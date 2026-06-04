@@ -1,12 +1,11 @@
 import { Module } from '@nestjs/common';
-import { TerminusModule } from '@nestjs/terminus';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { PrismaService } from './prisma.service';
-import { HealthController } from './health.controller';
+import { AppController } from './app.controller.js';
+import { AppService } from './app.service.js';
+import { PrismaService } from './prisma.service.js';
+import { HealthController } from './health.controller.js';
 
 @Module({
-  imports: [TerminusModule],
+  imports: [],
   controllers: [AppController, HealthController],
   providers: [AppService, PrismaService],
   exports: [PrismaService],
