@@ -5,15 +5,7 @@ import { AppModule } from './app.module.js'
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
 
-  app.enableCors({
-    origin: [
-      process.env.FRONTEND_URL ?? 'https://mythrion-olive.vercel.app',
-      'http://localhost:3001',
-    ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    credentials: true,
-  })
+  app.enableCors()
 
   app.setGlobalPrefix('api', {
     exclude: ['health'],
