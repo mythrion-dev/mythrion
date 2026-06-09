@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
 import { AppModule } from './app.module.js'
 
-async function bootstrap() {
+export async function bootstrap() {
   const app = await NestFactory.create(AppModule)
 
   app.enableCors({
@@ -30,4 +30,11 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3000)
 }
-bootstrap()
+
+// Auto-bootstrap if running directly (for local dev)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  bootstrap().catch((err) => {
+    console.error('Failed to bootstrap:', err)
+    process.exit(1)
+  })
+}
