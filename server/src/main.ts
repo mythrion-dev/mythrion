@@ -10,6 +10,8 @@ async function bootstrap() {
       process.env.FRONTEND_URL ?? 'https://mythrion-olive.vercel.app',
       'http://localhost:3001',
     ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true,
   })
 
