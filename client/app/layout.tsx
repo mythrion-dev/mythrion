@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Mythrion RPG',
-  description: 'Mythrion RPG SaaS',
+  title: 'Mythrion',
+  description: 'Mythrion SaaS',
 }
 
 export default function RootLayout({

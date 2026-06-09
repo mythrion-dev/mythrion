@@ -26,7 +26,7 @@ export default function HomePage() {
   return (
     <main className="flex-1 flex items-center justify-center p-4">
       <div className="text-center space-y-6 max-w-md">
-        <h1 className="text-4xl font-bold tracking-tight">Mythrion RPG</h1>
+        <h1 className="text-4xl font-bold tracking-tight">Mythrion</h1>
         <p className="text-gray-400 leading-relaxed">
           Forge your legend. Build worlds, create characters, and embark on epic
           campaigns with your friends.

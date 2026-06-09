@@ -32,7 +32,7 @@ export default function DashboardPage() {
     <main className="flex-1 flex flex-col p-4">
       <header className="flex items-center justify-between pb-4 border-b border-gray-800">
         <div>
-          <h1 className="text-xl font-semibold">Mythrion RPG</h1>
+          <h1 className="text-xl font-semibold">Mythrion</h1>
           <p className="text-sm text-gray-400">
             Welcome, {user.displayName ?? user.email}
           </p>

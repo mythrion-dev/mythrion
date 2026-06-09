@@ -10,7 +10,9 @@ async function bootstrap() {
     credentials: true,
   })
 
-  app.setGlobalPrefix('api')
+  app.setGlobalPrefix('api', {
+    exclude: ['health'],
+  })
 
   app.useGlobalPipes(
     new ValidationPipe({
