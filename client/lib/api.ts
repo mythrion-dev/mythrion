@@ -44,7 +44,7 @@ export function getAccessToken(): string | null {
 export function setAccessToken(token: string): void {
   if (typeof window === 'undefined') return
   localStorage.setItem('accessToken', token)
-  document.cookie = `auth_token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`
+  document.cookie = `auth_token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=None; Secure`
 }
 
 export function removeAccessToken(): void {
