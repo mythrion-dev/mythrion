@@ -1,4 +1,4 @@
-import('./dist/main.js')
+import('./dist/src/main.js')
   .then(({ bootstrap }) => {
     if (bootstrap) {
       return bootstrap();
