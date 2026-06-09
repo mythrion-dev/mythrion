@@ -5,7 +5,16 @@ import { AppModule } from './app.module.js'
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
 
-  app.enableCors()
+  app.enableCors({
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      process.env.FRONTEND_URL,
+    ].filter(Boolean),
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
 
   app.setGlobalPrefix('api', {
     exclude: ['health'],
