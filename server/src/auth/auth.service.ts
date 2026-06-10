@@ -9,6 +9,8 @@ import { PrismaService } from '../prisma.service.js'
 import { LoginDto } from './dto/login.dto.js'
 import { RegisterDto } from './dto/register.dto.js'
 import { OnboardingDto } from './dto/onboarding.dto.js'
+import { Request } from 'express'
+import geoip from 'geoip-lite'
 
 @Injectable()
 export class AuthService {
@@ -79,6 +81,25 @@ export class AuthService {
     const payload = { sub: userId, email }
     return {
       accessToken: this.jwtService.sign(payload),
+    }
+  }
+
+  getRequestIp(req: Request) {
+    const forwarded = req.headers ['x-forwarded-for']
+    if (typeof forwarded === 'string') {
+      return forwarded.split(',')[0].trim()
+    }
+    return req.socket.remoteAddress ?? 'unknown'
+  }
+
+  async getLocationFromIp(ip: string) {
+    const geo = geoip.lookup(ip)
+    if (!geo) return { country: null, region: null, city: null }
+
+    return {
+      country: geo.country,
+      region: geo.region,
+      city: geo.city,
     }
   }
 }
