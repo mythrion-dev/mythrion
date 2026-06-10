@@ -98,7 +98,10 @@ export default function CampaignDetailPage() {
   if (loading || fetching) {
     return (
       <main className="flex-1 flex items-center justify-center p-4">
-        <div className="text-sm text-gray-400">Loading...</div>
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+          <span className="text-sm">Loading...</span>
+        </div>
       </main>
     )
   }
@@ -106,68 +109,125 @@ export default function CampaignDetailPage() {
   if (!campaign) {
     return (
       <main className="flex-1 flex items-center justify-center p-4">
-        <div className="text-sm text-gray-400">Campaign not found.</div>
+        <div className="text-sm text-muted-foreground">Campaign not found.</div>
       </main>
     )
   }
 
   return (
-    <main className="flex-1 flex flex-col p-4 max-w-3xl mx-auto w-full">
+    <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 animate-fade-in">
+      {/* Back link */}
       <div className="mb-6">
         <Link
           href="/dashboard"
-          className="text-sm text-gray-400 hover:text-gray-200 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors"
         >
-          &larr; Back to Dashboard
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Dashboard
         </Link>
       </div>
 
       {!editing ? (
-        <>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold truncate">{campaign.name}</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Created{' '}
-                {new Date(campaign.createdAt).toLocaleDateString()}
-              </p>
+        <div className="space-y-6">
+          {/* Header card */}
+          <div className="card !p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl font-bold text-gradient truncate">
+                  {campaign.name}
+                </h1>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="badge badge-gold">Campaign</span>
+                  <span className="text-xs text-muted">
+                    Created{' '}
+                    {new Date(campaign.createdAt).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button onClick={() => setEditing(true)} className="btn-ghost">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="btn-danger"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete
+                </button>
+              </div>
             </div>
-            <div className="flex gap-2 shrink-0">
-              <button
-                onClick={() => setEditing(true)}
-                className="rounded-lg border border-gray-700 px-4 py-2 text-sm hover:bg-gray-800 transition-colors"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="rounded-lg border border-red-800 px-4 py-2 text-sm text-red-400 hover:bg-red-900/30 transition-colors"
-              >
-                Delete
-              </button>
+
+            <hr className="divider" />
+
+            {campaign.description ? (
+              <div className="prose prose-invert max-w-none">
+                <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap text-sm">
+                  {campaign.description}
+                </p>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground text-sm italic">
+                No description yet. Click edit to add one.
+              </div>
+            )}
+          </div>
+
+          {/* Quick stats */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="card !p-4 text-center">
+              <div className="text-xl mb-1">📜</div>
+              <div className="text-xs text-muted">Quests</div>
+              <div className="text-lg font-semibold text-foreground">0</div>
+            </div>
+            <div className="card !p-4 text-center">
+              <div className="text-xl mb-1">⚔️</div>
+              <div className="text-xs text-muted">Characters</div>
+              <div className="text-lg font-semibold text-foreground">0</div>
+            </div>
+            <div className="card !p-4 text-center">
+              <div className="text-xl mb-1">🗺️</div>
+              <div className="text-xs text-muted">Maps</div>
+              <div className="text-lg font-semibold text-foreground">0</div>
             </div>
           </div>
 
-          {campaign.description ? (
-            <p className="mt-6 text-gray-300 leading-relaxed whitespace-pre-wrap">
-              {campaign.description}
-            </p>
-          ) : (
-            <p className="mt-6 text-gray-500 italic">No description.</p>
-          )}
-
           {/* Delete confirmation modal */}
           {confirmDelete && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-              <div className="bg-gray-900 rounded-xl border border-gray-800 p-6 max-w-sm w-full space-y-4">
-                <h2 className="text-lg font-semibold">Delete Campaign</h2>
-                <p className="text-sm text-gray-400">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in">
+              <div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center">
+                    <svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="font-semibold">Delete Campaign</h2>
+                    <p className="text-sm text-muted-foreground">
+                      This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-sm text-muted-foreground">
                   Are you sure you want to delete "{campaign.name}"?
-                  This action cannot be undone.
+                  All associated data will be permanently removed.
                 </p>
 
                 {deleteError && (
-                  <div className="rounded-lg bg-red-900/40 border border-red-700 px-4 py-2 text-sm text-red-300">
+                  <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">
                     {deleteError}
                   </div>
                 )}
@@ -176,30 +236,33 @@ export default function CampaignDetailPage() {
                   <button
                     onClick={() => setConfirmDelete(false)}
                     disabled={deleting}
-                    className="rounded-lg border border-gray-700 px-4 py-2 text-sm hover:bg-gray-800 transition-colors disabled:opacity-50"
+                    className="btn-ghost"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleDelete}
                     disabled={deleting}
-                    className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+                    className="btn-danger-solid"
                   >
-                    {deleting ? 'Deleting...' : 'Delete'}
+                    {deleting ? 'Deleting...' : 'Delete forever'}
                   </button>
                 </div>
               </div>
             </div>
           )}
-        </>
+        </div>
       ) : (
-        <form onSubmit={handleUpdate} className="space-y-4">
-          <h1 className="text-2xl font-bold">Edit Campaign</h1>
+        <form onSubmit={handleUpdate} className="card !p-6 space-y-4 animate-slide-up">
+          <div className="flex items-center gap-3 mb-2">
+            <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            <h2 className="text-xl font-semibold text-gradient">Edit Campaign</h2>
+          </div>
 
           <div>
-            <label htmlFor="editName" className="block text-sm font-medium">
-              Name
-            </label>
+            <label htmlFor="editName" className="label">Campaign Name</label>
             <input
               id="editName"
               type="text"
@@ -207,34 +270,36 @@ export default function CampaignDetailPage() {
               maxLength={100}
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="input-field"
+              placeholder="The Dragon's Lair"
             />
           </div>
 
           <div>
-            <label
-              htmlFor="editDescription"
-              className="block text-sm font-medium"
-            >
-              Description <span className="text-gray-500">(optional)</span>
+            <label htmlFor="editDescription" className="label">
+              Description <span className="text-muted font-normal">(optional)</span>
             </label>
             <textarea
               id="editDescription"
               maxLength={1000}
-              rows={4}
+              rows={6}
               value={editDescription}
               onChange={(e) => setEditDescription(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              className="input-field resize-none"
+              placeholder="Describe your campaign..."
             />
+            <p className="text-xs text-muted mt-1.5 text-right">
+              {editDescription.length}/1000
+            </p>
           </div>
 
           {editError && (
-            <div className="rounded-lg bg-red-900/40 border border-red-700 px-4 py-2.5 text-sm text-red-300">
+            <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">
               {editError}
             </div>
           )}
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 justify-end pt-2">
             <button
               type="button"
               onClick={() => {
@@ -244,16 +309,23 @@ export default function CampaignDetailPage() {
                 setEditDescription(campaign.description ?? '')
               }}
               disabled={saving}
-              className="rounded-lg border border-gray-700 px-4 py-2 text-sm hover:bg-gray-800 transition-colors disabled:opacity-50"
+              className="btn-ghost"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving || editName.trim().length === 0}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+              className="btn-primary"
             >
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </button>
           </div>
         </form>
