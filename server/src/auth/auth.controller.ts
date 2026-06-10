@@ -4,10 +4,8 @@ import { LoginDto } from './dto/login.dto.js'
 import { RegisterDto } from './dto/register.dto.js'
 import { OnboardingDto } from './dto/onboarding.dto.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
-
-interface AuthenticatedRequest extends Request {
-  user: { sub: string; email: string }
-}
+import { AuthenticatedRequest } from './AuthenticatedRequest.js'
+import { Request } from 'express'
 
 @Controller('auth')
 export class AuthController {
@@ -33,5 +31,20 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   completeOnboarding(@Req() req: AuthenticatedRequest, @Body() dto: OnboardingDto) {
     return this.authService.completeOnboarding(req.user.sub, dto)
+  }
+
+  @Get('current-user')
+  @UseGuards(JwtAuthGuard)
+  async currentUser(@Req() req: AuthenticatedRequest) {
+    const userId = req.user.sub
+    const profile = await this.authService.getProfile(userId)
+    const ip = this.authService.getRequestIp(req)
+    const location = await this.authService.getLocationFromIp(ip)
+
+    return {
+      ...profile,
+      ip,
+      location,
+    }
   }
 }
