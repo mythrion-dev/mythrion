@@ -24,11 +24,11 @@ export default function NewCampaignPage() {
     setSubmitting(true)
 
     try {
-      await api.post('/campaigns', {
+      const created = await api.post<{ id: string; name: string }>('/campaigns', {
         name: name.trim(),
         description: description.trim() || undefined,
       })
-      router.push('/dashboard')
+      router.push(`/dashboard/campaigns/${created.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create campaign')
     } finally {
