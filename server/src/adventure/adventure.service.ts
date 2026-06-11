@@ -4,15 +4,19 @@ import {
   ForbiddenException,
 } from '@nestjs/common'
 import { PrismaService } from '../prisma.service.js'
+import { MembershipService } from '../membership/membership.service.js'
 import { CreateAdventureDto } from './dto/create-adventure.dto.js'
 import { UpdateAdventureDto } from './dto/update-adventure.dto.js'
 
 @Injectable()
 export class AdventureService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly membership: MembershipService,
+  ) {}
 
   async create(userId: string, dto: CreateAdventureDto) {
-    return this.prisma.adventure.create({
+    const adventure = await this.prisma.adventure.create({
       data: {
         name: dto.name,
         campaign: dto.campaign,
@@ -21,13 +25,16 @@ export class AdventureService {
         ownerId: userId,
       },
     })
+
+    // Auto-create GM membership for the creator
+    await this.membership.createMembership(adventure.id, userId, 'GM')
+
+    return adventure
   }
 
   async findAllByUser(userId: string) {
-    return this.prisma.adventure.findMany({
-      where: { ownerId: userId },
-      orderBy: { createdAt: 'desc' },
-    })
+    // Return adventures where user is a member (not just owner)
+    return this.membership.getUserAdventures(userId)
   }
 
   async findOne(id: string, userId: string) {
@@ -35,14 +42,20 @@ export class AdventureService {
     if (!adventure) {
       throw new NotFoundException('Adventure not found')
     }
-    if (adventure.ownerId !== userId) {
-      throw new ForbiddenException('You do not own this adventure')
+
+    // Check membership (GMs and players can view)
+    const isMember = await this.membership.isMember(id, userId)
+    if (!isMember) {
+      throw new ForbiddenException('You are not a member of this adventure')
     }
+
     return adventure
   }
 
   async update(id: string, userId: string, dto: UpdateAdventureDto) {
-    await this.findOne(id, userId)
+    // Only GM can update
+    await this.membership.requireRole(id, userId, 'GM')
+
     return this.prisma.adventure.update({
       where: { id },
       data: {
@@ -55,7 +68,9 @@ export class AdventureService {
   }
 
   async remove(id: string, userId: string) {
-    await this.findOne(id, userId)
+    // Only GM can delete
+    await this.membership.requireRole(id, userId, 'GM')
+
     return this.prisma.adventure.delete({ where: { id } })
   }
 }
