@@ -384,7 +384,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 
 export const ModelName = {
-  User: 'User'
+  User: 'User',
+  Adventure: 'Adventure'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -400,7 +401,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user"
+    modelProps: "user" | "adventure"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -478,6 +479,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Adventure: {
+      payload: Prisma.$AdventurePayload<ExtArgs>
+      fields: Prisma.AdventureFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AdventureFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdventurePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AdventureFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdventurePayload>
+        }
+        findFirst: {
+          args: Prisma.AdventureFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdventurePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AdventureFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdventurePayload>
+        }
+        findMany: {
+          args: Prisma.AdventureFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdventurePayload>[]
+        }
+        create: {
+          args: Prisma.AdventureCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdventurePayload>
+        }
+        createMany: {
+          args: Prisma.AdventureCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AdventureCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdventurePayload>[]
+        }
+        delete: {
+          args: Prisma.AdventureDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdventurePayload>
+        }
+        update: {
+          args: Prisma.AdventureUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdventurePayload>
+        }
+        deleteMany: {
+          args: Prisma.AdventureDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AdventureUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AdventureUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdventurePayload>[]
+        }
+        upsert: {
+          args: Prisma.AdventureUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdventurePayload>
+        }
+        aggregate: {
+          args: Prisma.AdventureAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAdventure>
+        }
+        groupBy: {
+          args: Prisma.AdventureGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdventureGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AdventureCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdventureCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -528,6 +603,20 @@ export const UserScalarFieldEnum = {
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const AdventureScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  campaign: 'campaign',
+  synopsis: 'synopsis',
+  maxPlayers: 'maxPlayers',
+  ownerId: 'ownerId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AdventureScalarFieldEnum = (typeof AdventureScalarFieldEnum)[keyof typeof AdventureScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -606,6 +695,20 @@ export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'In
  * Reference to a field of type 'Int[]'
  */
 export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Float'
+ */
+export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+/**
+ * Reference to a field of type 'Float[]'
+ */
+export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
     
 
 /**
@@ -719,6 +822,7 @@ export type PrismaClientOptions = ({
 }
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
+  adventure?: Prisma.AdventureOmit
 }
 
 /* Types for Logging */

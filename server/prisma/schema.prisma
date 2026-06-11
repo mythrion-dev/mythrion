@@ -11,11 +11,26 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  passwordHash  String
-  displayName   String?
-  onboardingComplete Boolean @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                 String      @id @default(cuid())
+  email              String      @unique
+  passwordHash       String
+  displayName        String?
+  onboardingComplete Boolean     @default(false)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  adventures         Adventure[]
+}
+
+model Adventure {
+  id          String   @id @default(cuid())
+  name        String
+  campaign    String
+  synopsis    String?
+  maxPlayers  Int      @default(5)
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ownerId])
 }

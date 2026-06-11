@@ -4,7 +4,7 @@ import { LoginDto } from './dto/login.dto.js'
 import { RegisterDto } from './dto/register.dto.js'
 import { OnboardingDto } from './dto/onboarding.dto.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
-import { AuthenticatedRequest } from './AuthenticatedRequest.js'
+import type { AuthenticatedRequest } from './AuthenticatedRequest.js'
 import { Request } from 'express'
 
 @Controller('auth')

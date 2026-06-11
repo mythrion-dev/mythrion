@@ -37,33 +37,50 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-sm space-y-6">
+      {/* Logo */}
+      <div className="flex justify-center">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-surface border border-border ring-1 ring-primary/10 shadow-[0_0_30px_rgba(201,164,75,0.06)]">
+          <svg
+            className="w-7 h-7 text-primary"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4-6.2-4.5h7.6L12 2z"
+            />
+          </svg>
+        </div>
+      </div>
+
       <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Mythrion</h1>
-        <p className="mt-2 text-sm text-gray-400">
-          {isRegister ? 'Create your account' : 'Sign in to your account'}
+        <h1 className="text-2xl font-bold tracking-tight text-gradient">
+          Mythrion
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {isRegister ? 'Create your account' : 'Sign in to continue your journey'}
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="card !p-6 space-y-4">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium">
-            Email
-          </label>
+          <label htmlFor="email" className="label">Email</label>
           <input
             id="email"
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="you@example.com"
+            className="input-field"
+            placeholder="adventurer@example.com"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium">
-            Password
-          </label>
+          <label htmlFor="password" className="label">Password</label>
           <input
             id="password"
             type="password"
@@ -71,13 +88,13 @@ function LoginForm() {
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="input-field"
             placeholder="At least 8 characters"
           />
         </div>
 
         {error && (
-          <div className="rounded-lg bg-red-900/40 border border-red-700 px-4 py-2.5 text-sm text-red-300">
+          <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">
             {error}
           </div>
         )}
@@ -85,37 +102,37 @@ function LoginForm() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+          className="btn-primary w-full"
         >
           {submitting
             ? 'Please wait...'
             : isRegister
               ? 'Create account'
-              : 'Sign in'}
+              : 'Enter the realm'}
         </button>
       </form>
 
-      <div className="text-center text-sm text-gray-400">
+      <div className="text-center text-sm text-muted">
         {isRegister ? (
           <>
             Already have an account?{' '}
             <button
               type="button"
-              onClick={() => setIsRegister(false)}
-              className="font-medium text-indigo-400 hover:text-indigo-300"
+              onClick={() => { setIsRegister(false); setError(null) }}
+              className="font-medium text-primary hover:text-primary-hover transition-colors"
             >
               Sign in
             </button>
           </>
         ) : (
           <>
-            Don't have an account?{' '}
+            New to Mythrion?{' '}
             <button
               type="button"
-              onClick={() => setIsRegister(true)}
-              className="font-medium text-indigo-400 hover:text-indigo-300"
+              onClick={() => { setIsRegister(true); setError(null) }}
+              className="font-medium text-primary hover:text-primary-hover transition-colors"
             >
-              Create one
+              Create an account
             </button>
           </>
         )}
@@ -126,10 +143,13 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="flex-1 flex items-center justify-center p-4">
+    <main className="flex-1 flex items-center justify-center p-4 relative">
+      {/* Ambient glow */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-gradient-to-b from-accent/5 via-primary/3 to-transparent blur-3xl pointer-events-none" />
+
       <Suspense
         fallback={
-          <div className="text-sm text-gray-400">Loading...</div>
+          <div className="text-sm text-muted-foreground">Loading...</div>
         }
       >
         <LoginForm />
