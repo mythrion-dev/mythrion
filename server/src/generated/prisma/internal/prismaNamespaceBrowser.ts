@@ -52,7 +52,8 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   User: 'User',
-  Adventure: 'Adventure'
+  Adventure: 'Adventure',
+  GoogleAccount: 'GoogleAccount'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -96,6 +97,21 @@ export const AdventureScalarFieldEnum = {
 } as const
 
 export type AdventureScalarFieldEnum = (typeof AdventureScalarFieldEnum)[keyof typeof AdventureScalarFieldEnum]
+
+
+export const GoogleAccountScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  googleId: 'googleId',
+  email: 'email',
+  displayName: 'displayName',
+  avatarUrl: 'avatarUrl',
+  locale: 'locale',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type GoogleAccountScalarFieldEnum = (typeof GoogleAccountScalarFieldEnum)[keyof typeof GoogleAccountScalarFieldEnum]
 
 
 export const SortOrder = {

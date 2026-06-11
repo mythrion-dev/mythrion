@@ -51,3 +51,8 @@ export type User = Prisma.UserModel
  * 
  */
 export type Adventure = Prisma.AdventureModel
+/**
+ * Model GoogleAccount
+ * 
+ */
+export type GoogleAccount = Prisma.GoogleAccountModel
