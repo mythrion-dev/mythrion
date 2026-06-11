@@ -21,6 +21,7 @@ model User {
   adventures         Adventure[]
   memberships        CampaignMember[]
   sentInvitations    CampaignInvitation[] @relation("SentInvitations")
+  googleAccount      GoogleAccount?
 }
 
 model Adventure {
@@ -83,4 +84,16 @@ model CampaignInvitation {
 
   @@index([adventureId])
   @@index([token])
+}
+model GoogleAccount {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String   @unique
+  googleId    String   @unique
+  email       String
+  displayName String?
+  avatarUrl   String?
+  locale      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

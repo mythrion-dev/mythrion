@@ -199,6 +199,7 @@ export type UserWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   adventures?: Prisma.AdventureListRelationFilter
+  googleAccount?: Prisma.XOR<Prisma.GoogleAccountNullableScalarRelationFilter, Prisma.GoogleAccountWhereInput> | null
 }
 
 export type UserOrderByWithRelationInput = {
@@ -210,6 +211,7 @@ export type UserOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   adventures?: Prisma.AdventureOrderByRelationAggregateInput
+  googleAccount?: Prisma.GoogleAccountOrderByWithRelationInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -224,6 +226,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   adventures?: Prisma.AdventureListRelationFilter
+  googleAccount?: Prisma.XOR<Prisma.GoogleAccountNullableScalarRelationFilter, Prisma.GoogleAccountWhereInput> | null
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -261,6 +264,7 @@ export type UserCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureCreateNestedManyWithoutOwnerInput
+  googleAccount?: Prisma.GoogleAccountCreateNestedOneWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -272,6 +276,7 @@ export type UserUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureUncheckedCreateNestedManyWithoutOwnerInput
+  googleAccount?: Prisma.GoogleAccountUncheckedCreateNestedOneWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -283,6 +288,7 @@ export type UserUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUpdateManyWithoutOwnerNestedInput
+  googleAccount?: Prisma.GoogleAccountUpdateOneWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -294,6 +300,7 @@ export type UserUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUncheckedUpdateManyWithoutOwnerNestedInput
+  googleAccount?: Prisma.GoogleAccountUncheckedUpdateOneWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -391,6 +398,20 @@ export type UserUpdateOneRequiredWithoutAdventuresNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAdventuresInput, Prisma.UserUpdateWithoutAdventuresInput>, Prisma.UserUncheckedUpdateWithoutAdventuresInput>
 }
 
+export type UserCreateNestedOneWithoutGoogleAccountInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutGoogleAccountInput, Prisma.UserUncheckedCreateWithoutGoogleAccountInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutGoogleAccountInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutGoogleAccountNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutGoogleAccountInput, Prisma.UserUncheckedCreateWithoutGoogleAccountInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutGoogleAccountInput
+  upsert?: Prisma.UserUpsertWithoutGoogleAccountInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutGoogleAccountInput, Prisma.UserUpdateWithoutGoogleAccountInput>, Prisma.UserUncheckedUpdateWithoutGoogleAccountInput>
+}
+
 export type UserCreateWithoutAdventuresInput = {
   id?: string
   email: string
@@ -399,6 +420,7 @@ export type UserCreateWithoutAdventuresInput = {
   onboardingComplete?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  googleAccount?: Prisma.GoogleAccountCreateNestedOneWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAdventuresInput = {
@@ -409,6 +431,7 @@ export type UserUncheckedCreateWithoutAdventuresInput = {
   onboardingComplete?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  googleAccount?: Prisma.GoogleAccountUncheckedCreateNestedOneWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAdventuresInput = {
@@ -435,6 +458,7 @@ export type UserUpdateWithoutAdventuresInput = {
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  googleAccount?: Prisma.GoogleAccountUpdateOneWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAdventuresInput = {
@@ -445,6 +469,67 @@ export type UserUncheckedUpdateWithoutAdventuresInput = {
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  googleAccount?: Prisma.GoogleAccountUncheckedUpdateOneWithoutUserNestedInput
+}
+
+export type UserCreateWithoutGoogleAccountInput = {
+  id?: string
+  email: string
+  passwordHash: string
+  displayName?: string | null
+  onboardingComplete?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  adventures?: Prisma.AdventureCreateNestedManyWithoutOwnerInput
+}
+
+export type UserUncheckedCreateWithoutGoogleAccountInput = {
+  id?: string
+  email: string
+  passwordHash: string
+  displayName?: string | null
+  onboardingComplete?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  adventures?: Prisma.AdventureUncheckedCreateNestedManyWithoutOwnerInput
+}
+
+export type UserCreateOrConnectWithoutGoogleAccountInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutGoogleAccountInput, Prisma.UserUncheckedCreateWithoutGoogleAccountInput>
+}
+
+export type UserUpsertWithoutGoogleAccountInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutGoogleAccountInput, Prisma.UserUncheckedUpdateWithoutGoogleAccountInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutGoogleAccountInput, Prisma.UserUncheckedCreateWithoutGoogleAccountInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutGoogleAccountInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutGoogleAccountInput, Prisma.UserUncheckedUpdateWithoutGoogleAccountInput>
+}
+
+export type UserUpdateWithoutGoogleAccountInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  adventures?: Prisma.AdventureUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserUncheckedUpdateWithoutGoogleAccountInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  adventures?: Prisma.AdventureUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 
@@ -487,6 +572,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   createdAt?: boolean
   updatedAt?: boolean
   adventures?: boolean | Prisma.User$adventuresArgs<ExtArgs>
+  googleAccount?: boolean | Prisma.User$googleAccountArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -523,6 +609,7 @@ export type UserSelectScalar = {
 export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "passwordHash" | "displayName" | "onboardingComplete" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   adventures?: boolean | Prisma.User$adventuresArgs<ExtArgs>
+  googleAccount?: boolean | Prisma.User$googleAccountArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -532,6 +619,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   name: "User"
   objects: {
     adventures: Prisma.$AdventurePayload<ExtArgs>[]
+    googleAccount: Prisma.$GoogleAccountPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -936,6 +1024,7 @@ readonly fields: UserFieldRefs;
 export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   adventures<T extends Prisma.User$adventuresArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$adventuresArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AdventurePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  googleAccount<T extends Prisma.User$googleAccountArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$googleAccountArgs<ExtArgs>>): Prisma.Prisma__GoogleAccountClient<runtime.Types.Result.GetResult<Prisma.$GoogleAccountPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1386,6 +1475,25 @@ export type User$adventuresArgs<ExtArgs extends runtime.Types.Extensions.Interna
   take?: number
   skip?: number
   distinct?: Prisma.AdventureScalarFieldEnum | Prisma.AdventureScalarFieldEnum[]
+}
+
+/**
+ * User.googleAccount
+ */
+export type User$googleAccountArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the GoogleAccount
+   */
+  select?: Prisma.GoogleAccountSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the GoogleAccount
+   */
+  omit?: Prisma.GoogleAccountOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GoogleAccountInclude<ExtArgs> | null
+  where?: Prisma.GoogleAccountWhereInput
 }
 
 /**
