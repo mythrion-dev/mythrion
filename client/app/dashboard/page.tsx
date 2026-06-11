@@ -13,6 +13,8 @@ interface Adventure {
   synopsis: string | null
   maxPlayers: number
   ownerId: string
+  role?: string
+  joinedAt?: string
   createdAt: string
   updatedAt: string
 }
@@ -152,6 +154,16 @@ function AdventureCard({
           {adventure.campaign}
         </span>
       </div>
+
+      {adventure.role && (
+        <div className="mb-2">
+          <span className={`badge text-[0.6rem] ${adventure.role === 'GM' ? 'badge-gold' : ''}`}
+            style={adventure.role !== 'GM' ? { background: 'rgba(124,92,231,0.15)', color: '#9070f0', border: '1px solid rgba(124,92,231,0.2)' } : undefined}
+          >
+            {adventure.role}
+          </span>
+        </div>
+      )}
 
       {adventure.synopsis ? (
         <p className="text-sm text-muted-foreground line-clamp-3 mb-4 flex-1">

@@ -11,26 +11,76 @@ datasource db {
 }
 
 model User {
-  id                 String      @id @default(cuid())
-  email              String      @unique
+  id                 String              @id @default(cuid())
+  email              String              @unique
   passwordHash       String
   displayName        String?
-  onboardingComplete Boolean     @default(false)
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  onboardingComplete Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
   adventures         Adventure[]
+  memberships        CampaignMember[]
+  sentInvitations    CampaignInvitation[] @relation("SentInvitations")
 }
 
 model Adventure {
-  id          String   @id @default(cuid())
+  id          String            @id @default(cuid())
   name        String
   campaign    String
   synopsis    String?
-  maxPlayers  Int      @default(5)
+  maxPlayers  Int               @default(5)
   ownerId     String
-  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  owner       User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  members     CampaignMember[]
+  invitations CampaignInvitation[]
 
   @@index([ownerId])
+}
+
+enum MemberRole {
+  GM
+  PLAYER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+model CampaignMember {
+  id         String     @id @default(cuid())
+  adventureId  String
+  adventure    Adventure @relation(fields: [adventureId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       MemberRole
+  joinedAt   DateTime   @default(now())
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@unique([adventureId, userId])
+  @@index([userId])
+}
+
+model CampaignInvitation {
+  id           String           @id @default(cuid())
+  adventureId     String
+  adventure       Adventure      @relation(fields: [adventureId], references: [id], onDelete: Cascade)
+  invitedEmail String?
+  token        String           @unique
+  role         MemberRole
+  status       InvitationStatus @default(PENDING)
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  createdById  String
+  createdBy    User             @relation("SentInvitations", fields: [createdById], references: [id])
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([adventureId])
+  @@index([token])
 }
