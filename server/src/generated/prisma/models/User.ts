@@ -198,7 +198,7 @@ export type UserWhereInput = {
   onboardingComplete?: Prisma.BoolFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
-  campaigns?: Prisma.CampaignListRelationFilter
+  adventures?: Prisma.AdventureListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -209,7 +209,7 @@ export type UserOrderByWithRelationInput = {
   onboardingComplete?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  campaigns?: Prisma.CampaignOrderByRelationAggregateInput
+  adventures?: Prisma.AdventureOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -223,7 +223,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   onboardingComplete?: Prisma.BoolFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
-  campaigns?: Prisma.CampaignListRelationFilter
+  adventures?: Prisma.AdventureListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -260,7 +260,7 @@ export type UserCreateInput = {
   onboardingComplete?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
-  campaigns?: Prisma.CampaignCreateNestedManyWithoutOwnerInput
+  adventures?: Prisma.AdventureCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -271,7 +271,7 @@ export type UserUncheckedCreateInput = {
   onboardingComplete?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
-  campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutOwnerInput
+  adventures?: Prisma.AdventureUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUpdateInput = {
@@ -282,7 +282,7 @@ export type UserUpdateInput = {
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  campaigns?: Prisma.CampaignUpdateManyWithoutOwnerNestedInput
+  adventures?: Prisma.AdventureUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -293,7 +293,7 @@ export type UserUncheckedUpdateInput = {
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutOwnerNestedInput
+  adventures?: Prisma.AdventureUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -377,21 +377,21 @@ export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
 }
 
-export type UserCreateNestedOneWithoutCampaignsInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutCampaignsInput, Prisma.UserUncheckedCreateWithoutCampaignsInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCampaignsInput
+export type UserCreateNestedOneWithoutAdventuresInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAdventuresInput, Prisma.UserUncheckedCreateWithoutAdventuresInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAdventuresInput
   connect?: Prisma.UserWhereUniqueInput
 }
 
-export type UserUpdateOneRequiredWithoutCampaignsNestedInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutCampaignsInput, Prisma.UserUncheckedCreateWithoutCampaignsInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCampaignsInput
-  upsert?: Prisma.UserUpsertWithoutCampaignsInput
+export type UserUpdateOneRequiredWithoutAdventuresNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAdventuresInput, Prisma.UserUncheckedCreateWithoutAdventuresInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAdventuresInput
+  upsert?: Prisma.UserUpsertWithoutAdventuresInput
   connect?: Prisma.UserWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCampaignsInput, Prisma.UserUpdateWithoutCampaignsInput>, Prisma.UserUncheckedUpdateWithoutCampaignsInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAdventuresInput, Prisma.UserUpdateWithoutAdventuresInput>, Prisma.UserUncheckedUpdateWithoutAdventuresInput>
 }
 
-export type UserCreateWithoutCampaignsInput = {
+export type UserCreateWithoutAdventuresInput = {
   id?: string
   email: string
   passwordHash: string
@@ -401,7 +401,7 @@ export type UserCreateWithoutCampaignsInput = {
   updatedAt?: Date | string
 }
 
-export type UserUncheckedCreateWithoutCampaignsInput = {
+export type UserUncheckedCreateWithoutAdventuresInput = {
   id?: string
   email: string
   passwordHash: string
@@ -411,23 +411,23 @@ export type UserUncheckedCreateWithoutCampaignsInput = {
   updatedAt?: Date | string
 }
 
-export type UserCreateOrConnectWithoutCampaignsInput = {
+export type UserCreateOrConnectWithoutAdventuresInput = {
   where: Prisma.UserWhereUniqueInput
-  create: Prisma.XOR<Prisma.UserCreateWithoutCampaignsInput, Prisma.UserUncheckedCreateWithoutCampaignsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutAdventuresInput, Prisma.UserUncheckedCreateWithoutAdventuresInput>
 }
 
-export type UserUpsertWithoutCampaignsInput = {
-  update: Prisma.XOR<Prisma.UserUpdateWithoutCampaignsInput, Prisma.UserUncheckedUpdateWithoutCampaignsInput>
-  create: Prisma.XOR<Prisma.UserCreateWithoutCampaignsInput, Prisma.UserUncheckedCreateWithoutCampaignsInput>
+export type UserUpsertWithoutAdventuresInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutAdventuresInput, Prisma.UserUncheckedUpdateWithoutAdventuresInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutAdventuresInput, Prisma.UserUncheckedCreateWithoutAdventuresInput>
   where?: Prisma.UserWhereInput
 }
 
-export type UserUpdateToOneWithWhereWithoutCampaignsInput = {
+export type UserUpdateToOneWithWhereWithoutAdventuresInput = {
   where?: Prisma.UserWhereInput
-  data: Prisma.XOR<Prisma.UserUpdateWithoutCampaignsInput, Prisma.UserUncheckedUpdateWithoutCampaignsInput>
+  data: Prisma.XOR<Prisma.UserUpdateWithoutAdventuresInput, Prisma.UserUncheckedUpdateWithoutAdventuresInput>
 }
 
-export type UserUpdateWithoutCampaignsInput = {
+export type UserUpdateWithoutAdventuresInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
@@ -437,7 +437,7 @@ export type UserUpdateWithoutCampaignsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type UserUncheckedUpdateWithoutCampaignsInput = {
+export type UserUncheckedUpdateWithoutAdventuresInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
@@ -453,11 +453,11 @@ export type UserUncheckedUpdateWithoutCampaignsInput = {
  */
 
 export type UserCountOutputType = {
-  campaigns: number
+  adventures: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  campaigns?: boolean | UserCountOutputTypeCountCampaignsArgs
+  adventures?: boolean | UserCountOutputTypeCountAdventuresArgs
 }
 
 /**
@@ -473,8 +473,8 @@ export type UserCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensi
 /**
  * UserCountOutputType without action
  */
-export type UserCountOutputTypeCountCampaignsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.CampaignWhereInput
+export type UserCountOutputTypeCountAdventuresArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AdventureWhereInput
 }
 
 
@@ -486,7 +486,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   onboardingComplete?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  campaigns?: boolean | Prisma.User$campaignsArgs<ExtArgs>
+  adventures?: boolean | Prisma.User$adventuresArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -522,7 +522,7 @@ export type UserSelectScalar = {
 
 export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "passwordHash" | "displayName" | "onboardingComplete" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  campaigns?: boolean | Prisma.User$campaignsArgs<ExtArgs>
+  adventures?: boolean | Prisma.User$adventuresArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -531,7 +531,7 @@ export type UserIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "User"
   objects: {
-    campaigns: Prisma.$CampaignPayload<ExtArgs>[]
+    adventures: Prisma.$AdventurePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -935,7 +935,7 @@ readonly fields: UserFieldRefs;
  */
 export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  campaigns<T extends Prisma.User$campaignsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$campaignsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  adventures<T extends Prisma.User$adventuresArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$adventuresArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AdventurePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1365,27 +1365,27 @@ export type UserDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
 }
 
 /**
- * User.campaigns
+ * User.adventures
  */
-export type User$campaignsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type User$adventuresArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the Campaign
+   * Select specific fields to fetch from the Adventure
    */
-  select?: Prisma.CampaignSelect<ExtArgs> | null
+  select?: Prisma.AdventureSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the Campaign
+   * Omit specific fields from the Adventure
    */
-  omit?: Prisma.CampaignOmit<ExtArgs> | null
+  omit?: Prisma.AdventureOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.CampaignInclude<ExtArgs> | null
-  where?: Prisma.CampaignWhereInput
-  orderBy?: Prisma.CampaignOrderByWithRelationInput | Prisma.CampaignOrderByWithRelationInput[]
-  cursor?: Prisma.CampaignWhereUniqueInput
+  include?: Prisma.AdventureInclude<ExtArgs> | null
+  where?: Prisma.AdventureWhereInput
+  orderBy?: Prisma.AdventureOrderByWithRelationInput | Prisma.AdventureOrderByWithRelationInput[]
+  cursor?: Prisma.AdventureWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.CampaignScalarFieldEnum | Prisma.CampaignScalarFieldEnum[]
+  distinct?: Prisma.AdventureScalarFieldEnum | Prisma.AdventureScalarFieldEnum[]
 }
 
 /**

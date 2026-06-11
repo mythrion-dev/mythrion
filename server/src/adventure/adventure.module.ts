@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
-import { CampaignService } from './campaign.service.js'
-import { CampaignController } from './campaign.controller.js'
+import { AdventureService } from './adventure.service.js'
+import { AdventureController } from './adventure.controller.js'
 import { PrismaService } from '../prisma.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { JwtModule } from '@nestjs/jwt'
@@ -12,8 +12,8 @@ import { JwtModule } from '@nestjs/jwt'
       signOptions: { expiresIn: '7d' },
     }),
   ],
-  controllers: [CampaignController],
-  providers: [CampaignService, PrismaService, JwtAuthGuard],
-  exports: [CampaignService],
+  controllers: [AdventureController],
+  providers: [AdventureService, PrismaService, JwtAuthGuard],
+  exports: [AdventureService],
 })
-export class CampaignModule {}
+export class AdventureModule {}
