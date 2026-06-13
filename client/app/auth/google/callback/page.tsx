@@ -12,7 +12,8 @@ function GoogleCallbackInner() {
     const token = searchParams.get('token')
     if (token) {
       setAccessToken(token)
-      router.replace('/dashboard')
+      // Force full page reload so AuthProvider re-initializes with the token
+      window.location.replace('/dashboard')
     } else {
       router.replace('/login?error=google_auth_failed')
     }
