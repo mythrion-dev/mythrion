@@ -1,11 +1,14 @@
-import { Controller, Post, Get, Body, UseGuards, Req } from '@nestjs/common'
+import { Controller, Post, Get, Body, UseGuards, Req, Res } from '@nestjs/common'
 import { AuthService } from './auth.service.js'
 import { LoginDto } from './dto/login.dto.js'
 import { RegisterDto } from './dto/register.dto.js'
 import { OnboardingDto } from './dto/onboarding.dto.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
-import type { AuthenticatedRequest } from './jwt-auth.guard.js'
-import { Request } from 'express'
+import { AuthGuard } from '@nestjs/passport'
+import type { AuthenticatedRequest } from './AuthenticatedRequest.js'
+import type { Request, Response } from 'express'
+
+const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:3001'
 
 @Controller('auth')
 export class AuthController {
@@ -46,5 +49,20 @@ export class AuthController {
       ip,
       location,
     }
+  }
+
+  /** Google OAuth — redirect to Google */
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  googleAuth() {
+    // Guard redirects to Google
+  }
+
+  /** Google OAuth callback — returns JWT via redirect */
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleCallback(@Req() req: any, @Res() res: Response) {
+    const { accessToken } = req.user
+    res.redirect(`${FRONTEND_URL}/auth/google/callback?token=${accessToken}`)
   }
 }

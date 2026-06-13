@@ -241,6 +241,8 @@ export type AdventureWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Adventure"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Adventure"> | Date | string
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  members?: Prisma.CampaignMemberListRelationFilter
+  invitations?: Prisma.CampaignInvitationListRelationFilter
 }
 
 export type AdventureOrderByWithRelationInput = {
@@ -253,6 +255,8 @@ export type AdventureOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   owner?: Prisma.UserOrderByWithRelationInput
+  members?: Prisma.CampaignMemberOrderByRelationAggregateInput
+  invitations?: Prisma.CampaignInvitationOrderByRelationAggregateInput
 }
 
 export type AdventureWhereUniqueInput = Prisma.AtLeast<{
@@ -268,6 +272,8 @@ export type AdventureWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Adventure"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Adventure"> | Date | string
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  members?: Prisma.CampaignMemberListRelationFilter
+  invitations?: Prisma.CampaignInvitationListRelationFilter
 }, "id">
 
 export type AdventureOrderByWithAggregationInput = {
@@ -309,6 +315,8 @@ export type AdventureCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   owner: Prisma.UserCreateNestedOneWithoutAdventuresInput
+  members?: Prisma.CampaignMemberCreateNestedManyWithoutAdventureInput
+  invitations?: Prisma.CampaignInvitationCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateInput = {
@@ -320,6 +328,8 @@ export type AdventureUncheckedCreateInput = {
   ownerId: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  members?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutAdventureInput
+  invitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUpdateInput = {
@@ -331,6 +341,8 @@ export type AdventureUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.UserUpdateOneRequiredWithoutAdventuresNestedInput
+  members?: Prisma.CampaignMemberUpdateManyWithoutAdventureNestedInput
+  invitations?: Prisma.CampaignInvitationUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateInput = {
@@ -342,6 +354,8 @@ export type AdventureUncheckedUpdateInput = {
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  members?: Prisma.CampaignMemberUncheckedUpdateManyWithoutAdventureNestedInput
+  invitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureCreateManyInput = {
@@ -427,6 +441,11 @@ export type AdventureSumOrderByAggregateInput = {
   maxPlayers?: Prisma.SortOrder
 }
 
+export type AdventureScalarRelationFilter = {
+  is?: Prisma.AdventureWhereInput
+  isNot?: Prisma.AdventureWhereInput
+}
+
 export type AdventureCreateNestedManyWithoutOwnerInput = {
   create?: Prisma.XOR<Prisma.AdventureCreateWithoutOwnerInput, Prisma.AdventureUncheckedCreateWithoutOwnerInput> | Prisma.AdventureCreateWithoutOwnerInput[] | Prisma.AdventureUncheckedCreateWithoutOwnerInput[]
   connectOrCreate?: Prisma.AdventureCreateOrConnectWithoutOwnerInput | Prisma.AdventureCreateOrConnectWithoutOwnerInput[]
@@ -477,6 +496,34 @@ export type IntFieldUpdateOperationsInput = {
   divide?: number
 }
 
+export type AdventureCreateNestedOneWithoutMembersInput = {
+  create?: Prisma.XOR<Prisma.AdventureCreateWithoutMembersInput, Prisma.AdventureUncheckedCreateWithoutMembersInput>
+  connectOrCreate?: Prisma.AdventureCreateOrConnectWithoutMembersInput
+  connect?: Prisma.AdventureWhereUniqueInput
+}
+
+export type AdventureUpdateOneRequiredWithoutMembersNestedInput = {
+  create?: Prisma.XOR<Prisma.AdventureCreateWithoutMembersInput, Prisma.AdventureUncheckedCreateWithoutMembersInput>
+  connectOrCreate?: Prisma.AdventureCreateOrConnectWithoutMembersInput
+  upsert?: Prisma.AdventureUpsertWithoutMembersInput
+  connect?: Prisma.AdventureWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AdventureUpdateToOneWithWhereWithoutMembersInput, Prisma.AdventureUpdateWithoutMembersInput>, Prisma.AdventureUncheckedUpdateWithoutMembersInput>
+}
+
+export type AdventureCreateNestedOneWithoutInvitationsInput = {
+  create?: Prisma.XOR<Prisma.AdventureCreateWithoutInvitationsInput, Prisma.AdventureUncheckedCreateWithoutInvitationsInput>
+  connectOrCreate?: Prisma.AdventureCreateOrConnectWithoutInvitationsInput
+  connect?: Prisma.AdventureWhereUniqueInput
+}
+
+export type AdventureUpdateOneRequiredWithoutInvitationsNestedInput = {
+  create?: Prisma.XOR<Prisma.AdventureCreateWithoutInvitationsInput, Prisma.AdventureUncheckedCreateWithoutInvitationsInput>
+  connectOrCreate?: Prisma.AdventureCreateOrConnectWithoutInvitationsInput
+  upsert?: Prisma.AdventureUpsertWithoutInvitationsInput
+  connect?: Prisma.AdventureWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AdventureUpdateToOneWithWhereWithoutInvitationsInput, Prisma.AdventureUpdateWithoutInvitationsInput>, Prisma.AdventureUncheckedUpdateWithoutInvitationsInput>
+}
+
 export type AdventureCreateWithoutOwnerInput = {
   id?: string
   name: string
@@ -485,6 +532,8 @@ export type AdventureCreateWithoutOwnerInput = {
   maxPlayers?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  members?: Prisma.CampaignMemberCreateNestedManyWithoutAdventureInput
+  invitations?: Prisma.CampaignInvitationCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateWithoutOwnerInput = {
@@ -495,6 +544,8 @@ export type AdventureUncheckedCreateWithoutOwnerInput = {
   maxPlayers?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  members?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutAdventureInput
+  invitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureCreateOrConnectWithoutOwnerInput = {
@@ -537,6 +588,134 @@ export type AdventureScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Adventure"> | Date | string
 }
 
+export type AdventureCreateWithoutMembersInput = {
+  id?: string
+  name: string
+  campaign: string
+  synopsis?: string | null
+  maxPlayers?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  owner: Prisma.UserCreateNestedOneWithoutAdventuresInput
+  invitations?: Prisma.CampaignInvitationCreateNestedManyWithoutAdventureInput
+}
+
+export type AdventureUncheckedCreateWithoutMembersInput = {
+  id?: string
+  name: string
+  campaign: string
+  synopsis?: string | null
+  maxPlayers?: number
+  ownerId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  invitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutAdventureInput
+}
+
+export type AdventureCreateOrConnectWithoutMembersInput = {
+  where: Prisma.AdventureWhereUniqueInput
+  create: Prisma.XOR<Prisma.AdventureCreateWithoutMembersInput, Prisma.AdventureUncheckedCreateWithoutMembersInput>
+}
+
+export type AdventureUpsertWithoutMembersInput = {
+  update: Prisma.XOR<Prisma.AdventureUpdateWithoutMembersInput, Prisma.AdventureUncheckedUpdateWithoutMembersInput>
+  create: Prisma.XOR<Prisma.AdventureCreateWithoutMembersInput, Prisma.AdventureUncheckedCreateWithoutMembersInput>
+  where?: Prisma.AdventureWhereInput
+}
+
+export type AdventureUpdateToOneWithWhereWithoutMembersInput = {
+  where?: Prisma.AdventureWhereInput
+  data: Prisma.XOR<Prisma.AdventureUpdateWithoutMembersInput, Prisma.AdventureUncheckedUpdateWithoutMembersInput>
+}
+
+export type AdventureUpdateWithoutMembersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  campaign?: Prisma.StringFieldUpdateOperationsInput | string
+  synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.UserUpdateOneRequiredWithoutAdventuresNestedInput
+  invitations?: Prisma.CampaignInvitationUpdateManyWithoutAdventureNestedInput
+}
+
+export type AdventureUncheckedUpdateWithoutMembersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  campaign?: Prisma.StringFieldUpdateOperationsInput | string
+  synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  invitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutAdventureNestedInput
+}
+
+export type AdventureCreateWithoutInvitationsInput = {
+  id?: string
+  name: string
+  campaign: string
+  synopsis?: string | null
+  maxPlayers?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  owner: Prisma.UserCreateNestedOneWithoutAdventuresInput
+  members?: Prisma.CampaignMemberCreateNestedManyWithoutAdventureInput
+}
+
+export type AdventureUncheckedCreateWithoutInvitationsInput = {
+  id?: string
+  name: string
+  campaign: string
+  synopsis?: string | null
+  maxPlayers?: number
+  ownerId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  members?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutAdventureInput
+}
+
+export type AdventureCreateOrConnectWithoutInvitationsInput = {
+  where: Prisma.AdventureWhereUniqueInput
+  create: Prisma.XOR<Prisma.AdventureCreateWithoutInvitationsInput, Prisma.AdventureUncheckedCreateWithoutInvitationsInput>
+}
+
+export type AdventureUpsertWithoutInvitationsInput = {
+  update: Prisma.XOR<Prisma.AdventureUpdateWithoutInvitationsInput, Prisma.AdventureUncheckedUpdateWithoutInvitationsInput>
+  create: Prisma.XOR<Prisma.AdventureCreateWithoutInvitationsInput, Prisma.AdventureUncheckedCreateWithoutInvitationsInput>
+  where?: Prisma.AdventureWhereInput
+}
+
+export type AdventureUpdateToOneWithWhereWithoutInvitationsInput = {
+  where?: Prisma.AdventureWhereInput
+  data: Prisma.XOR<Prisma.AdventureUpdateWithoutInvitationsInput, Prisma.AdventureUncheckedUpdateWithoutInvitationsInput>
+}
+
+export type AdventureUpdateWithoutInvitationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  campaign?: Prisma.StringFieldUpdateOperationsInput | string
+  synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.UserUpdateOneRequiredWithoutAdventuresNestedInput
+  members?: Prisma.CampaignMemberUpdateManyWithoutAdventureNestedInput
+}
+
+export type AdventureUncheckedUpdateWithoutInvitationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  campaign?: Prisma.StringFieldUpdateOperationsInput | string
+  synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  members?: Prisma.CampaignMemberUncheckedUpdateManyWithoutAdventureNestedInput
+}
+
 export type AdventureCreateManyOwnerInput = {
   id?: string
   name: string
@@ -555,6 +734,8 @@ export type AdventureUpdateWithoutOwnerInput = {
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  members?: Prisma.CampaignMemberUpdateManyWithoutAdventureNestedInput
+  invitations?: Prisma.CampaignInvitationUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateWithoutOwnerInput = {
@@ -565,6 +746,8 @@ export type AdventureUncheckedUpdateWithoutOwnerInput = {
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  members?: Prisma.CampaignMemberUncheckedUpdateManyWithoutAdventureNestedInput
+  invitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateManyWithoutOwnerInput = {
@@ -578,6 +761,44 @@ export type AdventureUncheckedUpdateManyWithoutOwnerInput = {
 }
 
 
+/**
+ * Count Type AdventureCountOutputType
+ */
+
+export type AdventureCountOutputType = {
+  members: number
+  invitations: number
+}
+
+export type AdventureCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  members?: boolean | AdventureCountOutputTypeCountMembersArgs
+  invitations?: boolean | AdventureCountOutputTypeCountInvitationsArgs
+}
+
+/**
+ * AdventureCountOutputType without action
+ */
+export type AdventureCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AdventureCountOutputType
+   */
+  select?: Prisma.AdventureCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * AdventureCountOutputType without action
+ */
+export type AdventureCountOutputTypeCountMembersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CampaignMemberWhereInput
+}
+
+/**
+ * AdventureCountOutputType without action
+ */
+export type AdventureCountOutputTypeCountInvitationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CampaignInvitationWhereInput
+}
+
 
 export type AdventureSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -589,6 +810,9 @@ export type AdventureSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   createdAt?: boolean
   updatedAt?: boolean
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  members?: boolean | Prisma.Adventure$membersArgs<ExtArgs>
+  invitations?: boolean | Prisma.Adventure$invitationsArgs<ExtArgs>
+  _count?: boolean | Prisma.AdventureCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["adventure"]>
 
 export type AdventureSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -629,6 +853,9 @@ export type AdventureSelectScalar = {
 export type AdventureOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "campaign" | "synopsis" | "maxPlayers" | "ownerId" | "createdAt" | "updatedAt", ExtArgs["result"]["adventure"]>
 export type AdventureInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  members?: boolean | Prisma.Adventure$membersArgs<ExtArgs>
+  invitations?: boolean | Prisma.Adventure$invitationsArgs<ExtArgs>
+  _count?: boolean | Prisma.AdventureCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type AdventureIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -641,6 +868,8 @@ export type $AdventurePayload<ExtArgs extends runtime.Types.Extensions.InternalA
   name: "Adventure"
   objects: {
     owner: Prisma.$UserPayload<ExtArgs>
+    members: Prisma.$CampaignMemberPayload<ExtArgs>[]
+    invitations: Prisma.$CampaignInvitationPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1046,6 +1275,8 @@ readonly fields: AdventureFieldRefs;
 export interface Prisma__AdventureClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   owner<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  members<T extends Prisma.Adventure$membersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Adventure$membersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignMemberPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  invitations<T extends Prisma.Adventure$invitationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Adventure$invitationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignInvitationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1481,6 +1712,54 @@ export type AdventureDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Limit how many Adventures to delete.
    */
   limit?: number
+}
+
+/**
+ * Adventure.members
+ */
+export type Adventure$membersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CampaignMember
+   */
+  select?: Prisma.CampaignMemberSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CampaignMember
+   */
+  omit?: Prisma.CampaignMemberOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CampaignMemberInclude<ExtArgs> | null
+  where?: Prisma.CampaignMemberWhereInput
+  orderBy?: Prisma.CampaignMemberOrderByWithRelationInput | Prisma.CampaignMemberOrderByWithRelationInput[]
+  cursor?: Prisma.CampaignMemberWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CampaignMemberScalarFieldEnum | Prisma.CampaignMemberScalarFieldEnum[]
+}
+
+/**
+ * Adventure.invitations
+ */
+export type Adventure$invitationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CampaignInvitation
+   */
+  select?: Prisma.CampaignInvitationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CampaignInvitation
+   */
+  omit?: Prisma.CampaignInvitationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CampaignInvitationInclude<ExtArgs> | null
+  where?: Prisma.CampaignInvitationWhereInput
+  orderBy?: Prisma.CampaignInvitationOrderByWithRelationInput | Prisma.CampaignInvitationOrderByWithRelationInput[]
+  cursor?: Prisma.CampaignInvitationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CampaignInvitationScalarFieldEnum | Prisma.CampaignInvitationScalarFieldEnum[]
 }
 
 /**

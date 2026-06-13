@@ -47,6 +47,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials')
     }
 
+    if (!user.passwordHash) {
+      throw new UnauthorizedException(
+        'This account uses Google Sign-In. Please sign in with Google.',
+      )
+    }
+
     const valid = await bcrypt.compare(dto.password, user.passwordHash)
     if (!valid) {
       throw new UnauthorizedException('Invalid credentials')

@@ -7,15 +7,19 @@ import { GoogleService } from './google.service.js'
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(private readonly googleService: GoogleService) {
     super({
-      clientID: 'GOOGLE_CLIENTE_ID',
-      clientSecret: 'GOOGLE_CALLBACK_URL',
-      callbackURL: 'GOOGLE_CLIENTE_SECRET',
+      clientID: process.env.GOOGLE_CLIENT_ID ?? '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+      callbackURL: process.env.GOOGLE_CALLBACK_URL ?? '',
       scope: ['profile', 'email'],
       passReqToCallback: false,
     })
   }
 
-  async validate(accessToken: string, refreshToken: string, profile: any) {
+  async validate(
+    _accessToken: string,
+    _refreshToken: string,
+    profile: any,
+  ) {
     return this.googleService.validateOAuthLogin(profile)
   }
 }
