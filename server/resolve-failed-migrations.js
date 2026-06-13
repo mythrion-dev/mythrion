@@ -1,8 +1,12 @@
 // Auto-resolve any failed migrations before prisma migrate deploy runs.
 // This prevents P3009 errors on Railway when a previous deploy partially failed.
+// Uses CommonJS-compatible imports for Node.js 24 ESM compatibility.
 
-import { PrismaClient } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
+import prismaPkg from '@prisma/client'
+import pgPkg from '@prisma/adapter-pg'
+
+const { PrismaClient } = prismaPkg
+const { PrismaPg } = pgPkg
 
 const rawUrl = process.env.DATABASE_URL
 if (!rawUrl) {
