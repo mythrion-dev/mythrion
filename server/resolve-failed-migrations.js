@@ -15,9 +15,9 @@ const adapter = new PrismaPg(pgUrl)
 const prisma = new PrismaClient({ adapter })
 
 try {
-  const result = await prisma.$queryRawUnsafe<
-    Array<{ migration_name: string }>
-  >(`SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NULL`)
+  const result = await prisma.$queryRawUnsafe(
+    `SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NULL`,
+  )
 
   for (const row of result) {
     console.log(`Resolving failed migration: ${row.migration_name}`)
