@@ -76,7 +76,6 @@ export class GoogleService {
         email,
         displayName,
         passwordHash: undefined,
-        onboardingComplete: true, // SSO users skip onboarding
         googleAccount: {
           create: {
             googleId,
