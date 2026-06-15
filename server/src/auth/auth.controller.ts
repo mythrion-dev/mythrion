@@ -65,4 +65,25 @@ export class AuthController {
     const { accessToken } = req.user
     res.redirect(`${FRONTEND_URL}/auth/google/callback?token=${accessToken}`)
   }
+
+  /** Discord OAuth — redirect to Discord */
+  @Get('discord')
+  @UseGuards(AuthGuard('discord'))
+  discordAuth() {
+    // Guard redirects to Discord
+  }
+
+  /** Discord OAuth callback — returns JWT via redirect */
+  @Get('discord/callback')
+  @UseGuards(AuthGuard('discord'))
+  async discordCallback(@Req() req: any, @Res() res: Response) {
+    const { accessToken } = req.user
+    res.redirect(`${FRONTEND_URL}/auth/discord/callback?token=${accessToken}`)
+  }
+
+  @Get('discord-profile')
+  @UseGuards(JwtAuthGuard)
+  async getDiscordProfile(@Req() req: AuthenticatedRequest) {
+    return this.authService.getDiscordAccount(req.user.sub)
+  }
 }

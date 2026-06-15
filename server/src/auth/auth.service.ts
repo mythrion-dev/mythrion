@@ -108,4 +108,11 @@ export class AuthService {
       city: geo.city,
     }
   }
+
+  async getDiscordAccount(userId: string) {
+    const discordAccount = await this.prisma.discordAccount.findUnique({
+      where: { userId },
+    })
+    return discordAccount
+  }
 }
