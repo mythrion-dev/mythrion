@@ -161,7 +161,7 @@ export type UserGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
 
 export type UserGroupByOutputType = {
   id: string
-  email: string
+  email: string | null
   passwordHash: string | null
   displayName: string | null
   onboardingComplete: boolean
@@ -192,7 +192,7 @@ export type UserWhereInput = {
   OR?: Prisma.UserWhereInput[]
   NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
   id?: Prisma.StringFilter<"User"> | string
-  email?: Prisma.StringFilter<"User"> | string
+  email?: Prisma.StringNullableFilter<"User"> | string | null
   passwordHash?: Prisma.StringNullableFilter<"User"> | string | null
   displayName?: Prisma.StringNullableFilter<"User"> | string | null
   onboardingComplete?: Prisma.BoolFilter<"User"> | boolean
@@ -207,7 +207,7 @@ export type UserWhereInput = {
 
 export type UserOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  email?: Prisma.SortOrder
+  email?: Prisma.SortOrderInput | Prisma.SortOrder
   passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
   displayName?: Prisma.SortOrderInput | Prisma.SortOrder
   onboardingComplete?: Prisma.SortOrder
@@ -240,7 +240,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
 
 export type UserOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  email?: Prisma.SortOrder
+  email?: Prisma.SortOrderInput | Prisma.SortOrder
   passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
   displayName?: Prisma.SortOrderInput | Prisma.SortOrder
   onboardingComplete?: Prisma.SortOrder
@@ -256,7 +256,7 @@ export type UserScalarWhereWithAggregatesInput = {
   OR?: Prisma.UserScalarWhereWithAggregatesInput[]
   NOT?: Prisma.UserScalarWhereWithAggregatesInput | Prisma.UserScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"User"> | string
-  email?: Prisma.StringWithAggregatesFilter<"User"> | string
+  email?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   passwordHash?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   displayName?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   onboardingComplete?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
@@ -266,7 +266,7 @@ export type UserScalarWhereWithAggregatesInput = {
 
 export type UserCreateInput = {
   id?: string
-  email: string
+  email?: string | null
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
@@ -281,7 +281,7 @@ export type UserCreateInput = {
 
 export type UserUncheckedCreateInput = {
   id?: string
-  email: string
+  email?: string | null
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
@@ -296,7 +296,7 @@ export type UserUncheckedCreateInput = {
 
 export type UserUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -311,7 +311,7 @@ export type UserUpdateInput = {
 
 export type UserUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -326,7 +326,7 @@ export type UserUncheckedUpdateInput = {
 
 export type UserCreateManyInput = {
   id?: string
-  email: string
+  email?: string | null
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
@@ -336,7 +336,7 @@ export type UserCreateManyInput = {
 
 export type UserUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -346,7 +346,7 @@ export type UserUpdateManyMutationInput = {
 
 export type UserUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -477,7 +477,7 @@ export type UserUpdateOneRequiredWithoutDiscordAccountNestedInput = {
 
 export type UserCreateWithoutAdventuresInput = {
   id?: string
-  email: string
+  email?: string | null
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
@@ -491,7 +491,7 @@ export type UserCreateWithoutAdventuresInput = {
 
 export type UserUncheckedCreateWithoutAdventuresInput = {
   id?: string
-  email: string
+  email?: string | null
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
@@ -521,7 +521,7 @@ export type UserUpdateToOneWithWhereWithoutAdventuresInput = {
 
 export type UserUpdateWithoutAdventuresInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -535,7 +535,7 @@ export type UserUpdateWithoutAdventuresInput = {
 
 export type UserUncheckedUpdateWithoutAdventuresInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -549,7 +549,7 @@ export type UserUncheckedUpdateWithoutAdventuresInput = {
 
 export type UserCreateWithoutMembershipsInput = {
   id?: string
-  email: string
+  email?: string | null
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
@@ -563,7 +563,7 @@ export type UserCreateWithoutMembershipsInput = {
 
 export type UserUncheckedCreateWithoutMembershipsInput = {
   id?: string
-  email: string
+  email?: string | null
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
@@ -593,7 +593,7 @@ export type UserUpdateToOneWithWhereWithoutMembershipsInput = {
 
 export type UserUpdateWithoutMembershipsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -607,7 +607,7 @@ export type UserUpdateWithoutMembershipsInput = {
 
 export type UserUncheckedUpdateWithoutMembershipsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -621,7 +621,7 @@ export type UserUncheckedUpdateWithoutMembershipsInput = {
 
 export type UserCreateWithoutSentInvitationsInput = {
   id?: string
-  email: string
+  email?: string | null
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
@@ -635,7 +635,7 @@ export type UserCreateWithoutSentInvitationsInput = {
 
 export type UserUncheckedCreateWithoutSentInvitationsInput = {
   id?: string
-  email: string
+  email?: string | null
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
@@ -665,7 +665,7 @@ export type UserUpdateToOneWithWhereWithoutSentInvitationsInput = {
 
 export type UserUpdateWithoutSentInvitationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -679,7 +679,7 @@ export type UserUpdateWithoutSentInvitationsInput = {
 
 export type UserUncheckedUpdateWithoutSentInvitationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -693,7 +693,7 @@ export type UserUncheckedUpdateWithoutSentInvitationsInput = {
 
 export type UserCreateWithoutGoogleAccountInput = {
   id?: string
-  email: string
+  email?: string | null
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
@@ -707,7 +707,7 @@ export type UserCreateWithoutGoogleAccountInput = {
 
 export type UserUncheckedCreateWithoutGoogleAccountInput = {
   id?: string
-  email: string
+  email?: string | null
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
@@ -737,7 +737,7 @@ export type UserUpdateToOneWithWhereWithoutGoogleAccountInput = {
 
 export type UserUpdateWithoutGoogleAccountInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -751,7 +751,7 @@ export type UserUpdateWithoutGoogleAccountInput = {
 
 export type UserUncheckedUpdateWithoutGoogleAccountInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -765,7 +765,7 @@ export type UserUncheckedUpdateWithoutGoogleAccountInput = {
 
 export type UserCreateWithoutDiscordAccountInput = {
   id?: string
-  email: string
+  email?: string | null
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
@@ -779,7 +779,7 @@ export type UserCreateWithoutDiscordAccountInput = {
 
 export type UserUncheckedCreateWithoutDiscordAccountInput = {
   id?: string
-  email: string
+  email?: string | null
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
@@ -809,7 +809,7 @@ export type UserUpdateToOneWithWhereWithoutDiscordAccountInput = {
 
 export type UserUpdateWithoutDiscordAccountInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -823,7 +823,7 @@ export type UserUpdateWithoutDiscordAccountInput = {
 
 export type UserUncheckedUpdateWithoutDiscordAccountInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -953,7 +953,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    email: string
+    email: string | null
     passwordHash: string | null
     displayName: string | null
     onboardingComplete: boolean
