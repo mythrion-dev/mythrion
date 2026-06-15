@@ -20,12 +20,12 @@ export class DiscordService {
   }) {
     const discordId = profile.id
     const username = profile.username
-    const email = profile.email ?? null
+    const email = profile.email ?? undefined
     const avatarUrl = profile.avatar
       ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
-      : null
-    const discriminator = profile.discriminator ?? null
-    const locale = profile.locale ?? null
+      : undefined
+    const discriminator = profile.discriminator ?? undefined
+    const locale = profile.locale ?? undefined
     const verified = profile.verified ?? false
 
     // 1. Verificar se DiscordAccount já existe
@@ -39,7 +39,7 @@ export class DiscordService {
     }
 
     // 2. Se houver email, verificar se User já existe com esse email
-    let existingUser = null
+    let existingUser: any | null = null
     if (email) {
       existingUser = await this.prisma.user.findUnique({
         where: { email },
@@ -78,7 +78,7 @@ export class DiscordService {
     // 3. Criar novo User + DiscordAccount
     const newUser = await this.prisma.user.create({
       data: {
-        email: email,
+        ...(email ? { email } : {}),
         displayName: username,
         passwordHash: undefined,
         discordAccount: {
@@ -98,7 +98,7 @@ export class DiscordService {
     return this.signTokens(newUser.id, newUser.email)
   }
 
-  private signTokens(userId: string, email: string) {
+  private signTokens(userId: string, email?: string | null) {
     const payload = { sub: userId, email }
     return {
       accessToken: this.jwtService.sign(payload),
