@@ -53,6 +53,8 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   User: 'User',
   Adventure: 'Adventure',
+  CampaignMember: 'CampaignMember',
+  CampaignInvitation: 'CampaignInvitation',
   GoogleAccount: 'GoogleAccount'
 } as const
 
@@ -97,6 +99,36 @@ export const AdventureScalarFieldEnum = {
 } as const
 
 export type AdventureScalarFieldEnum = (typeof AdventureScalarFieldEnum)[keyof typeof AdventureScalarFieldEnum]
+
+
+export const CampaignMemberScalarFieldEnum = {
+  id: 'id',
+  adventureId: 'adventureId',
+  userId: 'userId',
+  role: 'role',
+  joinedAt: 'joinedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CampaignMemberScalarFieldEnum = (typeof CampaignMemberScalarFieldEnum)[keyof typeof CampaignMemberScalarFieldEnum]
+
+
+export const CampaignInvitationScalarFieldEnum = {
+  id: 'id',
+  adventureId: 'adventureId',
+  invitedEmail: 'invitedEmail',
+  token: 'token',
+  role: 'role',
+  status: 'status',
+  expiresAt: 'expiresAt',
+  acceptedAt: 'acceptedAt',
+  createdById: 'createdById',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CampaignInvitationScalarFieldEnum = (typeof CampaignInvitationScalarFieldEnum)[keyof typeof CampaignInvitationScalarFieldEnum]
 
 
 export const GoogleAccountScalarFieldEnum = {

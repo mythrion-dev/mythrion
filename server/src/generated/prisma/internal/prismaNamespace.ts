@@ -386,6 +386,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   User: 'User',
   Adventure: 'Adventure',
+  CampaignMember: 'CampaignMember',
+  CampaignInvitation: 'CampaignInvitation',
   GoogleAccount: 'GoogleAccount'
 } as const
 
@@ -402,7 +404,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adventure" | "googleAccount"
+    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -554,6 +556,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    CampaignMember: {
+      payload: Prisma.$CampaignMemberPayload<ExtArgs>
+      fields: Prisma.CampaignMemberFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CampaignMemberFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignMemberPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CampaignMemberFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignMemberPayload>
+        }
+        findFirst: {
+          args: Prisma.CampaignMemberFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignMemberPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CampaignMemberFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignMemberPayload>
+        }
+        findMany: {
+          args: Prisma.CampaignMemberFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignMemberPayload>[]
+        }
+        create: {
+          args: Prisma.CampaignMemberCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignMemberPayload>
+        }
+        createMany: {
+          args: Prisma.CampaignMemberCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CampaignMemberCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignMemberPayload>[]
+        }
+        delete: {
+          args: Prisma.CampaignMemberDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignMemberPayload>
+        }
+        update: {
+          args: Prisma.CampaignMemberUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignMemberPayload>
+        }
+        deleteMany: {
+          args: Prisma.CampaignMemberDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CampaignMemberUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CampaignMemberUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignMemberPayload>[]
+        }
+        upsert: {
+          args: Prisma.CampaignMemberUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignMemberPayload>
+        }
+        aggregate: {
+          args: Prisma.CampaignMemberAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCampaignMember>
+        }
+        groupBy: {
+          args: Prisma.CampaignMemberGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignMemberGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CampaignMemberCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignMemberCountAggregateOutputType> | number
+        }
+      }
+    }
+    CampaignInvitation: {
+      payload: Prisma.$CampaignInvitationPayload<ExtArgs>
+      fields: Prisma.CampaignInvitationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CampaignInvitationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignInvitationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CampaignInvitationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignInvitationPayload>
+        }
+        findFirst: {
+          args: Prisma.CampaignInvitationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignInvitationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CampaignInvitationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignInvitationPayload>
+        }
+        findMany: {
+          args: Prisma.CampaignInvitationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignInvitationPayload>[]
+        }
+        create: {
+          args: Prisma.CampaignInvitationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignInvitationPayload>
+        }
+        createMany: {
+          args: Prisma.CampaignInvitationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CampaignInvitationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignInvitationPayload>[]
+        }
+        delete: {
+          args: Prisma.CampaignInvitationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignInvitationPayload>
+        }
+        update: {
+          args: Prisma.CampaignInvitationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignInvitationPayload>
+        }
+        deleteMany: {
+          args: Prisma.CampaignInvitationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CampaignInvitationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CampaignInvitationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignInvitationPayload>[]
+        }
+        upsert: {
+          args: Prisma.CampaignInvitationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignInvitationPayload>
+        }
+        aggregate: {
+          args: Prisma.CampaignInvitationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCampaignInvitation>
+        }
+        groupBy: {
+          args: Prisma.CampaignInvitationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignInvitationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CampaignInvitationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignInvitationCountAggregateOutputType> | number
+        }
+      }
+    }
     GoogleAccount: {
       payload: Prisma.$GoogleAccountPayload<ExtArgs>
       fields: Prisma.GoogleAccountFieldRefs
@@ -694,6 +844,36 @@ export const AdventureScalarFieldEnum = {
 export type AdventureScalarFieldEnum = (typeof AdventureScalarFieldEnum)[keyof typeof AdventureScalarFieldEnum]
 
 
+export const CampaignMemberScalarFieldEnum = {
+  id: 'id',
+  adventureId: 'adventureId',
+  userId: 'userId',
+  role: 'role',
+  joinedAt: 'joinedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CampaignMemberScalarFieldEnum = (typeof CampaignMemberScalarFieldEnum)[keyof typeof CampaignMemberScalarFieldEnum]
+
+
+export const CampaignInvitationScalarFieldEnum = {
+  id: 'id',
+  adventureId: 'adventureId',
+  invitedEmail: 'invitedEmail',
+  token: 'token',
+  role: 'role',
+  status: 'status',
+  expiresAt: 'expiresAt',
+  acceptedAt: 'acceptedAt',
+  createdById: 'createdById',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CampaignInvitationScalarFieldEnum = (typeof CampaignInvitationScalarFieldEnum)[keyof typeof CampaignInvitationScalarFieldEnum]
+
+
 export const GoogleAccountScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -785,6 +965,34 @@ export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'In
  * Reference to a field of type 'Int[]'
  */
 export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+/**
+ * Reference to a field of type 'MemberRole'
+ */
+export type EnumMemberRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MemberRole'>
+    
+
+
+/**
+ * Reference to a field of type 'MemberRole[]'
+ */
+export type ListEnumMemberRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MemberRole[]'>
+    
+
+
+/**
+ * Reference to a field of type 'InvitationStatus'
+ */
+export type EnumInvitationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InvitationStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'InvitationStatus[]'
+ */
+export type ListEnumInvitationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InvitationStatus[]'>
     
 
 
@@ -913,6 +1121,8 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
   adventure?: Prisma.AdventureOmit
+  campaignMember?: Prisma.CampaignMemberOmit
+  campaignInvitation?: Prisma.CampaignInvitationOmit
   googleAccount?: Prisma.GoogleAccountOmit
 }
 

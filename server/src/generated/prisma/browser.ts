@@ -28,6 +28,16 @@ export type User = Prisma.UserModel
  */
 export type Adventure = Prisma.AdventureModel
 /**
+ * Model CampaignMember
+ * 
+ */
+export type CampaignMember = Prisma.CampaignMemberModel
+/**
+ * Model CampaignInvitation
+ * 
+ */
+export type CampaignInvitation = Prisma.CampaignInvitationModel
+/**
  * Model GoogleAccount
  * 
  */

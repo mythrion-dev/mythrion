@@ -9,7 +9,19 @@
 * 🟢 You can import this file directly.
 */
 
+export const MemberRole = {
+  GM: 'GM',
+  PLAYER: 'PLAYER'
+} as const
+
+export type MemberRole = (typeof MemberRole)[keyof typeof MemberRole]
 
 
-// This file is empty because there are no enums in the schema.
-export {}
+export const InvitationStatus = {
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
+  EXPIRED: 'EXPIRED',
+  REVOKED: 'REVOKED'
+} as const
+
+export type InvitationStatus = (typeof InvitationStatus)[keyof typeof InvitationStatus]

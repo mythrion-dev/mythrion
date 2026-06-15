@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common'
 import { JwtModule } from '@nestjs/jwt'
+import { PassportModule } from '@nestjs/passport'
 import { AuthService } from './auth.service.js'
 import { AuthController } from './auth.controller.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
 import { PrismaService } from '../prisma.service.js'
+import { GoogleService } from './google.service.js'
+import { GoogleStrategy } from './google.strategy.js'
 
 @Module({
   imports: [
@@ -11,9 +14,10 @@ import { PrismaService } from '../prisma.service.js'
       secret: process.env.JWT_SECRET ?? 'dev-secret-change-me',
       signOptions: { expiresIn: '7d' },
     }),
+    PassportModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard, PrismaService],
-  exports: [JwtAuthGuard, JwtModule, AuthService],
+  providers: [AuthService, JwtAuthGuard, PrismaService, GoogleService, GoogleStrategy],
+  exports: [JwtAuthGuard, JwtModule, AuthService, GoogleService],
 })
 export class AuthModule {}
