@@ -80,15 +80,14 @@ export class DiscordService {
       data: {
         ...(email ? { email } : {}),
         displayName: username,
-        passwordHash: undefined,
         discordAccount: {
           create: {
             discordId,
             username,
-            email,
-            avatarUrl,
-            discriminator,
-            locale,
+            ...(email ? { email } : {}),
+            ...(avatarUrl ? { avatarUrl } : {}),
+            ...(discriminator ? { discriminator } : {}),
+            ...(locale ? { locale } : {}),
             verified,
           },
         },
