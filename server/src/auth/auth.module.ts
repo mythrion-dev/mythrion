@@ -7,6 +7,8 @@ import { JwtAuthGuard } from './jwt-auth.guard.js'
 import { PrismaService } from '../prisma.service.js'
 import { GoogleService } from './google.service.js'
 import { GoogleStrategy } from './google.strategy.js'
+import { DiscordService } from './discord.service.js'
+import { DiscordStrategy } from './discord.strategy.js'
 
 @Module({
   imports: [
@@ -17,7 +19,7 @@ import { GoogleStrategy } from './google.strategy.js'
     PassportModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard, PrismaService, GoogleService, GoogleStrategy],
-  exports: [JwtAuthGuard, JwtModule, AuthService, GoogleService],
+  providers: [AuthService, JwtAuthGuard, PrismaService, GoogleService, GoogleStrategy, DiscordService, DiscordStrategy],
+  exports: [JwtAuthGuard, JwtModule, AuthService, GoogleService, DiscordService],
 })
 export class AuthModule {}

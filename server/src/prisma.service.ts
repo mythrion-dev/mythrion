@@ -5,6 +5,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
   private readonly logger = new Logger(PrismaService.name);
+  discordAccount: any;
 
   constructor() {
     const rawUrl = process.env.DATABASE_URL!;
