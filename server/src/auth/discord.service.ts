@@ -20,7 +20,10 @@ export class DiscordService {
   }) {
     const discordId = profile.id
     const username = profile.username
-    const email = profile.email ?? undefined
+    const email = profile.email
+    if (!email) {
+      throw new Error ('Discord profile missing email')
+    }
     const avatarUrl = profile.avatar
       ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
       : undefined
@@ -78,16 +81,16 @@ export class DiscordService {
     // 3. Criar novo User + DiscordAccount
     const newUser = await this.prisma.user.create({
       data: {
-        ...(email ? { email } : {}),
+        email,
         displayName: username,
         discordAccount: {
           create: {
             discordId,
             username,
-            ...(email ? { email } : {}),
-            ...(avatarUrl ? { avatarUrl } : {}),
-            ...(discriminator ? { discriminator } : {}),
-            ...(locale ? { locale } : {}),
+            email,
+            avatarUrl,
+            discriminator,
+            locale,
             verified,
           },
         },
