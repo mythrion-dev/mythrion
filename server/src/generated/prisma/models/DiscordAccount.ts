@@ -252,11 +252,11 @@ export type DiscordAccountWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   userId?: string
   discordId?: string
+  email?: string
   AND?: Prisma.DiscordAccountWhereInput | Prisma.DiscordAccountWhereInput[]
   OR?: Prisma.DiscordAccountWhereInput[]
   NOT?: Prisma.DiscordAccountWhereInput | Prisma.DiscordAccountWhereInput[]
   username?: Prisma.StringFilter<"DiscordAccount"> | string
-  email?: Prisma.StringNullableFilter<"DiscordAccount"> | string | null
   avatarUrl?: Prisma.StringNullableFilter<"DiscordAccount"> | string | null
   discriminator?: Prisma.StringNullableFilter<"DiscordAccount"> | string | null
   locale?: Prisma.StringNullableFilter<"DiscordAccount"> | string | null
@@ -264,7 +264,7 @@ export type DiscordAccountWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"DiscordAccount"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"DiscordAccount"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-}, "id" | "userId" | "discordId">
+}, "id" | "userId" | "discordId" | "email">
 
 export type DiscordAccountOrderByWithAggregationInput = {
   id?: Prisma.SortOrder

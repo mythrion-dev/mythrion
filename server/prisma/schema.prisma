@@ -12,7 +12,7 @@ datasource db {
 
 model User {
   id                 String              @id @default(cuid())
-  email              String?              @unique
+  email              String              @unique
   passwordHash       String?
   displayName        String?
   onboardingComplete Boolean             @default(false)
@@ -106,7 +106,7 @@ model DiscordAccount {
   userId      String   @unique
   discordId   String   @unique
   username    String
-  email       String?
+  email       String?  @unique
   avatarUrl   String?
   discriminator String?  // # após o nome de usuário
   locale      String?
