@@ -49,7 +49,7 @@ export class AuthService {
 
     if (!user.passwordHash) {
       throw new UnauthorizedException(
-        'This account uses Google Sign-In. Please sign in with Google.',
+        'This account uses a social login provider. Please sign in with Google or Discord.',
       )
     }
 
