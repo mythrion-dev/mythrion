@@ -121,20 +121,8 @@ export default function InvitePage() {
       <div className="card !p-8 max-w-md w-full space-y-6 animate-slide-up relative z-10">
         {/* Logo */}
         <div className="flex justify-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-surface border border-border ring-1 ring-primary/10 shadow-[0_0_30px_rgba(201,164,75,0.06)]">
-            <svg
-              className="w-6 h-6 text-primary"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4-6.2-4.5h7.6L12 2z"
-              />
-            </svg>
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-surface border border-border ring-1 ring-primary/10 shadow-[0_0_30px_rgba(201,164,75,0.06)] p-2">
+            <img src="/logo.png" alt="Mythrion" className="w-full h-full object-contain" />
           </div>
         </div>
 

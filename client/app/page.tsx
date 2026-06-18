@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
@@ -29,21 +30,16 @@ export default function HomePage() {
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-gradient-to-b from-accent/5 via-primary/3 to-transparent blur-3xl pointer-events-none" />
 
       <div className="text-center space-y-8 max-w-lg relative z-10 animate-slide-up">
-        {/* Icon */}
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-surface border border-border ring-1 ring-primary/10 shadow-[0_0_40px_rgba(201,164,75,0.08)]">
-          <svg
-            className="w-10 h-10 text-primary"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1.5}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4-6.2-4.5h7.6L12 2z"
-            />
-          </svg>
+        {/* Logo */}
+        <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-surface border border-border ring-1 ring-primary/10 shadow-[0_0_40px_rgba(201,164,75,0.08)] p-3">
+          <Image
+            src="/logo.png"
+            alt="Mythrion"
+            width={72}
+            height={72}
+            className="w-full h-full object-contain"
+            priority
+          />
         </div>
 
         <div className="space-y-3">

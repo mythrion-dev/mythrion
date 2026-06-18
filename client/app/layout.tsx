@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: 'Mythrion — Forge Your Legend',
   description:
     'Build worlds, create characters, and embark on epic campaigns with your friends.',
-  icons: { icon: '/favicon.ico' },
+  icons: { icon: '/favicon.png' },
 }
 
 export default function RootLayout({
