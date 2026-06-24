@@ -1122,7 +1122,7 @@ function TemplatesSection(props: {
                 <div key={idx} className="flex items-center gap-1.5">
                   <input className="input-field flex-1" value={attr.key} onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)} placeholder="Key (e.g. strength)" />
                   <input className="input-field flex-1" value={attr.name} onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)} placeholder="Name (e.g. Strength)" />
-                  <input className="input-field" value={attr.modifier} onChange={(e) => props.onUpdateAttr(idx, 'modifier', e.target.value)} placeholder="Modifier (optional)" />
+                  <input className="input-field flex-1" value={attr.modifier} onChange={(e) => props.onUpdateAttr(idx, 'modifier', e.target.value)} placeholder="Modifier (optional)" />
                   <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
                 </div>
               ))}
@@ -1181,7 +1181,7 @@ function TemplateRow(props: {
               <div key={idx} className="flex items-center gap-1.5">
                 <input className="input-field flex-1" value={attr.key} onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)} placeholder="Key" />
                 <input className="input-field flex-1" value={attr.name} onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)} placeholder="Name" />
-                <input className="input-field" value={attr.modifier} onChange={(e) => props.onUpdateAttr(idx, 'modifier', e.target.value)} placeholder="Modifier (optional)" />
+                <input className="input-field flex-1" value={attr.modifier} onChange={(e) => props.onUpdateAttr(idx, 'modifier', e.target.value)} placeholder="Modifier (optional)" />
                 <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
               </div>
             ))}
