@@ -112,6 +112,9 @@ export class CharacterSheetService {
 
     // Must be either the owner or a member of the adventure
     if (sheet.ownerId !== userId) {
+      if (!sheet.adventureId) {
+        throw new ForbiddenException('You do not have access to this character sheet')
+      }
       const isMember = await this.membership.isMember(sheet.adventureId, userId)
       if (!isMember) {
         throw new ForbiddenException('You do not have access to this character sheet')
