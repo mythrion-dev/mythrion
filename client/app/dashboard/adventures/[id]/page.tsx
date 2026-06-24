@@ -107,13 +107,13 @@ export default function AdventureDetailPage() {
   const [showNewTemplate, setShowNewTemplate] = useState(false)
   const [newTemplateName, setNewTemplateName] = useState('')
   const [newTemplateDescription, setNewTemplateDescription] = useState('')
-  const [newTemplateAttrs, setNewTemplateAttrs] = useState<{ key: string; name: string }[]>([])
+  const [newTemplateAttrs, setNewTemplateAttrs] = useState<{ key: string; name: string; modifier: string }[]>([])
   const [templateCreating, setTemplateCreating] = useState(false)
   const [templateError, setTemplateError] = useState<string | null>(null)
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null)
   const [editTemplateName, setEditTemplateName] = useState('')
   const [editTemplateDescription, setEditTemplateDescription] = useState('')
-  const [editTemplateAttrs, setEditTemplateAttrs] = useState<{ key: string; name: string }[]>([])
+  const [editTemplateAttrs, setEditTemplateAttrs] = useState<{ key: string; name: string; modifier: string }[]>([])
   const [templateSaving, setTemplateSaving] = useState(false)
   const [editingTemplateError, setEditingTemplateError] = useState<string | null>(null)
 
@@ -218,14 +218,14 @@ export default function AdventureDetailPage() {
   }
 
   function addNewAttrRow() {
-    setNewTemplateAttrs((prev) => [...prev, { key: '', name: '' }])
+    setNewTemplateAttrs((prev) => [...prev, { key: '', name: '', modifier: '' }])
   }
 
   function removeNewAttrRow(index: number) {
     setNewTemplateAttrs((prev) => prev.filter((_, i) => i !== index))
   }
 
-  function updateNewAttr(index: number, field: 'key' | 'name', value: string) {
+  function updateNewAttr(index: number, field: 'key' | 'name' | 'modifier', value: string) {
     setNewTemplateAttrs((prev) =>
       prev.map((attr, i) => (i === index ? { ...attr, [field]: value } : attr)),
     )
@@ -237,6 +237,7 @@ export default function AdventureDetailPage() {
     const trimmedAttrs = newTemplateAttrs.map((a) => ({
       key: a.key.trim(),
       name: a.name.trim(),
+      modifier: a.modifier.trim() || undefined,
     }))
 
     if (trimmedAttrs.some((a) => !a.key || !a.name)) {
@@ -268,6 +269,7 @@ export default function AdventureDetailPage() {
       template.attributes.map((a) => ({
         key: a.key,
         name: a.name,
+        modifier: a.modifier ?? '',
       })),
     )
     setEditingTemplateError(null)
@@ -279,14 +281,14 @@ export default function AdventureDetailPage() {
   }
 
   function addEditAttrRow() {
-    setEditTemplateAttrs((prev) => [...prev, { key: '', name: '' }])
+    setEditTemplateAttrs((prev) => [...prev, { key: '', name: '', modifier: '' }])
   }
 
   function removeEditAttrRow(index: number) {
     setEditTemplateAttrs((prev) => prev.filter((_, i) => i !== index))
   }
 
-  function updateEditAttr(index: number, field: 'key' | 'name', value: string) {
+  function updateEditAttr(index: number, field: 'key' | 'name' | 'modifier', value: string) {
     setEditTemplateAttrs((prev) =>
       prev.map((attr, i) => (i === index ? { ...attr, [field]: value } : attr)),
     )
@@ -300,6 +302,7 @@ export default function AdventureDetailPage() {
     const trimmedAttrs = editTemplateAttrs.map((a) => ({
       key: a.key.trim(),
       name: a.name.trim(),
+      modifier: a.modifier.trim() || undefined,
     }))
 
     if (trimmedAttrs.some((a) => !a.key || !a.name)) {
@@ -1035,12 +1038,12 @@ function TemplatesSection(props: {
   editingTemplateId: string | null
   newTemplateName: string
   newTemplateDescription: string
-  newTemplateAttrs: { key: string; name: string }[]
+  newTemplateAttrs: { key: string; name: string; modifier: string }[]
   templateError: string | null
   templateCreating: boolean
   editTemplateName: string
   editTemplateDescription: string
-  editTemplateAttrs: { key: string; name: string }[]
+  editTemplateAttrs: { key: string; name: string; modifier: string }[]
   editingTemplateError: string | null
   templateSaving: boolean
   onNewClick: () => void
@@ -1050,7 +1053,7 @@ function TemplatesSection(props: {
   onDescriptionChange: (v: string) => void
   onAddAttr: () => void
   onRemoveAttr: (index: number) => void
-  onUpdateAttr: (index: number, field: 'key' | 'name', value: string) => void
+  onUpdateAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string) => void
   onStartEdit: (template: Template) => void
   onCancelEdit: () => void
   onUpdateTemplate: (e: FormEvent) => void
@@ -1059,7 +1062,7 @@ function TemplatesSection(props: {
   onEditDescriptionChange: (v: string) => void
   onAddEditAttr: () => void
   onRemoveEditAttr: (index: number) => void
-  onUpdateEditAttr: (index: number, field: 'key' | 'name', value: string) => void
+  onUpdateEditAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string) => void
 }) {
   return (
     <div className="space-y-4">
@@ -1119,6 +1122,7 @@ function TemplatesSection(props: {
                 <div key={idx} className="flex items-center gap-1.5">
                   <input className="input-field flex-1" value={attr.key} onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)} placeholder="Key (e.g. strength)" />
                   <input className="input-field flex-1" value={attr.name} onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)} placeholder="Name (e.g. Strength)" />
+                  <input className="input-field" value={attr.modifier} onChange={(e) => props.onUpdateAttr(idx, 'modifier', e.target.value)} placeholder="Modifier (optional)" />
                   <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
                 </div>
               ))}
@@ -1146,7 +1150,7 @@ function TemplateRow(props: {
   isEditing: boolean
   editName: string
   editDescription: string
-  editAttrs: { key: string; name: string }[]
+  editAttrs: { key: string; name: string; modifier: string }[]
   editError: string | null
   saving: boolean
   onStartEdit: () => void
@@ -1157,7 +1161,7 @@ function TemplateRow(props: {
   onEditDescriptionChange: (v: string) => void
   onAddAttr: () => void
   onRemoveAttr: (index: number) => void
-  onUpdateAttr: (index: number, field: 'key' | 'name', value: string) => void
+  onUpdateAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string) => void
 }) {
   if (props.isEditing) {
     return (
@@ -1177,6 +1181,7 @@ function TemplateRow(props: {
               <div key={idx} className="flex items-center gap-1.5">
                 <input className="input-field flex-1" value={attr.key} onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)} placeholder="Key" />
                 <input className="input-field flex-1" value={attr.name} onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)} placeholder="Name" />
+                <input className="input-field" value={attr.modifier} onChange={(e) => props.onUpdateAttr(idx, 'modifier', e.target.value)} placeholder="Modifier (optional)" />
                 <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
               </div>
             ))}
