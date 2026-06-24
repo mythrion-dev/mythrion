@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { api } from '@/lib/api'
 import Link from 'next/link'
+import FormulaBuilder from '@/lib/formula-builder'
 
 interface Adventure {
   id: string
