@@ -14,6 +14,7 @@ interface SheetAttribute {
     id: string
     key: string
     name: string
+    modifier: string | null
   }
 }
 
@@ -24,7 +25,7 @@ interface CharacterSheet {
   template: {
     id: string
     name: string
-    attributes: { id: string; key: string; name: string }[]
+    attributes: { id: string; key: string; name: string; modifier: string | null }[]
   }
   values: SheetAttribute[]
   ownerId: string
@@ -39,6 +40,7 @@ export default function CharacterSheetDetailPage() {
 
   const [sheet, setSheet] = useState<CharacterSheet | null>(null)
   const [fetching, setFetching] = useState(true)
+  const [modifierResults, setModifierResults] = useState<Record<string, number | null>>({})
 
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState('')
@@ -63,6 +65,9 @@ export default function CharacterSheetDetailPage() {
         vals[v.attributeId] = v.value
       })
       setEditValues(vals)
+
+      // Evaluate modifiers
+      computeModifiers(data)
     } catch (err: unknown) {
       const statusCode = (err as { statusCode?: number }).statusCode
       if (statusCode === 401 || statusCode === 403) {
@@ -72,6 +77,44 @@ export default function CharacterSheetDetailPage() {
       setFetching(false)
     }
   }, [id, router])
+
+  const computeModifiers = useCallback(async (sheetData: CharacterSheet) => {
+    const results: Record<string, number | null> = {}
+    const attributeValues: Record<string, number> = {}
+
+    // Parse current values as numbers
+    sheetData.values.forEach((v) => {
+      const num = parseFloat(v.value)
+      if (!isNaN(num)) {
+        attributeValues[v.attribute.key] = num
+      }
+    })
+
+    for (const attr of sheetData.template.attributes) {
+      if (attr.modifier && attr.modifier.trim()) {
+        try {
+          const variables: Record<string, number> = {}
+          // Pass all currently known numeric values
+          sheetData.template.attributes.forEach((a) => {
+            const val = parseFloat(
+              sheetData.values.find((v) => v.attributeId === a.id)?.value || '0',
+            )
+            variables[a.key] = isNaN(val) ? 0 : val
+          })
+
+          const res = await api.post<{ result: number }>('/formula/evaluate', {
+            formula: attr.modifier,
+            variables,
+          })
+          results[attr.id] = res.result
+        } catch {
+          results[attr.id] = null
+        }
+      }
+    }
+
+    setModifierResults(results)
+  }, [])
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -247,6 +290,7 @@ export default function CharacterSheetDetailPage() {
                 const val = sheet.values.find(
                   (v) => v.attributeId === attr.id,
                 )
+                const modResult = modifierResults[attr.id]
                 return (
                   <div
                     key={attr.id}
@@ -254,10 +298,20 @@ export default function CharacterSheetDetailPage() {
                   >
                     <span className="text-sm text-foreground">
                       {attr.name}
+                      {attr.modifier && (
+                        <span className="text-[0.6rem] text-primary ml-1">mod</span>
+                      )}
                     </span>
-                    <span className="text-sm font-semibold text-foreground">
-                      {val?.value || '—'}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-semibold text-foreground">
+                        {val?.value || '—'}
+                      </span>
+                      {modResult !== undefined && modResult !== null && (
+                        <span className="text-sm font-semibold text-primary">
+                          ({modResult >= 0 ? '+' : ''}{modResult})
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )
               })}

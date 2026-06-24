@@ -15,7 +15,7 @@ const sheetInclude = {
   },
   values: {
     include: {
-      attribute: { select: { id: true, key: true, name: true } },
+      attribute: { select: { id: true, key: true, name: true, modifier: true } },
     },
   },
 }
