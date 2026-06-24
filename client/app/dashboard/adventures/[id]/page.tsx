@@ -1056,6 +1056,21 @@ function TemplatesSection(props: {
   onRemoveEditAttr: (index: number) => void
   onUpdateEditAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string) => void
 }) {
+  const [expandedAttrs, setExpandedAttrs] = useState<Record<number, boolean>>({})
+  const prevCount = useRef(0)
+
+  useEffect(() => {
+    // Auto-expand newly added attributes
+    if (props.showNewTemplate && props.newTemplateAttrs.length > prevCount.current) {
+      setExpandedAttrs((prev) => ({ ...prev, [props.newTemplateAttrs.length - 1]: true }))
+    }
+    prevCount.current = props.newTemplateAttrs.length
+  }, [props.newTemplateAttrs.length, props.showNewTemplate])
+
+  const toggleAttr = (idx: number) => {
+    setExpandedAttrs((prev) => ({ ...prev, [idx]: !prev[idx] }))
+  }
+
   return (
     <div className="space-y-4">
       {props.templates.length === 0 && !props.showNewTemplate ? (
@@ -1109,29 +1124,18 @@ function TemplatesSection(props: {
           </div>
           <div>
             <label className="label">Attributes</label>
-            <div className="space-y-3 mt-1">
+            <div className="space-y-2 mt-1">
               {props.newTemplateAttrs.map((attr, idx) => (
-                <div key={idx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
-                  <div className="flex items-center gap-1.5">
-                    <input className="input-field flex-1" value={attr.key} onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)} placeholder="Key (e.g. strength)" />
-                    <input className="input-field flex-1" value={attr.name} onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)} placeholder="Name (e.g. Strength)" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted mb-1 block">Formula Builder (optional)</label>
-                    <FormulaBuilder
-                      value={attr.modifier}
-                      onChange={(v) => props.onUpdateAttr(idx, 'modifier', v)}
-                      attributes={props.newTemplateAttrs
-                        .filter((a) => a.key.trim() && a.name.trim())
-                        .map((a) => ({ key: a.key.trim(), name: a.name.trim() }))}
-                    />
-                  </div>
-                  <div className="flex justify-end">
-                    <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 transition-colors">
-                      Remove Attribute
-                    </button>
-                  </div>
-                </div>
+                <CollapsibleAttrCard
+                  key={idx}
+                  index={idx}
+                  attr={attr}
+                  isExpanded={!!expandedAttrs[idx]}
+                  onToggle={() => toggleAttr(idx)}
+                  onUpdateAttr={props.onUpdateAttr}
+                  onRemove={() => props.onRemoveAttr(idx)}
+                  allAttrs={props.newTemplateAttrs}
+                />
               ))}
             </div>
             <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button>
@@ -1146,6 +1150,64 @@ function TemplatesSection(props: {
             </button>
           </div>
         </form>
+      )}
+    </div>
+  )
+}
+
+function CollapsibleAttrCard({ index, attr, isExpanded, onToggle, onUpdateAttr, onRemove, allAttrs }: {
+  index: number
+  attr: { key: string; name: string; modifier: string }
+  isExpanded: boolean
+  onToggle: () => void
+  onUpdateAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string) => void
+  onRemove: () => void
+  allAttrs: { key: string; name: string; modifier: string }[]
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-background/30 overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex items-center justify-between w-full px-3 py-2 text-left hover:bg-background/50 transition-colors"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-medium text-foreground truncate">
+            {attr.name || 'New Attribute'}
+          </span>
+          {attr.key && (
+            <span className="text-[0.6rem] text-muted font-mono shrink-0">({attr.key})</span>
+          )}
+        </div>
+        <svg
+          className={`w-4 h-4 text-muted transition-transform shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {isExpanded && (
+        <div className="px-3 py-3 space-y-2 border-t border-border">
+          <div className="flex items-center gap-1.5">
+            <input className="input-field flex-1" value={attr.key} onChange={(e) => onUpdateAttr(index, 'key', e.target.value)} placeholder="Key (e.g. strength)" />
+            <input className="input-field flex-1" value={attr.name} onChange={(e) => onUpdateAttr(index, 'name', e.target.value)} placeholder="Name (e.g. Strength)" />
+          </div>
+          <div>
+            <label className="text-xs text-muted mb-1 block">Formula Builder (optional)</label>
+            <FormulaBuilder
+              value={attr.modifier}
+              onChange={(v) => onUpdateAttr(index, 'modifier', v)}
+              attributes={allAttrs
+                .filter((a) => a.key.trim() && a.name.trim())
+                .map((a) => ({ key: a.key.trim(), name: a.name.trim() }))}
+            />
+          </div>
+          <div className="flex justify-end">
+            <button type="button" onClick={onRemove} className="text-xs text-danger hover:text-danger/80 transition-colors">
+              Remove Attribute
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
