@@ -23,6 +23,7 @@ model User {
   sentInvitations    CampaignInvitation[] @relation("SentInvitations")
   googleAccount      GoogleAccount?
   discordAccount     DiscordAccount?
+  characterSheets    CharacterSheet[]
 }
 
 model Adventure {
@@ -37,6 +38,8 @@ model Adventure {
   updatedAt   DateTime          @updatedAt
   members     CampaignMember[]
   invitations CampaignInvitation[]
+  templates   Template[]
+  characterSheets CharacterSheet[]
 
   @@index([ownerId])
 }
@@ -113,4 +116,69 @@ model DiscordAccount {
   verified    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ── Character Sheet Templates ──
+
+model Template {
+  id           String              @id @default(cuid())
+  adventureId  String
+  adventure    Adventure           @relation(fields: [adventureId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?
+  attributes   TemplateAttribute[]
+  characterSheets CharacterSheet[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([adventureId])
+}
+
+model TemplateAttribute {
+  id          String                @id @default(cuid())
+  templateId  String
+  template    Template              @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  key         String
+  name        String
+  modifier    Boolean               @default(false)
+  order       Int                   @default(0)
+  sheetValues CharacterSheetValue[]
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@index([templateId])
+}
+
+// ── Character Sheets ──
+
+model CharacterSheet {
+  id         String               @id @default(cuid())
+  characterName String
+  adventureId  String
+  adventure    Adventure          @relation(fields: [adventureId], references: [id], onDelete: Cascade)
+  templateId   String
+  template     Template           @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  ownerId      String
+  owner        User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  values       CharacterSheetValue[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([adventureId])
+  @@index([ownerId])
+  @@index([templateId])
+}
+
+model CharacterSheetValue {
+  id          String         @id @default(cuid())
+  sheetId     String
+  sheet       CharacterSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  attributeId String
+  attribute   TemplateAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  value       String         @default("")
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([sheetId, attributeId])
+  @@index([sheetId])
 }

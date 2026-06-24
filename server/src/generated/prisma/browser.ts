@@ -47,3 +47,23 @@ export type GoogleAccount = Prisma.GoogleAccountModel
  * 
  */
 export type DiscordAccount = Prisma.DiscordAccountModel
+/**
+ * Model Template
+ * 
+ */
+export type Template = Prisma.TemplateModel
+/**
+ * Model TemplateAttribute
+ * 
+ */
+export type TemplateAttribute = Prisma.TemplateAttributeModel
+/**
+ * Model CharacterSheet
+ * 
+ */
+export type CharacterSheet = Prisma.CharacterSheetModel
+/**
+ * Model CharacterSheetValue
+ * 
+ */
+export type CharacterSheetValue = Prisma.CharacterSheetValueModel

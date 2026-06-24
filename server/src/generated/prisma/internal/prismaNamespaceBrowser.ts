@@ -56,7 +56,11 @@ export const ModelName = {
   CampaignMember: 'CampaignMember',
   CampaignInvitation: 'CampaignInvitation',
   GoogleAccount: 'GoogleAccount',
-  DiscordAccount: 'DiscordAccount'
+  DiscordAccount: 'DiscordAccount',
+  Template: 'Template',
+  TemplateAttribute: 'TemplateAttribute',
+  CharacterSheet: 'CharacterSheet',
+  CharacterSheetValue: 'CharacterSheetValue'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -162,6 +166,57 @@ export const DiscordAccountScalarFieldEnum = {
 } as const
 
 export type DiscordAccountScalarFieldEnum = (typeof DiscordAccountScalarFieldEnum)[keyof typeof DiscordAccountScalarFieldEnum]
+
+
+export const TemplateScalarFieldEnum = {
+  id: 'id',
+  adventureId: 'adventureId',
+  name: 'name',
+  description: 'description',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TemplateScalarFieldEnum = (typeof TemplateScalarFieldEnum)[keyof typeof TemplateScalarFieldEnum]
+
+
+export const TemplateAttributeScalarFieldEnum = {
+  id: 'id',
+  templateId: 'templateId',
+  key: 'key',
+  name: 'name',
+  modifier: 'modifier',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TemplateAttributeScalarFieldEnum = (typeof TemplateAttributeScalarFieldEnum)[keyof typeof TemplateAttributeScalarFieldEnum]
+
+
+export const CharacterSheetScalarFieldEnum = {
+  id: 'id',
+  characterName: 'characterName',
+  adventureId: 'adventureId',
+  templateId: 'templateId',
+  ownerId: 'ownerId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterSheetScalarFieldEnum = (typeof CharacterSheetScalarFieldEnum)[keyof typeof CharacterSheetScalarFieldEnum]
+
+
+export const CharacterSheetValueScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  attributeId: 'attributeId',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterSheetValueScalarFieldEnum = (typeof CharacterSheetValueScalarFieldEnum)[keyof typeof CharacterSheetValueScalarFieldEnum]
 
 
 export const SortOrder = {

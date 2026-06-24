@@ -43,6 +43,14 @@ interface Invitation {
   }
 }
 
+interface Template {
+  id: string
+  name: string
+  description: string | null
+  attributes: { id: string; key: string; name: string; modifier: boolean }[]
+  createdAt: string
+}
+
 export default function AdventureDetailPage() {
   const router = useRouter()
   const params = useParams()
@@ -75,6 +83,24 @@ export default function AdventureDetailPage() {
   const [inviteSending, setInviteSending] = useState(false)
   const [inviteLink, setInviteLink] = useState<string | null>(null)
   const [invitations, setInvitations] = useState<Invitation[]>([])
+
+  const [templates, setTemplates] = useState<Template[]>([])
+  const [showTemplates, setShowTemplates] = useState(false)
+
+  // Template management
+  const [showNewTemplate, setShowNewTemplate] = useState(false)
+  const [newTemplateName, setNewTemplateName] = useState('')
+  const [newTemplateDescription, setNewTemplateDescription] = useState('')
+  const [newTemplateAttrs, setNewTemplateAttrs] = useState<{ key: string; name: string; modifier: boolean }[]>([])
+  const [templateCreating, setTemplateCreating] = useState(false)
+  const [templateError, setTemplateError] = useState<string | null>(null)
+
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null)
+  const [editTemplateName, setEditTemplateName] = useState('')
+  const [editTemplateDescription, setEditTemplateDescription] = useState('')
+  const [editTemplateAttrs, setEditTemplateAttrs] = useState<{ key: string; name: string; modifier: boolean }[]>([])
+  const [templateSaving, setTemplateSaving] = useState(false)
+  const [editingTemplateError, setEditingTemplateError] = useState<string | null>(null)
 
   const isGM = userRole === 'GM'
 
@@ -128,6 +154,139 @@ export default function AdventureDetailPage() {
       setInvitations(data)
     } catch { /* ignore */ }
   }, [id])
+
+  const fetchTemplates = useCallback(async () => {
+    try {
+      const data = await api.get<Template[]>(`/adventures/${id}/templates`)
+      setTemplates(data)
+    } catch { /* ignore */ }
+  }, [id])
+
+  // ── Template CRUD handlers ──
+
+  function resetNewTemplate() {
+    setShowNewTemplate(false)
+    setNewTemplateName('')
+    setNewTemplateDescription('')
+    setNewTemplateAttrs([])
+    setTemplateError(null)
+  }
+
+  function addNewAttrRow() {
+    setNewTemplateAttrs((prev) => [...prev, { key: '', name: '', modifier: false }])
+  }
+
+  function removeNewAttrRow(index: number) {
+    setNewTemplateAttrs((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  function updateNewAttr(index: number, field: 'key' | 'name' | 'modifier', value: string | boolean) {
+    setNewTemplateAttrs((prev) =>
+      prev.map((attr, i) => (i === index ? { ...attr, [field]: value } : attr)),
+    )
+  }
+
+  async function handleCreateTemplate(e: FormEvent) {
+    e.preventDefault()
+    setTemplateError(null)
+    const trimmedAttrs = newTemplateAttrs.map((a) => ({
+      key: a.key.trim(),
+      name: a.name.trim(),
+      modifier: a.modifier,
+    }))
+
+    if (trimmedAttrs.some((a) => !a.key || !a.name)) {
+      setTemplateError('All attributes must have a key and name')
+      return
+    }
+
+    setTemplateCreating(true)
+    try {
+      await api.post(`/adventures/${id}/templates`, {
+        name: newTemplateName.trim(),
+        description: newTemplateDescription.trim() || undefined,
+        attributes: trimmedAttrs,
+      })
+      resetNewTemplate()
+      fetchTemplates()
+    } catch (err) {
+      setTemplateError(err instanceof Error ? err.message : 'Failed to create template')
+    } finally {
+      setTemplateCreating(false)
+    }
+  }
+
+  function startEditTemplate(template: Template) {
+    setEditingTemplateId(template.id)
+    setEditTemplateName(template.name)
+    setEditTemplateDescription(template.description ?? '')
+    setEditTemplateAttrs(
+      template.attributes.map((a) => ({
+        key: a.key,
+        name: a.name,
+        modifier: a.modifier,
+      })),
+    )
+    setEditingTemplateError(null)
+  }
+
+  function cancelEditTemplate() {
+    setEditingTemplateId(null)
+    setEditingTemplateError(null)
+  }
+
+  function addEditAttrRow() {
+    setEditTemplateAttrs((prev) => [...prev, { key: '', name: '', modifier: false }])
+  }
+
+  function removeEditAttrRow(index: number) {
+    setEditTemplateAttrs((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  function updateEditAttr(index: number, field: 'key' | 'name' | 'modifier', value: string | boolean) {
+    setEditTemplateAttrs((prev) =>
+      prev.map((attr, i) => (i === index ? { ...attr, [field]: value } : attr)),
+    )
+  }
+
+  async function handleUpdateTemplate(e: FormEvent) {
+    e.preventDefault()
+    if (!editingTemplateId) return
+    setEditingTemplateError(null)
+
+    const trimmedAttrs = editTemplateAttrs.map((a) => ({
+      key: a.key.trim(),
+      name: a.name.trim(),
+      modifier: a.modifier,
+    }))
+
+    if (trimmedAttrs.some((a) => !a.key || !a.name)) {
+      setEditingTemplateError('All attributes must have a key and name')
+      return
+    }
+
+    setTemplateSaving(true)
+    try {
+      await api.patch(`/adventures/${id}/templates/${editingTemplateId}`, {
+        name: editTemplateName.trim(),
+        description: editTemplateDescription.trim() || undefined,
+        attributes: trimmedAttrs,
+      })
+      cancelEditTemplate()
+      fetchTemplates()
+    } catch (err) {
+      setEditingTemplateError(err instanceof Error ? err.message : 'Failed to update template')
+    } finally {
+      setTemplateSaving(false)
+    }
+  }
+
+  async function handleDeleteTemplate(templateId: string) {
+    try {
+      await api.delete(`/adventures/${id}/templates/${templateId}`)
+      fetchTemplates()
+    } catch { /* ignore */ }
+  }
 
   async function handleUpdate(e: FormEvent) {
     e.preventDefault()
@@ -294,6 +453,50 @@ export default function AdventureDetailPage() {
               />
             </CollapsibleSection>
           )}
+
+          {/* Character Sheet Templates */}
+          <CollapsibleSection
+            title="Character Sheet Templates"
+            expanded={showTemplates}
+            onToggle={() => {
+              setShowTemplates(!showTemplates)
+              if (!showTemplates) fetchTemplates()
+            }}
+          >
+            <TemplatesSection
+              templates={templates}
+              isGM={isGM}
+              showNewTemplate={showNewTemplate}
+              editingTemplateId={editingTemplateId}
+              newTemplateName={newTemplateName}
+              newTemplateDescription={newTemplateDescription}
+              newTemplateAttrs={newTemplateAttrs}
+              templateError={templateError}
+              templateCreating={templateCreating}
+              editTemplateName={editTemplateName}
+              editTemplateDescription={editTemplateDescription}
+              editTemplateAttrs={editTemplateAttrs}
+              editingTemplateError={editingTemplateError}
+              templateSaving={templateSaving}
+              onNewClick={() => setShowNewTemplate(true)}
+              onCancelNew={resetNewTemplate}
+              onCreateTemplate={handleCreateTemplate}
+              onNameChange={setNewTemplateName}
+              onDescriptionChange={setNewTemplateDescription}
+              onAddAttr={addNewAttrRow}
+              onRemoveAttr={removeNewAttrRow}
+              onUpdateAttr={updateNewAttr}
+              onStartEdit={startEditTemplate}
+              onCancelEdit={cancelEditTemplate}
+              onUpdateTemplate={handleUpdateTemplate}
+              onDeleteTemplate={handleDeleteTemplate}
+              onEditNameChange={setEditTemplateName}
+              onEditDescriptionChange={setEditTemplateDescription}
+              onAddEditAttr={addEditAttrRow}
+              onRemoveEditAttr={removeEditAttrRow}
+              onUpdateEditAttr={updateEditAttr}
+            />
+          </CollapsibleSection>
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3">
@@ -553,5 +756,258 @@ function EditForm(props: {
         </button>
       </div>
     </form>
+  )
+}
+
+function TemplatesSection(props: {
+  templates: Array<{
+    id: string; name: string; description: string | null;
+    attributes: { id: string; key: string; name: string; modifier: boolean }[];
+    createdAt: string;
+  }>
+  isGM: boolean
+  showNewTemplate: boolean
+  editingTemplateId: string | null
+  newTemplateName: string
+  newTemplateDescription: string
+  newTemplateAttrs: { key: string; name: string; modifier: boolean }[]
+  templateError: string | null
+  templateCreating: boolean
+  editTemplateName: string
+  editTemplateDescription: string
+  editTemplateAttrs: { key: string; name: string; modifier: boolean }[]
+  editingTemplateError: string | null
+  templateSaving: boolean
+  onNewClick: () => void
+  onCancelNew: () => void
+  onCreateTemplate: (e: FormEvent) => void
+  onNameChange: (v: string) => void
+  onDescriptionChange: (v: string) => void
+  onAddAttr: () => void
+  onRemoveAttr: (index: number) => void
+  onUpdateAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string | boolean) => void
+  onStartEdit: (template: Template) => void
+  onCancelEdit: () => void
+  onUpdateTemplate: (e: FormEvent) => void
+  onDeleteTemplate: (id: string) => void
+  onEditNameChange: (v: string) => void
+  onEditDescriptionChange: (v: string) => void
+  onAddEditAttr: () => void
+  onRemoveEditAttr: (index: number) => void
+  onUpdateEditAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string | boolean) => void
+}) {
+  interface Template {
+    id: string; name: string; description: string | null;
+    attributes: { id: string; key: string; name: string; modifier: boolean }[];
+    createdAt: string;
+  }
+
+  return (
+    <div className="space-y-4">
+      {props.templates.length === 0 && !props.showNewTemplate ? (
+        <div className="text-center py-6 text-muted-foreground text-sm italic">
+          No templates defined yet.
+          {props.isGM && ' Create one below to allow players to build character sheets.'}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {props.templates.map((t) => (
+            <TemplateRow
+              key={t.id}
+              template={t}
+              isGM={props.isGM}
+              isEditing={props.editingTemplateId === t.id}
+              editName={props.editTemplateName}
+              editDescription={props.editTemplateDescription}
+              editAttrs={props.editTemplateAttrs}
+              editError={props.editingTemplateError}
+              saving={props.templateSaving}
+              onStartEdit={() => props.onStartEdit(t)}
+              onCancelEdit={props.onCancelEdit}
+              onUpdate={props.onUpdateTemplate}
+              onDelete={() => props.onDeleteTemplate(t.id)}
+              onEditNameChange={props.onEditNameChange}
+              onEditDescriptionChange={props.onEditDescriptionChange}
+              onAddAttr={props.onAddEditAttr}
+              onRemoveAttr={props.onRemoveEditAttr}
+              onUpdateAttr={props.onUpdateEditAttr}
+            />
+          ))}
+        </div>
+      )}
+
+      {props.isGM && !props.showNewTemplate && (
+        <button onClick={props.onNewClick} className="btn-primary text-sm">
+          + New Template
+        </button>
+      )}
+
+      {props.isGM && props.showNewTemplate && (
+        <form onSubmit={props.onCreateTemplate} className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3">
+          <h4 className="text-sm font-semibold text-primary">Create Template</h4>
+          <div>
+            <label className="label">Name</label>
+            <input
+              className="input-field"
+              value={props.newTemplateName}
+              onChange={(e) => props.onNameChange(e.target.value)}
+              placeholder="e.g. D&D 5e Character Sheet"
+              maxLength={100}
+              required
+            />
+          </div>
+          <div>
+            <label className="label">Description <span className="text-muted font-normal">(optional)</span></label>
+            <input
+              className="input-field"
+              value={props.newTemplateDescription}
+              onChange={(e) => props.onDescriptionChange(e.target.value)}
+              placeholder="Brief description of this template"
+              maxLength={200}
+            />
+          </div>
+          <div>
+            <label className="label">Attributes</label>
+            <div className="space-y-2 mt-1">
+              {props.newTemplateAttrs.map((attr, idx) => (
+                <div key={idx} className="flex items-center gap-1.5">
+                  <input
+                    className="input-field flex-1"
+                    value={attr.key}
+                    onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)}
+                    placeholder="Key (e.g. strength)"
+                  />
+                  <input
+                    className="input-field flex-1"
+                    value={attr.name}
+                    onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)}
+                    placeholder="Name (e.g. Strength)"
+                  />
+                  <label className="flex items-center gap-1 text-xs text-muted shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={attr.modifier}
+                      onChange={(e) => props.onUpdateAttr(idx, 'modifier', e.target.checked)}
+                      className="accent-primary"
+                    />
+                    mod
+                  </label>
+                  <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">
+              + Add Attribute
+            </button>
+          </div>
+
+          {props.templateError && (
+            <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{props.templateError}</div>
+          )}
+
+          <div className="flex gap-2 justify-end">
+            <button type="button" onClick={props.onCancelNew} disabled={props.templateCreating} className="btn-ghost text-sm">Cancel</button>
+            <button type="submit" disabled={props.templateCreating || !props.newTemplateName.trim() || props.newTemplateAttrs.length === 0} className="btn-primary text-sm">
+              {props.templateCreating ? 'Creating...' : 'Create'}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  )
+}
+
+function TemplateRow(props: {
+  template: { id: string; name: string; description: string | null; attributes: { id: string; key: string; name: string; modifier: boolean }[]; createdAt: string }
+  isGM: boolean
+  isEditing: boolean
+  editName: string
+  editDescription: string
+  editAttrs: { key: string; name: string; modifier: boolean }[]
+  editError: string | null
+  saving: boolean
+  onStartEdit: () => void
+  onCancelEdit: () => void
+  onUpdate: (e: FormEvent) => void
+  onDelete: () => void
+  onEditNameChange: (v: string) => void
+  onEditDescriptionChange: (v: string) => void
+  onAddAttr: () => void
+  onRemoveAttr: (index: number) => void
+  onUpdateAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string | boolean) => void
+}) {
+  if (props.isEditing) {
+    return (
+      <form onSubmit={props.onUpdate} className="rounded-lg border border-primary/30 bg-background/50 p-4 space-y-3">
+        <div>
+          <label className="label">Name</label>
+          <input className="input-field" value={props.editName} onChange={(e) => props.onEditNameChange(e.target.value)} maxLength={100} required />
+        </div>
+        <div>
+          <label className="label">Description <span className="text-muted font-normal">(optional)</span></label>
+          <input className="input-field" value={props.editDescription} onChange={(e) => props.onEditDescriptionChange(e.target.value)} maxLength={200} />
+        </div>
+        <div>
+          <label className="label">Attributes</label>
+          <div className="space-y-2 mt-1">
+            {props.editAttrs.map((attr, idx) => (
+              <div key={idx} className="flex items-center gap-1.5">
+                <input className="input-field flex-1" value={attr.key} onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)} placeholder="Key" />
+                <input className="input-field flex-1" value={attr.name} onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)} placeholder="Name" />
+                <label className="flex items-center gap-1 text-xs text-muted shrink-0">
+                  <input type="checkbox" checked={attr.modifier} onChange={(e) => props.onUpdateAttr(idx, 'modifier', e.target.checked)} className="accent-primary" />
+                  mod
+                </label>
+                <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+              </div>
+            ))}
+          </div>
+          <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button>
+        </div>
+
+        {props.editError && (
+          <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{props.editError}</div>
+        )}
+
+        <div className="flex gap-2 justify-end">
+          <button type="button" onClick={props.onCancelEdit} disabled={props.saving} className="btn-ghost text-sm">Cancel</button>
+          <button type="submit" disabled={props.saving || !props.editName.trim()} className="btn-primary text-sm">
+            {props.saving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </form>
+    )
+  }
+
+  return (
+    <div className="flex items-start justify-between py-2.5 px-3 rounded-lg bg-background/50 border border-border">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-foreground truncate">{props.template.name}</span>
+          <span className="badge badge-gold text-[0.6rem]">{props.template.attributes.length} attrs</span>
+        </div>
+        {props.template.description && (
+          <p className="text-xs text-muted mt-0.5 truncate">{props.template.description}</p>
+        )}
+        <div className="flex flex-wrap gap-1 mt-1">
+          {props.template.attributes.slice(0, 4).map((a) => (
+            <span key={a.id} className="text-[0.6rem] text-muted bg-background px-1.5 py-0.5 rounded">
+              {a.name}{a.modifier ? '*' : ''}
+            </span>
+          ))}
+          {props.template.attributes.length > 4 && (
+            <span className="text-[0.6rem] text-muted">+{props.template.attributes.length - 4} more</span>
+          )}
+        </div>
+      </div>
+      {props.isGM && (
+        <div className="flex gap-1 shrink-0 ml-2">
+          <button onClick={props.onStartEdit} className="btn-ghost text-xs px-2 py-1">Edit</button>
+          <button onClick={props.onDelete} className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors">Delete</button>
+        </div>
+      )}
+    </div>
   )
 }

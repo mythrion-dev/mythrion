@@ -203,6 +203,7 @@ export type UserWhereInput = {
   sentInvitations?: Prisma.CampaignInvitationListRelationFilter
   googleAccount?: Prisma.XOR<Prisma.GoogleAccountNullableScalarRelationFilter, Prisma.GoogleAccountWhereInput> | null
   discordAccount?: Prisma.XOR<Prisma.DiscordAccountNullableScalarRelationFilter, Prisma.DiscordAccountWhereInput> | null
+  characterSheets?: Prisma.CharacterSheetListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -218,6 +219,7 @@ export type UserOrderByWithRelationInput = {
   sentInvitations?: Prisma.CampaignInvitationOrderByRelationAggregateInput
   googleAccount?: Prisma.GoogleAccountOrderByWithRelationInput
   discordAccount?: Prisma.DiscordAccountOrderByWithRelationInput
+  characterSheets?: Prisma.CharacterSheetOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -236,6 +238,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   sentInvitations?: Prisma.CampaignInvitationListRelationFilter
   googleAccount?: Prisma.XOR<Prisma.GoogleAccountNullableScalarRelationFilter, Prisma.GoogleAccountWhereInput> | null
   discordAccount?: Prisma.XOR<Prisma.DiscordAccountNullableScalarRelationFilter, Prisma.DiscordAccountWhereInput> | null
+  characterSheets?: Prisma.CharacterSheetListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -277,6 +280,7 @@ export type UserCreateInput = {
   sentInvitations?: Prisma.CampaignInvitationCreateNestedManyWithoutCreatedByInput
   googleAccount?: Prisma.GoogleAccountCreateNestedOneWithoutUserInput
   discordAccount?: Prisma.DiscordAccountCreateNestedOneWithoutUserInput
+  characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -292,6 +296,7 @@ export type UserUncheckedCreateInput = {
   sentInvitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutCreatedByInput
   googleAccount?: Prisma.GoogleAccountUncheckedCreateNestedOneWithoutUserInput
   discordAccount?: Prisma.DiscordAccountUncheckedCreateNestedOneWithoutUserInput
+  characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUpdateInput = {
@@ -307,6 +312,7 @@ export type UserUpdateInput = {
   sentInvitations?: Prisma.CampaignInvitationUpdateManyWithoutCreatedByNestedInput
   googleAccount?: Prisma.GoogleAccountUpdateOneWithoutUserNestedInput
   discordAccount?: Prisma.DiscordAccountUpdateOneWithoutUserNestedInput
+  characterSheets?: Prisma.CharacterSheetUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -322,6 +328,7 @@ export type UserUncheckedUpdateInput = {
   sentInvitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutCreatedByNestedInput
   googleAccount?: Prisma.GoogleAccountUncheckedUpdateOneWithoutUserNestedInput
   discordAccount?: Prisma.DiscordAccountUncheckedUpdateOneWithoutUserNestedInput
+  characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -475,6 +482,20 @@ export type UserUpdateOneRequiredWithoutDiscordAccountNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutDiscordAccountInput, Prisma.UserUpdateWithoutDiscordAccountInput>, Prisma.UserUncheckedUpdateWithoutDiscordAccountInput>
 }
 
+export type UserCreateNestedOneWithoutCharacterSheetsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCharacterSheetsInput, Prisma.UserUncheckedCreateWithoutCharacterSheetsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCharacterSheetsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutCharacterSheetsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCharacterSheetsInput, Prisma.UserUncheckedCreateWithoutCharacterSheetsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCharacterSheetsInput
+  upsert?: Prisma.UserUpsertWithoutCharacterSheetsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCharacterSheetsInput, Prisma.UserUpdateWithoutCharacterSheetsInput>, Prisma.UserUncheckedUpdateWithoutCharacterSheetsInput>
+}
+
 export type UserCreateWithoutAdventuresInput = {
   id?: string
   email: string
@@ -487,6 +508,7 @@ export type UserCreateWithoutAdventuresInput = {
   sentInvitations?: Prisma.CampaignInvitationCreateNestedManyWithoutCreatedByInput
   googleAccount?: Prisma.GoogleAccountCreateNestedOneWithoutUserInput
   discordAccount?: Prisma.DiscordAccountCreateNestedOneWithoutUserInput
+  characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutAdventuresInput = {
@@ -501,6 +523,7 @@ export type UserUncheckedCreateWithoutAdventuresInput = {
   sentInvitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutCreatedByInput
   googleAccount?: Prisma.GoogleAccountUncheckedCreateNestedOneWithoutUserInput
   discordAccount?: Prisma.DiscordAccountUncheckedCreateNestedOneWithoutUserInput
+  characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutAdventuresInput = {
@@ -531,6 +554,7 @@ export type UserUpdateWithoutAdventuresInput = {
   sentInvitations?: Prisma.CampaignInvitationUpdateManyWithoutCreatedByNestedInput
   googleAccount?: Prisma.GoogleAccountUpdateOneWithoutUserNestedInput
   discordAccount?: Prisma.DiscordAccountUpdateOneWithoutUserNestedInput
+  characterSheets?: Prisma.CharacterSheetUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAdventuresInput = {
@@ -545,6 +569,7 @@ export type UserUncheckedUpdateWithoutAdventuresInput = {
   sentInvitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutCreatedByNestedInput
   googleAccount?: Prisma.GoogleAccountUncheckedUpdateOneWithoutUserNestedInput
   discordAccount?: Prisma.DiscordAccountUncheckedUpdateOneWithoutUserNestedInput
+  characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutMembershipsInput = {
@@ -559,6 +584,7 @@ export type UserCreateWithoutMembershipsInput = {
   sentInvitations?: Prisma.CampaignInvitationCreateNestedManyWithoutCreatedByInput
   googleAccount?: Prisma.GoogleAccountCreateNestedOneWithoutUserInput
   discordAccount?: Prisma.DiscordAccountCreateNestedOneWithoutUserInput
+  characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutMembershipsInput = {
@@ -573,6 +599,7 @@ export type UserUncheckedCreateWithoutMembershipsInput = {
   sentInvitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutCreatedByInput
   googleAccount?: Prisma.GoogleAccountUncheckedCreateNestedOneWithoutUserInput
   discordAccount?: Prisma.DiscordAccountUncheckedCreateNestedOneWithoutUserInput
+  characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutMembershipsInput = {
@@ -603,6 +630,7 @@ export type UserUpdateWithoutMembershipsInput = {
   sentInvitations?: Prisma.CampaignInvitationUpdateManyWithoutCreatedByNestedInput
   googleAccount?: Prisma.GoogleAccountUpdateOneWithoutUserNestedInput
   discordAccount?: Prisma.DiscordAccountUpdateOneWithoutUserNestedInput
+  characterSheets?: Prisma.CharacterSheetUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutMembershipsInput = {
@@ -617,6 +645,7 @@ export type UserUncheckedUpdateWithoutMembershipsInput = {
   sentInvitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutCreatedByNestedInput
   googleAccount?: Prisma.GoogleAccountUncheckedUpdateOneWithoutUserNestedInput
   discordAccount?: Prisma.DiscordAccountUncheckedUpdateOneWithoutUserNestedInput
+  characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutSentInvitationsInput = {
@@ -631,6 +660,7 @@ export type UserCreateWithoutSentInvitationsInput = {
   memberships?: Prisma.CampaignMemberCreateNestedManyWithoutUserInput
   googleAccount?: Prisma.GoogleAccountCreateNestedOneWithoutUserInput
   discordAccount?: Prisma.DiscordAccountCreateNestedOneWithoutUserInput
+  characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutSentInvitationsInput = {
@@ -645,6 +675,7 @@ export type UserUncheckedCreateWithoutSentInvitationsInput = {
   memberships?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutUserInput
   googleAccount?: Prisma.GoogleAccountUncheckedCreateNestedOneWithoutUserInput
   discordAccount?: Prisma.DiscordAccountUncheckedCreateNestedOneWithoutUserInput
+  characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutSentInvitationsInput = {
@@ -675,6 +706,7 @@ export type UserUpdateWithoutSentInvitationsInput = {
   memberships?: Prisma.CampaignMemberUpdateManyWithoutUserNestedInput
   googleAccount?: Prisma.GoogleAccountUpdateOneWithoutUserNestedInput
   discordAccount?: Prisma.DiscordAccountUpdateOneWithoutUserNestedInput
+  characterSheets?: Prisma.CharacterSheetUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSentInvitationsInput = {
@@ -689,6 +721,7 @@ export type UserUncheckedUpdateWithoutSentInvitationsInput = {
   memberships?: Prisma.CampaignMemberUncheckedUpdateManyWithoutUserNestedInput
   googleAccount?: Prisma.GoogleAccountUncheckedUpdateOneWithoutUserNestedInput
   discordAccount?: Prisma.DiscordAccountUncheckedUpdateOneWithoutUserNestedInput
+  characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutGoogleAccountInput = {
@@ -703,6 +736,7 @@ export type UserCreateWithoutGoogleAccountInput = {
   memberships?: Prisma.CampaignMemberCreateNestedManyWithoutUserInput
   sentInvitations?: Prisma.CampaignInvitationCreateNestedManyWithoutCreatedByInput
   discordAccount?: Prisma.DiscordAccountCreateNestedOneWithoutUserInput
+  characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutGoogleAccountInput = {
@@ -717,6 +751,7 @@ export type UserUncheckedCreateWithoutGoogleAccountInput = {
   memberships?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutUserInput
   sentInvitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutCreatedByInput
   discordAccount?: Prisma.DiscordAccountUncheckedCreateNestedOneWithoutUserInput
+  characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutGoogleAccountInput = {
@@ -747,6 +782,7 @@ export type UserUpdateWithoutGoogleAccountInput = {
   memberships?: Prisma.CampaignMemberUpdateManyWithoutUserNestedInput
   sentInvitations?: Prisma.CampaignInvitationUpdateManyWithoutCreatedByNestedInput
   discordAccount?: Prisma.DiscordAccountUpdateOneWithoutUserNestedInput
+  characterSheets?: Prisma.CharacterSheetUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutGoogleAccountInput = {
@@ -761,6 +797,7 @@ export type UserUncheckedUpdateWithoutGoogleAccountInput = {
   memberships?: Prisma.CampaignMemberUncheckedUpdateManyWithoutUserNestedInput
   sentInvitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutCreatedByNestedInput
   discordAccount?: Prisma.DiscordAccountUncheckedUpdateOneWithoutUserNestedInput
+  characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserCreateWithoutDiscordAccountInput = {
@@ -775,6 +812,7 @@ export type UserCreateWithoutDiscordAccountInput = {
   memberships?: Prisma.CampaignMemberCreateNestedManyWithoutUserInput
   sentInvitations?: Prisma.CampaignInvitationCreateNestedManyWithoutCreatedByInput
   googleAccount?: Prisma.GoogleAccountCreateNestedOneWithoutUserInput
+  characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutOwnerInput
 }
 
 export type UserUncheckedCreateWithoutDiscordAccountInput = {
@@ -789,6 +827,7 @@ export type UserUncheckedCreateWithoutDiscordAccountInput = {
   memberships?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutUserInput
   sentInvitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutCreatedByInput
   googleAccount?: Prisma.GoogleAccountUncheckedCreateNestedOneWithoutUserInput
+  characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutOwnerInput
 }
 
 export type UserCreateOrConnectWithoutDiscordAccountInput = {
@@ -819,6 +858,7 @@ export type UserUpdateWithoutDiscordAccountInput = {
   memberships?: Prisma.CampaignMemberUpdateManyWithoutUserNestedInput
   sentInvitations?: Prisma.CampaignInvitationUpdateManyWithoutCreatedByNestedInput
   googleAccount?: Prisma.GoogleAccountUpdateOneWithoutUserNestedInput
+  characterSheets?: Prisma.CharacterSheetUpdateManyWithoutOwnerNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDiscordAccountInput = {
@@ -833,6 +873,83 @@ export type UserUncheckedUpdateWithoutDiscordAccountInput = {
   memberships?: Prisma.CampaignMemberUncheckedUpdateManyWithoutUserNestedInput
   sentInvitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutCreatedByNestedInput
   googleAccount?: Prisma.GoogleAccountUncheckedUpdateOneWithoutUserNestedInput
+  characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutOwnerNestedInput
+}
+
+export type UserCreateWithoutCharacterSheetsInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  displayName?: string | null
+  onboardingComplete?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  adventures?: Prisma.AdventureCreateNestedManyWithoutOwnerInput
+  memberships?: Prisma.CampaignMemberCreateNestedManyWithoutUserInput
+  sentInvitations?: Prisma.CampaignInvitationCreateNestedManyWithoutCreatedByInput
+  googleAccount?: Prisma.GoogleAccountCreateNestedOneWithoutUserInput
+  discordAccount?: Prisma.DiscordAccountCreateNestedOneWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutCharacterSheetsInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  displayName?: string | null
+  onboardingComplete?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  adventures?: Prisma.AdventureUncheckedCreateNestedManyWithoutOwnerInput
+  memberships?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutUserInput
+  sentInvitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutCreatedByInput
+  googleAccount?: Prisma.GoogleAccountUncheckedCreateNestedOneWithoutUserInput
+  discordAccount?: Prisma.DiscordAccountUncheckedCreateNestedOneWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutCharacterSheetsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutCharacterSheetsInput, Prisma.UserUncheckedCreateWithoutCharacterSheetsInput>
+}
+
+export type UserUpsertWithoutCharacterSheetsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutCharacterSheetsInput, Prisma.UserUncheckedUpdateWithoutCharacterSheetsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutCharacterSheetsInput, Prisma.UserUncheckedCreateWithoutCharacterSheetsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutCharacterSheetsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutCharacterSheetsInput, Prisma.UserUncheckedUpdateWithoutCharacterSheetsInput>
+}
+
+export type UserUpdateWithoutCharacterSheetsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  adventures?: Prisma.AdventureUpdateManyWithoutOwnerNestedInput
+  memberships?: Prisma.CampaignMemberUpdateManyWithoutUserNestedInput
+  sentInvitations?: Prisma.CampaignInvitationUpdateManyWithoutCreatedByNestedInput
+  googleAccount?: Prisma.GoogleAccountUpdateOneWithoutUserNestedInput
+  discordAccount?: Prisma.DiscordAccountUpdateOneWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutCharacterSheetsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  adventures?: Prisma.AdventureUncheckedUpdateManyWithoutOwnerNestedInput
+  memberships?: Prisma.CampaignMemberUncheckedUpdateManyWithoutUserNestedInput
+  sentInvitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutCreatedByNestedInput
+  googleAccount?: Prisma.GoogleAccountUncheckedUpdateOneWithoutUserNestedInput
+  discordAccount?: Prisma.DiscordAccountUncheckedUpdateOneWithoutUserNestedInput
 }
 
 
@@ -844,12 +961,14 @@ export type UserCountOutputType = {
   adventures: number
   memberships: number
   sentInvitations: number
+  characterSheets: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   adventures?: boolean | UserCountOutputTypeCountAdventuresArgs
   memberships?: boolean | UserCountOutputTypeCountMembershipsArgs
   sentInvitations?: boolean | UserCountOutputTypeCountSentInvitationsArgs
+  characterSheets?: boolean | UserCountOutputTypeCountCharacterSheetsArgs
 }
 
 /**
@@ -883,6 +1002,13 @@ export type UserCountOutputTypeCountSentInvitationsArgs<ExtArgs extends runtime.
   where?: Prisma.CampaignInvitationWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountCharacterSheetsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CharacterSheetWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -897,6 +1023,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   sentInvitations?: boolean | Prisma.User$sentInvitationsArgs<ExtArgs>
   googleAccount?: boolean | Prisma.User$googleAccountArgs<ExtArgs>
   discordAccount?: boolean | Prisma.User$discordAccountArgs<ExtArgs>
+  characterSheets?: boolean | Prisma.User$characterSheetsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -937,6 +1064,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   sentInvitations?: boolean | Prisma.User$sentInvitationsArgs<ExtArgs>
   googleAccount?: boolean | Prisma.User$googleAccountArgs<ExtArgs>
   discordAccount?: boolean | Prisma.User$discordAccountArgs<ExtArgs>
+  characterSheets?: boolean | Prisma.User$characterSheetsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -950,6 +1078,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     sentInvitations: Prisma.$CampaignInvitationPayload<ExtArgs>[]
     googleAccount: Prisma.$GoogleAccountPayload<ExtArgs> | null
     discordAccount: Prisma.$DiscordAccountPayload<ExtArgs> | null
+    characterSheets: Prisma.$CharacterSheetPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1358,6 +1487,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   sentInvitations<T extends Prisma.User$sentInvitationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$sentInvitationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignInvitationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   googleAccount<T extends Prisma.User$googleAccountArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$googleAccountArgs<ExtArgs>>): Prisma.Prisma__GoogleAccountClient<runtime.Types.Result.GetResult<Prisma.$GoogleAccountPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   discordAccount<T extends Prisma.User$discordAccountArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$discordAccountArgs<ExtArgs>>): Prisma.Prisma__DiscordAccountClient<runtime.Types.Result.GetResult<Prisma.$DiscordAccountPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  characterSheets<T extends Prisma.User$characterSheetsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$characterSheetsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1894,6 +2024,30 @@ export type User$discordAccountArgs<ExtArgs extends runtime.Types.Extensions.Int
    */
   include?: Prisma.DiscordAccountInclude<ExtArgs> | null
   where?: Prisma.DiscordAccountWhereInput
+}
+
+/**
+ * User.characterSheets
+ */
+export type User$characterSheetsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CharacterSheet
+   */
+  select?: Prisma.CharacterSheetSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CharacterSheet
+   */
+  omit?: Prisma.CharacterSheetOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CharacterSheetInclude<ExtArgs> | null
+  where?: Prisma.CharacterSheetWhereInput
+  orderBy?: Prisma.CharacterSheetOrderByWithRelationInput | Prisma.CharacterSheetOrderByWithRelationInput[]
+  cursor?: Prisma.CharacterSheetWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CharacterSheetScalarFieldEnum | Prisma.CharacterSheetScalarFieldEnum[]
 }
 
 /**
