@@ -39,7 +39,7 @@ export default function FormulaBuilder({
   const [showVariables, setShowVariables] = useState(true)
   const [showFunctions, setShowFunctions] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const insertAtCursor = (text: string) => {
     const textarea = textareaRef.current
