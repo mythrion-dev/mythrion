@@ -13,6 +13,10 @@ export class AttributeDefDto {
 
   @IsString()
   name!: string
+
+  @IsString()
+  @IsOptional()
+  modifier?: string
 }
 
 export class CreateTemplateDto {

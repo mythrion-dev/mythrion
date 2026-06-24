@@ -7,6 +7,10 @@ export class UpdateAttributeDefDto {
 
   @IsString()
   name!: string
+
+  @IsString()
+  @IsOptional()
+  modifier?: string
 }
 
 export class UpdateTemplateDto {

@@ -47,7 +47,7 @@ interface Template {
   id: string
   name: string
   description: string | null
-  attributes: { id: string; key: string; name: string }[]
+  attributes: { id: string; key: string; name: string; modifier: string | null }[]
   createdAt: string
 }
 
@@ -1027,7 +1027,7 @@ function CharactersSection(props: {
 function TemplatesSection(props: {
   templates: Array<{
     id: string; name: string; description: string | null;
-    attributes: { id: string; key: string; name: string }[];
+    attributes: { id: string; key: string; name: string; modifier: string | null }[];
     createdAt: string;
   }>
   isGM: boolean
@@ -1141,7 +1141,7 @@ function TemplatesSection(props: {
 }
 
 function TemplateRow(props: {
-  template: { id: string; name: string; description: string | null; attributes: { id: string; key: string; name: string }[]; createdAt: string }
+  template: { id: string; name: string; description: string | null; attributes: { id: string; key: string; name: string; modifier: string | null }[]; createdAt: string }
   isGM: boolean
   isEditing: boolean
   editName: string

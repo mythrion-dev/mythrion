@@ -185,6 +185,7 @@ export const TemplateAttributeScalarFieldEnum = {
   templateId: 'templateId',
   key: 'key',
   name: 'name',
+  modifier: 'modifier',
   order: 'order',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
