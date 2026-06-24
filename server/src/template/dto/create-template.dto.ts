@@ -2,7 +2,6 @@ import {
   IsString,
   IsOptional,
   IsArray,
-  IsBoolean,
   ValidateNested,
   ArrayMinSize,
 } from 'class-validator'
@@ -14,9 +13,6 @@ export class AttributeDefDto {
 
   @IsString()
   name!: string
-
-  @IsBoolean()
-  modifier!: boolean
 }
 
 export class CreateTemplateDto {

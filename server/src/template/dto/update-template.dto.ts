@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, IsBoolean, ValidateNested } from 'class-validator'
+import { IsString, IsOptional, IsArray, ValidateNested } from 'class-validator'
 import { Type } from 'class-transformer'
 
 export class UpdateAttributeDefDto {
@@ -7,9 +7,6 @@ export class UpdateAttributeDefDto {
 
   @IsString()
   name!: string
-
-  @IsBoolean()
-  modifier!: boolean
 }
 
 export class UpdateTemplateDto {

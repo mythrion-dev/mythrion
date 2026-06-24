@@ -140,7 +140,6 @@ model TemplateAttribute {
   template    Template              @relation(fields: [templateId], references: [id], onDelete: Cascade)
   key         String
   name        String
-  modifier    Boolean               @default(false)
   order       Int                   @default(0)
   sheetValues CharacterSheetValue[]
   createdAt   DateTime              @default(now())

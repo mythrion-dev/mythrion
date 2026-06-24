@@ -30,6 +30,14 @@ export class CharacterSheetController {
     return this.sheetService.findAllByUser(req.user.sub)
   }
 
+  @Get('adventure/:adventureId')
+  findAllByAdventure(
+    @Req() req: AuthenticatedRequest,
+    @Param('adventureId') adventureId: string,
+  ) {
+    return this.sheetService.findAllByAdventure(adventureId, req.user.sub)
+  }
+
   @Get(':id')
   findOne(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.sheetService.findOne(id, req.user.sub)
@@ -47,5 +55,14 @@ export class CharacterSheetController {
   @Delete(':id')
   remove(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.sheetService.remove(id, req.user.sub)
+  }
+
+  @Post(':id/link')
+  linkToAdventure(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body('adventureId') adventureId: string,
+  ) {
+    return this.sheetService.linkToAdventure(id, adventureId, req.user.sub)
   }
 }

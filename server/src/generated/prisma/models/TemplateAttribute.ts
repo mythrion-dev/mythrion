@@ -39,7 +39,6 @@ export type TemplateAttributeMinAggregateOutputType = {
   templateId: string | null
   key: string | null
   name: string | null
-  modifier: boolean | null
   order: number | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -50,7 +49,6 @@ export type TemplateAttributeMaxAggregateOutputType = {
   templateId: string | null
   key: string | null
   name: string | null
-  modifier: boolean | null
   order: number | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -61,7 +59,6 @@ export type TemplateAttributeCountAggregateOutputType = {
   templateId: number
   key: number
   name: number
-  modifier: number
   order: number
   createdAt: number
   updatedAt: number
@@ -82,7 +79,6 @@ export type TemplateAttributeMinAggregateInputType = {
   templateId?: true
   key?: true
   name?: true
-  modifier?: true
   order?: true
   createdAt?: true
   updatedAt?: true
@@ -93,7 +89,6 @@ export type TemplateAttributeMaxAggregateInputType = {
   templateId?: true
   key?: true
   name?: true
-  modifier?: true
   order?: true
   createdAt?: true
   updatedAt?: true
@@ -104,7 +99,6 @@ export type TemplateAttributeCountAggregateInputType = {
   templateId?: true
   key?: true
   name?: true
-  modifier?: true
   order?: true
   createdAt?: true
   updatedAt?: true
@@ -202,7 +196,6 @@ export type TemplateAttributeGroupByOutputType = {
   templateId: string
   key: string
   name: string
-  modifier: boolean
   order: number
   createdAt: Date
   updatedAt: Date
@@ -236,7 +229,6 @@ export type TemplateAttributeWhereInput = {
   templateId?: Prisma.StringFilter<"TemplateAttribute"> | string
   key?: Prisma.StringFilter<"TemplateAttribute"> | string
   name?: Prisma.StringFilter<"TemplateAttribute"> | string
-  modifier?: Prisma.BoolFilter<"TemplateAttribute"> | boolean
   order?: Prisma.IntFilter<"TemplateAttribute"> | number
   createdAt?: Prisma.DateTimeFilter<"TemplateAttribute"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TemplateAttribute"> | Date | string
@@ -249,7 +241,6 @@ export type TemplateAttributeOrderByWithRelationInput = {
   templateId?: Prisma.SortOrder
   key?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  modifier?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -265,7 +256,6 @@ export type TemplateAttributeWhereUniqueInput = Prisma.AtLeast<{
   templateId?: Prisma.StringFilter<"TemplateAttribute"> | string
   key?: Prisma.StringFilter<"TemplateAttribute"> | string
   name?: Prisma.StringFilter<"TemplateAttribute"> | string
-  modifier?: Prisma.BoolFilter<"TemplateAttribute"> | boolean
   order?: Prisma.IntFilter<"TemplateAttribute"> | number
   createdAt?: Prisma.DateTimeFilter<"TemplateAttribute"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TemplateAttribute"> | Date | string
@@ -278,7 +268,6 @@ export type TemplateAttributeOrderByWithAggregationInput = {
   templateId?: Prisma.SortOrder
   key?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  modifier?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -297,7 +286,6 @@ export type TemplateAttributeScalarWhereWithAggregatesInput = {
   templateId?: Prisma.StringWithAggregatesFilter<"TemplateAttribute"> | string
   key?: Prisma.StringWithAggregatesFilter<"TemplateAttribute"> | string
   name?: Prisma.StringWithAggregatesFilter<"TemplateAttribute"> | string
-  modifier?: Prisma.BoolWithAggregatesFilter<"TemplateAttribute"> | boolean
   order?: Prisma.IntWithAggregatesFilter<"TemplateAttribute"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"TemplateAttribute"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"TemplateAttribute"> | Date | string
@@ -307,7 +295,6 @@ export type TemplateAttributeCreateInput = {
   id?: string
   key: string
   name: string
-  modifier?: boolean
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -320,7 +307,6 @@ export type TemplateAttributeUncheckedCreateInput = {
   templateId: string
   key: string
   name: string
-  modifier?: boolean
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -331,7 +317,6 @@ export type TemplateAttributeUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  modifier?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -344,7 +329,6 @@ export type TemplateAttributeUncheckedUpdateInput = {
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  modifier?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -356,7 +340,6 @@ export type TemplateAttributeCreateManyInput = {
   templateId: string
   key: string
   name: string
-  modifier?: boolean
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -366,7 +349,6 @@ export type TemplateAttributeUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  modifier?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -377,7 +359,6 @@ export type TemplateAttributeUncheckedUpdateManyInput = {
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  modifier?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -398,7 +379,6 @@ export type TemplateAttributeCountOrderByAggregateInput = {
   templateId?: Prisma.SortOrder
   key?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  modifier?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -413,7 +393,6 @@ export type TemplateAttributeMaxOrderByAggregateInput = {
   templateId?: Prisma.SortOrder
   key?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  modifier?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -424,7 +403,6 @@ export type TemplateAttributeMinOrderByAggregateInput = {
   templateId?: Prisma.SortOrder
   key?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  modifier?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -499,7 +477,6 @@ export type TemplateAttributeCreateWithoutTemplateInput = {
   id?: string
   key: string
   name: string
-  modifier?: boolean
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -510,7 +487,6 @@ export type TemplateAttributeUncheckedCreateWithoutTemplateInput = {
   id?: string
   key: string
   name: string
-  modifier?: boolean
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -551,7 +527,6 @@ export type TemplateAttributeScalarWhereInput = {
   templateId?: Prisma.StringFilter<"TemplateAttribute"> | string
   key?: Prisma.StringFilter<"TemplateAttribute"> | string
   name?: Prisma.StringFilter<"TemplateAttribute"> | string
-  modifier?: Prisma.BoolFilter<"TemplateAttribute"> | boolean
   order?: Prisma.IntFilter<"TemplateAttribute"> | number
   createdAt?: Prisma.DateTimeFilter<"TemplateAttribute"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TemplateAttribute"> | Date | string
@@ -561,7 +536,6 @@ export type TemplateAttributeCreateWithoutSheetValuesInput = {
   id?: string
   key: string
   name: string
-  modifier?: boolean
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -573,7 +547,6 @@ export type TemplateAttributeUncheckedCreateWithoutSheetValuesInput = {
   templateId: string
   key: string
   name: string
-  modifier?: boolean
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -599,7 +572,6 @@ export type TemplateAttributeUpdateWithoutSheetValuesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  modifier?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -611,7 +583,6 @@ export type TemplateAttributeUncheckedUpdateWithoutSheetValuesInput = {
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  modifier?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -621,7 +592,6 @@ export type TemplateAttributeCreateManyTemplateInput = {
   id?: string
   key: string
   name: string
-  modifier?: boolean
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -631,7 +601,6 @@ export type TemplateAttributeUpdateWithoutTemplateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  modifier?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -642,7 +611,6 @@ export type TemplateAttributeUncheckedUpdateWithoutTemplateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  modifier?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -653,7 +621,6 @@ export type TemplateAttributeUncheckedUpdateManyWithoutTemplateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  modifier?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -695,7 +662,6 @@ export type TemplateAttributeSelect<ExtArgs extends runtime.Types.Extensions.Int
   templateId?: boolean
   key?: boolean
   name?: boolean
-  modifier?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -709,7 +675,6 @@ export type TemplateAttributeSelectCreateManyAndReturn<ExtArgs extends runtime.T
   templateId?: boolean
   key?: boolean
   name?: boolean
-  modifier?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -721,7 +686,6 @@ export type TemplateAttributeSelectUpdateManyAndReturn<ExtArgs extends runtime.T
   templateId?: boolean
   key?: boolean
   name?: boolean
-  modifier?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -733,13 +697,12 @@ export type TemplateAttributeSelectScalar = {
   templateId?: boolean
   key?: boolean
   name?: boolean
-  modifier?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TemplateAttributeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "templateId" | "key" | "name" | "modifier" | "order" | "createdAt" | "updatedAt", ExtArgs["result"]["templateAttribute"]>
+export type TemplateAttributeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "templateId" | "key" | "name" | "order" | "createdAt" | "updatedAt", ExtArgs["result"]["templateAttribute"]>
 export type TemplateAttributeInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   sheetValues?: boolean | Prisma.TemplateAttribute$sheetValuesArgs<ExtArgs>
@@ -763,7 +726,6 @@ export type $TemplateAttributePayload<ExtArgs extends runtime.Types.Extensions.I
     templateId: string
     key: string
     name: string
-    modifier: boolean
     order: number
     createdAt: Date
     updatedAt: Date
@@ -1196,7 +1158,6 @@ export interface TemplateAttributeFieldRefs {
   readonly templateId: Prisma.FieldRef<"TemplateAttribute", 'String'>
   readonly key: Prisma.FieldRef<"TemplateAttribute", 'String'>
   readonly name: Prisma.FieldRef<"TemplateAttribute", 'String'>
-  readonly modifier: Prisma.FieldRef<"TemplateAttribute", 'Boolean'>
   readonly order: Prisma.FieldRef<"TemplateAttribute", 'Int'>
   readonly createdAt: Prisma.FieldRef<"TemplateAttribute", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"TemplateAttribute", 'DateTime'>

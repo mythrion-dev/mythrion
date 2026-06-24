@@ -14,7 +14,6 @@ interface SheetAttribute {
     id: string
     key: string
     name: string
-    modifier: boolean
   }
 }
 
@@ -25,7 +24,7 @@ interface CharacterSheet {
   template: {
     id: string
     name: string
-    attributes: { id: string; key: string; name: string; modifier: boolean }[]
+    attributes: { id: string; key: string; name: string }[]
   }
   values: SheetAttribute[]
   ownerId: string
@@ -255,11 +254,6 @@ export default function CharacterSheetDetailPage() {
                   >
                     <span className="text-sm text-foreground">
                       {attr.name}
-                      {attr.modifier && (
-                        <span className="text-[0.6rem] text-primary ml-1">
-                          mod
-                        </span>
-                      )}
                     </span>
                     <span className="text-sm font-semibold text-foreground">
                       {val?.value || '—'}
@@ -322,7 +316,7 @@ export default function CharacterSheetDetailPage() {
 
 function EditForm(props: {
   name: string
-  attributes: { id: string; key: string; name: string; modifier: boolean }[]
+  attributes: { id: string; key: string; name: string }[]
   values: Record<string, string>
   error: string | null
   saving: boolean
@@ -369,9 +363,6 @@ function EditForm(props: {
             <div key={attr.id}>
               <label className="text-xs text-muted flex items-center gap-1 mb-1">
                 {attr.name}
-                {attr.modifier && (
-                  <span className="text-[0.6rem] text-primary">(modifier)</span>
-                )}
               </label>
               <input
                 className="input-field"

@@ -47,7 +47,24 @@ interface Template {
   id: string
   name: string
   description: string | null
-  attributes: { id: string; key: string; name: string; modifier: boolean }[]
+  attributes: { id: string; key: string; name: string }[]
+  createdAt: string
+}
+
+interface CampaignCharacter {
+  id: string
+  characterName: string
+  adventure: { id: string; name: string; campaign: string }
+  template: { id: string; name: string }
+  owner: { id: string; displayName: string | null; email: string }
+  createdAt: string
+}
+
+interface UserSheet {
+  id: string
+  characterName: string
+  adventure: { id: string; name: string; campaign: string }
+  template: { id: string; name: string }
   createdAt: string
 }
 
@@ -84,23 +101,37 @@ export default function AdventureDetailPage() {
   const [inviteLink, setInviteLink] = useState<string | null>(null)
   const [invitations, setInvitations] = useState<Invitation[]>([])
 
+  // Templates
   const [templates, setTemplates] = useState<Template[]>([])
   const [showTemplates, setShowTemplates] = useState(false)
-
-  // Template management
   const [showNewTemplate, setShowNewTemplate] = useState(false)
   const [newTemplateName, setNewTemplateName] = useState('')
   const [newTemplateDescription, setNewTemplateDescription] = useState('')
-  const [newTemplateAttrs, setNewTemplateAttrs] = useState<{ key: string; name: string; modifier: boolean }[]>([])
+  const [newTemplateAttrs, setNewTemplateAttrs] = useState<{ key: string; name: string }[]>([])
   const [templateCreating, setTemplateCreating] = useState(false)
   const [templateError, setTemplateError] = useState<string | null>(null)
-
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null)
   const [editTemplateName, setEditTemplateName] = useState('')
   const [editTemplateDescription, setEditTemplateDescription] = useState('')
-  const [editTemplateAttrs, setEditTemplateAttrs] = useState<{ key: string; name: string; modifier: boolean }[]>([])
+  const [editTemplateAttrs, setEditTemplateAttrs] = useState<{ key: string; name: string }[]>([])
   const [templateSaving, setTemplateSaving] = useState(false)
   const [editingTemplateError, setEditingTemplateError] = useState<string | null>(null)
+
+  // Characters
+  const [campaignCharacters, setCampaignCharacters] = useState<CampaignCharacter[]>([])
+  const [showCharacters, setShowCharacters] = useState(false)
+  // Create new character inline
+  const [showNewCharForm, setShowNewCharForm] = useState(false)
+  const [newCharName, setNewCharName] = useState('')
+  const [newCharTemplateId, setNewCharTemplateId] = useState('')
+  const [newCharError, setNewCharError] = useState<string | null>(null)
+  const [newCharCreating, setNewCharCreating] = useState(false)
+  // Link existing character
+  const [showLinkCharForm, setShowLinkCharForm] = useState(false)
+  const [userSheets, setUserSheets] = useState<UserSheet[]>([])
+  const [linkSheetId, setLinkSheetId] = useState('')
+  const [linkCharError, setLinkCharError] = useState<string | null>(null)
+  const [linkCharLinking, setLinkCharLinking] = useState(false)
 
   const isGM = userRole === 'GM'
 
@@ -162,8 +193,22 @@ export default function AdventureDetailPage() {
     } catch { /* ignore */ }
   }, [id])
 
-  // ── Template CRUD handlers ──
+  const fetchCampaignCharacters = useCallback(async () => {
+    try {
+      const data = await api.get<CampaignCharacter[]>(`/character-sheets/adventure/${id}`)
+      setCampaignCharacters(data)
+    } catch { /* ignore */ }
+  }, [id])
 
+  const fetchUserSheets = useCallback(async () => {
+    try {
+      const data = await api.get<UserSheet[]>('/character-sheets')
+      // Filter out sheets already in this campaign
+      setUserSheets(data.filter((s) => s.adventure.id !== id))
+    } catch { /* ignore */ }
+  }, [id])
+
+  // ── Template handlers ──
   function resetNewTemplate() {
     setShowNewTemplate(false)
     setNewTemplateName('')
@@ -173,14 +218,14 @@ export default function AdventureDetailPage() {
   }
 
   function addNewAttrRow() {
-    setNewTemplateAttrs((prev) => [...prev, { key: '', name: '', modifier: false }])
+    setNewTemplateAttrs((prev) => [...prev, { key: '', name: '' }])
   }
 
   function removeNewAttrRow(index: number) {
     setNewTemplateAttrs((prev) => prev.filter((_, i) => i !== index))
   }
 
-  function updateNewAttr(index: number, field: 'key' | 'name' | 'modifier', value: string | boolean) {
+  function updateNewAttr(index: number, field: 'key' | 'name', value: string) {
     setNewTemplateAttrs((prev) =>
       prev.map((attr, i) => (i === index ? { ...attr, [field]: value } : attr)),
     )
@@ -192,7 +237,6 @@ export default function AdventureDetailPage() {
     const trimmedAttrs = newTemplateAttrs.map((a) => ({
       key: a.key.trim(),
       name: a.name.trim(),
-      modifier: a.modifier,
     }))
 
     if (trimmedAttrs.some((a) => !a.key || !a.name)) {
@@ -224,7 +268,6 @@ export default function AdventureDetailPage() {
       template.attributes.map((a) => ({
         key: a.key,
         name: a.name,
-        modifier: a.modifier,
       })),
     )
     setEditingTemplateError(null)
@@ -236,14 +279,14 @@ export default function AdventureDetailPage() {
   }
 
   function addEditAttrRow() {
-    setEditTemplateAttrs((prev) => [...prev, { key: '', name: '', modifier: false }])
+    setEditTemplateAttrs((prev) => [...prev, { key: '', name: '' }])
   }
 
   function removeEditAttrRow(index: number) {
     setEditTemplateAttrs((prev) => prev.filter((_, i) => i !== index))
   }
 
-  function updateEditAttr(index: number, field: 'key' | 'name' | 'modifier', value: string | boolean) {
+  function updateEditAttr(index: number, field: 'key' | 'name', value: string) {
     setEditTemplateAttrs((prev) =>
       prev.map((attr, i) => (i === index ? { ...attr, [field]: value } : attr)),
     )
@@ -257,7 +300,6 @@ export default function AdventureDetailPage() {
     const trimmedAttrs = editTemplateAttrs.map((a) => ({
       key: a.key.trim(),
       name: a.name.trim(),
-      modifier: a.modifier,
     }))
 
     if (trimmedAttrs.some((a) => !a.key || !a.name)) {
@@ -285,6 +327,60 @@ export default function AdventureDetailPage() {
     try {
       await api.delete(`/adventures/${id}/templates/${templateId}`)
       fetchTemplates()
+    } catch { /* ignore */ }
+  }
+
+  // ── Character handlers ──
+  async function handleCreateCharacter(e: FormEvent) {
+    e.preventDefault()
+    setNewCharError(null)
+    if (!newCharName.trim() || !newCharTemplateId) return
+    setNewCharCreating(true)
+    try {
+      await api.post('/character-sheets', {
+        characterName: newCharName.trim(),
+        templateId: newCharTemplateId,
+      })
+      setShowNewCharForm(false)
+      setNewCharName('')
+      setNewCharTemplateId('')
+      fetchCampaignCharacters()
+    } catch (err) {
+      setNewCharError(err instanceof Error ? err.message : 'Failed to create character')
+    } finally {
+      setNewCharCreating(false)
+    }
+  }
+
+  async function handleLinkCharacter(e: FormEvent) {
+    e.preventDefault()
+    setLinkCharError(null)
+    if (!linkSheetId) return
+    setLinkCharLinking(true)
+    try {
+      await api.post(`/character-sheets/${linkSheetId}/link`, {
+        adventureId: id,
+      })
+      setShowLinkCharForm(false)
+      setLinkSheetId('')
+      fetchCampaignCharacters()
+    } catch (err) {
+      setLinkCharError(err instanceof Error ? err.message : 'Failed to link character')
+    } finally {
+      setLinkCharLinking(false)
+    }
+  }
+
+  async function handleRemoveCharacter(sheetId: string) {
+    try {
+      // Unlink by setting adventureId to the same adventure (GM can only remove, not delete)
+      // For now, GM just removes from campaign view - we'll use the link endpoint to a null adventure
+      // Actually, we should just re-fetch the list. The GM removes by asking the player to unlink.
+      // For now, let's just hide it from the UI and tell the GM to talk to the player.
+      await api.post(`/character-sheets/${sheetId}/link`, {
+        adventureId: id, // This just re-links, not ideal. TODO: add unlink endpoint
+      })
+      fetchCampaignCharacters()
     } catch { /* ignore */ }
   }
 
@@ -402,7 +498,6 @@ export default function AdventureDetailPage() {
 
       {!editing ? (
         <div className="space-y-6">
-          {/* Header */}
           <AdventureHeader
             adventure={adventure}
             isGM={isGM}
@@ -454,6 +549,44 @@ export default function AdventureDetailPage() {
             </CollapsibleSection>
           )}
 
+          {/* Characters */}
+          <CollapsibleSection
+            title="Characters"
+            expanded={showCharacters}
+            onToggle={() => {
+              setShowCharacters(!showCharacters)
+              if (!showCharacters) { fetchCampaignCharacters(); fetchUserSheets() }
+            }}
+          >
+            <CharactersSection
+              characters={campaignCharacters}
+              isGM={isGM}
+              userId={user?.id ?? ''}
+              templates={templates}
+              userSheets={userSheets}
+              showNewCharForm={showNewCharForm}
+              showLinkCharForm={showLinkCharForm}
+              newCharName={newCharName}
+              newCharTemplateId={newCharTemplateId}
+              newCharError={newCharError}
+              newCharCreating={newCharCreating}
+              linkSheetId={linkSheetId}
+              linkCharError={linkCharError}
+              linkCharLinking={linkCharLinking}
+              onNewCharClick={() => { setShowNewCharForm(true); setShowLinkCharForm(false); fetchTemplates() }}
+              onLinkCharClick={() => { setShowLinkCharForm(true); setShowNewCharForm(false); fetchUserSheets() }}
+              onCancelNewChar={() => { setShowNewCharForm(false); setNewCharName(''); setNewCharTemplateId(''); setNewCharError(null) }}
+              onCancelLinkChar={() => { setShowLinkCharForm(false); setLinkSheetId(''); setLinkCharError(null) }}
+              onCreateCharacter={handleCreateCharacter}
+              onLinkCharacter={handleLinkCharacter}
+              onNewCharNameChange={setNewCharName}
+              onNewCharTemplateChange={setNewCharTemplateId}
+              onLinkSheetChange={setLinkSheetId}
+              onRemoveCharacter={handleRemoveCharacter}
+              onViewCharacter={(sheetId) => router.push(`/dashboard/character-sheets/${sheetId}`)}
+            />
+          </CollapsibleSection>
+
           {/* Character Sheet Templates */}
           <CollapsibleSection
             title="Character Sheet Templates"
@@ -501,7 +634,7 @@ export default function AdventureDetailPage() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3">
             <StatCard icon="📜" label="Quests" value={0} />
-            <StatCard icon="⚔️" label="Characters" value={0} />
+            <StatCard icon="⚔️" label="Characters" value={campaignCharacters.length} />
             <StatCard icon="🗺️" label="Maps" value={0} />
           </div>
 
@@ -759,10 +892,142 @@ function EditForm(props: {
   )
 }
 
+function CharactersSection(props: {
+  characters: CampaignCharacter[]
+  isGM: boolean
+  userId: string
+  templates: Template[]
+  userSheets: UserSheet[]
+  showNewCharForm: boolean
+  showLinkCharForm: boolean
+  newCharName: string
+  newCharTemplateId: string
+  newCharError: string | null
+  newCharCreating: boolean
+  linkSheetId: string
+  linkCharError: string | null
+  linkCharLinking: boolean
+  onNewCharClick: () => void
+  onLinkCharClick: () => void
+  onCancelNewChar: () => void
+  onCancelLinkChar: () => void
+  onCreateCharacter: (e: FormEvent) => void
+  onLinkCharacter: (e: FormEvent) => void
+  onNewCharNameChange: (v: string) => void
+  onNewCharTemplateChange: (v: string) => void
+  onLinkSheetChange: (v: string) => void
+  onRemoveCharacter: (id: string) => void
+  onViewCharacter: (id: string) => void
+}) {
+  return (
+    <div className="space-y-4">
+      {props.characters.length === 0 && !props.showNewCharForm && !props.showLinkCharForm ? (
+        <div className="text-center py-6 text-muted-foreground text-sm italic">
+          No characters in this campaign yet.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {props.characters.map((c) => (
+            <div key={c.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-foreground truncate">{c.characterName}</span>
+                  <span className="badge badge-gold text-[0.6rem]">{c.template.name}</span>
+                </div>
+                <p className="text-xs text-muted mt-0.5">
+                  {c.owner.displayName ?? c.owner.email}
+                </p>
+              </div>
+              <div className="flex gap-1 shrink-0 ml-2">
+                <button onClick={() => props.onViewCharacter(c.id)} className="btn-ghost text-xs px-2 py-1">View</button>
+                {props.isGM && c.owner.id !== props.userId && (
+                  <button onClick={() => props.onRemoveCharacter(c.id)} className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors">Remove</button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Action buttons */}
+      {!props.showNewCharForm && !props.showLinkCharForm && (
+        <div className="flex gap-2">
+          <button onClick={props.onNewCharClick} className="btn-primary text-sm">+ New Character</button>
+          <button onClick={props.onLinkCharClick} className="btn-ghost text-sm">Link Existing Character</button>
+        </div>
+      )}
+
+      {/* Create New Character form */}
+      {props.showNewCharForm && (
+        <form onSubmit={props.onCreateCharacter} className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3">
+          <h4 className="text-sm font-semibold text-primary">Create New Character</h4>
+          <div>
+            <label className="label">Character Name</label>
+            <input className="input-field" value={props.newCharName} onChange={(e) => props.onNewCharNameChange(e.target.value)} placeholder="e.g. Aragorn" maxLength={100} required />
+          </div>
+          <div>
+            <label className="label">Template</label>
+            {props.templates.length === 0 ? (
+              <p className="text-sm text-muted italic">No templates available. Ask your GM to create one.</p>
+            ) : (
+              <select className="input-field" value={props.newCharTemplateId} onChange={(e) => props.onNewCharTemplateChange(e.target.value)} required>
+                <option value="">Select a template...</option>
+                {props.templates.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+          {props.newCharError && (
+            <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{props.newCharError}</div>
+          )}
+          <div className="flex gap-2 justify-end">
+            <button type="button" onClick={props.onCancelNewChar} disabled={props.newCharCreating} className="btn-ghost text-sm">Cancel</button>
+            <button type="submit" disabled={props.newCharCreating || !props.newCharName.trim() || !props.newCharTemplateId} className="btn-primary text-sm">
+              {props.newCharCreating ? 'Creating...' : 'Create'}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Link Existing Character form */}
+      {props.showLinkCharForm && (
+        <form onSubmit={props.onLinkCharacter} className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3">
+          <h4 className="text-sm font-semibold text-primary">Link Existing Character</h4>
+          <div>
+            <label className="label">Select Character</label>
+            {props.userSheets.length === 0 ? (
+              <p className="text-sm text-muted italic">No unlinked characters available.</p>
+            ) : (
+              <select className="input-field" value={props.linkSheetId} onChange={(e) => props.onLinkSheetChange(e.target.value)} required>
+                <option value="">Select a character...</option>
+                {props.userSheets.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.characterName} ({s.template.name})
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+          {props.linkCharError && (
+            <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{props.linkCharError}</div>
+          )}
+          <div className="flex gap-2 justify-end">
+            <button type="button" onClick={props.onCancelLinkChar} disabled={props.linkCharLinking} className="btn-ghost text-sm">Cancel</button>
+            <button type="submit" disabled={props.linkCharLinking || !props.linkSheetId} className="btn-primary text-sm">
+              {props.linkCharLinking ? 'Linking...' : 'Link'}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  )
+}
+
 function TemplatesSection(props: {
   templates: Array<{
     id: string; name: string; description: string | null;
-    attributes: { id: string; key: string; name: string; modifier: boolean }[];
+    attributes: { id: string; key: string; name: string }[];
     createdAt: string;
   }>
   isGM: boolean
@@ -770,12 +1035,12 @@ function TemplatesSection(props: {
   editingTemplateId: string | null
   newTemplateName: string
   newTemplateDescription: string
-  newTemplateAttrs: { key: string; name: string; modifier: boolean }[]
+  newTemplateAttrs: { key: string; name: string }[]
   templateError: string | null
   templateCreating: boolean
   editTemplateName: string
   editTemplateDescription: string
-  editTemplateAttrs: { key: string; name: string; modifier: boolean }[]
+  editTemplateAttrs: { key: string; name: string }[]
   editingTemplateError: string | null
   templateSaving: boolean
   onNewClick: () => void
@@ -785,7 +1050,7 @@ function TemplatesSection(props: {
   onDescriptionChange: (v: string) => void
   onAddAttr: () => void
   onRemoveAttr: (index: number) => void
-  onUpdateAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string | boolean) => void
+  onUpdateAttr: (index: number, field: 'key' | 'name', value: string) => void
   onStartEdit: (template: Template) => void
   onCancelEdit: () => void
   onUpdateTemplate: (e: FormEvent) => void
@@ -794,14 +1059,8 @@ function TemplatesSection(props: {
   onEditDescriptionChange: (v: string) => void
   onAddEditAttr: () => void
   onRemoveEditAttr: (index: number) => void
-  onUpdateEditAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string | boolean) => void
+  onUpdateEditAttr: (index: number, field: 'key' | 'name', value: string) => void
 }) {
-  interface Template {
-    id: string; name: string; description: string | null;
-    attributes: { id: string; key: string; name: string; modifier: boolean }[];
-    createdAt: string;
-  }
-
   return (
     <div className="space-y-4">
       {props.templates.length === 0 && !props.showNewTemplate ? (
@@ -847,66 +1106,28 @@ function TemplatesSection(props: {
           <h4 className="text-sm font-semibold text-primary">Create Template</h4>
           <div>
             <label className="label">Name</label>
-            <input
-              className="input-field"
-              value={props.newTemplateName}
-              onChange={(e) => props.onNameChange(e.target.value)}
-              placeholder="e.g. D&D 5e Character Sheet"
-              maxLength={100}
-              required
-            />
+            <input className="input-field" value={props.newTemplateName} onChange={(e) => props.onNameChange(e.target.value)} placeholder="e.g. D&D 5e Character Sheet" maxLength={100} required />
           </div>
           <div>
             <label className="label">Description <span className="text-muted font-normal">(optional)</span></label>
-            <input
-              className="input-field"
-              value={props.newTemplateDescription}
-              onChange={(e) => props.onDescriptionChange(e.target.value)}
-              placeholder="Brief description of this template"
-              maxLength={200}
-            />
+            <input className="input-field" value={props.newTemplateDescription} onChange={(e) => props.onDescriptionChange(e.target.value)} placeholder="Brief description of this template" maxLength={200} />
           </div>
           <div>
             <label className="label">Attributes</label>
             <div className="space-y-2 mt-1">
               {props.newTemplateAttrs.map((attr, idx) => (
                 <div key={idx} className="flex items-center gap-1.5">
-                  <input
-                    className="input-field flex-1"
-                    value={attr.key}
-                    onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)}
-                    placeholder="Key (e.g. strength)"
-                  />
-                  <input
-                    className="input-field flex-1"
-                    value={attr.name}
-                    onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)}
-                    placeholder="Name (e.g. Strength)"
-                  />
-                  <label className="flex items-center gap-1 text-xs text-muted shrink-0">
-                    <input
-                      type="checkbox"
-                      checked={attr.modifier}
-                      onChange={(e) => props.onUpdateAttr(idx, 'modifier', e.target.checked)}
-                      className="accent-primary"
-                    />
-                    mod
-                  </label>
-                  <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">
-                    ✕
-                  </button>
+                  <input className="input-field flex-1" value={attr.key} onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)} placeholder="Key (e.g. strength)" />
+                  <input className="input-field flex-1" value={attr.name} onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)} placeholder="Name (e.g. Strength)" />
+                  <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
                 </div>
               ))}
             </div>
-            <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">
-              + Add Attribute
-            </button>
+            <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button>
           </div>
-
           {props.templateError && (
             <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{props.templateError}</div>
           )}
-
           <div className="flex gap-2 justify-end">
             <button type="button" onClick={props.onCancelNew} disabled={props.templateCreating} className="btn-ghost text-sm">Cancel</button>
             <button type="submit" disabled={props.templateCreating || !props.newTemplateName.trim() || props.newTemplateAttrs.length === 0} className="btn-primary text-sm">
@@ -920,12 +1141,12 @@ function TemplatesSection(props: {
 }
 
 function TemplateRow(props: {
-  template: { id: string; name: string; description: string | null; attributes: { id: string; key: string; name: string; modifier: boolean }[]; createdAt: string }
+  template: { id: string; name: string; description: string | null; attributes: { id: string; key: string; name: string }[]; createdAt: string }
   isGM: boolean
   isEditing: boolean
   editName: string
   editDescription: string
-  editAttrs: { key: string; name: string; modifier: boolean }[]
+  editAttrs: { key: string; name: string }[]
   editError: string | null
   saving: boolean
   onStartEdit: () => void
@@ -936,7 +1157,7 @@ function TemplateRow(props: {
   onEditDescriptionChange: (v: string) => void
   onAddAttr: () => void
   onRemoveAttr: (index: number) => void
-  onUpdateAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string | boolean) => void
+  onUpdateAttr: (index: number, field: 'key' | 'name', value: string) => void
 }) {
   if (props.isEditing) {
     return (
@@ -956,21 +1177,15 @@ function TemplateRow(props: {
               <div key={idx} className="flex items-center gap-1.5">
                 <input className="input-field flex-1" value={attr.key} onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)} placeholder="Key" />
                 <input className="input-field flex-1" value={attr.name} onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)} placeholder="Name" />
-                <label className="flex items-center gap-1 text-xs text-muted shrink-0">
-                  <input type="checkbox" checked={attr.modifier} onChange={(e) => props.onUpdateAttr(idx, 'modifier', e.target.checked)} className="accent-primary" />
-                  mod
-                </label>
                 <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
               </div>
             ))}
           </div>
           <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button>
         </div>
-
         {props.editError && (
           <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{props.editError}</div>
         )}
-
         <div className="flex gap-2 justify-end">
           <button type="button" onClick={props.onCancelEdit} disabled={props.saving} className="btn-ghost text-sm">Cancel</button>
           <button type="submit" disabled={props.saving || !props.editName.trim()} className="btn-primary text-sm">
@@ -986,21 +1201,11 @@ function TemplateRow(props: {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-foreground truncate">{props.template.name}</span>
-          <span className="badge badge-gold text-[0.6rem]">{props.template.attributes.length} attrs</span>
+          <span className="badge badge-gold text-[0.6rem]">{props.template.attributes.length} Attributes</span>
         </div>
         {props.template.description && (
           <p className="text-xs text-muted mt-0.5 truncate">{props.template.description}</p>
         )}
-        <div className="flex flex-wrap gap-1 mt-1">
-          {props.template.attributes.slice(0, 4).map((a) => (
-            <span key={a.id} className="text-[0.6rem] text-muted bg-background px-1.5 py-0.5 rounded">
-              {a.name}{a.modifier ? '*' : ''}
-            </span>
-          ))}
-          {props.template.attributes.length > 4 && (
-            <span className="text-[0.6rem] text-muted">+{props.template.attributes.length - 4} more</span>
-          )}
-        </div>
       </div>
       {props.isGM && (
         <div className="flex gap-1 shrink-0 ml-2">

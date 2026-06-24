@@ -34,7 +34,6 @@ export class TemplateService {
           create: dto.attributes.map((attr, idx) => ({
             key: attr.key,
             name: attr.name,
-            modifier: attr.modifier,
             order: idx,
           })),
         },
@@ -100,7 +99,6 @@ export class TemplateService {
             create: dto.attributes.map((attr, idx) => ({
               key: attr.key,
               name: attr.name,
-              modifier: attr.modifier,
               order: idx,
             })),
           },

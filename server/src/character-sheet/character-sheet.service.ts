@@ -15,7 +15,7 @@ const sheetInclude = {
   },
   values: {
     include: {
-      attribute: { select: { id: true, key: true, name: true, modifier: true } },
+      attribute: { select: { id: true, key: true, name: true } },
     },
   },
 }
@@ -161,5 +161,30 @@ export class CharacterSheetService {
     }
 
     return this.prisma.characterSheet.delete({ where: { id } })
+  }
+
+  /** Link an existing sheet to a campaign. Only the owner can do this. */
+  async linkToAdventure(sheetId: string, adventureId: string, userId: string) {
+    const sheet = await this.prisma.characterSheet.findUnique({
+      where: { id: sheetId },
+    })
+    if (!sheet) {
+      throw new NotFoundException('Character sheet not found')
+    }
+    if (sheet.ownerId !== userId) {
+      throw new ForbiddenException('Only the owner can link this character sheet')
+    }
+
+    // Verify user is a member of the target adventure
+    const isMember = await this.membership.isMember(adventureId, userId)
+    if (!isMember) {
+      throw new ForbiddenException('You are not a member of this adventure')
+    }
+
+    return this.prisma.characterSheet.update({
+      where: { id: sheetId },
+      data: { adventureId },
+      include: sheetInclude,
+    })
   }
 }

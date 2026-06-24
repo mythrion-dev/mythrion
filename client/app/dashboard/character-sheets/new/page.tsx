@@ -16,7 +16,7 @@ interface Template {
   id: string
   name: string
   description: string | null
-  attributes: { id: string; key: string; name: string; modifier: boolean }[]
+  attributes: { id: string; key: string; name: string }[]
 }
 
 export default function NewCharacterSheetPage() {
@@ -263,9 +263,7 @@ function TemplatePreview({ template }: { template?: Template }) {
               className="flex items-center justify-between text-xs py-1 px-2 rounded bg-background/60"
             >
               <span className="text-foreground">{attr.name}</span>
-              {attr.modifier && (
-                <span className="text-[0.6rem] text-primary">mod</span>
-              )}
+
             </div>
           ))}
         </div>
