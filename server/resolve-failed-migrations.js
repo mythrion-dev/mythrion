@@ -21,20 +21,29 @@ try {
   const client = await pool.connect()
 
   try {
-    const result = await client.query(
-      `SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NULL`,
+    // Check if _prisma_migrations table exists
+    const exists = await client.query(
+      `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = '_prisma_migrations')`,
     )
 
-    for (const row of result.rows) {
-      console.log(`Resolving failed migration: ${row.migration_name}`)
-      await client.query(
-        `UPDATE "_prisma_migrations" SET finished_at = NOW(), logs = NULL, applied_steps_count = 1 WHERE migration_name = $1`,
-        [row.migration_name],
+    if (!exists.rows[0].exists) {
+      console.log('No _prisma_migrations table yet — fresh database, skipping.')
+    } else {
+      const result = await client.query(
+        `SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NULL`,
       )
-      console.log(`  ✅ Marked as resolved`)
-    }
 
-    console.log('Done — all failed migrations resolved.')
+      for (const row of result.rows) {
+        console.log(`Resolving failed migration: ${row.migration_name}`)
+        await client.query(
+          `UPDATE "_prisma_migrations" SET finished_at = NOW(), logs = NULL, applied_steps_count = 1 WHERE migration_name = $1`,
+          [row.migration_name],
+        )
+        console.log(`  ✅ Marked as resolved`)
+      }
+
+      console.log('Done — all failed migrations resolved.')
+    }
   } finally {
     client.release()
   }
