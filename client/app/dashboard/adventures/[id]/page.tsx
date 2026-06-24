@@ -1120,11 +1120,22 @@ function TemplatesSection(props: {
             <label className="label">Attributes</label>
             <div className="space-y-2 mt-1">
               {props.newTemplateAttrs.map((attr, idx) => (
-                <div key={idx} className="flex items-center gap-1.5">
-                  <input className="input-field flex-1" value={attr.key} onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)} placeholder="Key (e.g. strength)" />
-                  <input className="input-field flex-1" value={attr.name} onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)} placeholder="Name (e.g. Strength)" />
-                  <input className="input-field flex-1" value={attr.modifier} onChange={(e) => props.onUpdateAttr(idx, 'modifier', e.target.value)} placeholder="Modifier (optional)" />
-                  <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                <div key={idx} className="space-y-2 py-3 border-b border-border last:border-0">
+                  <div className="flex items-center gap-1.5">
+                    <input className="input-field flex-1" value={attr.key} onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)} placeholder="Key (e.g. strength)" />
+                    <input className="input-field flex-1" value={attr.name} onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)} placeholder="Name (e.g. Strength)" />
+                    <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted mb-1 block">Formula Builder (optional)</label>
+                    <FormulaBuilder
+                      value={attr.modifier}
+                      onChange={(v) => props.onUpdateAttr(idx, 'modifier', v)}
+                      attributes={props.newTemplateAttrs
+                        .filter((a) => a.key.trim() && a.name.trim())
+                        .map((a) => ({ key: a.key.trim(), name: a.name.trim() }))}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -1177,13 +1188,24 @@ function TemplateRow(props: {
         </div>
         <div>
           <label className="label">Attributes</label>
-          <div className="space-y-2 mt-1">
+          <div className="space-y-3 mt-1">
             {props.editAttrs.map((attr, idx) => (
-              <div key={idx} className="flex items-center gap-1.5">
-                <input className="input-field flex-1" value={attr.key} onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)} placeholder="Key" />
-                <input className="input-field flex-1" value={attr.name} onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)} placeholder="Name" />
-                <input className="input-field flex-1" value={attr.modifier} onChange={(e) => props.onUpdateAttr(idx, 'modifier', e.target.value)} placeholder="Modifier (optional)" />
-                <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+              <div key={idx} className="space-y-2 py-3 border-b border-border last:border-0">
+                <div className="flex items-center gap-1.5">
+                  <input className="input-field flex-1" value={attr.key} onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)} placeholder="Key" />
+                  <input className="input-field flex-1" value={attr.name} onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)} placeholder="Name" />
+                  <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                </div>
+                <div>
+                  <label className="text-xs text-muted mb-1 block">Formula Builder (optional)</label>
+                  <FormulaBuilder
+                    value={attr.modifier}
+                    onChange={(v) => props.onUpdateAttr(idx, 'modifier', v)}
+                    attributes={props.editAttrs
+                      .filter((a) => a.key.trim() && a.name.trim())
+                      .map((a) => ({ key: a.key.trim(), name: a.name.trim() }))}
+                  />
+                </div>
               </div>
             ))}
           </div>
