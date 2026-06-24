@@ -197,4 +197,33 @@ export class CharacterSheetService {
       include: sheetInclude,
     })
   }
+
+  /** Unlink a sheet from a campaign. Owner or GM of the campaign can do this. */
+  async unlinkFromAdventure(sheetId: string, userId: string) {
+    const sheet = await this.prisma.characterSheet.findUnique({
+      where: { id: sheetId },
+    })
+    if (!sheet) {
+      throw new NotFoundException('Character sheet not found')
+    }
+
+    // Only the owner or a GM of the campaign can unlink
+    if (sheet.ownerId !== userId) {
+      if (!sheet.adventureId) {
+        throw new ForbiddenException('Only the owner can unlink this character sheet')
+      }
+      // Check if user is GM of the campaign
+      try {
+        await this.membership.requireRole(sheet.adventureId, userId, 'GM')
+      } catch {
+        throw new ForbiddenException('Only the owner or a GM can unlink this character sheet')
+      }
+    }
+
+    return this.prisma.characterSheet.update({
+      where: { id: sheetId },
+      data: { adventureId: null },
+      include: sheetInclude,
+    })
+  }
 }

@@ -65,4 +65,12 @@ export class CharacterSheetController {
   ) {
     return this.sheetService.linkToAdventure(id, adventureId, req.user.sub)
   }
+
+  @Post(':id/unlink')
+  unlinkFromAdventure(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
+    return this.sheetService.unlinkFromAdventure(id, req.user.sub)
+  }
 }
