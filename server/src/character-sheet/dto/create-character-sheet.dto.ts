@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator'
+import { IsString, IsOptional } from 'class-validator'
 
 export class CreateCharacterSheetDto {
   @IsString()
@@ -6,4 +6,8 @@ export class CreateCharacterSheetDto {
 
   @IsString()
   templateId!: string
+
+  @IsString()
+  @IsOptional()
+  adventureId?: string
 }

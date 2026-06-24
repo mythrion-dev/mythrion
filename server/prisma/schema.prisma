@@ -154,8 +154,8 @@ model TemplateAttribute {
 model CharacterSheet {
   id         String               @id @default(cuid())
   characterName String
-  adventureId  String
-  adventure    Adventure          @relation(fields: [adventureId], references: [id], onDelete: Cascade)
+  adventureId  String?
+  adventure    Adventure?         @relation(fields: [adventureId], references: [id], onDelete: SetNull)
   templateId   String
   template     Template           @relation(fields: [templateId], references: [id], onDelete: Cascade)
   ownerId      String

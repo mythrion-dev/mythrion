@@ -460,6 +460,11 @@ export type AdventureScalarRelationFilter = {
   isNot?: Prisma.AdventureWhereInput
 }
 
+export type AdventureNullableScalarRelationFilter = {
+  is?: Prisma.AdventureWhereInput | null
+  isNot?: Prisma.AdventureWhereInput | null
+}
+
 export type AdventureCreateNestedManyWithoutOwnerInput = {
   create?: Prisma.XOR<Prisma.AdventureCreateWithoutOwnerInput, Prisma.AdventureUncheckedCreateWithoutOwnerInput> | Prisma.AdventureCreateWithoutOwnerInput[] | Prisma.AdventureUncheckedCreateWithoutOwnerInput[]
   connectOrCreate?: Prisma.AdventureCreateOrConnectWithoutOwnerInput | Prisma.AdventureCreateOrConnectWithoutOwnerInput[]
@@ -558,10 +563,12 @@ export type AdventureCreateNestedOneWithoutCharacterSheetsInput = {
   connect?: Prisma.AdventureWhereUniqueInput
 }
 
-export type AdventureUpdateOneRequiredWithoutCharacterSheetsNestedInput = {
+export type AdventureUpdateOneWithoutCharacterSheetsNestedInput = {
   create?: Prisma.XOR<Prisma.AdventureCreateWithoutCharacterSheetsInput, Prisma.AdventureUncheckedCreateWithoutCharacterSheetsInput>
   connectOrCreate?: Prisma.AdventureCreateOrConnectWithoutCharacterSheetsInput
   upsert?: Prisma.AdventureUpsertWithoutCharacterSheetsInput
+  disconnect?: Prisma.AdventureWhereInput | boolean
+  delete?: Prisma.AdventureWhereInput | boolean
   connect?: Prisma.AdventureWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.AdventureUpdateToOneWithWhereWithoutCharacterSheetsInput, Prisma.AdventureUpdateWithoutCharacterSheetsInput>, Prisma.AdventureUncheckedUpdateWithoutCharacterSheetsInput>
 }

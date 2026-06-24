@@ -162,7 +162,7 @@ export type CharacterSheetGroupByArgs<ExtArgs extends runtime.Types.Extensions.I
 export type CharacterSheetGroupByOutputType = {
   id: string
   characterName: string
-  adventureId: string
+  adventureId: string | null
   templateId: string
   ownerId: string
   createdAt: Date
@@ -193,12 +193,12 @@ export type CharacterSheetWhereInput = {
   NOT?: Prisma.CharacterSheetWhereInput | Prisma.CharacterSheetWhereInput[]
   id?: Prisma.StringFilter<"CharacterSheet"> | string
   characterName?: Prisma.StringFilter<"CharacterSheet"> | string
-  adventureId?: Prisma.StringFilter<"CharacterSheet"> | string
+  adventureId?: Prisma.StringNullableFilter<"CharacterSheet"> | string | null
   templateId?: Prisma.StringFilter<"CharacterSheet"> | string
   ownerId?: Prisma.StringFilter<"CharacterSheet"> | string
   createdAt?: Prisma.DateTimeFilter<"CharacterSheet"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterSheet"> | Date | string
-  adventure?: Prisma.XOR<Prisma.AdventureScalarRelationFilter, Prisma.AdventureWhereInput>
+  adventure?: Prisma.XOR<Prisma.AdventureNullableScalarRelationFilter, Prisma.AdventureWhereInput> | null
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   values?: Prisma.CharacterSheetValueListRelationFilter
@@ -207,7 +207,7 @@ export type CharacterSheetWhereInput = {
 export type CharacterSheetOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   characterName?: Prisma.SortOrder
-  adventureId?: Prisma.SortOrder
+  adventureId?: Prisma.SortOrderInput | Prisma.SortOrder
   templateId?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -224,12 +224,12 @@ export type CharacterSheetWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.CharacterSheetWhereInput[]
   NOT?: Prisma.CharacterSheetWhereInput | Prisma.CharacterSheetWhereInput[]
   characterName?: Prisma.StringFilter<"CharacterSheet"> | string
-  adventureId?: Prisma.StringFilter<"CharacterSheet"> | string
+  adventureId?: Prisma.StringNullableFilter<"CharacterSheet"> | string | null
   templateId?: Prisma.StringFilter<"CharacterSheet"> | string
   ownerId?: Prisma.StringFilter<"CharacterSheet"> | string
   createdAt?: Prisma.DateTimeFilter<"CharacterSheet"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterSheet"> | Date | string
-  adventure?: Prisma.XOR<Prisma.AdventureScalarRelationFilter, Prisma.AdventureWhereInput>
+  adventure?: Prisma.XOR<Prisma.AdventureNullableScalarRelationFilter, Prisma.AdventureWhereInput> | null
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   values?: Prisma.CharacterSheetValueListRelationFilter
@@ -238,7 +238,7 @@ export type CharacterSheetWhereUniqueInput = Prisma.AtLeast<{
 export type CharacterSheetOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   characterName?: Prisma.SortOrder
-  adventureId?: Prisma.SortOrder
+  adventureId?: Prisma.SortOrderInput | Prisma.SortOrder
   templateId?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -254,7 +254,7 @@ export type CharacterSheetScalarWhereWithAggregatesInput = {
   NOT?: Prisma.CharacterSheetScalarWhereWithAggregatesInput | Prisma.CharacterSheetScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"CharacterSheet"> | string
   characterName?: Prisma.StringWithAggregatesFilter<"CharacterSheet"> | string
-  adventureId?: Prisma.StringWithAggregatesFilter<"CharacterSheet"> | string
+  adventureId?: Prisma.StringNullableWithAggregatesFilter<"CharacterSheet"> | string | null
   templateId?: Prisma.StringWithAggregatesFilter<"CharacterSheet"> | string
   ownerId?: Prisma.StringWithAggregatesFilter<"CharacterSheet"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"CharacterSheet"> | Date | string
@@ -266,7 +266,7 @@ export type CharacterSheetCreateInput = {
   characterName: string
   createdAt?: Date | string
   updatedAt?: Date | string
-  adventure: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
+  adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
@@ -275,7 +275,7 @@ export type CharacterSheetCreateInput = {
 export type CharacterSheetUncheckedCreateInput = {
   id?: string
   characterName: string
-  adventureId: string
+  adventureId?: string | null
   templateId: string
   ownerId: string
   createdAt?: Date | string
@@ -288,7 +288,7 @@ export type CharacterSheetUpdateInput = {
   characterName?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  adventure?: Prisma.AdventureUpdateOneRequiredWithoutCharacterSheetsNestedInput
+  adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneRequiredWithoutCharacterSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
@@ -297,7 +297,7 @@ export type CharacterSheetUpdateInput = {
 export type CharacterSheetUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   characterName?: Prisma.StringFieldUpdateOperationsInput | string
-  adventureId?: Prisma.StringFieldUpdateOperationsInput | string
+  adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -308,7 +308,7 @@ export type CharacterSheetUncheckedUpdateInput = {
 export type CharacterSheetCreateManyInput = {
   id?: string
   characterName: string
-  adventureId: string
+  adventureId?: string | null
   templateId: string
   ownerId: string
   createdAt?: Date | string
@@ -325,7 +325,7 @@ export type CharacterSheetUpdateManyMutationInput = {
 export type CharacterSheetUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   characterName?: Prisma.StringFieldUpdateOperationsInput | string
-  adventureId?: Prisma.StringFieldUpdateOperationsInput | string
+  adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -522,7 +522,7 @@ export type CharacterSheetCreateWithoutOwnerInput = {
   characterName: string
   createdAt?: Date | string
   updatedAt?: Date | string
-  adventure: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
+  adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
 }
@@ -530,7 +530,7 @@ export type CharacterSheetCreateWithoutOwnerInput = {
 export type CharacterSheetUncheckedCreateWithoutOwnerInput = {
   id?: string
   characterName: string
-  adventureId: string
+  adventureId?: string | null
   templateId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -569,7 +569,7 @@ export type CharacterSheetScalarWhereInput = {
   NOT?: Prisma.CharacterSheetScalarWhereInput | Prisma.CharacterSheetScalarWhereInput[]
   id?: Prisma.StringFilter<"CharacterSheet"> | string
   characterName?: Prisma.StringFilter<"CharacterSheet"> | string
-  adventureId?: Prisma.StringFilter<"CharacterSheet"> | string
+  adventureId?: Prisma.StringNullableFilter<"CharacterSheet"> | string | null
   templateId?: Prisma.StringFilter<"CharacterSheet"> | string
   ownerId?: Prisma.StringFilter<"CharacterSheet"> | string
   createdAt?: Prisma.DateTimeFilter<"CharacterSheet"> | Date | string
@@ -627,7 +627,7 @@ export type CharacterSheetCreateWithoutTemplateInput = {
   characterName: string
   createdAt?: Date | string
   updatedAt?: Date | string
-  adventure: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
+  adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   owner: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
 }
@@ -635,7 +635,7 @@ export type CharacterSheetCreateWithoutTemplateInput = {
 export type CharacterSheetUncheckedCreateWithoutTemplateInput = {
   id?: string
   characterName: string
-  adventureId: string
+  adventureId?: string | null
   ownerId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -673,7 +673,7 @@ export type CharacterSheetCreateWithoutValuesInput = {
   characterName: string
   createdAt?: Date | string
   updatedAt?: Date | string
-  adventure: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
+  adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
 }
@@ -681,7 +681,7 @@ export type CharacterSheetCreateWithoutValuesInput = {
 export type CharacterSheetUncheckedCreateWithoutValuesInput = {
   id?: string
   characterName: string
-  adventureId: string
+  adventureId?: string | null
   templateId: string
   ownerId: string
   createdAt?: Date | string
@@ -709,7 +709,7 @@ export type CharacterSheetUpdateWithoutValuesInput = {
   characterName?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  adventure?: Prisma.AdventureUpdateOneRequiredWithoutCharacterSheetsNestedInput
+  adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneRequiredWithoutCharacterSheetsNestedInput
 }
@@ -717,7 +717,7 @@ export type CharacterSheetUpdateWithoutValuesInput = {
 export type CharacterSheetUncheckedUpdateWithoutValuesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   characterName?: Prisma.StringFieldUpdateOperationsInput | string
-  adventureId?: Prisma.StringFieldUpdateOperationsInput | string
+  adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -727,7 +727,7 @@ export type CharacterSheetUncheckedUpdateWithoutValuesInput = {
 export type CharacterSheetCreateManyOwnerInput = {
   id?: string
   characterName: string
-  adventureId: string
+  adventureId?: string | null
   templateId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -738,7 +738,7 @@ export type CharacterSheetUpdateWithoutOwnerInput = {
   characterName?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  adventure?: Prisma.AdventureUpdateOneRequiredWithoutCharacterSheetsNestedInput
+  adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
 }
@@ -746,7 +746,7 @@ export type CharacterSheetUpdateWithoutOwnerInput = {
 export type CharacterSheetUncheckedUpdateWithoutOwnerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   characterName?: Prisma.StringFieldUpdateOperationsInput | string
-  adventureId?: Prisma.StringFieldUpdateOperationsInput | string
+  adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -756,7 +756,7 @@ export type CharacterSheetUncheckedUpdateWithoutOwnerInput = {
 export type CharacterSheetUncheckedUpdateManyWithoutOwnerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   characterName?: Prisma.StringFieldUpdateOperationsInput | string
-  adventureId?: Prisma.StringFieldUpdateOperationsInput | string
+  adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -803,7 +803,7 @@ export type CharacterSheetUncheckedUpdateManyWithoutAdventureInput = {
 export type CharacterSheetCreateManyTemplateInput = {
   id?: string
   characterName: string
-  adventureId: string
+  adventureId?: string | null
   ownerId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -814,7 +814,7 @@ export type CharacterSheetUpdateWithoutTemplateInput = {
   characterName?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  adventure?: Prisma.AdventureUpdateOneRequiredWithoutCharacterSheetsNestedInput
+  adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneRequiredWithoutCharacterSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
 }
@@ -822,7 +822,7 @@ export type CharacterSheetUpdateWithoutTemplateInput = {
 export type CharacterSheetUncheckedUpdateWithoutTemplateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   characterName?: Prisma.StringFieldUpdateOperationsInput | string
-  adventureId?: Prisma.StringFieldUpdateOperationsInput | string
+  adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -832,7 +832,7 @@ export type CharacterSheetUncheckedUpdateWithoutTemplateInput = {
 export type CharacterSheetUncheckedUpdateManyWithoutTemplateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   characterName?: Prisma.StringFieldUpdateOperationsInput | string
-  adventureId?: Prisma.StringFieldUpdateOperationsInput | string
+  adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -877,7 +877,7 @@ export type CharacterSheetSelect<ExtArgs extends runtime.Types.Extensions.Intern
   ownerId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  adventure?: boolean | Prisma.AdventureDefaultArgs<ExtArgs>
+  adventure?: boolean | Prisma.CharacterSheet$adventureArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   values?: boolean | Prisma.CharacterSheet$valuesArgs<ExtArgs>
@@ -892,7 +892,7 @@ export type CharacterSheetSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   ownerId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  adventure?: boolean | Prisma.AdventureDefaultArgs<ExtArgs>
+  adventure?: boolean | Prisma.CharacterSheet$adventureArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["characterSheet"]>
@@ -905,7 +905,7 @@ export type CharacterSheetSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   ownerId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  adventure?: boolean | Prisma.AdventureDefaultArgs<ExtArgs>
+  adventure?: boolean | Prisma.CharacterSheet$adventureArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["characterSheet"]>
@@ -922,19 +922,19 @@ export type CharacterSheetSelectScalar = {
 
 export type CharacterSheetOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "characterName" | "adventureId" | "templateId" | "ownerId" | "createdAt" | "updatedAt", ExtArgs["result"]["characterSheet"]>
 export type CharacterSheetInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  adventure?: boolean | Prisma.AdventureDefaultArgs<ExtArgs>
+  adventure?: boolean | Prisma.CharacterSheet$adventureArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   values?: boolean | Prisma.CharacterSheet$valuesArgs<ExtArgs>
   _count?: boolean | Prisma.CharacterSheetCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CharacterSheetIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  adventure?: boolean | Prisma.AdventureDefaultArgs<ExtArgs>
+  adventure?: boolean | Prisma.CharacterSheet$adventureArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type CharacterSheetIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  adventure?: boolean | Prisma.AdventureDefaultArgs<ExtArgs>
+  adventure?: boolean | Prisma.CharacterSheet$adventureArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
@@ -942,7 +942,7 @@ export type CharacterSheetIncludeUpdateManyAndReturn<ExtArgs extends runtime.Typ
 export type $CharacterSheetPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "CharacterSheet"
   objects: {
-    adventure: Prisma.$AdventurePayload<ExtArgs>
+    adventure: Prisma.$AdventurePayload<ExtArgs> | null
     template: Prisma.$TemplatePayload<ExtArgs>
     owner: Prisma.$UserPayload<ExtArgs>
     values: Prisma.$CharacterSheetValuePayload<ExtArgs>[]
@@ -950,7 +950,7 @@ export type $CharacterSheetPayload<ExtArgs extends runtime.Types.Extensions.Inte
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     characterName: string
-    adventureId: string
+    adventureId: string | null
     templateId: string
     ownerId: string
     createdAt: Date
@@ -1349,7 +1349,7 @@ readonly fields: CharacterSheetFieldRefs;
  */
 export interface Prisma__CharacterSheetClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  adventure<T extends Prisma.AdventureDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AdventureDefaultArgs<ExtArgs>>): Prisma.Prisma__AdventureClient<runtime.Types.Result.GetResult<Prisma.$AdventurePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  adventure<T extends Prisma.CharacterSheet$adventureArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$adventureArgs<ExtArgs>>): Prisma.Prisma__AdventureClient<runtime.Types.Result.GetResult<Prisma.$AdventurePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   template<T extends Prisma.TemplateDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateDefaultArgs<ExtArgs>>): Prisma.Prisma__TemplateClient<runtime.Types.Result.GetResult<Prisma.$TemplatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   owner<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   values<T extends Prisma.CharacterSheet$valuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$valuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -1787,6 +1787,25 @@ export type CharacterSheetDeleteManyArgs<ExtArgs extends runtime.Types.Extension
    * Limit how many CharacterSheets to delete.
    */
   limit?: number
+}
+
+/**
+ * CharacterSheet.adventure
+ */
+export type CharacterSheet$adventureArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Adventure
+   */
+  select?: Prisma.AdventureSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Adventure
+   */
+  omit?: Prisma.AdventureOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AdventureInclude<ExtArgs> | null
+  where?: Prisma.AdventureWhereInput
 }
 
 /**

@@ -38,17 +38,24 @@ export class CharacterSheetService {
       throw new NotFoundException('Template not found')
     }
 
-    // Verify membership in the adventure
-    const isMember = await this.membership.isMember(template.adventureId, userId)
-    if (!isMember) {
-      throw new ForbiddenException('You are not a member of this adventure')
+    // Determine adventureId: use provided one, or inherit from template
+    const adventureId = dto.adventureId !== undefined
+      ? (dto.adventureId || null) // empty string = no campaign
+      : template.adventureId
+
+    // If linking to a campaign, verify membership
+    if (adventureId) {
+      const isMember = await this.membership.isMember(adventureId, userId)
+      if (!isMember) {
+        throw new ForbiddenException('You are not a member of this adventure')
+      }
     }
 
     // Create sheet with values for every template attribute
     const sheet = await this.prisma.characterSheet.create({
       data: {
         characterName: dto.characterName,
-        adventureId: template.adventureId,
+        adventureId: adventureId || null,
         templateId: template.id,
         ownerId: userId,
         values: {
