@@ -626,12 +626,6 @@ export default function AdventureDetailPage() {
             />
           </CollapsibleSection>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3">
-            <StatCard icon="📜" label="Quests" value={0} />
-            <StatCard icon="⚔️" label="Characters" value={campaignCharacters.length} />
-            <StatCard icon="🗺️" label="Maps" value={0} />
-          </div>
 
           {/* Delete modal */}
           {confirmDelete && (
