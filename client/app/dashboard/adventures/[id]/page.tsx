@@ -1232,6 +1232,16 @@ function TemplateRow(props: {
   onRemoveAttr: (index: number) => void
   onUpdateAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string) => void
 }) {
+  const [expandedEditAttrs, setExpandedEditAttrs] = useState<Record<number, boolean>>({})
+  const prevEditCount = useRef(0)
+
+  useEffect(() => {
+    if (props.editAttrs.length > prevEditCount.current) {
+      setExpandedEditAttrs((prev) => ({ ...prev, [props.editAttrs.length - 1]: true }))
+    }
+    prevEditCount.current = props.editAttrs.length
+  }, [props.editAttrs.length])
+
   if (props.isEditing) {
     return (
       <form onSubmit={props.onUpdate} className="rounded-lg border border-primary/30 bg-background/50 p-4 space-y-3">
@@ -1245,25 +1255,18 @@ function TemplateRow(props: {
         </div>
         <div>
           <label className="label">Attributes</label>
-          <div className="space-y-3 mt-1">
+          <div className="space-y-2 mt-1">
             {props.editAttrs.map((attr, idx) => (
-              <div key={idx} className="space-y-2 py-3 border-b border-border last:border-0">
-                <div className="flex items-center gap-1.5">
-                  <input className="input-field flex-1" value={attr.key} onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)} placeholder="Key" />
-                  <input className="input-field flex-1" value={attr.name} onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)} placeholder="Name" />
-                  <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
-                </div>
-                <div>
-                  <label className="text-xs text-muted mb-1 block">Formula Builder (optional)</label>
-                  <FormulaBuilder
-                    value={attr.modifier}
-                    onChange={(v) => props.onUpdateAttr(idx, 'modifier', v)}
-                    attributes={props.editAttrs
-                      .filter((a) => a.key.trim() && a.name.trim())
-                      .map((a) => ({ key: a.key.trim(), name: a.name.trim() }))}
-                  />
-                </div>
-              </div>
+              <CollapsibleAttrCard
+                key={idx}
+                index={idx}
+                attr={attr}
+                isExpanded={!!expandedEditAttrs[idx]}
+                onToggle={() => setExpandedEditAttrs((prev) => ({ ...prev, [idx]: !prev[idx] }))}
+                onUpdateAttr={props.onUpdateAttr}
+                onRemove={() => props.onRemoveAttr(idx)}
+                allAttrs={props.editAttrs}
+              />
             ))}
           </div>
           <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button>
