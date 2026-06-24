@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, type FormEvent } from 'react'
+import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { api } from '@/lib/api'
@@ -341,14 +341,11 @@ export default function AdventureDetailPage() {
     if (!newCharName.trim() || !newCharTemplateId) return
     setNewCharCreating(true)
     try {
-      await api.post('/character-sheets', {
+      const sheet = await api.post<{ id: string }>('/character-sheets', {
         characterName: newCharName.trim(),
         templateId: newCharTemplateId,
       })
-      setShowNewCharForm(false)
-      setNewCharName('')
-      setNewCharTemplateId('')
-      fetchCampaignCharacters()
+      router.push(`/dashboard/character-sheets/${sheet.id}`)
     } catch (err) {
       setNewCharError(err instanceof Error ? err.message : 'Failed to create character')
     } finally {
@@ -377,13 +374,7 @@ export default function AdventureDetailPage() {
 
   async function handleRemoveCharacter(sheetId: string) {
     try {
-      // Unlink by setting adventureId to the same adventure (GM can only remove, not delete)
-      // For now, GM just removes from campaign view - we'll use the link endpoint to a null adventure
-      // Actually, we should just re-fetch the list. The GM removes by asking the player to unlink.
-      // For now, let's just hide it from the UI and tell the GM to talk to the player.
-      await api.post(`/character-sheets/${sheetId}/link`, {
-        adventureId: id, // This just re-links, not ideal. TODO: add unlink endpoint
-      })
+      await api.post(`/character-sheets/${sheetId}/unlink`)
       fetchCampaignCharacters()
     } catch { /* ignore */ }
   }
@@ -1065,6 +1056,19 @@ function TemplatesSection(props: {
   onRemoveEditAttr: (index: number) => void
   onUpdateEditAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string) => void
 }) {
+  const [expandedCreate, setExpandedCreate] = useState<Record<number, boolean>>({})
+  const prevLengthRef = useRef(0)
+
+  // Auto-expand newly added attributes in create form
+  useEffect(() => {
+    if (props.showNewTemplate && props.newTemplateAttrs.length > prevLengthRef.current) {
+      setExpandedCreate((prev) => ({
+        ...prev,
+        [props.newTemplateAttrs.length - 1]: true,
+      }))
+    }
+    prevLengthRef.current = props.newTemplateAttrs.length
+  }, [props.newTemplateAttrs.length, props.showNewTemplate])
   return (
     <div className="space-y-4">
       {props.templates.length === 0 && !props.showNewTemplate ? (
@@ -1120,22 +1124,50 @@ function TemplatesSection(props: {
             <label className="label">Attributes</label>
             <div className="space-y-2 mt-1">
               {props.newTemplateAttrs.map((attr, idx) => (
-                <div key={idx} className="space-y-2 py-3 border-b border-border last:border-0">
-                  <div className="flex items-center gap-1.5">
-                    <input className="input-field flex-1" value={attr.key} onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)} placeholder="Key (e.g. strength)" />
-                    <input className="input-field flex-1" value={attr.name} onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)} placeholder="Name (e.g. Strength)" />
-                    <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted mb-1 block">Formula Builder (optional)</label>
-                    <FormulaBuilder
-                      value={attr.modifier}
-                      onChange={(v) => props.onUpdateAttr(idx, 'modifier', v)}
-                      attributes={props.newTemplateAttrs
-                        .filter((a) => a.key.trim() && a.name.trim())
-                        .map((a) => ({ key: a.key.trim(), name: a.name.trim() }))}
-                    />
-                  </div>
+                <div key={idx} className="rounded-lg border border-border bg-background/30 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedCreate((prev) => ({ ...prev, [idx]: !prev[idx] }))}
+                    className="flex items-center justify-between w-full px-3 py-2 text-left hover:bg-background/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-medium text-foreground truncate">
+                        {attr.name || 'New Attribute'}
+                      </span>
+                      {attr.key && (
+                        <span className="text-[0.6rem] text-muted font-mono shrink-0">({attr.key})</span>
+                      )}
+                    </div>
+                    <svg
+                      className={`w-4 h-4 text-muted transition-transform shrink-0 ${expandedCreate[idx] ? 'rotate-180' : ''}`}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {expandedCreate[idx] && (
+                    <div className="px-3 py-3 space-y-2 border-t border-border">
+                      <div className="flex items-center gap-1.5">
+                        <input className="input-field flex-1" value={attr.key} onChange={(e) => props.onUpdateAttr(idx, 'key', e.target.value)} placeholder="Key (e.g. strength)" />
+                        <input className="input-field flex-1" value={attr.name} onChange={(e) => props.onUpdateAttr(idx, 'name', e.target.value)} placeholder="Name (e.g. Strength)" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted mb-1 block">Formula Builder (optional)</label>
+                        <FormulaBuilder
+                          value={attr.modifier}
+                          onChange={(v) => props.onUpdateAttr(idx, 'modifier', v)}
+                          attributes={props.newTemplateAttrs
+                            .filter((a) => a.key.trim() && a.name.trim())
+                            .map((a) => ({ key: a.key.trim(), name: a.name.trim() }))}
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <button type="button" onClick={() => props.onRemoveAttr(idx)} className="text-xs text-danger hover:text-danger/80 transition-colors">
+                          Remove Attribute
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

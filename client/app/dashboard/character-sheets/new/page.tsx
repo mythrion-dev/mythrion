@@ -147,7 +147,7 @@ export default function NewCharacterSheetPage() {
         </div>
 
         <div>
-          <label className="label">Campaign</label>
+          <label className="label">Campaign <span className="text-muted font-normal">(optional)</span></label>
           {fetchingAdv ? (
             <div className="text-sm text-muted">Loading adventures...</div>
           ) : (
@@ -155,9 +155,8 @@ export default function NewCharacterSheetPage() {
               className="input-field"
               value={selectedAdventureId}
               onChange={(e) => setSelectedAdventureId(e.target.value)}
-              required
             >
-              <option value="">Select a campaign...</option>
+              <option value="">No campaign (standalone)</option>
               {adventures.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.campaign} — {a.name}
@@ -169,13 +168,13 @@ export default function NewCharacterSheetPage() {
 
         <div>
           <label className="label">Template</label>
-          {!selectedAdventureId ? (
+          {!selectedAdventureId && adventures.length === 0 ? (
             <p className="text-sm text-muted italic">
-              Select a campaign first
+              Join a campaign first to use its templates, or create a standalone character.
             </p>
           ) : fetchingTemplates ? (
             <div className="text-sm text-muted">Loading templates...</div>
-          ) : templates.length === 0 ? (
+          ) : templates.length === 0 && selectedAdventureId ? (
             <p className="text-sm text-muted italic">
               No templates available for this campaign. Ask your GM to create
               one.

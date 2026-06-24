@@ -145,6 +145,7 @@ export default function CharacterSheetDetailPage() {
       )
       setSheet(updated)
       setEditing(false)
+      computeModifiers(updated)
     } catch (err) {
       setEditError(err instanceof Error ? err.message : 'Failed to update')
     } finally {
