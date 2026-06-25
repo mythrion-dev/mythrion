@@ -139,6 +139,9 @@ export default function AdventureDetailPage() {
 
   const isGM = userRole === 'GM'
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'campaign' | 'templates'>('campaign')
+
   const fetchAdventure = useCallback(async () => {
     try {
       const data = await api.get<Adventure>(`/adventures/${id}`)
@@ -511,148 +514,41 @@ export default function AdventureDetailPage() {
         </Link>
       </div>
 
+      <AdventureHeader
+        adventure={adventure}
+        isGM={isGM}
+        userRole={userRole}
+        onEdit={() => setEditing(true)}
+        onDelete={() => setConfirmDelete(true)}
+      />
+
       {!editing ? (
-        <div className="space-y-6">
-          <AdventureHeader
-            adventure={adventure}
-            isGM={isGM}
-            userRole={userRole}
-            onEdit={() => setEditing(true)}
-            onDelete={() => setConfirmDelete(true)}
-          />
+        <div className="space-y-6 mt-6">
+          {/* Tab Navigation */}
+          <nav className="flex gap-1">
+            <button onClick={() => setActiveTab('campaign')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'campaign' ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`}>Campaign</button>
+            <button onClick={() => setActiveTab('templates')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'templates' ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`}>Character Sheet Templates</button>
+          </nav>
 
-          {/* Members */}
-          <CollapsibleSection
-            title="Party Members"
-            expanded={showMembers}
-            onToggle={() => {
-              setShowMembers(!showMembers)
-              if (!showMembers) { fetchMembers(); if (isGM) fetchInvitations() }
-            }}
-          >
-            {members.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Loading...</p>
-            ) : (
-              <div className="space-y-2">
-                {members.map((m) => (
-                  <MemberRow key={m.id} member={m} isGM={isGM} isSelf={m.user.id === user?.id} onRemove={() => handleRemoveMember(m.user.id)} />
-                ))}
-              </div>
-            )}
-          </CollapsibleSection>
-
-          {/* Invite (GM only) */}
-          {isGM && (
-            <CollapsibleSection
-              title="Invite Players"
-              expanded={showInvite}
-              onToggle={() => setShowInvite(!showInvite)}
-            >
-              <InvitePanel
-                inviteRole={inviteRole}
-                inviteEmail={inviteEmail}
-                inviteLink={inviteLink}
-                inviteError={inviteError}
-                inviteSending={inviteSending}
-                invitations={invitations}
-                onRoleChange={setInviteRole}
-                onEmailChange={setInviteEmail}
-                onInviteByEmail={handleInviteByEmail}
-                onInviteByLink={handleInviteByLink}
-                onRevoke={handleRevokeInvitation}
-              />
-            </CollapsibleSection>
+          {activeTab === 'campaign' ? (
+            <>
+              <CollapsibleSection title="Party Members" expanded={showMembers} onToggle={() => { setShowMembers(!showMembers); if (!showMembers) { fetchMembers(); if (isGM) fetchInvitations() } }}>
+                {members.length === 0 ? (<p className="text-sm text-muted-foreground">Loading...</p>) : (
+                  <div className="space-y-2">{members.map((m) => (<MemberRow key={m.id} member={m} isGM={isGM} isSelf={m.user.id === user?.id} onRemove={() => handleRemoveMember(m.user.id)} />))}</div>
+                )}
+              </CollapsibleSection>
+              {isGM && (
+                <CollapsibleSection title="Invite Players" expanded={showInvite} onToggle={() => setShowInvite(!showInvite)}>
+                  <InvitePanel inviteRole={inviteRole} inviteEmail={inviteEmail} inviteLink={inviteLink} inviteError={inviteError} inviteSending={inviteSending} invitations={invitations} onRoleChange={setInviteRole} onEmailChange={setInviteEmail} onInviteByEmail={handleInviteByEmail} onInviteByLink={handleInviteByLink} onRevoke={handleRevokeInvitation} />
+                </CollapsibleSection>
+              )}
+              <CollapsibleSection title="Characters" expanded={showCharacters} onToggle={() => { setShowCharacters(!showCharacters); if (!showCharacters) { fetchCampaignCharacters(); fetchUserSheets() } }}>
+                <CharactersSection characters={campaignCharacters} isGM={isGM} userId={user?.id ?? ''} templates={templates} userSheets={userSheets} showNewCharForm={showNewCharForm} showLinkCharForm={showLinkCharForm} newCharName={newCharName} newCharTemplateId={newCharTemplateId} newCharError={newCharError} newCharCreating={newCharCreating} linkSheetId={linkSheetId} linkCharError={linkCharError} linkCharLinking={linkCharLinking} onNewCharClick={() => { setShowNewCharForm(true); setShowLinkCharForm(false); fetchTemplates() }} onLinkCharClick={() => { setShowLinkCharForm(true); setShowNewCharForm(false); fetchUserSheets() }} onCancelNewChar={() => { setShowNewCharForm(false); setNewCharName(''); setNewCharTemplateId(''); setNewCharError(null) }} onCancelLinkChar={() => { setShowLinkCharForm(false); setLinkSheetId(''); setLinkCharError(null) }} onCreateCharacter={handleCreateCharacter} onLinkCharacter={handleLinkCharacter} onNewCharNameChange={setNewCharName} onNewCharTemplateChange={setNewCharTemplateId} onLinkSheetChange={setLinkSheetId} onRemoveCharacter={handleRemoveCharacter} onViewCharacter={(sheetId) => router.push(`/dashboard/character-sheets/${sheetId}`)} />
+              </CollapsibleSection>
+            </>
+          ) : (
+            <TemplatesSection templates={templates} isGM={isGM} showNewTemplate={showNewTemplate} editingTemplateId={editingTemplateId} newTemplateName={newTemplateName} newTemplateDescription={newTemplateDescription} newTemplateAttrs={newTemplateAttrs} newTemplateFields={newTemplateFields} templateError={templateError} templateCreating={templateCreating} editTemplateName={editTemplateName} editTemplateDescription={editTemplateDescription} editTemplateAttrs={editTemplateAttrs} editingTemplateError={editingTemplateError} templateSaving={templateSaving} onNewClick={() => setShowNewTemplate(true)} onCancelNew={resetNewTemplate} onCreateTemplate={handleCreateTemplate} onNameChange={setNewTemplateName} onDescriptionChange={setNewTemplateDescription} onAddAttr={addNewAttrRow} onRemoveAttr={removeNewAttrRow} onUpdateAttr={updateNewAttr} onAddField={addNewFieldRow} onRemoveField={removeNewFieldRow} onUpdateField={updateNewField} onStartEdit={startEditTemplate} onCancelEdit={cancelEditTemplate} onUpdateTemplate={handleUpdateTemplate} onDeleteTemplate={handleDeleteTemplate} onEditNameChange={setEditTemplateName} onEditDescriptionChange={setEditTemplateDescription} onAddEditAttr={addEditAttrRow} onRemoveEditAttr={removeEditAttrRow} onUpdateEditAttr={updateEditAttr} editTemplateFields={editTemplateFields} onAddEditField={addEditFieldRow} onRemoveEditField={removeEditFieldRow} onUpdateEditField={updateEditField} />
           )}
-
-          {/* Characters */}
-          <CollapsibleSection
-            title="Characters"
-            expanded={showCharacters}
-            onToggle={() => {
-              setShowCharacters(!showCharacters)
-              if (!showCharacters) { fetchCampaignCharacters(); fetchUserSheets() }
-            }}
-          >
-            <CharactersSection
-              characters={campaignCharacters}
-              isGM={isGM}
-              userId={user?.id ?? ''}
-              templates={templates}
-              userSheets={userSheets}
-              showNewCharForm={showNewCharForm}
-              showLinkCharForm={showLinkCharForm}
-              newCharName={newCharName}
-              newCharTemplateId={newCharTemplateId}
-              newCharError={newCharError}
-              newCharCreating={newCharCreating}
-              linkSheetId={linkSheetId}
-              linkCharError={linkCharError}
-              linkCharLinking={linkCharLinking}
-              onNewCharClick={() => { setShowNewCharForm(true); setShowLinkCharForm(false); fetchTemplates() }}
-              onLinkCharClick={() => { setShowLinkCharForm(true); setShowNewCharForm(false); fetchUserSheets() }}
-              onCancelNewChar={() => { setShowNewCharForm(false); setNewCharName(''); setNewCharTemplateId(''); setNewCharError(null) }}
-              onCancelLinkChar={() => { setShowLinkCharForm(false); setLinkSheetId(''); setLinkCharError(null) }}
-              onCreateCharacter={handleCreateCharacter}
-              onLinkCharacter={handleLinkCharacter}
-              onNewCharNameChange={setNewCharName}
-              onNewCharTemplateChange={setNewCharTemplateId}
-              onLinkSheetChange={setLinkSheetId}
-              onRemoveCharacter={handleRemoveCharacter}
-              onViewCharacter={(sheetId) => router.push(`/dashboard/character-sheets/${sheetId}`)}
-            />
-          </CollapsibleSection>
-
-          {/* Character Sheet Templates */}
-          <CollapsibleSection
-            title="Character Sheet Templates"
-            expanded={showTemplates}
-            onToggle={() => {
-              setShowTemplates(!showTemplates)
-              if (!showTemplates) fetchTemplates()
-            }}
-          >
-            <TemplatesSection
-              templates={templates}
-              isGM={isGM}
-              showNewTemplate={showNewTemplate}
-              editingTemplateId={editingTemplateId}
-              newTemplateName={newTemplateName}
-              newTemplateDescription={newTemplateDescription}
-              newTemplateAttrs={newTemplateAttrs}
-              newTemplateFields={newTemplateFields}
-              templateError={templateError}
-              templateCreating={templateCreating}
-              editTemplateName={editTemplateName}
-              editTemplateDescription={editTemplateDescription}
-              editTemplateAttrs={editTemplateAttrs}
-              editingTemplateError={editingTemplateError}
-              templateSaving={templateSaving}
-              onNewClick={() => setShowNewTemplate(true)}
-              onCancelNew={resetNewTemplate}
-              onCreateTemplate={handleCreateTemplate}
-              onNameChange={setNewTemplateName}
-              onDescriptionChange={setNewTemplateDescription}
-              onAddAttr={addNewAttrRow}
-              onRemoveAttr={removeNewAttrRow}
-              onUpdateAttr={updateNewAttr}
-              onAddField={addNewFieldRow}
-              onRemoveField={removeNewFieldRow}
-              onUpdateField={updateNewField}
-              onStartEdit={startEditTemplate}
-              onCancelEdit={cancelEditTemplate}
-              onUpdateTemplate={handleUpdateTemplate}
-              onDeleteTemplate={handleDeleteTemplate}
-              onEditNameChange={setEditTemplateName}
-              onEditDescriptionChange={setEditTemplateDescription}
-              onAddEditAttr={addEditAttrRow}
-              onRemoveEditAttr={removeEditAttrRow}
-              onUpdateEditAttr={updateEditAttr}
-              editTemplateFields={editTemplateFields}
-              onAddEditField={addEditFieldRow}
-              onRemoveEditField={removeEditFieldRow}
-              onUpdateEditField={updateEditField}
-            />
-          </CollapsibleSection>
 
 
           {/* Delete modal */}
