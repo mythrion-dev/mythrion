@@ -1114,11 +1114,15 @@ function TemplatesSection(props: {
             <label className="label">Skills</label>
             <div className="space-y-2 mt-1">
               {(props.newTemplateSkills || []).map((s, idx) => (
-                <div key={idx} className="flex items-center gap-1.5">
-                  <input className="input-field flex-1" value={s.name} onChange={(e) => props.onUpdateSkill?.(idx, 'name', e.target.value)} placeholder="Skill Name (e.g. Stealth)" />
-                  <input className="input-field flex-1" value={s.formula} onChange={(e) => props.onUpdateSkill?.(idx, 'formula', e.target.value)} placeholder="Formula (e.g. mod(dex) + mastery)" />
-                  <button type="button" onClick={() => props.onRemoveSkill?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
-                </div>
+                <CollapsibleSkillCard
+                  key={idx}
+                  index={idx}
+                  skill={s}
+                  onUpdateSkill={props.onUpdateSkill}
+                  onRemove={() => props.onRemoveSkill?.(idx)}
+                  attributes={props.newTemplateAttrs.filter((a) => a.key.trim() && a.name.trim()).map((a) => ({ key: a.key.trim(), name: a.name.trim() }))}
+                  customFields={(props.newTemplateFields || []).filter((f) => f.key.trim() && f.label.trim()).map((f) => ({ key: f.key.trim(), label: f.label.trim() }))}
+                />
               ))}
             </div>
             <button type="button" onClick={props.onAddSkill} className="btn-ghost text-xs mt-2">+ Add Skill</button>
@@ -1211,6 +1215,53 @@ function CollapsibleAttrCard({ index, attr, isExpanded, onToggle, onUpdateAttr, 
   )
 }
 
+function CollapsibleSkillCard({ index, skill, onUpdateSkill, onRemove, attributes, customFields }: {
+  index: number
+  skill: { name: string; description: string; formula: string }
+  onUpdateSkill?: (index: number, field: 'name' | 'description' | 'formula', value: string) => void
+  onRemove?: () => void
+  attributes: { key: string; name: string }[]
+  customFields: { key: string; label: string }[]
+}) {
+  const [expanded, setExpanded] = useState(true)
+  return (
+    <div className="rounded-lg border border-border bg-background/30 overflow-hidden">
+      <button type="button" onClick={() => setExpanded(!expanded)} className="flex items-center justify-between w-full px-3 py-2 text-left hover:bg-background/50 transition-colors">
+        <span className="text-sm font-medium text-foreground truncate">{skill.name || 'New Skill'}</span>
+        <svg className={`w-4 h-4 text-muted transition-transform shrink-0 ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {expanded && (
+        <div className="px-3 py-3 space-y-2 border-t border-border">
+          <div>
+            <label className="text-xs text-muted mb-1 block">Name</label>
+            <input className="input-field" value={skill.name} onChange={(e) => onUpdateSkill?.(index, 'name', e.target.value)} placeholder="Skill Name (e.g. Stealth)" />
+          </div>
+          <div>
+            <label className="text-xs text-muted mb-1 block">Description <span className="text-muted font-normal">(optional)</span></label>
+            <input className="input-field" value={skill.description} onChange={(e) => onUpdateSkill?.(index, 'description', e.target.value)} placeholder="Brief description" />
+          </div>
+          <div>
+            <label className="text-xs text-muted mb-1 block">Formula Builder</label>
+            <FormulaBuilder
+              value={skill.formula}
+              onChange={(v) => onUpdateSkill?.(index, 'formula', v)}
+              attributes={attributes}
+              customFields={customFields}
+              useModPrefix
+              placeholder="Build skill formula..."
+            />
+          </div>
+          <div className="flex justify-end">
+            <button type="button" onClick={onRemove} className="text-xs text-danger hover:text-danger/80 transition-colors">Remove Skill</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TemplateRow(props: {
   template: { id: string; name: string; description: string | null; attributes: { id: string; key: string; name: string; modifier: string | null }[]; createdAt: string }
   isGM: boolean
@@ -1283,11 +1334,15 @@ function TemplateRow(props: {
             <label className="label">Skills</label>
             <div className="space-y-2 mt-1">
               {(props.editSkills || []).map((s, idx) => (
-                <div key={idx} className="flex items-center gap-1.5">
-                  <input className="input-field flex-1" value={s.name} onChange={(e) => props.onUpdateSkill?.(idx, 'name', e.target.value)} placeholder="Skill Name (e.g. Stealth)" />
-                  <input className="input-field flex-1" value={s.formula} onChange={(e) => props.onUpdateSkill?.(idx, 'formula', e.target.value)} placeholder="Formula (e.g. mod(dex) + mastery)" />
-                  <button type="button" onClick={() => props.onRemoveSkill?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
-                </div>
+                <CollapsibleSkillCard
+                  key={idx}
+                  index={idx}
+                  skill={s}
+                  onUpdateSkill={props.onUpdateSkill}
+                  onRemove={() => props.onRemoveSkill?.(idx)}
+                  attributes={props.editAttrs.filter((a) => a.key.trim() && a.name.trim()).map((a) => ({ key: a.key.trim(), name: a.name.trim() }))}
+                  customFields={(props.editFields || []).filter((f) => f.key.trim() && f.label.trim()).map((f) => ({ key: f.key.trim(), label: f.label.trim() }))}
+                />
               ))}
             </div>
             <button type="button" onClick={props.onAddSkill} className="btn-ghost text-xs mt-2">+ Add Skill</button>
