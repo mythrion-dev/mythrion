@@ -95,10 +95,27 @@ export default function CharacterSheetDetailPage() {
 
   const computeSkills = useCallback(async (sheetData: CharacterSheet) => {
     const results: Record<string, number | null> = {}
+
+    // First, compute all modifier values (e.g. dex_mod = 4)
+    const modifierVars: Record<string, number> = {}
+    for (const attr of sheetData.template.attributes) {
+      if (attr.modifier && attr.modifier.trim()) {
+        try {
+          const modVars: Record<string, number> = {}
+          sheetData.template.attributes.forEach((a) => {
+            const v = parseFloat(sheetData.values.find((sv) => sv.attributeId === a.id)?.value || '0')
+            modVars[a.key] = isNaN(v) ? 0 : v
+          })
+          const modResult = await api.post<{ result: number }>('/formula/evaluate', { formula: attr.modifier, variables: modVars })
+          modifierVars[`${attr.key}_mod`] = modResult.result
+        } catch { modifierVars[`${attr.key}_mod`] = 0 }
+      }
+    }
+
     for (const sv of sheetData.skillValues) {
       if (sv.skill.formula && sv.skill.formula.trim()) {
         try {
-          const variables: Record<string, number> = {}
+          const variables: Record<string, number> = { ...modifierVars }
           sheetData.template.attributes.forEach((a) => {
             const val = parseFloat(sheetData.values.find((v) => v.attributeId === a.id)?.value || '0')
             variables[a.key] = isNaN(val) ? 0 : val
