@@ -200,6 +200,13 @@ export default function AdventureDetailPage() {
     } catch { /* ignore */ }
   }, [id])
 
+  // Fetch templates when switching to templates tab
+  useEffect(() => {
+    if (activeTab === 'templates') {
+      fetchTemplates()
+    }
+  }, [activeTab, fetchTemplates])
+
   const fetchCampaignCharacters = useCallback(async () => {
     try {
       const data = await api.get<CampaignCharacter[]>(`/character-sheets/adventure/${id}`)
