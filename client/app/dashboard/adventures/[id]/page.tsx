@@ -49,6 +49,7 @@ interface Template {
   name: string
   description: string | null
   attributes: { id: string; key: string; name: string; modifier: string | null }[]
+  templateFields?: { id: string; key: string; label: string }[]
   createdAt: string
 }
 
@@ -109,12 +110,14 @@ export default function AdventureDetailPage() {
   const [newTemplateName, setNewTemplateName] = useState('')
   const [newTemplateDescription, setNewTemplateDescription] = useState('')
   const [newTemplateAttrs, setNewTemplateAttrs] = useState<{ key: string; name: string; modifier: string }[]>([])
+  const [newTemplateFields, setNewTemplateFields] = useState<{ key: string; label: string }[]>([])
   const [templateCreating, setTemplateCreating] = useState(false)
   const [templateError, setTemplateError] = useState<string | null>(null)
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null)
   const [editTemplateName, setEditTemplateName] = useState('')
   const [editTemplateDescription, setEditTemplateDescription] = useState('')
   const [editTemplateAttrs, setEditTemplateAttrs] = useState<{ key: string; name: string; modifier: string }[]>([])
+  const [editTemplateFields, setEditTemplateFields] = useState<{ key: string; label: string }[]>([])
   const [templateSaving, setTemplateSaving] = useState(false)
   const [editingTemplateError, setEditingTemplateError] = useState<string | null>(null)
 
@@ -215,6 +218,7 @@ export default function AdventureDetailPage() {
     setNewTemplateName('')
     setNewTemplateDescription('')
     setNewTemplateAttrs([])
+    setNewTemplateFields([])
     setTemplateError(null)
   }
 
@@ -252,6 +256,7 @@ export default function AdventureDetailPage() {
         name: newTemplateName.trim(),
         description: newTemplateDescription.trim() || undefined,
         attributes: trimmedAttrs,
+        templateFields: newTemplateFields.filter((f) => f.key.trim() && f.label.trim()).map((f) => ({ key: f.key.trim(), label: f.label.trim() })),
       })
       resetNewTemplate()
       fetchTemplates()
@@ -271,6 +276,12 @@ export default function AdventureDetailPage() {
         key: a.key,
         name: a.name,
         modifier: a.modifier ?? '',
+      })),
+    )
+    setEditTemplateFields(
+      (template.templateFields || []).map((f) => ({
+        key: f.key,
+        label: f.label,
       })),
     )
     setEditingTemplateError(null)
@@ -295,6 +306,14 @@ export default function AdventureDetailPage() {
     )
   }
 
+  // Template field (custom fields) handlers
+  function addNewFieldRow() { setNewTemplateFields((prev) => [...prev, { key: '', label: '' }]) }
+  function removeNewFieldRow(index: number) { setNewTemplateFields((prev) => prev.filter((_, i) => i !== index)) }
+  function updateNewField(index: number, field: 'key' | 'label', value: string) { setNewTemplateFields((prev) => prev.map((f, i) => (i === index ? { ...f, [field]: value } : f))) }
+  function addEditFieldRow() { setEditTemplateFields((prev) => [...prev, { key: '', label: '' }]) }
+  function removeEditFieldRow(index: number) { setEditTemplateFields((prev) => prev.filter((_, i) => i !== index)) }
+  function updateEditField(index: number, field: 'key' | 'label', value: string) { setEditTemplateFields((prev) => prev.map((f, i) => (i === index ? { ...f, [field]: value } : f))) }
+
   async function handleUpdateTemplate(e: FormEvent) {
     e.preventDefault()
     if (!editingTemplateId) return
@@ -317,6 +336,7 @@ export default function AdventureDetailPage() {
         name: editTemplateName.trim(),
         description: editTemplateDescription.trim() || undefined,
         attributes: trimmedAttrs,
+        templateFields: editTemplateFields.filter((f) => f.key.trim() && f.label.trim()).map((f) => ({ key: f.key.trim(), label: f.label.trim() })),
       })
       cancelEditTemplate()
       fetchTemplates()
@@ -599,6 +619,7 @@ export default function AdventureDetailPage() {
               newTemplateName={newTemplateName}
               newTemplateDescription={newTemplateDescription}
               newTemplateAttrs={newTemplateAttrs}
+              newTemplateFields={newTemplateFields}
               templateError={templateError}
               templateCreating={templateCreating}
               editTemplateName={editTemplateName}
@@ -614,6 +635,9 @@ export default function AdventureDetailPage() {
               onAddAttr={addNewAttrRow}
               onRemoveAttr={removeNewAttrRow}
               onUpdateAttr={updateNewAttr}
+              onAddField={addNewFieldRow}
+              onRemoveField={removeNewFieldRow}
+              onUpdateField={updateNewField}
               onStartEdit={startEditTemplate}
               onCancelEdit={cancelEditTemplate}
               onUpdateTemplate={handleUpdateTemplate}
@@ -623,6 +647,10 @@ export default function AdventureDetailPage() {
               onAddEditAttr={addEditAttrRow}
               onRemoveEditAttr={removeEditAttrRow}
               onUpdateEditAttr={updateEditAttr}
+              editTemplateFields={editTemplateFields}
+              onAddEditField={addEditFieldRow}
+              onRemoveEditField={removeEditFieldRow}
+              onUpdateEditField={updateEditField}
             />
           </CollapsibleSection>
 
@@ -1025,11 +1053,13 @@ function TemplatesSection(props: {
   newTemplateName: string
   newTemplateDescription: string
   newTemplateAttrs: { key: string; name: string; modifier: string }[]
+  newTemplateFields?: { key: string; label: string }[]
   templateError: string | null
   templateCreating: boolean
   editTemplateName: string
   editTemplateDescription: string
   editTemplateAttrs: { key: string; name: string; modifier: string }[]
+  editTemplateFields?: { key: string; label: string }[]
   editingTemplateError: string | null
   templateSaving: boolean
   onNewClick: () => void
@@ -1040,6 +1070,9 @@ function TemplatesSection(props: {
   onAddAttr: () => void
   onRemoveAttr: (index: number) => void
   onUpdateAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string) => void
+  onAddField?: () => void
+  onRemoveField?: (index: number) => void
+  onUpdateField?: (index: number, field: 'key' | 'label', value: string) => void
   onStartEdit: (template: Template) => void
   onCancelEdit: () => void
   onUpdateTemplate: (e: FormEvent) => void
@@ -1049,6 +1082,9 @@ function TemplatesSection(props: {
   onAddEditAttr: () => void
   onRemoveEditAttr: (index: number) => void
   onUpdateEditAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string) => void
+  onAddEditField?: () => void
+  onRemoveEditField?: (index: number) => void
+  onUpdateEditField?: (index: number, field: 'key' | 'label', value: string) => void
 }) {
   const [expandedAttrs, setExpandedAttrs] = useState<Record<number, boolean>>({})
   const prevCount = useRef(0)
@@ -1083,6 +1119,7 @@ function TemplatesSection(props: {
               editName={props.editTemplateName}
               editDescription={props.editTemplateDescription}
               editAttrs={props.editTemplateAttrs}
+              editFields={props.editTemplateFields}
               editError={props.editingTemplateError}
               saving={props.templateSaving}
               onStartEdit={() => props.onStartEdit(t)}
@@ -1094,6 +1131,9 @@ function TemplatesSection(props: {
               onAddAttr={props.onAddEditAttr}
               onRemoveAttr={props.onRemoveEditAttr}
               onUpdateAttr={props.onUpdateEditAttr}
+              onAddField={props.onAddEditField}
+              onRemoveField={props.onRemoveEditField}
+              onUpdateField={props.onUpdateEditField}
             />
           ))}
         </div>
@@ -1134,6 +1174,21 @@ function TemplatesSection(props: {
             </div>
             <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button>
           </div>
+          {props.onAddField && (
+            <div>
+              <label className="label">Custom Fields</label>
+              <div className="space-y-2 mt-1">
+                {(props.newTemplateFields || []).map((f, idx) => (
+                  <div key={idx} className="flex items-center gap-1.5">
+                    <input className="input-field flex-1" value={f.key} onChange={(e) => props.onUpdateField?.(idx, 'key', e.target.value)} placeholder="Key (e.g. class)" />
+                    <input className="input-field flex-1" value={f.label} onChange={(e) => props.onUpdateField?.(idx, 'label', e.target.value)} placeholder="Label (e.g. Class)" />
+                    <button type="button" onClick={() => props.onRemoveField?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                  </div>
+                ))}
+              </div>
+              <button type="button" onClick={props.onAddField} className="btn-ghost text-xs mt-2">+ Add Custom Field</button>
+            </div>
+          )}
           {props.templateError && (
             <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{props.templateError}</div>
           )}
@@ -1214,6 +1269,7 @@ function TemplateRow(props: {
   editName: string
   editDescription: string
   editAttrs: { key: string; name: string; modifier: string }[]
+  editFields?: { key: string; label: string }[]
   editError: string | null
   saving: boolean
   onStartEdit: () => void
@@ -1225,6 +1281,9 @@ function TemplateRow(props: {
   onAddAttr: () => void
   onRemoveAttr: (index: number) => void
   onUpdateAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string) => void
+  onAddField?: () => void
+  onRemoveField?: (index: number) => void
+  onUpdateField?: (index: number, field: 'key' | 'label', value: string) => void
 }) {
   const [expandedEditAttrs, setExpandedEditAttrs] = useState<Record<number, boolean>>({})
   const prevEditCount = useRef(0)
@@ -1265,6 +1324,21 @@ function TemplateRow(props: {
           </div>
           <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button>
         </div>
+        {props.onAddField && (
+          <div>
+            <label className="label">Custom Fields</label>
+            <div className="space-y-2 mt-1">
+              {(props.editFields || []).map((f, idx) => (
+                <div key={idx} className="flex items-center gap-1.5">
+                  <input className="input-field flex-1" value={f.key} onChange={(e) => props.onUpdateField?.(idx, 'key', e.target.value)} placeholder="Key (e.g. class)" />
+                  <input className="input-field flex-1" value={f.label} onChange={(e) => props.onUpdateField?.(idx, 'label', e.target.value)} placeholder="Label (e.g. Class)" />
+                  <button type="button" onClick={() => props.onRemoveField?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={props.onAddField} className="btn-ghost text-xs mt-2">+ Add Custom Field</button>
+          </div>
+        )}
         {props.editError && (
           <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{props.editError}</div>
         )}
