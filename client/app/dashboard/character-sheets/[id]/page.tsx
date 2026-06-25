@@ -114,11 +114,13 @@ export default function CharacterSheetDetailPage() {
     setSaving(true)
     try {
       const values = Object.entries(editValues).map(([attributeId, value]) => ({ attributeId, value }))
+      const fieldValues = Object.entries(editFieldValues).map(([templateFieldId, value]) => ({ templateFieldId, value }))
       const updated = await api.patch<CharacterSheet>(`/character-sheets/${id}`, {
         characterName: editName.trim() || undefined,
         playerName: editPlayerName.trim() || undefined,
         level: editLevel,
         values,
+        fieldValues,
       })
       setSheet(updated)
       setEditing(false)

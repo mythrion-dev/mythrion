@@ -9,6 +9,14 @@ export class AttributeValueDto {
   value!: string
 }
 
+export class FieldValueDto {
+  @IsString()
+  templateFieldId!: string
+
+  @IsString()
+  value!: string
+}
+
 export class UpdateCharacterSheetDto {
   @IsString()
   @IsOptional()
@@ -29,4 +37,10 @@ export class UpdateCharacterSheetDto {
   @ValidateNested({ each: true })
   @Type(() => AttributeValueDto)
   values?: AttributeValueDto[]
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => FieldValueDto)
+  fieldValues?: FieldValueDto[]
 }

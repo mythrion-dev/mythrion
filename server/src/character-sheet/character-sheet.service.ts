@@ -164,6 +164,23 @@ export class CharacterSheetService {
       }
     }
 
+    // If fieldValues are provided, upsert each one
+    if (dto.fieldValues) {
+      for (const fv of dto.fieldValues) {
+        await this.prisma.characterSheetFieldValue.upsert({
+          where: {
+            sheetId_templateFieldId: { sheetId: id, templateFieldId: fv.templateFieldId },
+          },
+          create: {
+            sheetId: id,
+            templateFieldId: fv.templateFieldId,
+            value: fv.value,
+          },
+          update: { value: fv.value },
+        })
+      }
+    }
+
     return this.prisma.characterSheet.update({
       where: { id },
       data: {
