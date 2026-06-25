@@ -18,6 +18,9 @@ const sheetInclude = {
       attribute: { select: { id: true, key: true, name: true, modifier: true } },
     },
   },
+  customFields: {
+    orderBy: { createdAt: 'asc' as const },
+  },
 }
 
 @Injectable()
@@ -55,6 +58,8 @@ export class CharacterSheetService {
     const sheet = await this.prisma.characterSheet.create({
       data: {
         characterName: dto.characterName,
+        playerName: dto.playerName ?? null,
+        level: dto.level ?? 1,
         adventureId: adventureId || null,
         templateId: template.id,
         ownerId: userId,
@@ -155,6 +160,8 @@ export class CharacterSheetService {
       where: { id },
       data: {
         ...(dto.characterName !== undefined && { characterName: dto.characterName }),
+        ...(dto.playerName !== undefined && { playerName: dto.playerName }),
+        ...(dto.level !== undefined && { level: dto.level }),
       },
       include: sheetInclude,
     })

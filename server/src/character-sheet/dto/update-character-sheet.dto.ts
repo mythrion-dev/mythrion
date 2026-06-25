@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsArray, ValidateNested } from 'class-validator'
+import { IsOptional, IsString, IsInt, IsArray, ValidateNested, Min } from 'class-validator'
 import { Type } from 'class-transformer'
 
 export class AttributeValueDto {
@@ -13,6 +13,16 @@ export class UpdateCharacterSheetDto {
   @IsString()
   @IsOptional()
   characterName?: string
+
+  @IsString()
+  @IsOptional()
+  playerName?: string
+
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  @Type(() => Number)
+  level?: number
 
   @IsArray()
   @IsOptional()

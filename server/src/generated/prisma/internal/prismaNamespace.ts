@@ -393,7 +393,8 @@ export const ModelName = {
   Template: 'Template',
   TemplateAttribute: 'TemplateAttribute',
   CharacterSheet: 'CharacterSheet',
-  CharacterSheetValue: 'CharacterSheetValue'
+  CharacterSheetValue: 'CharacterSheetValue',
+  CustomField: 'CustomField'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -409,7 +410,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "discordAccount" | "template" | "templateAttribute" | "characterSheet" | "characterSheetValue"
+    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "discordAccount" | "template" | "templateAttribute" | "characterSheet" | "characterSheetValue" | "customField"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1153,6 +1154,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    CustomField: {
+      payload: Prisma.$CustomFieldPayload<ExtArgs>
+      fields: Prisma.CustomFieldFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CustomFieldFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CustomFieldFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>
+        }
+        findFirst: {
+          args: Prisma.CustomFieldFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CustomFieldFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>
+        }
+        findMany: {
+          args: Prisma.CustomFieldFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>[]
+        }
+        create: {
+          args: Prisma.CustomFieldCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>
+        }
+        createMany: {
+          args: Prisma.CustomFieldCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CustomFieldCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>[]
+        }
+        delete: {
+          args: Prisma.CustomFieldDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>
+        }
+        update: {
+          args: Prisma.CustomFieldUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>
+        }
+        deleteMany: {
+          args: Prisma.CustomFieldDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CustomFieldUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CustomFieldUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>[]
+        }
+        upsert: {
+          args: Prisma.CustomFieldUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>
+        }
+        aggregate: {
+          args: Prisma.CustomFieldAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCustomField>
+        }
+        groupBy: {
+          args: Prisma.CustomFieldGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CustomFieldGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CustomFieldCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CustomFieldCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1310,6 +1385,8 @@ export type TemplateAttributeScalarFieldEnum = (typeof TemplateAttributeScalarFi
 export const CharacterSheetScalarFieldEnum = {
   id: 'id',
   characterName: 'characterName',
+  playerName: 'playerName',
+  level: 'level',
   adventureId: 'adventureId',
   templateId: 'templateId',
   ownerId: 'ownerId',
@@ -1330,6 +1407,18 @@ export const CharacterSheetValueScalarFieldEnum = {
 } as const
 
 export type CharacterSheetValueScalarFieldEnum = (typeof CharacterSheetValueScalarFieldEnum)[keyof typeof CharacterSheetValueScalarFieldEnum]
+
+
+export const CustomFieldScalarFieldEnum = {
+  id: 'id',
+  characterSheetId: 'characterSheetId',
+  label: 'label',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CustomFieldScalarFieldEnum = (typeof CustomFieldScalarFieldEnum)[keyof typeof CustomFieldScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1572,6 +1661,7 @@ export type GlobalOmitConfig = {
   templateAttribute?: Prisma.TemplateAttributeOmit
   characterSheet?: Prisma.CharacterSheetOmit
   characterSheetValue?: Prisma.CharacterSheetValueOmit
+  customField?: Prisma.CustomFieldOmit
 }
 
 /* Types for Logging */

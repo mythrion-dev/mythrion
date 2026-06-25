@@ -8,9 +8,10 @@ import { AdventureModule } from './adventure/adventure.module.js';
 import { TemplateModule } from './template/template.module.js';
 import { CharacterSheetModule } from './character-sheet/character-sheet.module.js';
 import { FormulaModule } from './formula/formula.module.js';
+import { CustomFieldModule } from './custom-field/custom-field.module.js';
 
 @Module({
-  imports: [AuthModule, AdventureModule, TemplateModule, CharacterSheetModule, FormulaModule],
+  imports: [AuthModule, AdventureModule, TemplateModule, CharacterSheetModule, FormulaModule, CustomFieldModule],
   controllers: [AppController, HealthController],
   providers: [AppService, PrismaService],
   exports: [PrismaService],

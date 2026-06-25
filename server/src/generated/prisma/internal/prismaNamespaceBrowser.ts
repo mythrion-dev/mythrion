@@ -60,7 +60,8 @@ export const ModelName = {
   Template: 'Template',
   TemplateAttribute: 'TemplateAttribute',
   CharacterSheet: 'CharacterSheet',
-  CharacterSheetValue: 'CharacterSheetValue'
+  CharacterSheetValue: 'CharacterSheetValue',
+  CustomField: 'CustomField'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -197,6 +198,8 @@ export type TemplateAttributeScalarFieldEnum = (typeof TemplateAttributeScalarFi
 export const CharacterSheetScalarFieldEnum = {
   id: 'id',
   characterName: 'characterName',
+  playerName: 'playerName',
+  level: 'level',
   adventureId: 'adventureId',
   templateId: 'templateId',
   ownerId: 'ownerId',
@@ -217,6 +220,18 @@ export const CharacterSheetValueScalarFieldEnum = {
 } as const
 
 export type CharacterSheetValueScalarFieldEnum = (typeof CharacterSheetValueScalarFieldEnum)[keyof typeof CharacterSheetValueScalarFieldEnum]
+
+
+export const CustomFieldScalarFieldEnum = {
+  id: 'id',
+  characterSheetId: 'characterSheetId',
+  label: 'label',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CustomFieldScalarFieldEnum = (typeof CustomFieldScalarFieldEnum)[keyof typeof CustomFieldScalarFieldEnum]
 
 
 export const SortOrder = {

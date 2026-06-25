@@ -152,17 +152,20 @@ model TemplateAttribute {
 // ── Character Sheets ──
 
 model CharacterSheet {
-  id         String               @id @default(cuid())
+  id            String              @id @default(cuid())
   characterName String
-  adventureId  String?
-  adventure    Adventure?         @relation(fields: [adventureId], references: [id], onDelete: SetNull)
-  templateId   String
-  template     Template           @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  ownerId      String
-  owner        User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  values       CharacterSheetValue[]
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  playerName    String?
+  level         Int?                @default(1)
+  adventureId   String?
+  adventure     Adventure?          @relation(fields: [adventureId], references: [id], onDelete: SetNull)
+  templateId    String
+  template      Template            @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  ownerId       String
+  owner         User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  values        CharacterSheetValue[]
+  customFields  CustomField[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
 
   @@index([adventureId])
   @@index([ownerId])
@@ -181,4 +184,18 @@ model CharacterSheetValue {
 
   @@unique([sheetId, attributeId])
   @@index([sheetId])
+}
+
+// ── Custom Fields ──
+
+model CustomField {
+  id               String          @id @default(cuid())
+  characterSheetId String
+  characterSheet   CharacterSheet  @relation(fields: [characterSheetId], references: [id], onDelete: Cascade)
+  label            String
+  value            String          @default("")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([characterSheetId])
 }
