@@ -50,6 +50,7 @@ interface Template {
   description: string | null
   attributes: { id: string; key: string; name: string; modifier: string | null }[]
   templateFields?: { id: string; key: string; label: string }[]
+  templateSkills?: { id: string; name: string; description: string | null; formula: string | null }[]
   createdAt: string
 }
 
@@ -118,7 +119,17 @@ export default function AdventureDetailPage() {
   const [editTemplateDescription, setEditTemplateDescription] = useState('')
   const [editTemplateAttrs, setEditTemplateAttrs] = useState<{ key: string; name: string; modifier: string }[]>([])
   const [editTemplateFields, setEditTemplateFields] = useState<{ key: string; label: string }[]>([])
+  const [newTemplateSkills, setNewTemplateSkills] = useState<{ name: string; description: string; formula: string }[]>([])
+  const [editTemplateSkills, setEditTemplateSkills] = useState<{ name: string; description: string; formula: string }[]>([])
   const [templateSaving, setTemplateSaving] = useState(false)
+
+  // Template skills handlers
+  function addNewSkillRow() { setNewTemplateSkills((prev) => [...prev, { name: '', description: '', formula: '' }]) }
+  function removeNewSkillRow(index: number) { setNewTemplateSkills((prev) => prev.filter((_, i) => i !== index)) }
+  function updateNewSkill(index: number, field: 'name' | 'description' | 'formula', value: string) { setNewTemplateSkills((prev) => prev.map((s, i) => (i === index ? { ...s, [field]: value } : s))) }
+  function addEditSkillRow() { setEditTemplateSkills((prev) => [...prev, { name: '', description: '', formula: '' }]) }
+  function removeEditSkillRow(index: number) { setEditTemplateSkills((prev) => prev.filter((_, i) => i !== index)) }
+  function updateEditSkill(index: number, field: 'name' | 'description' | 'formula', value: string) { setEditTemplateSkills((prev) => prev.map((s, i) => (i === index ? { ...s, [field]: value } : s))) }
   const [editingTemplateError, setEditingTemplateError] = useState<string | null>(null)
 
   // Characters
@@ -267,6 +278,7 @@ export default function AdventureDetailPage() {
         description: newTemplateDescription.trim() || undefined,
         attributes: trimmedAttrs,
         templateFields: newTemplateFields.filter((f) => f.key.trim() && f.label.trim()).map((f) => ({ key: f.key.trim(), label: f.label.trim() })),
+        skills: newTemplateSkills.filter((s) => s.name.trim()).map((s) => ({ name: s.name.trim(), description: s.description.trim() || undefined, formula: s.formula.trim() || undefined })),
       })
       resetNewTemplate()
       fetchTemplates()
@@ -347,6 +359,7 @@ export default function AdventureDetailPage() {
         description: editTemplateDescription.trim() || undefined,
         attributes: trimmedAttrs,
         templateFields: editTemplateFields.filter((f) => f.key.trim() && f.label.trim()).map((f) => ({ key: f.key.trim(), label: f.label.trim() })),
+        skills: editTemplateSkills.filter((s) => s.name.trim()).map((s) => ({ name: s.name.trim(), description: s.description.trim() || undefined, formula: s.formula.trim() || undefined })),
       })
       cancelEditTemplate()
       fetchTemplates()
