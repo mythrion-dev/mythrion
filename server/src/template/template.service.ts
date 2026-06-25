@@ -7,6 +7,7 @@ import { UpdateTemplateDto } from './dto/update-template.dto.js'
 const templateInclude = {
   attributes: { orderBy: { order: 'asc' as const } },
   templateFields: { orderBy: { order: 'asc' as const } },
+  templateSkills: { orderBy: { order: 'asc' as const } },
 }
 
 @Injectable()
@@ -29,6 +30,11 @@ export class TemplateService {
         templateFields: {
           create: (dto.templateFields || []).map((f, idx) => ({
             key: f.key, label: f.label, order: idx,
+          })),
+        },
+        templateSkills: {
+          create: (dto.skills || []).map((s, idx) => ({
+            name: s.name, description: s.description ?? null, formula: s.formula ?? null, order: idx,
           })),
         },
       },
@@ -57,7 +63,6 @@ export class TemplateService {
     if (!template) throw new NotFoundException('Template not found')
     await this.membership.requireRole(template.adventureId, userId, 'GM')
 
-    // Handle attributes
     if (dto.attributes) {
       const existingAttrs = await this.prisma.templateAttribute.findMany({ where: { templateId: id } })
       const newKeys = dto.attributes.map(a => a.key.trim())
@@ -79,7 +84,6 @@ export class TemplateService {
       }
     }
 
-    // Handle templateFields
     if (dto.templateFields) {
       const existingFields = await this.prisma.templateField.findMany({ where: { templateId: id } })
       const newFieldKeys = dto.templateFields.map(f => f.key.trim())
@@ -98,6 +102,28 @@ export class TemplateService {
         const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
         for (const sheet of sheets) for (const field of newFields)
           await this.prisma.characterSheetFieldValue.upsert({ where: { sheetId_templateFieldId: { sheetId: sheet.id, templateFieldId: field.id } }, create: { sheetId: sheet.id, templateFieldId: field.id, value: '' }, update: {} })
+      }
+    }
+
+    // Handle skills
+    if (dto.skills) {
+      const existingSkills = await this.prisma.templateSkill.findMany({ where: { templateId: id } })
+      const newSkillNames = dto.skills.map(s => s.name.trim())
+      const existingSkillNames = existingSkills.map(s => s.name)
+      const skillNamesToDelete = existingSkillNames.filter(n => !newSkillNames.includes(n))
+      if (skillNamesToDelete.length) await this.prisma.templateSkill.deleteMany({ where: { templateId: id, name: { in: skillNamesToDelete } } })
+      for (let idx = 0; idx < dto.skills.length; idx++) {
+        const s = dto.skills[idx]; const name = s.name.trim()
+        const existing = existingSkills.find(e => e.name === name)
+        if (existing) { await this.prisma.templateSkill.update({ where: { id: existing.id }, data: { description: s.description ?? null, formula: s.formula ?? null, order: idx } }) }
+        else { await this.prisma.templateSkill.create({ data: { templateId: id, name, description: s.description ?? null, formula: s.formula ?? null, order: idx } }) }
+      }
+      const addedSkillNames = newSkillNames.filter(n => !existingSkillNames.includes(n))
+      if (addedSkillNames.length > 0) {
+        const newSkills = await this.prisma.templateSkill.findMany({ where: { templateId: id, name: { in: addedSkillNames } } })
+        const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
+        for (const sheet of sheets) for (const skill of newSkills)
+          await this.prisma.characterSheetSkillValue.upsert({ where: { sheetId_skillId: { sheetId: sheet.id, skillId: skill.id } }, create: { sheetId: sheet.id, skillId: skill.id, value: '' }, update: {} })
       }
     }
 

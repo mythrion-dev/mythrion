@@ -9,6 +9,11 @@ const allowedFunctions = [
   'floor', 'ceil', 'round', 'max', 'min', 'abs',
   'add', 'subtract', 'multiply', 'divide', 'mod', 'pow', 'sqrt',
 ]
+
+function transformModSyntax(formula: string): string {
+  // Transform mod(key) -> key_mod (a safe variable we'll pre-compute)
+  return formula.replace(/mod\(([a-zA-Z_][a-zA-Z0-9_]*)\)/g, (_, key) => `${key}_mod`)
+}
 const allowedOperators = ['+', '-', '*', '/', '(', ')', '^']
 
 @Injectable()
@@ -19,17 +24,20 @@ export class FormulaService {
    * Throws BadRequestException if the expression is invalid.
    */
   evaluate(formula: string, variables: Record<string, number>): number {
-    if (!formula || formula.trim().length === 0) {
+    return this.evaluateRaw(transformModSyntax(formula), variables)
+  }
+
+  private evaluateRaw(sanitized: string, variables: Record<string, number>): number {
+    if (!sanitized || sanitized.trim().length === 0) {
       return 0
     }
 
-    const sanitized = formula.trim()
+    sanitized = sanitized.trim()
 
     // Validate the expression before executing
-    this.validate(sanitized, Object.keys(variables))
+    this.validateRaw(sanitized, Object.keys(variables))
 
     try {
-      // Create a limited math instance for this evaluation
       const scope: Record<string, unknown> = { ...variables }
       const result = math.evaluate(sanitized, scope)
 
@@ -53,12 +61,16 @@ export class FormulaService {
    * Checks for syntax errors and unknown functions.
    */
   validate(formula: string, knownVariables: string[]): void {
-    if (!formula || formula.trim().length === 0) {
-      return // Empty formula is valid (optional)
+    this.validateRaw(transformModSyntax(formula), knownVariables)
+  }
+
+  private validateRaw(sanitized: string, knownVariables: string[]): void {
+    if (!sanitized || sanitized.trim().length === 0) {
+      return
     }
 
     try {
-      const node = math.parse(formula)
+      const node = math.parse(sanitized)
 
       // Walk the AST to check for disallowed elements
       this.validateNode(node, knownVariables)
@@ -121,8 +133,9 @@ export class FormulaService {
     }
 
     try {
-      this.validate(formula, Object.keys(variables))
-      const result = this.evaluate(formula, variables)
+      const transformed = transformModSyntax(formula)
+      this.validateRaw(transformed, Object.keys(variables))
+      const result = this.evaluateRaw(transformed, variables)
       return { expression: formula, result }
     } catch (err) {
       return {

@@ -23,6 +23,11 @@ const sheetInclude = {
       templateField: { select: { id: true, key: true, label: true } },
     },
   },
+  skillValues: {
+    include: {
+      skill: { select: { id: true, name: true, description: true, formula: true } },
+    },
+  },
 }
 
 @Injectable()
@@ -37,7 +42,7 @@ export class CharacterSheetService {
     // Fetch the template to verify access and get adventureId
     const template = await this.prisma.template.findUnique({
       where: { id: dto.templateId },
-      include: { attributes: true, templateFields: true },
+      include: { attributes: true, templateFields: true, templateSkills: true },
     })
     if (!template) {
       throw new NotFoundException('Template not found')
@@ -74,6 +79,12 @@ export class CharacterSheetService {
         fieldValues: {
           create: template.templateFields?.map((f) => ({
             templateFieldId: f.id,
+            value: '',
+          })) || [],
+        },
+        skillValues: {
+          create: template.templateSkills?.map((s) => ({
+            skillId: s.id,
             value: '',
           })) || [],
         },
