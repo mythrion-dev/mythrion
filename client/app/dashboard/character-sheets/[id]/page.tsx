@@ -20,6 +20,13 @@ interface FieldValue {
   templateField: { id: string; key: string; label: string }
 }
 
+interface SkillValue {
+  id: string
+  skillId: string
+  value: string
+  skill: { id: string; name: string; description: string | null; formula: string | null }
+}
+
 interface CharacterSheet {
   id: string
   characterName: string
@@ -33,6 +40,7 @@ interface CharacterSheet {
   }
   values: SheetAttribute[]
   fieldValues: FieldValue[]
+  skillValues: SkillValue[]
   ownerId: string
   createdAt: string
 }
@@ -46,6 +54,7 @@ export default function CharacterSheetDetailPage() {
   const [sheet, setSheet] = useState<CharacterSheet | null>(null)
   const [fetching, setFetching] = useState(true)
   const [modifierResults, setModifierResults] = useState<Record<string, number | null>>({})
+  const [skillResults, setSkillResults] = useState<Record<string, number | null>>({})
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
   const [editing, setEditing] = useState(false)
@@ -77,13 +86,35 @@ export default function CharacterSheetDetailPage() {
       data.fieldValues.forEach((fv) => { fvals[fv.templateFieldId] = fv.value })
       setEditFieldValues(fvals)
       computeModifiers(data)
+      computeSkills(data)
     } catch (err: unknown) {
       const statusCode = (err as { statusCode?: number }).statusCode
       if (statusCode === 401 || statusCode === 403) router.replace('/login')
-    } finally {
-      setFetching(false)
-    }
+    } finally { setFetching(false) }
   }, [id, router])
+
+  const computeSkills = useCallback(async (sheetData: CharacterSheet) => {
+    const results: Record<string, number | null> = {}
+    for (const sv of sheetData.skillValues) {
+      if (sv.skill.formula && sv.skill.formula.trim()) {
+        try {
+          const variables: Record<string, number> = {}
+          sheetData.template.attributes.forEach((a) => {
+            const val = parseFloat(sheetData.values.find((v) => v.attributeId === a.id)?.value || '0')
+            variables[a.key] = isNaN(val) ? 0 : val
+          })
+          sheetData.fieldValues.forEach((fv) => {
+            const val = parseFloat(fv.value)
+            variables[fv.templateField.key] = isNaN(val) ? 0 : val
+          })
+          variables['level'] = sheetData.level ?? 1
+          const res = await api.post<{ result: number }>('/formula/evaluate', { formula: sv.skill.formula, variables })
+          results[sv.skillId] = res.result
+        } catch { results[sv.skillId] = null }
+      }
+    }
+    setSkillResults(results)
+  }, [])
 
   const computeModifiers = useCallback(async (sheetData: CharacterSheet) => {
     const results: Record<string, number | null> = {}
@@ -125,11 +156,10 @@ export default function CharacterSheetDetailPage() {
       setSheet(updated)
       setEditing(false)
       computeModifiers(updated)
+      computeSkills(updated)
     } catch (err) {
       setEditError(err instanceof Error ? err.message : 'Failed to update')
-    } finally {
-      setSaving(false)
-    }
+    } finally { setSaving(false) }
   }
 
   async function handleDelete() {
@@ -170,7 +200,6 @@ export default function CharacterSheetDetailPage() {
 
       {!editing ? (
         <div className="space-y-6">
-          {/* Header Card */}
           <div className="card !p-6 space-y-4">
             <div className="flex gap-4">
               <div className="shrink-0">
@@ -183,7 +212,6 @@ export default function CharacterSheetDetailPage() {
                   </label>
                 ) : null}
               </div>
-
               <div className="flex-1 min-w-0">
                 <h1 className="text-2xl font-bold text-gradient truncate">{sheet.characterName}</h1>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -191,46 +219,33 @@ export default function CharacterSheetDetailPage() {
                   {sheet.level && <span className="badge badge-gold">Level: {sheet.level}</span>}
                   {sheet.adventure && <span className="badge badge-gold">{sheet.adventure.campaign}</span>}
                   <span className="badge badge-gold">{sheet.template.name}</span>
-                  <span className="text-xs text-muted">
-                    Created {new Date(sheet.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                  </span>
+                  <span className="text-xs text-muted">Created {new Date(sheet.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                 </div>
               </div>
-
               {isOwner && (
                 <div className="flex gap-2 shrink-0">
-                  <button onClick={() => setEditing(true)} className="btn-ghost">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>Edit
-                  </button>
-                  <button onClick={() => setConfirmDelete(true)} className="btn-danger">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>Delete
-                  </button>
+                  <button onClick={() => setEditing(true)} className="btn-ghost"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>Edit</button>
+                  <button onClick={() => setConfirmDelete(true)} className="btn-danger"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>Delete</button>
                 </div>
               )}
             </div>
             {sheet.adventure && <><hr className="divider" /><div><h3 className="text-sm font-medium text-muted mb-1">Adventure</h3><p className="text-foreground/80 text-sm">{sheet.adventure.name}</p></div></>}
           </div>
 
-          {/* Template Field Values (Character Info from Template) */}
           {sheet.fieldValues.length > 0 && (
             <div className="card !p-6">
               <h3 className="font-semibold mb-3">Character Info</h3>
               <div className="grid gap-2 sm:grid-cols-2">
                 {sheet.fieldValues.map((fv) => (
                   <div key={fv.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
-                    <span className="text-sm text-foreground">{fv.templateField.label}</span>
-                    <span className="text-sm font-medium text-muted">{fv.value || '—'}</span>
+                    <span className="text-sm text-muted">{fv.templateField.label}</span>
+                    <span className="text-sm font-medium text-foreground">{fv.value || '—'}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Attributes */}
           <div className="card !p-6">
             <h3 className="font-semibold mb-4">Attributes</h3>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -242,15 +257,31 @@ export default function CharacterSheetDetailPage() {
                     <span className="text-sm text-foreground">{attr.name}{attr.modifier && <span className="text-[0.6rem] text-primary ml-1">mod</span>}</span>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-semibold text-foreground">{val?.value || '—'}</span>
-                      {modResult !== undefined && modResult !== null && (
-                        <span className="text-sm font-semibold text-primary">({modResult >= 0 ? '+' : ''}{modResult})</span>
-                      )}
+                      {modResult !== undefined && modResult !== null && (<span className="text-sm font-semibold text-primary">({modResult >= 0 ? '+' : ''}{modResult})</span>)}
                     </div>
                   </div>
                 )
               })}
             </div>
           </div>
+
+          {/* Skills */}
+          {sheet.skillValues.length > 0 && (
+            <div className="card !p-6">
+              <h3 className="font-semibold mb-4">Skills</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {sheet.skillValues.map((sv) => {
+                  const result = skillResults[sv.skillId]
+                  return (
+                    <div key={sv.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
+                      <span className="text-sm text-foreground">{sv.skill.name}</span>
+                      <span className="text-sm font-semibold text-primary">{result != null ? result : '—'}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="text-center"><p className="text-xs text-muted">{isOwner ? 'You own this character sheet.' : 'This character sheet belongs to another player.'}</p></div>
           {confirmDelete && <DeleteModal name={sheet.characterName} error={deleteError} loading={deleting} onCancel={() => setConfirmDelete(false)} onConfirm={handleDelete} />}
@@ -291,9 +322,7 @@ function EditForm(props: {
   return (
     <form onSubmit={props.onSubmit} className="card !p-6 space-y-4 animate-slide-up">
       <div className="flex items-center gap-3 mb-2">
-        <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-        </svg>
+        <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
         <h2 className="text-xl font-semibold text-gradient">Edit Character Sheet</h2>
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
@@ -301,8 +330,6 @@ function EditForm(props: {
         <div><label className="label">Player Name</label><input className="input-field" value={props.playerName} onChange={(e) => props.onPlayerNameChange(e.target.value)} maxLength={100} placeholder="Player name" /></div>
         <div><label className="label">Level</label><input type="number" className="input-field" value={props.level} onChange={(e) => props.onLevelChange(Number(e.target.value))} min={1} /></div>
       </div>
-
-      {/* Template Field Values */}
       {props.fieldValues.length > 0 && (
         <div>
           <label className="label">Character Info (Template)</label>
@@ -316,7 +343,6 @@ function EditForm(props: {
           </div>
         </div>
       )}
-
       <div>
         <label className="label">Attributes</label>
         <div className="space-y-3 mt-1">
@@ -345,9 +371,7 @@ function DeleteModal({ name, error, loading, onCancel, onConfirm }: { name: stri
       <div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center">
-            <svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+            <svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
           </div>
           <div><h2 className="font-semibold">Delete Character Sheet</h2><p className="text-sm text-muted-foreground">This action cannot be undone.</p></div>
         </div>
