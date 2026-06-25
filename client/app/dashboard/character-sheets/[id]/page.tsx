@@ -222,8 +222,8 @@ export default function CharacterSheetDetailPage() {
               <div className="grid gap-2 sm:grid-cols-2">
                 {sheet.fieldValues.map((fv) => (
                   <div key={fv.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
-                    <span className="text-sm text-muted">{fv.templateField.label}</span>
-                    <span className="text-sm font-medium text-foreground">{fv.value || '—'}</span>
+                    <span className="text-sm text-foreground">{fv.templateField.label}</span>
+                    <span className="text-sm font-medium text-muted">{fv.value || '—'}</span>
                   </div>
                 ))}
               </div>
