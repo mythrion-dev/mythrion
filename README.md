@@ -22,4 +22,4 @@ Anyone who plays tabletop RPGs online and is tired of stitching together five di
 
 ## Status
 
-Currently in early development.
+Currently in early development
