@@ -998,9 +998,17 @@ function TemplatesSection(props: {
   onAddEditAttr: () => void
   onRemoveEditAttr: (index: number) => void
   onUpdateEditAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string) => void
-  onAddEditField?: () => void
+          onAddEditField?: () => void
   onRemoveEditField?: (index: number) => void
   onUpdateEditField?: (index: number, field: 'key' | 'label', value: string) => void
+  newTemplateSkills?: { name: string; description: string; formula: string }[]
+  editTemplateSkills?: { name: string; description: string; formula: string }[]
+  onAddSkill?: () => void
+  onRemoveSkill?: (index: number) => void
+  onUpdateSkill?: (index: number, field: 'name' | 'description' | 'formula', value: string) => void
+  onAddEditSkill?: () => void
+  onRemoveEditSkill?: (index: number) => void
+  onUpdateEditSkill?: (index: number, field: 'name' | 'description' | 'formula', value: string) => void
 }) {
   const [expandedAttrs, setExpandedAttrs] = useState<Record<number, boolean>>({})
   const prevCount = useRef(0)
@@ -1089,6 +1097,20 @@ function TemplatesSection(props: {
               ))}
             </div>
             <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button>
+          </div>
+          {/* Skills */}
+          <div>
+            <label className="label">Skills</label>
+            <div className="space-y-2 mt-1">
+              {(props.newTemplateSkills || []).map((s, idx) => (
+                <div key={idx} className="flex items-center gap-1.5">
+                  <input className="input-field flex-1" value={s.name} onChange={(e) => props.onUpdateSkill?.(idx, 'name', e.target.value)} placeholder="Skill Name (e.g. Stealth)" />
+                  <input className="input-field flex-1" value={s.formula} onChange={(e) => props.onUpdateSkill?.(idx, 'formula', e.target.value)} placeholder="Formula (e.g. mod(dex) + mastery)" />
+                  <button type="button" onClick={() => props.onRemoveSkill?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={props.onAddSkill} className="btn-ghost text-xs mt-2">+ Add Skill</button>
           </div>
           {props.onAddField && (
             <div>
