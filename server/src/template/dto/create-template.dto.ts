@@ -29,7 +29,21 @@ export class CreateTemplateDto {
 
   @IsArray()
   @ValidateNested({ each: true })
+  @IsOptional()
+  @Type(() => TemplateFieldDefDto)
+  templateFields?: TemplateFieldDefDto[]
+
+  @IsArray()
+  @ValidateNested({ each: true })
   @ArrayMinSize(1)
   @Type(() => AttributeDefDto)
   attributes!: AttributeDefDto[]
+}
+
+export class TemplateFieldDefDto {
+  @IsString()
+  key!: string
+
+  @IsString()
+  label!: string
 }

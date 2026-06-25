@@ -61,7 +61,8 @@ export const ModelName = {
   TemplateAttribute: 'TemplateAttribute',
   CharacterSheet: 'CharacterSheet',
   CharacterSheetValue: 'CharacterSheetValue',
-  CustomField: 'CustomField'
+  TemplateField: 'TemplateField',
+  CharacterSheetFieldValue: 'CharacterSheetFieldValue'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -222,16 +223,29 @@ export const CharacterSheetValueScalarFieldEnum = {
 export type CharacterSheetValueScalarFieldEnum = (typeof CharacterSheetValueScalarFieldEnum)[keyof typeof CharacterSheetValueScalarFieldEnum]
 
 
-export const CustomFieldScalarFieldEnum = {
+export const TemplateFieldScalarFieldEnum = {
   id: 'id',
-  characterSheetId: 'characterSheetId',
+  templateId: 'templateId',
+  key: 'key',
   label: 'label',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TemplateFieldScalarFieldEnum = (typeof TemplateFieldScalarFieldEnum)[keyof typeof TemplateFieldScalarFieldEnum]
+
+
+export const CharacterSheetFieldValueScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  templateFieldId: 'templateFieldId',
   value: 'value',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type CustomFieldScalarFieldEnum = (typeof CustomFieldScalarFieldEnum)[keyof typeof CustomFieldScalarFieldEnum]
+export type CharacterSheetFieldValueScalarFieldEnum = (typeof CharacterSheetFieldValueScalarFieldEnum)[keyof typeof CharacterSheetFieldValueScalarFieldEnum]
 
 
 export const SortOrder = {

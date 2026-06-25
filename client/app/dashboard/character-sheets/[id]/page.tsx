@@ -10,18 +10,14 @@ interface SheetAttribute {
   id: string
   attributeId: string
   value: string
-  attribute: {
-    id: string
-    key: string
-    name: string
-    modifier: string | null
-  }
+  attribute: { id: string; key: string; name: string; modifier: string | null }
 }
 
-interface CustomField {
+interface FieldValue {
   id: string
-  label: string
+  templateFieldId: string
   value: string
+  templateField: { id: string; key: string; label: string }
 }
 
 interface CharacterSheet {
@@ -36,7 +32,7 @@ interface CharacterSheet {
     attributes: { id: string; key: string; name: string; modifier: string | null }[]
   }
   values: SheetAttribute[]
-  customFields: CustomField[]
+  fieldValues: FieldValue[]
   ownerId: string
   createdAt: string
 }
@@ -50,12 +46,14 @@ export default function CharacterSheetDetailPage() {
   const [sheet, setSheet] = useState<CharacterSheet | null>(null)
   const [fetching, setFetching] = useState(true)
   const [modifierResults, setModifierResults] = useState<Record<string, number | null>>({})
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState('')
   const [editPlayerName, setEditPlayerName] = useState('')
   const [editLevel, setEditLevel] = useState(1)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
+  const [editFieldValues, setEditFieldValues] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
 
@@ -63,39 +61,25 @@ export default function CharacterSheetDetailPage() {
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
-  // Custom fields management
-  const [customFields, setCustomFields] = useState<CustomField[]>([])
-  const [newFieldLabel, setNewFieldLabel] = useState('')
-  const [newFieldValue, setNewFieldValue] = useState('')
-  const [addingField, setAddingField] = useState(false)
-  const [editingFieldId, setEditingFieldId] = useState<string | null>(null)
-  const [editFieldLabel, setEditFieldLabel] = useState('')
-  const [editFieldValue, setEditFieldValue] = useState('')
-
-  // Avatar (frontend only)
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-
   const isOwner = sheet?.ownerId === user?.id
 
   const fetchSheet = useCallback(async () => {
     try {
       const data = await api.get<CharacterSheet>(`/character-sheets/${id}`)
       setSheet(data)
-      setCustomFields(data.customFields || [])
       setEditName(data.characterName)
       setEditPlayerName(data.playerName ?? '')
       setEditLevel(data.level ?? 1)
       const vals: Record<string, string> = {}
-      data.values.forEach((v) => {
-        vals[v.attributeId] = v.value
-      })
+      data.values.forEach((v) => { vals[v.attributeId] = v.value })
       setEditValues(vals)
+      const fvals: Record<string, string> = {}
+      data.fieldValues.forEach((fv) => { fvals[fv.templateFieldId] = fv.value })
+      setEditFieldValues(fvals)
       computeModifiers(data)
     } catch (err: unknown) {
       const statusCode = (err as { statusCode?: number }).statusCode
-      if (statusCode === 401 || statusCode === 403) {
-        router.replace('/login')
-      }
+      if (statusCode === 401 || statusCode === 403) router.replace('/login')
     } finally {
       setFetching(false)
     }
@@ -108,29 +92,19 @@ export default function CharacterSheetDetailPage() {
         try {
           const variables: Record<string, number> = {}
           sheetData.template.attributes.forEach((a) => {
-            const val = parseFloat(
-              sheetData.values.find((v) => v.attributeId === a.id)?.value || '0',
-            )
+            const val = parseFloat(sheetData.values.find((v) => v.attributeId === a.id)?.value || '0')
             variables[a.key] = isNaN(val) ? 0 : val
           })
-          const res = await api.post<{ result: number }>('/formula/evaluate', {
-            formula: attr.modifier,
-            variables,
-          })
+          const res = await api.post<{ result: number }>('/formula/evaluate', { formula: attr.modifier, variables })
           results[attr.id] = res.result
-        } catch {
-          results[attr.id] = null
-        }
+        } catch { results[attr.id] = null }
       }
     }
     setModifierResults(results)
   }, [])
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace('/login')
-      return
-    }
+    if (!authLoading && !user) { router.replace('/login'); return }
     if (user) fetchSheet()
   }, [authLoading, user, fetchSheet])
 
@@ -139,10 +113,7 @@ export default function CharacterSheetDetailPage() {
     setEditError(null)
     setSaving(true)
     try {
-      const values = Object.entries(editValues).map(([attributeId, value]) => ({
-        attributeId,
-        value,
-      }))
+      const values = Object.entries(editValues).map(([attributeId, value]) => ({ attributeId, value }))
       const updated = await api.patch<CharacterSheet>(`/character-sheets/${id}`, {
         characterName: editName.trim() || undefined,
         playerName: editPlayerName.trim() || undefined,
@@ -150,7 +121,6 @@ export default function CharacterSheetDetailPage() {
         values,
       })
       setSheet(updated)
-      setCustomFields(updated.customFields || [])
       setEditing(false)
       computeModifiers(updated)
     } catch (err) {
@@ -161,52 +131,9 @@ export default function CharacterSheetDetailPage() {
   }
 
   async function handleDelete() {
-    setDeleteError(null)
-    setDeleting(true)
-    try {
-      await api.delete(`/character-sheets/${id}`)
-      router.push('/dashboard?tab=character-sheets')
-    } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Failed to delete')
-      setDeleting(false)
-      setConfirmDelete(false)
-    }
-  }
-
-  // Custom field handlers
-  async function handleAddField() {
-    if (!newFieldLabel.trim() || !newFieldValue.trim()) return
-    setAddingField(true)
-    try {
-      const created = await api.post<CustomField>(`/character-sheets/${id}/custom-fields`, {
-        label: newFieldLabel.trim(),
-        value: newFieldValue.trim(),
-      })
-      setCustomFields((prev) => [...prev, created])
-      setNewFieldLabel('')
-      setNewFieldValue('')
-    } catch { /* ignore */ } finally {
-      setAddingField(false)
-    }
-  }
-
-  async function handleUpdateField(fieldId: string) {
-    if (!editFieldLabel.trim() || !editFieldValue.trim()) return
-    try {
-      const updated = await api.patch<CustomField>(`/character-sheets/${id}/custom-fields/${fieldId}`, {
-        label: editFieldLabel.trim(),
-        value: editFieldValue.trim(),
-      })
-      setCustomFields((prev) => prev.map((f) => (f.id === fieldId ? updated : f)))
-      setEditingFieldId(null)
-    } catch { /* ignore */ }
-  }
-
-  async function handleDeleteField(fieldId: string) {
-    try {
-      await api.delete(`/character-sheets/${id}/custom-fields/${fieldId}`)
-      setCustomFields((prev) => prev.filter((f) => f.id !== fieldId))
-    } catch { /* ignore */ }
+    setDeleteError(null); setDeleting(true)
+    try { await api.delete(`/character-sheets/${id}`); router.push('/dashboard?tab=character-sheets') }
+    catch (err) { setDeleteError(err instanceof Error ? err.message : 'Failed to delete'); setDeleting(false); setConfirmDelete(false) }
   }
 
   if (authLoading || fetching) {
@@ -231,10 +158,7 @@ export default function CharacterSheetDetailPage() {
   return (
     <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 animate-fade-in">
       <div className="mb-6">
-        <Link
-          href="/dashboard?tab=character-sheets"
-          className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors"
-        >
+        <Link href="/dashboard?tab=character-sheets" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
@@ -247,48 +171,26 @@ export default function CharacterSheetDetailPage() {
           {/* Header Card */}
           <div className="card !p-6 space-y-4">
             <div className="flex gap-4">
-              {/* Avatar (frontend only) */}
               <div className="shrink-0">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="Avatar" className="w-20 h-20 rounded-lg object-cover border border-border" />
-                ) : (
+                ) : isOwner ? (
                   <label className="w-20 h-20 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/30 transition-colors">
                     <span className="text-2xl text-muted">+</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) {
-                          setAvatarUrl(URL.createObjectURL(file))
-                        }
-                      }}
-                    />
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setAvatarUrl(URL.createObjectURL(file)) }} />
                   </label>
-                )}
+                ) : null}
               </div>
 
               <div className="flex-1 min-w-0">
                 <h1 className="text-2xl font-bold text-gradient truncate">{sheet.characterName}</h1>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
-                  {sheet.playerName && (
-                    <span className="badge badge-gold">Player: {sheet.playerName}</span>
-                  )}
-                  {sheet.level && (
-                    <span className="badge badge-gold">Level: {sheet.level}</span>
-                  )}
-                  {sheet.adventure && (
-                    <span className="badge badge-gold">{sheet.adventure.campaign}</span>
-                  )}
+                  {sheet.playerName && <span className="badge badge-gold">Player: {sheet.playerName}</span>}
+                  {sheet.level && <span className="badge badge-gold">Level: {sheet.level}</span>}
+                  {sheet.adventure && <span className="badge badge-gold">{sheet.adventure.campaign}</span>}
                   <span className="badge badge-gold">{sheet.template.name}</span>
                   <span className="text-xs text-muted">
-                    Created{' '}
-                    {new Date(sheet.createdAt).toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
+                    Created {new Date(sheet.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                   </span>
                 </div>
               </div>
@@ -298,39 +200,28 @@ export default function CharacterSheetDetailPage() {
                   <button onClick={() => setEditing(true)} className="btn-ghost">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Edit
+                    </svg>Edit
                   </button>
                   <button onClick={() => setConfirmDelete(true)} className="btn-danger">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Delete
+                    </svg>Delete
                   </button>
                 </div>
               )}
             </div>
-
-            {sheet.adventure && (
-              <>
-                <hr className="divider" />
-                <div>
-                  <h3 className="text-sm font-medium text-muted mb-1">Adventure</h3>
-                  <p className="text-foreground/80 text-sm">{sheet.adventure.name}</p>
-                </div>
-              </>
-            )}
+            {sheet.adventure && <><hr className="divider" /><div><h3 className="text-sm font-medium text-muted mb-1">Adventure</h3><p className="text-foreground/80 text-sm">{sheet.adventure.name}</p></div></>}
           </div>
 
-          {/* Custom Fields Metadata Section */}
-          {customFields.length > 0 && (
+          {/* Template Field Values (Character Info from Template) */}
+          {sheet.fieldValues.length > 0 && (
             <div className="card !p-6">
               <h3 className="font-semibold mb-3">Character Info</h3>
               <div className="grid gap-2 sm:grid-cols-2">
-                {customFields.map((cf) => (
-                  <div key={cf.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
-                    <span className="text-sm text-muted">{cf.label}</span>
-                    <span className="text-sm font-medium text-foreground">{cf.value}</span>
+                {sheet.fieldValues.map((fv) => (
+                  <div key={fv.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
+                    <span className="text-sm text-muted">{fv.templateField.label}</span>
+                    <span className="text-sm font-medium text-foreground">{fv.value || '—'}</span>
                   </div>
                 ))}
               </div>
@@ -346,10 +237,7 @@ export default function CharacterSheetDetailPage() {
                 const modResult = modifierResults[attr.id]
                 return (
                   <div key={attr.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
-                    <span className="text-sm text-foreground">
-                      {attr.name}
-                      {attr.modifier && <span className="text-[0.6rem] text-primary ml-1">mod</span>}
-                    </span>
+                    <span className="text-sm text-foreground">{attr.name}{attr.modifier && <span className="text-[0.6rem] text-primary ml-1">mod</span>}</span>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-semibold text-foreground">{val?.value || '—'}</span>
                       {modResult !== undefined && modResult !== null && (
@@ -362,76 +250,23 @@ export default function CharacterSheetDetailPage() {
             </div>
           </div>
 
-          {/* Custom Field Management (owner only) */}
-          {isOwner && (
-            <div className="card !p-6">
-              <h3 className="font-semibold mb-3">Custom Fields</h3>
-              <div className="space-y-2">
-                {customFields.length === 0 && (
-                  <p className="text-sm text-muted-foreground italic">No custom fields yet.</p>
-                )}
-                {customFields.map((cf) => (
-                  <div key={cf.id} className="flex items-center gap-2 py-2 border-b border-border last:border-0">
-                    {editingFieldId === cf.id ? (
-                      <>
-                        <input className="input-field flex-1 text-sm" value={editFieldLabel} onChange={(e) => setEditFieldLabel(e.target.value)} placeholder="Label" />
-                        <input className="input-field flex-1 text-sm" value={editFieldValue} onChange={(e) => setEditFieldValue(e.target.value)} placeholder="Value" />
-                        <button onClick={() => handleUpdateField(cf.id)} className="btn-primary text-xs px-2 py-1">Save</button>
-                        <button onClick={() => setEditingFieldId(null)} className="btn-ghost text-xs px-2 py-1">Cancel</button>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-sm text-muted flex-1">{cf.label}</span>
-                        <span className="text-sm text-foreground flex-1">{cf.value}</span>
-                        <button onClick={() => { setEditingFieldId(cf.id); setEditFieldLabel(cf.label); setEditFieldValue(cf.value) }} className="btn-ghost text-xs px-2 py-1">Edit</button>
-                        <button onClick={() => handleDeleteField(cf.id)} className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors">✕</button>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center gap-2 mt-3">
-                <input className="input-field flex-1 text-sm" value={newFieldLabel} onChange={(e) => setNewFieldLabel(e.target.value)} placeholder="Label (e.g. Class)" />
-                <input className="input-field flex-1 text-sm" value={newFieldValue} onChange={(e) => setNewFieldValue(e.target.value)} placeholder="Value (e.g. Rogue)" />
-                <button onClick={handleAddField} disabled={addingField || !newFieldLabel.trim() || !newFieldValue.trim()} className="btn-primary text-sm">
-                  {addingField ? '...' : 'Add'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="text-center">
-            <p className="text-xs text-muted">
-              {isOwner ? 'You own this character sheet.' : 'This character sheet belongs to another player.'}
-            </p>
-          </div>
-
-          {confirmDelete && (
-            <DeleteModal name={sheet.characterName} error={deleteError} loading={deleting} onCancel={() => setConfirmDelete(false)} onConfirm={handleDelete} />
-          )}
+          <div className="text-center"><p className="text-xs text-muted">{isOwner ? 'You own this character sheet.' : 'This character sheet belongs to another player.'}</p></div>
+          {confirmDelete && <DeleteModal name={sheet.characterName} error={deleteError} loading={deleting} onCancel={() => setConfirmDelete(false)} onConfirm={handleDelete} />}
         </div>
       ) : (
         <EditForm
-          name={editName}
-          playerName={editPlayerName}
-          level={editLevel}
-          attributes={sheet.template.attributes}
-          values={editValues}
-          error={editError}
-          saving={saving}
-          onNameChange={setEditName}
-          onPlayerNameChange={setEditPlayerName}
-          onLevelChange={setEditLevel}
+          name={editName} playerName={editPlayerName} level={editLevel}
+          attributes={sheet.template.attributes} values={editValues}
+          fieldValues={sheet.fieldValues} editFieldValues={editFieldValues}
+          error={editError} saving={saving}
+          onNameChange={setEditName} onPlayerNameChange={setEditPlayerName} onLevelChange={setEditLevel}
           onValueChange={(attrId, val) => setEditValues((prev) => ({ ...prev, [attrId]: val }))}
+          onFieldValueChange={(tfId, val) => setEditFieldValues((prev) => ({ ...prev, [tfId]: val }))}
           onCancel={() => {
-            setEditing(false)
-            setEditError(null)
-            setEditName(sheet.characterName)
-            setEditPlayerName(sheet.playerName ?? '')
-            setEditLevel(sheet.level ?? 1)
-            const vals: Record<string, string> = {}
-            sheet.values.forEach((v) => { vals[v.attributeId] = v.value })
-            setEditValues(vals)
+            setEditing(false); setEditError(null)
+            setEditName(sheet.characterName); setEditPlayerName(sheet.playerName ?? ''); setEditLevel(sheet.level ?? 1)
+            const vals: Record<string, string> = {}; sheet.values.forEach((v) => { vals[v.attributeId] = v.value }); setEditValues(vals)
+            const fvals: Record<string, string> = {}; sheet.fieldValues.forEach((fv) => { fvals[fv.templateFieldId] = fv.value }); setEditFieldValues(fvals)
           }}
           onSubmit={handleSave}
         />
@@ -440,22 +275,16 @@ export default function CharacterSheetDetailPage() {
   )
 }
 
-/* ── Sub-components ── */
-
 function EditForm(props: {
-  name: string
-  playerName: string
-  level: number
+  name: string; playerName: string; level: number
   attributes: { id: string; key: string; name: string }[]
   values: Record<string, string>
-  error: string | null
-  saving: boolean
-  onNameChange: (v: string) => void
-  onPlayerNameChange: (v: string) => void
-  onLevelChange: (v: number) => void
+  fieldValues: FieldValue[]; editFieldValues: Record<string, string>
+  error: string | null; saving: boolean
+  onNameChange: (v: string) => void; onPlayerNameChange: (v: string) => void; onLevelChange: (v: number) => void
   onValueChange: (attrId: string, v: string) => void
-  onCancel: () => void
-  onSubmit: (e: FormEvent) => void
+  onFieldValueChange: (tfId: string, v: string) => void
+  onCancel: () => void; onSubmit: (e: FormEvent) => void
 }) {
   return (
     <form onSubmit={props.onSubmit} className="card !p-6 space-y-4 animate-slide-up">
@@ -466,19 +295,26 @@ function EditForm(props: {
         <h2 className="text-xl font-semibold text-gradient">Edit Character Sheet</h2>
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
-        <div>
-          <label className="label">Character Name</label>
-          <input className="input-field" value={props.name} onChange={(e) => props.onNameChange(e.target.value)} maxLength={100} />
-        </div>
-        <div>
-          <label className="label">Player Name</label>
-          <input className="input-field" value={props.playerName} onChange={(e) => props.onPlayerNameChange(e.target.value)} maxLength={100} placeholder="Player name" />
-        </div>
-        <div>
-          <label className="label">Level</label>
-          <input type="number" className="input-field" value={props.level} onChange={(e) => props.onLevelChange(Number(e.target.value))} min={1} />
-        </div>
+        <div><label className="label">Character Name</label><input className="input-field" value={props.name} onChange={(e) => props.onNameChange(e.target.value)} maxLength={100} /></div>
+        <div><label className="label">Player Name</label><input className="input-field" value={props.playerName} onChange={(e) => props.onPlayerNameChange(e.target.value)} maxLength={100} placeholder="Player name" /></div>
+        <div><label className="label">Level</label><input type="number" className="input-field" value={props.level} onChange={(e) => props.onLevelChange(Number(e.target.value))} min={1} /></div>
       </div>
+
+      {/* Template Field Values */}
+      {props.fieldValues.length > 0 && (
+        <div>
+          <label className="label">Character Info (Template)</label>
+          <div className="space-y-3 mt-1">
+            {props.fieldValues.map((fv) => (
+              <div key={fv.id}>
+                <label className="text-xs text-muted mb-1 block">{fv.templateField.label}</label>
+                <input className="input-field" value={props.editFieldValues[fv.templateFieldId] ?? ''} onChange={(e) => props.onFieldValueChange(fv.templateFieldId, e.target.value)} placeholder={`Enter ${fv.templateField.label}...`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div>
         <label className="label">Attributes</label>
         <div className="space-y-3 mt-1">
@@ -511,10 +347,7 @@ function DeleteModal({ name, error, loading, onCancel, onConfirm }: { name: stri
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <div>
-            <h2 className="font-semibold">Delete Character Sheet</h2>
-            <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
-          </div>
+          <div><h2 className="font-semibold">Delete Character Sheet</h2><p className="text-sm text-muted-foreground">This action cannot be undone.</p></div>
         </div>
         <p className="text-sm text-muted-foreground">Are you sure you want to delete "{name}"?</p>
         {error && <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">{error}</div>}

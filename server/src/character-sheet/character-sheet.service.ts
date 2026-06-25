@@ -18,8 +18,10 @@ const sheetInclude = {
       attribute: { select: { id: true, key: true, name: true, modifier: true } },
     },
   },
-  customFields: {
-    orderBy: { createdAt: 'asc' as const },
+  fieldValues: {
+    include: {
+      templateField: { select: { id: true, key: true, label: true } },
+    },
   },
 }
 
@@ -35,7 +37,7 @@ export class CharacterSheetService {
     // Fetch the template to verify access and get adventureId
     const template = await this.prisma.template.findUnique({
       where: { id: dto.templateId },
-      include: { attributes: true },
+      include: { attributes: true, templateFields: true },
     })
     if (!template) {
       throw new NotFoundException('Template not found')
@@ -68,6 +70,12 @@ export class CharacterSheetService {
             attributeId: attr.id,
             value: '',
           })),
+        },
+        fieldValues: {
+          create: template.templateFields?.map((f) => ({
+            templateFieldId: f.id,
+            value: '',
+          })) || [],
         },
       },
       include: sheetInclude,

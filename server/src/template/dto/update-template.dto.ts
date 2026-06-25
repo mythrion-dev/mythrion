@@ -13,6 +13,14 @@ export class UpdateAttributeDefDto {
   modifier?: string
 }
 
+export class UpdateTemplateFieldDefDto {
+  @IsString()
+  key!: string
+
+  @IsString()
+  label!: string
+}
+
 export class UpdateTemplateDto {
   @IsString()
   @IsOptional()
@@ -27,4 +35,10 @@ export class UpdateTemplateDto {
   @ValidateNested({ each: true })
   @Type(() => UpdateAttributeDefDto)
   attributes?: UpdateAttributeDefDto[]
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateTemplateFieldDefDto)
+  templateFields?: UpdateTemplateFieldDefDto[]
 }

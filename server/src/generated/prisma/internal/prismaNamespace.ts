@@ -394,7 +394,8 @@ export const ModelName = {
   TemplateAttribute: 'TemplateAttribute',
   CharacterSheet: 'CharacterSheet',
   CharacterSheetValue: 'CharacterSheetValue',
-  CustomField: 'CustomField'
+  TemplateField: 'TemplateField',
+  CharacterSheetFieldValue: 'CharacterSheetFieldValue'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -410,7 +411,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "discordAccount" | "template" | "templateAttribute" | "characterSheet" | "characterSheetValue" | "customField"
+    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "discordAccount" | "template" | "templateAttribute" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1154,77 +1155,151 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    CustomField: {
-      payload: Prisma.$CustomFieldPayload<ExtArgs>
-      fields: Prisma.CustomFieldFieldRefs
+    TemplateField: {
+      payload: Prisma.$TemplateFieldPayload<ExtArgs>
+      fields: Prisma.TemplateFieldFieldRefs
       operations: {
         findUnique: {
-          args: Prisma.CustomFieldFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload> | null
+          args: Prisma.TemplateFieldFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateFieldPayload> | null
         }
         findUniqueOrThrow: {
-          args: Prisma.CustomFieldFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>
+          args: Prisma.TemplateFieldFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateFieldPayload>
         }
         findFirst: {
-          args: Prisma.CustomFieldFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload> | null
+          args: Prisma.TemplateFieldFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateFieldPayload> | null
         }
         findFirstOrThrow: {
-          args: Prisma.CustomFieldFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>
+          args: Prisma.TemplateFieldFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateFieldPayload>
         }
         findMany: {
-          args: Prisma.CustomFieldFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>[]
+          args: Prisma.TemplateFieldFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateFieldPayload>[]
         }
         create: {
-          args: Prisma.CustomFieldCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>
+          args: Prisma.TemplateFieldCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateFieldPayload>
         }
         createMany: {
-          args: Prisma.CustomFieldCreateManyArgs<ExtArgs>
+          args: Prisma.TemplateFieldCreateManyArgs<ExtArgs>
           result: BatchPayload
         }
         createManyAndReturn: {
-          args: Prisma.CustomFieldCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>[]
+          args: Prisma.TemplateFieldCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateFieldPayload>[]
         }
         delete: {
-          args: Prisma.CustomFieldDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>
+          args: Prisma.TemplateFieldDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateFieldPayload>
         }
         update: {
-          args: Prisma.CustomFieldUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>
+          args: Prisma.TemplateFieldUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateFieldPayload>
         }
         deleteMany: {
-          args: Prisma.CustomFieldDeleteManyArgs<ExtArgs>
+          args: Prisma.TemplateFieldDeleteManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateMany: {
-          args: Prisma.CustomFieldUpdateManyArgs<ExtArgs>
+          args: Prisma.TemplateFieldUpdateManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateManyAndReturn: {
-          args: Prisma.CustomFieldUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>[]
+          args: Prisma.TemplateFieldUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateFieldPayload>[]
         }
         upsert: {
-          args: Prisma.CustomFieldUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomFieldPayload>
+          args: Prisma.TemplateFieldUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateFieldPayload>
         }
         aggregate: {
-          args: Prisma.CustomFieldAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateCustomField>
+          args: Prisma.TemplateFieldAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTemplateField>
         }
         groupBy: {
-          args: Prisma.CustomFieldGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.CustomFieldGroupByOutputType>[]
+          args: Prisma.TemplateFieldGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TemplateFieldGroupByOutputType>[]
         }
         count: {
-          args: Prisma.CustomFieldCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.CustomFieldCountAggregateOutputType> | number
+          args: Prisma.TemplateFieldCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TemplateFieldCountAggregateOutputType> | number
+        }
+      }
+    }
+    CharacterSheetFieldValue: {
+      payload: Prisma.$CharacterSheetFieldValuePayload<ExtArgs>
+      fields: Prisma.CharacterSheetFieldValueFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CharacterSheetFieldValueFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetFieldValuePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CharacterSheetFieldValueFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetFieldValuePayload>
+        }
+        findFirst: {
+          args: Prisma.CharacterSheetFieldValueFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetFieldValuePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CharacterSheetFieldValueFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetFieldValuePayload>
+        }
+        findMany: {
+          args: Prisma.CharacterSheetFieldValueFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetFieldValuePayload>[]
+        }
+        create: {
+          args: Prisma.CharacterSheetFieldValueCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetFieldValuePayload>
+        }
+        createMany: {
+          args: Prisma.CharacterSheetFieldValueCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CharacterSheetFieldValueCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetFieldValuePayload>[]
+        }
+        delete: {
+          args: Prisma.CharacterSheetFieldValueDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetFieldValuePayload>
+        }
+        update: {
+          args: Prisma.CharacterSheetFieldValueUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetFieldValuePayload>
+        }
+        deleteMany: {
+          args: Prisma.CharacterSheetFieldValueDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CharacterSheetFieldValueUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CharacterSheetFieldValueUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetFieldValuePayload>[]
+        }
+        upsert: {
+          args: Prisma.CharacterSheetFieldValueUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetFieldValuePayload>
+        }
+        aggregate: {
+          args: Prisma.CharacterSheetFieldValueAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCharacterSheetFieldValue>
+        }
+        groupBy: {
+          args: Prisma.CharacterSheetFieldValueGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterSheetFieldValueGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CharacterSheetFieldValueCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterSheetFieldValueCountAggregateOutputType> | number
         }
       }
     }
@@ -1409,16 +1484,29 @@ export const CharacterSheetValueScalarFieldEnum = {
 export type CharacterSheetValueScalarFieldEnum = (typeof CharacterSheetValueScalarFieldEnum)[keyof typeof CharacterSheetValueScalarFieldEnum]
 
 
-export const CustomFieldScalarFieldEnum = {
+export const TemplateFieldScalarFieldEnum = {
   id: 'id',
-  characterSheetId: 'characterSheetId',
+  templateId: 'templateId',
+  key: 'key',
   label: 'label',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TemplateFieldScalarFieldEnum = (typeof TemplateFieldScalarFieldEnum)[keyof typeof TemplateFieldScalarFieldEnum]
+
+
+export const CharacterSheetFieldValueScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  templateFieldId: 'templateFieldId',
   value: 'value',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type CustomFieldScalarFieldEnum = (typeof CustomFieldScalarFieldEnum)[keyof typeof CustomFieldScalarFieldEnum]
+export type CharacterSheetFieldValueScalarFieldEnum = (typeof CharacterSheetFieldValueScalarFieldEnum)[keyof typeof CharacterSheetFieldValueScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1661,7 +1749,8 @@ export type GlobalOmitConfig = {
   templateAttribute?: Prisma.TemplateAttributeOmit
   characterSheet?: Prisma.CharacterSheetOmit
   characterSheetValue?: Prisma.CharacterSheetValueOmit
-  customField?: Prisma.CustomFieldOmit
+  templateField?: Prisma.TemplateFieldOmit
+  characterSheetFieldValue?: Prisma.CharacterSheetFieldValueOmit
 }
 
 /* Types for Logging */

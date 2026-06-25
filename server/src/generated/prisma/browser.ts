@@ -68,7 +68,12 @@ export type CharacterSheet = Prisma.CharacterSheetModel
  */
 export type CharacterSheetValue = Prisma.CharacterSheetValueModel
 /**
- * Model CustomField
+ * Model TemplateField
  * 
  */
-export type CustomField = Prisma.CustomFieldModel
+export type TemplateField = Prisma.TemplateFieldModel
+/**
+ * Model CharacterSheetFieldValue
+ * 
+ */
+export type CharacterSheetFieldValue = Prisma.CharacterSheetFieldValueModel
