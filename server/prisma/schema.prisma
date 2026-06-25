@@ -128,6 +128,7 @@ model Template {
   description     String?
   attributes      TemplateAttribute[]
   templateFields  TemplateField[]
+  templateSkills  TemplateSkill[]
   characterSheets CharacterSheet[]
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
@@ -150,6 +151,40 @@ model TemplateAttribute {
   @@index([templateId])
 }
 
+// ── Template Skills ──
+
+model TemplateSkill {
+  id               String                     @id @default(cuid())
+  templateId       String
+  template         Template                   @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  name             String
+  description      String?
+  formula          String?
+  order            Int                        @default(0)
+  skillValues      CharacterSheetSkillValue[]
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+
+  @@index([templateId])
+}
+
+// ── Character Sheet Skill Values ──
+
+model CharacterSheetSkillValue {
+  id              String         @id @default(cuid())
+  sheetId         String
+  sheet           CharacterSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  skillId         String
+  skill           TemplateSkill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  value           String         @default("")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([sheetId, skillId])
+  @@index([sheetId])
+  @@index([skillId])
+}
+
 // ── Character Sheets ──
 
 model CharacterSheet {
@@ -165,6 +200,7 @@ model CharacterSheet {
   owner         User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   values        CharacterSheetValue[]
   fieldValues   CharacterSheetFieldValue[]
+  skillValues   CharacterSheetSkillValue[]
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
 

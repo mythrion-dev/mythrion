@@ -59,6 +59,8 @@ export const ModelName = {
   DiscordAccount: 'DiscordAccount',
   Template: 'Template',
   TemplateAttribute: 'TemplateAttribute',
+  TemplateSkill: 'TemplateSkill',
+  CharacterSheetSkillValue: 'CharacterSheetSkillValue',
   CharacterSheet: 'CharacterSheet',
   CharacterSheetValue: 'CharacterSheetValue',
   TemplateField: 'TemplateField',
@@ -194,6 +196,32 @@ export const TemplateAttributeScalarFieldEnum = {
 } as const
 
 export type TemplateAttributeScalarFieldEnum = (typeof TemplateAttributeScalarFieldEnum)[keyof typeof TemplateAttributeScalarFieldEnum]
+
+
+export const TemplateSkillScalarFieldEnum = {
+  id: 'id',
+  templateId: 'templateId',
+  name: 'name',
+  description: 'description',
+  formula: 'formula',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TemplateSkillScalarFieldEnum = (typeof TemplateSkillScalarFieldEnum)[keyof typeof TemplateSkillScalarFieldEnum]
+
+
+export const CharacterSheetSkillValueScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  skillId: 'skillId',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterSheetSkillValueScalarFieldEnum = (typeof CharacterSheetSkillValueScalarFieldEnum)[keyof typeof CharacterSheetSkillValueScalarFieldEnum]
 
 
 export const CharacterSheetScalarFieldEnum = {

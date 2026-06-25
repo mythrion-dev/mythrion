@@ -21,6 +21,19 @@ export class UpdateTemplateFieldDefDto {
   label!: string
 }
 
+export class UpdateTemplateSkillDefDto {
+  @IsString()
+  name!: string
+
+  @IsString()
+  @IsOptional()
+  description?: string
+
+  @IsString()
+  @IsOptional()
+  formula?: string
+}
+
 export class UpdateTemplateDto {
   @IsString()
   @IsOptional()
@@ -41,4 +54,10 @@ export class UpdateTemplateDto {
   @ValidateNested({ each: true })
   @Type(() => UpdateTemplateFieldDefDto)
   templateFields?: UpdateTemplateFieldDefDto[]
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateTemplateSkillDefDto)
+  skills?: UpdateTemplateSkillDefDto[]
 }

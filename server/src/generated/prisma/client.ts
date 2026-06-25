@@ -82,6 +82,16 @@ export type Template = Prisma.TemplateModel
  */
 export type TemplateAttribute = Prisma.TemplateAttributeModel
 /**
+ * Model TemplateSkill
+ * 
+ */
+export type TemplateSkill = Prisma.TemplateSkillModel
+/**
+ * Model CharacterSheetSkillValue
+ * 
+ */
+export type CharacterSheetSkillValue = Prisma.CharacterSheetSkillValueModel
+/**
  * Model CharacterSheet
  * 
  */

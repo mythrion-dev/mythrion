@@ -392,6 +392,8 @@ export const ModelName = {
   DiscordAccount: 'DiscordAccount',
   Template: 'Template',
   TemplateAttribute: 'TemplateAttribute',
+  TemplateSkill: 'TemplateSkill',
+  CharacterSheetSkillValue: 'CharacterSheetSkillValue',
   CharacterSheet: 'CharacterSheet',
   CharacterSheetValue: 'CharacterSheetValue',
   TemplateField: 'TemplateField',
@@ -411,7 +413,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "discordAccount" | "template" | "templateAttribute" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue"
+    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "discordAccount" | "template" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1007,6 +1009,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    TemplateSkill: {
+      payload: Prisma.$TemplateSkillPayload<ExtArgs>
+      fields: Prisma.TemplateSkillFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TemplateSkillFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateSkillPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TemplateSkillFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateSkillPayload>
+        }
+        findFirst: {
+          args: Prisma.TemplateSkillFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateSkillPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TemplateSkillFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateSkillPayload>
+        }
+        findMany: {
+          args: Prisma.TemplateSkillFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateSkillPayload>[]
+        }
+        create: {
+          args: Prisma.TemplateSkillCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateSkillPayload>
+        }
+        createMany: {
+          args: Prisma.TemplateSkillCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TemplateSkillCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateSkillPayload>[]
+        }
+        delete: {
+          args: Prisma.TemplateSkillDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateSkillPayload>
+        }
+        update: {
+          args: Prisma.TemplateSkillUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateSkillPayload>
+        }
+        deleteMany: {
+          args: Prisma.TemplateSkillDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TemplateSkillUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TemplateSkillUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateSkillPayload>[]
+        }
+        upsert: {
+          args: Prisma.TemplateSkillUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateSkillPayload>
+        }
+        aggregate: {
+          args: Prisma.TemplateSkillAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTemplateSkill>
+        }
+        groupBy: {
+          args: Prisma.TemplateSkillGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TemplateSkillGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TemplateSkillCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TemplateSkillCountAggregateOutputType> | number
+        }
+      }
+    }
+    CharacterSheetSkillValue: {
+      payload: Prisma.$CharacterSheetSkillValuePayload<ExtArgs>
+      fields: Prisma.CharacterSheetSkillValueFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CharacterSheetSkillValueFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetSkillValuePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CharacterSheetSkillValueFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetSkillValuePayload>
+        }
+        findFirst: {
+          args: Prisma.CharacterSheetSkillValueFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetSkillValuePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CharacterSheetSkillValueFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetSkillValuePayload>
+        }
+        findMany: {
+          args: Prisma.CharacterSheetSkillValueFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetSkillValuePayload>[]
+        }
+        create: {
+          args: Prisma.CharacterSheetSkillValueCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetSkillValuePayload>
+        }
+        createMany: {
+          args: Prisma.CharacterSheetSkillValueCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CharacterSheetSkillValueCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetSkillValuePayload>[]
+        }
+        delete: {
+          args: Prisma.CharacterSheetSkillValueDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetSkillValuePayload>
+        }
+        update: {
+          args: Prisma.CharacterSheetSkillValueUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetSkillValuePayload>
+        }
+        deleteMany: {
+          args: Prisma.CharacterSheetSkillValueDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CharacterSheetSkillValueUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CharacterSheetSkillValueUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetSkillValuePayload>[]
+        }
+        upsert: {
+          args: Prisma.CharacterSheetSkillValueUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetSkillValuePayload>
+        }
+        aggregate: {
+          args: Prisma.CharacterSheetSkillValueAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCharacterSheetSkillValue>
+        }
+        groupBy: {
+          args: Prisma.CharacterSheetSkillValueGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterSheetSkillValueGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CharacterSheetSkillValueCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterSheetSkillValueCountAggregateOutputType> | number
+        }
+      }
+    }
     CharacterSheet: {
       payload: Prisma.$CharacterSheetPayload<ExtArgs>
       fields: Prisma.CharacterSheetFieldRefs
@@ -1457,6 +1607,32 @@ export const TemplateAttributeScalarFieldEnum = {
 export type TemplateAttributeScalarFieldEnum = (typeof TemplateAttributeScalarFieldEnum)[keyof typeof TemplateAttributeScalarFieldEnum]
 
 
+export const TemplateSkillScalarFieldEnum = {
+  id: 'id',
+  templateId: 'templateId',
+  name: 'name',
+  description: 'description',
+  formula: 'formula',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TemplateSkillScalarFieldEnum = (typeof TemplateSkillScalarFieldEnum)[keyof typeof TemplateSkillScalarFieldEnum]
+
+
+export const CharacterSheetSkillValueScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  skillId: 'skillId',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterSheetSkillValueScalarFieldEnum = (typeof CharacterSheetSkillValueScalarFieldEnum)[keyof typeof CharacterSheetSkillValueScalarFieldEnum]
+
+
 export const CharacterSheetScalarFieldEnum = {
   id: 'id',
   characterName: 'characterName',
@@ -1747,6 +1923,8 @@ export type GlobalOmitConfig = {
   discordAccount?: Prisma.DiscordAccountOmit
   template?: Prisma.TemplateOmit
   templateAttribute?: Prisma.TemplateAttributeOmit
+  templateSkill?: Prisma.TemplateSkillOmit
+  characterSheetSkillValue?: Prisma.CharacterSheetSkillValueOmit
   characterSheet?: Prisma.CharacterSheetOmit
   characterSheetValue?: Prisma.CharacterSheetValueOmit
   templateField?: Prisma.TemplateFieldOmit

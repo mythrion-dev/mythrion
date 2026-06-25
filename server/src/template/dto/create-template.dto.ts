@@ -19,6 +19,27 @@ export class AttributeDefDto {
   modifier?: string
 }
 
+export class TemplateFieldDefDto {
+  @IsString()
+  key!: string
+
+  @IsString()
+  label!: string
+}
+
+export class TemplateSkillDefDto {
+  @IsString()
+  name!: string
+
+  @IsString()
+  @IsOptional()
+  description?: string
+
+  @IsString()
+  @IsOptional()
+  formula?: string
+}
+
 export class CreateTemplateDto {
   @IsString()
   name!: string
@@ -35,15 +56,13 @@ export class CreateTemplateDto {
 
   @IsArray()
   @ValidateNested({ each: true })
+  @IsOptional()
+  @Type(() => TemplateSkillDefDto)
+  skills?: TemplateSkillDefDto[]
+
+  @IsArray()
+  @ValidateNested({ each: true })
   @ArrayMinSize(1)
   @Type(() => AttributeDefDto)
   attributes!: AttributeDefDto[]
-}
-
-export class TemplateFieldDefDto {
-  @IsString()
-  key!: string
-
-  @IsString()
-  label!: string
 }
