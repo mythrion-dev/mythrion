@@ -306,6 +306,13 @@ export default function AdventureDetailPage() {
         label: f.label,
       })),
     )
+    setEditTemplateSkills(
+      (template.templateSkills || []).map((s) => ({
+        name: s.name,
+        description: s.description ?? '',
+        formula: s.formula ?? '',
+      })),
+    )
     setEditingTemplateError(null)
   }
 
@@ -1044,6 +1051,7 @@ function TemplatesSection(props: {
               editDescription={props.editTemplateDescription}
               editAttrs={props.editTemplateAttrs}
               editFields={props.editTemplateFields}
+              editSkills={props.editTemplateSkills}
               editError={props.editingTemplateError}
               saving={props.templateSaving}
               onStartEdit={() => props.onStartEdit(t)}
@@ -1058,6 +1066,9 @@ function TemplatesSection(props: {
               onAddField={props.onAddEditField}
               onRemoveField={props.onRemoveEditField}
               onUpdateField={props.onUpdateEditField}
+              onAddSkill={props.onAddEditSkill}
+              onRemoveSkill={props.onRemoveEditSkill}
+              onUpdateSkill={props.onUpdateEditSkill}
             />
           ))}
         </div>
@@ -1208,6 +1219,7 @@ function TemplateRow(props: {
   editDescription: string
   editAttrs: { key: string; name: string; modifier: string }[]
   editFields?: { key: string; label: string }[]
+  editSkills?: { name: string; description: string; formula: string }[]
   editError: string | null
   saving: boolean
   onStartEdit: () => void
@@ -1222,6 +1234,9 @@ function TemplateRow(props: {
   onAddField?: () => void
   onRemoveField?: (index: number) => void
   onUpdateField?: (index: number, field: 'key' | 'label', value: string) => void
+  onAddSkill?: () => void
+  onRemoveSkill?: (index: number) => void
+  onUpdateSkill?: (index: number, field: 'name' | 'description' | 'formula', value: string) => void
 }) {
   const [expandedEditAttrs, setExpandedEditAttrs] = useState<Record<number, boolean>>({})
   const prevEditCount = useRef(0)
@@ -1262,11 +1277,27 @@ function TemplateRow(props: {
           </div>
           <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button>
         </div>
-        {props.onAddField && (
+        {/* Skills in edit mode */}
+        {props.onAddSkill && (
           <div>
-            <label className="label">Custom Fields</label>
+            <label className="label">Skills</label>
             <div className="space-y-2 mt-1">
-              {(props.editFields || []).map((f, idx) => (
+              {(props.editSkills || []).map((s, idx) => (
+                <div key={idx} className="flex items-center gap-1.5">
+                  <input className="input-field flex-1" value={s.name} onChange={(e) => props.onUpdateSkill?.(idx, 'name', e.target.value)} placeholder="Skill Name (e.g. Stealth)" />
+                  <input className="input-field flex-1" value={s.formula} onChange={(e) => props.onUpdateSkill?.(idx, 'formula', e.target.value)} placeholder="Formula (e.g. mod(dex) + mastery)" />
+                  <button type="button" onClick={() => props.onRemoveSkill?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={props.onAddSkill} className="btn-ghost text-xs mt-2">+ Add Skill</button>
+          </div>
+        )}
+        {props.onAddField && (
+            <div>
+              <label className="label">Custom Fields</label>
+              <div className="space-y-2 mt-1">
+                {(props.editFields || []).map((f, idx) => (
                 <div key={idx} className="flex items-center gap-1.5">
                   <input className="input-field flex-1" value={f.key} onChange={(e) => props.onUpdateField?.(idx, 'key', e.target.value)} placeholder="Key (e.g. class)" />
                   <input className="input-field flex-1" value={f.label} onChange={(e) => props.onUpdateField?.(idx, 'label', e.target.value)} placeholder="Label (e.g. Class)" />
