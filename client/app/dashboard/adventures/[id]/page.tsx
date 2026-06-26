@@ -406,6 +406,10 @@ export default function AdventureDetailPage() {
         attributes: trimmedAttrs,
         templateFields: editTemplateFields.filter((f) => f.key.trim() && f.label.trim()).map((f) => ({ key: f.key.trim(), label: f.label.trim() })),
         skills: editTemplateSkills.filter((s) => s.name.trim()).map((s) => ({ name: s.name.trim(), description: s.description.trim() || undefined, formula: s.formula.trim() || undefined })),
+        skillModifierProfiles: editTemplateProfiles.filter((p) => p.name.trim()).map((p) => ({
+          name: p.name.trim(),
+          options: p.options.filter((o) => o.label.trim()).map((o) => ({ label: o.label.trim(), value: o.value })),
+        })),
       })
       cancelEditTemplate()
       fetchTemplates()
