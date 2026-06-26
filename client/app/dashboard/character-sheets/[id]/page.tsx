@@ -138,7 +138,7 @@ export default function CharacterSheetDetailPage() {
       setProfileSelections(selMap)
 
       computeModifiers(data)
-      computeSkills(data, selMap)
+      computeSkills(data, selMap, others)
     } catch (err: unknown) {
       const statusCode = (err as { statusCode?: number }).statusCode
       if (statusCode === 401 || statusCode === 403) router.replace('/login')
