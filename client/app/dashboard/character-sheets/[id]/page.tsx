@@ -145,9 +145,10 @@ export default function CharacterSheetDetailPage() {
     } finally { setFetching(false) }
   }, [id, router])
 
-  const computeSkills = useCallback(async (sheetData: CharacterSheet, selections?: Record<string, Record<string, string | null>>) => {
+  const computeSkills = useCallback(async (sheetData: CharacterSheet, selections?: Record<string, Record<string, string | null>>, othersOverrides?: Record<string, number>) => {
     const results: Record<string, number | null> = {}
     const selMap = selections || profileSelections
+    const effOthers = othersOverrides ?? othersValues
 
     // First, compute all modifier values (e.g. dex_mod = 4)
     const modifierVars: Record<string, number> = {}
@@ -180,7 +181,7 @@ export default function CharacterSheetDetailPage() {
           variables['level'] = sheetData.level ?? 1
 
           const res = await api.post<{ result: number }>('/formula/evaluate', { formula: sv.skill.formula, variables })
-          let finalResult = res.result + (othersValues[sv.skillId] ?? 0)
+          let finalResult = res.result + (effOthers[sv.skillId] ?? 0)
 
           // Add selected profile option values ON TOP of formula result
           const skillSelections = selMap[sv.skillId] || {}
@@ -207,7 +208,7 @@ export default function CharacterSheetDetailPage() {
       }
     }
     setSkillResults(results)
-  }, [profileSelections])
+  }, [profileSelections, othersValues])
 
   const computeModifiers = useCallback(async (sheetData: CharacterSheet) => {
     const results: Record<string, number | null> = {}
@@ -425,7 +426,9 @@ export default function CharacterSheetDetailPage() {
                     }}
                     onOthersChange={async (newOthers: number) => {
                       const ov = Math.max(0, Math.floor(newOthers))
-                      setOthersValues((prev) => ({ ...prev, [sv.skillId]: ov }))
+                      const next = { ...othersValues, [sv.skillId]: ov }
+                      setOthersValues(next)
+                      computeSkills(sheet, profileSelections, next)
                       const av = activeSkills[sv.skillId] ?? false
                       try {
                         await api.patch(`/character-sheets/${sheet.id}`, {
@@ -518,23 +521,6 @@ function CollapsibleSkillRow({ skill, result, profiles, selections, active, othe
 
       {expanded && active && (
         <div className="px-4 py-3 space-y-2 border-t border-border ml-10">
-          {/* Others field */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted shrink-0 min-w-[80px]">Others:</span>
-            <input
-              type="number"
-              min={0}
-              step={1}
-              className="input-field py-1 text-xs w-20"
-              value={others || ''}
-              placeholder="0"
-              onChange={(e) => onOthersChange(parseInt(e.target.value, 10) || 0)}
-            />
-            {others > 0 && (
-              <span className="text-xs font-mono text-primary">+{others}</span>
-            )}
-          </div>
-
           {profiles.map((profile) => {
             const selectedOptionId = selections[profile.id]
             const selectedOption = selectedOptionId
@@ -567,6 +553,23 @@ function CollapsibleSkillRow({ skill, result, profiles, selections, active, othe
               </div>
             )
           })}
+
+          {/* Others field — below profiles */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted shrink-0 min-w-[80px]">Others:</span>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              className="input-field py-1 text-xs w-20"
+              value={others || ''}
+              placeholder="0"
+              onChange={(e) => onOthersChange(parseInt(e.target.value, 10) || 0)}
+            />
+            {others > 0 && (
+              <span className="text-xs font-mono text-primary">+{others}</span>
+            )}
+          </div>
         </div>
       )}
     </div>
