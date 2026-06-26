@@ -246,6 +246,9 @@ model CharacterSheet {
   characterName      String
   playerName         String?
   level              Int?                             @default(1)
+  hpActual           Int?                             @default(0)
+  hpMax              Int?                             @default(0)
+  hpPerLevel         Int?                             @default(0)
   adventureId        String?
   adventure          Adventure?                       @relation(fields: [adventureId], references: [id], onDelete: SetNull)
   templateId         String

@@ -287,6 +287,9 @@ export class CharacterSheetService {
         ...(dto.characterName !== undefined && { characterName: dto.characterName }),
         ...(dto.playerName !== undefined && { playerName: dto.playerName }),
         ...(dto.level !== undefined && { level: dto.level }),
+        ...(dto.hpActual !== undefined && { hpActual: dto.hpActual }),
+        ...(dto.hpMax !== undefined && { hpMax: dto.hpMax }),
+        ...(dto.hpPerLevel !== undefined && { hpPerLevel: dto.hpPerLevel }),
       },
       include: sheetInclude,
     })

@@ -52,6 +52,21 @@ export class UpdateCharacterSheetDto {
   @Type(() => Number)
   level?: number
 
+  @IsInt()
+  @IsOptional()
+  @Type(() => Number)
+  hpActual?: number
+
+  @IsInt()
+  @IsOptional()
+  @Type(() => Number)
+  hpMax?: number
+
+  @IsInt()
+  @IsOptional()
+  @Type(() => Number)
+  hpPerLevel?: number
+
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
