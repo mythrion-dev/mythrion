@@ -396,7 +396,10 @@ export default function CharacterSheetDetailPage() {
 
           {/* Health Points Card */}
           <div className="card !p-4 space-y-3">
-            <h3 className="font-semibold text-sm">Health Points</h3>
+            <h3 className="font-semibold text-sm">
+              Health Points
+              {sheet.hpNotes && <span className="text-xs text-muted ml-2 font-normal">— {sheet.hpNotes}</span>}
+            </h3>
             <div className="flex items-center justify-between gap-3">
               <div className="text-center">
                 <span className="text-muted text-xs block">Actual</span>
