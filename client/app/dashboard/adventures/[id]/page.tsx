@@ -269,6 +269,8 @@ export default function AdventureDetailPage() {
     setNewTemplateDescription('')
     setNewTemplateAttrs([])
     setNewTemplateFields([])
+    setNewTemplateSkills([])
+    setNewTemplateProfiles([])
     setTemplateError(null)
   }
 
@@ -1186,6 +1188,11 @@ function TemplatesSection(props: {
                   onRemove={() => props.onRemoveSkill?.(idx)}
                   attributes={props.newTemplateAttrs.filter((a) => a.key.trim() && a.name.trim()).map((a) => ({ key: a.key.trim(), name: a.name.trim() }))}
                   customFields={(props.newTemplateFields || []).filter((f) => f.key.trim() && f.label.trim()).map((f) => ({ key: f.key.trim(), label: f.label.trim() }))}
+                  skillProfiles={(props.newTemplateProfiles || []).filter((p) => p.name.trim()).map((p, pIdx) => ({
+                    id: `new-${pIdx}`,
+                    name: p.name.trim(),
+                    options: p.options.filter((o) => o.label.trim()).map((o, oIdx) => ({ id: `new-${pIdx}-${oIdx}`, label: o.label.trim(), value: o.value })),
+                  }))}
                 />
               ))}
             </div>
@@ -1306,13 +1313,14 @@ function CollapsibleAttrCard({ index, attr, isExpanded, onToggle, onUpdateAttr, 
   )
 }
 
-function CollapsibleSkillCard({ index, skill, onUpdateSkill, onRemove, attributes, customFields }: {
+function CollapsibleSkillCard({ index, skill, onUpdateSkill, onRemove, attributes, customFields, skillProfiles }: {
   index: number
   skill: { name: string; description: string; formula: string }
   onUpdateSkill?: (index: number, field: 'name' | 'description' | 'formula', value: string) => void
   onRemove?: () => void
   attributes: { key: string; name: string }[]
   customFields: { key: string; label: string }[]
+  skillProfiles: { id: string; name: string; options: { id: string; label: string; value: number }[] }[]
 }) {
   const [expanded, setExpanded] = useState(true)
   return (
@@ -1340,6 +1348,7 @@ function CollapsibleSkillCard({ index, skill, onUpdateSkill, onRemove, attribute
               onChange={(v) => onUpdateSkill?.(index, 'formula', v)}
               attributes={attributes}
               customFields={customFields}
+              skillModifierProfiles={skillProfiles}
               useModPrefix
               placeholder="Build skill formula..."
             />
@@ -1440,6 +1449,11 @@ function TemplateRow(props: {
                   onRemove={() => props.onRemoveSkill?.(idx)}
                   attributes={props.editAttrs.filter((a) => a.key.trim() && a.name.trim()).map((a) => ({ key: a.key.trim(), name: a.name.trim() }))}
                   customFields={(props.editFields || []).filter((f) => f.key.trim() && f.label.trim()).map((f) => ({ key: f.key.trim(), label: f.label.trim() }))}
+                  skillProfiles={(props.editProfiles || []).filter((p) => p.name.trim()).map((p, pIdx) => ({
+                    id: `edit-${pIdx}`,
+                    name: p.name.trim(),
+                    options: p.options.filter((o) => o.label.trim()).map((o, oIdx) => ({ id: `edit-${pIdx}-${oIdx}`, label: o.label.trim(), value: o.value })),
+                  }))}
                 />
               ))}
             </div>
