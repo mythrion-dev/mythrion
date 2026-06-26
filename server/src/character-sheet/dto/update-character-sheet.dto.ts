@@ -62,10 +62,9 @@ export class UpdateCharacterSheetDto {
   @Type(() => Number)
   hpMax?: number
 
-  @IsInt()
+  @IsString()
   @IsOptional()
-  @Type(() => Number)
-  hpPerLevel?: number
+  hpNotes?: string
 
   @IsArray()
   @IsOptional()

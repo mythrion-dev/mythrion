@@ -289,7 +289,7 @@ export class CharacterSheetService {
         ...(dto.level !== undefined && { level: dto.level }),
         ...(dto.hpActual !== undefined && { hpActual: dto.hpActual }),
         ...(dto.hpMax !== undefined && { hpMax: dto.hpMax }),
-        ...(dto.hpPerLevel !== undefined && { hpPerLevel: dto.hpPerLevel }),
+        ...(dto.hpNotes !== undefined && { hpNotes: dto.hpNotes }),
       },
       include: sheetInclude,
     })

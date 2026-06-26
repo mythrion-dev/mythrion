@@ -55,7 +55,7 @@ interface CharacterSheet {
   level: number | null
   hpActual: number | null
   hpMax: number | null
-  hpPerLevel: number | null
+  hpNotes: string | null
   adventure: { id: string; name: string; campaign: string } | null
   template: {
     id: string
@@ -89,7 +89,7 @@ export default function CharacterSheetDetailPage() {
   const [editLevel, setEditLevel] = useState(1)
   const [editHpActual, setEditHpActual] = useState(0)
   const [editHpMax, setEditHpMax] = useState(0)
-  const [editHpPerLevel, setEditHpPerLevel] = useState(0)
+  const [editHpNotes, setEditHpNotes] = useState('')
   const [editValues, setEditValues] = useState<Record<string, string>>({})
   const [editFieldValues, setEditFieldValues] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
@@ -119,7 +119,7 @@ export default function CharacterSheetDetailPage() {
       setEditLevel(data.level ?? 1)
       setEditHpActual(data.hpActual ?? 0)
       setEditHpMax(data.hpMax ?? 0)
-      setEditHpPerLevel(data.hpPerLevel ?? 0)
+      setEditHpNotes(data.hpNotes ?? '')
       const vals: Record<string, string> = {}
       data.values.forEach((v) => { vals[v.attributeId] = v.value })
       setEditValues(vals)
@@ -291,7 +291,7 @@ export default function CharacterSheetDetailPage() {
         level: editLevel,
         hpActual: editHpActual,
         hpMax: editHpMax,
-        hpPerLevel: editHpPerLevel,
+        hpNotes: editHpNotes || undefined,
         values,
         fieldValues,
       })
@@ -463,18 +463,18 @@ export default function CharacterSheetDetailPage() {
       ) : (
         <EditForm
           name={editName} playerName={editPlayerName} level={editLevel}
-          hpActual={editHpActual} hpMax={editHpMax} hpPerLevel={editHpPerLevel}
+          hpActual={editHpActual} hpMax={editHpMax} hpNotes={editHpNotes}
           attributes={sheet.template.attributes} values={editValues}
           fieldValues={sheet.fieldValues} editFieldValues={editFieldValues}
           error={editError} saving={saving}
           onNameChange={setEditName} onPlayerNameChange={setEditPlayerName} onLevelChange={setEditLevel}
-          onHpActualChange={setEditHpActual} onHpMaxChange={setEditHpMax} onHpPerLevelChange={setEditHpPerLevel}
+          onHpActualChange={setEditHpActual} onHpMaxChange={setEditHpMax} onHpNotesChange={setEditHpNotes}
           onValueChange={(attrId, val) => setEditValues((prev) => ({ ...prev, [attrId]: val }))}
           onFieldValueChange={(tfId, val) => setEditFieldValues((prev) => ({ ...prev, [tfId]: val }))}
           onCancel={() => {
             setEditing(false); setEditError(null)
             setEditName(sheet.characterName); setEditPlayerName(sheet.playerName ?? ''); setEditLevel(sheet.level ?? 1)
-            setEditHpActual(sheet.hpActual ?? 0); setEditHpMax(sheet.hpMax ?? 0); setEditHpPerLevel(sheet.hpPerLevel ?? 0)
+            setEditHpActual(sheet.hpActual ?? 0); setEditHpMax(sheet.hpMax ?? 0); setEditHpNotes(sheet.hpNotes ?? '')
             const vals: Record<string, string> = {}; sheet.values.forEach((v) => { vals[v.attributeId] = v.value }); setEditValues(vals)
             const fvals: Record<string, string> = {}; sheet.fieldValues.forEach((fv) => { fvals[fv.templateFieldId] = fv.value }); setEditFieldValues(fvals)
           }}
@@ -593,13 +593,13 @@ function CollapsibleSkillRow({ skill, result, profiles, selections, active, othe
 
 function EditForm(props: {
   name: string; playerName: string; level: number
-  hpActual: number; hpMax: number; hpPerLevel: number
+  hpActual: number; hpMax: number; hpNotes: string
   attributes: { id: string; key: string; name: string }[]
   values: Record<string, string>
   fieldValues: FieldValue[]; editFieldValues: Record<string, string>
   error: string | null; saving: boolean
   onNameChange: (v: string) => void; onPlayerNameChange: (v: string) => void; onLevelChange: (v: number) => void
-  onHpActualChange: (v: number) => void; onHpMaxChange: (v: number) => void; onHpPerLevelChange: (v: number) => void
+  onHpActualChange: (v: number) => void; onHpMaxChange: (v: number) => void; onHpNotesChange: (v: string) => void
   onValueChange: (attrId: string, v: string) => void
   onFieldValueChange: (tfId: string, v: string) => void
   onCancel: () => void; onSubmit: (e: FormEvent) => void
@@ -622,7 +622,7 @@ function EditForm(props: {
         <div className="grid gap-2 sm:grid-cols-3 mt-1">
           <div><label className="text-xs text-muted mb-1 block">Actual</label><input type="number" className="input-field" value={props.hpActual} onChange={(e) => props.onHpActualChange(Number(e.target.value))} min={0} /></div>
           <div><label className="text-xs text-muted mb-1 block">Max</label><input type="number" className="input-field" value={props.hpMax} onChange={(e) => props.onHpMaxChange(Number(e.target.value))} min={0} /></div>
-          <div><label className="text-xs text-muted mb-1 block">Per Level</label><input type="number" className="input-field" value={props.hpPerLevel} onChange={(e) => props.onHpPerLevelChange(Number(e.target.value))} min={0} /></div>
+          <div><label className="text-xs text-muted mb-1 block">Notes</label><input className="input-field" value={props.hpNotes} onChange={(e) => props.onHpNotesChange(e.target.value)} placeholder="e.g. 1d8 per level" /></div>
         </div>
       </div>
 
