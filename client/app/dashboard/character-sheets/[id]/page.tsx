@@ -108,6 +108,9 @@ export default function CharacterSheetDetailPage() {
   // Others bonus — player-entered positive int per skill
   const [othersValues, setOthersValues] = useState<Record<string, number>>({})
 
+  // HP modifier input
+  const [hpModifier, setHpModifier] = useState(0)
+
   const isOwner = sheet?.ownerId === user?.id
 
   const fetchSheet = useCallback(async () => {
@@ -242,6 +245,20 @@ export default function CharacterSheetDetailPage() {
     if (user) fetchSheet()
   }, [authLoading, user, fetchSheet])
 
+  // Handle HP change (heal / damage)
+  async function handleHpModify(delta: number) {
+    if (!sheet) return
+    const amount = Math.abs(hpModifier) || 0
+    if (amount === 0) return
+    const newHp = Math.max(0, (sheet.hpActual ?? 0) + delta * amount)
+    setSheet((prev) => prev ? { ...prev, hpActual: newHp } : prev)
+    try {
+      await api.patch(`/character-sheets/${sheet.id}`, { hpActual: newHp })
+    } catch {
+      setSheet((prev) => prev ? { ...prev, hpActual: sheet.hpActual } : prev)
+    }
+  }
+
   // Handle profile selection change
   async function handleProfileChange(skillId: string, profileId: string, optionId: string | null) {
     if (!sheet) return
@@ -375,6 +392,54 @@ export default function CharacterSheetDetailPage() {
               )}
             </div>
             {sheet.adventure && <><hr className="divider" /><div><h3 className="text-sm font-medium text-muted mb-1">Adventure</h3><p className="text-foreground/80 text-sm">{sheet.adventure.name}</p></div></>}
+          </div>
+
+          {/* Health Points Card */}
+          <div className="card !p-4 space-y-3">
+            <h3 className="font-semibold text-sm">Health Points</h3>
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-center">
+                <span className="text-muted text-xs block">Actual</span>
+                <span className="text-xl font-bold text-foreground">{sheet.hpActual ?? 0}</span>
+              </div>
+              <span className="text-muted text-lg">/</span>
+              <div className="text-center">
+                <span className="text-muted text-xs block">Max</span>
+                <span className="text-xl font-bold text-foreground">{sheet.hpMax ?? 0}</span>
+              </div>
+            </div>
+            {isOwner && (
+              <div className="space-y-2 pt-2 border-t border-border">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    className="input-field py-1 text-xs flex-1"
+                    value={hpModifier || ''}
+                    placeholder="Amount"
+                    onChange={(e) => setHpModifier(parseInt(e.target.value, 10) || 0)}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleHpModify(1)}
+                    disabled={!hpModifier}
+                    className="btn-primary text-xs flex-1 py-1"
+                  >
+                    + Heal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleHpModify(-1)}
+                    disabled={!hpModifier}
+                    className="btn-danger text-xs flex-1 py-1"
+                  >
+                    − Damage
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {sheet.fieldValues.length > 0 && (
