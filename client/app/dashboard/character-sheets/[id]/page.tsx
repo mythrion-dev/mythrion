@@ -162,16 +162,17 @@ export default function CharacterSheetDetailPage() {
           })
           variables['level'] = sheetData.level ?? 1
 
-          // Add profile values from current selections
+          const res = await api.post<{ result: number }>('/formula/evaluate', { formula: sv.skill.formula, variables })
+          let finalResult = res.result
+
+          // Add selected profile option values ON TOP of formula result
           const skillSelections = selMap[sv.skillId] || {}
           for (const profile of sheetData.template.skillModifierProfiles) {
             const selectedOptionId = skillSelections[profile.id]
             if (selectedOptionId) {
               const option = profile.options.find(o => o.id === selectedOptionId)
               if (option) {
-                variables[profile.name] = option.value
-              } else {
-                variables[profile.name] = 0
+                finalResult += option.value
               }
             } else {
               // No selection; check stored data
@@ -179,22 +180,12 @@ export default function CharacterSheetDetailPage() {
                 spv => spv.skillId === sv.skillId && spv.profileId === profile.id
               )
               if (stored?.option?.value !== undefined) {
-                variables[profile.name] = stored.option.value
-              } else {
-                variables[profile.name] = 0
+                finalResult += stored.option.value
               }
             }
           }
 
-          // Pre-populate profile variables for ones not yet in selMap but referenced by formula
-          for (const profile of sheetData.template.skillModifierProfiles) {
-            if (!(profile.name in variables)) {
-              variables[profile.name] = 0
-            }
-          }
-
-          const res = await api.post<{ result: number }>('/formula/evaluate', { formula: sv.skill.formula, variables })
-          results[sv.skillId] = res.result
+          results[sv.skillId] = finalResult
         } catch { results[sv.skillId] = null }
       }
     }
@@ -389,62 +380,19 @@ export default function CharacterSheetDetailPage() {
             </div>
           </div>
 
-          {/* Skills with Profile Selectors */}
-          {sheet.skillValues.length > 0 && allProfiles.length > 0 && (
-            <div className="space-y-4">
-              {sheet.skillValues.map((sv) => {
-                const result = skillResults[sv.skillId]
-                const selections = profileSelections[sv.skillId] || {}
-
-                return (
-                  <div key={sv.id} className="card !p-5 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-foreground">{sv.skill.name}</h3>
-                        {sv.skill.description && (
-                          <p className="text-xs text-muted mt-0.5">{sv.skill.description}</p>
-                        )}
-                      </div>
-                      <span className="text-lg font-bold text-primary">{result != null ? result : '—'}</span>
-                    </div>
-
-                    <div className="space-y-2 pt-2 border-t border-border">
-                      {allProfiles.map((profile: SkillModifierProfile) => {
-                        const selectedOptionId = selections[profile.id]
-                        const selectedOption = selectedOptionId
-                          ? profile.options.find((o: ProfileOption) => o.id === selectedOptionId)
-                          : null
-
-                        return (
-                          <div key={profile.id} className="flex items-center gap-2">
-                            <span className="text-xs text-muted shrink-0 min-w-[80px]">{profile.name}:</span>
-                            <select
-                              className="input-field py-1 text-xs flex-1"
-                              value={selectedOptionId ?? ''}
-                              onChange={(e) => {
-                                const val = e.target.value || null
-                                handleProfileChange(sv.skillId, profile.id, val)
-                              }}
-                            >
-                              <option value="">— Select —</option>
-                              {profile.options.map((opt: ProfileOption) => (
-                                <option key={opt.id} value={opt.id}>
-                                  {opt.label} ({opt.value >= 0 ? '+' : ''}{opt.value})
-                                </option>
-                              ))}
-                            </select>
-                            {selectedOption && (
-                              <span className="text-xs font-mono text-primary shrink-0">
-                                {selectedOption.value >= 0 ? '+' : ''}{selectedOption.value}
-                              </span>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )
-              })}
+          {/* Skills — collapsible cards */}
+          {sheet.skillValues.length > 0 && (
+            <div className="space-y-2">
+              {sheet.skillValues.map((sv) => (
+                <CollapsibleSkillRow
+                  key={sv.id}
+                  skill={sv}
+                  result={skillResults[sv.skillId]}
+                  profiles={allProfiles}
+                  selections={profileSelections[sv.skillId] || {}}
+                  onProfileChange={(profileId, optionId) => handleProfileChange(sv.skillId, profileId, optionId)}
+                />
+              ))}
             </div>
           )}
 
@@ -470,6 +418,80 @@ export default function CharacterSheetDetailPage() {
         />
       )}
     </main>
+  )
+}
+
+function CollapsibleSkillRow({ skill, result, profiles, selections, onProfileChange }: {
+  skill: SkillValue
+  result: number | null
+  profiles: SkillModifierProfile[]
+  selections: Record<string, string | null>
+  onProfileChange: (profileId: string, optionId: string | null) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <div className="rounded-lg border border-border bg-background/30 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center justify-between w-full px-4 py-3 text-left hover:bg-background/50 transition-colors"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-foreground truncate">{skill.skill.name}</span>
+            {skill.skill.description && (
+              <span className="text-xs text-muted truncate hidden sm:inline">— {skill.skill.description}</span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-3 shrink-0 ml-3">
+          <span className="text-base font-bold text-primary">{result != null ? result : '—'}</span>
+          {profiles.length > 0 && (
+            <svg className={`w-4 h-4 text-muted transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          )}
+        </div>
+      </button>
+
+      {expanded && profiles.length > 0 && (
+        <div className="px-4 py-3 space-y-2 border-t border-border">
+          {profiles.map((profile) => {
+            const selectedOptionId = selections[profile.id]
+            const selectedOption = selectedOptionId
+              ? profile.options.find((o: ProfileOption) => o.id === selectedOptionId)
+              : null
+
+            return (
+              <div key={profile.id} className="flex items-center gap-2">
+                <span className="text-xs text-muted shrink-0 min-w-[80px]">{profile.name}:</span>
+                <select
+                  className="input-field py-1 text-xs flex-1"
+                  value={selectedOptionId ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value || null
+                    onProfileChange(profile.id, val)
+                  }}
+                >
+                  <option value="">— Select —</option>
+                  {profile.options.map((opt: ProfileOption) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.label} ({opt.value >= 0 ? '+' : ''}{opt.value})
+                    </option>
+                  ))}
+                </select>
+                {selectedOption && (
+                  <span className="text-xs font-mono text-primary shrink-0">
+                    {selectedOption.value >= 0 ? '+' : ''}{selectedOption.value}
+                  </span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 
