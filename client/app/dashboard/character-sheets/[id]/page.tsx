@@ -115,6 +115,11 @@ export default function CharacterSheetDetailPage() {
       data.fieldValues.forEach((fv) => { fvals[fv.templateFieldId] = fv.value })
       setEditFieldValues(fvals)
 
+      // Restore active skills from stored values ("1" = checked)
+      const actives: Record<string, boolean> = {}
+      data.skillValues.forEach((sv) => { actives[sv.skillId] = sv.value === '1' })
+      setActiveSkills(actives)
+
       // Build profile selections map: { [skillId]: { [profileId]: optionId | null } }
       const selMap: Record<string, Record<string, string | null>> = {}
       data.skillProfileValues.forEach((spv) => {
@@ -396,8 +401,16 @@ export default function CharacterSheetDetailPage() {
                     profiles={allProfiles}
                     selections={profileSelections[sv.skillId] || {}}
                     active={activeSkills[sv.skillId] ?? false}
-                    onToggleActive={() => {
-                      setActiveSkills((prev) => ({ ...prev, [sv.skillId]: !prev[sv.skillId] }))
+                    onToggleActive={async () => {
+                      const newVal = !activeSkills[sv.skillId]
+                      setActiveSkills((prev) => ({ ...prev, [sv.skillId]: newVal }))
+                      try {
+                        await api.patch(`/character-sheets/${sheet.id}`, {
+                          skillValues: [{ skillId: sv.skillId, value: newVal ? '1' : '0' }],
+                        })
+                      } catch {
+                        setActiveSkills((prev) => ({ ...prev, [sv.skillId]: !newVal }))
+                      }
                     }}
                     onProfileChange={(profileId, optionId) => handleProfileChange(sv.skillId, profileId, optionId)}
                   />

@@ -242,6 +242,23 @@ export class CharacterSheetService {
       }
     }
 
+    // If skillValues (checkbox state) are provided, upsert each one
+    if (dto.skillValues) {
+      for (const sv of dto.skillValues) {
+        await this.prisma.characterSheetSkillValue.upsert({
+          where: {
+            sheetId_skillId: { sheetId: id, skillId: sv.skillId },
+          },
+          create: {
+            sheetId: id,
+            skillId: sv.skillId,
+            value: sv.value,
+          },
+          update: { value: sv.value },
+        })
+      }
+    }
+
     // If skillProfileValues are provided, upsert each one
     if (dto.skillProfileValues) {
       for (const spv of dto.skillProfileValues) {
