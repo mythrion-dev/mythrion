@@ -380,19 +380,22 @@ export default function CharacterSheetDetailPage() {
             </div>
           </div>
 
-          {/* Skills — collapsible cards */}
+          {/* Skills — card with 2-column grid, collapsible rows */}
           {sheet.skillValues.length > 0 && (
-            <div className="space-y-2">
-              {sheet.skillValues.map((sv) => (
-                <CollapsibleSkillRow
-                  key={sv.id}
-                  skill={sv}
-                  result={skillResults[sv.skillId]}
-                  profiles={allProfiles}
-                  selections={profileSelections[sv.skillId] || {}}
-                  onProfileChange={(profileId, optionId) => handleProfileChange(sv.skillId, profileId, optionId)}
-                />
-              ))}
+            <div className="card !p-6">
+              <h3 className="font-semibold mb-4">Skills</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {sheet.skillValues.map((sv) => (
+                  <CollapsibleSkillRow
+                    key={sv.id}
+                    skill={sv}
+                    result={skillResults[sv.skillId]}
+                    profiles={allProfiles}
+                    selections={profileSelections[sv.skillId] || {}}
+                    onProfileChange={(profileId, optionId) => handleProfileChange(sv.skillId, profileId, optionId)}
+                  />
+                ))}
+              </div>
             </div>
           )}
 
