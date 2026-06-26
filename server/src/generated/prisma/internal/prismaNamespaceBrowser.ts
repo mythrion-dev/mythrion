@@ -58,6 +58,9 @@ export const ModelName = {
   GoogleAccount: 'GoogleAccount',
   DiscordAccount: 'DiscordAccount',
   Template: 'Template',
+  SkillModifierProfile: 'SkillModifierProfile',
+  ProfileOption: 'ProfileOption',
+  CharacterSheetSkillProfileValue: 'CharacterSheetSkillProfileValue',
   TemplateAttribute: 'TemplateAttribute',
   TemplateSkill: 'TemplateSkill',
   CharacterSheetSkillValue: 'CharacterSheetSkillValue',
@@ -182,6 +185,44 @@ export const TemplateScalarFieldEnum = {
 } as const
 
 export type TemplateScalarFieldEnum = (typeof TemplateScalarFieldEnum)[keyof typeof TemplateScalarFieldEnum]
+
+
+export const SkillModifierProfileScalarFieldEnum = {
+  id: 'id',
+  templateId: 'templateId',
+  name: 'name',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SkillModifierProfileScalarFieldEnum = (typeof SkillModifierProfileScalarFieldEnum)[keyof typeof SkillModifierProfileScalarFieldEnum]
+
+
+export const ProfileOptionScalarFieldEnum = {
+  id: 'id',
+  profileId: 'profileId',
+  label: 'label',
+  value: 'value',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProfileOptionScalarFieldEnum = (typeof ProfileOptionScalarFieldEnum)[keyof typeof ProfileOptionScalarFieldEnum]
+
+
+export const CharacterSheetSkillProfileValueScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  skillId: 'skillId',
+  profileId: 'profileId',
+  optionId: 'optionId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterSheetSkillProfileValueScalarFieldEnum = (typeof CharacterSheetSkillProfileValueScalarFieldEnum)[keyof typeof CharacterSheetSkillProfileValueScalarFieldEnum]
 
 
 export const TemplateAttributeScalarFieldEnum = {

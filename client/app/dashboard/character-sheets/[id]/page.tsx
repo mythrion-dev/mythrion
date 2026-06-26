@@ -27,6 +27,27 @@ interface SkillValue {
   skill: { id: string; name: string; description: string | null; formula: string | null }
 }
 
+interface ProfileOption {
+  id: string
+  label: string
+  value: number
+}
+
+interface SkillModifierProfile {
+  id: string
+  name: string
+  options: ProfileOption[]
+}
+
+interface SkillProfileValue {
+  id: string
+  skillId: string
+  profileId: string
+  optionId: string | null
+  profile: { id: string; name: string }
+  option: { id: string; label: string; value: number } | null
+}
+
 interface CharacterSheet {
   id: string
   characterName: string
@@ -37,10 +58,12 @@ interface CharacterSheet {
     id: string
     name: string
     attributes: { id: string; key: string; name: string; modifier: string | null }[]
+    skillModifierProfiles: SkillModifierProfile[]
   }
   values: SheetAttribute[]
   fieldValues: FieldValue[]
   skillValues: SkillValue[]
+  skillProfileValues: SkillProfileValue[]
   ownerId: string
   createdAt: string
 }
@@ -70,6 +93,9 @@ export default function CharacterSheetDetailPage() {
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
+  // Local profile selections (optimistic UI)
+  const [profileSelections, setProfileSelections] = useState<Record<string, Record<string, string | null>>>({})
+
   const isOwner = sheet?.ownerId === user?.id
 
   const fetchSheet = useCallback(async () => {
@@ -85,16 +111,26 @@ export default function CharacterSheetDetailPage() {
       const fvals: Record<string, string> = {}
       data.fieldValues.forEach((fv) => { fvals[fv.templateFieldId] = fv.value })
       setEditFieldValues(fvals)
+
+      // Build profile selections map: { [skillId]: { [profileId]: optionId | null } }
+      const selMap: Record<string, Record<string, string | null>> = {}
+      data.skillProfileValues.forEach((spv) => {
+        if (!selMap[spv.skillId]) selMap[spv.skillId] = {}
+        selMap[spv.skillId][spv.profileId] = spv.optionId
+      })
+      setProfileSelections(selMap)
+
       computeModifiers(data)
-      computeSkills(data)
+      computeSkills(data, selMap)
     } catch (err: unknown) {
       const statusCode = (err as { statusCode?: number }).statusCode
       if (statusCode === 401 || statusCode === 403) router.replace('/login')
     } finally { setFetching(false) }
   }, [id, router])
 
-  const computeSkills = useCallback(async (sheetData: CharacterSheet) => {
+  const computeSkills = useCallback(async (sheetData: CharacterSheet, selections?: Record<string, Record<string, string | null>>) => {
     const results: Record<string, number | null> = {}
+    const selMap = selections || profileSelections
 
     // First, compute all modifier values (e.g. dex_mod = 4)
     const modifierVars: Record<string, number> = {}
@@ -125,13 +161,45 @@ export default function CharacterSheetDetailPage() {
             variables[fv.templateField.key] = isNaN(val) ? 0 : val
           })
           variables['level'] = sheetData.level ?? 1
+
+          // Add profile values from current selections
+          const skillSelections = selMap[sv.skillId] || {}
+          for (const profile of sheetData.template.skillModifierProfiles) {
+            const selectedOptionId = skillSelections[profile.id]
+            if (selectedOptionId) {
+              const option = profile.options.find(o => o.id === selectedOptionId)
+              if (option) {
+                variables[profile.name] = option.value
+              } else {
+                variables[profile.name] = 0
+              }
+            } else {
+              // No selection; check stored data
+              const stored = sheetData.skillProfileValues.find(
+                spv => spv.skillId === sv.skillId && spv.profileId === profile.id
+              )
+              if (stored?.option?.value !== undefined) {
+                variables[profile.name] = stored.option.value
+              } else {
+                variables[profile.name] = 0
+              }
+            }
+          }
+
+          // Pre-populate profile variables for ones not yet in selMap but referenced by formula
+          for (const profile of sheetData.template.skillModifierProfiles) {
+            if (!(profile.name in variables)) {
+              variables[profile.name] = 0
+            }
+          }
+
           const res = await api.post<{ result: number }>('/formula/evaluate', { formula: sv.skill.formula, variables })
           results[sv.skillId] = res.result
         } catch { results[sv.skillId] = null }
       }
     }
     setSkillResults(results)
-  }, [])
+  }, [profileSelections])
 
   const computeModifiers = useCallback(async (sheetData: CharacterSheet) => {
     const results: Record<string, number | null> = {}
@@ -156,6 +224,42 @@ export default function CharacterSheetDetailPage() {
     if (user) fetchSheet()
   }, [authLoading, user, fetchSheet])
 
+  // Handle profile selection change
+  async function handleProfileChange(skillId: string, profileId: string, optionId: string | null) {
+    if (!sheet) return
+
+    // Optimistic UI update
+    setProfileSelections((prev) => {
+      const next = { ...prev }
+      if (!next[skillId]) next[skillId] = {}
+      next[skillId] = { ...next[skillId], [profileId]: optionId }
+      return next
+    })
+
+    // Persist to backend
+    try {
+      await api.patch(`/character-sheets/${sheet.id}/skills/${skillId}/profiles/${profileId}`, { optionId })
+    } catch {
+      // Revert on failure
+      const stored = sheet.skillProfileValues.find(spv => spv.skillId === skillId && spv.profileId === profileId)
+      setProfileSelections((prev) => {
+        const next = { ...prev }
+        if (!next[skillId]) next[skillId] = {}
+        next[skillId] = { ...next[skillId], [profileId]: stored?.optionId ?? null }
+        return next
+      })
+      return
+    }
+
+    // Recalculate skills with new selection
+    if (sheet) {
+      const updatedSelections = { ...profileSelections }
+      if (!updatedSelections[skillId]) updatedSelections[skillId] = {}
+      updatedSelections[skillId] = { ...updatedSelections[skillId], [profileId]: optionId }
+      computeSkills(sheet, updatedSelections)
+    }
+  }
+
   async function handleSave(e: FormEvent) {
     e.preventDefault()
     setEditError(null)
@@ -173,7 +277,7 @@ export default function CharacterSheetDetailPage() {
       setSheet(updated)
       setEditing(false)
       computeModifiers(updated)
-      computeSkills(updated)
+      computeSkills(updated, profileSelections)
     } catch (err) {
       setEditError(err instanceof Error ? err.message : 'Failed to update')
     } finally { setSaving(false) }
@@ -202,6 +306,15 @@ export default function CharacterSheetDetailPage() {
         <div className="text-sm text-muted-foreground">Character sheet not found.</div>
       </main>
     )
+  }
+
+  // Extract which profiles are used by which skill
+  function getSkillProfiles(skillFormula: string | null): SkillModifierProfile[] {
+    if (!skillFormula) return []
+    const tokens = skillFormula.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || []
+    const functions = new Set(['mod', 'floor', 'ceil', 'round', 'max', 'min', 'abs'])
+    const usedVars = tokens.filter(t => !functions.has(t))
+    return sheet!.template.skillModifierProfiles.filter(p => usedVars.includes(p.name))
   }
 
   return (
@@ -282,21 +395,65 @@ export default function CharacterSheetDetailPage() {
             </div>
           </div>
 
-          {/* Skills */}
+          {/* Skills with Profile Selectors */}
           {sheet.skillValues.length > 0 && (
-            <div className="card !p-6">
-              <h3 className="font-semibold mb-4">Skills</h3>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {sheet.skillValues.map((sv) => {
-                  const result = skillResults[sv.skillId]
-                  return (
-                    <div key={sv.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
-                      <span className="text-sm text-foreground">{sv.skill.name}</span>
-                      <span className="text-sm font-semibold text-primary">{result != null ? result : '—'}</span>
+            <div className="space-y-4">
+              {sheet.skillValues.map((sv) => {
+                const result = skillResults[sv.skillId]
+                const skillProfiles = getSkillProfiles(sv.skill.formula)
+                const selections = profileSelections[sv.skillId] || {}
+
+                return (
+                  <div key={sv.id} className="card !p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-foreground">{sv.skill.name}</h3>
+                        {sv.skill.description && (
+                          <p className="text-xs text-muted mt-0.5">{sv.skill.description}</p>
+                        )}
+                      </div>
+                      <span className="text-lg font-bold text-primary">{result != null ? result : '—'}</span>
                     </div>
-                  )
-                })}
-              </div>
+
+                    {skillProfiles.length > 0 && (
+                      <div className="space-y-2 pt-2 border-t border-border">
+                        {skillProfiles.map((profile) => {
+                          const selectedOptionId = selections[profile.id]
+                          const selectedOption = selectedOptionId
+                            ? profile.options.find(o => o.id === selectedOptionId)
+                            : null
+
+                          return (
+                            <div key={profile.id} className="flex items-center gap-2">
+                              <span className="text-xs text-muted shrink-0 min-w-[80px]">{profile.name}:</span>
+                              <select
+                                className="input-field py-1 text-xs flex-1"
+                                value={selectedOptionId ?? ''}
+                                onChange={(e) => {
+                                  const val = e.target.value || null
+                                  handleProfileChange(sv.skillId, profile.id, val)
+                                }}
+                              >
+                                <option value="">— Select —</option>
+                                {profile.options.map((opt) => (
+                                  <option key={opt.id} value={opt.id}>
+                                    {opt.label} ({opt.value >= 0 ? '+' : ''}{opt.value})
+                                  </option>
+                                ))}
+                              </select>
+                              {selectedOption && (
+                                <span className="text-xs font-mono text-primary shrink-0">
+                                  {selectedOption.value >= 0 ? '+' : ''}{selectedOption.value}
+                                </span>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
 

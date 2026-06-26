@@ -73,4 +73,21 @@ export class CharacterSheetController {
   ) {
     return this.sheetService.unlinkFromAdventure(id, req.user.sub)
   }
+
+  @Patch(':id/skills/:skillId/profiles/:profileId')
+  updateSkillProfileValue(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('skillId') skillId: string,
+    @Param('profileId') profileId: string,
+    @Body('optionId') optionId: string | null,
+  ) {
+    return this.sheetService.updateSkillProfileValue(
+      id,
+      skillId,
+      profileId,
+      optionId,
+      req.user.sub,
+    )
+  }
 }

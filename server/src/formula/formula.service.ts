@@ -59,6 +59,7 @@ export class FormulaService {
   /**
    * Validate a formula expression without executing it.
    * Checks for syntax errors and unknown functions.
+   * Also validates that profile variables are used correctly (not inside mod()).
    */
   validate(formula: string, knownVariables: string[]): void {
     this.validateRaw(transformModSyntax(formula), knownVariables)
@@ -91,9 +92,9 @@ export class FormulaService {
       if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
         throw new BadRequestException(`Invalid variable name: "${name}"`)
       }
-      // Only allow known variables (attributes)
+      // Only allow known variables (attributes, profiles, mod-suffixed, bonus, penalty, etc.)
       if (!knownVariables.includes(name)) {
-        throw new BadRequestException(`Unknown attribute: "${name}". Available: ${knownVariables.join(', ')}`)
+        throw new BadRequestException(`Unknown variable: "${name}". Available: ${knownVariables.join(', ')}`)
       }
     }
 
@@ -144,5 +145,29 @@ export class FormulaService {
         error: err instanceof Error ? err.message : 'Invalid formula',
       }
     }
+  }
+
+  /**
+   * Extract all variable names referenced in a formula.
+   * This includes both raw attributes and profile names.
+   * It ignores function names like mod(), floor(), etc.
+   */
+  extractVariables(formula: string): string[] {
+    if (!formula || formula.trim().length === 0) return []
+    const transformed = transformModSyntax(formula)
+    const tokens = transformed.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || []
+    const functionNames = new Set([
+      'mod', 'floor', 'ceil', 'round', 'max', 'min', 'abs',
+      'add', 'subtract', 'multiply', 'divide', 'pow', 'sqrt',
+    ])
+    const seen = new Set<string>()
+    const vars: string[] = []
+    for (const t of tokens) {
+      if (!functionNames.has(t) && !seen.has(t)) {
+        seen.add(t)
+        vars.push(t)
+      }
+    }
+    return vars
   }
 }

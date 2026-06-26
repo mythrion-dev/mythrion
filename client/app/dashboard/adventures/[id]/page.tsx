@@ -44,6 +44,12 @@ interface Invitation {
   }
 }
 
+interface SkillModifierProfile {
+  id: string
+  name: string
+  options: { id: string; label: string; value: number }[]
+}
+
 interface Template {
   id: string
   name: string
@@ -51,6 +57,7 @@ interface Template {
   attributes: { id: string; key: string; name: string; modifier: string | null }[]
   templateFields?: { id: string; key: string; label: string }[]
   templateSkills?: { id: string; name: string; description: string | null; formula: string | null }[]
+  skillModifierProfiles?: SkillModifierProfile[]
   createdAt: string
 }
 
@@ -122,6 +129,28 @@ export default function AdventureDetailPage() {
   const [newTemplateSkills, setNewTemplateSkills] = useState<{ name: string; description: string; formula: string }[]>([])
   const [editTemplateSkills, setEditTemplateSkills] = useState<{ name: string; description: string; formula: string }[]>([])
   const [templateSaving, setTemplateSaving] = useState(false)
+
+  // Skill Modifier Profiles state
+  const [newTemplateProfiles, setNewTemplateProfiles] = useState<{ name: string; options: { label: string; value: number }[] }[]>([])
+  const [editTemplateProfiles, setEditTemplateProfiles] = useState<{ name: string; options: { label: string; value: number }[] }[]>([])
+
+  // Profile handlers
+  function addNewProfile() { setNewTemplateProfiles((prev) => [...prev, { name: '', options: [{ label: '', value: 0 }] }]) }
+  function removeNewProfile(index: number) { setNewTemplateProfiles((prev) => prev.filter((_, i) => i !== index)) }
+  function updateNewProfile(index: number, name: string) { setNewTemplateProfiles((prev) => prev.map((p, i) => (i === index ? { ...p, name } : p))) }
+  function addNewProfileOption(pIdx: number) { setNewTemplateProfiles((prev) => prev.map((p, i) => (i === pIdx ? { ...p, options: [...p.options, { label: '', value: 0 }] } : p))) }
+  function removeNewProfileOption(pIdx: number, oIdx: number) { setNewTemplateProfiles((prev) => prev.map((p, i) => (i === pIdx ? { ...p, options: p.options.filter((_, oi) => oi !== oi) } : p))) }
+  function updateNewProfileOption(pIdx: number, oIdx: number, field: 'label' | 'value', value: string | number) {
+    setNewTemplateProfiles((prev) => prev.map((p, i) => (i === pIdx ? { ...p, options: p.options.map((o, oi) => (oi === oIdx ? { ...o, [field]: field === 'value' ? Number(value) : value } : o)) } : p)))
+  }
+  function addEditProfile() { setEditTemplateProfiles((prev) => [...prev, { name: '', options: [{ label: '', value: 0 }] }]) }
+  function removeEditProfile(index: number) { setEditTemplateProfiles((prev) => prev.filter((_, i) => i !== index)) }
+  function updateEditProfile(index: number, name: string) { setEditTemplateProfiles((prev) => prev.map((p, i) => (i === index ? { ...p, name } : p))) }
+  function addEditProfileOption(pIdx: number) { setEditTemplateProfiles((prev) => prev.map((p, i) => (i === pIdx ? { ...p, options: [...p.options, { label: '', value: 0 }] } : p))) }
+  function removeEditProfileOption(pIdx: number, oIdx: number) { setEditTemplateProfiles((prev) => prev.map((p, i) => (i === pIdx ? { ...p, options: p.options.filter((_, oi) => oi !== oi) } : p))) }
+  function updateEditProfileOption(pIdx: number, oIdx: number, field: 'label' | 'value', value: string | number) {
+    setEditTemplateProfiles((prev) => prev.map((p, i) => (i === pIdx ? { ...p, options: p.options.map((o, oi) => (oi === oIdx ? { ...o, [field]: field === 'value' ? Number(value) : value } : o)) } : p)))
+  }
 
   // Template skills handlers
   function addNewSkillRow() { setNewTemplateSkills((prev) => [...prev, { name: '', description: '', formula: '' }]) }
@@ -279,6 +308,10 @@ export default function AdventureDetailPage() {
         attributes: trimmedAttrs,
         templateFields: newTemplateFields.filter((f) => f.key.trim() && f.label.trim()).map((f) => ({ key: f.key.trim(), label: f.label.trim() })),
         skills: newTemplateSkills.filter((s) => s.name.trim()).map((s) => ({ name: s.name.trim(), description: s.description.trim() || undefined, formula: s.formula.trim() || undefined })),
+        skillModifierProfiles: newTemplateProfiles.filter((p) => p.name.trim()).map((p) => ({
+          name: p.name.trim(),
+          options: p.options.filter((o) => o.label.trim()).map((o) => ({ label: o.label.trim(), value: o.value })),
+        })),
       })
       resetNewTemplate()
       fetchTemplates()
@@ -311,6 +344,12 @@ export default function AdventureDetailPage() {
         name: s.name,
         description: s.description ?? '',
         formula: s.formula ?? '',
+      })),
+    )
+    setEditTemplateProfiles(
+      (template.skillModifierProfiles || []).map((p) => ({
+        name: p.name,
+        options: p.options.map((o) => ({ label: o.label, value: o.value })),
       })),
     )
     setEditingTemplateError(null)
@@ -574,7 +613,7 @@ export default function AdventureDetailPage() {
               </CollapsibleSection>
             </>
           ) : (
-            <TemplatesSection templates={templates} isGM={isGM} showNewTemplate={showNewTemplate} editingTemplateId={editingTemplateId} newTemplateName={newTemplateName} newTemplateDescription={newTemplateDescription} newTemplateAttrs={newTemplateAttrs} newTemplateFields={newTemplateFields} templateError={templateError} templateCreating={templateCreating} editTemplateName={editTemplateName} editTemplateDescription={editTemplateDescription} editTemplateAttrs={editTemplateAttrs} editingTemplateError={editingTemplateError} templateSaving={templateSaving} onNewClick={() => setShowNewTemplate(true)} onCancelNew={resetNewTemplate} onCreateTemplate={handleCreateTemplate} onNameChange={setNewTemplateName} onDescriptionChange={setNewTemplateDescription} onAddAttr={addNewAttrRow} onRemoveAttr={removeNewAttrRow} onUpdateAttr={updateNewAttr} onAddField={addNewFieldRow} onRemoveField={removeNewFieldRow} onUpdateField={updateNewField} newTemplateSkills={newTemplateSkills} onAddSkill={addNewSkillRow} onRemoveSkill={removeNewSkillRow} onUpdateSkill={updateNewSkill} onStartEdit={startEditTemplate} onCancelEdit={cancelEditTemplate} onUpdateTemplate={handleUpdateTemplate} onDeleteTemplate={handleDeleteTemplate} onEditNameChange={setEditTemplateName} onEditDescriptionChange={setEditTemplateDescription} onAddEditAttr={addEditAttrRow} onRemoveEditAttr={removeEditAttrRow} onUpdateEditAttr={updateEditAttr} editTemplateFields={editTemplateFields} onAddEditField={addEditFieldRow} onRemoveEditField={removeEditFieldRow} onUpdateEditField={updateEditField} editTemplateSkills={editTemplateSkills} onAddEditSkill={addEditSkillRow} onRemoveEditSkill={removeEditSkillRow} onUpdateEditSkill={updateEditSkill} />
+            <TemplatesSection templates={templates} isGM={isGM} showNewTemplate={showNewTemplate} editingTemplateId={editingTemplateId} newTemplateName={newTemplateName} newTemplateDescription={newTemplateDescription} newTemplateAttrs={newTemplateAttrs} newTemplateFields={newTemplateFields} templateError={templateError} templateCreating={templateCreating} editTemplateName={editTemplateName} editTemplateDescription={editTemplateDescription} editTemplateAttrs={editTemplateAttrs} editingTemplateError={editingTemplateError} templateSaving={templateSaving} onNewClick={() => setShowNewTemplate(true)} onCancelNew={resetNewTemplate} onCreateTemplate={handleCreateTemplate} onNameChange={setNewTemplateName} onDescriptionChange={setNewTemplateDescription} onAddAttr={addNewAttrRow} onRemoveAttr={removeNewAttrRow} onUpdateAttr={updateNewAttr} onAddField={addNewFieldRow} onRemoveField={removeNewFieldRow} onUpdateField={updateNewField} newTemplateSkills={newTemplateSkills} onAddSkill={addNewSkillRow} onRemoveSkill={removeNewSkillRow} onUpdateSkill={updateNewSkill} onStartEdit={startEditTemplate} onCancelEdit={cancelEditTemplate} onUpdateTemplate={handleUpdateTemplate} onDeleteTemplate={handleDeleteTemplate} onEditNameChange={setEditTemplateName} onEditDescriptionChange={setEditTemplateDescription} onAddEditAttr={addEditAttrRow} onRemoveEditAttr={removeEditAttrRow} onUpdateEditAttr={updateEditAttr} editTemplateFields={editTemplateFields} onAddEditField={addEditFieldRow} onRemoveEditField={removeEditFieldRow} onUpdateEditField={updateEditField} editTemplateSkills={editTemplateSkills} onAddEditSkill={addEditSkillRow} onRemoveEditSkill={removeEditSkillRow} onUpdateEditSkill={updateEditSkill} newTemplateProfiles={newTemplateProfiles} editTemplateProfiles={editTemplateProfiles} onAddProfile={addNewProfile} onRemoveProfile={removeNewProfile} onUpdateProfile={updateNewProfile} onAddProfileOption={addNewProfileOption} onRemoveProfileOption={removeNewProfileOption} onUpdateProfileOption={updateNewProfileOption} onAddEditProfile={addEditProfile} onRemoveEditProfile={removeEditProfile} onUpdateEditProfile={updateEditProfile} onAddEditProfileOption={addEditProfileOption} onRemoveEditProfileOption={removeEditProfileOption} onUpdateEditProfileOption={updateEditProfileOption} />
           )}
 
 
@@ -1016,6 +1055,20 @@ function TemplatesSection(props: {
   onAddEditSkill?: () => void
   onRemoveEditSkill?: (index: number) => void
   onUpdateEditSkill?: (index: number, field: 'name' | 'description' | 'formula', value: string) => void
+  newTemplateProfiles?: { name: string; options: { label: string; value: number }[] }[]
+  editTemplateProfiles?: { name: string; options: { label: string; value: number }[] }[]
+  onAddProfile?: () => void
+  onRemoveProfile?: (index: number) => void
+  onUpdateProfile?: (index: number, name: string) => void
+  onAddProfileOption?: (pIdx: number) => void
+  onRemoveProfileOption?: (pIdx: number, oIdx: number) => void
+  onUpdateProfileOption?: (pIdx: number, oIdx: number, field: 'label' | 'value', value: string | number) => void
+  onAddEditProfile?: () => void
+  onRemoveEditProfile?: (index: number) => void
+  onUpdateEditProfile?: (index: number, name: string) => void
+  onAddEditProfileOption?: (pIdx: number) => void
+  onRemoveEditProfileOption?: (pIdx: number, oIdx: number) => void
+  onUpdateEditProfileOption?: (pIdx: number, oIdx: number, field: 'label' | 'value', value: string | number) => void
 }) {
   const [expandedAttrs, setExpandedAttrs] = useState<Record<number, boolean>>({})
   const prevCount = useRef(0)
@@ -1069,6 +1122,13 @@ function TemplatesSection(props: {
               onAddSkill={props.onAddEditSkill}
               onRemoveSkill={props.onRemoveEditSkill}
               onUpdateSkill={props.onUpdateEditSkill}
+              editProfiles={props.editTemplateProfiles}
+              onAddProfile={props.onAddEditProfile}
+              onRemoveProfile={props.onRemoveEditProfile}
+              onUpdateProfile={props.onUpdateEditProfile}
+              onAddProfileOption={props.onAddEditProfileOption}
+              onRemoveProfileOption={props.onRemoveEditProfileOption}
+              onUpdateProfileOption={props.onUpdateEditProfileOption}
             />
           ))}
         </div>
@@ -1127,6 +1187,33 @@ function TemplatesSection(props: {
             </div>
             <button type="button" onClick={props.onAddSkill} className="btn-ghost text-xs mt-2">+ Add Skill</button>
           </div>
+          {/* Skill Modifier Profiles - New */}
+          {props.onAddProfile && (
+            <div>
+              <label className="label">Skill Modifier Profiles</label>
+              <div className="space-y-2 mt-1">
+                {(props.newTemplateProfiles || []).map((p, pIdx) => (
+                  <div key={pIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
+                    <div className="flex items-center gap-1.5">
+                      <input className="input-field flex-1" value={p.name} onChange={(e) => props.onUpdateProfile?.(pIdx, e.target.value)} placeholder="Profile name (e.g. mastery)" />
+                      <button type="button" onClick={() => props.onRemoveProfile?.(pIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                    </div>
+                    <div className="space-y-1 pl-2">
+                      {p.options.map((o, oIdx) => (
+                        <div key={oIdx} className="flex items-center gap-1.5">
+                          <input className="input-field flex-1 text-xs" value={o.label} onChange={(e) => props.onUpdateProfileOption?.(pIdx, oIdx, 'label', e.target.value)} placeholder="Option label (e.g. Expert)" />
+                          <input className="input-field w-20 text-xs" type="number" value={o.value} onChange={(e) => props.onUpdateProfileOption?.(pIdx, oIdx, 'value', e.target.value)} placeholder="Value" />
+                          <button type="button" onClick={() => props.onRemoveProfileOption?.(pIdx, oIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" onClick={() => props.onAddProfileOption?.(pIdx)} className="btn-ghost text-xs">+ Add Option</button>
+                  </div>
+                ))}
+              </div>
+              <button type="button" onClick={props.onAddProfile} className="btn-ghost text-xs mt-2">+ Add Skill Modifier Profile</button>
+            </div>
+          )}
           {props.onAddField && (
             <div>
               <label className="label">Custom Fields</label>
@@ -1288,6 +1375,13 @@ function TemplateRow(props: {
   onAddSkill?: () => void
   onRemoveSkill?: (index: number) => void
   onUpdateSkill?: (index: number, field: 'name' | 'description' | 'formula', value: string) => void
+  editProfiles?: { name: string; options: { label: string; value: number }[] }[]
+  onAddProfile?: () => void
+  onRemoveProfile?: (index: number) => void
+  onUpdateProfile?: (index: number, name: string) => void
+  onAddProfileOption?: (pIdx: number) => void
+  onRemoveProfileOption?: (pIdx: number, oIdx: number) => void
+  onUpdateProfileOption?: (pIdx: number, oIdx: number, field: 'label' | 'value', value: string | number) => void
 }) {
   const [expandedEditAttrs, setExpandedEditAttrs] = useState<Record<number, boolean>>({})
   const prevEditCount = useRef(0)
@@ -1346,6 +1440,33 @@ function TemplateRow(props: {
               ))}
             </div>
             <button type="button" onClick={props.onAddSkill} className="btn-ghost text-xs mt-2">+ Add Skill</button>
+          </div>
+        )}
+        {/* Skill Modifier Profiles - Edit */}
+        {props.onAddProfile && (
+          <div>
+            <label className="label">Skill Modifier Profiles</label>
+            <div className="space-y-2 mt-1">
+              {(props.editProfiles || []).map((p, pIdx) => (
+                <div key={pIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <input className="input-field flex-1" value={p.name} onChange={(e) => props.onUpdateProfile?.(pIdx, e.target.value)} placeholder="Profile name (e.g. mastery)" />
+                    <button type="button" onClick={() => props.onRemoveProfile?.(pIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                  </div>
+                  <div className="space-y-1 pl-2">
+                    {p.options.map((o, oIdx) => (
+                      <div key={oIdx} className="flex items-center gap-1.5">
+                        <input className="input-field flex-1 text-xs" value={o.label} onChange={(e) => props.onUpdateProfileOption?.(pIdx, oIdx, 'label', e.target.value)} placeholder="Option label (e.g. Expert)" />
+                        <input className="input-field w-20 text-xs" type="number" value={o.value} onChange={(e) => props.onUpdateProfileOption?.(pIdx, oIdx, 'value', e.target.value)} placeholder="Value" />
+                        <button type="button" onClick={() => props.onRemoveProfileOption?.(pIdx, oIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                      </div>
+                    ))}
+                  </div>
+                  <button type="button" onClick={() => props.onAddProfileOption?.(pIdx)} className="btn-ghost text-xs">+ Add Option</button>
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={props.onAddProfile} className="btn-ghost text-xs mt-2">+ Add Skill Modifier Profile</button>
           </div>
         )}
         {props.onAddField && (

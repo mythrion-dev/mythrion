@@ -4,6 +4,7 @@ import {
   IsArray,
   ValidateNested,
   ArrayMinSize,
+  IsNumber,
 } from 'class-validator'
 import { Type } from 'class-transformer'
 
@@ -40,6 +41,25 @@ export class TemplateSkillDefDto {
   formula?: string
 }
 
+export class ProfileOptionDefDto {
+  @IsString()
+  label!: string
+
+  @IsNumber()
+  value!: number
+}
+
+export class SkillModifierProfileDefDto {
+  @IsString()
+  name!: string
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @ArrayMinSize(1)
+  @Type(() => ProfileOptionDefDto)
+  options!: ProfileOptionDefDto[]
+}
+
 export class CreateTemplateDto {
   @IsString()
   name!: string
@@ -65,4 +85,10 @@ export class CreateTemplateDto {
   @ArrayMinSize(1)
   @Type(() => AttributeDefDto)
   attributes!: AttributeDefDto[]
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @IsOptional()
+  @Type(() => SkillModifierProfileDefDto)
+  skillModifierProfiles?: SkillModifierProfileDefDto[]
 }

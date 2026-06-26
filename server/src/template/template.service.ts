@@ -8,6 +8,10 @@ const templateInclude = {
   attributes: { orderBy: { order: 'asc' as const } },
   templateFields: { orderBy: { order: 'asc' as const } },
   templateSkills: { orderBy: { order: 'asc' as const } },
+  skillModifierProfiles: {
+    orderBy: { order: 'asc' as const },
+    include: { options: { orderBy: { order: 'asc' as const } } },
+  },
 }
 
 @Injectable()
@@ -35,6 +39,19 @@ export class TemplateService {
         templateSkills: {
           create: (dto.skills || []).map((s, idx) => ({
             name: s.name, description: s.description ?? null, formula: s.formula ?? null, order: idx,
+          })),
+        },
+        skillModifierProfiles: {
+          create: (dto.skillModifierProfiles || []).map((p, pIdx) => ({
+            name: p.name,
+            order: pIdx,
+            options: {
+              create: p.options.map((o, oIdx) => ({
+                label: o.label,
+                value: o.value,
+                order: oIdx,
+              })),
+            },
           })),
         },
       },
@@ -127,6 +144,123 @@ export class TemplateService {
       }
     }
 
+    // Handle skill modifier profiles
+    if (dto.skillModifierProfiles) {
+      const existingProfiles = await this.prisma.skillModifierProfile.findMany({
+        where: { templateId: id },
+        include: { options: true },
+      })
+      const newProfileNames = dto.skillModifierProfiles.map(p => p.name.trim())
+      const existingProfileNames = existingProfiles.map(p => p.name)
+
+      // Delete profiles not in the new list
+      const profileNamesToDelete = existingProfileNames.filter(n => !newProfileNames.includes(n))
+      if (profileNamesToDelete.length) {
+        await this.prisma.skillModifierProfile.deleteMany({ where: { templateId: id, name: { in: profileNamesToDelete } } })
+      }
+
+      // Upsert each profile
+      for (let pIdx = 0; pIdx < dto.skillModifierProfiles.length; pIdx++) {
+        const p = dto.skillModifierProfiles[pIdx]
+        const name = p.name.trim()
+        const existing = existingProfiles.find(e => e.name === name)
+
+        if (existing) {
+          // Update profile name if changed (should stay same based on match)
+          await this.prisma.skillModifierProfile.update({
+            where: { id: existing.id },
+            data: { name, order: pIdx },
+          })
+          // Handle options for existing profile
+          const existingOptions = existing.options
+          const newOptionLabels = p.options.map(o => o.label.trim())
+          const existingOptionLabels = existingOptions.map(o => o.label)
+
+          // Delete removed options
+          const labelsToDelete = existingOptionLabels.filter(l => !newOptionLabels.includes(l))
+          if (labelsToDelete.length) {
+            await this.prisma.profileOption.deleteMany({ where: { profileId: existing.id, label: { in: labelsToDelete } } })
+          }
+
+          // Upsert each option
+          for (let oIdx = 0; oIdx < p.options.length; oIdx++) {
+            const o = p.options[oIdx]
+            const label = o.label.trim()
+            const existingOpt = existingOptions.find(eo => eo.label === label)
+            if (existingOpt) {
+              await this.prisma.profileOption.update({
+                where: { id: existingOpt.id },
+                data: { value: o.value, order: oIdx },
+              })
+            } else {
+              await this.prisma.profileOption.create({
+                data: { profileId: existing.id, label, value: o.value, order: oIdx },
+              })
+            }
+          }
+        } else {
+          // Create new profile with options
+          await this.prisma.skillModifierProfile.create({
+            data: {
+              templateId: id,
+              name,
+              order: pIdx,
+              options: {
+                create: p.options.map((o, oIdx) => ({
+                  label: o.label.trim(),
+                  value: o.value,
+                  order: oIdx,
+                })),
+              },
+            },
+          })
+        }
+      }
+
+      // For newly created profiles, ensure existing sheets get default profile values for skills that reference them
+      const addedProfileNames = newProfileNames.filter(n => !existingProfileNames.includes(n))
+      if (addedProfileNames.length > 0) {
+        const newProfiles = await this.prisma.skillModifierProfile.findMany({
+          where: { templateId: id, name: { in: addedProfileNames } },
+        })
+        const skills = await this.prisma.templateSkill.findMany({ where: { templateId: id } })
+        const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
+
+        // For each sheet, for each skill that references these profiles, create a default entry
+        for (const sheet of sheets) {
+          for (const skill of skills) {
+            if (!skill.formula) continue
+            const formulaVars = this.extractVariableNames(skill.formula)
+            for (const profile of newProfiles) {
+              if (formulaVars.includes(profile.name)) {
+                // Only create if the formula actually references this profile
+                const firstOption = await this.prisma.profileOption.findFirst({
+                  where: { profileId: profile.id },
+                  orderBy: { order: 'asc' },
+                })
+                await this.prisma.characterSheetSkillProfileValue.upsert({
+                  where: {
+                    sheetId_skillId_profileId: {
+                      sheetId: sheet.id,
+                      skillId: skill.id,
+                      profileId: profile.id,
+                    },
+                  },
+                  create: {
+                    sheetId: sheet.id,
+                    skillId: skill.id,
+                    profileId: profile.id,
+                    optionId: firstOption?.id ?? null,
+                  },
+                  update: {},
+                })
+              }
+            }
+          }
+        }
+      }
+    }
+
     return this.prisma.template.update({
       where: { id },
       data: {
@@ -142,5 +276,25 @@ export class TemplateService {
     if (!template) throw new NotFoundException('Template not found')
     await this.membership.requireRole(template.adventureId, userId, 'GM')
     return this.prisma.template.delete({ where: { id } })
+  }
+
+  /**
+   * Extract variable names from a formula string.
+   * Matches identifiers that aren't functions or operators.
+   */
+  private extractVariableNames(formula: string): string[] {
+    if (!formula) return []
+    // Match all word-like tokens, then filter out known functions
+    const tokens = formula.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || []
+    const functions = new Set(['mod', 'floor', 'ceil', 'round', 'max', 'min', 'abs'])
+    const seen = new Set<string>()
+    const vars: string[] = []
+    for (const t of tokens) {
+      if (!functions.has(t) && !seen.has(t)) {
+        seen.add(t)
+        vars.push(t)
+      }
+    }
+    return vars
   }
 }

@@ -53,6 +53,21 @@ export type DiscordAccount = Prisma.DiscordAccountModel
  */
 export type Template = Prisma.TemplateModel
 /**
+ * Model SkillModifierProfile
+ * 
+ */
+export type SkillModifierProfile = Prisma.SkillModifierProfileModel
+/**
+ * Model ProfileOption
+ * 
+ */
+export type ProfileOption = Prisma.ProfileOptionModel
+/**
+ * Model CharacterSheetSkillProfileValue
+ * 
+ */
+export type CharacterSheetSkillProfileValue = Prisma.CharacterSheetSkillProfileValueModel
+/**
  * Model TemplateAttribute
  * 
  */

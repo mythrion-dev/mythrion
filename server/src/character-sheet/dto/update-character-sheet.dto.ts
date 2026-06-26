@@ -17,6 +17,18 @@ export class FieldValueDto {
   value!: string
 }
 
+export class SkillProfileValueDto {
+  @IsString()
+  skillId!: string
+
+  @IsString()
+  profileId!: string
+
+  @IsOptional()
+  @IsString()
+  optionId?: string | null
+}
+
 export class UpdateCharacterSheetDto {
   @IsString()
   @IsOptional()
@@ -43,4 +55,10 @@ export class UpdateCharacterSheetDto {
   @ValidateNested({ each: true })
   @Type(() => FieldValueDto)
   fieldValues?: FieldValueDto[]
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => SkillProfileValueDto)
+  skillProfileValues?: SkillProfileValueDto[]
 }

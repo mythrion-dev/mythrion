@@ -3,11 +3,18 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { api } from '@/lib/api'
 
+interface SkillModifierProfile {
+  id: string
+  name: string
+  options: { id: string; label: string; value: number }[]
+}
+
 interface FormulaBuilderProps {
   value: string
   onChange: (formula: string) => void
   attributes: { key: string; name: string }[]
   customFields?: { key: string; label: string }[]
+  skillModifierProfiles?: SkillModifierProfile[]
   placeholder?: string
   useModPrefix?: boolean
 }
@@ -36,12 +43,14 @@ export default function FormulaBuilder({
   onChange,
   attributes,
   customFields,
+  skillModifierProfiles,
   placeholder = 'Build formula...',
   useModPrefix = false,
 }: FormulaBuilderProps) {
   const [preview, setPreview] = useState<{ result: number | null; error?: string }>({ result: null })
   const [showVariables, setShowVariables] = useState(true)
   const [showCustomFields, setShowCustomFields] = useState(false)
+  const [showProfiles, setShowProfiles] = useState(false)
   const [showFunctions, setShowFunctions] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -85,13 +94,17 @@ export default function FormulaBuilder({
     if (attributes.length === 0) { setPreview({ result: null }); return }
     const variables: Record<string, number> = {}
     attributes.forEach((a) => { variables[a.key] = 0 })
+    // Add profile variables with sample values
+    if (skillModifierProfiles) {
+      skillModifierProfiles.forEach((p) => { variables[p.name] = 0 })
+    }
     try {
       const data = await api.post<{ result: number }>('/formula/preview', { formula, variables })
       setPreview({ result: data.result })
     } catch (err) {
       setPreview({ result: null, error: err instanceof Error ? err.message : 'Evaluation failed' })
     }
-  }, [attributes])
+  }, [attributes, skillModifierProfiles])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -99,11 +112,15 @@ export default function FormulaBuilder({
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [value, updatePreview])
 
-  const toggleGroup = (group: 'variables' | 'customFields' | 'functions') => {
+  const toggleGroup = (group: 'variables' | 'customFields' | 'profiles' | 'functions') => {
     setShowVariables(group === 'variables' ? !showVariables : false)
     setShowCustomFields(group === 'customFields' ? !showCustomFields : false)
+    setShowProfiles(group === 'profiles' ? !showProfiles : false)
     setShowFunctions(group === 'functions' ? !showFunctions : false)
   }
+
+  const hasProfiles = skillModifierProfiles && skillModifierProfiles.length > 0
+  const hasCustomFields = customFields && customFields.length > 0
 
   return (
     <div className="space-y-3">
@@ -118,9 +135,12 @@ export default function FormulaBuilder({
         </div>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <button type="button" onClick={() => toggleGroup('variables')} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showVariables ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`}>Attributes</button>
-        {customFields && customFields.length > 0 && (
+        {hasProfiles && (
+          <button type="button" onClick={() => toggleGroup('profiles')} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showProfiles ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`}>Skill Profiles</button>
+        )}
+        {hasCustomFields && (
           <button type="button" onClick={() => toggleGroup('customFields')} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showCustomFields ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`}>Custom Fields</button>
         )}
         <button type="button" onClick={() => toggleGroup('functions')} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showFunctions ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`}>Functions</button>
@@ -136,9 +156,28 @@ export default function FormulaBuilder({
         </div>
       )}
 
-      {showCustomFields && customFields && customFields.length > 0 && (
+      {showProfiles && hasProfiles && (
+        <div className="space-y-2">
+          <p className="text-xs text-muted">Skill Modifier Profiles — click to insert as variable</p>
+          <div className="flex flex-wrap gap-1">
+            {skillModifierProfiles!.map((profile) => (
+              <button
+                key={profile.id}
+                type="button"
+                onClick={() => insertAtCursor(profile.name)}
+                className="px-2 py-1 rounded bg-background/60 border border-border text-xs text-foreground hover:border-primary/30 hover:text-primary transition-colors"
+                title={`Insert ${profile.name} — ${profile.options.map(o => `${o.label}(${o.value})`).join(', ')}`}
+              >
+                [{profile.name}]
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {showCustomFields && hasCustomFields && (
         <div className="flex flex-wrap gap-1">
-          {customFields.map((cf) => (
+          {customFields!.map((cf) => (
             <button key={cf.key} type="button" onClick={() => insertAtCursor(cf.key)} className="px-2 py-1 rounded bg-background/60 border border-border text-xs text-foreground hover:border-primary/30 hover:text-primary transition-colors" title={`Insert ${cf.key}`}>
               [{cf.label}]
             </button>
@@ -147,12 +186,15 @@ export default function FormulaBuilder({
       )}
 
       {showFunctions && (
-        <div className="flex flex-wrap gap-1">
-          {FUNCTIONS.map((fn) => (
-            <button key={fn.label} type="button" onClick={() => insertAtCursor(fn.value)} className="px-2 py-1 rounded bg-background/60 border border-border text-xs text-foreground hover:border-primary/30 hover:text-primary transition-colors" title={`Insert ${fn.display}`}>
-              {fn.label}
-            </button>
-          ))}
+        <div className="space-y-2">
+          <p className="text-xs text-muted">Functions — click to insert</p>
+          <div className="flex flex-wrap gap-1">
+            {FUNCTIONS.map((fn) => (
+              <button key={fn.label} type="button" onClick={() => insertAtCursor(fn.value)} className="px-2 py-1 rounded bg-background/60 border border-border text-xs text-foreground hover:border-primary/30 hover:text-primary transition-colors" title={`Insert ${fn.display}`}>
+                {fn.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

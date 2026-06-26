@@ -121,19 +121,72 @@ model DiscordAccount {
 // ── Character Sheet Templates ──
 
 model Template {
-  id              String              @id @default(cuid())
-  adventureId     String
-  adventure       Adventure           @relation(fields: [adventureId], references: [id], onDelete: Cascade)
-  name            String
-  description     String?
-  attributes      TemplateAttribute[]
-  templateFields  TemplateField[]
-  templateSkills  TemplateSkill[]
-  characterSheets CharacterSheet[]
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  id                    String                   @id @default(cuid())
+  adventureId           String
+  adventure             Adventure                @relation(fields: [adventureId], references: [id], onDelete: Cascade)
+  name                  String
+  description           String?
+  attributes            TemplateAttribute[]
+  templateFields        TemplateField[]
+  templateSkills        TemplateSkill[]
+  skillModifierProfiles SkillModifierProfile[]
+  characterSheets       CharacterSheet[]
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
 
   @@index([adventureId])
+}
+
+// ── Skill Modifier Profiles ──
+
+model SkillModifierProfile {
+  id                String                           @id @default(cuid())
+  templateId        String
+  template          Template                         @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  name              String
+  order             Int                              @default(0)
+  options           ProfileOption[]
+  skillProfileValues CharacterSheetSkillProfileValue[]
+  createdAt         DateTime                         @default(now())
+  updatedAt         DateTime                         @updatedAt
+
+  @@unique([templateId, name])
+  @@index([templateId])
+}
+
+model ProfileOption {
+  id             String                        @id @default(cuid())
+  profileId      String
+  profile        SkillModifierProfile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  label          String
+  value          Float                         @default(0)
+  order          Int                           @default(0)
+  selections     CharacterSheetSkillProfileValue[]
+  createdAt      DateTime                      @default(now())
+  updatedAt      DateTime                      @updatedAt
+
+  @@unique([profileId, label])
+  @@index([profileId])
+}
+
+// ── Character Sheet Skill Profile Values ──
+
+model CharacterSheetSkillProfileValue {
+  id        String              @id @default(cuid())
+  sheetId   String
+  sheet     CharacterSheet      @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  skillId   String
+  skill     TemplateSkill       @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  profileId String
+  profile   SkillModifierProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  optionId  String?
+  option    ProfileOption?      @relation(fields: [optionId], references: [id], onDelete: SetNull)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@unique([sheetId, skillId, profileId])
+  @@index([sheetId])
+  @@index([skillId])
 }
 
 model TemplateAttribute {
@@ -154,16 +207,17 @@ model TemplateAttribute {
 // ── Template Skills ──
 
 model TemplateSkill {
-  id               String                     @id @default(cuid())
-  templateId       String
-  template         Template                   @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  name             String
-  description      String?
-  formula          String?
-  order            Int                        @default(0)
-  skillValues      CharacterSheetSkillValue[]
-  createdAt        DateTime                   @default(now())
-  updatedAt        DateTime                   @updatedAt
+  id                 String                           @id @default(cuid())
+  templateId         String
+  template           Template                         @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  name               String
+  description        String?
+  formula            String?
+  order              Int                              @default(0)
+  skillValues        CharacterSheetSkillValue[]
+  skillProfileValues CharacterSheetSkillProfileValue[]
+  createdAt          DateTime                         @default(now())
+  updatedAt          DateTime                         @updatedAt
 
   @@index([templateId])
 }
@@ -188,21 +242,22 @@ model CharacterSheetSkillValue {
 // ── Character Sheets ──
 
 model CharacterSheet {
-  id            String              @id @default(cuid())
-  characterName String
-  playerName    String?
-  level         Int?                @default(1)
-  adventureId   String?
-  adventure     Adventure?          @relation(fields: [adventureId], references: [id], onDelete: SetNull)
-  templateId    String
-  template      Template            @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  ownerId       String
-  owner         User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  values        CharacterSheetValue[]
-  fieldValues   CharacterSheetFieldValue[]
-  skillValues   CharacterSheetSkillValue[]
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
+  id                 String                           @id @default(cuid())
+  characterName      String
+  playerName         String?
+  level              Int?                             @default(1)
+  adventureId        String?
+  adventure          Adventure?                       @relation(fields: [adventureId], references: [id], onDelete: SetNull)
+  templateId         String
+  template           Template                         @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  ownerId            String
+  owner              User                             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  values             CharacterSheetValue[]
+  fieldValues        CharacterSheetFieldValue[]
+  skillValues        CharacterSheetSkillValue[]
+  skillProfileValues CharacterSheetSkillProfileValue[]
+  createdAt          DateTime                         @default(now())
+  updatedAt          DateTime                         @updatedAt
 
   @@index([adventureId])
   @@index([ownerId])
