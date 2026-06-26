@@ -308,14 +308,8 @@ export default function CharacterSheetDetailPage() {
     )
   }
 
-  // Extract which profiles are used by which skill
-  function getSkillProfiles(skillFormula: string | null): SkillModifierProfile[] {
-    if (!skillFormula) return []
-    const tokens = skillFormula.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || []
-    const functions = new Set(['mod', 'floor', 'ceil', 'round', 'max', 'min', 'abs'])
-    const usedVars = tokens.filter(t => !functions.has(t))
-    return sheet!.template.skillModifierProfiles.filter(p => usedVars.includes(p.name))
-  }
+  // All profiles from the template — every skill shows every profile as a dropdown
+  const allProfiles: SkillModifierProfile[] = sheet?.template.skillModifierProfiles ?? []
 
   return (
     <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 animate-fade-in">
@@ -396,11 +390,10 @@ export default function CharacterSheetDetailPage() {
           </div>
 
           {/* Skills with Profile Selectors */}
-          {sheet.skillValues.length > 0 && (
+          {sheet.skillValues.length > 0 && allProfiles.length > 0 && (
             <div className="space-y-4">
               {sheet.skillValues.map((sv) => {
                 const result = skillResults[sv.skillId]
-                const skillProfiles = getSkillProfiles(sv.skill.formula)
                 const selections = profileSelections[sv.skillId] || {}
 
                 return (
@@ -415,42 +408,40 @@ export default function CharacterSheetDetailPage() {
                       <span className="text-lg font-bold text-primary">{result != null ? result : '—'}</span>
                     </div>
 
-                    {skillProfiles.length > 0 && (
-                      <div className="space-y-2 pt-2 border-t border-border">
-                        {skillProfiles.map((profile) => {
-                          const selectedOptionId = selections[profile.id]
-                          const selectedOption = selectedOptionId
-                            ? profile.options.find(o => o.id === selectedOptionId)
-                            : null
+                    <div className="space-y-2 pt-2 border-t border-border">
+                      {allProfiles.map((profile: SkillModifierProfile) => {
+                        const selectedOptionId = selections[profile.id]
+                        const selectedOption = selectedOptionId
+                          ? profile.options.find((o: ProfileOption) => o.id === selectedOptionId)
+                          : null
 
-                          return (
-                            <div key={profile.id} className="flex items-center gap-2">
-                              <span className="text-xs text-muted shrink-0 min-w-[80px]">{profile.name}:</span>
-                              <select
-                                className="input-field py-1 text-xs flex-1"
-                                value={selectedOptionId ?? ''}
-                                onChange={(e) => {
-                                  const val = e.target.value || null
-                                  handleProfileChange(sv.skillId, profile.id, val)
-                                }}
-                              >
-                                <option value="">— Select —</option>
-                                {profile.options.map((opt) => (
-                                  <option key={opt.id} value={opt.id}>
-                                    {opt.label} ({opt.value >= 0 ? '+' : ''}{opt.value})
-                                  </option>
-                                ))}
-                              </select>
-                              {selectedOption && (
-                                <span className="text-xs font-mono text-primary shrink-0">
-                                  {selectedOption.value >= 0 ? '+' : ''}{selectedOption.value}
-                                </span>
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
+                        return (
+                          <div key={profile.id} className="flex items-center gap-2">
+                            <span className="text-xs text-muted shrink-0 min-w-[80px]">{profile.name}:</span>
+                            <select
+                              className="input-field py-1 text-xs flex-1"
+                              value={selectedOptionId ?? ''}
+                              onChange={(e) => {
+                                const val = e.target.value || null
+                                handleProfileChange(sv.skillId, profile.id, val)
+                              }}
+                            >
+                              <option value="">— Select —</option>
+                              {profile.options.map((opt: ProfileOption) => (
+                                <option key={opt.id} value={opt.id}>
+                                  {opt.label} ({opt.value >= 0 ? '+' : ''}{opt.value})
+                                </option>
+                              ))}
+                            </select>
+                            {selectedOption && (
+                              <span className="text-xs font-mono text-primary shrink-0">
+                                {selectedOption.value >= 0 ? '+' : ''}{selectedOption.value}
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 )
               })}
