@@ -96,6 +96,9 @@ export default function CharacterSheetDetailPage() {
   // Local profile selections (optimistic UI)
   const [profileSelections, setProfileSelections] = useState<Record<string, Record<string, string | null>>>({})
 
+  // Skill check toggles — which skills are active (checkbox on = calc runs)
+  const [activeSkills, setActiveSkills] = useState<Record<string, boolean>>({})
+
   const isOwner = sheet?.ownerId === user?.id
 
   const fetchSheet = useCallback(async () => {
@@ -392,6 +395,10 @@ export default function CharacterSheetDetailPage() {
                     result={skillResults[sv.skillId]}
                     profiles={allProfiles}
                     selections={profileSelections[sv.skillId] || {}}
+                    active={activeSkills[sv.skillId] ?? false}
+                    onToggleActive={() => {
+                      setActiveSkills((prev) => ({ ...prev, [sv.skillId]: !prev[sv.skillId] }))
+                    }}
                     onProfileChange={(profileId, optionId) => handleProfileChange(sv.skillId, profileId, optionId)}
                   />
                 ))}
@@ -424,42 +431,55 @@ export default function CharacterSheetDetailPage() {
   )
 }
 
-function CollapsibleSkillRow({ skill, result, profiles, selections, onProfileChange }: {
+function CollapsibleSkillRow({ skill, result, profiles, selections, active, onToggleActive, onProfileChange }: {
   skill: SkillValue
   result: number | null
   profiles: SkillModifierProfile[]
   selections: Record<string, string | null>
+  active: boolean
+  onToggleActive: () => void
   onProfileChange: (profileId: string, optionId: string | null) => void
 }) {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="rounded-lg border border-border bg-background/30 overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-center justify-between w-full px-4 py-3 text-left hover:bg-background/50 transition-colors"
-      >
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-foreground truncate">{skill.skill.name}</span>
-            {skill.skill.description && (
-              <span className="text-xs text-muted truncate hidden sm:inline">— {skill.skill.description}</span>
+    <div className={`rounded-lg border border-border bg-background/30 overflow-hidden transition-opacity ${active ? '' : 'opacity-40'}`}>
+      <div className="flex items-center px-4 py-3">
+        {/* Checkbox on the left */}
+        <input
+          type="checkbox"
+          checked={active}
+          onChange={onToggleActive}
+          className="shrink-0 w-4 h-4 rounded border-border accent-primary cursor-pointer mr-3"
+        />
+
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          disabled={!active}
+          className="flex items-center justify-between flex-1 min-w-0 text-left hover:bg-background/50 transition-colors disabled:cursor-default disabled:hover:bg-transparent"
+        >
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-foreground truncate">{skill.skill.name}</span>
+              {skill.skill.description && (
+                <span className="text-xs text-muted truncate hidden sm:inline">— {skill.skill.description}</span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-3 shrink-0 ml-3">
+            <span className="text-base font-bold text-primary">{active ? (result != null ? result : '—') : '0'}</span>
+            {profiles.length > 0 && (
+              <svg className={`w-4 h-4 text-muted transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
             )}
           </div>
-        </div>
-        <div className="flex items-center gap-3 shrink-0 ml-3">
-          <span className="text-base font-bold text-primary">{result != null ? result : '—'}</span>
-          {profiles.length > 0 && (
-            <svg className={`w-4 h-4 text-muted transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          )}
-        </div>
-      </button>
+        </button>
+      </div>
 
-      {expanded && profiles.length > 0 && (
-        <div className="px-4 py-3 space-y-2 border-t border-border">
+      {expanded && profiles.length > 0 && active && (
+        <div className="px-4 py-3 space-y-2 border-t border-border ml-10">
           {profiles.map((profile) => {
             const selectedOptionId = selections[profile.id]
             const selectedOption = selectedOptionId
