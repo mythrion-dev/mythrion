@@ -1076,21 +1076,6 @@ function TemplatesSection(props: {
   onRemoveEditProfileOption?: (pIdx: number, oIdx: number) => void
   onUpdateEditProfileOption?: (pIdx: number, oIdx: number, field: 'label' | 'value', value: string | number) => void
 }) {
-  const [expandedAttrs, setExpandedAttrs] = useState<Record<number, boolean>>({})
-  const prevCount = useRef(0)
-
-  useEffect(() => {
-    // Auto-expand newly added attributes
-    if (props.showNewTemplate && props.newTemplateAttrs.length > prevCount.current) {
-      setExpandedAttrs((prev) => ({ ...prev, [props.newTemplateAttrs.length - 1]: true }))
-    }
-    prevCount.current = props.newTemplateAttrs.length
-  }, [props.newTemplateAttrs.length, props.showNewTemplate])
-
-  const toggleAttr = (idx: number) => {
-    setExpandedAttrs((prev) => ({ ...prev, [idx]: !prev[idx] }))
-  }
-
   return (
     <div className="space-y-4">
       {props.templates.length === 0 && !props.showNewTemplate ? (
@@ -1147,109 +1132,35 @@ function TemplatesSection(props: {
       )}
 
       {props.isGM && props.showNewTemplate && (
-        <form onSubmit={props.onCreateTemplate} className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3">
-          <h4 className="text-sm font-semibold text-primary">Create Template</h4>
-          <div>
-            <label className="label">Name</label>
-            <input className="input-field" value={props.newTemplateName} onChange={(e) => props.onNameChange(e.target.value)} placeholder="e.g. D&D 5e Character Sheet" maxLength={100} required />
-          </div>
-          <div>
-            <label className="label">Description <span className="text-muted font-normal">(optional)</span></label>
-            <input className="input-field" value={props.newTemplateDescription} onChange={(e) => props.onDescriptionChange(e.target.value)} placeholder="Brief description of this template" maxLength={200} />
-          </div>
-          <div>
-            <label className="label">Attributes</label>
-            <div className="space-y-2 mt-1">
-              {props.newTemplateAttrs.map((attr, idx) => (
-                <CollapsibleAttrCard
-                  key={idx}
-                  index={idx}
-                  attr={attr}
-                  isExpanded={!!expandedAttrs[idx]}
-                  onToggle={() => toggleAttr(idx)}
-                  onUpdateAttr={props.onUpdateAttr}
-                  onRemove={() => props.onRemoveAttr(idx)}
-                  allAttrs={props.newTemplateAttrs}
-                />
-              ))}
-            </div>
-            <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button>
-          </div>
-          {/* Skills */}
-          <div>
-            <label className="label">Skills</label>
-            <div className="space-y-2 mt-1">
-              {(props.newTemplateSkills || []).map((s, idx) => (
-                <CollapsibleSkillCard
-                  key={idx}
-                  index={idx}
-                  skill={s}
-                  onUpdateSkill={props.onUpdateSkill}
-                  onRemove={() => props.onRemoveSkill?.(idx)}
-                  attributes={props.newTemplateAttrs.filter((a) => a.key.trim() && a.name.trim()).map((a) => ({ key: a.key.trim(), name: a.name.trim() }))}
-                  customFields={(props.newTemplateFields || []).filter((f) => f.key.trim() && f.label.trim()).map((f) => ({ key: f.key.trim(), label: f.label.trim() }))}
-                  skillProfiles={(props.newTemplateProfiles || []).filter((p) => p.name.trim()).map((p, pIdx) => ({
-                    id: `new-${pIdx}`,
-                    name: p.name.trim(),
-                    options: p.options.filter((o) => o.label.trim()).map((o, oIdx) => ({ id: `new-${pIdx}-${oIdx}`, label: o.label.trim(), value: o.value })),
-                  }))}
-                />
-              ))}
-            </div>
-            <button type="button" onClick={props.onAddSkill} className="btn-ghost text-xs mt-2">+ Add Skill</button>
-          </div>
-          {/* Skill Modifier Profiles - New */}
-          {props.onAddProfile && (
-            <div>
-              <label className="label">Skill Modifier Profiles</label>
-              <div className="space-y-2 mt-1">
-                {(props.newTemplateProfiles || []).map((p, pIdx) => (
-                  <div key={pIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
-                    <div className="flex items-center gap-1.5">
-                      <input className="input-field flex-1" value={p.name} onChange={(e) => props.onUpdateProfile?.(pIdx, e.target.value)} placeholder="Profile name (e.g. mastery)" />
-                      <button type="button" onClick={() => props.onRemoveProfile?.(pIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
-                    </div>
-                    <div className="space-y-1 pl-2">
-                      {p.options.map((o, oIdx) => (
-                        <div key={oIdx} className="flex items-center gap-1.5">
-                          <input className="input-field flex-1 text-xs" value={o.label} onChange={(e) => props.onUpdateProfileOption?.(pIdx, oIdx, 'label', e.target.value)} placeholder="Option label (e.g. Expert)" />
-                          <input className="input-field w-20 text-xs" type="number" value={o.value} onChange={(e) => props.onUpdateProfileOption?.(pIdx, oIdx, 'value', e.target.value)} placeholder="Value" />
-                          <button type="button" onClick={() => props.onRemoveProfileOption?.(pIdx, oIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
-                        </div>
-                      ))}
-                    </div>
-                    <button type="button" onClick={() => props.onAddProfileOption?.(pIdx)} className="btn-ghost text-xs">+ Add Option</button>
-                  </div>
-                ))}
-              </div>
-              <button type="button" onClick={props.onAddProfile} className="btn-ghost text-xs mt-2">+ Add Skill Modifier Profile</button>
-            </div>
-          )}
-          {props.onAddField && (
-            <div>
-              <label className="label">Custom Fields</label>
-              <div className="space-y-2 mt-1">
-                {(props.newTemplateFields || []).map((f, idx) => (
-                  <div key={idx} className="flex items-center gap-1.5">
-                    <input className="input-field flex-1" value={f.key} onChange={(e) => props.onUpdateField?.(idx, 'key', e.target.value)} placeholder="Key (e.g. class)" />
-                    <input className="input-field flex-1" value={f.label} onChange={(e) => props.onUpdateField?.(idx, 'label', e.target.value)} placeholder="Label (e.g. Class)" />
-                    <button type="button" onClick={() => props.onRemoveField?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
-                  </div>
-                ))}
-              </div>
-              <button type="button" onClick={props.onAddField} className="btn-ghost text-xs mt-2">+ Add Custom Field</button>
-            </div>
-          )}
-          {props.templateError && (
-            <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{props.templateError}</div>
-          )}
-          <div className="flex gap-2 justify-end">
-            <button type="button" onClick={props.onCancelNew} disabled={props.templateCreating} className="btn-ghost text-sm">Cancel</button>
-            <button type="submit" disabled={props.templateCreating || !props.newTemplateName.trim() || props.newTemplateAttrs.length === 0} className="btn-primary text-sm">
-              {props.templateCreating ? 'Creating...' : 'Create'}
-            </button>
-          </div>
-        </form>
+        <NewTemplateForm
+          newTemplateName={props.newTemplateName}
+          newTemplateDescription={props.newTemplateDescription}
+          newTemplateAttrs={props.newTemplateAttrs}
+          newTemplateSkills={props.newTemplateSkills}
+          newTemplateProfiles={props.newTemplateProfiles}
+          newTemplateFields={props.newTemplateFields}
+          templateError={props.templateError}
+          templateCreating={props.templateCreating}
+          onNameChange={props.onNameChange}
+          onDescriptionChange={props.onDescriptionChange}
+          onAddAttr={props.onAddAttr}
+          onRemoveAttr={props.onRemoveAttr}
+          onUpdateAttr={props.onUpdateAttr}
+          onAddSkill={props.onAddSkill}
+          onRemoveSkill={props.onRemoveSkill}
+          onUpdateSkill={props.onUpdateSkill}
+          onAddProfile={props.onAddProfile}
+          onRemoveProfile={props.onRemoveProfile}
+          onUpdateProfile={props.onUpdateProfile}
+          onAddProfileOption={props.onAddProfileOption}
+          onRemoveProfileOption={props.onRemoveProfileOption}
+          onUpdateProfileOption={props.onUpdateProfileOption}
+          onAddField={props.onAddField}
+          onRemoveField={props.onRemoveField}
+          onUpdateField={props.onUpdateField}
+          onCancelNew={props.onCancelNew}
+          onCreateTemplate={props.onCreateTemplate}
+        />
       )}
     </div>
   )
@@ -1362,6 +1273,171 @@ function CollapsibleSkillCard({ index, skill, onUpdateSkill, onRemove, attribute
   )
 }
 
+function NewTemplateForm(props: {
+  newTemplateName: string
+  newTemplateDescription: string
+  newTemplateAttrs: { key: string; name: string; modifier: string }[]
+  newTemplateSkills?: { name: string; description: string; formula: string }[]
+  newTemplateProfiles?: { name: string; options: { label: string; value: number }[] }[]
+  newTemplateFields?: { key: string; label: string }[]
+  templateError: string | null
+  templateCreating: boolean
+  onNameChange: (v: string) => void
+  onDescriptionChange: (v: string) => void
+  onAddAttr: () => void
+  onRemoveAttr: (index: number) => void
+  onUpdateAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string) => void
+  onAddSkill?: () => void
+  onRemoveSkill?: (index: number) => void
+  onUpdateSkill?: (index: number, field: 'name' | 'description' | 'formula', value: string) => void
+  onAddProfile?: () => void
+  onRemoveProfile?: (index: number) => void
+  onUpdateProfile?: (index: number, name: string) => void
+  onAddProfileOption?: (pIdx: number) => void
+  onRemoveProfileOption?: (pIdx: number, oIdx: number) => void
+  onUpdateProfileOption?: (pIdx: number, oIdx: number, field: 'label' | 'value', value: string | number) => void
+  onAddField?: () => void
+  onRemoveField?: (index: number) => void
+  onUpdateField?: (index: number, field: 'key' | 'label', value: string) => void
+  onCancelNew: () => void
+  onCreateTemplate: (e: FormEvent) => void
+}) {
+  const [activeTab, setActiveTab] = useState<'attrs' | 'skills' | 'profiles' | 'fields'>('attrs')
+  const [expandedAttrs, setExpandedAttrs] = useState<Record<number, boolean>>({})
+  const prevCount = useRef(0)
+
+  useEffect(() => {
+    if (props.newTemplateAttrs.length > prevCount.current) {
+      setExpandedAttrs((prev) => ({ ...prev, [props.newTemplateAttrs.length - 1]: true }))
+    }
+    prevCount.current = props.newTemplateAttrs.length
+  }, [props.newTemplateAttrs.length])
+
+  const tabClass = (tab: string) =>
+    `px-3 py-1.5 rounded text-xs font-medium transition-colors ${activeTab === tab ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`
+
+  return (
+    <form onSubmit={props.onCreateTemplate} className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3">
+      <h4 className="text-sm font-semibold text-primary">Create Template</h4>
+      <div>
+        <label className="label">Name</label>
+        <input className="input-field" value={props.newTemplateName} onChange={(e) => props.onNameChange(e.target.value)} placeholder="e.g. D&D 5e Character Sheet" maxLength={100} required />
+      </div>
+      <div>
+        <label className="label">Description <span className="text-muted font-normal">(optional)</span></label>
+        <input className="input-field" value={props.newTemplateDescription} onChange={(e) => props.onDescriptionChange(e.target.value)} placeholder="Brief description of this template" maxLength={200} />
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 flex-wrap">
+        <button type="button" onClick={() => setActiveTab('attrs')} className={tabClass('attrs')}>Attributes</button>
+        <button type="button" onClick={() => setActiveTab('skills')} className={tabClass('skills')}>Skills</button>
+        {props.onAddProfile && <button type="button" onClick={() => setActiveTab('profiles')} className={tabClass('profiles')}>Skill Modifier Profiles</button>}
+        {props.onAddField && <button type="button" onClick={() => setActiveTab('fields')} className={tabClass('fields')}>Custom Fields</button>}
+      </div>
+
+      {/* Attributes tab */}
+      {activeTab === 'attrs' && (
+        <div>
+          <div className="space-y-2 mt-1">
+            {props.newTemplateAttrs.map((attr, idx) => (
+              <CollapsibleAttrCard
+                key={idx}
+                index={idx}
+                attr={attr}
+                isExpanded={!!expandedAttrs[idx]}
+                onToggle={() => setExpandedAttrs((prev) => ({ ...prev, [idx]: !prev[idx] }))}
+                onUpdateAttr={props.onUpdateAttr}
+                onRemove={() => props.onRemoveAttr(idx)}
+                allAttrs={props.newTemplateAttrs}
+              />
+            ))}
+          </div>
+          <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button>
+        </div>
+      )}
+
+      {/* Skills tab */}
+      {activeTab === 'skills' && (
+        <div>
+          <div className="space-y-2 mt-1">
+            {(props.newTemplateSkills || []).map((s, idx) => (
+              <CollapsibleSkillCard
+                key={idx}
+                index={idx}
+                skill={s}
+                onUpdateSkill={props.onUpdateSkill}
+                onRemove={() => props.onRemoveSkill?.(idx)}
+                attributes={props.newTemplateAttrs.filter((a) => a.key.trim() && a.name.trim()).map((a) => ({ key: a.key.trim(), name: a.name.trim() }))}
+                customFields={(props.newTemplateFields || []).filter((f) => f.key.trim() && f.label.trim()).map((f) => ({ key: f.key.trim(), label: f.label.trim() }))}
+                skillProfiles={(props.newTemplateProfiles || []).filter((p) => p.name.trim()).map((p, pIdx) => ({
+                  id: `new-${pIdx}`,
+                  name: p.name.trim(),
+                  options: p.options.filter((o) => o.label.trim()).map((o, oIdx) => ({ id: `new-${pIdx}-${oIdx}`, label: o.label.trim(), value: o.value })),
+                }))}
+              />
+            ))}
+          </div>
+          <button type="button" onClick={props.onAddSkill} className="btn-ghost text-xs mt-2">+ Add Skill</button>
+        </div>
+      )}
+
+      {/* Skill Modifier Profiles tab */}
+      {activeTab === 'profiles' && (
+        <div>
+          <div className="space-y-2 mt-1">
+            {(props.newTemplateProfiles || []).map((p, pIdx) => (
+              <div key={pIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <input className="input-field flex-1" value={p.name} onChange={(e) => props.onUpdateProfile?.(pIdx, e.target.value)} placeholder="Profile name (e.g. mastery)" />
+                  <button type="button" onClick={() => props.onRemoveProfile?.(pIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                </div>
+                <div className="space-y-1 pl-2">
+                  {p.options.map((o, oIdx) => (
+                    <div key={oIdx} className="flex items-center gap-1.5">
+                      <input className="input-field flex-1 text-xs" value={o.label} onChange={(e) => props.onUpdateProfileOption?.(pIdx, oIdx, 'label', e.target.value)} placeholder="Option label (e.g. Expert)" />
+                      <input className="input-field w-20 text-xs" type="number" value={o.value} onChange={(e) => props.onUpdateProfileOption?.(pIdx, oIdx, 'value', e.target.value)} placeholder="Value" />
+                      <button type="button" onClick={() => props.onRemoveProfileOption?.(pIdx, oIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" onClick={() => props.onAddProfileOption?.(pIdx)} className="btn-ghost text-xs">+ Add Option</button>
+              </div>
+            ))}
+          </div>
+          <button type="button" onClick={props.onAddProfile} className="btn-ghost text-xs mt-2">+ Add Skill Modifier Profile</button>
+        </div>
+      )}
+
+      {/* Custom Fields tab */}
+      {activeTab === 'fields' && (
+        <div>
+          <div className="space-y-2 mt-1">
+            {(props.newTemplateFields || []).map((f, idx) => (
+              <div key={idx} className="flex items-center gap-1.5">
+                <input className="input-field flex-1" value={f.key} onChange={(e) => props.onUpdateField?.(idx, 'key', e.target.value)} placeholder="Key (e.g. class)" />
+                <input className="input-field flex-1" value={f.label} onChange={(e) => props.onUpdateField?.(idx, 'label', e.target.value)} placeholder="Label (e.g. Class)" />
+                <button type="button" onClick={() => props.onRemoveField?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+              </div>
+            ))}
+          </div>
+          <button type="button" onClick={props.onAddField} className="btn-ghost text-xs mt-2">+ Add Custom Field</button>
+        </div>
+      )}
+
+      {props.templateError && (
+        <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{props.templateError}</div>
+      )}
+      <div className="flex gap-2 justify-end">
+        <button type="button" onClick={props.onCancelNew} disabled={props.templateCreating} className="btn-ghost text-sm">Cancel</button>
+        <button type="submit" disabled={props.templateCreating || !props.newTemplateName.trim() || props.newTemplateAttrs.length === 0} className="btn-primary text-sm">
+          {props.templateCreating ? 'Creating...' : 'Create'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
 function TemplateRow(props: {
   template: { id: string; name: string; description: string | null; attributes: { id: string; key: string; name: string; modifier: string | null }[]; createdAt: string }
   isGM: boolean
@@ -1406,6 +1482,10 @@ function TemplateRow(props: {
     prevEditCount.current = props.editAttrs.length
   }, [props.editAttrs.length])
 
+  const [editTab, setEditTab] = useState<'attrs' | 'skills' | 'profiles' | 'fields'>('attrs')
+  const etabClass = (tab: string) =>
+    `px-3 py-1.5 rounded text-xs font-medium transition-colors ${editTab === tab ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`
+
   if (props.isEditing) {
     return (
       <form onSubmit={props.onUpdate} className="rounded-lg border border-primary/30 bg-background/50 p-4 space-y-3">
@@ -1417,28 +1497,39 @@ function TemplateRow(props: {
           <label className="label">Description <span className="text-muted font-normal">(optional)</span></label>
           <input className="input-field" value={props.editDescription} onChange={(e) => props.onEditDescriptionChange(e.target.value)} maxLength={200} />
         </div>
-        <div>
-          <label className="label">Attributes</label>
-          <div className="space-y-2 mt-1">
-            {props.editAttrs.map((attr, idx) => (
-              <CollapsibleAttrCard
-                key={idx}
-                index={idx}
-                attr={attr}
-                isExpanded={!!expandedEditAttrs[idx]}
-                onToggle={() => setExpandedEditAttrs((prev) => ({ ...prev, [idx]: !prev[idx] }))}
-                onUpdateAttr={props.onUpdateAttr}
-                onRemove={() => props.onRemoveAttr(idx)}
-                allAttrs={props.editAttrs}
-              />
-            ))}
-          </div>
-          <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button>
+
+        {/* Tabs */}
+        <div className="flex gap-1 flex-wrap">
+          <button type="button" onClick={() => setEditTab('attrs')} className={etabClass('attrs')}>Attributes</button>
+          <button type="button" onClick={() => setEditTab('skills')} className={etabClass('skills')}>Skills</button>
+          {props.onAddProfile && <button type="button" onClick={() => setEditTab('profiles')} className={etabClass('profiles')}>Skill Modifier Profiles</button>}
+          {props.onAddField && <button type="button" onClick={() => setEditTab('fields')} className={etabClass('fields')}>Custom Fields</button>}
         </div>
-        {/* Skills in edit mode */}
-        {props.onAddSkill && (
+
+        {/* Attributes */}
+        {editTab === 'attrs' && (
           <div>
-            <label className="label">Skills</label>
+            <div className="space-y-2 mt-1">
+              {props.editAttrs.map((attr, idx) => (
+                <CollapsibleAttrCard
+                  key={idx}
+                  index={idx}
+                  attr={attr}
+                  isExpanded={!!expandedEditAttrs[idx]}
+                  onToggle={() => setExpandedEditAttrs((prev) => ({ ...prev, [idx]: !prev[idx] }))}
+                  onUpdateAttr={props.onUpdateAttr}
+                  onRemove={() => props.onRemoveAttr(idx)}
+                  allAttrs={props.editAttrs}
+                />
+              ))}
+            </div>
+            <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button>
+          </div>
+        )}
+
+        {/* Skills */}
+        {editTab === 'skills' && (
+          <div>
             <div className="space-y-2 mt-1">
               {(props.editSkills || []).map((s, idx) => (
                 <CollapsibleSkillCard
@@ -1460,10 +1551,10 @@ function TemplateRow(props: {
             <button type="button" onClick={props.onAddSkill} className="btn-ghost text-xs mt-2">+ Add Skill</button>
           </div>
         )}
-        {/* Skill Modifier Profiles - Edit */}
-        {props.onAddProfile && (
+
+        {/* Skill Modifier Profiles */}
+        {editTab === 'profiles' && (
           <div>
-            <label className="label">Skill Modifier Profiles</label>
             <div className="space-y-2 mt-1">
               {(props.editProfiles || []).map((p, pIdx) => (
                 <div key={pIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
@@ -1487,11 +1578,12 @@ function TemplateRow(props: {
             <button type="button" onClick={props.onAddProfile} className="btn-ghost text-xs mt-2">+ Add Skill Modifier Profile</button>
           </div>
         )}
-        {props.onAddField && (
-            <div>
-              <label className="label">Custom Fields</label>
-              <div className="space-y-2 mt-1">
-                {(props.editFields || []).map((f, idx) => (
+
+        {/* Custom Fields */}
+        {editTab === 'fields' && (
+          <div>
+            <div className="space-y-2 mt-1">
+              {(props.editFields || []).map((f, idx) => (
                 <div key={idx} className="flex items-center gap-1.5">
                   <input className="input-field flex-1" value={f.key} onChange={(e) => props.onUpdateField?.(idx, 'key', e.target.value)} placeholder="Key (e.g. class)" />
                   <input className="input-field flex-1" value={f.label} onChange={(e) => props.onUpdateField?.(idx, 'label', e.target.value)} placeholder="Label (e.g. Class)" />
@@ -1502,6 +1594,7 @@ function TemplateRow(props: {
             <button type="button" onClick={props.onAddField} className="btn-ghost text-xs mt-2">+ Add Custom Field</button>
           </div>
         )}
+
         {props.editError && (
           <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{props.editError}</div>
         )}
