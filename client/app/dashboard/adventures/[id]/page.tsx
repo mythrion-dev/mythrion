@@ -139,7 +139,7 @@ export default function AdventureDetailPage() {
   function removeNewProfile(index: number) { setNewTemplateProfiles((prev) => prev.filter((_, i) => i !== index)) }
   function updateNewProfile(index: number, name: string) { setNewTemplateProfiles((prev) => prev.map((p, i) => (i === index ? { ...p, name } : p))) }
   function addNewProfileOption(pIdx: number) { setNewTemplateProfiles((prev) => prev.map((p, i) => (i === pIdx ? { ...p, options: [...p.options, { label: '', value: 0 }] } : p))) }
-  function removeNewProfileOption(pIdx: number, oIdx: number) { setNewTemplateProfiles((prev) => prev.map((p, i) => (i === pIdx ? { ...p, options: p.options.filter((_, oi) => oi !== oi) } : p))) }
+  function removeNewProfileOption(pIdx: number, oIdx: number) { setNewTemplateProfiles((prev) => prev.map((p, i) => (i === pIdx ? { ...p, options: p.options.filter((_, oi) => oi !== oIdx) } : p))) }
   function updateNewProfileOption(pIdx: number, oIdx: number, field: 'label' | 'value', value: string | number) {
     setNewTemplateProfiles((prev) => prev.map((p, i) => (i === pIdx ? { ...p, options: p.options.map((o, oi) => (oi === oIdx ? { ...o, [field]: field === 'value' ? Number(value) : value } : o)) } : p)))
   }
@@ -147,7 +147,7 @@ export default function AdventureDetailPage() {
   function removeEditProfile(index: number) { setEditTemplateProfiles((prev) => prev.filter((_, i) => i !== index)) }
   function updateEditProfile(index: number, name: string) { setEditTemplateProfiles((prev) => prev.map((p, i) => (i === index ? { ...p, name } : p))) }
   function addEditProfileOption(pIdx: number) { setEditTemplateProfiles((prev) => prev.map((p, i) => (i === pIdx ? { ...p, options: [...p.options, { label: '', value: 0 }] } : p))) }
-  function removeEditProfileOption(pIdx: number, oIdx: number) { setEditTemplateProfiles((prev) => prev.map((p, i) => (i === pIdx ? { ...p, options: p.options.filter((_, oi) => oi !== oi) } : p))) }
+  function removeEditProfileOption(pIdx: number, oIdx: number) { setEditTemplateProfiles((prev) => prev.map((p, i) => (i === pIdx ? { ...p, options: p.options.filter((_, oi) => oi !== oIdx) } : p))) }
   function updateEditProfileOption(pIdx: number, oIdx: number, field: 'label' | 'value', value: string | number) {
     setEditTemplateProfiles((prev) => prev.map((p, i) => (i === pIdx ? { ...p, options: p.options.map((o, oi) => (oi === oIdx ? { ...o, [field]: field === 'value' ? Number(value) : value } : o)) } : p)))
   }
