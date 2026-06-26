@@ -99,6 +99,9 @@ export default function CharacterSheetDetailPage() {
   // Skill check toggles — which skills are active (checkbox on = calc runs)
   const [activeSkills, setActiveSkills] = useState<Record<string, boolean>>({})
 
+  // Others bonus — player-entered positive int per skill
+  const [othersValues, setOthersValues] = useState<Record<string, number>>({})
+
   const isOwner = sheet?.ownerId === user?.id
 
   const fetchSheet = useCallback(async () => {
@@ -115,10 +118,16 @@ export default function CharacterSheetDetailPage() {
       data.fieldValues.forEach((fv) => { fvals[fv.templateFieldId] = fv.value })
       setEditFieldValues(fvals)
 
-      // Restore active skills from stored values ("1" = checked)
+      // Restore active skills + others from stored values ("active|others" e.g. "1|5")
       const actives: Record<string, boolean> = {}
-      data.skillValues.forEach((sv) => { actives[sv.skillId] = sv.value === '1' })
+      const others: Record<string, number> = {}
+      data.skillValues.forEach((sv) => {
+        const parts = (sv.value || '').split('|')
+        actives[sv.skillId] = parts[0] === '1'
+        others[sv.skillId] = parseInt(parts[1] || '0', 10) || 0
+      })
       setActiveSkills(actives)
+      setOthersValues(others)
 
       // Build profile selections map: { [skillId]: { [profileId]: optionId | null } }
       const selMap: Record<string, Record<string, string | null>> = {}
@@ -171,7 +180,7 @@ export default function CharacterSheetDetailPage() {
           variables['level'] = sheetData.level ?? 1
 
           const res = await api.post<{ result: number }>('/formula/evaluate', { formula: sv.skill.formula, variables })
-          let finalResult = res.result
+          let finalResult = res.result + (othersValues[sv.skillId] ?? 0)
 
           // Add selected profile option values ON TOP of formula result
           const skillSelections = selMap[sv.skillId] || {}
@@ -401,15 +410,29 @@ export default function CharacterSheetDetailPage() {
                     profiles={allProfiles}
                     selections={profileSelections[sv.skillId] || {}}
                     active={activeSkills[sv.skillId] ?? false}
+                    others={othersValues[sv.skillId] ?? 0}
                     onToggleActive={async () => {
                       const newVal = !activeSkills[sv.skillId]
                       setActiveSkills((prev) => ({ ...prev, [sv.skillId]: newVal }))
+                      const ov = othersValues[sv.skillId] ?? 0
                       try {
                         await api.patch(`/character-sheets/${sheet.id}`, {
-                          skillValues: [{ skillId: sv.skillId, value: newVal ? '1' : '0' }],
+                          skillValues: [{ skillId: sv.skillId, value: `${newVal ? '1' : '0'}|${ov}` }],
                         })
                       } catch {
                         setActiveSkills((prev) => ({ ...prev, [sv.skillId]: !newVal }))
+                      }
+                    }}
+                    onOthersChange={async (newOthers: number) => {
+                      const ov = Math.max(0, Math.floor(newOthers))
+                      setOthersValues((prev) => ({ ...prev, [sv.skillId]: ov }))
+                      const av = activeSkills[sv.skillId] ?? false
+                      try {
+                        await api.patch(`/character-sheets/${sheet.id}`, {
+                          skillValues: [{ skillId: sv.skillId, value: `${av ? '1' : '0'}|${ov}` }],
+                        })
+                      } catch {
+                        setOthersValues((prev) => ({ ...prev, [sv.skillId]: othersValues[sv.skillId] ?? 0 }))
                       }
                     }}
                     onProfileChange={(profileId, optionId) => handleProfileChange(sv.skillId, profileId, optionId)}
@@ -444,13 +467,15 @@ export default function CharacterSheetDetailPage() {
   )
 }
 
-function CollapsibleSkillRow({ skill, result, profiles, selections, active, onToggleActive, onProfileChange }: {
+function CollapsibleSkillRow({ skill, result, profiles, selections, active, others, onToggleActive, onOthersChange, onProfileChange }: {
   skill: SkillValue
   result: number | null
   profiles: SkillModifierProfile[]
   selections: Record<string, string | null>
   active: boolean
+  others: number
   onToggleActive: () => void
+  onOthersChange: (value: number) => void
   onProfileChange: (profileId: string, optionId: string | null) => void
 }) {
   const [expanded, setExpanded] = useState(false)
@@ -482,7 +507,7 @@ function CollapsibleSkillRow({ skill, result, profiles, selections, active, onTo
           </div>
           <div className="flex items-center gap-3 shrink-0 ml-3">
             <span className="text-base font-bold text-primary">{active ? (result != null ? result : '—') : '0'}</span>
-            {profiles.length > 0 && (
+            {(profiles.length > 0 || true) && (
               <svg className={`w-4 h-4 text-muted transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
@@ -491,8 +516,25 @@ function CollapsibleSkillRow({ skill, result, profiles, selections, active, onTo
         </button>
       </div>
 
-      {expanded && profiles.length > 0 && active && (
+      {expanded && active && (
         <div className="px-4 py-3 space-y-2 border-t border-border ml-10">
+          {/* Others field */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted shrink-0 min-w-[80px]">Others:</span>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              className="input-field py-1 text-xs w-20"
+              value={others || ''}
+              placeholder="0"
+              onChange={(e) => onOthersChange(parseInt(e.target.value, 10) || 0)}
+            />
+            {others > 0 && (
+              <span className="text-xs font-mono text-primary">+{others}</span>
+            )}
+          </div>
+
           {profiles.map((profile) => {
             const selectedOptionId = selections[profile.id]
             const selectedOption = selectedOptionId
