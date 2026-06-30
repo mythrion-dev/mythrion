@@ -138,7 +138,7 @@ export default function CharacterSheetDetailPage() {
       } catch { results[sv.skillId] = null }
     }
     setSkillResults(results)
-  }, [profileSelections, othersValues])
+  }, []) // profileSelections/othersValues passed as params, not deps
 
   const fetchSheet = useCallback(async () => {
     try {
