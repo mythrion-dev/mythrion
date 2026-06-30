@@ -93,13 +93,13 @@ export class UpdateCharacterSheetDto {
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
-  @Type(() => RuntimeModifierValueDto)
-  runtimeModifierValues?: RuntimeModifierValueDto[]
+  @Type(() => RuntimeModifierComponentValueDto)
+  runtimeModifierComponentValues?: RuntimeModifierComponentValueDto[]
 }
 
-export class RuntimeModifierValueDto {
+export class RuntimeModifierComponentValueDto {
   @IsString()
-  modifierId!: string
+  componentId!: string
 
   @IsString()
   value!: string

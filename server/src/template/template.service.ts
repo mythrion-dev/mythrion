@@ -14,7 +14,7 @@ const templateInclude = {
   },
   runtimeModifiers: {
     orderBy: { order: 'asc' as const },
-    include: { options: { orderBy: { order: 'asc' as const } } },
+    include: { components: { orderBy: { order: 'asc' as const } } },
   },
 }
 
@@ -62,18 +62,17 @@ export class TemplateService {
           create: (dto.runtimeModifiers || []).map((mod, modIdx) => ({
             key: mod.key,
             name: mod.name,
-            type: mod.type,
-            defaultValue: mod.defaultValue ?? null,
             description: mod.description ?? null,
             order: modIdx,
-            options: mod.type === 'SELECT' && mod.options
-              ? {
-                  create: mod.options.map((o, oIdx) => ({
-                    label: o.label,
-                    order: oIdx,
-                  })),
-                }
-              : undefined,
+            components: {
+              create: (mod.components || []).map((c, cIdx) => ({
+                name: c.name,
+                defaultValue: c.defaultValue ?? null,
+                locked: c.locked ?? false,
+                formula: c.formula ?? null,
+                order: cIdx,
+              })),
+            },
           })),
         },
       },
@@ -174,201 +173,107 @@ export class TemplateService {
       })
       const newProfileNames = dto.skillModifierProfiles.map(p => p.name.trim())
       const existingProfileNames = existingProfiles.map(p => p.name)
-
-      // Delete profiles not in the new list
       const profileNamesToDelete = existingProfileNames.filter(n => !newProfileNames.includes(n))
-      if (profileNamesToDelete.length) {
-        await this.prisma.skillModifierProfile.deleteMany({ where: { templateId: id, name: { in: profileNamesToDelete } } })
-      }
-
-      // Upsert each profile
+      if (profileNamesToDelete.length) await this.prisma.skillModifierProfile.deleteMany({ where: { templateId: id, name: { in: profileNamesToDelete } } })
       for (let pIdx = 0; pIdx < dto.skillModifierProfiles.length; pIdx++) {
-        const p = dto.skillModifierProfiles[pIdx]
-        const name = p.name.trim()
+        const p = dto.skillModifierProfiles[pIdx]; const name = p.name.trim()
         const existing = existingProfiles.find(e => e.name === name)
-
         if (existing) {
-          // Update profile name if changed (should stay same based on match)
-          await this.prisma.skillModifierProfile.update({
-            where: { id: existing.id },
-            data: { name, order: pIdx },
-          })
-          // Handle options for existing profile
+          await this.prisma.skillModifierProfile.update({ where: { id: existing.id }, data: { name, order: pIdx } })
           const existingOptions = existing.options
           const newOptionLabels = p.options.map(o => o.label.trim())
           const existingOptionLabels = existingOptions.map(o => o.label)
-
-          // Delete removed options
           const labelsToDelete = existingOptionLabels.filter(l => !newOptionLabels.includes(l))
-          if (labelsToDelete.length) {
-            await this.prisma.profileOption.deleteMany({ where: { profileId: existing.id, label: { in: labelsToDelete } } })
-          }
-
-          // Upsert each option
+          if (labelsToDelete.length) await this.prisma.profileOption.deleteMany({ where: { profileId: existing.id, label: { in: labelsToDelete } } })
           for (let oIdx = 0; oIdx < p.options.length; oIdx++) {
-            const o = p.options[oIdx]
-            const label = o.label.trim()
+            const o = p.options[oIdx]; const label = o.label.trim()
             const existingOpt = existingOptions.find(eo => eo.label === label)
-            if (existingOpt) {
-              await this.prisma.profileOption.update({
-                where: { id: existingOpt.id },
-                data: { value: o.value, order: oIdx },
-              })
-            } else {
-              await this.prisma.profileOption.create({
-                data: { profileId: existing.id, label, value: o.value, order: oIdx },
-              })
-            }
+            if (existingOpt) { await this.prisma.profileOption.update({ where: { id: existingOpt.id }, data: { value: o.value, order: oIdx } }) }
+            else { await this.prisma.profileOption.create({ data: { profileId: existing.id, label, value: o.value, order: oIdx } }) }
           }
         } else {
-          // Create new profile with options
-          await this.prisma.skillModifierProfile.create({
-            data: {
-              templateId: id,
-              name,
-              order: pIdx,
-              options: {
-                create: p.options.map((o, oIdx) => ({
-                  label: o.label.trim(),
-                  value: o.value,
-                  order: oIdx,
-                })),
-              },
-            },
-          })
+          await this.prisma.skillModifierProfile.create({ data: { templateId: id, name, order: pIdx, options: { create: p.options.map((o, oIdx) => ({ label: o.label.trim(), value: o.value, order: oIdx })) } } })
         }
       }
-
-      // For newly created profiles, ensure existing sheets get default profile values for skills that reference them
       const addedProfileNames = newProfileNames.filter(n => !existingProfileNames.includes(n))
       if (addedProfileNames.length > 0) {
-        const newProfiles = await this.prisma.skillModifierProfile.findMany({
-          where: { templateId: id, name: { in: addedProfileNames } },
-        })
+        const newProfiles = await this.prisma.skillModifierProfile.findMany({ where: { templateId: id, name: { in: addedProfileNames } } })
         const skills = await this.prisma.templateSkill.findMany({ where: { templateId: id } })
         const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
-
-        // For each sheet, for each skill that references these profiles, create a default entry
-        for (const sheet of sheets) {
-          for (const skill of skills) {
-            if (!skill.formula) continue
-            const formulaVars = this.extractVariableNames(skill.formula)
-            for (const profile of newProfiles) {
-              if (formulaVars.includes(profile.name)) {
-                // Only create if the formula actually references this profile
-                const firstOption = await this.prisma.profileOption.findFirst({
-                  where: { profileId: profile.id },
-                  orderBy: { order: 'asc' },
-                })
-                await this.prisma.characterSheetSkillProfileValue.upsert({
-                  where: {
-                    sheetId_skillId_profileId: {
-                      sheetId: sheet.id,
-                      skillId: skill.id,
-                      profileId: profile.id,
-                    },
-                  },
-                  create: {
-                    sheetId: sheet.id,
-                    skillId: skill.id,
-                    profileId: profile.id,
-                    optionId: firstOption?.id ?? null,
-                  },
-                  update: {},
-                })
-              }
+        for (const sheet of sheets) for (const skill of skills) {
+          if (!skill.formula) continue
+          const formulaVars = this.extractVariableNames(skill.formula)
+          for (const profile of newProfiles) {
+            if (formulaVars.includes(profile.name)) {
+              const firstOption = await this.prisma.profileOption.findFirst({ where: { profileId: profile.id }, orderBy: { order: 'asc' } })
+              await this.prisma.characterSheetSkillProfileValue.upsert({ where: { sheetId_skillId_profileId: { sheetId: sheet.id, skillId: skill.id, profileId: profile.id } }, create: { sheetId: sheet.id, skillId: skill.id, profileId: profile.id, optionId: firstOption?.id ?? null }, update: {} })
             }
           }
         }
       }
     }
 
-    // Handle runtime modifiers
+    // Handle runtime modifiers (component-based)
     if (dto.runtimeModifiers) {
       const existingModifiers = await this.prisma.templateRuntimeModifier.findMany({
         where: { templateId: id },
-        include: { options: true },
+        include: { components: true },
       })
       const newModifierKeys = dto.runtimeModifiers.map(m => m.key.trim())
       const existingModifierKeys = existingModifiers.map(m => m.key)
-
-      // Delete modifiers not in the new list
       const modifierKeysToDelete = existingModifierKeys.filter(k => !newModifierKeys.includes(k))
       if (modifierKeysToDelete.length) {
         await this.prisma.templateRuntimeModifier.deleteMany({ where: { templateId: id, key: { in: modifierKeysToDelete } } })
       }
 
-      // Upsert each modifier
       for (let mIdx = 0; mIdx < dto.runtimeModifiers.length; mIdx++) {
         const mod = dto.runtimeModifiers[mIdx]
         const key = mod.key.trim()
         const existing = existingModifiers.find(e => e.key === key)
 
         if (existing) {
-          // Update modifier
           await this.prisma.templateRuntimeModifier.update({
             where: { id: existing.id },
-            data: {
-              name: mod.name.trim(),
-              type: mod.type,
-              defaultValue: mod.defaultValue ?? null,
-              description: mod.description ?? null,
-              order: mIdx,
-            },
+            data: { name: mod.name.trim(), description: mod.description ?? null, order: mIdx },
           })
-          // Handle options for SELECT type
-          if (mod.type === 'SELECT' && mod.options) {
-            const existingOptions = existing.options
-            const newOptionLabels = mod.options.map(o => o.label.trim())
-            const existingOptionLabels = existingOptions.map(o => o.label)
-
-            // Delete removed options
-            const labelsToDelete = existingOptionLabels.filter(l => !newOptionLabels.includes(l))
-            if (labelsToDelete.length) {
-              await this.prisma.runtimeModifierOption.deleteMany({ where: { modifierId: existing.id, label: { in: labelsToDelete } } })
-            }
-
-            // Upsert each option
-            for (let oIdx = 0; oIdx < mod.options.length; oIdx++) {
-              const o = mod.options[oIdx]
-              const label = o.label.trim()
-              const existingOpt = existingOptions.find(eo => eo.label === label)
-              if (existingOpt) {
-                await this.prisma.runtimeModifierOption.update({
-                  where: { id: existingOpt.id },
-                  data: { order: oIdx },
-                })
-              } else {
-                await this.prisma.runtimeModifierOption.create({
-                  data: { modifierId: existing.id, label, order: oIdx },
-                })
-              }
-            }
-          } else {
-            // If type changed away from SELECT, delete all options
-            if (existing.options.length > 0) {
-              await this.prisma.runtimeModifierOption.deleteMany({ where: { modifierId: existing.id } })
+          // Handle components for existing modifier
+          const existingComponents = existing.components
+          const newCompNames = (mod.components || []).map(c => c.name.trim())
+          const existingCompNames = existingComponents.map(c => c.name)
+          const compNamesToDelete = existingCompNames.filter(n => !newCompNames.includes(n))
+          if (compNamesToDelete.length) {
+            await this.prisma.runtimeModifierComponent.deleteMany({ where: { modifierId: existing.id, name: { in: compNamesToDelete } } })
+          }
+          for (let cIdx = 0; cIdx < (mod.components || []).length; cIdx++) {
+            const c = mod.components![cIdx]; const cName = c.name.trim()
+            const existingComp = existingComponents.find(ec => ec.name === cName)
+            if (existingComp) {
+              await this.prisma.runtimeModifierComponent.update({ where: { id: existingComp.id }, data: { defaultValue: c.defaultValue ?? null, locked: c.locked ?? false, formula: c.formula ?? null, order: cIdx } })
+            } else {
+              await this.prisma.runtimeModifierComponent.create({ data: { modifierId: existing.id, name: cName, defaultValue: c.defaultValue ?? null, locked: c.locked ?? false, formula: c.formula ?? null, order: cIdx } })
             }
           }
+          // For newly added components, auto-create values on existing sheets
+          const addedCompNames = newCompNames.filter(n => !existingCompNames.includes(n))
+          if (addedCompNames.length > 0) {
+            const newComps = await this.prisma.runtimeModifierComponent.findMany({ where: { modifierId: existing.id, name: { in: addedCompNames } } })
+            const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
+            for (const sheet of sheets) for (const comp of newComps)
+              await this.prisma.characterSheetRuntimeModifierComponentValue.upsert({
+                where: { sheetId_componentId: { sheetId: sheet.id, componentId: comp.id } },
+                create: { sheetId: sheet.id, componentId: comp.id, value: comp.defaultValue ?? '0' },
+                update: {},
+              })
+          }
         } else {
-          // Create new modifier
           await this.prisma.templateRuntimeModifier.create({
             data: {
-              templateId: id,
-              key,
-              name: mod.name.trim(),
-              type: mod.type,
-              defaultValue: mod.defaultValue ?? null,
-              description: mod.description ?? null,
-              order: mIdx,
-              options: mod.type === 'SELECT' && mod.options
-                ? {
-                    create: mod.options.map((o, oIdx) => ({
-                      label: o.label.trim(),
-                      order: oIdx,
-                    })),
-                  }
-                : undefined,
+              templateId: id, key, name: mod.name.trim(), description: mod.description ?? null, order: mIdx,
+              components: {
+                create: (mod.components || []).map((c, cIdx) => ({
+                  name: c.name, defaultValue: c.defaultValue ?? null, locked: c.locked ?? false, formula: c.formula ?? null, order: cIdx,
+                })),
+              },
             },
           })
         }
@@ -392,22 +297,14 @@ export class TemplateService {
     return this.prisma.template.delete({ where: { id } })
   }
 
-  /**
-   * Extract variable names from a formula string.
-   * Matches identifiers that aren't functions or operators.
-   */
   private extractVariableNames(formula: string): string[] {
     if (!formula) return []
-    // Match all word-like tokens, then filter out known functions
     const tokens = formula.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || []
     const functions = new Set(['mod', 'floor', 'ceil', 'round', 'max', 'min', 'abs'])
     const seen = new Set<string>()
     const vars: string[] = []
     for (const t of tokens) {
-      if (!functions.has(t) && !seen.has(t)) {
-        seen.add(t)
-        vars.push(t)
-      }
+      if (!functions.has(t) && !seen.has(t)) { seen.add(t); vars.push(t) }
     }
     return vars
   }

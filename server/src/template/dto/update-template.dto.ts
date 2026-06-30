@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, ValidateNested, IsNumber, ArrayMinSize, IsEnum } from 'class-validator'
+import { IsString, IsOptional, IsArray, ValidateNested, IsNumber, ArrayMinSize, IsBoolean } from 'class-validator'
 import { Type } from 'class-transformer'
 
 export class UpdateAttributeDefDto {
@@ -53,9 +53,21 @@ export class UpdateSkillModifierProfileDefDto {
   options!: UpdateProfileOptionDefDto[]
 }
 
-export class UpdateRuntimeModifierOptionDefDto {
+export class UpdateRuntimeModifierComponentDefDto {
   @IsString()
-  label!: string
+  name!: string
+
+  @IsString()
+  @IsOptional()
+  defaultValue?: string
+
+  @IsBoolean()
+  @IsOptional()
+  locked?: boolean
+
+  @IsString()
+  @IsOptional()
+  formula?: string
 }
 
 export class UpdateRuntimeModifierDefDto {
@@ -65,13 +77,6 @@ export class UpdateRuntimeModifierDefDto {
   @IsString()
   name!: string
 
-  @IsEnum(['NUMBER', 'BOOLEAN', 'SELECT'])
-  type!: 'NUMBER' | 'BOOLEAN' | 'SELECT'
-
-  @IsString()
-  @IsOptional()
-  defaultValue?: string
-
   @IsString()
   @IsOptional()
   description?: string
@@ -79,8 +84,8 @@ export class UpdateRuntimeModifierDefDto {
   @IsArray()
   @ValidateNested({ each: true })
   @IsOptional()
-  @Type(() => UpdateRuntimeModifierOptionDefDto)
-  options?: UpdateRuntimeModifierOptionDefDto[]
+  @Type(() => UpdateRuntimeModifierComponentDefDto)
+  components?: UpdateRuntimeModifierComponentDefDto[]
 }
 
 export class UpdateTemplateDto {

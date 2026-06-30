@@ -39,8 +39,6 @@ export type TemplateRuntimeModifierMinAggregateOutputType = {
   templateId: string | null
   key: string | null
   name: string | null
-  type: $Enums.RuntimeModifierType | null
-  defaultValue: string | null
   description: string | null
   order: number | null
   createdAt: Date | null
@@ -52,8 +50,6 @@ export type TemplateRuntimeModifierMaxAggregateOutputType = {
   templateId: string | null
   key: string | null
   name: string | null
-  type: $Enums.RuntimeModifierType | null
-  defaultValue: string | null
   description: string | null
   order: number | null
   createdAt: Date | null
@@ -65,8 +61,6 @@ export type TemplateRuntimeModifierCountAggregateOutputType = {
   templateId: number
   key: number
   name: number
-  type: number
-  defaultValue: number
   description: number
   order: number
   createdAt: number
@@ -88,8 +82,6 @@ export type TemplateRuntimeModifierMinAggregateInputType = {
   templateId?: true
   key?: true
   name?: true
-  type?: true
-  defaultValue?: true
   description?: true
   order?: true
   createdAt?: true
@@ -101,8 +93,6 @@ export type TemplateRuntimeModifierMaxAggregateInputType = {
   templateId?: true
   key?: true
   name?: true
-  type?: true
-  defaultValue?: true
   description?: true
   order?: true
   createdAt?: true
@@ -114,8 +104,6 @@ export type TemplateRuntimeModifierCountAggregateInputType = {
   templateId?: true
   key?: true
   name?: true
-  type?: true
-  defaultValue?: true
   description?: true
   order?: true
   createdAt?: true
@@ -214,8 +202,6 @@ export type TemplateRuntimeModifierGroupByOutputType = {
   templateId: string
   key: string
   name: string
-  type: $Enums.RuntimeModifierType
-  defaultValue: string | null
   description: string | null
   order: number
   createdAt: Date
@@ -250,15 +236,12 @@ export type TemplateRuntimeModifierWhereInput = {
   templateId?: Prisma.StringFilter<"TemplateRuntimeModifier"> | string
   key?: Prisma.StringFilter<"TemplateRuntimeModifier"> | string
   name?: Prisma.StringFilter<"TemplateRuntimeModifier"> | string
-  type?: Prisma.EnumRuntimeModifierTypeFilter<"TemplateRuntimeModifier"> | $Enums.RuntimeModifierType
-  defaultValue?: Prisma.StringNullableFilter<"TemplateRuntimeModifier"> | string | null
   description?: Prisma.StringNullableFilter<"TemplateRuntimeModifier"> | string | null
   order?: Prisma.IntFilter<"TemplateRuntimeModifier"> | number
   createdAt?: Prisma.DateTimeFilter<"TemplateRuntimeModifier"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TemplateRuntimeModifier"> | Date | string
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
-  options?: Prisma.RuntimeModifierOptionListRelationFilter
-  sheetValues?: Prisma.CharacterSheetRuntimeModifierValueListRelationFilter
+  components?: Prisma.RuntimeModifierComponentListRelationFilter
 }
 
 export type TemplateRuntimeModifierOrderByWithRelationInput = {
@@ -266,15 +249,12 @@ export type TemplateRuntimeModifierOrderByWithRelationInput = {
   templateId?: Prisma.SortOrder
   key?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  type?: Prisma.SortOrder
-  defaultValue?: Prisma.SortOrderInput | Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   template?: Prisma.TemplateOrderByWithRelationInput
-  options?: Prisma.RuntimeModifierOptionOrderByRelationAggregateInput
-  sheetValues?: Prisma.CharacterSheetRuntimeModifierValueOrderByRelationAggregateInput
+  components?: Prisma.RuntimeModifierComponentOrderByRelationAggregateInput
 }
 
 export type TemplateRuntimeModifierWhereUniqueInput = Prisma.AtLeast<{
@@ -285,15 +265,12 @@ export type TemplateRuntimeModifierWhereUniqueInput = Prisma.AtLeast<{
   templateId?: Prisma.StringFilter<"TemplateRuntimeModifier"> | string
   key?: Prisma.StringFilter<"TemplateRuntimeModifier"> | string
   name?: Prisma.StringFilter<"TemplateRuntimeModifier"> | string
-  type?: Prisma.EnumRuntimeModifierTypeFilter<"TemplateRuntimeModifier"> | $Enums.RuntimeModifierType
-  defaultValue?: Prisma.StringNullableFilter<"TemplateRuntimeModifier"> | string | null
   description?: Prisma.StringNullableFilter<"TemplateRuntimeModifier"> | string | null
   order?: Prisma.IntFilter<"TemplateRuntimeModifier"> | number
   createdAt?: Prisma.DateTimeFilter<"TemplateRuntimeModifier"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TemplateRuntimeModifier"> | Date | string
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
-  options?: Prisma.RuntimeModifierOptionListRelationFilter
-  sheetValues?: Prisma.CharacterSheetRuntimeModifierValueListRelationFilter
+  components?: Prisma.RuntimeModifierComponentListRelationFilter
 }, "id">
 
 export type TemplateRuntimeModifierOrderByWithAggregationInput = {
@@ -301,8 +278,6 @@ export type TemplateRuntimeModifierOrderByWithAggregationInput = {
   templateId?: Prisma.SortOrder
   key?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  type?: Prisma.SortOrder
-  defaultValue?: Prisma.SortOrderInput | Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -322,8 +297,6 @@ export type TemplateRuntimeModifierScalarWhereWithAggregatesInput = {
   templateId?: Prisma.StringWithAggregatesFilter<"TemplateRuntimeModifier"> | string
   key?: Prisma.StringWithAggregatesFilter<"TemplateRuntimeModifier"> | string
   name?: Prisma.StringWithAggregatesFilter<"TemplateRuntimeModifier"> | string
-  type?: Prisma.EnumRuntimeModifierTypeWithAggregatesFilter<"TemplateRuntimeModifier"> | $Enums.RuntimeModifierType
-  defaultValue?: Prisma.StringNullableWithAggregatesFilter<"TemplateRuntimeModifier"> | string | null
   description?: Prisma.StringNullableWithAggregatesFilter<"TemplateRuntimeModifier"> | string | null
   order?: Prisma.IntWithAggregatesFilter<"TemplateRuntimeModifier"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"TemplateRuntimeModifier"> | Date | string
@@ -334,15 +307,12 @@ export type TemplateRuntimeModifierCreateInput = {
   id?: string
   key: string
   name: string
-  type: $Enums.RuntimeModifierType
-  defaultValue?: string | null
   description?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   template: Prisma.TemplateCreateNestedOneWithoutRuntimeModifiersInput
-  options?: Prisma.RuntimeModifierOptionCreateNestedManyWithoutModifierInput
-  sheetValues?: Prisma.CharacterSheetRuntimeModifierValueCreateNestedManyWithoutModifierInput
+  components?: Prisma.RuntimeModifierComponentCreateNestedManyWithoutModifierInput
 }
 
 export type TemplateRuntimeModifierUncheckedCreateInput = {
@@ -350,29 +320,23 @@ export type TemplateRuntimeModifierUncheckedCreateInput = {
   templateId: string
   key: string
   name: string
-  type: $Enums.RuntimeModifierType
-  defaultValue?: string | null
   description?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  options?: Prisma.RuntimeModifierOptionUncheckedCreateNestedManyWithoutModifierInput
-  sheetValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedCreateNestedManyWithoutModifierInput
+  components?: Prisma.RuntimeModifierComponentUncheckedCreateNestedManyWithoutModifierInput
 }
 
 export type TemplateRuntimeModifierUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumRuntimeModifierTypeFieldUpdateOperationsInput | $Enums.RuntimeModifierType
-  defaultValue?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   template?: Prisma.TemplateUpdateOneRequiredWithoutRuntimeModifiersNestedInput
-  options?: Prisma.RuntimeModifierOptionUpdateManyWithoutModifierNestedInput
-  sheetValues?: Prisma.CharacterSheetRuntimeModifierValueUpdateManyWithoutModifierNestedInput
+  components?: Prisma.RuntimeModifierComponentUpdateManyWithoutModifierNestedInput
 }
 
 export type TemplateRuntimeModifierUncheckedUpdateInput = {
@@ -380,14 +344,11 @@ export type TemplateRuntimeModifierUncheckedUpdateInput = {
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumRuntimeModifierTypeFieldUpdateOperationsInput | $Enums.RuntimeModifierType
-  defaultValue?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  options?: Prisma.RuntimeModifierOptionUncheckedUpdateManyWithoutModifierNestedInput
-  sheetValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedUpdateManyWithoutModifierNestedInput
+  components?: Prisma.RuntimeModifierComponentUncheckedUpdateManyWithoutModifierNestedInput
 }
 
 export type TemplateRuntimeModifierCreateManyInput = {
@@ -395,8 +356,6 @@ export type TemplateRuntimeModifierCreateManyInput = {
   templateId: string
   key: string
   name: string
-  type: $Enums.RuntimeModifierType
-  defaultValue?: string | null
   description?: string | null
   order?: number
   createdAt?: Date | string
@@ -407,8 +366,6 @@ export type TemplateRuntimeModifierUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumRuntimeModifierTypeFieldUpdateOperationsInput | $Enums.RuntimeModifierType
-  defaultValue?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -420,8 +377,6 @@ export type TemplateRuntimeModifierUncheckedUpdateManyInput = {
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumRuntimeModifierTypeFieldUpdateOperationsInput | $Enums.RuntimeModifierType
-  defaultValue?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -443,8 +398,6 @@ export type TemplateRuntimeModifierCountOrderByAggregateInput = {
   templateId?: Prisma.SortOrder
   key?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  type?: Prisma.SortOrder
-  defaultValue?: Prisma.SortOrder
   description?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -460,8 +413,6 @@ export type TemplateRuntimeModifierMaxOrderByAggregateInput = {
   templateId?: Prisma.SortOrder
   key?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  type?: Prisma.SortOrder
-  defaultValue?: Prisma.SortOrder
   description?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -473,8 +424,6 @@ export type TemplateRuntimeModifierMinOrderByAggregateInput = {
   templateId?: Prisma.SortOrder
   key?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  type?: Prisma.SortOrder
-  defaultValue?: Prisma.SortOrder
   description?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -532,64 +481,40 @@ export type TemplateRuntimeModifierUncheckedUpdateManyWithoutTemplateNestedInput
   deleteMany?: Prisma.TemplateRuntimeModifierScalarWhereInput | Prisma.TemplateRuntimeModifierScalarWhereInput[]
 }
 
-export type EnumRuntimeModifierTypeFieldUpdateOperationsInput = {
-  set?: $Enums.RuntimeModifierType
-}
-
-export type TemplateRuntimeModifierCreateNestedOneWithoutOptionsInput = {
-  create?: Prisma.XOR<Prisma.TemplateRuntimeModifierCreateWithoutOptionsInput, Prisma.TemplateRuntimeModifierUncheckedCreateWithoutOptionsInput>
-  connectOrCreate?: Prisma.TemplateRuntimeModifierCreateOrConnectWithoutOptionsInput
+export type TemplateRuntimeModifierCreateNestedOneWithoutComponentsInput = {
+  create?: Prisma.XOR<Prisma.TemplateRuntimeModifierCreateWithoutComponentsInput, Prisma.TemplateRuntimeModifierUncheckedCreateWithoutComponentsInput>
+  connectOrCreate?: Prisma.TemplateRuntimeModifierCreateOrConnectWithoutComponentsInput
   connect?: Prisma.TemplateRuntimeModifierWhereUniqueInput
 }
 
-export type TemplateRuntimeModifierUpdateOneRequiredWithoutOptionsNestedInput = {
-  create?: Prisma.XOR<Prisma.TemplateRuntimeModifierCreateWithoutOptionsInput, Prisma.TemplateRuntimeModifierUncheckedCreateWithoutOptionsInput>
-  connectOrCreate?: Prisma.TemplateRuntimeModifierCreateOrConnectWithoutOptionsInput
-  upsert?: Prisma.TemplateRuntimeModifierUpsertWithoutOptionsInput
+export type TemplateRuntimeModifierUpdateOneRequiredWithoutComponentsNestedInput = {
+  create?: Prisma.XOR<Prisma.TemplateRuntimeModifierCreateWithoutComponentsInput, Prisma.TemplateRuntimeModifierUncheckedCreateWithoutComponentsInput>
+  connectOrCreate?: Prisma.TemplateRuntimeModifierCreateOrConnectWithoutComponentsInput
+  upsert?: Prisma.TemplateRuntimeModifierUpsertWithoutComponentsInput
   connect?: Prisma.TemplateRuntimeModifierWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.TemplateRuntimeModifierUpdateToOneWithWhereWithoutOptionsInput, Prisma.TemplateRuntimeModifierUpdateWithoutOptionsInput>, Prisma.TemplateRuntimeModifierUncheckedUpdateWithoutOptionsInput>
-}
-
-export type TemplateRuntimeModifierCreateNestedOneWithoutSheetValuesInput = {
-  create?: Prisma.XOR<Prisma.TemplateRuntimeModifierCreateWithoutSheetValuesInput, Prisma.TemplateRuntimeModifierUncheckedCreateWithoutSheetValuesInput>
-  connectOrCreate?: Prisma.TemplateRuntimeModifierCreateOrConnectWithoutSheetValuesInput
-  connect?: Prisma.TemplateRuntimeModifierWhereUniqueInput
-}
-
-export type TemplateRuntimeModifierUpdateOneRequiredWithoutSheetValuesNestedInput = {
-  create?: Prisma.XOR<Prisma.TemplateRuntimeModifierCreateWithoutSheetValuesInput, Prisma.TemplateRuntimeModifierUncheckedCreateWithoutSheetValuesInput>
-  connectOrCreate?: Prisma.TemplateRuntimeModifierCreateOrConnectWithoutSheetValuesInput
-  upsert?: Prisma.TemplateRuntimeModifierUpsertWithoutSheetValuesInput
-  connect?: Prisma.TemplateRuntimeModifierWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.TemplateRuntimeModifierUpdateToOneWithWhereWithoutSheetValuesInput, Prisma.TemplateRuntimeModifierUpdateWithoutSheetValuesInput>, Prisma.TemplateRuntimeModifierUncheckedUpdateWithoutSheetValuesInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TemplateRuntimeModifierUpdateToOneWithWhereWithoutComponentsInput, Prisma.TemplateRuntimeModifierUpdateWithoutComponentsInput>, Prisma.TemplateRuntimeModifierUncheckedUpdateWithoutComponentsInput>
 }
 
 export type TemplateRuntimeModifierCreateWithoutTemplateInput = {
   id?: string
   key: string
   name: string
-  type: $Enums.RuntimeModifierType
-  defaultValue?: string | null
   description?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  options?: Prisma.RuntimeModifierOptionCreateNestedManyWithoutModifierInput
-  sheetValues?: Prisma.CharacterSheetRuntimeModifierValueCreateNestedManyWithoutModifierInput
+  components?: Prisma.RuntimeModifierComponentCreateNestedManyWithoutModifierInput
 }
 
 export type TemplateRuntimeModifierUncheckedCreateWithoutTemplateInput = {
   id?: string
   key: string
   name: string
-  type: $Enums.RuntimeModifierType
-  defaultValue?: string | null
   description?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  options?: Prisma.RuntimeModifierOptionUncheckedCreateNestedManyWithoutModifierInput
-  sheetValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedCreateNestedManyWithoutModifierInput
+  components?: Prisma.RuntimeModifierComponentUncheckedCreateNestedManyWithoutModifierInput
 }
 
 export type TemplateRuntimeModifierCreateOrConnectWithoutTemplateInput = {
@@ -626,164 +551,76 @@ export type TemplateRuntimeModifierScalarWhereInput = {
   templateId?: Prisma.StringFilter<"TemplateRuntimeModifier"> | string
   key?: Prisma.StringFilter<"TemplateRuntimeModifier"> | string
   name?: Prisma.StringFilter<"TemplateRuntimeModifier"> | string
-  type?: Prisma.EnumRuntimeModifierTypeFilter<"TemplateRuntimeModifier"> | $Enums.RuntimeModifierType
-  defaultValue?: Prisma.StringNullableFilter<"TemplateRuntimeModifier"> | string | null
   description?: Prisma.StringNullableFilter<"TemplateRuntimeModifier"> | string | null
   order?: Prisma.IntFilter<"TemplateRuntimeModifier"> | number
   createdAt?: Prisma.DateTimeFilter<"TemplateRuntimeModifier"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TemplateRuntimeModifier"> | Date | string
 }
 
-export type TemplateRuntimeModifierCreateWithoutOptionsInput = {
+export type TemplateRuntimeModifierCreateWithoutComponentsInput = {
   id?: string
   key: string
   name: string
-  type: $Enums.RuntimeModifierType
-  defaultValue?: string | null
   description?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   template: Prisma.TemplateCreateNestedOneWithoutRuntimeModifiersInput
-  sheetValues?: Prisma.CharacterSheetRuntimeModifierValueCreateNestedManyWithoutModifierInput
 }
 
-export type TemplateRuntimeModifierUncheckedCreateWithoutOptionsInput = {
+export type TemplateRuntimeModifierUncheckedCreateWithoutComponentsInput = {
   id?: string
   templateId: string
   key: string
   name: string
-  type: $Enums.RuntimeModifierType
-  defaultValue?: string | null
   description?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  sheetValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedCreateNestedManyWithoutModifierInput
 }
 
-export type TemplateRuntimeModifierCreateOrConnectWithoutOptionsInput = {
+export type TemplateRuntimeModifierCreateOrConnectWithoutComponentsInput = {
   where: Prisma.TemplateRuntimeModifierWhereUniqueInput
-  create: Prisma.XOR<Prisma.TemplateRuntimeModifierCreateWithoutOptionsInput, Prisma.TemplateRuntimeModifierUncheckedCreateWithoutOptionsInput>
+  create: Prisma.XOR<Prisma.TemplateRuntimeModifierCreateWithoutComponentsInput, Prisma.TemplateRuntimeModifierUncheckedCreateWithoutComponentsInput>
 }
 
-export type TemplateRuntimeModifierUpsertWithoutOptionsInput = {
-  update: Prisma.XOR<Prisma.TemplateRuntimeModifierUpdateWithoutOptionsInput, Prisma.TemplateRuntimeModifierUncheckedUpdateWithoutOptionsInput>
-  create: Prisma.XOR<Prisma.TemplateRuntimeModifierCreateWithoutOptionsInput, Prisma.TemplateRuntimeModifierUncheckedCreateWithoutOptionsInput>
+export type TemplateRuntimeModifierUpsertWithoutComponentsInput = {
+  update: Prisma.XOR<Prisma.TemplateRuntimeModifierUpdateWithoutComponentsInput, Prisma.TemplateRuntimeModifierUncheckedUpdateWithoutComponentsInput>
+  create: Prisma.XOR<Prisma.TemplateRuntimeModifierCreateWithoutComponentsInput, Prisma.TemplateRuntimeModifierUncheckedCreateWithoutComponentsInput>
   where?: Prisma.TemplateRuntimeModifierWhereInput
 }
 
-export type TemplateRuntimeModifierUpdateToOneWithWhereWithoutOptionsInput = {
+export type TemplateRuntimeModifierUpdateToOneWithWhereWithoutComponentsInput = {
   where?: Prisma.TemplateRuntimeModifierWhereInput
-  data: Prisma.XOR<Prisma.TemplateRuntimeModifierUpdateWithoutOptionsInput, Prisma.TemplateRuntimeModifierUncheckedUpdateWithoutOptionsInput>
+  data: Prisma.XOR<Prisma.TemplateRuntimeModifierUpdateWithoutComponentsInput, Prisma.TemplateRuntimeModifierUncheckedUpdateWithoutComponentsInput>
 }
 
-export type TemplateRuntimeModifierUpdateWithoutOptionsInput = {
+export type TemplateRuntimeModifierUpdateWithoutComponentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumRuntimeModifierTypeFieldUpdateOperationsInput | $Enums.RuntimeModifierType
-  defaultValue?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   template?: Prisma.TemplateUpdateOneRequiredWithoutRuntimeModifiersNestedInput
-  sheetValues?: Prisma.CharacterSheetRuntimeModifierValueUpdateManyWithoutModifierNestedInput
 }
 
-export type TemplateRuntimeModifierUncheckedUpdateWithoutOptionsInput = {
+export type TemplateRuntimeModifierUncheckedUpdateWithoutComponentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumRuntimeModifierTypeFieldUpdateOperationsInput | $Enums.RuntimeModifierType
-  defaultValue?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  sheetValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedUpdateManyWithoutModifierNestedInput
-}
-
-export type TemplateRuntimeModifierCreateWithoutSheetValuesInput = {
-  id?: string
-  key: string
-  name: string
-  type: $Enums.RuntimeModifierType
-  defaultValue?: string | null
-  description?: string | null
-  order?: number
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  template: Prisma.TemplateCreateNestedOneWithoutRuntimeModifiersInput
-  options?: Prisma.RuntimeModifierOptionCreateNestedManyWithoutModifierInput
-}
-
-export type TemplateRuntimeModifierUncheckedCreateWithoutSheetValuesInput = {
-  id?: string
-  templateId: string
-  key: string
-  name: string
-  type: $Enums.RuntimeModifierType
-  defaultValue?: string | null
-  description?: string | null
-  order?: number
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  options?: Prisma.RuntimeModifierOptionUncheckedCreateNestedManyWithoutModifierInput
-}
-
-export type TemplateRuntimeModifierCreateOrConnectWithoutSheetValuesInput = {
-  where: Prisma.TemplateRuntimeModifierWhereUniqueInput
-  create: Prisma.XOR<Prisma.TemplateRuntimeModifierCreateWithoutSheetValuesInput, Prisma.TemplateRuntimeModifierUncheckedCreateWithoutSheetValuesInput>
-}
-
-export type TemplateRuntimeModifierUpsertWithoutSheetValuesInput = {
-  update: Prisma.XOR<Prisma.TemplateRuntimeModifierUpdateWithoutSheetValuesInput, Prisma.TemplateRuntimeModifierUncheckedUpdateWithoutSheetValuesInput>
-  create: Prisma.XOR<Prisma.TemplateRuntimeModifierCreateWithoutSheetValuesInput, Prisma.TemplateRuntimeModifierUncheckedCreateWithoutSheetValuesInput>
-  where?: Prisma.TemplateRuntimeModifierWhereInput
-}
-
-export type TemplateRuntimeModifierUpdateToOneWithWhereWithoutSheetValuesInput = {
-  where?: Prisma.TemplateRuntimeModifierWhereInput
-  data: Prisma.XOR<Prisma.TemplateRuntimeModifierUpdateWithoutSheetValuesInput, Prisma.TemplateRuntimeModifierUncheckedUpdateWithoutSheetValuesInput>
-}
-
-export type TemplateRuntimeModifierUpdateWithoutSheetValuesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  key?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumRuntimeModifierTypeFieldUpdateOperationsInput | $Enums.RuntimeModifierType
-  defaultValue?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  order?: Prisma.IntFieldUpdateOperationsInput | number
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  template?: Prisma.TemplateUpdateOneRequiredWithoutRuntimeModifiersNestedInput
-  options?: Prisma.RuntimeModifierOptionUpdateManyWithoutModifierNestedInput
-}
-
-export type TemplateRuntimeModifierUncheckedUpdateWithoutSheetValuesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  templateId?: Prisma.StringFieldUpdateOperationsInput | string
-  key?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumRuntimeModifierTypeFieldUpdateOperationsInput | $Enums.RuntimeModifierType
-  defaultValue?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  order?: Prisma.IntFieldUpdateOperationsInput | number
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  options?: Prisma.RuntimeModifierOptionUncheckedUpdateManyWithoutModifierNestedInput
 }
 
 export type TemplateRuntimeModifierCreateManyTemplateInput = {
   id?: string
   key: string
   name: string
-  type: $Enums.RuntimeModifierType
-  defaultValue?: string | null
   description?: string | null
   order?: number
   createdAt?: Date | string
@@ -794,36 +631,28 @@ export type TemplateRuntimeModifierUpdateWithoutTemplateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumRuntimeModifierTypeFieldUpdateOperationsInput | $Enums.RuntimeModifierType
-  defaultValue?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  options?: Prisma.RuntimeModifierOptionUpdateManyWithoutModifierNestedInput
-  sheetValues?: Prisma.CharacterSheetRuntimeModifierValueUpdateManyWithoutModifierNestedInput
+  components?: Prisma.RuntimeModifierComponentUpdateManyWithoutModifierNestedInput
 }
 
 export type TemplateRuntimeModifierUncheckedUpdateWithoutTemplateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumRuntimeModifierTypeFieldUpdateOperationsInput | $Enums.RuntimeModifierType
-  defaultValue?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  options?: Prisma.RuntimeModifierOptionUncheckedUpdateManyWithoutModifierNestedInput
-  sheetValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedUpdateManyWithoutModifierNestedInput
+  components?: Prisma.RuntimeModifierComponentUncheckedUpdateManyWithoutModifierNestedInput
 }
 
 export type TemplateRuntimeModifierUncheckedUpdateManyWithoutTemplateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumRuntimeModifierTypeFieldUpdateOperationsInput | $Enums.RuntimeModifierType
-  defaultValue?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -836,13 +665,11 @@ export type TemplateRuntimeModifierUncheckedUpdateManyWithoutTemplateInput = {
  */
 
 export type TemplateRuntimeModifierCountOutputType = {
-  options: number
-  sheetValues: number
+  components: number
 }
 
 export type TemplateRuntimeModifierCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  options?: boolean | TemplateRuntimeModifierCountOutputTypeCountOptionsArgs
-  sheetValues?: boolean | TemplateRuntimeModifierCountOutputTypeCountSheetValuesArgs
+  components?: boolean | TemplateRuntimeModifierCountOutputTypeCountComponentsArgs
 }
 
 /**
@@ -858,15 +685,8 @@ export type TemplateRuntimeModifierCountOutputTypeDefaultArgs<ExtArgs extends ru
 /**
  * TemplateRuntimeModifierCountOutputType without action
  */
-export type TemplateRuntimeModifierCountOutputTypeCountOptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.RuntimeModifierOptionWhereInput
-}
-
-/**
- * TemplateRuntimeModifierCountOutputType without action
- */
-export type TemplateRuntimeModifierCountOutputTypeCountSheetValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.CharacterSheetRuntimeModifierValueWhereInput
+export type TemplateRuntimeModifierCountOutputTypeCountComponentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RuntimeModifierComponentWhereInput
 }
 
 
@@ -875,15 +695,12 @@ export type TemplateRuntimeModifierSelect<ExtArgs extends runtime.Types.Extensio
   templateId?: boolean
   key?: boolean
   name?: boolean
-  type?: boolean
-  defaultValue?: boolean
   description?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
-  options?: boolean | Prisma.TemplateRuntimeModifier$optionsArgs<ExtArgs>
-  sheetValues?: boolean | Prisma.TemplateRuntimeModifier$sheetValuesArgs<ExtArgs>
+  components?: boolean | Prisma.TemplateRuntimeModifier$componentsArgs<ExtArgs>
   _count?: boolean | Prisma.TemplateRuntimeModifierCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["templateRuntimeModifier"]>
 
@@ -892,8 +709,6 @@ export type TemplateRuntimeModifierSelectCreateManyAndReturn<ExtArgs extends run
   templateId?: boolean
   key?: boolean
   name?: boolean
-  type?: boolean
-  defaultValue?: boolean
   description?: boolean
   order?: boolean
   createdAt?: boolean
@@ -906,8 +721,6 @@ export type TemplateRuntimeModifierSelectUpdateManyAndReturn<ExtArgs extends run
   templateId?: boolean
   key?: boolean
   name?: boolean
-  type?: boolean
-  defaultValue?: boolean
   description?: boolean
   order?: boolean
   createdAt?: boolean
@@ -920,19 +733,16 @@ export type TemplateRuntimeModifierSelectScalar = {
   templateId?: boolean
   key?: boolean
   name?: boolean
-  type?: boolean
-  defaultValue?: boolean
   description?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TemplateRuntimeModifierOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "templateId" | "key" | "name" | "type" | "defaultValue" | "description" | "order" | "createdAt" | "updatedAt", ExtArgs["result"]["templateRuntimeModifier"]>
+export type TemplateRuntimeModifierOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "templateId" | "key" | "name" | "description" | "order" | "createdAt" | "updatedAt", ExtArgs["result"]["templateRuntimeModifier"]>
 export type TemplateRuntimeModifierInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
-  options?: boolean | Prisma.TemplateRuntimeModifier$optionsArgs<ExtArgs>
-  sheetValues?: boolean | Prisma.TemplateRuntimeModifier$sheetValuesArgs<ExtArgs>
+  components?: boolean | Prisma.TemplateRuntimeModifier$componentsArgs<ExtArgs>
   _count?: boolean | Prisma.TemplateRuntimeModifierCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TemplateRuntimeModifierIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -946,16 +756,13 @@ export type $TemplateRuntimeModifierPayload<ExtArgs extends runtime.Types.Extens
   name: "TemplateRuntimeModifier"
   objects: {
     template: Prisma.$TemplatePayload<ExtArgs>
-    options: Prisma.$RuntimeModifierOptionPayload<ExtArgs>[]
-    sheetValues: Prisma.$CharacterSheetRuntimeModifierValuePayload<ExtArgs>[]
+    components: Prisma.$RuntimeModifierComponentPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     templateId: string
     key: string
     name: string
-    type: $Enums.RuntimeModifierType
-    defaultValue: string | null
     description: string | null
     order: number
     createdAt: Date
@@ -1355,8 +1162,7 @@ readonly fields: TemplateRuntimeModifierFieldRefs;
 export interface Prisma__TemplateRuntimeModifierClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   template<T extends Prisma.TemplateDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateDefaultArgs<ExtArgs>>): Prisma.Prisma__TemplateClient<runtime.Types.Result.GetResult<Prisma.$TemplatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  options<T extends Prisma.TemplateRuntimeModifier$optionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateRuntimeModifier$optionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RuntimeModifierOptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  sheetValues<T extends Prisma.TemplateRuntimeModifier$sheetValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateRuntimeModifier$sheetValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetRuntimeModifierValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  components<T extends Prisma.TemplateRuntimeModifier$componentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateRuntimeModifier$componentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RuntimeModifierComponentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1390,8 +1196,6 @@ export interface TemplateRuntimeModifierFieldRefs {
   readonly templateId: Prisma.FieldRef<"TemplateRuntimeModifier", 'String'>
   readonly key: Prisma.FieldRef<"TemplateRuntimeModifier", 'String'>
   readonly name: Prisma.FieldRef<"TemplateRuntimeModifier", 'String'>
-  readonly type: Prisma.FieldRef<"TemplateRuntimeModifier", 'RuntimeModifierType'>
-  readonly defaultValue: Prisma.FieldRef<"TemplateRuntimeModifier", 'String'>
   readonly description: Prisma.FieldRef<"TemplateRuntimeModifier", 'String'>
   readonly order: Prisma.FieldRef<"TemplateRuntimeModifier", 'Int'>
   readonly createdAt: Prisma.FieldRef<"TemplateRuntimeModifier", 'DateTime'>
@@ -1797,51 +1601,27 @@ export type TemplateRuntimeModifierDeleteManyArgs<ExtArgs extends runtime.Types.
 }
 
 /**
- * TemplateRuntimeModifier.options
+ * TemplateRuntimeModifier.components
  */
-export type TemplateRuntimeModifier$optionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type TemplateRuntimeModifier$componentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the RuntimeModifierOption
+   * Select specific fields to fetch from the RuntimeModifierComponent
    */
-  select?: Prisma.RuntimeModifierOptionSelect<ExtArgs> | null
+  select?: Prisma.RuntimeModifierComponentSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the RuntimeModifierOption
+   * Omit specific fields from the RuntimeModifierComponent
    */
-  omit?: Prisma.RuntimeModifierOptionOmit<ExtArgs> | null
+  omit?: Prisma.RuntimeModifierComponentOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.RuntimeModifierOptionInclude<ExtArgs> | null
-  where?: Prisma.RuntimeModifierOptionWhereInput
-  orderBy?: Prisma.RuntimeModifierOptionOrderByWithRelationInput | Prisma.RuntimeModifierOptionOrderByWithRelationInput[]
-  cursor?: Prisma.RuntimeModifierOptionWhereUniqueInput
+  include?: Prisma.RuntimeModifierComponentInclude<ExtArgs> | null
+  where?: Prisma.RuntimeModifierComponentWhereInput
+  orderBy?: Prisma.RuntimeModifierComponentOrderByWithRelationInput | Prisma.RuntimeModifierComponentOrderByWithRelationInput[]
+  cursor?: Prisma.RuntimeModifierComponentWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.RuntimeModifierOptionScalarFieldEnum | Prisma.RuntimeModifierOptionScalarFieldEnum[]
-}
-
-/**
- * TemplateRuntimeModifier.sheetValues
- */
-export type TemplateRuntimeModifier$sheetValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the CharacterSheetRuntimeModifierValue
-   */
-  select?: Prisma.CharacterSheetRuntimeModifierValueSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the CharacterSheetRuntimeModifierValue
-   */
-  omit?: Prisma.CharacterSheetRuntimeModifierValueOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.CharacterSheetRuntimeModifierValueInclude<ExtArgs> | null
-  where?: Prisma.CharacterSheetRuntimeModifierValueWhereInput
-  orderBy?: Prisma.CharacterSheetRuntimeModifierValueOrderByWithRelationInput | Prisma.CharacterSheetRuntimeModifierValueOrderByWithRelationInput[]
-  cursor?: Prisma.CharacterSheetRuntimeModifierValueWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.CharacterSheetRuntimeModifierValueScalarFieldEnum | Prisma.CharacterSheetRuntimeModifierValueScalarFieldEnum[]
+  distinct?: Prisma.RuntimeModifierComponentScalarFieldEnum | Prisma.RuntimeModifierComponentScalarFieldEnum[]
 }
 
 /**

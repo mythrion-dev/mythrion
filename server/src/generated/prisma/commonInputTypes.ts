@@ -263,23 +263,6 @@ export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedIntNullableFilter<$PrismaModel>
 }
 
-export type EnumRuntimeModifierTypeFilter<$PrismaModel = never> = {
-  equals?: $Enums.RuntimeModifierType | Prisma.EnumRuntimeModifierTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.RuntimeModifierType[] | Prisma.ListEnumRuntimeModifierTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.RuntimeModifierType[] | Prisma.ListEnumRuntimeModifierTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumRuntimeModifierTypeFilter<$PrismaModel> | $Enums.RuntimeModifierType
-}
-
-export type EnumRuntimeModifierTypeWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.RuntimeModifierType | Prisma.EnumRuntimeModifierTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.RuntimeModifierType[] | Prisma.ListEnumRuntimeModifierTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.RuntimeModifierType[] | Prisma.ListEnumRuntimeModifierTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumRuntimeModifierTypeWithAggregatesFilter<$PrismaModel> | $Enums.RuntimeModifierType
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumRuntimeModifierTypeFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumRuntimeModifierTypeFilter<$PrismaModel>
-}
-
 export type NestedStringFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -529,23 +512,6 @@ export type NestedFloatNullableFilter<$PrismaModel = never> = {
   gt?: number | Prisma.FloatFieldRefInput<$PrismaModel>
   gte?: number | Prisma.FloatFieldRefInput<$PrismaModel>
   not?: Prisma.NestedFloatNullableFilter<$PrismaModel> | number | null
-}
-
-export type NestedEnumRuntimeModifierTypeFilter<$PrismaModel = never> = {
-  equals?: $Enums.RuntimeModifierType | Prisma.EnumRuntimeModifierTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.RuntimeModifierType[] | Prisma.ListEnumRuntimeModifierTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.RuntimeModifierType[] | Prisma.ListEnumRuntimeModifierTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumRuntimeModifierTypeFilter<$PrismaModel> | $Enums.RuntimeModifierType
-}
-
-export type NestedEnumRuntimeModifierTypeWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.RuntimeModifierType | Prisma.EnumRuntimeModifierTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.RuntimeModifierType[] | Prisma.ListEnumRuntimeModifierTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.RuntimeModifierType[] | Prisma.ListEnumRuntimeModifierTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumRuntimeModifierTypeWithAggregatesFilter<$PrismaModel> | $Enums.RuntimeModifierType
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumRuntimeModifierTypeFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumRuntimeModifierTypeFilter<$PrismaModel>
 }
 
 

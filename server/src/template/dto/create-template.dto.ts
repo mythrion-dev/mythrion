@@ -5,7 +5,7 @@ import {
   ValidateNested,
   ArrayMinSize,
   IsNumber,
-  IsEnum,
+  IsBoolean,
 } from 'class-validator'
 import { Type } from 'class-transformer'
 
@@ -61,9 +61,21 @@ export class SkillModifierProfileDefDto {
   options!: ProfileOptionDefDto[]
 }
 
-export class RuntimeModifierOptionDefDto {
+export class RuntimeModifierComponentDefDto {
   @IsString()
-  label!: string
+  name!: string
+
+  @IsString()
+  @IsOptional()
+  defaultValue?: string
+
+  @IsBoolean()
+  @IsOptional()
+  locked?: boolean
+
+  @IsString()
+  @IsOptional()
+  formula?: string
 }
 
 export class RuntimeModifierDefDto {
@@ -73,13 +85,6 @@ export class RuntimeModifierDefDto {
   @IsString()
   name!: string
 
-  @IsEnum(['NUMBER', 'BOOLEAN', 'SELECT'])
-  type!: 'NUMBER' | 'BOOLEAN' | 'SELECT'
-
-  @IsString()
-  @IsOptional()
-  defaultValue?: string
-
   @IsString()
   @IsOptional()
   description?: string
@@ -87,8 +92,8 @@ export class RuntimeModifierDefDto {
   @IsArray()
   @ValidateNested({ each: true })
   @IsOptional()
-  @Type(() => RuntimeModifierOptionDefDto)
-  options?: RuntimeModifierOptionDefDto[]
+  @Type(() => RuntimeModifierComponentDefDto)
+  components?: RuntimeModifierComponentDefDto[]
 }
 
 export class CreateTemplateDto {

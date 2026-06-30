@@ -21,7 +21,7 @@ const sheetInclude = {
       },
       runtimeModifiers: {
         orderBy: { order: 'asc' as const },
-        include: { options: { orderBy: { order: 'asc' as const } } },
+        include: { components: { orderBy: { order: 'asc' as const } } },
       },
     },
   },
@@ -46,16 +46,23 @@ const sheetInclude = {
       option: { select: { id: true, label: true, value: true } },
     },
   },
-  runtimeModifierValues: {
+  runtimeModifierComponentValues: {
     include: {
-      modifier: {
+      component: {
         select: {
           id: true,
-          key: true,
           name: true,
-          type: true,
-          description: true,
-          options: { orderBy: { order: 'asc' as const } },
+          defaultValue: true,
+          locked: true,
+          formula: true,
+          modifier: {
+            select: {
+              id: true,
+              key: true,
+              name: true,
+              description: true,
+            },
+          },
         },
       },
     },
@@ -69,9 +76,8 @@ export class CharacterSheetService {
     private readonly membership: MembershipService,
   ) {}
 
-  /** Create a character sheet from a template. The user must be a member of the template's adventure. */
+  /** Create a character sheet from a template. */
   async create(userId: string, dto: CreateCharacterSheetDto) {
-    // Fetch the template to verify access and get adventureId
     const template = await this.prisma.template.findUnique({
       where: { id: dto.templateId },
       include: {
@@ -79,52 +85,34 @@ export class CharacterSheetService {
         templateFields: true,
         templateSkills: true,
         skillModifierProfiles: { include: { options: { orderBy: { order: 'asc' } } } },
-        runtimeModifiers: { include: { options: { orderBy: { order: 'asc' } } } },
+        runtimeModifiers: { include: { components: { orderBy: { order: 'asc' } } } },
       },
     })
-    if (!template) {
-      throw new NotFoundException('Template not found')
-    }
+    if (!template) throw new NotFoundException('Template not found')
 
-    // Determine adventureId: use provided one, or inherit from template
     const adventureId = dto.adventureId !== undefined
-      ? (dto.adventureId || null) // empty string = no campaign
+      ? (dto.adventureId || null)
       : template.adventureId
 
-    // If linking to a campaign, verify membership
     if (adventureId) {
       const isMember = await this.membership.isMember(adventureId, userId)
-      if (!isMember) {
-        throw new ForbiddenException('You are not a member of this adventure')
-      }
+      if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
     }
 
-    // Build skill profile values: for each skill that references a profile in its formula,
-    // create a default entry pointing to the first option.
     const skillProfileValues: Array<{
-      sheetId?: string
-      skillId: string
-      profileId: string
-      optionId?: string | null
+      skillId: string; profileId: string; optionId?: string | null
     }> = []
-
     for (const skill of template.templateSkills) {
       if (!skill.formula) continue
       const formulaVars = this.extractVariableNames(skill.formula)
       for (const profile of template.skillModifierProfiles) {
         if (formulaVars.includes(profile.name)) {
-          const firstOption = profile.options[0]
-          skillProfileValues.push({
-            skillId: skill.id,
-            profileId: profile.id,
-            optionId: firstOption?.id ?? null,
-          })
+          skillProfileValues.push({ skillId: skill.id, profileId: profile.id, optionId: profile.options[0]?.id ?? null })
         }
       }
     }
 
-    // Create sheet with values for every template attribute AND runtime modifier
-    const sheet = await this.prisma.characterSheet.create({
+    return this.prisma.characterSheet.create({
       data: {
         characterName: dto.characterName,
         playerName: dto.playerName ?? null,
@@ -133,46 +121,30 @@ export class CharacterSheetService {
         templateId: template.id,
         ownerId: userId,
         values: {
-          create: template.attributes.map((attr) => ({
-            attributeId: attr.id,
-            value: '',
-          })),
+          create: template.attributes.map(a => ({ attributeId: a.id, value: '' })),
         },
         fieldValues: {
-          create: template.templateFields?.map((f) => ({
-            templateFieldId: f.id,
-            value: '',
-          })) || [],
+          create: (template.templateFields || []).map(f => ({ templateFieldId: f.id, value: '' })),
         },
         skillValues: {
-          create: template.templateSkills?.map((s) => ({
-            skillId: s.id,
-            value: '',
-          })) || [],
+          create: (template.templateSkills || []).map(s => ({ skillId: s.id, value: '' })),
         },
         skillProfileValues: {
-          create: skillProfileValues.map((spv) => ({
-            skillId: spv.skillId,
-            profileId: spv.profileId,
-            optionId: spv.optionId,
-          })),
+          create: skillProfileValues.map(spv => ({ skillId: spv.skillId, profileId: spv.profileId, optionId: spv.optionId })),
         },
-        runtimeModifierValues: {
-          create: template.runtimeModifiers.map((mod) => ({
-            modifierId: mod.id,
-            value: mod.defaultValue ?? (
-              mod.type === 'BOOLEAN' ? 'false' : mod.type === 'NUMBER' ? '0' : mod.options[0]?.label ?? ''
-            ),
-          })),
+        runtimeModifierComponentValues: {
+          create: template.runtimeModifiers.flatMap(mod =>
+            mod.components.map(c => ({
+              componentId: c.id,
+              value: c.defaultValue ?? '0',
+            })),
+          ),
         },
       },
       include: sheetInclude,
     })
-
-    return sheet
   }
 
-  /** Return all character sheets owned by the current user */
   async findAllByUser(userId: string) {
     return this.prisma.characterSheet.findMany({
       where: { ownerId: userId },
@@ -184,13 +156,9 @@ export class CharacterSheetService {
     })
   }
 
-  /** Return all character sheets for a given adventure (members only) */
   async findAllByAdventure(adventureId: string, userId: string) {
     const isMember = await this.membership.isMember(adventureId, userId)
-    if (!isMember) {
-      throw new ForbiddenException('You are not a member of this adventure')
-    }
-
+    if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
     return this.prisma.characterSheet.findMany({
       where: { adventureId },
       include: {
@@ -203,126 +171,60 @@ export class CharacterSheetService {
   }
 
   async findOne(id: string, userId: string) {
-    const sheet = await this.prisma.characterSheet.findUnique({
-      where: { id },
-      include: sheetInclude,
-    })
-    if (!sheet) {
-      throw new NotFoundException('Character sheet not found')
-    }
-
-    // Must be either the owner or a member of the adventure
+    const sheet = await this.prisma.characterSheet.findUnique({ where: { id }, include: sheetInclude })
+    if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) {
-        throw new ForbiddenException('You do not have access to this character sheet')
-      }
+      if (!sheet.adventureId) throw new ForbiddenException('You do not have access to this character sheet')
       const isMember = await this.membership.isMember(sheet.adventureId, userId)
-      if (!isMember) {
-        throw new ForbiddenException('You do not have access to this character sheet')
-      }
+      if (!isMember) throw new ForbiddenException('You do not have access to this character sheet')
     }
-
     return sheet
   }
 
-  /** Only the owner can update their sheet */
   async update(id: string, userId: string, dto: UpdateCharacterSheetDto) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id } })
-    if (!sheet) {
-      throw new NotFoundException('Character sheet not found')
-    }
-    if (sheet.ownerId !== userId) {
-      throw new ForbiddenException('Only the owner can edit this character sheet')
-    }
+    if (!sheet) throw new NotFoundException('Character sheet not found')
+    if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can edit this character sheet')
 
-    // If values are provided, upsert each one
     if (dto.values) {
-      for (const v of dto.values) {
+      for (const v of dto.values)
         await this.prisma.characterSheetValue.upsert({
-          where: {
-            sheetId_attributeId: { sheetId: id, attributeId: v.attributeId },
-          },
-          create: {
-            sheetId: id,
-            attributeId: v.attributeId,
-            value: v.value,
-          },
+          where: { sheetId_attributeId: { sheetId: id, attributeId: v.attributeId } },
+          create: { sheetId: id, attributeId: v.attributeId, value: v.value },
           update: { value: v.value },
         })
-      }
     }
-
-    // If fieldValues are provided, upsert each one
     if (dto.fieldValues) {
-      for (const fv of dto.fieldValues) {
+      for (const fv of dto.fieldValues)
         await this.prisma.characterSheetFieldValue.upsert({
-          where: {
-            sheetId_templateFieldId: { sheetId: id, templateFieldId: fv.templateFieldId },
-          },
-          create: {
-            sheetId: id,
-            templateFieldId: fv.templateFieldId,
-            value: fv.value,
-          },
+          where: { sheetId_templateFieldId: { sheetId: id, templateFieldId: fv.templateFieldId } },
+          create: { sheetId: id, templateFieldId: fv.templateFieldId, value: fv.value },
           update: { value: fv.value },
         })
-      }
     }
-
-    // If skillValues (checkbox state) are provided, upsert each one
     if (dto.skillValues) {
-      for (const sv of dto.skillValues) {
+      for (const sv of dto.skillValues)
         await this.prisma.characterSheetSkillValue.upsert({
-          where: {
-            sheetId_skillId: { sheetId: id, skillId: sv.skillId },
-          },
-          create: {
-            sheetId: id,
-            skillId: sv.skillId,
-            value: sv.value,
-          },
+          where: { sheetId_skillId: { sheetId: id, skillId: sv.skillId } },
+          create: { sheetId: id, skillId: sv.skillId, value: sv.value },
           update: { value: sv.value },
         })
-      }
     }
-
-    // If skillProfileValues are provided, upsert each one
     if (dto.skillProfileValues) {
-      for (const spv of dto.skillProfileValues) {
+      for (const spv of dto.skillProfileValues)
         await this.prisma.characterSheetSkillProfileValue.upsert({
-          where: {
-            sheetId_skillId_profileId: {
-              sheetId: id,
-              skillId: spv.skillId,
-              profileId: spv.profileId,
-            },
-          },
-          create: {
-            sheetId: id,
-            skillId: spv.skillId,
-            profileId: spv.profileId,
-            optionId: spv.optionId,
-          },
+          where: { sheetId_skillId_profileId: { sheetId: id, skillId: spv.skillId, profileId: spv.profileId } },
+          create: { sheetId: id, skillId: spv.skillId, profileId: spv.profileId, optionId: spv.optionId },
           update: { optionId: spv.optionId },
         })
-      }
     }
-
-    // If runtimeModifierValues are provided, upsert each one
-    if (dto.runtimeModifierValues) {
-      for (const rmv of dto.runtimeModifierValues) {
-        await this.prisma.characterSheetRuntimeModifierValue.upsert({
-          where: {
-            sheetId_modifierId: { sheetId: id, modifierId: rmv.modifierId },
-          },
-          create: {
-            sheetId: id,
-            modifierId: rmv.modifierId,
-            value: rmv.value,
-          },
-          update: { value: rmv.value },
+    if (dto.runtimeModifierComponentValues) {
+      for (const rmc of dto.runtimeModifierComponentValues)
+        await this.prisma.characterSheetRuntimeModifierComponentValue.upsert({
+          where: { sheetId_componentId: { sheetId: id, componentId: rmc.componentId } },
+          create: { sheetId: id, componentId: rmc.componentId, value: rmc.value },
+          update: { value: rmc.value },
         })
-      }
     }
 
     return this.prisma.characterSheet.update({
@@ -339,99 +241,42 @@ export class CharacterSheetService {
     })
   }
 
-  /** Only the owner can delete their sheet */
   async remove(id: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id } })
-    if (!sheet) {
-      throw new NotFoundException('Character sheet not found')
-    }
-    if (sheet.ownerId !== userId) {
-      throw new ForbiddenException('Only the owner can delete this character sheet')
-    }
-
+    if (!sheet) throw new NotFoundException('Character sheet not found')
+    if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can delete this character sheet')
     return this.prisma.characterSheet.delete({ where: { id } })
   }
 
-  /** Link an existing sheet to a campaign. Only the owner can do this. */
   async linkToAdventure(sheetId: string, adventureId: string, userId: string) {
-    const sheet = await this.prisma.characterSheet.findUnique({
-      where: { id: sheetId },
-    })
-    if (!sheet) {
-      throw new NotFoundException('Character sheet not found')
-    }
-    if (sheet.ownerId !== userId) {
-      throw new ForbiddenException('Only the owner can link this character sheet')
-    }
-
-    // Verify user is a member of the target adventure
+    const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
+    if (!sheet) throw new NotFoundException('Character sheet not found')
+    if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can link this character sheet')
     const isMember = await this.membership.isMember(adventureId, userId)
-    if (!isMember) {
-      throw new ForbiddenException('You are not a member of this adventure')
-    }
-
-    return this.prisma.characterSheet.update({
-      where: { id: sheetId },
-      data: { adventureId },
-      include: sheetInclude,
-    })
+    if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
+    return this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId }, include: sheetInclude })
   }
 
-  /** Unlink a sheet from a campaign. Owner or GM of the campaign can do this. */
   async unlinkFromAdventure(sheetId: string, userId: string) {
-    const sheet = await this.prisma.characterSheet.findUnique({
-      where: { id: sheetId },
-    })
-    if (!sheet) {
-      throw new NotFoundException('Character sheet not found')
-    }
-
-    // Only the owner or a GM of the campaign can unlink
-    if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) {
-        throw new ForbiddenException('Only the owner can unlink this character sheet')
-      }
-      // Check if user is GM of the campaign
-      try {
-        await this.membership.requireRole(sheet.adventureId, userId, 'GM')
-      } catch {
-        throw new ForbiddenException('Only the owner or a GM can unlink this character sheet')
-      }
-    }
-
-    return this.prisma.characterSheet.update({
-      where: { id: sheetId },
-      data: { adventureId: null },
-      include: sheetInclude,
-    })
-  }
-
-  /**
-   * Update a single skill profile option selection.
-   * This is for the live selection UI on the character sheet.
-   */
-  async updateSkillProfileValue(
-    sheetId: string,
-    skillId: string,
-    profileId: string,
-    optionId: string | null,
-    userId: string,
-  ) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) {
-      throw new ForbiddenException('Only the owner can edit this character sheet')
+      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can unlink this character sheet')
+      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+      catch { throw new ForbiddenException('Only the owner or a GM can unlink this character sheet') }
     }
+    return this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId: null }, include: sheetInclude })
+  }
 
-    const result = await this.prisma.characterSheetSkillProfileValue.upsert({
-      where: {
-        sheetId_skillId_profileId: { sheetId, skillId, profileId },
-      },
+  async updateSkillProfileValue(sheetId: string, skillId: string, profileId: string, optionId: string | null, userId: string) {
+    const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
+    if (!sheet) throw new NotFoundException('Character sheet not found')
+    if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can edit this character sheet')
+    return this.prisma.characterSheetSkillProfileValue.upsert({
+      where: { sheetId_skillId_profileId: { sheetId, skillId, profileId } },
       create: { sheetId, skillId, profileId, optionId },
       update: { optionId },
     })
-
-    return result
   }
 
   private extractVariableNames(formula: string): string[] {
@@ -441,10 +286,7 @@ export class CharacterSheetService {
     const seen = new Set<string>()
     const vars: string[] = []
     for (const t of tokens) {
-      if (!functions.has(t) && !seen.has(t)) {
-        seen.add(t)
-        vars.push(t)
-      }
+      if (!functions.has(t) && !seen.has(t)) { seen.add(t); vars.push(t) }
     }
     return vars
   }

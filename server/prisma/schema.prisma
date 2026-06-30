@@ -259,9 +259,9 @@ model CharacterSheet {
   values             CharacterSheetValue[]
   fieldValues        CharacterSheetFieldValue[]
   skillValues        CharacterSheetSkillValue[]
-  skillProfileValues    CharacterSheetSkillProfileValue[]
-  runtimeModifierValues CharacterSheetRuntimeModifierValue[]
-  createdAt             DateTime                         @default(now())
+  skillProfileValues             CharacterSheetSkillProfileValue[]
+  runtimeModifierComponentValues CharacterSheetRuntimeModifierComponentValue[]
+  createdAt                      DateTime                         @default(now())
   updatedAt             DateTime                         @updatedAt
 
   @@index([adventureId])
@@ -320,55 +320,50 @@ model CharacterSheetFieldValue {
 
 // ── Runtime Modifiers ──
 
-enum RuntimeModifierType {
-  NUMBER
-  BOOLEAN
-  SELECT
-}
-
 model TemplateRuntimeModifier {
-  id          String                                @id @default(cuid())
+  id          String                     @id @default(cuid())
   templateId  String
-  template    Template                              @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  template    Template                   @relation(fields: [templateId], references: [id], onDelete: Cascade)
   key         String
   name        String
-  type        RuntimeModifierType
-  defaultValue String?
   description String?
-  order       Int                                   @default(0)
-  options     RuntimeModifierOption[]
-  sheetValues CharacterSheetRuntimeModifierValue[]
-  createdAt   DateTime                              @default(now())
-  updatedAt   DateTime                              @updatedAt
+  order       Int                        @default(0)
+  components  RuntimeModifierComponent[]
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
 
   @@index([templateId])
 }
 
-model RuntimeModifierOption {
-  id            String                 @id @default(cuid())
-  modifierId    String
-  modifier      TemplateRuntimeModifier @relation(fields: [modifierId], references: [id], onDelete: Cascade)
-  label         String
-  order         Int                    @default(0)
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
+model RuntimeModifierComponent {
+  id           String                                      @id @default(cuid())
+  modifierId   String
+  modifier     TemplateRuntimeModifier                      @relation(fields: [modifierId], references: [id], onDelete: Cascade)
+  name         String
+  defaultValue String?
+  locked       Boolean                                      @default(false)
+  formula      String?
+  order        Int                                          @default(0)
+  sheetValues  CharacterSheetRuntimeModifierComponentValue[]
+  createdAt    DateTime                                     @default(now())
+  updatedAt    DateTime                                     @updatedAt
 
   @@index([modifierId])
 }
 
-// ── Character Sheet Runtime Modifier Values ──
+// ── Character Sheet Runtime Modifier Component Values ──
 
-model CharacterSheetRuntimeModifierValue {
-  id              String                 @id @default(cuid())
-  sheetId         String
-  sheet           CharacterSheet         @relation(fields: [sheetId], references: [id], onDelete: Cascade)
-  modifierId      String
-  modifier        TemplateRuntimeModifier @relation(fields: [modifierId], references: [id], onDelete: Cascade)
-  value           String                 @default("")
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
+model CharacterSheetRuntimeModifierComponentValue {
+  id          String                  @id @default(cuid())
+  sheetId     String
+  sheet       CharacterSheet           @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  componentId String
+  component   RuntimeModifierComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  value       String                  @default("")
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
 
-  @@unique([sheetId, modifierId])
+  @@unique([sheetId, componentId])
   @@index([sheetId])
-  @@index([modifierId])
+  @@index([componentId])
 }

@@ -287,7 +287,7 @@ export type CharacterSheetWhereInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueListRelationFilter
   skillValues?: Prisma.CharacterSheetSkillValueListRelationFilter
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueListRelationFilter
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueListRelationFilter
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueListRelationFilter
 }
 
 export type CharacterSheetOrderByWithRelationInput = {
@@ -310,7 +310,7 @@ export type CharacterSheetOrderByWithRelationInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueOrderByRelationAggregateInput
   skillValues?: Prisma.CharacterSheetSkillValueOrderByRelationAggregateInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueOrderByRelationAggregateInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueOrderByRelationAggregateInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueOrderByRelationAggregateInput
 }
 
 export type CharacterSheetWhereUniqueInput = Prisma.AtLeast<{
@@ -336,7 +336,7 @@ export type CharacterSheetWhereUniqueInput = Prisma.AtLeast<{
   fieldValues?: Prisma.CharacterSheetFieldValueListRelationFilter
   skillValues?: Prisma.CharacterSheetSkillValueListRelationFilter
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueListRelationFilter
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueListRelationFilter
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueListRelationFilter
 }, "id">
 
 export type CharacterSheetOrderByWithAggregationInput = {
@@ -394,7 +394,7 @@ export type CharacterSheetCreateInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueCreateNestedManyWithoutSheetInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueCreateNestedManyWithoutSheetInput
 }
 
 export type CharacterSheetUncheckedCreateInput = {
@@ -414,7 +414,7 @@ export type CharacterSheetUncheckedCreateInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueUncheckedCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedCreateNestedManyWithoutSheetInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUncheckedCreateNestedManyWithoutSheetInput
 }
 
 export type CharacterSheetUpdateInput = {
@@ -434,7 +434,7 @@ export type CharacterSheetUpdateInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUpdateManyWithoutSheetNestedInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUpdateManyWithoutSheetNestedInput
 }
 
 export type CharacterSheetUncheckedUpdateInput = {
@@ -454,7 +454,7 @@ export type CharacterSheetUncheckedUpdateInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueUncheckedUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedUpdateManyWithoutSheetNestedInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUncheckedUpdateManyWithoutSheetNestedInput
 }
 
 export type CharacterSheetCreateManyInput = {
@@ -761,18 +761,18 @@ export type CharacterSheetUpdateOneRequiredWithoutFieldValuesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterSheetUpdateToOneWithWhereWithoutFieldValuesInput, Prisma.CharacterSheetUpdateWithoutFieldValuesInput>, Prisma.CharacterSheetUncheckedUpdateWithoutFieldValuesInput>
 }
 
-export type CharacterSheetCreateNestedOneWithoutRuntimeModifierValuesInput = {
-  create?: Prisma.XOR<Prisma.CharacterSheetCreateWithoutRuntimeModifierValuesInput, Prisma.CharacterSheetUncheckedCreateWithoutRuntimeModifierValuesInput>
-  connectOrCreate?: Prisma.CharacterSheetCreateOrConnectWithoutRuntimeModifierValuesInput
+export type CharacterSheetCreateNestedOneWithoutRuntimeModifierComponentValuesInput = {
+  create?: Prisma.XOR<Prisma.CharacterSheetCreateWithoutRuntimeModifierComponentValuesInput, Prisma.CharacterSheetUncheckedCreateWithoutRuntimeModifierComponentValuesInput>
+  connectOrCreate?: Prisma.CharacterSheetCreateOrConnectWithoutRuntimeModifierComponentValuesInput
   connect?: Prisma.CharacterSheetWhereUniqueInput
 }
 
-export type CharacterSheetUpdateOneRequiredWithoutRuntimeModifierValuesNestedInput = {
-  create?: Prisma.XOR<Prisma.CharacterSheetCreateWithoutRuntimeModifierValuesInput, Prisma.CharacterSheetUncheckedCreateWithoutRuntimeModifierValuesInput>
-  connectOrCreate?: Prisma.CharacterSheetCreateOrConnectWithoutRuntimeModifierValuesInput
-  upsert?: Prisma.CharacterSheetUpsertWithoutRuntimeModifierValuesInput
+export type CharacterSheetUpdateOneRequiredWithoutRuntimeModifierComponentValuesNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterSheetCreateWithoutRuntimeModifierComponentValuesInput, Prisma.CharacterSheetUncheckedCreateWithoutRuntimeModifierComponentValuesInput>
+  connectOrCreate?: Prisma.CharacterSheetCreateOrConnectWithoutRuntimeModifierComponentValuesInput
+  upsert?: Prisma.CharacterSheetUpsertWithoutRuntimeModifierComponentValuesInput
   connect?: Prisma.CharacterSheetWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterSheetUpdateToOneWithWhereWithoutRuntimeModifierValuesInput, Prisma.CharacterSheetUpdateWithoutRuntimeModifierValuesInput>, Prisma.CharacterSheetUncheckedUpdateWithoutRuntimeModifierValuesInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterSheetUpdateToOneWithWhereWithoutRuntimeModifierComponentValuesInput, Prisma.CharacterSheetUpdateWithoutRuntimeModifierComponentValuesInput>, Prisma.CharacterSheetUncheckedUpdateWithoutRuntimeModifierComponentValuesInput>
 }
 
 export type CharacterSheetCreateWithoutOwnerInput = {
@@ -791,7 +791,7 @@ export type CharacterSheetCreateWithoutOwnerInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueCreateNestedManyWithoutSheetInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueCreateNestedManyWithoutSheetInput
 }
 
 export type CharacterSheetUncheckedCreateWithoutOwnerInput = {
@@ -810,7 +810,7 @@ export type CharacterSheetUncheckedCreateWithoutOwnerInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueUncheckedCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedCreateNestedManyWithoutSheetInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUncheckedCreateNestedManyWithoutSheetInput
 }
 
 export type CharacterSheetCreateOrConnectWithoutOwnerInput = {
@@ -873,7 +873,7 @@ export type CharacterSheetCreateWithoutAdventureInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueCreateNestedManyWithoutSheetInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueCreateNestedManyWithoutSheetInput
 }
 
 export type CharacterSheetUncheckedCreateWithoutAdventureInput = {
@@ -892,7 +892,7 @@ export type CharacterSheetUncheckedCreateWithoutAdventureInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueUncheckedCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedCreateNestedManyWithoutSheetInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUncheckedCreateNestedManyWithoutSheetInput
 }
 
 export type CharacterSheetCreateOrConnectWithoutAdventureInput = {
@@ -937,7 +937,7 @@ export type CharacterSheetCreateWithoutTemplateInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueCreateNestedManyWithoutSheetInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueCreateNestedManyWithoutSheetInput
 }
 
 export type CharacterSheetUncheckedCreateWithoutTemplateInput = {
@@ -956,7 +956,7 @@ export type CharacterSheetUncheckedCreateWithoutTemplateInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueUncheckedCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedCreateNestedManyWithoutSheetInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUncheckedCreateNestedManyWithoutSheetInput
 }
 
 export type CharacterSheetCreateOrConnectWithoutTemplateInput = {
@@ -1001,7 +1001,7 @@ export type CharacterSheetCreateWithoutSkillProfileValuesInput = {
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueCreateNestedManyWithoutSheetInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueCreateNestedManyWithoutSheetInput
 }
 
 export type CharacterSheetUncheckedCreateWithoutSkillProfileValuesInput = {
@@ -1020,7 +1020,7 @@ export type CharacterSheetUncheckedCreateWithoutSkillProfileValuesInput = {
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueUncheckedCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSheetInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedCreateNestedManyWithoutSheetInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUncheckedCreateNestedManyWithoutSheetInput
 }
 
 export type CharacterSheetCreateOrConnectWithoutSkillProfileValuesInput = {
@@ -1055,7 +1055,7 @@ export type CharacterSheetUpdateWithoutSkillProfileValuesInput = {
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUpdateManyWithoutSheetNestedInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUpdateManyWithoutSheetNestedInput
 }
 
 export type CharacterSheetUncheckedUpdateWithoutSkillProfileValuesInput = {
@@ -1074,7 +1074,7 @@ export type CharacterSheetUncheckedUpdateWithoutSkillProfileValuesInput = {
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUncheckedUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSheetNestedInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedUpdateManyWithoutSheetNestedInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUncheckedUpdateManyWithoutSheetNestedInput
 }
 
 export type CharacterSheetCreateWithoutSkillValuesInput = {
@@ -1093,7 +1093,7 @@ export type CharacterSheetCreateWithoutSkillValuesInput = {
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueCreateNestedManyWithoutSheetInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueCreateNestedManyWithoutSheetInput
 }
 
 export type CharacterSheetUncheckedCreateWithoutSkillValuesInput = {
@@ -1112,7 +1112,7 @@ export type CharacterSheetUncheckedCreateWithoutSkillValuesInput = {
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueUncheckedCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedCreateNestedManyWithoutSheetInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUncheckedCreateNestedManyWithoutSheetInput
 }
 
 export type CharacterSheetCreateOrConnectWithoutSkillValuesInput = {
@@ -1147,7 +1147,7 @@ export type CharacterSheetUpdateWithoutSkillValuesInput = {
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUpdateManyWithoutSheetNestedInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUpdateManyWithoutSheetNestedInput
 }
 
 export type CharacterSheetUncheckedUpdateWithoutSkillValuesInput = {
@@ -1166,7 +1166,7 @@ export type CharacterSheetUncheckedUpdateWithoutSkillValuesInput = {
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUncheckedUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedUpdateManyWithoutSheetNestedInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUncheckedUpdateManyWithoutSheetNestedInput
 }
 
 export type CharacterSheetCreateWithoutValuesInput = {
@@ -1185,7 +1185,7 @@ export type CharacterSheetCreateWithoutValuesInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueCreateNestedManyWithoutSheetInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueCreateNestedManyWithoutSheetInput
 }
 
 export type CharacterSheetUncheckedCreateWithoutValuesInput = {
@@ -1204,7 +1204,7 @@ export type CharacterSheetUncheckedCreateWithoutValuesInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueUncheckedCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedCreateNestedManyWithoutSheetInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUncheckedCreateNestedManyWithoutSheetInput
 }
 
 export type CharacterSheetCreateOrConnectWithoutValuesInput = {
@@ -1239,7 +1239,7 @@ export type CharacterSheetUpdateWithoutValuesInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUpdateManyWithoutSheetNestedInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUpdateManyWithoutSheetNestedInput
 }
 
 export type CharacterSheetUncheckedUpdateWithoutValuesInput = {
@@ -1258,7 +1258,7 @@ export type CharacterSheetUncheckedUpdateWithoutValuesInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueUncheckedUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedUpdateManyWithoutSheetNestedInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUncheckedUpdateManyWithoutSheetNestedInput
 }
 
 export type CharacterSheetCreateWithoutFieldValuesInput = {
@@ -1277,7 +1277,7 @@ export type CharacterSheetCreateWithoutFieldValuesInput = {
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueCreateNestedManyWithoutSheetInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueCreateNestedManyWithoutSheetInput
 }
 
 export type CharacterSheetUncheckedCreateWithoutFieldValuesInput = {
@@ -1296,7 +1296,7 @@ export type CharacterSheetUncheckedCreateWithoutFieldValuesInput = {
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedCreateNestedManyWithoutSheetInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUncheckedCreateNestedManyWithoutSheetInput
 }
 
 export type CharacterSheetCreateOrConnectWithoutFieldValuesInput = {
@@ -1331,7 +1331,7 @@ export type CharacterSheetUpdateWithoutFieldValuesInput = {
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUpdateManyWithoutSheetNestedInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUpdateManyWithoutSheetNestedInput
 }
 
 export type CharacterSheetUncheckedUpdateWithoutFieldValuesInput = {
@@ -1350,10 +1350,10 @@ export type CharacterSheetUncheckedUpdateWithoutFieldValuesInput = {
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedUpdateManyWithoutSheetNestedInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUncheckedUpdateManyWithoutSheetNestedInput
 }
 
-export type CharacterSheetCreateWithoutRuntimeModifierValuesInput = {
+export type CharacterSheetCreateWithoutRuntimeModifierComponentValuesInput = {
   id?: string
   characterName: string
   playerName?: string | null
@@ -1372,7 +1372,7 @@ export type CharacterSheetCreateWithoutRuntimeModifierValuesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
 }
 
-export type CharacterSheetUncheckedCreateWithoutRuntimeModifierValuesInput = {
+export type CharacterSheetUncheckedCreateWithoutRuntimeModifierComponentValuesInput = {
   id?: string
   characterName: string
   playerName?: string | null
@@ -1391,23 +1391,23 @@ export type CharacterSheetUncheckedCreateWithoutRuntimeModifierValuesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
 }
 
-export type CharacterSheetCreateOrConnectWithoutRuntimeModifierValuesInput = {
+export type CharacterSheetCreateOrConnectWithoutRuntimeModifierComponentValuesInput = {
   where: Prisma.CharacterSheetWhereUniqueInput
-  create: Prisma.XOR<Prisma.CharacterSheetCreateWithoutRuntimeModifierValuesInput, Prisma.CharacterSheetUncheckedCreateWithoutRuntimeModifierValuesInput>
+  create: Prisma.XOR<Prisma.CharacterSheetCreateWithoutRuntimeModifierComponentValuesInput, Prisma.CharacterSheetUncheckedCreateWithoutRuntimeModifierComponentValuesInput>
 }
 
-export type CharacterSheetUpsertWithoutRuntimeModifierValuesInput = {
-  update: Prisma.XOR<Prisma.CharacterSheetUpdateWithoutRuntimeModifierValuesInput, Prisma.CharacterSheetUncheckedUpdateWithoutRuntimeModifierValuesInput>
-  create: Prisma.XOR<Prisma.CharacterSheetCreateWithoutRuntimeModifierValuesInput, Prisma.CharacterSheetUncheckedCreateWithoutRuntimeModifierValuesInput>
+export type CharacterSheetUpsertWithoutRuntimeModifierComponentValuesInput = {
+  update: Prisma.XOR<Prisma.CharacterSheetUpdateWithoutRuntimeModifierComponentValuesInput, Prisma.CharacterSheetUncheckedUpdateWithoutRuntimeModifierComponentValuesInput>
+  create: Prisma.XOR<Prisma.CharacterSheetCreateWithoutRuntimeModifierComponentValuesInput, Prisma.CharacterSheetUncheckedCreateWithoutRuntimeModifierComponentValuesInput>
   where?: Prisma.CharacterSheetWhereInput
 }
 
-export type CharacterSheetUpdateToOneWithWhereWithoutRuntimeModifierValuesInput = {
+export type CharacterSheetUpdateToOneWithWhereWithoutRuntimeModifierComponentValuesInput = {
   where?: Prisma.CharacterSheetWhereInput
-  data: Prisma.XOR<Prisma.CharacterSheetUpdateWithoutRuntimeModifierValuesInput, Prisma.CharacterSheetUncheckedUpdateWithoutRuntimeModifierValuesInput>
+  data: Prisma.XOR<Prisma.CharacterSheetUpdateWithoutRuntimeModifierComponentValuesInput, Prisma.CharacterSheetUncheckedUpdateWithoutRuntimeModifierComponentValuesInput>
 }
 
-export type CharacterSheetUpdateWithoutRuntimeModifierValuesInput = {
+export type CharacterSheetUpdateWithoutRuntimeModifierComponentValuesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   characterName?: Prisma.StringFieldUpdateOperationsInput | string
   playerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1426,7 +1426,7 @@ export type CharacterSheetUpdateWithoutRuntimeModifierValuesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
 }
 
-export type CharacterSheetUncheckedUpdateWithoutRuntimeModifierValuesInput = {
+export type CharacterSheetUncheckedUpdateWithoutRuntimeModifierComponentValuesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   characterName?: Prisma.StringFieldUpdateOperationsInput | string
   playerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1475,7 +1475,7 @@ export type CharacterSheetUpdateWithoutOwnerInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUpdateManyWithoutSheetNestedInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUpdateManyWithoutSheetNestedInput
 }
 
 export type CharacterSheetUncheckedUpdateWithoutOwnerInput = {
@@ -1494,7 +1494,7 @@ export type CharacterSheetUncheckedUpdateWithoutOwnerInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueUncheckedUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedUpdateManyWithoutSheetNestedInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUncheckedUpdateManyWithoutSheetNestedInput
 }
 
 export type CharacterSheetUncheckedUpdateManyWithoutOwnerInput = {
@@ -1541,7 +1541,7 @@ export type CharacterSheetUpdateWithoutAdventureInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUpdateManyWithoutSheetNestedInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUpdateManyWithoutSheetNestedInput
 }
 
 export type CharacterSheetUncheckedUpdateWithoutAdventureInput = {
@@ -1560,7 +1560,7 @@ export type CharacterSheetUncheckedUpdateWithoutAdventureInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueUncheckedUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedUpdateManyWithoutSheetNestedInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUncheckedUpdateManyWithoutSheetNestedInput
 }
 
 export type CharacterSheetUncheckedUpdateManyWithoutAdventureInput = {
@@ -1607,7 +1607,7 @@ export type CharacterSheetUpdateWithoutTemplateInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUpdateManyWithoutSheetNestedInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUpdateManyWithoutSheetNestedInput
 }
 
 export type CharacterSheetUncheckedUpdateWithoutTemplateInput = {
@@ -1626,7 +1626,7 @@ export type CharacterSheetUncheckedUpdateWithoutTemplateInput = {
   fieldValues?: Prisma.CharacterSheetFieldValueUncheckedUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
-  runtimeModifierValues?: Prisma.CharacterSheetRuntimeModifierValueUncheckedUpdateManyWithoutSheetNestedInput
+  runtimeModifierComponentValues?: Prisma.CharacterSheetRuntimeModifierComponentValueUncheckedUpdateManyWithoutSheetNestedInput
 }
 
 export type CharacterSheetUncheckedUpdateManyWithoutTemplateInput = {
@@ -1653,7 +1653,7 @@ export type CharacterSheetCountOutputType = {
   fieldValues: number
   skillValues: number
   skillProfileValues: number
-  runtimeModifierValues: number
+  runtimeModifierComponentValues: number
 }
 
 export type CharacterSheetCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1661,7 +1661,7 @@ export type CharacterSheetCountOutputTypeSelect<ExtArgs extends runtime.Types.Ex
   fieldValues?: boolean | CharacterSheetCountOutputTypeCountFieldValuesArgs
   skillValues?: boolean | CharacterSheetCountOutputTypeCountSkillValuesArgs
   skillProfileValues?: boolean | CharacterSheetCountOutputTypeCountSkillProfileValuesArgs
-  runtimeModifierValues?: boolean | CharacterSheetCountOutputTypeCountRuntimeModifierValuesArgs
+  runtimeModifierComponentValues?: boolean | CharacterSheetCountOutputTypeCountRuntimeModifierComponentValuesArgs
 }
 
 /**
@@ -1705,8 +1705,8 @@ export type CharacterSheetCountOutputTypeCountSkillProfileValuesArgs<ExtArgs ext
 /**
  * CharacterSheetCountOutputType without action
  */
-export type CharacterSheetCountOutputTypeCountRuntimeModifierValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.CharacterSheetRuntimeModifierValueWhereInput
+export type CharacterSheetCountOutputTypeCountRuntimeModifierComponentValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CharacterSheetRuntimeModifierComponentValueWhereInput
 }
 
 
@@ -1730,7 +1730,7 @@ export type CharacterSheetSelect<ExtArgs extends runtime.Types.Extensions.Intern
   fieldValues?: boolean | Prisma.CharacterSheet$fieldValuesArgs<ExtArgs>
   skillValues?: boolean | Prisma.CharacterSheet$skillValuesArgs<ExtArgs>
   skillProfileValues?: boolean | Prisma.CharacterSheet$skillProfileValuesArgs<ExtArgs>
-  runtimeModifierValues?: boolean | Prisma.CharacterSheet$runtimeModifierValuesArgs<ExtArgs>
+  runtimeModifierComponentValues?: boolean | Prisma.CharacterSheet$runtimeModifierComponentValuesArgs<ExtArgs>
   _count?: boolean | Prisma.CharacterSheetCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["characterSheet"]>
 
@@ -1794,7 +1794,7 @@ export type CharacterSheetInclude<ExtArgs extends runtime.Types.Extensions.Inter
   fieldValues?: boolean | Prisma.CharacterSheet$fieldValuesArgs<ExtArgs>
   skillValues?: boolean | Prisma.CharacterSheet$skillValuesArgs<ExtArgs>
   skillProfileValues?: boolean | Prisma.CharacterSheet$skillProfileValuesArgs<ExtArgs>
-  runtimeModifierValues?: boolean | Prisma.CharacterSheet$runtimeModifierValuesArgs<ExtArgs>
+  runtimeModifierComponentValues?: boolean | Prisma.CharacterSheet$runtimeModifierComponentValuesArgs<ExtArgs>
   _count?: boolean | Prisma.CharacterSheetCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CharacterSheetIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1818,7 +1818,7 @@ export type $CharacterSheetPayload<ExtArgs extends runtime.Types.Extensions.Inte
     fieldValues: Prisma.$CharacterSheetFieldValuePayload<ExtArgs>[]
     skillValues: Prisma.$CharacterSheetSkillValuePayload<ExtArgs>[]
     skillProfileValues: Prisma.$CharacterSheetSkillProfileValuePayload<ExtArgs>[]
-    runtimeModifierValues: Prisma.$CharacterSheetRuntimeModifierValuePayload<ExtArgs>[]
+    runtimeModifierComponentValues: Prisma.$CharacterSheetRuntimeModifierComponentValuePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2234,7 +2234,7 @@ export interface Prisma__CharacterSheetClient<T, Null = never, ExtArgs extends r
   fieldValues<T extends Prisma.CharacterSheet$fieldValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$fieldValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetFieldValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   skillValues<T extends Prisma.CharacterSheet$skillValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$skillValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetSkillValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   skillProfileValues<T extends Prisma.CharacterSheet$skillProfileValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$skillProfileValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetSkillProfileValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  runtimeModifierValues<T extends Prisma.CharacterSheet$runtimeModifierValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$runtimeModifierValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetRuntimeModifierValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  runtimeModifierComponentValues<T extends Prisma.CharacterSheet$runtimeModifierComponentValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$runtimeModifierComponentValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetRuntimeModifierComponentValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2792,27 +2792,27 @@ export type CharacterSheet$skillProfileValuesArgs<ExtArgs extends runtime.Types.
 }
 
 /**
- * CharacterSheet.runtimeModifierValues
+ * CharacterSheet.runtimeModifierComponentValues
  */
-export type CharacterSheet$runtimeModifierValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type CharacterSheet$runtimeModifierComponentValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the CharacterSheetRuntimeModifierValue
+   * Select specific fields to fetch from the CharacterSheetRuntimeModifierComponentValue
    */
-  select?: Prisma.CharacterSheetRuntimeModifierValueSelect<ExtArgs> | null
+  select?: Prisma.CharacterSheetRuntimeModifierComponentValueSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the CharacterSheetRuntimeModifierValue
+   * Omit specific fields from the CharacterSheetRuntimeModifierComponentValue
    */
-  omit?: Prisma.CharacterSheetRuntimeModifierValueOmit<ExtArgs> | null
+  omit?: Prisma.CharacterSheetRuntimeModifierComponentValueOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.CharacterSheetRuntimeModifierValueInclude<ExtArgs> | null
-  where?: Prisma.CharacterSheetRuntimeModifierValueWhereInput
-  orderBy?: Prisma.CharacterSheetRuntimeModifierValueOrderByWithRelationInput | Prisma.CharacterSheetRuntimeModifierValueOrderByWithRelationInput[]
-  cursor?: Prisma.CharacterSheetRuntimeModifierValueWhereUniqueInput
+  include?: Prisma.CharacterSheetRuntimeModifierComponentValueInclude<ExtArgs> | null
+  where?: Prisma.CharacterSheetRuntimeModifierComponentValueWhereInput
+  orderBy?: Prisma.CharacterSheetRuntimeModifierComponentValueOrderByWithRelationInput | Prisma.CharacterSheetRuntimeModifierComponentValueOrderByWithRelationInput[]
+  cursor?: Prisma.CharacterSheetRuntimeModifierComponentValueWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.CharacterSheetRuntimeModifierValueScalarFieldEnum | Prisma.CharacterSheetRuntimeModifierValueScalarFieldEnum[]
+  distinct?: Prisma.CharacterSheetRuntimeModifierComponentValueScalarFieldEnum | Prisma.CharacterSheetRuntimeModifierComponentValueScalarFieldEnum[]
 }
 
 /**
