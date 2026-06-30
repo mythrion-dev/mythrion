@@ -75,6 +75,9 @@ const sheetInclude = {
       },
     },
   },
+  abilities: { orderBy: { order: 'asc' as const } },
+  inventoryItems: { orderBy: { order: 'asc' as const } },
+  story: true,
 }
 
 @Injectable()
@@ -309,6 +312,82 @@ export class CharacterSheetService {
       create: { sheetId, skillId, profileId, optionId },
       update: { optionId },
     })
+  }
+
+  // ── Abilities (CRUD) ──
+
+  async listAbilities(sheetId: string, userId: string) {
+    await this.requireOwnership(sheetId, userId)
+    return this.prisma.characterAbility.findMany({ where: { sheetId }, orderBy: { order: 'asc' } })
+  }
+
+  async createAbility(sheetId: string, userId: string, dto: { name: string; description?: string; manaCost?: number; cooldown?: string; notes?: string }) {
+    await this.requireOwnership(sheetId, userId)
+    const count = await this.prisma.characterAbility.count({ where: { sheetId } })
+    return this.prisma.characterAbility.create({ data: { sheetId, name: dto.name, description: dto.description ?? null, manaCost: dto.manaCost ?? null, cooldown: dto.cooldown ?? null, notes: dto.notes ?? null, order: count } })
+  }
+
+  async updateAbility(abilityId: string, userId: string, dto: { name?: string; description?: string; manaCost?: number; cooldown?: string; notes?: string }) {
+    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
+    if (!ability) throw new NotFoundException('Ability not found')
+    await this.requireOwnership(ability.sheetId, userId)
+    return this.prisma.characterAbility.update({ where: { id: abilityId }, data: { ...dto } })
+  }
+
+  async removeAbility(abilityId: string, userId: string) {
+    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
+    if (!ability) throw new NotFoundException('Ability not found')
+    await this.requireOwnership(ability.sheetId, userId)
+    return this.prisma.characterAbility.delete({ where: { id: abilityId } })
+  }
+
+  // ── Inventory (CRUD) ──
+
+  async listInventory(sheetId: string, userId: string) {
+    await this.requireOwnership(sheetId, userId)
+    return this.prisma.characterInventoryItem.findMany({ where: { sheetId }, orderBy: { order: 'asc' } })
+  }
+
+  async createInventoryItem(sheetId: string, userId: string, dto: { name: string; weight?: number; cost?: string; description?: string }) {
+    await this.requireOwnership(sheetId, userId)
+    const count = await this.prisma.characterInventoryItem.count({ where: { sheetId } })
+    return this.prisma.characterInventoryItem.create({ data: { sheetId, name: dto.name, weight: dto.weight ?? null, cost: dto.cost ?? null, description: dto.description ?? null, order: count } })
+  }
+
+  async updateInventoryItem(itemId: string, userId: string, dto: { name?: string; weight?: number; cost?: string; description?: string }) {
+    const item = await this.prisma.characterInventoryItem.findUnique({ where: { id: itemId } })
+    if (!item) throw new NotFoundException('Inventory item not found')
+    await this.requireOwnership(item.sheetId, userId)
+    return this.prisma.characterInventoryItem.update({ where: { id: itemId }, data: { ...dto } })
+  }
+
+  async removeInventoryItem(itemId: string, userId: string) {
+    const item = await this.prisma.characterInventoryItem.findUnique({ where: { id: itemId } })
+    if (!item) throw new NotFoundException('Inventory item not found')
+    await this.requireOwnership(item.sheetId, userId)
+    return this.prisma.characterInventoryItem.delete({ where: { id: itemId } })
+  }
+
+  // ── Story (CRUD — one-to-one) ──
+
+  async getStory(sheetId: string, userId: string) {
+    await this.requireOwnership(sheetId, userId)
+    const story = await this.prisma.characterStory.findUnique({ where: { sheetId } })
+    if (!story) {
+      return this.prisma.characterStory.create({ data: { sheetId } })
+    }
+    return story
+  }
+
+  async updateStory(sheetId: string, userId: string, dto: { appearance?: string; backstory?: string; personality?: string; goals?: string; notes?: string }) {
+    await this.requireOwnership(sheetId, userId)
+    return this.prisma.characterStory.upsert({ where: { sheetId }, create: { sheetId, ...dto }, update: { ...dto } })
+  }
+
+  private async requireOwnership(sheetId: string, userId: string) {
+    const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
+    if (!sheet) throw new NotFoundException('Character sheet not found')
+    if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can manage this character sheet')
   }
 
   private extractVariableNames(formula: string): string[] {

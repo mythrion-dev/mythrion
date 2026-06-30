@@ -132,3 +132,18 @@ export type ArmorClassField = Prisma.ArmorClassFieldModel
  * 
  */
 export type CharacterSheetArmorClassValue = Prisma.CharacterSheetArmorClassValueModel
+/**
+ * Model CharacterAbility
+ * 
+ */
+export type CharacterAbility = Prisma.CharacterAbilityModel
+/**
+ * Model CharacterInventoryItem
+ * 
+ */
+export type CharacterInventoryItem = Prisma.CharacterInventoryItemModel
+/**
+ * Model CharacterStory
+ * 
+ */
+export type CharacterStory = Prisma.CharacterStoryModel

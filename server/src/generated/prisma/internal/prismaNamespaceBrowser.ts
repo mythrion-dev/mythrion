@@ -73,7 +73,10 @@ export const ModelName = {
   CharacterSheetRuntimeModifierComponentValue: 'CharacterSheetRuntimeModifierComponentValue',
   TemplateArmorClass: 'TemplateArmorClass',
   ArmorClassField: 'ArmorClassField',
-  CharacterSheetArmorClassValue: 'CharacterSheetArmorClassValue'
+  CharacterSheetArmorClassValue: 'CharacterSheetArmorClassValue',
+  CharacterAbility: 'CharacterAbility',
+  CharacterInventoryItem: 'CharacterInventoryItem',
+  CharacterStory: 'CharacterStory'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -405,6 +408,52 @@ export const CharacterSheetArmorClassValueScalarFieldEnum = {
 } as const
 
 export type CharacterSheetArmorClassValueScalarFieldEnum = (typeof CharacterSheetArmorClassValueScalarFieldEnum)[keyof typeof CharacterSheetArmorClassValueScalarFieldEnum]
+
+
+export const CharacterAbilityScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  name: 'name',
+  description: 'description',
+  manaCost: 'manaCost',
+  cooldown: 'cooldown',
+  notes: 'notes',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterAbilityScalarFieldEnum = (typeof CharacterAbilityScalarFieldEnum)[keyof typeof CharacterAbilityScalarFieldEnum]
+
+
+export const CharacterInventoryItemScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  name: 'name',
+  weight: 'weight',
+  cost: 'cost',
+  description: 'description',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterInventoryItemScalarFieldEnum = (typeof CharacterInventoryItemScalarFieldEnum)[keyof typeof CharacterInventoryItemScalarFieldEnum]
+
+
+export const CharacterStoryScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  appearance: 'appearance',
+  backstory: 'backstory',
+  personality: 'personality',
+  goals: 'goals',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterStoryScalarFieldEnum = (typeof CharacterStoryScalarFieldEnum)[keyof typeof CharacterStoryScalarFieldEnum]
 
 
 export const SortOrder = {

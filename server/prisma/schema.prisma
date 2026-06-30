@@ -263,6 +263,9 @@ model CharacterSheet {
   skillProfileValues             CharacterSheetSkillProfileValue[]
   runtimeModifierComponentValues CharacterSheetRuntimeModifierComponentValue[]
   acValues                       CharacterSheetArmorClassValue[]
+  abilities          CharacterAbility[]
+  inventoryItems     CharacterInventoryItem[]
+  story              CharacterStory?
   createdAt                      DateTime                         @default(now())
   updatedAt             DateTime                         @updatedAt
 
@@ -414,4 +417,54 @@ model CharacterSheetArmorClassValue {
   @@unique([sheetId, fieldId])
   @@index([sheetId])
   @@index([fieldId])
+}
+
+// ── Character Abilities (Player-only) ──
+
+model CharacterAbility {
+  id          String         @id @default(cuid())
+  sheetId     String
+  sheet       CharacterSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  manaCost    Int?
+  cooldown    String?
+  notes       String?
+  order       Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([sheetId])
+}
+
+// ── Character Inventory Items (Player-only) ──
+
+model CharacterInventoryItem {
+  id          String         @id @default(cuid())
+  sheetId     String
+  sheet       CharacterSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  name        String
+  weight      Float?
+  cost        String?
+  description String?
+  order       Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([sheetId])
+}
+
+// ── Character Story (Player-only, one-to-one) ──
+
+model CharacterStory {
+  id          String         @id @default(cuid())
+  sheetId     String         @unique
+  sheet       CharacterSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  appearance  String?        @default("")
+  backstory   String?        @default("")
+  personality String?        @default("")
+  goals       String?        @default("")
+  notes       String?        @default("")
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 }

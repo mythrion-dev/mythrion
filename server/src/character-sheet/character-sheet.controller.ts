@@ -90,4 +90,60 @@ export class CharacterSheetController {
       req.user.sub,
     )
   }
+
+  // ── Abilities ──
+
+  @Get(':id/abilities')
+  listAbilities(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.sheetService.listAbilities(id, req.user.sub)
+  }
+
+  @Post(':id/abilities')
+  createAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: { name: string; description?: string; manaCost?: number; cooldown?: string; notes?: string }) {
+    return this.sheetService.createAbility(id, req.user.sub, dto)
+  }
+
+  @Patch(':id/abilities/:abilityId')
+  updateAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('abilityId') abilityId: string, @Body() dto: { name?: string; description?: string; manaCost?: number; cooldown?: string; notes?: string }) {
+    return this.sheetService.updateAbility(abilityId, req.user.sub, dto)
+  }
+
+  @Delete(':id/abilities/:abilityId')
+  removeAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('abilityId') abilityId: string) {
+    return this.sheetService.removeAbility(abilityId, req.user.sub)
+  }
+
+  // ── Inventory ──
+
+  @Get(':id/inventory')
+  listInventory(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.sheetService.listInventory(id, req.user.sub)
+  }
+
+  @Post(':id/inventory')
+  createInventoryItem(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: { name: string; weight?: number; cost?: string; description?: string }) {
+    return this.sheetService.createInventoryItem(id, req.user.sub, dto)
+  }
+
+  @Patch(':id/inventory/:itemId')
+  updateInventoryItem(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('itemId') itemId: string, @Body() dto: { name?: string; weight?: number; cost?: string; description?: string }) {
+    return this.sheetService.updateInventoryItem(itemId, req.user.sub, dto)
+  }
+
+  @Delete(':id/inventory/:itemId')
+  removeInventoryItem(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('itemId') itemId: string) {
+    return this.sheetService.removeInventoryItem(itemId, req.user.sub)
+  }
+
+  // ── Story ──
+
+  @Get(':id/story')
+  getStory(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.sheetService.getStory(id, req.user.sub)
+  }
+
+  @Patch(':id/story')
+  updateStory(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: { appearance?: string; backstory?: string; personality?: string; goals?: string; notes?: string }) {
+    return this.sheetService.updateStory(id, req.user.sub, dto)
+  }
 }
