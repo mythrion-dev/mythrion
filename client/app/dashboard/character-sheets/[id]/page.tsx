@@ -565,62 +565,67 @@ export default function CharacterSheetDetailPage() {
           </div>
 
           {/* Runtime Modifiers Section */}
-          {sheet.runtimeModifierValues.length > 0 && (
+          {sheet.template.runtimeModifiers.length > 0 && (
             <div className="card !p-6">
               <h3 className="font-semibold mb-4">Runtime Modifiers</h3>
               <div className="grid gap-3 sm:grid-cols-2">
-                {sheet.runtimeModifierValues.map((rv) => (
-                  <div key={rv.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
+                {sheet.template.runtimeModifiers.map((modDef) => {
+                  const rv = sheet.runtimeModifierValues.find((v) => v.modifierId === modDef.id)
+                  const currentValue = rv?.value ?? (modDef.type === 'BOOLEAN' ? 'false' : modDef.type === 'NUMBER' ? '0' : '')
+                  if (!rv && !isOwner) return null
+                  return (
+                  <div key={modDef.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm text-foreground">{rv.modifier.name}</span>
-                      {rv.modifier.description && (
-                        <span className="text-xs text-muted ml-2">{rv.modifier.description}</span>
+                      <span className="text-sm text-foreground">{modDef.name}</span>
+                      {modDef.description && (
+                        <span className="text-xs text-muted ml-2">{modDef.description}</span>
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0 ml-2">
-                      {rv.modifier.type === 'NUMBER' && (
+                      {modDef.type === 'NUMBER' && (
                         isOwner ? (
                           <input
                             type="number"
                             className="input-field py-1 text-xs w-20 text-center"
-                            value={rv.value}
-                            onChange={(e) => handleRuntimeModifierChange(rv.modifierId, e.target.value)}
+                            value={currentValue}
+                            onChange={(e) => handleRuntimeModifierChange(modDef.id, e.target.value)}
                           />
                         ) : (
-                          <span className="text-sm font-semibold text-foreground">{rv.value}</span>
+                          <span className="text-sm font-semibold text-foreground">{currentValue}</span>
                         )
                       )}
-                      {rv.modifier.type === 'BOOLEAN' && (
+                      {modDef.type === 'BOOLEAN' && (
                         isOwner ? (
                           <input
                             type="checkbox"
                             className="w-4 h-4 rounded accent-primary cursor-pointer"
-                            checked={rv.value === 'true'}
-                            onChange={(e) => handleRuntimeModifierChange(rv.modifierId, e.target.checked ? 'true' : 'false')}
+                            checked={currentValue === 'true'}
+                            onChange={(e) => handleRuntimeModifierChange(modDef.id, e.target.checked ? 'true' : 'false')}
                           />
                         ) : (
-                          <span className="text-sm font-semibold text-foreground">{rv.value === 'true' ? '☑' : '☐'}</span>
+                          <span className="text-sm font-semibold text-foreground">{currentValue === 'true' ? '☑' : '☐'}</span>
                         )
                       )}
-                      {rv.modifier.type === 'SELECT' && (
+                      {modDef.type === 'SELECT' && (
                         isOwner ? (
                           <select
                             className="input-field py-1 text-xs w-36"
-                            value={rv.value}
-                            onChange={(e) => handleRuntimeModifierChange(rv.modifierId, e.target.value)}
+                            value={currentValue}
+                            onChange={(e) => handleRuntimeModifierChange(modDef.id, e.target.value)}
                           >
                             <option value="">—</option>
-                            {rv.modifier.options.map((opt) => (
+                            {modDef.options.map((opt) => (
                               <option key={opt.id} value={opt.label}>{opt.label}</option>
                             ))}
                           </select>
                         ) : (
-                          <span className="text-sm font-semibold text-foreground">{rv.value || '—'}</span>
+                          <span className="text-sm font-semibold text-foreground">{currentValue || '—'}</span>
                         )
                       )}
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
@@ -681,7 +686,7 @@ export default function CharacterSheetDetailPage() {
           hpActual={editHpActual} hpMax={editHpMax} hpNotes={editHpNotes}
           attributes={sheet.template.attributes} values={editValues}
           fieldValues={sheet.fieldValues} editFieldValues={editFieldValues}
-          runtimeModifierValues={sheet.runtimeModifierValues} editRuntimeModifierValues={editRuntimeModifierValues}
+          runtimeModifiers={sheet.template.runtimeModifiers} editRuntimeModifierValues={editRuntimeModifierValues}
           error={editError} saving={saving}
           onNameChange={setEditName} onPlayerNameChange={setEditPlayerName} onLevelChange={setEditLevel}
           onHpActualChange={setEditHpActual} onHpMaxChange={setEditHpMax} onHpNotesChange={setEditHpNotes}
@@ -815,7 +820,7 @@ function EditForm(props: {
   attributes: { id: string; key: string; name: string }[]
   values: Record<string, string>
   fieldValues: FieldValue[]; editFieldValues: Record<string, string>
-  runtimeModifierValues: RuntimeModifierValue[]; editRuntimeModifierValues: Record<string, string>
+  runtimeModifiers: RuntimeModifierDef[]; editRuntimeModifierValues: Record<string, string>
   error: string | null; saving: boolean
   onNameChange: (v: string) => void; onPlayerNameChange: (v: string) => void; onLevelChange: (v: number) => void
   onHpActualChange: (v: number) => void; onHpMaxChange: (v: number) => void; onHpNotesChange: (v: string) => void
@@ -871,44 +876,44 @@ function EditForm(props: {
         </div>
       </div>
 
-      {props.runtimeModifierValues.length > 0 && (
+      {props.runtimeModifiers.length > 0 && (
         <div>
           <label className="label">Runtime Modifiers</label>
           <div className="space-y-3 mt-1">
-            {props.runtimeModifierValues.map((rv) => (
-              <div key={rv.id}>
+            {props.runtimeModifiers.map((modDef) => (
+              <div key={modDef.id}>
                 <label className="text-xs text-muted flex items-center gap-1 mb-1">
-                  {rv.modifier.name}
-                  {rv.modifier.description && <span className="font-normal">— {rv.modifier.description}</span>}
+                  {modDef.name}
+                  {modDef.description && <span className="font-normal">— {modDef.description}</span>}
                 </label>
-                {rv.modifier.type === 'NUMBER' && (
+                {modDef.type === 'NUMBER' && (
                   <input
                     type="number"
                     className="input-field"
-                    value={props.editRuntimeModifierValues[rv.modifierId] ?? ''}
-                    onChange={(e) => props.onRuntimeModifierValueChange(rv.modifierId, e.target.value)}
+                    value={props.editRuntimeModifierValues[modDef.id] ?? ''}
+                    onChange={(e) => props.onRuntimeModifierValueChange(modDef.id, e.target.value)}
                     placeholder="0"
                   />
                 )}
-                {rv.modifier.type === 'BOOLEAN' && (
+                {modDef.type === 'BOOLEAN' && (
                   <div className="flex items-center gap-2 pt-1">
                     <input
                       type="checkbox"
                       className="w-4 h-4 rounded accent-primary cursor-pointer"
-                      checked={(props.editRuntimeModifierValues[rv.modifierId] ?? 'false') === 'true'}
-                      onChange={(e) => props.onRuntimeModifierValueChange(rv.modifierId, e.target.checked ? 'true' : 'false')}
+                      checked={(props.editRuntimeModifierValues[modDef.id] ?? 'false') === 'true'}
+                      onChange={(e) => props.onRuntimeModifierValueChange(modDef.id, e.target.checked ? 'true' : 'false')}
                     />
-                    <span className="text-xs text-muted">{(props.editRuntimeModifierValues[rv.modifierId] ?? 'false') === 'true' ? 'Yes' : 'No'}</span>
+                    <span className="text-xs text-muted">{(props.editRuntimeModifierValues[modDef.id] ?? 'false') === 'true' ? 'Yes' : 'No'}</span>
                   </div>
                 )}
-                {rv.modifier.type === 'SELECT' && (
+                {modDef.type === 'SELECT' && (
                   <select
                     className="input-field"
-                    value={props.editRuntimeModifierValues[rv.modifierId] ?? ''}
-                    onChange={(e) => props.onRuntimeModifierValueChange(rv.modifierId, e.target.value)}
+                    value={props.editRuntimeModifierValues[modDef.id] ?? ''}
+                    onChange={(e) => props.onRuntimeModifierValueChange(modDef.id, e.target.value)}
                   >
                     <option value="">—</option>
-                    {rv.modifier.options.map((opt) => (
+                    {modDef.options.map((opt) => (
                       <option key={opt.id} value={opt.label}>{opt.label}</option>
                     ))}
                   </select>
