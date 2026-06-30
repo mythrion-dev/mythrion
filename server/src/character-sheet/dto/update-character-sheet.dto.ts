@@ -95,11 +95,25 @@ export class UpdateCharacterSheetDto {
   @ValidateNested({ each: true })
   @Type(() => RuntimeModifierComponentValueDto)
   runtimeModifierComponentValues?: RuntimeModifierComponentValueDto[]
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ArmorClassValueDto)
+  acValues?: ArmorClassValueDto[]
 }
 
 export class RuntimeModifierComponentValueDto {
   @IsString()
   componentId!: string
+
+  @IsString()
+  value!: string
+}
+
+export class ArmorClassValueDto {
+  @IsString()
+  fieldId!: string
 
   @IsString()
   value!: string

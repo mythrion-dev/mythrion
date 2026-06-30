@@ -16,6 +16,7 @@ interface FormulaBuilderProps {
   customFields?: { key: string; label: string }[]
   skillModifierProfiles?: SkillModifierProfile[]
   runtimeModifiers?: { key: string; name: string }[]
+  acFields?: { key: string; name: string }[]
   placeholder?: string
   useModPrefix?: boolean
 }
@@ -39,6 +40,8 @@ const FUNCTIONS = [
   { label: 'Absolute', value: 'abs()', display: 'abs()' },
 ]
 
+type ButtonGroup = 'variables' | 'customFields' | 'profiles' | 'runtimeModifiers' | 'acFields' | 'functions'
+
 export default function FormulaBuilder({
   value,
   onChange,
@@ -46,15 +49,12 @@ export default function FormulaBuilder({
   customFields,
   skillModifierProfiles,
   runtimeModifiers,
+  acFields,
   placeholder = 'Build formula...',
   useModPrefix = false,
 }: FormulaBuilderProps) {
   const [preview, setPreview] = useState<{ result: number | null; error?: string }>({ result: null })
-  const [showVariables, setShowVariables] = useState(true)
-  const [showCustomFields, setShowCustomFields] = useState(false)
-  const [showProfiles, setShowProfiles] = useState(false)
-  const [showRuntimeModifiers, setShowRuntimeModifiers] = useState(false)
-  const [showFunctions, setShowFunctions] = useState(false)
+  const [activeGroup, setActiveGroup] = useState<ButtonGroup | null>('variables')
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -103,13 +103,16 @@ export default function FormulaBuilder({
     if (runtimeModifiers) {
       runtimeModifiers.forEach((m) => { variables[m.key] = 0 })
     }
+    if (acFields) {
+      acFields.forEach((f) => { variables[f.key] = 0 })
+    }
     try {
       const data = await api.post<{ result: number }>('/formula/preview', { formula, variables })
       setPreview({ result: data.result })
     } catch (err) {
       setPreview({ result: null, error: err instanceof Error ? err.message : 'Evaluation failed' })
     }
-  }, [attributes, skillModifierProfiles, runtimeModifiers])
+  }, [attributes, skillModifierProfiles, runtimeModifiers, acFields])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -117,17 +120,16 @@ export default function FormulaBuilder({
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [value, updatePreview])
 
-  const toggleGroup = (group: 'variables' | 'customFields' | 'profiles' | 'runtimeModifiers' | 'functions') => {
-    setShowVariables(group === 'variables' ? !showVariables : false)
-    setShowCustomFields(group === 'customFields' ? !showCustomFields : false)
-    setShowProfiles(group === 'profiles' ? !showProfiles : false)
-    setShowRuntimeModifiers(group === 'runtimeModifiers' ? !showRuntimeModifiers : false)
-    setShowFunctions(group === 'functions' ? !showFunctions : false)
+  const toggleGroup = (group: ButtonGroup) => {
+    setActiveGroup(p => p === group ? null : group)
   }
 
   const hasProfiles = skillModifierProfiles && skillModifierProfiles.length > 0
   const hasCustomFields = customFields && customFields.length > 0
   const hasRuntimeModifiers = runtimeModifiers && runtimeModifiers.length > 0
+  const hasAcFields = acFields && acFields.length > 0
+
+  const btnClass = (group: ButtonGroup) => `px-2 py-1 rounded text-xs font-medium transition-colors ${activeGroup === group ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`
 
   return (
     <div className="space-y-3">
@@ -143,20 +145,23 @@ export default function FormulaBuilder({
       )}
 
       <div className="flex gap-2 flex-wrap">
-        <button type="button" onClick={() => toggleGroup('variables')} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showVariables ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`}>Attributes</button>
+        <button type="button" onClick={() => toggleGroup('variables')} className={btnClass('variables')}>Attributes</button>
         {hasRuntimeModifiers && (
-          <button type="button" onClick={() => toggleGroup('runtimeModifiers')} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showRuntimeModifiers ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`}>Runtime Modifiers</button>
+          <button type="button" onClick={() => toggleGroup('runtimeModifiers')} className={btnClass('runtimeModifiers')}>Runtime Modifiers</button>
         )}
         {hasProfiles && (
-          <button type="button" onClick={() => toggleGroup('profiles')} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showProfiles ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`}>Skill Profiles</button>
+          <button type="button" onClick={() => toggleGroup('profiles')} className={btnClass('profiles')}>Skill Profiles</button>
         )}
         {hasCustomFields && (
-          <button type="button" onClick={() => toggleGroup('customFields')} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showCustomFields ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`}>Custom Fields</button>
+          <button type="button" onClick={() => toggleGroup('customFields')} className={btnClass('customFields')}>Custom Fields</button>
         )}
-        <button type="button" onClick={() => toggleGroup('functions')} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showFunctions ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`}>Functions</button>
+        {hasAcFields && (
+          <button type="button" onClick={() => toggleGroup('acFields')} className={btnClass('acFields')}>AC Fields</button>
+        )}
+        <button type="button" onClick={() => toggleGroup('functions')} className={btnClass('functions')}>Functions</button>
       </div>
 
-      {showVariables && attributes.length > 0 && (
+      {activeGroup === 'variables' && attributes.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {attributes.map((attr) => (
             <button key={attr.key} type="button" onClick={() => insertAtCursor(useModPrefix ? `mod(${attr.key})` : attr.key)} className="px-2 py-1 rounded bg-background/60 border border-border text-xs text-foreground hover:border-primary/30 hover:text-primary transition-colors" title={`Insert ${useModPrefix ? 'mod(' + attr.key + ')' : attr.key}`}>
@@ -166,7 +171,7 @@ export default function FormulaBuilder({
         </div>
       )}
 
-      {showRuntimeModifiers && hasRuntimeModifiers && (
+      {activeGroup === 'runtimeModifiers' && hasRuntimeModifiers && (
         <div className="space-y-2">
           <p className="text-xs text-muted">Runtime Modifiers — click to insert as variable</p>
           <div className="flex flex-wrap gap-1">
@@ -185,7 +190,7 @@ export default function FormulaBuilder({
         </div>
       )}
 
-      {showProfiles && hasProfiles && (
+      {activeGroup === 'profiles' && hasProfiles && (
         <div className="space-y-2">
           <p className="text-xs text-muted">Skill Modifier Profiles — click to insert as variable</p>
           <div className="flex flex-wrap gap-1">
@@ -204,7 +209,7 @@ export default function FormulaBuilder({
         </div>
       )}
 
-      {showCustomFields && hasCustomFields && (
+      {activeGroup === 'customFields' && hasCustomFields && (
         <div className="flex flex-wrap gap-1">
           {customFields!.map((cf) => (
             <button key={cf.key} type="button" onClick={() => insertAtCursor(cf.key)} className="px-2 py-1 rounded bg-background/60 border border-border text-xs text-foreground hover:border-primary/30 hover:text-primary transition-colors" title={`Insert ${cf.key}`}>
@@ -214,7 +219,26 @@ export default function FormulaBuilder({
         </div>
       )}
 
-      {showFunctions && (
+      {activeGroup === 'acFields' && hasAcFields && (
+        <div className="space-y-2">
+          <p className="text-xs text-muted">Armor Class Fields — click to insert as variable</p>
+          <div className="flex flex-wrap gap-1">
+            {acFields!.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => insertAtCursor(f.key)}
+                className="px-2 py-1 rounded bg-background/60 border border-border text-xs text-foreground hover:border-primary/30 hover:text-primary transition-colors"
+                title={`Insert ${f.key}`}
+              >
+                [{f.name}]
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeGroup === 'functions' && (
         <div className="space-y-2">
           <p className="text-xs text-muted">Functions — click to insert</p>
           <div className="flex flex-wrap gap-1">

@@ -23,6 +23,9 @@ const sheetInclude = {
         orderBy: { order: 'asc' as const },
         include: { components: { orderBy: { order: 'asc' as const } } },
       },
+      armorClass: {
+        include: { fields: { orderBy: { order: 'asc' as const } } },
+      },
     },
   },
   values: {
@@ -44,6 +47,11 @@ const sheetInclude = {
     include: {
       profile: { select: { id: true, name: true } },
       option: { select: { id: true, label: true, value: true } },
+    },
+  },
+  acValues: {
+    include: {
+      field: { select: { id: true, name: true, key: true, defaultValue: true, editableByPlayer: true, description: true, armorClass: { select: { id: true, formula: true } } } },
     },
   },
   runtimeModifierComponentValues: {
@@ -112,6 +120,12 @@ export class CharacterSheetService {
       }
     }
 
+    // Fetch AC config for this template
+    const armorClass = await this.prisma.templateArmorClass.findUnique({
+      where: { templateId: template.id },
+      include: { fields: true },
+    })
+
     return this.prisma.characterSheet.create({
       data: {
         characterName: dto.characterName,
@@ -140,6 +154,16 @@ export class CharacterSheetService {
             })),
           ),
         },
+        ...(armorClass?.enabled && armorClass.fields.length > 0
+          ? {
+              acValues: {
+                create: armorClass.fields.map(f => ({
+                  fieldId: f.id,
+                  value: f.defaultValue,
+                })),
+              },
+            }
+          : {}),
       },
       include: sheetInclude,
     })
@@ -224,6 +248,14 @@ export class CharacterSheetService {
           where: { sheetId_componentId: { sheetId: id, componentId: rmc.componentId } },
           create: { sheetId: id, componentId: rmc.componentId, value: rmc.value },
           update: { value: rmc.value },
+        })
+    }
+    if (dto.acValues) {
+      for (const acv of dto.acValues)
+        await this.prisma.characterSheetArmorClassValue.upsert({
+          where: { sheetId_fieldId: { sheetId: id, fieldId: acv.fieldId } },
+          create: { sheetId: id, fieldId: acv.fieldId, value: acv.value },
+          update: { value: acv.value },
         })
     }
 

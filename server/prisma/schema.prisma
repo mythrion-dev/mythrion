@@ -131,6 +131,7 @@ model Template {
   templateSkills        TemplateSkill[]
   skillModifierProfiles SkillModifierProfile[]
   runtimeModifiers      TemplateRuntimeModifier[]
+  armorClass            TemplateArmorClass?
   characterSheets       CharacterSheet[]
   createdAt             DateTime                    @default(now())
   updatedAt             DateTime                    @updatedAt
@@ -261,6 +262,7 @@ model CharacterSheet {
   skillValues        CharacterSheetSkillValue[]
   skillProfileValues             CharacterSheetSkillProfileValue[]
   runtimeModifierComponentValues CharacterSheetRuntimeModifierComponentValue[]
+  acValues                       CharacterSheetArmorClassValue[]
   createdAt                      DateTime                         @default(now())
   updatedAt             DateTime                         @updatedAt
 
@@ -366,4 +368,50 @@ model CharacterSheetRuntimeModifierComponentValue {
   @@unique([sheetId, componentId])
   @@index([sheetId])
   @@index([componentId])
+}
+
+// ── Armor Class (AC) System ──
+
+model TemplateArmorClass {
+  id         String                @id @default(cuid())
+  templateId String                @unique
+  template   Template              @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  enabled    Boolean               @default(false)
+  formula    String?
+  fields     ArmorClassField[]
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+}
+
+model ArmorClassField {
+  id                String                             @id @default(cuid())
+  armorClassId      String
+  armorClass        TemplateArmorClass                 @relation(fields: [armorClassId], references: [id], onDelete: Cascade)
+  name              String
+  key               String
+  defaultValue      String                             @default("0")
+  editableByPlayer  Boolean                            @default(false)
+  description       String?
+  order             Int                                @default(0)
+  sheetValues       CharacterSheetArmorClassValue[]
+  createdAt         DateTime                           @default(now())
+  updatedAt         DateTime                           @updatedAt
+
+  @@unique([armorClassId, key])
+  @@index([armorClassId])
+}
+
+model CharacterSheetArmorClassValue {
+  id          String              @id @default(cuid())
+  sheetId     String
+  sheet       CharacterSheet      @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  fieldId     String
+  field       ArmorClassField     @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  value       String              @default("0")
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@unique([sheetId, fieldId])
+  @@index([sheetId])
+  @@index([fieldId])
 }

@@ -96,6 +96,41 @@ export class RuntimeModifierDefDto {
   components?: RuntimeModifierComponentDefDto[]
 }
 
+export class ArmorClassFieldDefDto {
+  @IsString()
+  name!: string
+
+  @IsString()
+  key!: string
+
+  @IsString()
+  @IsOptional()
+  defaultValue?: string
+
+  @IsBoolean()
+  @IsOptional()
+  editableByPlayer?: boolean
+
+  @IsString()
+  @IsOptional()
+  description?: string
+}
+
+export class ArmorClassDefDto {
+  @IsBoolean()
+  enabled!: boolean
+
+  @IsString()
+  @IsOptional()
+  formula?: string
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @IsOptional()
+  @Type(() => ArmorClassFieldDefDto)
+  fields?: ArmorClassFieldDefDto[]
+}
+
 export class CreateTemplateDto {
   @IsString()
   name!: string
@@ -133,4 +168,9 @@ export class CreateTemplateDto {
   @IsOptional()
   @Type(() => RuntimeModifierDefDto)
   runtimeModifiers?: RuntimeModifierDefDto[]
+
+  @ValidateNested()
+  @IsOptional()
+  @Type(() => ArmorClassDefDto)
+  armorClass?: ArmorClassDefDto
 }

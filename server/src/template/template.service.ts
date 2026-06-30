@@ -16,6 +16,9 @@ const templateInclude = {
     orderBy: { order: 'asc' as const },
     include: { components: { orderBy: { order: 'asc' as const } } },
   },
+  armorClass: {
+    include: { fields: { orderBy: { order: 'asc' as const } } },
+  },
 }
 
 @Injectable()
@@ -75,6 +78,26 @@ export class TemplateService {
             },
           })),
         },
+        ...(dto.armorClass?.enabled
+          ? {
+              armorClass: {
+                create: {
+                  enabled: true,
+                  formula: dto.armorClass.formula ?? null,
+                  fields: {
+                    create: (dto.armorClass.fields || []).map((f, fIdx) => ({
+                      name: f.name,
+                      key: f.key,
+                      defaultValue: f.defaultValue ?? '0',
+                      editableByPlayer: f.editableByPlayer ?? false,
+                      description: f.description ?? null,
+                      order: fIdx,
+                    })),
+                  },
+                },
+              },
+            }
+          : {}),
       },
       include: templateInclude,
     })
@@ -209,6 +232,97 @@ export class TemplateService {
               await this.prisma.characterSheetSkillProfileValue.upsert({ where: { sheetId_skillId_profileId: { sheetId: sheet.id, skillId: skill.id, profileId: profile.id } }, create: { sheetId: sheet.id, skillId: skill.id, profileId: profile.id, optionId: firstOption?.id ?? null }, update: {} })
             }
           }
+        }
+      }
+    }
+
+    // Handle Armor Class
+    if (dto.armorClass) {
+      const existingAC = await this.prisma.templateArmorClass.findUnique({ where: { templateId: id }, include: { fields: true } })
+
+      if (dto.armorClass.enabled === false) {
+        // Disable: remove the AC config entirely
+        if (existingAC) {
+          await this.prisma.templateArmorClass.delete({ where: { templateId: id } })
+        }
+      } else if (dto.armorClass.enabled === true || dto.armorClass.formula !== undefined || dto.armorClass.fields) {
+        if (existingAC) {
+          // Update existing
+          await this.prisma.templateArmorClass.update({
+            where: { templateId: id },
+            data: {
+              ...(dto.armorClass.enabled !== undefined && { enabled: dto.armorClass.enabled }),
+              ...(dto.armorClass.formula !== undefined && { formula: dto.armorClass.formula || null }),
+            },
+          })
+
+          if (dto.armorClass.fields) {
+            const existingFields = existingAC.fields
+            const newFieldKeys = dto.armorClass.fields.map(f => f.key?.trim() ?? '')
+            const existingFieldKeys = existingFields.map(f => f.key)
+            const fieldKeysToDelete = existingFieldKeys.filter(k => !newFieldKeys.includes(k))
+            if (fieldKeysToDelete.length) {
+              await this.prisma.armorClassField.deleteMany({ where: { armorClassId: existingAC.id, key: { in: fieldKeysToDelete } } })
+            }
+            for (let fIdx = 0; fIdx < dto.armorClass.fields.length; fIdx++) {
+              const f = dto.armorClass.fields[fIdx]; const key = f.key?.trim() ?? ''
+              if (!key) continue
+              const existingF = existingFields.find(ef => ef.key === key)
+              if (existingF) {
+                await this.prisma.armorClassField.update({
+                  where: { id: existingF.id },
+                  data: {
+                    ...(f.name !== undefined && { name: f.name }),
+                    ...(f.defaultValue !== undefined && { defaultValue: f.defaultValue }),
+                    ...(f.editableByPlayer !== undefined && { editableByPlayer: f.editableByPlayer }),
+                    ...(f.description !== undefined && { description: f.description || null }),
+                    order: fIdx,
+                  },
+                })
+              } else {
+                await this.prisma.armorClassField.create({
+                  data: {
+                    armorClassId: existingAC.id, key, name: f.name ?? key,
+                    defaultValue: f.defaultValue ?? '0',
+                    editableByPlayer: f.editableByPlayer ?? false,
+                    description: f.description ?? null,
+                    order: fIdx,
+                  },
+                })
+              }
+            }
+            // Auto-create values for newly added AC fields on existing sheets
+            const addedFieldKeys = newFieldKeys.filter(k => !existingFieldKeys.includes(k) && k.length > 0)
+            if (addedFieldKeys.length > 0) {
+              const newFields = await this.prisma.armorClassField.findMany({ where: { armorClassId: existingAC.id, key: { in: addedFieldKeys } } })
+              const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
+              for (const sheet of sheets) for (const field of newFields)
+                await this.prisma.characterSheetArmorClassValue.upsert({
+                  where: { sheetId_fieldId: { sheetId: sheet.id, fieldId: field.id } },
+                  create: { sheetId: sheet.id, fieldId: field.id, value: field.defaultValue },
+                  update: {},
+                })
+            }
+          }
+        } else {
+          // Create new AC for existing template
+          await this.prisma.templateArmorClass.create({
+            data: {
+              templateId: id,
+              enabled: dto.armorClass.enabled ?? true,
+              formula: dto.armorClass.formula ?? null,
+              fields: {
+                create: (dto.armorClass.fields || []).map((f, fIdx) => ({
+                  name: f.name ?? f.key?.trim() ?? '',
+                  key: f.key?.trim() ?? '',
+                  defaultValue: f.defaultValue ?? '0',
+                  editableByPlayer: f.editableByPlayer ?? false,
+                  description: f.description ?? null,
+                  order: fIdx,
+                })),
+              },
+            },
+          })
         }
       }
     }

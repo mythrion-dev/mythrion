@@ -70,7 +70,10 @@ export const ModelName = {
   CharacterSheetFieldValue: 'CharacterSheetFieldValue',
   TemplateRuntimeModifier: 'TemplateRuntimeModifier',
   RuntimeModifierComponent: 'RuntimeModifierComponent',
-  CharacterSheetRuntimeModifierComponentValue: 'CharacterSheetRuntimeModifierComponentValue'
+  CharacterSheetRuntimeModifierComponentValue: 'CharacterSheetRuntimeModifierComponentValue',
+  TemplateArmorClass: 'TemplateArmorClass',
+  ArmorClassField: 'ArmorClassField',
+  CharacterSheetArmorClassValue: 'CharacterSheetArmorClassValue'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -362,6 +365,46 @@ export const CharacterSheetRuntimeModifierComponentValueScalarFieldEnum = {
 } as const
 
 export type CharacterSheetRuntimeModifierComponentValueScalarFieldEnum = (typeof CharacterSheetRuntimeModifierComponentValueScalarFieldEnum)[keyof typeof CharacterSheetRuntimeModifierComponentValueScalarFieldEnum]
+
+
+export const TemplateArmorClassScalarFieldEnum = {
+  id: 'id',
+  templateId: 'templateId',
+  enabled: 'enabled',
+  formula: 'formula',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TemplateArmorClassScalarFieldEnum = (typeof TemplateArmorClassScalarFieldEnum)[keyof typeof TemplateArmorClassScalarFieldEnum]
+
+
+export const ArmorClassFieldScalarFieldEnum = {
+  id: 'id',
+  armorClassId: 'armorClassId',
+  name: 'name',
+  key: 'key',
+  defaultValue: 'defaultValue',
+  editableByPlayer: 'editableByPlayer',
+  description: 'description',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ArmorClassFieldScalarFieldEnum = (typeof ArmorClassFieldScalarFieldEnum)[keyof typeof ArmorClassFieldScalarFieldEnum]
+
+
+export const CharacterSheetArmorClassValueScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  fieldId: 'fieldId',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterSheetArmorClassValueScalarFieldEnum = (typeof CharacterSheetArmorClassValueScalarFieldEnum)[keyof typeof CharacterSheetArmorClassValueScalarFieldEnum]
 
 
 export const SortOrder = {

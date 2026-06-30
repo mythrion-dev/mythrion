@@ -141,3 +141,18 @@ export type RuntimeModifierComponent = Prisma.RuntimeModifierComponentModel
  * 
  */
 export type CharacterSheetRuntimeModifierComponentValue = Prisma.CharacterSheetRuntimeModifierComponentValueModel
+/**
+ * Model TemplateArmorClass
+ * 
+ */
+export type TemplateArmorClass = Prisma.TemplateArmorClassModel
+/**
+ * Model ArmorClassField
+ * 
+ */
+export type ArmorClassField = Prisma.ArmorClassFieldModel
+/**
+ * Model CharacterSheetArmorClassValue
+ * 
+ */
+export type CharacterSheetArmorClassValue = Prisma.CharacterSheetArmorClassValueModel
