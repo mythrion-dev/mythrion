@@ -67,7 +67,10 @@ export const ModelName = {
   CharacterSheet: 'CharacterSheet',
   CharacterSheetValue: 'CharacterSheetValue',
   TemplateField: 'TemplateField',
-  CharacterSheetFieldValue: 'CharacterSheetFieldValue'
+  CharacterSheetFieldValue: 'CharacterSheetFieldValue',
+  TemplateRuntimeModifier: 'TemplateRuntimeModifier',
+  RuntimeModifierOption: 'RuntimeModifierOption',
+  CharacterSheetRuntimeModifierValue: 'CharacterSheetRuntimeModifierValue'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -270,6 +273,9 @@ export const CharacterSheetScalarFieldEnum = {
   characterName: 'characterName',
   playerName: 'playerName',
   level: 'level',
+  hpActual: 'hpActual',
+  hpMax: 'hpMax',
+  hpNotes: 'hpNotes',
   adventureId: 'adventureId',
   templateId: 'templateId',
   ownerId: 'ownerId',
@@ -315,6 +321,46 @@ export const CharacterSheetFieldValueScalarFieldEnum = {
 } as const
 
 export type CharacterSheetFieldValueScalarFieldEnum = (typeof CharacterSheetFieldValueScalarFieldEnum)[keyof typeof CharacterSheetFieldValueScalarFieldEnum]
+
+
+export const TemplateRuntimeModifierScalarFieldEnum = {
+  id: 'id',
+  templateId: 'templateId',
+  key: 'key',
+  name: 'name',
+  type: 'type',
+  defaultValue: 'defaultValue',
+  description: 'description',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TemplateRuntimeModifierScalarFieldEnum = (typeof TemplateRuntimeModifierScalarFieldEnum)[keyof typeof TemplateRuntimeModifierScalarFieldEnum]
+
+
+export const RuntimeModifierOptionScalarFieldEnum = {
+  id: 'id',
+  modifierId: 'modifierId',
+  label: 'label',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RuntimeModifierOptionScalarFieldEnum = (typeof RuntimeModifierOptionScalarFieldEnum)[keyof typeof RuntimeModifierOptionScalarFieldEnum]
+
+
+export const CharacterSheetRuntimeModifierValueScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  modifierId: 'modifierId',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterSheetRuntimeModifierValueScalarFieldEnum = (typeof CharacterSheetRuntimeModifierValueScalarFieldEnum)[keyof typeof CharacterSheetRuntimeModifierValueScalarFieldEnum]
 
 
 export const SortOrder = {

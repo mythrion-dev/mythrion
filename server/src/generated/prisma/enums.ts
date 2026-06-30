@@ -25,3 +25,12 @@ export const InvitationStatus = {
 } as const
 
 export type InvitationStatus = (typeof InvitationStatus)[keyof typeof InvitationStatus]
+
+
+export const RuntimeModifierType = {
+  NUMBER: 'NUMBER',
+  BOOLEAN: 'BOOLEAN',
+  SELECT: 'SELECT'
+} as const
+
+export type RuntimeModifierType = (typeof RuntimeModifierType)[keyof typeof RuntimeModifierType]

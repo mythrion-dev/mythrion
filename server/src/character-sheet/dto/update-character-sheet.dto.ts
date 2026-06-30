@@ -89,4 +89,18 @@ export class UpdateCharacterSheetDto {
   @ValidateNested({ each: true })
   @Type(() => SkillProfileValueDto)
   skillProfileValues?: SkillProfileValueDto[]
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => RuntimeModifierValueDto)
+  runtimeModifierValues?: RuntimeModifierValueDto[]
+}
+
+export class RuntimeModifierValueDto {
+  @IsString()
+  modifierId!: string
+
+  @IsString()
+  value!: string
 }

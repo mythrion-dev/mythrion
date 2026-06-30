@@ -126,3 +126,18 @@ export type TemplateField = Prisma.TemplateFieldModel
  * 
  */
 export type CharacterSheetFieldValue = Prisma.CharacterSheetFieldValueModel
+/**
+ * Model TemplateRuntimeModifier
+ * 
+ */
+export type TemplateRuntimeModifier = Prisma.TemplateRuntimeModifierModel
+/**
+ * Model RuntimeModifierOption
+ * 
+ */
+export type RuntimeModifierOption = Prisma.RuntimeModifierOptionModel
+/**
+ * Model CharacterSheetRuntimeModifierValue
+ * 
+ */
+export type CharacterSheetRuntimeModifierValue = Prisma.CharacterSheetRuntimeModifierValueModel

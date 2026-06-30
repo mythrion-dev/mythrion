@@ -19,6 +19,10 @@ const sheetInclude = {
         orderBy: { order: 'asc' as const },
         include: { options: { orderBy: { order: 'asc' as const } } },
       },
+      runtimeModifiers: {
+        orderBy: { order: 'asc' as const },
+        include: { options: { orderBy: { order: 'asc' as const } } },
+      },
     },
   },
   values: {
@@ -42,6 +46,20 @@ const sheetInclude = {
       option: { select: { id: true, label: true, value: true } },
     },
   },
+  runtimeModifierValues: {
+    include: {
+      modifier: {
+        select: {
+          id: true,
+          key: true,
+          name: true,
+          type: true,
+          description: true,
+          options: { orderBy: { order: 'asc' as const } },
+        },
+      },
+    },
+  },
 }
 
 @Injectable()
@@ -61,6 +79,7 @@ export class CharacterSheetService {
         templateFields: true,
         templateSkills: true,
         skillModifierProfiles: { include: { options: { orderBy: { order: 'asc' } } } },
+        runtimeModifiers: { include: { options: { orderBy: { order: 'asc' } } } },
       },
     })
     if (!template) {
@@ -104,7 +123,7 @@ export class CharacterSheetService {
       }
     }
 
-    // Create sheet with values for every template attribute
+    // Create sheet with values for every template attribute AND runtime modifier
     const sheet = await this.prisma.characterSheet.create({
       data: {
         characterName: dto.characterName,
@@ -136,6 +155,14 @@ export class CharacterSheetService {
             skillId: spv.skillId,
             profileId: spv.profileId,
             optionId: spv.optionId,
+          })),
+        },
+        runtimeModifierValues: {
+          create: template.runtimeModifiers.map((mod) => ({
+            modifierId: mod.id,
+            value: mod.defaultValue ?? (
+              mod.type === 'BOOLEAN' ? 'false' : mod.type === 'NUMBER' ? '0' : mod.options[0]?.label ?? ''
+            ),
           })),
         },
       },
@@ -277,6 +304,23 @@ export class CharacterSheetService {
             optionId: spv.optionId,
           },
           update: { optionId: spv.optionId },
+        })
+      }
+    }
+
+    // If runtimeModifierValues are provided, upsert each one
+    if (dto.runtimeModifierValues) {
+      for (const rmv of dto.runtimeModifierValues) {
+        await this.prisma.characterSheetRuntimeModifierValue.upsert({
+          where: {
+            sheetId_modifierId: { sheetId: id, modifierId: rmv.modifierId },
+          },
+          create: {
+            sheetId: id,
+            modifierId: rmv.modifierId,
+            value: rmv.value,
+          },
+          update: { value: rmv.value },
         })
       }
     }

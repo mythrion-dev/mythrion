@@ -48,6 +48,22 @@ interface SkillProfileValue {
   option: { id: string; label: string; value: number } | null
 }
 
+interface RuntimeModifierDef {
+  id: string
+  key: string
+  name: string
+  type: 'NUMBER' | 'BOOLEAN' | 'SELECT'
+  description: string | null
+  options: { id: string; label: string }[]
+}
+
+interface RuntimeModifierValue {
+  id: string
+  modifierId: string
+  value: string
+  modifier: RuntimeModifierDef
+}
+
 interface CharacterSheet {
   id: string
   characterName: string
@@ -62,11 +78,13 @@ interface CharacterSheet {
     name: string
     attributes: { id: string; key: string; name: string; modifier: string | null }[]
     skillModifierProfiles: SkillModifierProfile[]
+    runtimeModifiers: RuntimeModifierDef[]
   }
   values: SheetAttribute[]
   fieldValues: FieldValue[]
   skillValues: SkillValue[]
   skillProfileValues: SkillProfileValue[]
+  runtimeModifierValues: RuntimeModifierValue[]
   ownerId: string
   createdAt: string
 }
@@ -92,6 +110,7 @@ export default function CharacterSheetDetailPage() {
   const [editHpNotes, setEditHpNotes] = useState('')
   const [editValues, setEditValues] = useState<Record<string, string>>({})
   const [editFieldValues, setEditFieldValues] = useState<Record<string, string>>({})
+  const [editRuntimeModifierValues, setEditRuntimeModifierValues] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
 
@@ -129,6 +148,9 @@ export default function CharacterSheetDetailPage() {
       const fvals: Record<string, string> = {}
       data.fieldValues.forEach((fv) => { fvals[fv.templateFieldId] = fv.value })
       setEditFieldValues(fvals)
+      const rvals: Record<string, string> = {}
+      data.runtimeModifierValues.forEach((rv) => { rvals[rv.modifierId] = rv.value })
+      setEditRuntimeModifierValues(rvals)
 
       // Restore active skills + others from stored values ("active|others" e.g. "1|5")
       const actives: Record<string, boolean> = {}
@@ -172,6 +194,15 @@ export default function CharacterSheetDetailPage() {
             const v = parseFloat(sheetData.values.find((sv) => sv.attributeId === a.id)?.value || '0')
             modVars[a.key] = isNaN(v) ? 0 : v
           })
+          // Include runtime modifier values
+          sheetData.runtimeModifierValues.forEach((rv) => {
+            if (rv.modifier.type === 'NUMBER') {
+              const v = parseFloat(rv.value)
+              modVars[rv.modifier.key] = isNaN(v) ? 0 : v
+            } else if (rv.modifier.type === 'BOOLEAN') {
+              modVars[rv.modifier.key] = rv.value === 'true' ? 1 : 0
+            }
+          })
           const modResult = await api.post<{ result: number }>('/formula/evaluate', { formula: attr.modifier, variables: modVars })
           modifierVars[`${attr.key}_mod`] = modResult.result
         } catch { modifierVars[`${attr.key}_mod`] = 0 }
@@ -190,6 +221,17 @@ export default function CharacterSheetDetailPage() {
             const val = parseFloat(fv.value)
             variables[fv.templateField.key] = isNaN(val) ? 0 : val
           })
+          // Include runtime modifier values
+          sheetData.runtimeModifierValues.forEach((rv) => {
+            if (rv.modifier.type === 'NUMBER') {
+              const v = parseFloat(rv.value)
+              variables[rv.modifier.key] = isNaN(v) ? 0 : v
+            } else if (rv.modifier.type === 'BOOLEAN') {
+              variables[rv.modifier.key] = rv.value === 'true' ? 1 : 0
+            } else if (rv.modifier.type === 'SELECT') {
+              variables[rv.modifier.key] = 0 // SELECT values contribute via selected option logic (not numeric)
+            }
+          })
           variables['level'] = sheetData.level ?? 1
 
           const res = await api.post<{ result: number }>('/formula/evaluate', { formula: sv.skill.formula, variables })
@@ -205,7 +247,6 @@ export default function CharacterSheetDetailPage() {
                 finalResult += option.value
               }
             } else {
-              // No selection; check stored data
               const stored = sheetData.skillProfileValues.find(
                 spv => spv.skillId === sv.skillId && spv.profileId === profile.id
               )
@@ -232,6 +273,15 @@ export default function CharacterSheetDetailPage() {
             const val = parseFloat(sheetData.values.find((v) => v.attributeId === a.id)?.value || '0')
             variables[a.key] = isNaN(val) ? 0 : val
           })
+          // Include runtime modifier values
+          sheetData.runtimeModifierValues.forEach((rv) => {
+            if (rv.modifier.type === 'NUMBER') {
+              const v = parseFloat(rv.value)
+              variables[rv.modifier.key] = isNaN(v) ? 0 : v
+            } else if (rv.modifier.type === 'BOOLEAN') {
+              variables[rv.modifier.key] = rv.value === 'true' ? 1 : 0
+            }
+          })
           const res = await api.post<{ result: number }>('/formula/evaluate', { formula: attr.modifier, variables })
           results[attr.id] = res.result
         } catch { results[attr.id] = null }
@@ -244,6 +294,40 @@ export default function CharacterSheetDetailPage() {
     if (!authLoading && !user) { router.replace('/login'); return }
     if (user) fetchSheet()
   }, [authLoading, user, fetchSheet])
+
+  // Handle runtime modifier change — live persistence + recalculation
+  async function handleRuntimeModifierChange(modifierId: string, value: string) {
+    if (!sheet) return
+
+    // Optimistic UI update
+    const updatedRvals = { ...editRuntimeModifierValues, [modifierId]: value }
+    setEditRuntimeModifierValues(updatedRvals)
+
+    const updatedSheet = {
+      ...sheet,
+      runtimeModifierValues: sheet.runtimeModifierValues.map((rv) =>
+        rv.modifierId === modifierId ? { ...rv, value } : rv
+      ),
+    }
+    setSheet(updatedSheet)
+
+    // Persist to backend
+    try {
+      await api.patch(`/character-sheets/${sheet.id}`, {
+        runtimeModifierValues: [{ modifierId, value }],
+      })
+    } catch {
+      // Revert on failure
+      const stored = sheet.runtimeModifierValues.find((rv) => rv.modifierId === modifierId)
+      setEditRuntimeModifierValues((prev) => ({ ...prev, [modifierId]: stored?.value ?? '' }))
+      setSheet(sheet)
+      return
+    }
+
+    // Recalculate modifiers and skills
+    computeModifiers(updatedSheet)
+    computeSkills(updatedSheet)
+  }
 
   // Handle HP change (heal / damage)
   async function handleHpModify(delta: number) {
@@ -302,6 +386,7 @@ export default function CharacterSheetDetailPage() {
     try {
       const values = Object.entries(editValues).map(([attributeId, value]) => ({ attributeId, value }))
       const fieldValues = Object.entries(editFieldValues).map(([templateFieldId, value]) => ({ templateFieldId, value }))
+      const runtimeModifierValues = Object.entries(editRuntimeModifierValues).map(([modifierId, value]) => ({ modifierId, value }))
       const updated = await api.patch<CharacterSheet>(`/character-sheets/${id}`, {
         characterName: editName.trim() || undefined,
         playerName: editPlayerName.trim() || undefined,
@@ -311,6 +396,7 @@ export default function CharacterSheetDetailPage() {
         hpNotes: editHpNotes || undefined,
         values,
         fieldValues,
+        runtimeModifierValues,
       })
       setSheet(updated)
       setEditing(false)
@@ -478,6 +564,67 @@ export default function CharacterSheetDetailPage() {
             </div>
           </div>
 
+          {/* Runtime Modifiers Section */}
+          {sheet.runtimeModifierValues.length > 0 && (
+            <div className="card !p-6">
+              <h3 className="font-semibold mb-4">Runtime Modifiers</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {sheet.runtimeModifierValues.map((rv) => (
+                  <div key={rv.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm text-foreground">{rv.modifier.name}</span>
+                      {rv.modifier.description && (
+                        <span className="text-xs text-muted ml-2">{rv.modifier.description}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      {rv.modifier.type === 'NUMBER' && (
+                        isOwner ? (
+                          <input
+                            type="number"
+                            className="input-field py-1 text-xs w-20 text-center"
+                            value={rv.value}
+                            onChange={(e) => handleRuntimeModifierChange(rv.modifierId, e.target.value)}
+                          />
+                        ) : (
+                          <span className="text-sm font-semibold text-foreground">{rv.value}</span>
+                        )
+                      )}
+                      {rv.modifier.type === 'BOOLEAN' && (
+                        isOwner ? (
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 rounded accent-primary cursor-pointer"
+                            checked={rv.value === 'true'}
+                            onChange={(e) => handleRuntimeModifierChange(rv.modifierId, e.target.checked ? 'true' : 'false')}
+                          />
+                        ) : (
+                          <span className="text-sm font-semibold text-foreground">{rv.value === 'true' ? '☑' : '☐'}</span>
+                        )
+                      )}
+                      {rv.modifier.type === 'SELECT' && (
+                        isOwner ? (
+                          <select
+                            className="input-field py-1 text-xs w-36"
+                            value={rv.value}
+                            onChange={(e) => handleRuntimeModifierChange(rv.modifierId, e.target.value)}
+                          >
+                            <option value="">—</option>
+                            {rv.modifier.options.map((opt) => (
+                              <option key={opt.id} value={opt.label}>{opt.label}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="text-sm font-semibold text-foreground">{rv.value || '—'}</span>
+                        )
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Skills — card with 2-column grid, collapsible rows */}
           {sheet.skillValues.length > 0 && (
             <div className="card !p-6">
@@ -534,17 +681,20 @@ export default function CharacterSheetDetailPage() {
           hpActual={editHpActual} hpMax={editHpMax} hpNotes={editHpNotes}
           attributes={sheet.template.attributes} values={editValues}
           fieldValues={sheet.fieldValues} editFieldValues={editFieldValues}
+          runtimeModifierValues={sheet.runtimeModifierValues} editRuntimeModifierValues={editRuntimeModifierValues}
           error={editError} saving={saving}
           onNameChange={setEditName} onPlayerNameChange={setEditPlayerName} onLevelChange={setEditLevel}
           onHpActualChange={setEditHpActual} onHpMaxChange={setEditHpMax} onHpNotesChange={setEditHpNotes}
           onValueChange={(attrId, val) => setEditValues((prev) => ({ ...prev, [attrId]: val }))}
           onFieldValueChange={(tfId, val) => setEditFieldValues((prev) => ({ ...prev, [tfId]: val }))}
+          onRuntimeModifierValueChange={(modId, val) => setEditRuntimeModifierValues((prev) => ({ ...prev, [modId]: val }))}
           onCancel={() => {
             setEditing(false); setEditError(null)
             setEditName(sheet.characterName); setEditPlayerName(sheet.playerName ?? ''); setEditLevel(sheet.level ?? 1)
             setEditHpActual(sheet.hpActual ?? 0); setEditHpMax(sheet.hpMax ?? 0); setEditHpNotes(sheet.hpNotes ?? '')
             const vals: Record<string, string> = {}; sheet.values.forEach((v) => { vals[v.attributeId] = v.value }); setEditValues(vals)
             const fvals: Record<string, string> = {}; sheet.fieldValues.forEach((fv) => { fvals[fv.templateFieldId] = fv.value }); setEditFieldValues(fvals)
+            const rvals: Record<string, string> = {}; sheet.runtimeModifierValues.forEach((rv) => { rvals[rv.modifierId] = rv.value }); setEditRuntimeModifierValues(rvals)
           }}
           onSubmit={handleSave}
         />
@@ -665,11 +815,13 @@ function EditForm(props: {
   attributes: { id: string; key: string; name: string }[]
   values: Record<string, string>
   fieldValues: FieldValue[]; editFieldValues: Record<string, string>
+  runtimeModifierValues: RuntimeModifierValue[]; editRuntimeModifierValues: Record<string, string>
   error: string | null; saving: boolean
   onNameChange: (v: string) => void; onPlayerNameChange: (v: string) => void; onLevelChange: (v: number) => void
   onHpActualChange: (v: number) => void; onHpMaxChange: (v: number) => void; onHpNotesChange: (v: string) => void
   onValueChange: (attrId: string, v: string) => void
   onFieldValueChange: (tfId: string, v: string) => void
+  onRuntimeModifierValueChange: (modId: string, v: string) => void
   onCancel: () => void; onSubmit: (e: FormEvent) => void
 }) {
   return (
@@ -718,6 +870,55 @@ function EditForm(props: {
           ))}
         </div>
       </div>
+
+      {props.runtimeModifierValues.length > 0 && (
+        <div>
+          <label className="label">Runtime Modifiers</label>
+          <div className="space-y-3 mt-1">
+            {props.runtimeModifierValues.map((rv) => (
+              <div key={rv.id}>
+                <label className="text-xs text-muted flex items-center gap-1 mb-1">
+                  {rv.modifier.name}
+                  {rv.modifier.description && <span className="font-normal">— {rv.modifier.description}</span>}
+                </label>
+                {rv.modifier.type === 'NUMBER' && (
+                  <input
+                    type="number"
+                    className="input-field"
+                    value={props.editRuntimeModifierValues[rv.modifierId] ?? ''}
+                    onChange={(e) => props.onRuntimeModifierValueChange(rv.modifierId, e.target.value)}
+                    placeholder="0"
+                  />
+                )}
+                {rv.modifier.type === 'BOOLEAN' && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded accent-primary cursor-pointer"
+                      checked={(props.editRuntimeModifierValues[rv.modifierId] ?? 'false') === 'true'}
+                      onChange={(e) => props.onRuntimeModifierValueChange(rv.modifierId, e.target.checked ? 'true' : 'false')}
+                    />
+                    <span className="text-xs text-muted">{(props.editRuntimeModifierValues[rv.modifierId] ?? 'false') === 'true' ? 'Yes' : 'No'}</span>
+                  </div>
+                )}
+                {rv.modifier.type === 'SELECT' && (
+                  <select
+                    className="input-field"
+                    value={props.editRuntimeModifierValues[rv.modifierId] ?? ''}
+                    onChange={(e) => props.onRuntimeModifierValueChange(rv.modifierId, e.target.value)}
+                  >
+                    <option value="">—</option>
+                    {rv.modifier.options.map((opt) => (
+                      <option key={opt.id} value={opt.label}>{opt.label}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {props.error && <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">{props.error}</div>}
       <div className="flex gap-3 justify-end pt-2">
         <button type="button" onClick={props.onCancel} disabled={props.saving} className="btn-ghost">Cancel</button>

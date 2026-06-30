@@ -400,7 +400,10 @@ export const ModelName = {
   CharacterSheet: 'CharacterSheet',
   CharacterSheetValue: 'CharacterSheetValue',
   TemplateField: 'TemplateField',
-  CharacterSheetFieldValue: 'CharacterSheetFieldValue'
+  CharacterSheetFieldValue: 'CharacterSheetFieldValue',
+  TemplateRuntimeModifier: 'TemplateRuntimeModifier',
+  RuntimeModifierOption: 'RuntimeModifierOption',
+  CharacterSheetRuntimeModifierValue: 'CharacterSheetRuntimeModifierValue'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -416,7 +419,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "discordAccount" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue"
+    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "discordAccount" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateRuntimeModifier" | "runtimeModifierOption" | "characterSheetRuntimeModifierValue"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1678,6 +1681,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    TemplateRuntimeModifier: {
+      payload: Prisma.$TemplateRuntimeModifierPayload<ExtArgs>
+      fields: Prisma.TemplateRuntimeModifierFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TemplateRuntimeModifierFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TemplateRuntimeModifierFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>
+        }
+        findFirst: {
+          args: Prisma.TemplateRuntimeModifierFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TemplateRuntimeModifierFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>
+        }
+        findMany: {
+          args: Prisma.TemplateRuntimeModifierFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>[]
+        }
+        create: {
+          args: Prisma.TemplateRuntimeModifierCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>
+        }
+        createMany: {
+          args: Prisma.TemplateRuntimeModifierCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TemplateRuntimeModifierCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>[]
+        }
+        delete: {
+          args: Prisma.TemplateRuntimeModifierDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>
+        }
+        update: {
+          args: Prisma.TemplateRuntimeModifierUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>
+        }
+        deleteMany: {
+          args: Prisma.TemplateRuntimeModifierDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TemplateRuntimeModifierUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TemplateRuntimeModifierUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>[]
+        }
+        upsert: {
+          args: Prisma.TemplateRuntimeModifierUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>
+        }
+        aggregate: {
+          args: Prisma.TemplateRuntimeModifierAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTemplateRuntimeModifier>
+        }
+        groupBy: {
+          args: Prisma.TemplateRuntimeModifierGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TemplateRuntimeModifierGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TemplateRuntimeModifierCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TemplateRuntimeModifierCountAggregateOutputType> | number
+        }
+      }
+    }
+    RuntimeModifierOption: {
+      payload: Prisma.$RuntimeModifierOptionPayload<ExtArgs>
+      fields: Prisma.RuntimeModifierOptionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RuntimeModifierOptionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierOptionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RuntimeModifierOptionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierOptionPayload>
+        }
+        findFirst: {
+          args: Prisma.RuntimeModifierOptionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierOptionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RuntimeModifierOptionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierOptionPayload>
+        }
+        findMany: {
+          args: Prisma.RuntimeModifierOptionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierOptionPayload>[]
+        }
+        create: {
+          args: Prisma.RuntimeModifierOptionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierOptionPayload>
+        }
+        createMany: {
+          args: Prisma.RuntimeModifierOptionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RuntimeModifierOptionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierOptionPayload>[]
+        }
+        delete: {
+          args: Prisma.RuntimeModifierOptionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierOptionPayload>
+        }
+        update: {
+          args: Prisma.RuntimeModifierOptionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierOptionPayload>
+        }
+        deleteMany: {
+          args: Prisma.RuntimeModifierOptionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RuntimeModifierOptionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RuntimeModifierOptionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierOptionPayload>[]
+        }
+        upsert: {
+          args: Prisma.RuntimeModifierOptionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierOptionPayload>
+        }
+        aggregate: {
+          args: Prisma.RuntimeModifierOptionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRuntimeModifierOption>
+        }
+        groupBy: {
+          args: Prisma.RuntimeModifierOptionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RuntimeModifierOptionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RuntimeModifierOptionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RuntimeModifierOptionCountAggregateOutputType> | number
+        }
+      }
+    }
+    CharacterSheetRuntimeModifierValue: {
+      payload: Prisma.$CharacterSheetRuntimeModifierValuePayload<ExtArgs>
+      fields: Prisma.CharacterSheetRuntimeModifierValueFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CharacterSheetRuntimeModifierValueFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierValuePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CharacterSheetRuntimeModifierValueFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierValuePayload>
+        }
+        findFirst: {
+          args: Prisma.CharacterSheetRuntimeModifierValueFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierValuePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CharacterSheetRuntimeModifierValueFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierValuePayload>
+        }
+        findMany: {
+          args: Prisma.CharacterSheetRuntimeModifierValueFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierValuePayload>[]
+        }
+        create: {
+          args: Prisma.CharacterSheetRuntimeModifierValueCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierValuePayload>
+        }
+        createMany: {
+          args: Prisma.CharacterSheetRuntimeModifierValueCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CharacterSheetRuntimeModifierValueCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierValuePayload>[]
+        }
+        delete: {
+          args: Prisma.CharacterSheetRuntimeModifierValueDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierValuePayload>
+        }
+        update: {
+          args: Prisma.CharacterSheetRuntimeModifierValueUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierValuePayload>
+        }
+        deleteMany: {
+          args: Prisma.CharacterSheetRuntimeModifierValueDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CharacterSheetRuntimeModifierValueUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CharacterSheetRuntimeModifierValueUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierValuePayload>[]
+        }
+        upsert: {
+          args: Prisma.CharacterSheetRuntimeModifierValueUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierValuePayload>
+        }
+        aggregate: {
+          args: Prisma.CharacterSheetRuntimeModifierValueAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCharacterSheetRuntimeModifierValue>
+        }
+        groupBy: {
+          args: Prisma.CharacterSheetRuntimeModifierValueGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterSheetRuntimeModifierValueGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CharacterSheetRuntimeModifierValueCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterSheetRuntimeModifierValueCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1901,6 +2126,9 @@ export const CharacterSheetScalarFieldEnum = {
   characterName: 'characterName',
   playerName: 'playerName',
   level: 'level',
+  hpActual: 'hpActual',
+  hpMax: 'hpMax',
+  hpNotes: 'hpNotes',
   adventureId: 'adventureId',
   templateId: 'templateId',
   ownerId: 'ownerId',
@@ -1946,6 +2174,46 @@ export const CharacterSheetFieldValueScalarFieldEnum = {
 } as const
 
 export type CharacterSheetFieldValueScalarFieldEnum = (typeof CharacterSheetFieldValueScalarFieldEnum)[keyof typeof CharacterSheetFieldValueScalarFieldEnum]
+
+
+export const TemplateRuntimeModifierScalarFieldEnum = {
+  id: 'id',
+  templateId: 'templateId',
+  key: 'key',
+  name: 'name',
+  type: 'type',
+  defaultValue: 'defaultValue',
+  description: 'description',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TemplateRuntimeModifierScalarFieldEnum = (typeof TemplateRuntimeModifierScalarFieldEnum)[keyof typeof TemplateRuntimeModifierScalarFieldEnum]
+
+
+export const RuntimeModifierOptionScalarFieldEnum = {
+  id: 'id',
+  modifierId: 'modifierId',
+  label: 'label',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RuntimeModifierOptionScalarFieldEnum = (typeof RuntimeModifierOptionScalarFieldEnum)[keyof typeof RuntimeModifierOptionScalarFieldEnum]
+
+
+export const CharacterSheetRuntimeModifierValueScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  modifierId: 'modifierId',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterSheetRuntimeModifierValueScalarFieldEnum = (typeof CharacterSheetRuntimeModifierValueScalarFieldEnum)[keyof typeof CharacterSheetRuntimeModifierValueScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -2066,6 +2334,20 @@ export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, '
  * Reference to a field of type 'Float[]'
  */
 export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+    
+
+
+/**
+ * Reference to a field of type 'RuntimeModifierType'
+ */
+export type EnumRuntimeModifierTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RuntimeModifierType'>
+    
+
+
+/**
+ * Reference to a field of type 'RuntimeModifierType[]'
+ */
+export type ListEnumRuntimeModifierTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RuntimeModifierType[]'>
     
 
 /**
@@ -2195,6 +2477,9 @@ export type GlobalOmitConfig = {
   characterSheetValue?: Prisma.CharacterSheetValueOmit
   templateField?: Prisma.TemplateFieldOmit
   characterSheetFieldValue?: Prisma.CharacterSheetFieldValueOmit
+  templateRuntimeModifier?: Prisma.TemplateRuntimeModifierOmit
+  runtimeModifierOption?: Prisma.RuntimeModifierOptionOmit
+  characterSheetRuntimeModifierValue?: Prisma.CharacterSheetRuntimeModifierValueOmit
 }
 
 /* Types for Logging */
