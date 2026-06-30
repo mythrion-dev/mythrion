@@ -15,6 +15,7 @@ interface FormulaBuilderProps {
   attributes: { key: string; name: string }[]
   customFields?: { key: string; label: string }[]
   skillModifierProfiles?: SkillModifierProfile[]
+  runtimeModifiers?: { key: string; name: string }[]
   placeholder?: string
   useModPrefix?: boolean
 }
@@ -44,6 +45,7 @@ export default function FormulaBuilder({
   attributes,
   customFields,
   skillModifierProfiles,
+  runtimeModifiers,
   placeholder = 'Build formula...',
   useModPrefix = false,
 }: FormulaBuilderProps) {
@@ -51,6 +53,7 @@ export default function FormulaBuilder({
   const [showVariables, setShowVariables] = useState(true)
   const [showCustomFields, setShowCustomFields] = useState(false)
   const [showProfiles, setShowProfiles] = useState(false)
+  const [showRuntimeModifiers, setShowRuntimeModifiers] = useState(false)
   const [showFunctions, setShowFunctions] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -94,9 +97,11 @@ export default function FormulaBuilder({
     if (attributes.length === 0) { setPreview({ result: null }); return }
     const variables: Record<string, number> = {}
     attributes.forEach((a) => { variables[a.key] = 0 })
-    // Add profile variables with sample values
     if (skillModifierProfiles) {
       skillModifierProfiles.forEach((p) => { variables[p.name] = 0 })
+    }
+    if (runtimeModifiers) {
+      runtimeModifiers.forEach((m) => { variables[m.key] = 0 })
     }
     try {
       const data = await api.post<{ result: number }>('/formula/preview', { formula, variables })
@@ -104,7 +109,7 @@ export default function FormulaBuilder({
     } catch (err) {
       setPreview({ result: null, error: err instanceof Error ? err.message : 'Evaluation failed' })
     }
-  }, [attributes, skillModifierProfiles])
+  }, [attributes, skillModifierProfiles, runtimeModifiers])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -112,15 +117,17 @@ export default function FormulaBuilder({
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [value, updatePreview])
 
-  const toggleGroup = (group: 'variables' | 'customFields' | 'profiles' | 'functions') => {
+  const toggleGroup = (group: 'variables' | 'customFields' | 'profiles' | 'runtimeModifiers' | 'functions') => {
     setShowVariables(group === 'variables' ? !showVariables : false)
     setShowCustomFields(group === 'customFields' ? !showCustomFields : false)
     setShowProfiles(group === 'profiles' ? !showProfiles : false)
+    setShowRuntimeModifiers(group === 'runtimeModifiers' ? !showRuntimeModifiers : false)
     setShowFunctions(group === 'functions' ? !showFunctions : false)
   }
 
   const hasProfiles = skillModifierProfiles && skillModifierProfiles.length > 0
   const hasCustomFields = customFields && customFields.length > 0
+  const hasRuntimeModifiers = runtimeModifiers && runtimeModifiers.length > 0
 
   return (
     <div className="space-y-3">
@@ -137,6 +144,9 @@ export default function FormulaBuilder({
 
       <div className="flex gap-2 flex-wrap">
         <button type="button" onClick={() => toggleGroup('variables')} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showVariables ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`}>Attributes</button>
+        {hasRuntimeModifiers && (
+          <button type="button" onClick={() => toggleGroup('runtimeModifiers')} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showRuntimeModifiers ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`}>Runtime Modifiers</button>
+        )}
         {hasProfiles && (
           <button type="button" onClick={() => toggleGroup('profiles')} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${showProfiles ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`}>Skill Profiles</button>
         )}
@@ -153,6 +163,25 @@ export default function FormulaBuilder({
               [{attr.name}]
             </button>
           ))}
+        </div>
+      )}
+
+      {showRuntimeModifiers && hasRuntimeModifiers && (
+        <div className="space-y-2">
+          <p className="text-xs text-muted">Runtime Modifiers — click to insert as variable</p>
+          <div className="flex flex-wrap gap-1">
+            {runtimeModifiers!.map((mod) => (
+              <button
+                key={mod.key}
+                type="button"
+                onClick={() => insertAtCursor(mod.key)}
+                className="px-2 py-1 rounded bg-background/60 border border-border text-xs text-foreground hover:border-primary/30 hover:text-primary transition-colors"
+                title={`Insert ${mod.key}`}
+              >
+                [{mod.name}]
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

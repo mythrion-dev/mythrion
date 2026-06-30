@@ -5,6 +5,7 @@ import {
   ValidateNested,
   ArrayMinSize,
   IsNumber,
+  IsEnum,
 } from 'class-validator'
 import { Type } from 'class-transformer'
 
@@ -60,6 +61,36 @@ export class SkillModifierProfileDefDto {
   options!: ProfileOptionDefDto[]
 }
 
+export class RuntimeModifierOptionDefDto {
+  @IsString()
+  label!: string
+}
+
+export class RuntimeModifierDefDto {
+  @IsString()
+  key!: string
+
+  @IsString()
+  name!: string
+
+  @IsEnum(['NUMBER', 'BOOLEAN', 'SELECT'])
+  type!: 'NUMBER' | 'BOOLEAN' | 'SELECT'
+
+  @IsString()
+  @IsOptional()
+  defaultValue?: string
+
+  @IsString()
+  @IsOptional()
+  description?: string
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @IsOptional()
+  @Type(() => RuntimeModifierOptionDefDto)
+  options?: RuntimeModifierOptionDefDto[]
+}
+
 export class CreateTemplateDto {
   @IsString()
   name!: string
@@ -91,4 +122,10 @@ export class CreateTemplateDto {
   @IsOptional()
   @Type(() => SkillModifierProfileDefDto)
   skillModifierProfiles?: SkillModifierProfileDefDto[]
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @IsOptional()
+  @Type(() => RuntimeModifierDefDto)
+  runtimeModifiers?: RuntimeModifierDefDto[]
 }

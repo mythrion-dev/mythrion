@@ -50,6 +50,16 @@ interface SkillModifierProfile {
   options: { id: string; label: string; value: number }[]
 }
 
+interface RuntimeModifier {
+  id: string
+  key: string
+  name: string
+  type: 'NUMBER' | 'BOOLEAN' | 'SELECT'
+  defaultValue: string | null
+  description: string | null
+  options: { id: string; label: string }[]
+}
+
 interface Template {
   id: string
   name: string
@@ -58,6 +68,7 @@ interface Template {
   templateFields?: { id: string; key: string; label: string }[]
   templateSkills?: { id: string; name: string; description: string | null; formula: string | null }[]
   skillModifierProfiles?: SkillModifierProfile[]
+  runtimeModifiers?: RuntimeModifier[]
   createdAt: string
 }
 
@@ -133,6 +144,24 @@ export default function AdventureDetailPage() {
   // Skill Modifier Profiles state
   const [newTemplateProfiles, setNewTemplateProfiles] = useState<{ name: string; options: { label: string; value: number }[] }[]>([])
   const [editTemplateProfiles, setEditTemplateProfiles] = useState<{ name: string; options: { label: string; value: number }[] }[]>([])
+
+  // Runtime Modifiers state
+  const [newTemplateModifiers, setNewTemplateModifiers] = useState<{ key: string; name: string; type: 'NUMBER' | 'BOOLEAN' | 'SELECT'; defaultValue: string; description: string; options: { label: string }[] }[]>([])
+  const [editTemplateModifiers, setEditTemplateModifiers] = useState<{ key: string; name: string; type: 'NUMBER' | 'BOOLEAN' | 'SELECT'; defaultValue: string; description: string; options: { label: string }[] }[]>([])
+
+  // Runtime Modifier handlers
+  function addNewModifier() { setNewTemplateModifiers((prev) => [...prev, { key: '', name: '', type: 'NUMBER', defaultValue: '', description: '', options: [] }]) }
+  function removeNewModifier(index: number) { setNewTemplateModifiers((prev) => prev.filter((_, i) => i !== index)) }
+  function updateNewModifier(index: number, field: 'key' | 'name' | 'type' | 'defaultValue' | 'description', value: string) { setNewTemplateModifiers((prev) => prev.map((m, i) => (i === index ? { ...m, [field]: value, ...(field === 'type' && value !== 'SELECT' ? { options: [] } : {}) } : m))) }
+  function addNewModifierOption(mIdx: number) { setNewTemplateModifiers((prev) => prev.map((m, i) => (i === mIdx ? { ...m, options: [...m.options, { label: '' }] } : m))) }
+  function removeNewModifierOption(mIdx: number, oIdx: number) { setNewTemplateModifiers((prev) => prev.map((m, i) => (i === mIdx ? { ...m, options: m.options.filter((_, oi) => oi !== oIdx) } : m))) }
+  function updateNewModifierOption(mIdx: number, oIdx: number, label: string) { setNewTemplateModifiers((prev) => prev.map((m, i) => (i === mIdx ? { ...m, options: m.options.map((o, oi) => (oi === oIdx ? { ...o, label } : o)) } : m))) }
+  function addEditModifier() { setEditTemplateModifiers((prev) => [...prev, { key: '', name: '', type: 'NUMBER', defaultValue: '', description: '', options: [] }]) }
+  function removeEditModifier(index: number) { setEditTemplateModifiers((prev) => prev.filter((_, i) => i !== index)) }
+  function updateEditModifier(index: number, field: 'key' | 'name' | 'type' | 'defaultValue' | 'description', value: string) { setEditTemplateModifiers((prev) => prev.map((m, i) => (i === index ? { ...m, [field]: value, ...(field === 'type' && value !== 'SELECT' ? { options: [] } : {}) } : m))) }
+  function addEditModifierOption(mIdx: number) { setEditTemplateModifiers((prev) => prev.map((m, i) => (i === mIdx ? { ...m, options: [...m.options, { label: '' }] } : m))) }
+  function removeEditModifierOption(mIdx: number, oIdx: number) { setEditTemplateModifiers((prev) => prev.map((m, i) => (i === mIdx ? { ...m, options: m.options.filter((_, oi) => oi !== oIdx) } : m))) }
+  function updateEditModifierOption(mIdx: number, oIdx: number, label: string) { setEditTemplateModifiers((prev) => prev.map((m, i) => (i === mIdx ? { ...m, options: m.options.map((o, oi) => (oi === oIdx ? { ...o, label } : o)) } : m))) }
 
   // Profile handlers
   function addNewProfile() { setNewTemplateProfiles((prev) => [...prev, { name: '', options: [{ label: '', value: 0 }] }]) }
@@ -271,6 +300,7 @@ export default function AdventureDetailPage() {
     setNewTemplateFields([])
     setNewTemplateSkills([])
     setNewTemplateProfiles([])
+    setNewTemplateModifiers([])
     setTemplateError(null)
   }
 
@@ -288,6 +318,23 @@ export default function AdventureDetailPage() {
     )
   }
 
+  // Validation for runtime modifiers
+  function validateModifiers(modifiers: { key: string; name: string }[]) {
+    const valid = modifiers.filter((m) => m.key.trim() && m.name.trim())
+    const keys = new Set<string>()
+    const names = new Set<string>()
+    for (const m of valid) {
+      const k = m.key.trim()
+      const n = m.name.trim()
+      if (keys.has(k)) return `Duplicate key: "${k}"`
+      if (names.has(n)) return `Duplicate name: "${n}"`
+      keys.add(k)
+      names.add(n)
+    }
+    if (valid.some((m) => !m.key.trim() || !m.name.trim())) return 'Runtime modifiers require a key and name'
+    return null
+  }
+
   async function handleCreateTemplate(e: FormEvent) {
     e.preventDefault()
     setTemplateError(null)
@@ -302,6 +349,9 @@ export default function AdventureDetailPage() {
       return
     }
 
+    const valError = validateModifiers(newTemplateModifiers)
+    if (valError) { setTemplateError(valError); return }
+
     setTemplateCreating(true)
     try {
       await api.post(`/adventures/${id}/templates`, {
@@ -313,6 +363,14 @@ export default function AdventureDetailPage() {
         skillModifierProfiles: newTemplateProfiles.filter((p) => p.name.trim()).map((p) => ({
           name: p.name.trim(),
           options: p.options.filter((o) => o.label.trim()).map((o) => ({ label: o.label.trim(), value: o.value })),
+        })),
+        runtimeModifiers: newTemplateModifiers.filter((m) => m.key.trim() && m.name.trim()).map((m) => ({
+          key: m.key.trim(),
+          name: m.name.trim(),
+          type: m.type,
+          defaultValue: m.defaultValue.trim() || undefined,
+          description: m.description.trim() || undefined,
+          options: m.type === 'SELECT' ? m.options.filter((o) => o.label.trim()).map((o) => ({ label: o.label.trim() })) : undefined,
         })),
       })
       resetNewTemplate()
@@ -352,6 +410,16 @@ export default function AdventureDetailPage() {
       (template.skillModifierProfiles || []).map((p) => ({
         name: p.name,
         options: p.options.map((o) => ({ label: o.label, value: o.value })),
+      })),
+    )
+    setEditTemplateModifiers(
+      (template.runtimeModifiers || []).map((m) => ({
+        key: m.key,
+        name: m.name,
+        type: m.type,
+        defaultValue: m.defaultValue ?? '',
+        description: m.description ?? '',
+        options: m.options.map((o) => ({ label: o.label })),
       })),
     )
     setEditingTemplateError(null)
@@ -400,6 +468,9 @@ export default function AdventureDetailPage() {
       return
     }
 
+    const valError = validateModifiers(editTemplateModifiers)
+    if (valError) { setEditingTemplateError(valError); return }
+
     setTemplateSaving(true)
     try {
       await api.patch(`/adventures/${id}/templates/${editingTemplateId}`, {
@@ -411,6 +482,14 @@ export default function AdventureDetailPage() {
         skillModifierProfiles: editTemplateProfiles.filter((p) => p.name.trim()).map((p) => ({
           name: p.name.trim(),
           options: p.options.filter((o) => o.label.trim()).map((o) => ({ label: o.label.trim(), value: o.value })),
+        })),
+        runtimeModifiers: editTemplateModifiers.filter((m) => m.key.trim() && m.name.trim()).map((m) => ({
+          key: m.key.trim(),
+          name: m.name.trim(),
+          type: m.type,
+          defaultValue: m.defaultValue.trim() || undefined,
+          description: m.description.trim() || undefined,
+          options: m.type === 'SELECT' ? m.options.filter((o) => o.label.trim()).map((o) => ({ label: o.label.trim() })) : undefined,
         })),
       })
       cancelEditTemplate()
@@ -619,7 +698,33 @@ export default function AdventureDetailPage() {
               </CollapsibleSection>
             </>
           ) : (
-            <TemplatesSection templates={templates} isGM={isGM} showNewTemplate={showNewTemplate} editingTemplateId={editingTemplateId} newTemplateName={newTemplateName} newTemplateDescription={newTemplateDescription} newTemplateAttrs={newTemplateAttrs} newTemplateFields={newTemplateFields} templateError={templateError} templateCreating={templateCreating} editTemplateName={editTemplateName} editTemplateDescription={editTemplateDescription} editTemplateAttrs={editTemplateAttrs} editingTemplateError={editingTemplateError} templateSaving={templateSaving} onNewClick={() => setShowNewTemplate(true)} onCancelNew={resetNewTemplate} onCreateTemplate={handleCreateTemplate} onNameChange={setNewTemplateName} onDescriptionChange={setNewTemplateDescription} onAddAttr={addNewAttrRow} onRemoveAttr={removeNewAttrRow} onUpdateAttr={updateNewAttr} onAddField={addNewFieldRow} onRemoveField={removeNewFieldRow} onUpdateField={updateNewField} newTemplateSkills={newTemplateSkills} onAddSkill={addNewSkillRow} onRemoveSkill={removeNewSkillRow} onUpdateSkill={updateNewSkill} onStartEdit={startEditTemplate} onCancelEdit={cancelEditTemplate} onUpdateTemplate={handleUpdateTemplate} onDeleteTemplate={handleDeleteTemplate} onEditNameChange={setEditTemplateName} onEditDescriptionChange={setEditTemplateDescription} onAddEditAttr={addEditAttrRow} onRemoveEditAttr={removeEditAttrRow} onUpdateEditAttr={updateEditAttr} editTemplateFields={editTemplateFields} onAddEditField={addEditFieldRow} onRemoveEditField={removeEditFieldRow} onUpdateEditField={updateEditField} editTemplateSkills={editTemplateSkills} onAddEditSkill={addEditSkillRow} onRemoveEditSkill={removeEditSkillRow} onUpdateEditSkill={updateEditSkill} newTemplateProfiles={newTemplateProfiles} editTemplateProfiles={editTemplateProfiles} onAddProfile={addNewProfile} onRemoveProfile={removeNewProfile} onUpdateProfile={updateNewProfile} onAddProfileOption={addNewProfileOption} onRemoveProfileOption={removeNewProfileOption} onUpdateProfileOption={updateNewProfileOption} onAddEditProfile={addEditProfile} onRemoveEditProfile={removeEditProfile} onUpdateEditProfile={updateEditProfile} onAddEditProfileOption={addEditProfileOption} onRemoveEditProfileOption={removeEditProfileOption} onUpdateEditProfileOption={updateEditProfileOption} />
+            <TemplatesSection
+              templates={templates} isGM={isGM} showNewTemplate={showNewTemplate} editingTemplateId={editingTemplateId}
+              newTemplateName={newTemplateName} newTemplateDescription={newTemplateDescription} newTemplateAttrs={newTemplateAttrs}
+              newTemplateFields={newTemplateFields} templateError={templateError} templateCreating={templateCreating}
+              editTemplateName={editTemplateName} editTemplateDescription={editTemplateDescription} editTemplateAttrs={editTemplateAttrs}
+              editingTemplateError={editingTemplateError} templateSaving={templateSaving}
+              onNewClick={() => setShowNewTemplate(true)} onCancelNew={resetNewTemplate} onCreateTemplate={handleCreateTemplate}
+              onNameChange={setNewTemplateName} onDescriptionChange={setNewTemplateDescription}
+              onAddAttr={addNewAttrRow} onRemoveAttr={removeNewAttrRow} onUpdateAttr={updateNewAttr}
+              onAddField={addNewFieldRow} onRemoveField={removeNewFieldRow} onUpdateField={updateNewField}
+              newTemplateSkills={newTemplateSkills} onAddSkill={addNewSkillRow} onRemoveSkill={removeNewSkillRow} onUpdateSkill={updateNewSkill}
+              onStartEdit={startEditTemplate} onCancelEdit={cancelEditTemplate} onUpdateTemplate={handleUpdateTemplate} onDeleteTemplate={handleDeleteTemplate}
+              onEditNameChange={setEditTemplateName} onEditDescriptionChange={setEditTemplateDescription}
+              onAddEditAttr={addEditAttrRow} onRemoveEditAttr={removeEditAttrRow} onUpdateEditAttr={updateEditAttr}
+              editTemplateFields={editTemplateFields} onAddEditField={addEditFieldRow} onRemoveEditField={removeEditFieldRow} onUpdateEditField={updateEditField}
+              editTemplateSkills={editTemplateSkills} onAddEditSkill={addEditSkillRow} onRemoveEditSkill={removeEditSkillRow} onUpdateEditSkill={updateEditSkill}
+              newTemplateProfiles={newTemplateProfiles} editTemplateProfiles={editTemplateProfiles}
+              onAddProfile={addNewProfile} onRemoveProfile={removeNewProfile} onUpdateProfile={updateNewProfile}
+              onAddProfileOption={addNewProfileOption} onRemoveProfileOption={removeNewProfileOption} onUpdateProfileOption={updateNewProfileOption}
+              onAddEditProfile={addEditProfile} onRemoveEditProfile={removeEditProfile} onUpdateEditProfile={updateEditProfile}
+              onAddEditProfileOption={addEditProfileOption} onRemoveEditProfileOption={removeEditProfileOption} onUpdateEditProfileOption={updateEditProfileOption}
+              newTemplateModifiers={newTemplateModifiers} editTemplateModifiers={editTemplateModifiers}
+              onAddModifier={addNewModifier} onRemoveModifier={removeNewModifier} onUpdateModifier={updateNewModifier}
+              onAddModifierOption={addNewModifierOption} onRemoveModifierOption={removeNewModifierOption} onUpdateModifierOption={updateNewModifierOption}
+              onAddEditModifier={addEditModifier} onRemoveEditModifier={removeEditModifier} onUpdateEditModifier={updateEditModifier}
+              onAddEditModifierOption={addEditModifierOption} onRemoveEditModifierOption={removeEditModifierOption} onUpdateEditModifierOption={updateEditModifierOption}
+            />
           )}
 
 
@@ -793,16 +898,6 @@ function InvitePanel(props: {
           ))}
         </div>
       )}
-    </div>
-  )
-}
-
-function StatCard({ icon, label, value }: { icon: string; label: string; value: number }) {
-  return (
-    <div className="card !p-4 text-center">
-      <div className="text-xl mb-1">{icon}</div>
-      <div className="text-xs text-muted">{label}</div>
-      <div className="text-lg font-semibold text-foreground">{value}</div>
     </div>
   )
 }
@@ -1010,11 +1105,7 @@ function CharactersSection(props: {
 }
 
 function TemplatesSection(props: {
-  templates: Array<{
-    id: string; name: string; description: string | null;
-    attributes: { id: string; key: string; name: string; modifier: string | null }[];
-    createdAt: string;
-  }>
+  templates: Template[]
   isGM: boolean
   showNewTemplate: boolean
   editingTemplateId: string | null
@@ -1050,7 +1141,7 @@ function TemplatesSection(props: {
   onAddEditAttr: () => void
   onRemoveEditAttr: (index: number) => void
   onUpdateEditAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string) => void
-          onAddEditField?: () => void
+  onAddEditField?: () => void
   onRemoveEditField?: (index: number) => void
   onUpdateEditField?: (index: number, field: 'key' | 'label', value: string) => void
   newTemplateSkills?: { name: string; description: string; formula: string }[]
@@ -1075,6 +1166,21 @@ function TemplatesSection(props: {
   onAddEditProfileOption?: (pIdx: number) => void
   onRemoveEditProfileOption?: (pIdx: number, oIdx: number) => void
   onUpdateEditProfileOption?: (pIdx: number, oIdx: number, field: 'label' | 'value', value: string | number) => void
+  // Runtime modifiers
+  newTemplateModifiers?: { key: string; name: string; type: 'NUMBER' | 'BOOLEAN' | 'SELECT'; defaultValue: string; description: string; options: { label: string }[] }[]
+  editTemplateModifiers?: { key: string; name: string; type: 'NUMBER' | 'BOOLEAN' | 'SELECT'; defaultValue: string; description: string; options: { label: string }[] }[]
+  onAddModifier?: () => void
+  onRemoveModifier?: (index: number) => void
+  onUpdateModifier?: (index: number, field: 'key' | 'name' | 'type' | 'defaultValue' | 'description', value: string) => void
+  onAddModifierOption?: (mIdx: number) => void
+  onRemoveModifierOption?: (mIdx: number, oIdx: number) => void
+  onUpdateModifierOption?: (mIdx: number, oIdx: number, label: string) => void
+  onAddEditModifier?: () => void
+  onRemoveEditModifier?: (index: number) => void
+  onUpdateEditModifier?: (index: number, field: 'key' | 'name' | 'type' | 'defaultValue' | 'description', value: string) => void
+  onAddEditModifierOption?: (mIdx: number) => void
+  onRemoveEditModifierOption?: (mIdx: number, oIdx: number) => void
+  onUpdateEditModifierOption?: (mIdx: number, oIdx: number, label: string) => void
 }) {
   return (
     <div className="space-y-4">
@@ -1120,6 +1226,13 @@ function TemplatesSection(props: {
               onAddProfileOption={props.onAddEditProfileOption}
               onRemoveProfileOption={props.onRemoveEditProfileOption}
               onUpdateProfileOption={props.onUpdateEditProfileOption}
+              editModifiers={props.editTemplateModifiers}
+              onAddModifier={props.onAddEditModifier}
+              onRemoveModifier={props.onRemoveEditModifier}
+              onUpdateModifier={props.onUpdateEditModifier}
+              onAddModifierOption={props.onAddEditModifierOption}
+              onRemoveModifierOption={props.onRemoveEditModifierOption}
+              onUpdateModifierOption={props.onUpdateEditModifierOption}
             />
           ))}
         </div>
@@ -1160,13 +1273,20 @@ function TemplatesSection(props: {
           onUpdateField={props.onUpdateField}
           onCancelNew={props.onCancelNew}
           onCreateTemplate={props.onCreateTemplate}
+          newTemplateModifiers={props.newTemplateModifiers}
+          onAddModifier={props.onAddModifier}
+          onRemoveModifier={props.onRemoveModifier}
+          onUpdateModifier={props.onUpdateModifier}
+          onAddModifierOption={props.onAddModifierOption}
+          onRemoveModifierOption={props.onRemoveModifierOption}
+          onUpdateModifierOption={props.onUpdateModifierOption}
         />
       )}
     </div>
   )
 }
 
-function CollapsibleAttrCard({ index, attr, isExpanded, onToggle, onUpdateAttr, onRemove, allAttrs }: {
+function CollapsibleAttrCard({ index, attr, isExpanded, onToggle, onUpdateAttr, onRemove, allAttrs, runtimeModifiers }: {
   index: number
   attr: { key: string; name: string; modifier: string }
   isExpanded: boolean
@@ -1174,6 +1294,7 @@ function CollapsibleAttrCard({ index, attr, isExpanded, onToggle, onUpdateAttr, 
   onUpdateAttr: (index: number, field: 'key' | 'name' | 'modifier', value: string) => void
   onRemove: () => void
   allAttrs: { key: string; name: string; modifier: string }[]
+  runtimeModifiers?: { key: string; name: string }[]
 }) {
   return (
     <div className="rounded-lg border border-border bg-background/30 overflow-hidden">
@@ -1211,6 +1332,7 @@ function CollapsibleAttrCard({ index, attr, isExpanded, onToggle, onUpdateAttr, 
               attributes={allAttrs
                 .filter((a) => a.key.trim() && a.name.trim())
                 .map((a) => ({ key: a.key.trim(), name: a.name.trim() }))}
+              runtimeModifiers={runtimeModifiers}
             />
           </div>
           <div className="flex justify-end">
@@ -1224,7 +1346,7 @@ function CollapsibleAttrCard({ index, attr, isExpanded, onToggle, onUpdateAttr, 
   )
 }
 
-function CollapsibleSkillCard({ index, skill, onUpdateSkill, onRemove, attributes, customFields, skillProfiles }: {
+function CollapsibleSkillCard({ index, skill, onUpdateSkill, onRemove, attributes, customFields, skillProfiles, runtimeModifiers }: {
   index: number
   skill: { name: string; description: string; formula: string }
   onUpdateSkill?: (index: number, field: 'name' | 'description' | 'formula', value: string) => void
@@ -1232,6 +1354,7 @@ function CollapsibleSkillCard({ index, skill, onUpdateSkill, onRemove, attribute
   attributes: { key: string; name: string }[]
   customFields: { key: string; label: string }[]
   skillProfiles: { id: string; name: string; options: { id: string; label: string; value: number }[] }[]
+  runtimeModifiers?: { key: string; name: string }[]
 }) {
   const [expanded, setExpanded] = useState(true)
   return (
@@ -1260,6 +1383,7 @@ function CollapsibleSkillCard({ index, skill, onUpdateSkill, onRemove, attribute
               attributes={attributes}
               customFields={customFields}
               skillModifierProfiles={skillProfiles}
+              runtimeModifiers={runtimeModifiers}
               useModPrefix
               placeholder="Build skill formula..."
             />
@@ -1301,8 +1425,16 @@ function NewTemplateForm(props: {
   onUpdateField?: (index: number, field: 'key' | 'label', value: string) => void
   onCancelNew: () => void
   onCreateTemplate: (e: FormEvent) => void
+  // Runtime modifiers
+  newTemplateModifiers?: { key: string; name: string; type: 'NUMBER' | 'BOOLEAN' | 'SELECT'; defaultValue: string; description: string; options: { label: string }[] }[]
+  onAddModifier?: () => void
+  onRemoveModifier?: (index: number) => void
+  onUpdateModifier?: (index: number, field: 'key' | 'name' | 'type' | 'defaultValue' | 'description', value: string) => void
+  onAddModifierOption?: (mIdx: number) => void
+  onRemoveModifierOption?: (mIdx: number, oIdx: number) => void
+  onUpdateModifierOption?: (mIdx: number, oIdx: number, label: string) => void
 }) {
-  const [activeTab, setActiveTab] = useState<'attrs' | 'skills' | 'profiles' | 'fields'>('attrs')
+  const [activeTab, setActiveTab] = useState<'attrs' | 'skills' | 'profiles' | 'fields' | 'modifiers'>('attrs')
   const [expandedAttrs, setExpandedAttrs] = useState<Record<number, boolean>>({})
   const prevCount = useRef(0)
 
@@ -1315,6 +1447,15 @@ function NewTemplateForm(props: {
 
   const tabClass = (tab: string) =>
     `px-3 py-1.5 rounded text-xs font-medium transition-colors ${activeTab === tab ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`
+
+  const activeAttrs = props.newTemplateAttrs.filter((a) => a.key.trim() && a.name.trim()).map((a) => ({ key: a.key.trim(), name: a.name.trim() }))
+  const activeFields = (props.newTemplateFields || []).filter((f) => f.key.trim() && f.label.trim()).map((f) => ({ key: f.key.trim(), label: f.label.trim() }))
+  const activeProfiles = (props.newTemplateProfiles || []).filter((p) => p.name.trim()).map((p, pIdx) => ({
+    id: `new-${pIdx}`,
+    name: p.name.trim(),
+    options: p.options.filter((o) => o.label.trim()).map((o, oIdx) => ({ id: `new-${pIdx}-${oIdx}`, label: o.label.trim(), value: o.value })),
+  }))
+  const activeModifiers = (props.newTemplateModifiers || []).filter((m) => m.key.trim() && m.name.trim()).map((m) => ({ key: m.key.trim(), name: m.name.trim() }))
 
   return (
     <form onSubmit={props.onCreateTemplate} className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3">
@@ -1333,6 +1474,7 @@ function NewTemplateForm(props: {
         <button type="button" onClick={() => setActiveTab('attrs')} className={tabClass('attrs')}>Attributes</button>
         <button type="button" onClick={() => setActiveTab('skills')} className={tabClass('skills')}>Skills</button>
         {props.onAddProfile && <button type="button" onClick={() => setActiveTab('profiles')} className={tabClass('profiles')}>Skill Modifier Profiles</button>}
+        {props.onAddModifier && <button type="button" onClick={() => setActiveTab('modifiers')} className={tabClass('modifiers')}>Runtime Modifiers</button>}
         {props.onAddField && <button type="button" onClick={() => setActiveTab('fields')} className={tabClass('fields')}>Custom Fields</button>}
       </div>
 
@@ -1350,6 +1492,7 @@ function NewTemplateForm(props: {
                 onUpdateAttr={props.onUpdateAttr}
                 onRemove={() => props.onRemoveAttr(idx)}
                 allAttrs={props.newTemplateAttrs}
+                runtimeModifiers={activeModifiers}
               />
             ))}
           </div>
@@ -1368,13 +1511,10 @@ function NewTemplateForm(props: {
                 skill={s}
                 onUpdateSkill={props.onUpdateSkill}
                 onRemove={() => props.onRemoveSkill?.(idx)}
-                attributes={props.newTemplateAttrs.filter((a) => a.key.trim() && a.name.trim()).map((a) => ({ key: a.key.trim(), name: a.name.trim() }))}
-                customFields={(props.newTemplateFields || []).filter((f) => f.key.trim() && f.label.trim()).map((f) => ({ key: f.key.trim(), label: f.label.trim() }))}
-                skillProfiles={(props.newTemplateProfiles || []).filter((p) => p.name.trim()).map((p, pIdx) => ({
-                  id: `new-${pIdx}`,
-                  name: p.name.trim(),
-                  options: p.options.filter((o) => o.label.trim()).map((o, oIdx) => ({ id: `new-${pIdx}-${oIdx}`, label: o.label.trim(), value: o.value })),
-                }))}
+                attributes={activeAttrs}
+                customFields={activeFields}
+                skillProfiles={activeProfiles}
+                runtimeModifiers={activeModifiers}
               />
             ))}
           </div>
@@ -1409,6 +1549,44 @@ function NewTemplateForm(props: {
         </div>
       )}
 
+      {/* Runtime Modifiers tab */}
+      {activeTab === 'modifiers' && (
+        <div>
+          <div className="space-y-2 mt-1">
+            {(props.newTemplateModifiers || []).map((m, mIdx) => (
+              <div key={mIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <input className="input-field flex-1" value={m.key} onChange={(e) => props.onUpdateModifier?.(mIdx, 'key', e.target.value)} placeholder="Key (e.g. armor)" />
+                  <input className="input-field flex-1" value={m.name} onChange={(e) => props.onUpdateModifier?.(mIdx, 'name', e.target.value)} placeholder="Name (e.g. Armor)" />
+                  <select className="input-field w-28" value={m.type} onChange={(e) => props.onUpdateModifier?.(mIdx, 'type', e.target.value)}>
+                    <option value="NUMBER">Number</option>
+                    <option value="BOOLEAN">Boolean</option>
+                    <option value="SELECT">Select</option>
+                  </select>
+                  <button type="button" onClick={() => props.onRemoveModifier?.(mIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <input className="input-field flex-1" value={m.defaultValue} onChange={(e) => props.onUpdateModifier?.(mIdx, 'defaultValue', e.target.value)} placeholder={m.type === 'NUMBER' ? 'Default (e.g. 0)' : m.type === 'BOOLEAN' ? 'Default (true/false)' : 'Default value'} />
+                  <input className="input-field flex-1" value={m.description} onChange={(e) => props.onUpdateModifier?.(mIdx, 'description', e.target.value)} placeholder="Description (optional)" />
+                </div>
+                {m.type === 'SELECT' && (
+                  <div className="space-y-1 pl-2">
+                    {m.options.map((o, oIdx) => (
+                      <div key={oIdx} className="flex items-center gap-1.5">
+                        <input className="input-field flex-1 text-xs" value={o.label} onChange={(e) => props.onUpdateModifierOption?.(mIdx, oIdx, e.target.value)} placeholder="Option label (e.g. Normal)" />
+                        <button type="button" onClick={() => props.onRemoveModifierOption?.(mIdx, oIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => props.onAddModifierOption?.(mIdx)} className="btn-ghost text-xs">+ Add Option</button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <button type="button" onClick={props.onAddModifier} className="btn-ghost text-xs mt-2">+ Add Runtime Modifier</button>
+        </div>
+      )}
+
       {/* Custom Fields tab */}
       {activeTab === 'fields' && (
         <div>
@@ -1439,7 +1617,7 @@ function NewTemplateForm(props: {
 }
 
 function TemplateRow(props: {
-  template: { id: string; name: string; description: string | null; attributes: { id: string; key: string; name: string; modifier: string | null }[]; createdAt: string }
+  template: Template
   isGM: boolean
   isEditing: boolean
   editName: string
@@ -1471,6 +1649,14 @@ function TemplateRow(props: {
   onAddProfileOption?: (pIdx: number) => void
   onRemoveProfileOption?: (pIdx: number, oIdx: number) => void
   onUpdateProfileOption?: (pIdx: number, oIdx: number, field: 'label' | 'value', value: string | number) => void
+  // Runtime modifiers
+  editModifiers?: { key: string; name: string; type: 'NUMBER' | 'BOOLEAN' | 'SELECT'; defaultValue: string; description: string; options: { label: string }[] }[]
+  onAddModifier?: () => void
+  onRemoveModifier?: (index: number) => void
+  onUpdateModifier?: (index: number, field: 'key' | 'name' | 'type' | 'defaultValue' | 'description', value: string) => void
+  onAddModifierOption?: (mIdx: number) => void
+  onRemoveModifierOption?: (mIdx: number, oIdx: number) => void
+  onUpdateModifierOption?: (mIdx: number, oIdx: number, label: string) => void
 }) {
   const [expandedEditAttrs, setExpandedEditAttrs] = useState<Record<number, boolean>>({})
   const prevEditCount = useRef(0)
@@ -1482,9 +1668,18 @@ function TemplateRow(props: {
     prevEditCount.current = props.editAttrs.length
   }, [props.editAttrs.length])
 
-  const [editTab, setEditTab] = useState<'attrs' | 'skills' | 'profiles' | 'fields'>('attrs')
+  const [editTab, setEditTab] = useState<'attrs' | 'skills' | 'profiles' | 'modifiers' | 'fields'>('attrs')
   const etabClass = (tab: string) =>
     `px-3 py-1.5 rounded text-xs font-medium transition-colors ${editTab === tab ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`
+
+  const activeAttrs = props.editAttrs.filter((a) => a.key.trim() && a.name.trim()).map((a) => ({ key: a.key.trim(), name: a.name.trim() }))
+  const activeFields = (props.editFields || []).filter((f) => f.key.trim() && f.label.trim()).map((f) => ({ key: f.key.trim(), label: f.label.trim() }))
+  const activeProfiles = (props.editProfiles || []).filter((p) => p.name.trim()).map((p, pIdx) => ({
+    id: `edit-${pIdx}`,
+    name: p.name.trim(),
+    options: p.options.filter((o) => o.label.trim()).map((o, oIdx) => ({ id: `edit-${pIdx}-${oIdx}`, label: o.label.trim(), value: o.value })),
+  }))
+  const activeModifiers = (props.editModifiers || []).filter((m) => m.key.trim() && m.name.trim()).map((m) => ({ key: m.key.trim(), name: m.name.trim() }))
 
   if (props.isEditing) {
     return (
@@ -1503,6 +1698,7 @@ function TemplateRow(props: {
           <button type="button" onClick={() => setEditTab('attrs')} className={etabClass('attrs')}>Attributes</button>
           <button type="button" onClick={() => setEditTab('skills')} className={etabClass('skills')}>Skills</button>
           {props.onAddProfile && <button type="button" onClick={() => setEditTab('profiles')} className={etabClass('profiles')}>Skill Modifier Profiles</button>}
+          {props.onAddModifier && <button type="button" onClick={() => setEditTab('modifiers')} className={etabClass('modifiers')}>Runtime Modifiers</button>}
           {props.onAddField && <button type="button" onClick={() => setEditTab('fields')} className={etabClass('fields')}>Custom Fields</button>}
         </div>
 
@@ -1520,6 +1716,7 @@ function TemplateRow(props: {
                   onUpdateAttr={props.onUpdateAttr}
                   onRemove={() => props.onRemoveAttr(idx)}
                   allAttrs={props.editAttrs}
+                  runtimeModifiers={activeModifiers}
                 />
               ))}
             </div>
@@ -1538,13 +1735,10 @@ function TemplateRow(props: {
                   skill={s}
                   onUpdateSkill={props.onUpdateSkill}
                   onRemove={() => props.onRemoveSkill?.(idx)}
-                  attributes={props.editAttrs.filter((a) => a.key.trim() && a.name.trim()).map((a) => ({ key: a.key.trim(), name: a.name.trim() }))}
-                  customFields={(props.editFields || []).filter((f) => f.key.trim() && f.label.trim()).map((f) => ({ key: f.key.trim(), label: f.label.trim() }))}
-                  skillProfiles={(props.editProfiles || []).filter((p) => p.name.trim()).map((p, pIdx) => ({
-                    id: `edit-${pIdx}`,
-                    name: p.name.trim(),
-                    options: p.options.filter((o) => o.label.trim()).map((o, oIdx) => ({ id: `edit-${pIdx}-${oIdx}`, label: o.label.trim(), value: o.value })),
-                  }))}
+                  attributes={activeAttrs}
+                  customFields={activeFields}
+                  skillProfiles={activeProfiles}
+                  runtimeModifiers={activeModifiers}
                 />
               ))}
             </div>
@@ -1576,6 +1770,44 @@ function TemplateRow(props: {
               ))}
             </div>
             <button type="button" onClick={props.onAddProfile} className="btn-ghost text-xs mt-2">+ Add Skill Modifier Profile</button>
+          </div>
+        )}
+
+        {/* Runtime Modifiers */}
+        {editTab === 'modifiers' && (
+          <div>
+            <div className="space-y-2 mt-1">
+              {(props.editModifiers || []).map((m, mIdx) => (
+                <div key={mIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <input className="input-field flex-1" value={m.key} onChange={(e) => props.onUpdateModifier?.(mIdx, 'key', e.target.value)} placeholder="Key (e.g. armor)" />
+                    <input className="input-field flex-1" value={m.name} onChange={(e) => props.onUpdateModifier?.(mIdx, 'name', e.target.value)} placeholder="Name (e.g. Armor)" />
+                    <select className="input-field w-28" value={m.type} onChange={(e) => props.onUpdateModifier?.(mIdx, 'type', e.target.value)}>
+                      <option value="NUMBER">Number</option>
+                      <option value="BOOLEAN">Boolean</option>
+                      <option value="SELECT">Select</option>
+                    </select>
+                    <button type="button" onClick={() => props.onRemoveModifier?.(mIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <input className="input-field flex-1" value={m.defaultValue} onChange={(e) => props.onUpdateModifier?.(mIdx, 'defaultValue', e.target.value)} placeholder={m.type === 'NUMBER' ? 'Default (e.g. 0)' : m.type === 'BOOLEAN' ? 'Default (true/false)' : 'Default value'} />
+                    <input className="input-field flex-1" value={m.description} onChange={(e) => props.onUpdateModifier?.(mIdx, 'description', e.target.value)} placeholder="Description (optional)" />
+                  </div>
+                  {m.type === 'SELECT' && (
+                    <div className="space-y-1 pl-2">
+                      {m.options.map((o, oIdx) => (
+                        <div key={oIdx} className="flex items-center gap-1.5">
+                          <input className="input-field flex-1 text-xs" value={o.label} onChange={(e) => props.onUpdateModifierOption?.(mIdx, oIdx, e.target.value)} placeholder="Option label (e.g. Normal)" />
+                          <button type="button" onClick={() => props.onRemoveModifierOption?.(mIdx, oIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => props.onAddModifierOption?.(mIdx)} className="btn-ghost text-xs">+ Add Option</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={props.onAddModifier} className="btn-ghost text-xs mt-2">+ Add Runtime Modifier</button>
           </div>
         )}
 

@@ -12,6 +12,10 @@ const templateInclude = {
     orderBy: { order: 'asc' as const },
     include: { options: { orderBy: { order: 'asc' as const } } },
   },
+  runtimeModifiers: {
+    orderBy: { order: 'asc' as const },
+    include: { options: { orderBy: { order: 'asc' as const } } },
+  },
 }
 
 @Injectable()
@@ -52,6 +56,24 @@ export class TemplateService {
                 order: oIdx,
               })),
             },
+          })),
+        },
+        runtimeModifiers: {
+          create: (dto.runtimeModifiers || []).map((mod, modIdx) => ({
+            key: mod.key,
+            name: mod.name,
+            type: mod.type,
+            defaultValue: mod.defaultValue ?? null,
+            description: mod.description ?? null,
+            order: modIdx,
+            options: mod.type === 'SELECT' && mod.options
+              ? {
+                  create: mod.options.map((o, oIdx) => ({
+                    label: o.label,
+                    order: oIdx,
+                  })),
+                }
+              : undefined,
           })),
         },
       },
@@ -257,6 +279,98 @@ export class TemplateService {
               }
             }
           }
+        }
+      }
+    }
+
+    // Handle runtime modifiers
+    if (dto.runtimeModifiers) {
+      const existingModifiers = await this.prisma.templateRuntimeModifier.findMany({
+        where: { templateId: id },
+        include: { options: true },
+      })
+      const newModifierKeys = dto.runtimeModifiers.map(m => m.key.trim())
+      const existingModifierKeys = existingModifiers.map(m => m.key)
+
+      // Delete modifiers not in the new list
+      const modifierKeysToDelete = existingModifierKeys.filter(k => !newModifierKeys.includes(k))
+      if (modifierKeysToDelete.length) {
+        await this.prisma.templateRuntimeModifier.deleteMany({ where: { templateId: id, key: { in: modifierKeysToDelete } } })
+      }
+
+      // Upsert each modifier
+      for (let mIdx = 0; mIdx < dto.runtimeModifiers.length; mIdx++) {
+        const mod = dto.runtimeModifiers[mIdx]
+        const key = mod.key.trim()
+        const existing = existingModifiers.find(e => e.key === key)
+
+        if (existing) {
+          // Update modifier
+          await this.prisma.templateRuntimeModifier.update({
+            where: { id: existing.id },
+            data: {
+              name: mod.name.trim(),
+              type: mod.type,
+              defaultValue: mod.defaultValue ?? null,
+              description: mod.description ?? null,
+              order: mIdx,
+            },
+          })
+          // Handle options for SELECT type
+          if (mod.type === 'SELECT' && mod.options) {
+            const existingOptions = existing.options
+            const newOptionLabels = mod.options.map(o => o.label.trim())
+            const existingOptionLabels = existingOptions.map(o => o.label)
+
+            // Delete removed options
+            const labelsToDelete = existingOptionLabels.filter(l => !newOptionLabels.includes(l))
+            if (labelsToDelete.length) {
+              await this.prisma.runtimeModifierOption.deleteMany({ where: { modifierId: existing.id, label: { in: labelsToDelete } } })
+            }
+
+            // Upsert each option
+            for (let oIdx = 0; oIdx < mod.options.length; oIdx++) {
+              const o = mod.options[oIdx]
+              const label = o.label.trim()
+              const existingOpt = existingOptions.find(eo => eo.label === label)
+              if (existingOpt) {
+                await this.prisma.runtimeModifierOption.update({
+                  where: { id: existingOpt.id },
+                  data: { order: oIdx },
+                })
+              } else {
+                await this.prisma.runtimeModifierOption.create({
+                  data: { modifierId: existing.id, label, order: oIdx },
+                })
+              }
+            }
+          } else {
+            // If type changed away from SELECT, delete all options
+            if (existing.options.length > 0) {
+              await this.prisma.runtimeModifierOption.deleteMany({ where: { modifierId: existing.id } })
+            }
+          }
+        } else {
+          // Create new modifier
+          await this.prisma.templateRuntimeModifier.create({
+            data: {
+              templateId: id,
+              key,
+              name: mod.name.trim(),
+              type: mod.type,
+              defaultValue: mod.defaultValue ?? null,
+              description: mod.description ?? null,
+              order: mIdx,
+              options: mod.type === 'SELECT' && mod.options
+                ? {
+                    create: mod.options.map((o, oIdx) => ({
+                      label: o.label.trim(),
+                      order: oIdx,
+                    })),
+                  }
+                : undefined,
+            },
+          })
         }
       }
     }
