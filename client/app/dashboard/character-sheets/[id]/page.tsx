@@ -599,26 +599,42 @@ export default function CharacterSheetDetailPage() {
                 )}
               </div>
               {isOwner ? (
-                <InlineClickEdit
-                  value={a.description ?? ''}
-                  onSave={async (v) => saveAbilityField(a.id, 'description', v)}
-                  as="textarea"
-                  className="text-sm text-muted-foreground whitespace-pre-wrap"
-                  emptyDisplay="Add description..."
-                />
+                <div>
+                  <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
+                  <InlineClickEdit
+                    value={a.description ?? ''}
+                    onSave={async (v) => saveAbilityField(a.id, 'description', v)}
+                    as="textarea"
+                    className="text-sm text-muted-foreground whitespace-pre-wrap"
+                    emptyDisplay="Add description..."
+                  />
+                </div>
               ) : (
-                a.description && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{a.description}</p>
+                a.description && (
+                  <div>
+                    <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{a.description}</p>
+                  </div>
+                )
               )}
               {isOwner ? (
-                <InlineClickEdit
-                  value={a.notes ?? ''}
-                  onSave={async (v) => saveAbilityField(a.id, 'notes', v)}
-                  as="textarea"
-                  className="text-xs text-muted italic whitespace-pre-wrap"
-                  emptyDisplay="Add notes..."
-                />
+                <div>
+                  <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
+                  <InlineClickEdit
+                    value={a.notes ?? ''}
+                    onSave={async (v) => saveAbilityField(a.id, 'notes', v)}
+                    as="textarea"
+                    className="text-xs text-muted italic whitespace-pre-wrap"
+                    emptyDisplay="Add notes..."
+                  />
+                </div>
               ) : (
-                a.notes && <p className="text-xs text-muted italic whitespace-pre-wrap">{a.notes}</p>
+                a.notes && (
+                  <div>
+                    <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
+                    <p className="text-xs text-muted italic whitespace-pre-wrap">{a.notes}</p>
+                  </div>
+                )
               )}
             </div>
           ))}
@@ -666,13 +682,23 @@ export default function CharacterSheetDetailPage() {
                 )}
               </div>
               {isOwner ? (
-                <InlineClickEdit
-                  value={item.description ?? ''}
-                  onSave={async (v) => saveItemField(item.id, 'description', v)}
-                  as="textarea"
-                  className="text-sm text-muted-foreground whitespace-pre-wrap"
-                  emptyDisplay="Add description..."
-                />
+                <div>
+                  <button type="button" onClick={() => setExpandedItems(p => ({ ...p, [item.id]: !p[item.id] }))} className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors">
+                    <svg className={`w-3 h-3 transition-transform ${expandedItems[item.id] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    Description
+                  </button>
+                  {expandedItems[item.id] && (
+                    <div className="mt-1 pl-4">
+                      <InlineClickEdit
+                        value={item.description ?? ''}
+                        onSave={async (v) => saveItemField(item.id, 'description', v)}
+                        as="textarea"
+                        className="text-sm text-muted-foreground whitespace-pre-wrap"
+                        emptyDisplay="Add description..."
+                      />
+                    </div>
+                  )}
+                </div>
               ) : (
                 item.description && (
                   <div>
