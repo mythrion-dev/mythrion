@@ -204,6 +204,23 @@ export class InvitationService {
       throw new BadRequestException('Invitation has expired')
     }
 
+    // Check if user is already a member of this adventure
+    const alreadyMember = await this.membership.isMember(invitation.adventureId, userId)
+    if (alreadyMember) {
+      // Already a member — just return the adventure info so the client can redirect
+      const adventure = await this.prisma.adventure.findUnique({
+        where: { id: invitation.adventureId },
+        select: { id: true, name: true },
+      })
+      return {
+        success: true,
+        alreadyMember: true,
+        adventureId: invitation.adventureId,
+        adventureName: adventure?.name ?? 'Unknown',
+        role: invitation.role,
+      }
+    }
+
     // Check player capacity when accepting a PLAYER invitation
     if (invitation.role === 'PLAYER') {
       // Only count this invitation itself (not the user yet, they're not a member)

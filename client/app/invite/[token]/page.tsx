@@ -29,6 +29,7 @@ export default function InvitePage() {
   const [error, setError] = useState<string | null>(null)
   const [accepted, setAccepted] = useState(false)
   const [autoAccepted, setAutoAccepted] = useState(false)
+  const [alreadyMember, setAlreadyMember] = useState(false)
 
   const fetchInvitation = useCallback(async () => {
     try {
@@ -58,17 +59,21 @@ export default function InvitePage() {
       setError(null)
 
       api
-        .post<{ success: boolean; adventureId: string; adventureName: string; role: string }>(
+        .post<{ success: boolean; alreadyMember?: boolean; adventureId: string; adventureName: string; role: string }>(
           `/invitations/${token}/accept`,
         )
         .then((result) => {
           removeInvitationToken()
-          setAccepted(true)
-          setInvitation({
-            ...invitation,
-            status: 'ACCEPTED',
-            isValid: false,
-          })
+          if (result.alreadyMember) {
+            setAlreadyMember(true)
+          } else {
+            setAccepted(true)
+            setInvitation({
+              ...invitation,
+              status: 'ACCEPTED',
+              isValid: false,
+            })
+          }
           setTimeout(() => {
             router.push(`/dashboard/adventures/${result.adventureId}`)
           }, 1500)
@@ -95,17 +100,22 @@ export default function InvitePage() {
     try {
       const result = await api.post<{
         success: boolean
+        alreadyMember?: boolean
         adventureId: string
         adventureName: string
         role: string
       }>(`/invitations/${token}/accept`)
       removeInvitationToken()
-      setAccepted(true)
-      setInvitation({
-        ...invitation!,
-        status: 'ACCEPTED',
-        isValid: false,
-      })
+      if (result.alreadyMember) {
+        setAlreadyMember(true)
+      } else {
+        setAccepted(true)
+        setInvitation({
+          ...invitation!,
+          status: 'ACCEPTED',
+          isValid: false,
+        })
+      }
       // Redirect to adventure after brief delay
       setTimeout(() => {
         router.push(`/dashboard/adventures/${result.adventureId}`)
@@ -239,6 +249,12 @@ export default function InvitePage() {
         {error && (
           <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">
             {error}
+          </div>
+        )}
+
+        {alreadyMember && (
+          <div className="rounded-lg bg-success/10 border border-success/20 px-4 py-2.5 text-sm text-success text-center">
+            You are already a member of this adventure. Redirecting...
           </div>
         )}
 
