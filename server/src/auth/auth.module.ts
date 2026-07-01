@@ -9,6 +9,7 @@ import { GoogleService } from './google.service.js'
 import { GoogleStrategy } from './google.strategy.js'
 import { DiscordService } from './discord.service.js'
 import { DiscordStrategy } from './discord.strategy.js'
+import { DiscordAuthGuard } from './discord-auth.guard.js'
 import { TokenService } from './token.service.js'
 
 @Module({
@@ -28,6 +29,7 @@ import { TokenService } from './token.service.js'
     GoogleStrategy,
     DiscordService,
     DiscordStrategy,
+    DiscordAuthGuard,
     TokenService,
   ],
   exports: [JwtAuthGuard, JwtModule, AuthService, GoogleService, DiscordService, TokenService],

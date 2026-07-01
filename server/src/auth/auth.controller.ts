@@ -5,6 +5,7 @@ import { RegisterDto } from './dto/register.dto.js'
 import { OnboardingDto } from './dto/onboarding.dto.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
 import { AuthGuard } from '@nestjs/passport'
+import { DiscordAuthGuard } from './discord-auth.guard.js'
 import type { AuthenticatedRequest } from './AuthenticatedRequest.js'
 import type { Request, Response } from 'express'
 
@@ -85,14 +86,14 @@ export class AuthController {
 
   /** Discord OAuth — redirect to Discord */
   @Get('discord')
-  @UseGuards(AuthGuard('discord'))
+  @UseGuards(DiscordAuthGuard)
   discordAuth() {
     // Guard redirects to Discord
   }
 
   /** Discord OAuth callback — returns tokens via redirect */
   @Get('discord/callback')
-  @UseGuards(AuthGuard('discord'))
+  @UseGuards(DiscordAuthGuard)
   async discordCallback(@Req() req: any, @Res() res: Response, @Query('state') state?: string) {
     const { accessToken, refreshToken } = req.user
     const params = new URLSearchParams()
