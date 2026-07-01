@@ -407,6 +407,8 @@ function TemplateRow(props: {
 }) {
   const [expandedEditAttrs, setExpandedEditAttrs] = useState<Record<number,boolean>>({}); const prevEditCount = useRef(0)
   useEffect(()=>{if(props.editAttrs.length>prevEditCount.current){setExpandedEditAttrs(p=>({...p,[props.editAttrs.length-1]:true}))};prevEditCount.current=props.editAttrs.length},[props.editAttrs.length])
+  // Reset collapsed state when entering edit mode (component stays mounted, need to clear old state)
+  useEffect(()=>{if(props.isEditing){setExpandedEditAttrs({});setEditTab('attrs')}},[props.isEditing])
   const [editTab, setEditTab] = useState<'attrs'|'skills'|'profiles'|'modifiers'|'fields'|'ac'>('attrs'); const etabClass = (tab:string) => `px-3 py-1.5 rounded text-xs font-medium transition-colors ${editTab===tab?'bg-primary/15 text-primary border border-primary/20':'text-muted hover:text-foreground'}`
   const activeAttrs = props.editAttrs.filter(a=>a.key.trim()&&a.name.trim()).map(a=>({key:a.key.trim(),name:a.name.trim()}))
   const activeFields = (props.editFields||[]).filter(f=>f.key.trim()&&f.label.trim()).map(f=>({key:f.key.trim(),label:f.label.trim()}))
