@@ -50,6 +50,11 @@ export class InvitationService {
     })
     if (!adventure) throw new NotFoundException('Adventure not found')
 
+    // Check player capacity for PLAYER invites
+    if (params.role === 'PLAYER') {
+      await this.membership.assertPlayerCapacity(params.adventureId)
+    }
+
     const token = this.generateToken()
 
     const invitation = await this.prisma.campaignInvitation.create({
@@ -92,6 +97,11 @@ export class InvitationService {
       params.createdById,
       'GM',
     )
+
+    // Check player capacity for PLAYER invites
+    if (params.role === 'PLAYER') {
+      await this.membership.assertPlayerCapacity(params.adventureId)
+    }
 
     const token = this.generateToken()
 
@@ -192,6 +202,18 @@ export class InvitationService {
         data: { status: 'EXPIRED' },
       })
       throw new BadRequestException('Invitation has expired')
+    }
+
+    // Check player capacity when accepting a PLAYER invitation
+    if (invitation.role === 'PLAYER') {
+      // Only count this invitation itself (not the user yet, they're not a member)
+      const adventure = await this.prisma.adventure.findUnique({ where: { id: invitation.adventureId } })
+      if (adventure) {
+        const currentPlayers = await this.membership.countPlayers(invitation.adventureId)
+        if (currentPlayers + 1 > adventure.maxPlayers) {
+          throw new BadRequestException('Adventure is at maximum player capacity')
+        }
+      }
     }
 
     // Create membership

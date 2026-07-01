@@ -91,4 +91,30 @@ export class MembershipService {
     })
     return !!member
   }
+
+  /** Count current PLAYER members in the adventure (excluding GMs). */
+  async countPlayers(adventureId: string): Promise<number> {
+    return this.prisma.campaignMember.count({
+      where: { adventureId, role: 'PLAYER' },
+    })
+  }
+
+  /** Count pending PLAYER invitations for the adventure. */
+  async countPendingPlayerInvitations(adventureId: string): Promise<number> {
+    return this.prisma.campaignInvitation.count({
+      where: { adventureId, role: 'PLAYER', status: 'PENDING' },
+    })
+  }
+
+  /** Check if adding `count` PLAYERs would exceed adventure maxPlayers. */
+  async assertPlayerCapacity(adventureId: string, count: number = 1) {
+    const adventure = await this.prisma.adventure.findUnique({ where: { id: adventureId } })
+    if (!adventure) throw new NotFoundException('Adventure not found')
+
+    const currentPlayers = await this.countPlayers(adventureId)
+    const pendingInvites = await this.countPendingPlayerInvitations(adventureId)
+    if (currentPlayers + pendingInvites + count > adventure.maxPlayers) {
+      throw new ForbiddenException('Adventure is at maximum player capacity')
+    }
+  }
 }
