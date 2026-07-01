@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, type FormEvent } from 'react'
+import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { api } from '@/lib/api'
@@ -77,8 +77,12 @@ export default function CharacterSheetDetailPage() {
   const [saving, setSaving] = useState(false); const [editError, setEditError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false); const [deleting, setDeleting] = useState(false); const [deleteError, setDeleteError] = useState<string | null>(null)
   const [profileSelections, setProfileSelections] = useState<Record<string, Record<string, string | null>>>({})
+  const profileSelectionsRef = useRef(profileSelections)
+  profileSelectionsRef.current = profileSelections
   const [activeSkills, setActiveSkills] = useState<Record<string, boolean>>({})
   const [othersValues, setOthersValues] = useState<Record<string, number>>({})
+  const othersValuesRef = useRef(othersValues)
+  othersValuesRef.current = othersValues
   const [hpModifier, setHpModifier] = useState(0)
   const [activeTab, setActiveTab] = useState<Tab>('character')
   const isOwner = sheet?.ownerId === user?.id
@@ -125,7 +129,7 @@ export default function CharacterSheetDetailPage() {
   }, [])
 
   const computeSkills = useCallback(async (sd: CharacterSheet, selections?: Record<string, Record<string, string | null>>, othersOverrides?: Record<string, number>) => {
-    const results: Record<string, number | null> = {}; const selMap = selections || profileSelections; const effOthers = othersOverrides ?? othersValues
+    const results: Record<string, number | null> = {}; const selMap = selections || profileSelectionsRef.current; const effOthers = othersOverrides ?? othersValuesRef.current
     const modifierVars: Record<string, number> = {}
     for (const attr of sd.template.attributes) {
       if (!attr.modifier?.trim()) continue
@@ -157,7 +161,7 @@ export default function CharacterSheetDetailPage() {
       } catch { results[sv.skillId] = null }
     }
     setSkillResults(results)
-  }, [profileSelections, othersValues])
+  }, [])
 
   const fetchSheet = useCallback(async () => {
     try {
