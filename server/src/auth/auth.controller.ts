@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, Req, Res } from '@nestjs/common'
+import { Controller, Post, Get, Body, UseGuards, Req, Res, Query } from '@nestjs/common'
 import { AuthService } from './auth.service.js'
 import { LoginDto } from './dto/login.dto.js'
 import { RegisterDto } from './dto/register.dto.js'
@@ -22,6 +22,17 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto)
+  }
+
+  @Post('refresh')
+  async refresh(@Body() body: { refreshToken: string }) {
+    return this.authService.refreshTokens(body.refreshToken)
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  async logout(@Req() req: AuthenticatedRequest) {
+    return this.authService.logout(req.user.sub)
   }
 
   @Get('profile')
@@ -51,19 +62,25 @@ export class AuthController {
     }
   }
 
-  /** Google OAuth — redirect to Google */
+  /** Google OAuth — redirect to Google. Passes state for invitation context. */
   @Get('google')
   @UseGuards(AuthGuard('google'))
   googleAuth() {
     // Guard redirects to Google
   }
 
-  /** Google OAuth callback — returns JWT via redirect */
+  /** Google OAuth callback — returns tokens via redirect */
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  async googleCallback(@Req() req: any, @Res() res: Response) {
-    const { accessToken } = req.user
-    res.redirect(`${FRONTEND_URL}/auth/google/callback?token=${accessToken}`)
+  async googleCallback(@Req() req: any, @Res() res: Response, @Query('state') state?: string) {
+    const { accessToken, refreshToken } = req.user
+    const params = new URLSearchParams()
+    params.set('token', accessToken)
+    params.set('refreshToken', refreshToken)
+    if (state) {
+      params.set('state', state)
+    }
+    res.redirect(`${FRONTEND_URL}/auth/google/callback?${params.toString()}`)
   }
 
   /** Discord OAuth — redirect to Discord */
@@ -73,12 +90,18 @@ export class AuthController {
     // Guard redirects to Discord
   }
 
-  /** Discord OAuth callback — returns JWT via redirect */
+  /** Discord OAuth callback — returns tokens via redirect */
   @Get('discord/callback')
   @UseGuards(AuthGuard('discord'))
-  async discordCallback(@Req() req: any, @Res() res: Response) {
-    const { accessToken } = req.user
-    res.redirect(`${FRONTEND_URL}/auth/discord/callback?token=${accessToken}`)
+  async discordCallback(@Req() req: any, @Res() res: Response, @Query('state') state?: string) {
+    const { accessToken, refreshToken } = req.user
+    const params = new URLSearchParams()
+    params.set('token', accessToken)
+    params.set('refreshToken', refreshToken)
+    if (state) {
+      params.set('state', state)
+    }
+    res.redirect(`${FRONTEND_URL}/auth/discord/callback?${params.toString()}`)
   }
 
   @Get('discord-profile')

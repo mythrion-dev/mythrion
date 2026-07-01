@@ -72,6 +72,11 @@ export type GoogleAccount = Prisma.GoogleAccountModel
  */
 export type DiscordAccount = Prisma.DiscordAccountModel
 /**
+ * Model RefreshToken
+ * 
+ */
+export type RefreshToken = Prisma.RefreshTokenModel
+/**
  * Model Template
  * 
  */

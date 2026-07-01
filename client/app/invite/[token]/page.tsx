@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { api, setAccessToken } from '@/lib/api'
+import { api, setInvitationToken, getInvitationToken, removeInvitationToken } from '@/lib/api'
 import Link from 'next/link'
 
 interface InvitationInfo {
@@ -28,6 +28,7 @@ export default function InvitePage() {
   const [accepting, setAccepting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [accepted, setAccepted] = useState(false)
+  const [autoAccepted, setAutoAccepted] = useState(false)
 
   const fetchInvitation = useCallback(async () => {
     try {
@@ -46,11 +47,44 @@ export default function InvitePage() {
     fetchInvitation()
   }, [fetchInvitation])
 
+  // Auto-accept invitation when user becomes available after OAuth login
+  useEffect(() => {
+    if (!user || authLoading || autoAccepted || !invitation || accepted) return
+
+    const pendingToken = getInvitationToken()
+    if (pendingToken === token && invitation.status === 'PENDING') {
+      setAutoAccepted(true)
+      setAccepting(true)
+      setError(null)
+
+      api
+        .post<{ success: boolean; adventureId: string; adventureName: string; role: string }>(
+          `/invitations/${token}/accept`,
+        )
+        .then((result) => {
+          removeInvitationToken()
+          setAccepted(true)
+          setInvitation({
+            ...invitation,
+            status: 'ACCEPTED',
+            isValid: false,
+          })
+          setTimeout(() => {
+            router.push(`/dashboard/adventures/${result.adventureId}`)
+          }, 1500)
+        })
+        .catch((err) => {
+          setAccepting(false)
+          setAutoAccepted(false)
+          setError(err instanceof Error ? err.message : 'Failed to accept invitation')
+        })
+    }
+  }, [user, authLoading, autoAccepted, invitation, accepted, token, router])
+
   async function handleAccept() {
     if (!user) {
       // Store token and redirect to login
-      localStorage.setItem('pendingInviteToken', token)
-      setAccessToken(token) // temporary cookie for middleware
+      setInvitationToken(token)
       router.push(`/login?redirect=/invite/${token}`)
       return
     }
@@ -65,6 +99,7 @@ export default function InvitePage() {
         adventureName: string
         role: string
       }>(`/invitations/${token}/accept`)
+      removeInvitationToken()
       setAccepted(true)
       setInvitation({
         ...invitation!,
@@ -82,7 +117,7 @@ export default function InvitePage() {
     }
   }
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
@@ -111,7 +146,7 @@ export default function InvitePage() {
   }
 
   const isPending = invitation.status === 'PENDING'
-  const showAccept = isPending || (!user && !authLoading)
+  const showAccept = isPending && !accepted && !(autoAccepted && accepting)
 
   return (
     <main className="flex-1 flex items-center justify-center p-4 relative">
@@ -213,7 +248,14 @@ export default function InvitePage() {
           </div>
         )}
 
-        {showAccept && !accepted && (
+        {autoAccepted && accepting && !accepted && (
+          <div className="rounded-lg bg-success/10 border border-success/20 px-4 py-2.5 text-sm text-success text-center flex items-center justify-center gap-2">
+            <div className="w-4 h-4 border-2 border-success/30 border-t-success rounded-full animate-spin" />
+            Joining the adventure...
+          </div>
+        )}
+
+        {showAccept && (
           <button
             onClick={handleAccept}
             disabled={accepting}

@@ -9,17 +9,27 @@ import { GoogleService } from './google.service.js'
 import { GoogleStrategy } from './google.strategy.js'
 import { DiscordService } from './discord.service.js'
 import { DiscordStrategy } from './discord.strategy.js'
+import { TokenService } from './token.service.js'
 
 @Module({
   imports: [
     JwtModule.register({
       secret: process.env.JWT_SECRET ?? 'dev-secret-change-me',
-      signOptions: { expiresIn: '7d' },
+      signOptions: { expiresIn: '15m' },
     }),
     PassportModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard, PrismaService, GoogleService, GoogleStrategy, DiscordService, DiscordStrategy],
-  exports: [JwtAuthGuard, JwtModule, AuthService, GoogleService, DiscordService],
+  providers: [
+    AuthService,
+    JwtAuthGuard,
+    PrismaService,
+    GoogleService,
+    GoogleStrategy,
+    DiscordService,
+    DiscordStrategy,
+    TokenService,
+  ],
+  exports: [JwtAuthGuard, JwtModule, AuthService, GoogleService, DiscordService, TokenService],
 })
 export class AuthModule {}

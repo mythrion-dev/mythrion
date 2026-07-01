@@ -2,17 +2,31 @@
 
 import { useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { setAccessToken } from '@/lib/api'
+import {
+  setAccessToken,
+  setRefreshToken,
+  getInvitationToken,
+} from '@/lib/api'
 
 function DiscordCallbackInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    const token = searchParams.get('token')
-    if (token) {
-      setAccessToken(token)
-      // Force full page reload so AuthProvider re-initializes with the token
+    const accessToken = searchParams.get('token')
+    const refreshToken = searchParams.get('refreshToken')
+
+    if (accessToken && refreshToken) {
+      setAccessToken(accessToken)
+      setRefreshToken(refreshToken)
+
+      // Check for pending invitation
+      const pendingInvite = getInvitationToken()
+      if (pendingInvite) {
+        window.location.replace(`/invite/${pendingInvite}`)
+        return
+      }
+
       window.location.replace('/dashboard')
     } else {
       router.replace('/login?error=discord_auth_failed')

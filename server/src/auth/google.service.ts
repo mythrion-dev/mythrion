@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common'
-import { JwtService } from '@nestjs/jwt'
 import { PrismaService } from '../prisma.service.js'
+import { TokenService } from './token.service.js'
 
 @Injectable()
 export class GoogleService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService,
+    private readonly tokenService: TokenService,
   ) {}
 
   async validateOAuthLogin(profile: {
@@ -35,7 +35,7 @@ export class GoogleService {
     })
 
     if (googleAccount) {
-      return this.signTokens(googleAccount.user.id, googleAccount.user.email)
+      return this.tokenService.generateTokens(googleAccount.user.id, googleAccount.user.email)
     }
 
     // 2. Check if a User already exists with this email (email/password signup)
@@ -67,7 +67,7 @@ export class GoogleService {
         })
       }
 
-      return this.signTokens(existingUser.id, existingUser.email)
+      return this.tokenService.generateTokens(existingUser.id, existingUser.email)
     }
 
     // 3. Create new User + GoogleAccount
@@ -88,13 +88,6 @@ export class GoogleService {
       },
     })
 
-    return this.signTokens(newUser.id, newUser.email)
-  }
-
-  private signTokens(userId: string, email: string) {
-    const payload = { sub: userId, email }
-    return {
-      accessToken: this.jwtService.sign(payload),
-    }
+    return this.tokenService.generateTokens(newUser.id, newUser.email)
   }
 }

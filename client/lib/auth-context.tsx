@@ -8,7 +8,17 @@ import {
   useCallback,
   type ReactNode,
 } from 'react'
-import { api, getAccessToken, setAccessToken, removeAccessToken } from './api'
+import {
+  api,
+  getAccessToken,
+  setAccessToken,
+  removeAccessToken,
+  getRefreshToken,
+  setRefreshToken,
+  removeRefreshToken,
+  getInvitationToken,
+  removeInvitationToken,
+} from './api'
 
 interface User {
   id: string
@@ -22,7 +32,7 @@ interface AuthState {
   loading: boolean
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string, displayName?: string) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
   completeOnboarding: (displayName: string) => Promise<void>
 }
 
@@ -38,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(profile)
     } catch {
       removeAccessToken()
+      removeRefreshToken()
       setUser(null)
     } finally {
       setLoading(false)
@@ -49,34 +60,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token) {
       fetchProfile()
     } else {
-      setLoading(false)
+      const refreshToken = getRefreshToken()
+      if (refreshToken) {
+        // Try to refresh on page load
+        fetchProfile()
+      } else {
+        setLoading(false)
+      }
     }
   }, [fetchProfile])
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await api.post<{ accessToken: string }>('/auth/login', {
+    const res = await api.post<{ accessToken: string; refreshToken: string }>('/auth/login', {
       email,
       password,
     })
     setAccessToken(res.accessToken)
+    setRefreshToken(res.refreshToken)
     await fetchProfile()
   }, [fetchProfile])
 
   const register = useCallback(
     async (email: string, password: string, displayName?: string) => {
-      const res = await api.post<{ accessToken: string }>('/auth/register', {
+      const res = await api.post<{ accessToken: string; refreshToken: string }>('/auth/register', {
         email,
         password,
         displayName,
       })
       setAccessToken(res.accessToken)
+      setRefreshToken(res.refreshToken)
       await fetchProfile()
     },
     [fetchProfile],
   )
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      await api.post('/auth/logout')
+    } catch {
+      // Ignore errors on logout
+    }
     removeAccessToken()
+    removeRefreshToken()
+    removeInvitationToken()
     setUser(null)
   }, [])
 

@@ -2,17 +2,36 @@
 
 import { useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { setAccessToken, getAccessToken } from '@/lib/api'
+import {
+  setAccessToken,
+  setRefreshToken,
+  getInvitationToken,
+  removeInvitationToken,
+  api,
+} from '@/lib/api'
 
 function GoogleCallbackInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    const token = searchParams.get('token')
-    if (token) {
-      setAccessToken(token)
-      // Force full page reload so AuthProvider re-initializes with the token
+    const accessToken = searchParams.get('token')
+    const refreshToken = searchParams.get('refreshToken')
+
+    if (accessToken && refreshToken) {
+      setAccessToken(accessToken)
+      setRefreshToken(refreshToken)
+
+      // Check for pending invitation
+      const pendingInvite = getInvitationToken()
+      if (pendingInvite) {
+        // Force a full page load so AuthProvider picks up the new token
+        // and navigates to the invite page
+        window.location.replace(`/invite/${pendingInvite}`)
+        return
+      }
+
+      // No pending invitation, go to dashboard
       window.location.replace('/dashboard')
     } else {
       router.replace('/login?error=google_auth_failed')

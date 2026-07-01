@@ -3,9 +3,9 @@ import {
   UnauthorizedException,
   ConflictException,
 } from '@nestjs/common'
-import { JwtService } from '@nestjs/jwt'
 import * as bcrypt from 'bcrypt'
 import { PrismaService } from '../prisma.service.js'
+import { TokenService } from './token.service.js'
 import { LoginDto } from './dto/login.dto.js'
 import { RegisterDto } from './dto/register.dto.js'
 import { OnboardingDto } from './dto/onboarding.dto.js'
@@ -16,7 +16,7 @@ import geoip from 'geoip-lite'
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService,
+    private readonly tokenService: TokenService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -36,7 +36,7 @@ export class AuthService {
       },
     })
 
-    return this.signTokens(user.id, user.email)
+    return this.tokenService.generateTokens(user.id, user.email)
   }
 
   async login(dto: LoginDto) {
@@ -58,7 +58,16 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials')
     }
 
-    return this.signTokens(user.id, user.email)
+    return this.tokenService.generateTokens(user.id, user.email)
+  }
+
+  async refreshTokens(encodedRefreshToken: string) {
+    return this.tokenService.rotateRefreshToken(encodedRefreshToken)
+  }
+
+  async logout(userId: string) {
+    await this.tokenService.revokeAllTokens(userId)
+    return { success: true }
   }
 
   async completeOnboarding(userId: string, dto: OnboardingDto) {
@@ -81,13 +90,6 @@ export class AuthService {
       throw new UnauthorizedException('User not found')
     }
     return user
-  }
-
-  private signTokens(userId: string, email: string) {
-    const payload = { sub: userId, email }
-    return {
-      accessToken: this.jwtService.sign(payload),
-    }
   }
 
   getRequestIp(req: Request) {

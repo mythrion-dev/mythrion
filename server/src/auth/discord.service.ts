@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common'
-import { JwtService } from '@nestjs/jwt'
 import { PrismaService } from '../prisma.service.js'
+import { TokenService } from './token.service.js'
 
 @Injectable()
 export class DiscordService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService,
+    private readonly tokenService: TokenService,
   ) {}
 
   async validateOAuthLogin(profile: {
@@ -31,17 +31,17 @@ export class DiscordService {
     const locale = profile.locale ?? undefined
     const verified = profile.verified ?? false
 
-    // 1. Verificar se DiscordAccount já existe
+    // 1. Check if DiscordAccount already exists
     let discordAccount = await this.prisma.discordAccount.findUnique({
       where: { discordId },
       include: { user: true },
     })
 
     if (discordAccount) {
-      return this.signTokens(discordAccount.user.id, discordAccount.user.email)
+      return this.tokenService.generateTokens(discordAccount.user.id, discordAccount.user.email!)
     }
 
-    // 2. Se houver email, verificar se User já existe com esse email
+    // 2. Check if user already exists with this email
     let existingUser: any | null = null
     if (email) {
       existingUser = await this.prisma.user.findUnique({
@@ -50,7 +50,7 @@ export class DiscordService {
     }
 
     if (existingUser) {
-      // Conectar Discord ao usuário existente
+      // Link Discord to existing user
       await this.prisma.discordAccount.create({
         data: {
           discordId,
@@ -64,7 +64,7 @@ export class DiscordService {
         },
       })
 
-      // Auto-completar onboarding se não foi feito
+      // Auto-complete onboarding if not done
       if (!existingUser.onboardingComplete) {
         await this.prisma.user.update({
           where: { id: existingUser.id },
@@ -75,10 +75,10 @@ export class DiscordService {
         })
       }
 
-      return this.signTokens(existingUser.id, existingUser.email)
+      return this.tokenService.generateTokens(existingUser.id, existingUser.email)
     }
 
-    // 3. Criar novo User + DiscordAccount
+    // 3. Create new User + DiscordAccount
     const newUser = await this.prisma.user.create({
       data: {
         email,
@@ -97,13 +97,6 @@ export class DiscordService {
       },
     })
 
-    return this.signTokens(newUser.id, newUser.email)
-  }
-
-  private signTokens(userId: string, email?: string | null) {
-    const payload = { sub: userId, email }
-    return {
-      accessToken: this.jwtService.sign(payload),
-    }
+    return this.tokenService.generateTokens(newUser.id, newUser.email)
   }
 }
