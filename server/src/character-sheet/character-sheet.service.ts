@@ -184,10 +184,18 @@ export class CharacterSheetService {
   }
 
   async findAllByAdventure(adventureId: string, userId: string) {
-    const isMember = await this.membership.isMember(adventureId, userId)
-    if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
+    const member = await this.prisma.campaignMember.findUnique({
+      where: { adventureId_userId: { adventureId, userId } },
+    })
+    if (!member) throw new ForbiddenException('You are not a member of this adventure')
+
+    // GMs can see all sheets in the adventure; PLAYERs only see their own
+    const where = member.role === 'GM'
+      ? { adventureId }
+      : { adventureId, ownerId: userId }
+
     return this.prisma.characterSheet.findMany({
-      where: { adventureId },
+      where,
       include: {
         adventure: { select: { id: true, name: true, campaign: true } },
         template: { select: { id: true, name: true } },
@@ -202,8 +210,11 @@ export class CharacterSheetService {
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) {
       if (!sheet.adventureId) throw new ForbiddenException('You do not have access to this character sheet')
-      const isMember = await this.membership.isMember(sheet.adventureId, userId)
-      if (!isMember) throw new ForbiddenException('You do not have access to this character sheet')
+      try {
+        await this.membership.requireRole(sheet.adventureId, userId, 'GM')
+      } catch {
+        throw new ForbiddenException('You do not have access to this character sheet')
+      }
     }
     return sheet
   }
