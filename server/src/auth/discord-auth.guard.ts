@@ -16,33 +16,49 @@ import { Response } from 'express'
 @Injectable()
 export class DiscordAuthGuard extends AuthGuard('discord') {
   /**
-   * Override handleRequest to catch access_denied errors from the
-   * prompt=none attempt and retry with prompt=consent.
+   * Pass prompt: 'none' to the underlying passport-discord strategy.
+   *
+   * This is the CORRECT NestJS way to pass authentication options —
+   * the strategy's override of authorizationParams doesn't work because
+   * NestJS wraps the strategy in a proxy that doesn't forward prototype
+   * method overrides. Using getAuthenticateOptions ensures the options
+   * flow through passport.authenticate() → authorizationParams() correctly.
+   *
+   * With prompt=none, Discord silently authenticates returning users.
+   * First-time users get an access_denied error, which we handle below.
+   */
+  getAuthenticateOptions(context: ExecutionContext): { prompt: string } {
+    return { prompt: 'none' }
+  }
+
+  /**
+   * Handle access_denied from prompt=none: the user hasn't authorized
+   * yet (first login), so retry with prompt=consent to show the
+   * authorization screen ONCE.
+   *
+   * On subsequent logins, prompt=none succeeds and this handler is
+   * never reached — the user passes straight through to validate().
    */
   handleRequest(err: any, user: any, info: any, context: ExecutionContext, status: any): any {
-    // If we got access_denied, the user hasn't authorized yet.
-    // We need to retry with prompt=consent to show them the authorization screen.
     if (err && err.code === 'access_denied') {
-      const request = context.switchToHttp().getRequest()
       const response = context.switchToHttp().getResponse<Response>()
 
       const discordClientId = process.env.DISCORD_CLIENT_ID ?? ''
-      const callbackURL = process.env.DISCORD_CALLBACK_URL ?? ''
-      const scopes = ['identify', 'email'].join(' ')
+      const redirectUri = process.env.DISCORD_CALLBACK_URL ?? ''
+      const scope = ['identify', 'email'].join(' ')
 
       const consentUrl =
         `https://discord.com/api/oauth2/authorize` +
         `?client_id=${encodeURIComponent(discordClientId)}` +
-        `&redirect_uri=${encodeURIComponent(callbackURL)}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
         `&response_type=code` +
-        `&scope=${encodeURIComponent(scopes)}` +
+        `&scope=${encodeURIComponent(scope)}` +
         `&prompt=consent`
 
       response.redirect(consentUrl)
-      return null // Stop processing
+      return null
     }
 
-    // Default handling for other cases
     if (err || !user) {
       throw err || new UnauthorizedException()
     }
