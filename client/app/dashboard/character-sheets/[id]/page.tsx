@@ -108,6 +108,17 @@ export default function CharacterSheetDetailPage() {
       sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); vars[rcv.component.modifier.key] = isNaN(v) ? 0 : v })
       sd.fieldValues.forEach(fv => { const v = parseFloat(fv.value); vars[fv.templateField.key] = isNaN(v) ? 0 : v })
       sd.acValues.forEach(acv => { const v = parseFloat(acv.value); vars[acv.field.key] = isNaN(v) ? 0 : v })
+      // Compute attribute modifiers for formula support
+      for (const attr of sd.template.attributes) {
+        if (!attr.modifier?.trim()) continue
+        try {
+          const modVars: Record<string, number> = {}
+          sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv => sv.attributeId === a.id)?.value || '0'); modVars[a.key] = isNaN(v) ? 0 : v })
+          sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); modVars[rcv.component.modifier.key] = isNaN(v) ? 0 : v })
+          const mr = await api.post<{ result: number }>('/formula/evaluate', { formula: attr.modifier, variables: modVars })
+          vars[`${attr.key}_mod`] = mr.result
+        } catch { vars[`${attr.key}_mod`] = 0 }
+      }
       const res = await api.post<{ result: number }>('/formula/evaluate', { formula: ac.formula, variables: vars })
       setAcResult(res.result)
     } catch { setAcResult(null) }
