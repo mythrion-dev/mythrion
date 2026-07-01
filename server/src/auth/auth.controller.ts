@@ -5,9 +5,8 @@ import { RegisterDto } from './dto/register.dto.js'
 import { OnboardingDto } from './dto/onboarding.dto.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
 import { AuthGuard } from '@nestjs/passport'
-import { DiscordAuthGuard } from './discord-auth.guard.js'
 import type { AuthenticatedRequest } from './AuthenticatedRequest.js'
-import type { Request, Response } from 'express'
+import type { Response } from 'express'
 
 const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:3001'
 
@@ -63,7 +62,7 @@ export class AuthController {
     }
   }
 
-  /** Google OAuth — redirect to Google. Passes state for invitation context. */
+  /** Google OAuth — redirect to Google */
   @Get('google')
   @UseGuards(AuthGuard('google'))
   googleAuth() {
@@ -82,32 +81,5 @@ export class AuthController {
       params.set('state', state)
     }
     res.redirect(`${FRONTEND_URL}/auth/google/callback?${params.toString()}`)
-  }
-
-  /** Discord OAuth — redirect to Discord */
-  @Get('discord')
-  @UseGuards(DiscordAuthGuard)
-  discordAuth() {
-    // Guard redirects to Discord
-  }
-
-  /** Discord OAuth callback — returns tokens via redirect */
-  @Get('discord/callback')
-  @UseGuards(DiscordAuthGuard)
-  async discordCallback(@Req() req: any, @Res() res: Response, @Query('state') state?: string) {
-    const { accessToken, refreshToken } = req.user
-    const params = new URLSearchParams()
-    params.set('token', accessToken)
-    params.set('refreshToken', refreshToken)
-    if (state) {
-      params.set('state', state)
-    }
-    res.redirect(`${FRONTEND_URL}/auth/discord/callback?${params.toString()}`)
-  }
-
-  @Get('discord-profile')
-  @UseGuards(JwtAuthGuard)
-  async getDiscordProfile(@Req() req: AuthenticatedRequest) {
-    return this.authService.getDiscordAccount(req.user.sub)
   }
 }

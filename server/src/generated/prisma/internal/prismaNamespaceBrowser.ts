@@ -56,7 +56,6 @@ export const ModelName = {
   CampaignMember: 'CampaignMember',
   CampaignInvitation: 'CampaignInvitation',
   GoogleAccount: 'GoogleAccount',
-  DiscordAccount: 'DiscordAccount',
   RefreshToken: 'RefreshToken',
   Template: 'Template',
   SkillModifierProfile: 'SkillModifierProfile',
@@ -166,23 +165,6 @@ export const GoogleAccountScalarFieldEnum = {
 } as const
 
 export type GoogleAccountScalarFieldEnum = (typeof GoogleAccountScalarFieldEnum)[keyof typeof GoogleAccountScalarFieldEnum]
-
-
-export const DiscordAccountScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  discordId: 'discordId',
-  username: 'username',
-  email: 'email',
-  avatarUrl: 'avatarUrl',
-  discriminator: 'discriminator',
-  locale: 'locale',
-  verified: 'verified',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type DiscordAccountScalarFieldEnum = (typeof DiscordAccountScalarFieldEnum)[keyof typeof DiscordAccountScalarFieldEnum]
 
 
 export const RefreshTokenScalarFieldEnum = {

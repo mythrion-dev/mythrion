@@ -22,7 +22,6 @@ model User {
   memberships        CampaignMember[]
   sentInvitations    CampaignInvitation[] @relation("SentInvitations")
   googleAccount      GoogleAccount?
-  discordAccount     DiscordAccount?
   refreshTokens      RefreshToken[]
   characterSheets    CharacterSheet[]
 }
@@ -100,21 +99,6 @@ model GoogleAccount {
   displayName String?
   avatarUrl   String?
   locale      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model DiscordAccount {
-  id          String   @id @default(cuid())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String   @unique
-  discordId   String   @unique
-  username    String
-  email       String?  @unique
-  avatarUrl   String?
-  discriminator String?  // # após o nome de usuário
-  locale      String?
-  verified    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

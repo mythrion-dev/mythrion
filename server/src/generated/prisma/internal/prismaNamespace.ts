@@ -389,7 +389,6 @@ export const ModelName = {
   CampaignMember: 'CampaignMember',
   CampaignInvitation: 'CampaignInvitation',
   GoogleAccount: 'GoogleAccount',
-  DiscordAccount: 'DiscordAccount',
   RefreshToken: 'RefreshToken',
   Template: 'Template',
   SkillModifierProfile: 'SkillModifierProfile',
@@ -426,7 +425,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "discordAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateRuntimeModifier" | "runtimeModifierComponent" | "characterSheetRuntimeModifierComponentValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "characterAbility" | "characterInventoryItem" | "characterStory"
+    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateRuntimeModifier" | "runtimeModifierComponent" | "characterSheetRuntimeModifierComponentValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "characterAbility" | "characterInventoryItem" | "characterStory"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -797,80 +796,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.GoogleAccountCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.GoogleAccountCountAggregateOutputType> | number
-        }
-      }
-    }
-    DiscordAccount: {
-      payload: Prisma.$DiscordAccountPayload<ExtArgs>
-      fields: Prisma.DiscordAccountFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.DiscordAccountFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DiscordAccountPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.DiscordAccountFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DiscordAccountPayload>
-        }
-        findFirst: {
-          args: Prisma.DiscordAccountFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DiscordAccountPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.DiscordAccountFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DiscordAccountPayload>
-        }
-        findMany: {
-          args: Prisma.DiscordAccountFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DiscordAccountPayload>[]
-        }
-        create: {
-          args: Prisma.DiscordAccountCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DiscordAccountPayload>
-        }
-        createMany: {
-          args: Prisma.DiscordAccountCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.DiscordAccountCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DiscordAccountPayload>[]
-        }
-        delete: {
-          args: Prisma.DiscordAccountDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DiscordAccountPayload>
-        }
-        update: {
-          args: Prisma.DiscordAccountUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DiscordAccountPayload>
-        }
-        deleteMany: {
-          args: Prisma.DiscordAccountDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.DiscordAccountUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.DiscordAccountUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DiscordAccountPayload>[]
-        }
-        upsert: {
-          args: Prisma.DiscordAccountUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DiscordAccountPayload>
-        }
-        aggregate: {
-          args: Prisma.DiscordAccountAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateDiscordAccount>
-        }
-        groupBy: {
-          args: Prisma.DiscordAccountGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.DiscordAccountGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.DiscordAccountCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.DiscordAccountCountAggregateOutputType> | number
         }
       }
     }
@@ -2539,23 +2464,6 @@ export const GoogleAccountScalarFieldEnum = {
 export type GoogleAccountScalarFieldEnum = (typeof GoogleAccountScalarFieldEnum)[keyof typeof GoogleAccountScalarFieldEnum]
 
 
-export const DiscordAccountScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  discordId: 'discordId',
-  username: 'username',
-  email: 'email',
-  avatarUrl: 'avatarUrl',
-  discriminator: 'discriminator',
-  locale: 'locale',
-  verified: 'verified',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type DiscordAccountScalarFieldEnum = (typeof DiscordAccountScalarFieldEnum)[keyof typeof DiscordAccountScalarFieldEnum]
-
-
 export const RefreshTokenScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -3075,7 +2983,6 @@ export type GlobalOmitConfig = {
   campaignMember?: Prisma.CampaignMemberOmit
   campaignInvitation?: Prisma.CampaignInvitationOmit
   googleAccount?: Prisma.GoogleAccountOmit
-  discordAccount?: Prisma.DiscordAccountOmit
   refreshToken?: Prisma.RefreshTokenOmit
   template?: Prisma.TemplateOmit
   skillModifierProfile?: Prisma.SkillModifierProfileOmit

@@ -43,11 +43,6 @@ export type CampaignInvitation = Prisma.CampaignInvitationModel
  */
 export type GoogleAccount = Prisma.GoogleAccountModel
 /**
- * Model DiscordAccount
- * 
- */
-export type DiscordAccount = Prisma.DiscordAccountModel
-/**
  * Model RefreshToken
  * 
  */

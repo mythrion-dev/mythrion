@@ -49,7 +49,7 @@ export class AuthService {
 
     if (!user.passwordHash) {
       throw new UnauthorizedException(
-        'This account uses a social login provider. Please sign in with Google or Discord.',
+        'This account uses a social login provider. Please sign in with Google.',
       )
     }
 
@@ -109,12 +109,5 @@ export class AuthService {
       region: geo.region,
       city: geo.city,
     }
-  }
-
-  async getDiscordAccount(userId: string) {
-    const discordAccount = await this.prisma.discordAccount.findUnique({
-      where: { userId },
-    })
-    return discordAccount
   }
 }
