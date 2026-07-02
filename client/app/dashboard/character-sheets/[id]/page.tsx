@@ -175,6 +175,10 @@ export default function CharacterSheetDetailPage() {
         const variables: Record<string, number> = { ...modifierVars }
         // value = assigned attribute value (generic placeholder)
         variables['value'] = isNaN(skillAttrValue) ? 0 : skillAttrValue
+        // value_mod = modifier of the assigned attribute (computed via global attribute modifier formula)
+        if (skillAttr) {
+          variables['value_mod'] = modifierVars[`${skillAttr.key}_mod`] ?? 0
+        }
         sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv2 => sv2.attributeId === a.id)?.value || '0'); variables[a.key] = isNaN(v) ? 0 : v })
         sd.fieldValues.forEach(fv => { const v = parseFloat(fv.value); variables[fv.templateField.key] = isNaN(v) ? 0 : v })
         sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); variables[rcv.component.modifier.key] = isNaN(v) ? 0 : v })
