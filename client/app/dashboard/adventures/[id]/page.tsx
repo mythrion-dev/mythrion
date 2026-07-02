@@ -372,7 +372,7 @@ function NewTemplateForm(props: {
         </label>
         {(props.newAcEnabled??false)&&<div className="space-y-2 pl-2">
           <div><label className="text-xs text-muted mb-1 block">Armor Class Formula</label>
-            <FormulaBuilder value={props.newAcFormula??''} onChange={v=>props.onNewAcFormulaChange?.(v)} attributes={activeAttrs} customFields={activeFields} runtimeModifiers={activeModifiers} acFields={(props.newAcFields||[]).filter(f=>f.key.trim()&&f.name.trim()).map(f=>({key:f.key.trim(),name:f.name.trim()}))} placeholder="Build AC formula..."/>
+            <FormulaBuilder value={props.newAcFormula??''} onChange={v=>props.onNewAcFormulaChange?.(v)} attributes={activeAttrs} customFields={activeFields} runtimeModifiers={activeModifiers} acFields={(props.newAcFields||[]).filter(f=>f.key.trim()&&f.name.trim()).map(f=>({key:f.key.trim(),name:f.name.trim()}))} useModPrefix placeholder="Build AC formula..."/>
           </div>
           <div className="space-y-1">
             {(props.newAcFields||[]).map((f,idx)=><div key={idx} className="rounded border border-border/50 bg-background/20 p-2 space-y-1">
@@ -436,7 +436,7 @@ function TemplateRow(props: {
         </label>
         {(props.editAcEnabled??false)&&<div className="space-y-2 pl-2">
           <div><label className="text-xs text-muted mb-1 block">Armor Class Formula</label>
-            <FormulaBuilder value={props.editAcFormula??''} onChange={v=>props.onEditAcFormulaChange?.(v)} attributes={activeAttrs} customFields={activeFields} runtimeModifiers={activeModifiers} acFields={(props.editAcFields||[]).filter(f=>f.key.trim()&&f.name.trim()).map(f=>({key:f.key.trim(),name:f.name.trim()}))} placeholder="Build AC formula..."/>
+            <FormulaBuilder value={props.editAcFormula??''} onChange={v=>props.onEditAcFormulaChange?.(v)} attributes={activeAttrs} customFields={activeFields} runtimeModifiers={activeModifiers} acFields={(props.editAcFields||[]).filter(f=>f.key.trim()&&f.name.trim()).map(f=>({key:f.key.trim(),name:f.name.trim()}))} useModPrefix placeholder="Build AC formula..."/>
           </div>
           <div className="space-y-1">
             {(props.editAcFields||[]).map((f,idx)=><div key={idx} className="rounded border border-border/50 bg-background/20 p-2 space-y-1">
