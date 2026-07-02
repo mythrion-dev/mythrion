@@ -125,6 +125,7 @@ model Template {
   name                     String
   description              String?
   attributeModifierFormula String?
+  skillFormula             String?
   attributes               TemplateAttribute[]
   templateFields           TemplateField[]
   templateSkills           TemplateSkill[]
@@ -212,7 +213,6 @@ model TemplateSkill {
   template           Template                         @relation(fields: [templateId], references: [id], onDelete: Cascade)
   name               String
   description        String?
-  formula            String?
   order              Int                              @default(0)
   skillValues        CharacterSheetSkillValue[]
   skillProfileValues CharacterSheetSkillProfileValue[]

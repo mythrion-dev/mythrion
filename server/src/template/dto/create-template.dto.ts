@@ -32,10 +32,6 @@ export class TemplateSkillDefDto {
   @IsString()
   @IsOptional()
   description?: string
-
-  @IsString()
-  @IsOptional()
-  formula?: string
 }
 
 export class ProfileOptionDefDto {
@@ -173,4 +169,8 @@ export class CreateTemplateDto {
   @IsString()
   @IsOptional()
   attributeModifierFormula?: string
+
+  @IsString()
+  @IsOptional()
+  skillFormula?: string
 }

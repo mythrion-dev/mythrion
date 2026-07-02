@@ -24,10 +24,6 @@ export class UpdateTemplateSkillDefDto {
   @IsString()
   @IsOptional()
   description?: string
-
-  @IsString()
-  @IsOptional()
-  formula?: string
 }
 
 export class UpdateProfileOptionDefDto {
@@ -169,4 +165,8 @@ export class UpdateTemplateDto {
   @IsString()
   @IsOptional()
   attributeModifierFormula?: string
+
+  @IsString()
+  @IsOptional()
+  skillFormula?: string
 }

@@ -15,6 +15,7 @@ const sheetInclude = {
       id: true,
       name: true,
       attributeModifierFormula: true,
+      skillFormula: true,
       attributes: { orderBy: { order: 'asc' as const } },
       skillModifierProfiles: {
         orderBy: { order: 'asc' as const },
@@ -41,7 +42,7 @@ const sheetInclude = {
   },
   skillValues: {
     include: {
-      skill: { select: { id: true, name: true, description: true, formula: true } },
+      skill: { select: { id: true, name: true, description: true } },
     },
   },
   skillProfileValues: {
@@ -92,10 +93,13 @@ export class CharacterSheetService {
   async create(userId: string, dto: CreateCharacterSheetDto) {
     const template = await this.prisma.template.findUnique({
       where: { id: dto.templateId },
-      include: {
+      select: {
+        id: true,
+        adventureId: true,
+        skillFormula: true,
         attributes: true,
         templateFields: true,
-        templateSkills: true,
+      templateSkills: { select: { id: true, name: true, description: true, templateId: true, order: true } },
         skillModifierProfiles: { include: { options: { orderBy: { order: 'asc' } } } },
         runtimeModifiers: { include: { components: { orderBy: { order: 'asc' } } } },
       },
@@ -114,15 +118,18 @@ export class CharacterSheetService {
     const skillProfileValues: Array<{
       skillId: string; profileId: string; optionId?: string | null
     }> = []
-    for (const skill of template.templateSkills) {
-      if (!skill.formula) continue
-      const formulaVars = this.extractVariableNames(skill.formula)
-      for (const profile of template.skillModifierProfiles) {
-        if (formulaVars.includes(profile.name)) {
-          skillProfileValues.push({ skillId: skill.id, profileId: profile.id, optionId: profile.options[0]?.id ?? null })
+    const globalSkillFormula = template.skillFormula
+    if (globalSkillFormula) {
+      const formulaVars = this.extractVariableNames(globalSkillFormula)
+      for (const skill of template.templateSkills) {
+        for (const profile of template.skillModifierProfiles) {
+          if (formulaVars.includes(profile.name)) {
+            skillProfileValues.push({ skillId: skill.id, profileId: profile.id, optionId: profile.options[0]?.id ?? null })
+          }
         }
       }
     }
+
 
     // Fetch AC config for this template
     const armorClass = await this.prisma.templateArmorClass.findUnique({

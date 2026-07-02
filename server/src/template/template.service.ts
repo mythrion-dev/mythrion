@@ -34,6 +34,7 @@ export class TemplateService {
       data: {
         adventureId, name: dto.name, description: dto.description ?? null,
         attributeModifierFormula: dto.attributeModifierFormula ?? null,
+        skillFormula: dto.skillFormula ?? null,
         attributes: {
           create: dto.attributes.map((attr, idx) => ({
             key: attr.key, name: attr.name, order: idx,
@@ -46,7 +47,7 @@ export class TemplateService {
         },
         templateSkills: {
           create: (dto.skills || []).map((s, idx) => ({
-            name: s.name, description: s.description ?? null, formula: s.formula ?? null, order: idx,
+            name: s.name, description: s.description ?? null, order: idx,
           })),
         },
         skillModifierProfiles: {
@@ -177,8 +178,8 @@ export class TemplateService {
       for (let idx = 0; idx < dto.skills.length; idx++) {
         const s = dto.skills[idx]; const name = s.name.trim()
         const existing = existingSkills.find(e => e.name === name)
-        if (existing) { await this.prisma.templateSkill.update({ where: { id: existing.id }, data: { description: s.description ?? null, formula: s.formula ?? null, order: idx } }) }
-        else { await this.prisma.templateSkill.create({ data: { templateId: id, name, description: s.description ?? null, formula: s.formula ?? null, order: idx } }) }
+        if (existing) { await this.prisma.templateSkill.update({ where: { id: existing.id }, data: { description: s.description ?? null, order: idx } }) }
+        else { await this.prisma.templateSkill.create({ data: { templateId: id, name, description: s.description ?? null, order: idx } }) }
       }
       const addedSkillNames = newSkillNames.filter(n => !existingSkillNames.includes(n))
       if (addedSkillNames.length > 0) {
@@ -225,8 +226,9 @@ export class TemplateService {
         const skills = await this.prisma.templateSkill.findMany({ where: { templateId: id } })
         const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
         for (const sheet of sheets) for (const skill of skills) {
-          if (!skill.formula) continue
-          const formulaVars = this.extractVariableNames(skill.formula)
+          const globalSkillFormula = (await this.prisma.template.findUnique({ where: { id }, select: { skillFormula: true } }))?.skillFormula
+          if (!globalSkillFormula) continue
+          const formulaVars = this.extractVariableNames(globalSkillFormula)
           for (const profile of newProfiles) {
             if (formulaVars.includes(profile.name)) {
               const firstOption = await this.prisma.profileOption.findFirst({ where: { profileId: profile.id }, orderBy: { order: 'asc' } })
@@ -401,6 +403,7 @@ export class TemplateService {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.attributeModifierFormula !== undefined && { attributeModifierFormula: dto.attributeModifierFormula || null }),
+        ...(dto.skillFormula !== undefined && { skillFormula: dto.skillFormula || null }),
       },
       include: templateInclude,
     })

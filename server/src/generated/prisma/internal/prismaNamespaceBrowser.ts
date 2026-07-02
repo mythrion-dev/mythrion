@@ -184,6 +184,8 @@ export const TemplateScalarFieldEnum = {
   adventureId: 'adventureId',
   name: 'name',
   description: 'description',
+  attributeModifierFormula: 'attributeModifierFormula',
+  skillFormula: 'skillFormula',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -234,7 +236,6 @@ export const TemplateAttributeScalarFieldEnum = {
   templateId: 'templateId',
   key: 'key',
   name: 'name',
-  modifier: 'modifier',
   order: 'order',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -248,7 +249,6 @@ export const TemplateSkillScalarFieldEnum = {
   templateId: 'templateId',
   name: 'name',
   description: 'description',
-  formula: 'formula',
   order: 'order',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
