@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { api } from '@/lib/api'
 import Link from 'next/link'
+import { PageNav } from '@/lib/breadcrumb'
 
 interface Adventure {
   id: string
@@ -104,27 +105,10 @@ export default function NewCharacterSheetPage() {
 
   return (
     <main className="flex-1 max-w-xl mx-auto w-full px-4 py-6 animate-fade-in">
-      <div className="mb-6">
-        <Link
-          href="/dashboard?tab=character-sheets"
-          className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          Back to Character Sheets
-        </Link>
-      </div>
+      <PageNav crumbs={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'New Character Sheet' },
+      ]} />
 
       <form onSubmit={handleSubmit} className="card !p-6 space-y-4">
         <div className="flex items-center gap-3 mb-2">

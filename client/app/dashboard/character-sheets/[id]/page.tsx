@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context'
 import { api } from '@/lib/api'
 import { InlineText, InlineNumber, InlineTextarea } from '@/lib/inline-editable'
 import Link from 'next/link'
+import { PageNav } from '@/lib/breadcrumb'
 
 interface SheetAttribute { id: string; attributeId: string; value: string; attribute: { id: string; key: string; name: string; modifier: string | null } }
 interface FieldValue { id: string; templateFieldId: string; value: string; templateField: { id: string; key: string; label: string } }
@@ -358,7 +359,11 @@ export default function CharacterSheetDetailPage() {
   const tabClass = (t: Tab) => `flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === t ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`
 
   return (<main className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 animate-fade-in">
-    <div className="mb-6"><Link href="/dashboard?tab=character-sheets" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>Back to Character Sheets</Link></div>
+    <PageNav crumbs={[
+      { label: 'Dashboard', href: '/dashboard' },
+      ...(sheet.adventure ? [{ label: sheet.adventure.name, href: `/dashboard/adventures/${sheet.adventure.id}` }] : []),
+      { label: sheet.characterName },
+    ]} />
 
     <div className="space-y-6">
       {/* Header Card */}

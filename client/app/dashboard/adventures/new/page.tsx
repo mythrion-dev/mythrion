@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { api } from '@/lib/api'
 import Link from 'next/link'
+import { PageNav } from '@/lib/breadcrumb'
 
 export default function NewAdventurePage() {
   const router = useRouter()
@@ -55,28 +56,10 @@ export default function NewAdventurePage() {
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-gradient-to-b from-accent/5 via-primary/3 to-transparent blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-md space-y-6 animate-slide-up relative z-10">
-        {/* Back link */}
-        <div>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Back to Dashboard
-          </Link>
-        </div>
+        <PageNav crumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'New Adventure' },
+        ]} />
 
         {/* Header */}
         <div className="flex items-center gap-4">

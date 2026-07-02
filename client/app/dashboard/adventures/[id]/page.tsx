@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context'
 import { api } from '@/lib/api'
 import Link from 'next/link'
 import FormulaBuilder from '@/lib/formula-builder'
+import { PageNav } from '@/lib/breadcrumb'
 
 interface Adventure {
   id: string; name: string; campaign: string; synopsis: string | null; maxPlayers: number; ownerId: string; createdAt: string; updatedAt: string
@@ -210,7 +211,10 @@ export default function AdventureDetailPage() {
 
   return (
     <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 animate-fade-in">
-      <div className="mb-6"><Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>Back to Dashboard</Link></div>
+      <PageNav crumbs={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: adventure.name },
+      ]} />
       <AdventureHeader adventure={adventure} isGM={isGM} userRole={userRole} onEdit={()=>setEditing(true)} onDelete={()=>setConfirmDelete(true)} />
       {!editing ? (<div className="space-y-6 mt-6">
         <nav className="flex gap-1"><button onClick={()=>setActiveTab('campaign')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab==='campaign'?'bg-primary/15 text-primary border border-primary/20':'text-muted hover:text-foreground'}`}>Campaign</button><button onClick={()=>setActiveTab('templates')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab==='templates'?'bg-primary/15 text-primary border border-primary/20':'text-muted hover:text-foreground'}`}>Character Sheet Templates</button></nav>

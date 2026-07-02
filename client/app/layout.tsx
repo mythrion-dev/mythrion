@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { AuthProvider } from '@/lib/auth-context'
+import { NavigationProvider } from '@/lib/navigation-context'
 import './globals.css'
 
 const geistSans = Geist({
@@ -33,7 +34,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-background text-foreground bg-pattern">
         {/* Subtle top ornament */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent pointer-events-none" />
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <NavigationProvider>{children}</NavigationProvider>
+        </AuthProvider>
       </body>
     </html>
   )
