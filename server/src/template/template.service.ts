@@ -33,9 +33,10 @@ export class TemplateService {
     return this.prisma.template.create({
       data: {
         adventureId, name: dto.name, description: dto.description ?? null,
+        attributeModifierFormula: dto.attributeModifierFormula ?? null,
         attributes: {
           create: dto.attributes.map((attr, idx) => ({
-            key: attr.key, name: attr.name, modifier: attr.modifier ?? null, order: idx,
+            key: attr.key, name: attr.name, order: idx,
           })),
         },
         templateFields: {
@@ -133,8 +134,8 @@ export class TemplateService {
       for (let idx = 0; idx < dto.attributes.length; idx++) {
         const a = dto.attributes[idx]; const key = a.key.trim()
         const existing = existingAttrs.find(e => e.key === key)
-        if (existing) { await this.prisma.templateAttribute.update({ where: { id: existing.id }, data: { name: a.name.trim(), modifier: a.modifier ?? null, order: idx } }) }
-        else { await this.prisma.templateAttribute.create({ data: { templateId: id, key, name: a.name.trim(), modifier: a.modifier ?? null, order: idx } }) }
+        if (existing) { await this.prisma.templateAttribute.update({ where: { id: existing.id }, data: { name: a.name.trim(), order: idx } }) }
+        else { await this.prisma.templateAttribute.create({ data: { templateId: id, key, name: a.name.trim(), order: idx } }) }
       }
       const newAttrKeys = newKeys.filter(k => !existingKeys.includes(k))
       if (newAttrKeys.length > 0) {
@@ -399,6 +400,7 @@ export class TemplateService {
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.attributeModifierFormula !== undefined && { attributeModifierFormula: dto.attributeModifierFormula || null }),
       },
       include: templateInclude,
     })

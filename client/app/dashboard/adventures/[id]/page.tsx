@@ -35,7 +35,8 @@ interface TemplateArmorClass {
 }
 interface Template {
   id: string; name: string; description: string | null
-  attributes: { id: string; key: string; name: string; modifier: string | null }[]
+  attributeModifierFormula?: string | null
+  attributes: { id: string; key: string; name: string }[]
   templateFields?: { id: string; key: string; label: string }[]
   templateSkills?: { id: string; name: string; description: string | null; formula: string | null }[]
   skillModifierProfiles?: SkillModifierProfile[]
@@ -64,11 +65,13 @@ export default function AdventureDetailPage() {
 
   const [templates, setTemplates] = useState<Template[]>([]); const [showTemplates, setShowTemplates] = useState(false)
   const [showNewTemplate, setShowNewTemplate] = useState(false); const [newTemplateName, setNewTemplateName] = useState(''); const [newTemplateDescription, setNewTemplateDescription] = useState('')
-  const [newTemplateAttrs, setNewTemplateAttrs] = useState<{ key: string; name: string; modifier: string }[]>([])
+  const [newTemplateAttrs, setNewTemplateAttrs] = useState<{ key: string; name: string }[]>([])
+  const [newAttrModifierFormula, setNewAttrModifierFormula] = useState('')
   const [newTemplateFields, setNewTemplateFields] = useState<{ key: string; label: string }[]>([])
   const [templateCreating, setTemplateCreating] = useState(false); const [templateError, setTemplateError] = useState<string | null>(null)
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null); const [editTemplateName, setEditTemplateName] = useState(''); const [editTemplateDescription, setEditTemplateDescription] = useState('')
-  const [editTemplateAttrs, setEditTemplateAttrs] = useState<{ key: string; name: string; modifier: string }[]>([])
+  const [editTemplateAttrs, setEditTemplateAttrs] = useState<{ key: string; name: string }[]>([])
+  const [editAttrModifierFormula, setEditAttrModifierFormula] = useState('')
   const [editTemplateFields, setEditTemplateFields] = useState<{ key: string; label: string }[]>([])
   const [newTemplateSkills, setNewTemplateSkills] = useState<{ name: string; description: string; formula: string }[]>([]); const [editTemplateSkills, setEditTemplateSkills] = useState<{ name: string; description: string; formula: string }[]>([]); const [templateSaving, setTemplateSaving] = useState(false)
   const [newTemplateProfiles, setNewTemplateProfiles] = useState<{ name: string; options: { label: string; value: number }[] }[]>([]); const [editTemplateProfiles, setEditTemplateProfiles] = useState<{ name: string; options: { label: string; value: number }[] }[]>([])
@@ -133,10 +136,10 @@ export default function AdventureDetailPage() {
   const fetchCampaignCharacters = useCallback(async () => { try { setCampaignCharacters(await api.get<CampaignCharacter[]>(`/character-sheets/adventure/${id}`)) } catch {} }, [id])
   const fetchUserSheets = useCallback(async () => { try { const d=await api.get<UserSheet[]>('/character-sheets'); setUserSheets(d.filter(s=>s.adventure.id!==id)) } catch {} }, [id])
 
-  function resetNewTemplate() { setShowNewTemplate(false); setNewTemplateName(''); setNewTemplateDescription(''); setNewTemplateAttrs([]); setNewTemplateFields([]); setNewTemplateSkills([]); setNewTemplateProfiles([]); setNewTemplateModifiers([]); setTemplateError(null) }
-  function addNewAttrRow() { setNewTemplateAttrs(p => [...p, { key: '', name: '', modifier: '' }]) }; function removeNewAttrRow(i: number) { setNewTemplateAttrs(p => p.filter((_,j)=>j!==i)) }; function updateNewAttr(i: number, f: 'key'|'name'|'modifier', v: string) { setNewTemplateAttrs(p => p.map((a,j)=>j===i?{...a,[f]:v}:a)) }
+  function resetNewTemplate() { setShowNewTemplate(false); setNewTemplateName(''); setNewTemplateDescription(''); setNewTemplateAttrs([]); setNewAttrModifierFormula(''); setNewTemplateFields([]); setNewTemplateSkills([]); setNewTemplateProfiles([]); setNewTemplateModifiers([]); setTemplateError(null) }
+  function addNewAttrRow() { setNewTemplateAttrs(p => [...p, { key: '', name: '' }]) }; function removeNewAttrRow(i: number) { setNewTemplateAttrs(p => p.filter((_,j)=>j!==i)) }; function updateNewAttr(i: number, f: 'key'|'name', v: string) { setNewTemplateAttrs(p => p.map((a,j)=>j===i?{...a,[f]:v}:a)) }
   function addNewFieldRow() { setNewTemplateFields(p => [...p, { key: '', label: '' }]) }; function removeNewFieldRow(i: number) { setNewTemplateFields(p => p.filter((_,j)=>j!==i)) }; function updateNewField(i: number, f: 'key'|'label', v: string) { setNewTemplateFields(p => p.map((a,j)=>j===i?{...a,[f]:v}:a)) }
-  function addEditAttrRow() { setEditTemplateAttrs(p => [...p, { key: '', name: '', modifier: '' }]) }; function removeEditAttrRow(i: number) { setEditTemplateAttrs(p => p.filter((_,j)=>j!==i)) }; function updateEditAttr(i: number, f: 'key'|'name'|'modifier', v: string) { setEditTemplateAttrs(p => p.map((a,j)=>j===i?{...a,[f]:v}:a)) }
+  function addEditAttrRow() { setEditTemplateAttrs(p => [...p, { key: '', name: '' }]) }; function removeEditAttrRow(i: number) { setEditTemplateAttrs(p => p.filter((_,j)=>j!==i)) }; function updateEditAttr(i: number, f: 'key'|'name', v: string) { setEditTemplateAttrs(p => p.map((a,j)=>j===i?{...a,[f]:v}:a)) }
   function addEditFieldRow() { setEditTemplateFields(p => [...p, { key: '', label: '' }]) }; function removeEditFieldRow(i: number) { setEditTemplateFields(p => p.filter((_,j)=>j!==i)) }; function updateEditField(i: number, f: 'key'|'label', v: string) { setEditTemplateFields(p => p.map((a,j)=>j===i?{...a,[f]:v}:a)) }
 
   function validateModifiers(modifiers: { key: string; name: string }[]) {
@@ -146,13 +149,15 @@ export default function AdventureDetailPage() {
   }
 
   async function handleCreateTemplate(e: FormEvent) { e.preventDefault(); setTemplateError(null)
-    const ta = newTemplateAttrs.map(a=>({key:a.key.trim(),name:a.name.trim(),modifier:a.modifier.trim()||undefined}))
+    const ta = newTemplateAttrs.map(a=>({key:a.key.trim(),name:a.name.trim()}))
     if(ta.some(a=>!a.key||!a.name)){setTemplateError('All attributes must have a key and name');return}
     const ve = validateModifiers(newTemplateModifiers); if(ve){setTemplateError(ve);return}
     setTemplateCreating(true)
     try {
       await api.post(`/adventures/${id}/templates`, {
-        name: newTemplateName.trim(), description: newTemplateDescription.trim()||undefined, attributes: ta,
+        name: newTemplateName.trim(), description: newTemplateDescription.trim()||undefined,
+        attributeModifierFormula: newAttrModifierFormula.trim() || undefined,
+        attributes: ta,
         templateFields: newTemplateFields.filter(f=>f.key.trim()&&f.label.trim()).map(f=>({key:f.key.trim(),label:f.label.trim()})),
         skills: newTemplateSkills.filter(s=>s.name.trim()).map(s=>({name:s.name.trim(),description:s.description.trim()||undefined,formula:s.formula.trim()||undefined})),
         skillModifierProfiles: newTemplateProfiles.filter(p=>p.name.trim()).map(p=>({name:p.name.trim(),options:p.options.filter(o=>o.label.trim()).map(o=>({label:o.label.trim(),value:o.value}))})),
@@ -164,7 +169,8 @@ export default function AdventureDetailPage() {
   }
 
   function startEditTemplate(t: Template) { setEditingTemplateId(t.id); setEditTemplateName(t.name); setEditTemplateDescription(t.description??'');
-    setEditTemplateAttrs(t.attributes.map(a=>({key:a.key,name:a.name,modifier:a.modifier??''})));
+    setEditTemplateAttrs(t.attributes.map(a=>({key:a.key,name:a.name})));
+    setEditAttrModifierFormula(t.attributeModifierFormula ?? '');
     setEditTemplateFields((t.templateFields||[]).map(f=>({key:f.key,label:f.label})));
     setEditTemplateSkills((t.templateSkills||[]).map(s=>({name:s.name,description:s.description??'',formula:s.formula??''})));
     setEditTemplateProfiles((t.skillModifierProfiles||[]).map(p=>({name:p.name,options:p.options.map(o=>({label:o.label,value:o.value}))})));
@@ -174,13 +180,15 @@ export default function AdventureDetailPage() {
   function cancelEditTemplate() { setEditingTemplateId(null); setEditingTemplateError(null) }
 
   async function handleUpdateTemplate(e: FormEvent) { e.preventDefault(); if(!editingTemplateId)return; setEditingTemplateError(null)
-    const ta = editTemplateAttrs.map(a=>({key:a.key.trim(),name:a.name.trim(),modifier:a.modifier.trim()||undefined}))
+    const ta = editTemplateAttrs.map(a=>({key:a.key.trim(),name:a.name.trim()}))
     if(ta.some(a=>!a.key||!a.name)){setEditingTemplateError('All attributes must have a key and name');return}
     const ve = validateModifiers(editTemplateModifiers); if(ve){setEditingTemplateError(ve);return}
     setTemplateSaving(true)
     try {
       await api.patch(`/adventures/${id}/templates/${editingTemplateId}`, {
-        name: editTemplateName.trim(), description: editTemplateDescription.trim()||undefined, attributes: ta,
+        name: editTemplateName.trim(), description: editTemplateDescription.trim()||undefined,
+        attributeModifierFormula: editAttrModifierFormula.trim() || undefined,
+        attributes: ta,
         templateFields: editTemplateFields.filter(f=>f.key.trim()&&f.label.trim()).map(f=>({key:f.key.trim(),label:f.label.trim()})),
         skills: editTemplateSkills.filter(s=>s.name.trim()).map(s=>({name:s.name.trim(),description:s.description.trim()||undefined,formula:s.formula.trim()||undefined})),
         skillModifierProfiles: editTemplateProfiles.filter(p=>p.name.trim()).map(p=>({name:p.name.trim(),options:p.options.filter(o=>o.label.trim()).map(o=>({label:o.label.trim(),value:o.value}))})),
@@ -230,8 +238,8 @@ export default function AdventureDetailPage() {
           </CollapsibleSection>
         </>) : (
           <TemplatesSection templates={templates} isGM={isGM} showNewTemplate={showNewTemplate} editingTemplateId={editingTemplateId}
-            newTemplateName={newTemplateName} newTemplateDescription={newTemplateDescription} newTemplateAttrs={newTemplateAttrs} newTemplateFields={newTemplateFields} templateError={templateError} templateCreating={templateCreating}
-            editTemplateName={editTemplateName} editTemplateDescription={editTemplateDescription} editTemplateAttrs={editTemplateAttrs} editingTemplateError={editingTemplateError} templateSaving={templateSaving}
+            newTemplateName={newTemplateName} newTemplateDescription={newTemplateDescription} newTemplateAttrs={newTemplateAttrs} newAttrModifierFormula={newAttrModifierFormula} newTemplateFields={newTemplateFields} templateError={templateError} templateCreating={templateCreating}
+            editTemplateName={editTemplateName} editTemplateDescription={editTemplateDescription} editTemplateAttrs={editTemplateAttrs} editAttrModifierFormula={editAttrModifierFormula} editingTemplateError={editingTemplateError} templateSaving={templateSaving}
             onNewClick={()=>setShowNewTemplate(true)} onCancelNew={resetNewTemplate} onCreateTemplate={handleCreateTemplate}
             onNameChange={setNewTemplateName} onDescriptionChange={setNewTemplateDescription} onAddAttr={addNewAttrRow} onRemoveAttr={removeNewAttrRow} onUpdateAttr={updateNewAttr}
             onAddField={addNewFieldRow} onRemoveField={removeNewFieldRow} onUpdateField={updateNewField}
@@ -254,6 +262,8 @@ export default function AdventureDetailPage() {
             editAcEnabled={editAcEnabled} editAcFormula={editAcFormula} editAcFields={editAcFields}
             onEditAcEnabledChange={setEditAcEnabled} onEditAcFormulaChange={setEditAcFormula}
             onAddEditAcField={addEditAcField} onRemoveEditAcField={removeEditAcField} onUpdateEditAcField={updateEditAcField} onUpdateEditAcFieldEditable={updateEditAcFieldEditable}
+            onNewAttrModifierFormulaChange={setNewAttrModifierFormula}
+            onEditAttrModifierFormulaChange={setEditAttrModifierFormula}
           />
         )}
         {confirmDelete && <DeleteModal name={adventure.name} error={deleteError} loading={deleting} onCancel={()=>setConfirmDelete(false)} onConfirm={handleDelete} />}
@@ -272,13 +282,13 @@ function CharactersSection(props:{characters:CampaignCharacter[];isGM:boolean;us
 
 function TemplatesSection(props: {
   templates: Template[]; isGM: boolean; showNewTemplate: boolean; editingTemplateId: string | null
-  newTemplateName: string; newTemplateDescription: string; newTemplateAttrs: { key: string; name: string; modifier: string }[]; newTemplateFields?: { key: string; label: string }[]; templateError: string | null; templateCreating: boolean
-  editTemplateName: string; editTemplateDescription: string; editTemplateAttrs: { key: string; name: string; modifier: string }[]; editTemplateFields?: { key: string; label: string }[]; editingTemplateError: string | null; templateSaving: boolean
+  newTemplateName: string; newTemplateDescription: string; newTemplateAttrs: { key: string; name: string }[]; newAttrModifierFormula: string; newTemplateFields?: { key: string; label: string }[]; templateError: string | null; templateCreating: boolean
+  editTemplateName: string; editTemplateDescription: string; editTemplateAttrs: { key: string; name: string }[]; editAttrModifierFormula: string; editTemplateFields?: { key: string; label: string }[]; editingTemplateError: string | null; templateSaving: boolean
   onNewClick: () => void; onCancelNew: () => void; onCreateTemplate: (e: FormEvent) => void; onNameChange: (v: string) => void; onDescriptionChange: (v: string) => void
-  onAddAttr: () => void; onRemoveAttr: (i: number) => void; onUpdateAttr: (i: number, f: 'key'|'name'|'modifier', v: string) => void
+  onAddAttr: () => void; onRemoveAttr: (i: number) => void; onUpdateAttr: (i: number, f: 'key'|'name', v: string) => void
   onAddField?: () => void; onRemoveField?: (i: number) => void; onUpdateField?: (i: number, f: 'key'|'label', v: string) => void
   onStartEdit: (t: Template) => void; onCancelEdit: () => void; onUpdateTemplate: (e: FormEvent) => void; onDeleteTemplate: (id: string) => void
-  onEditNameChange: (v: string) => void; onEditDescriptionChange: (v: string) => void; onAddEditAttr: () => void; onRemoveEditAttr: (i: number) => void; onUpdateEditAttr: (i: number, f: 'key'|'name'|'modifier', v: string) => void
+  onEditNameChange: (v: string) => void; onEditDescriptionChange: (v: string) => void; onAddEditAttr: () => void; onRemoveEditAttr: (i: number) => void; onUpdateEditAttr: (i: number, f: 'key'|'name', v: string) => void
   onAddEditField?: () => void; onRemoveEditField?: (i: number) => void; onUpdateEditField?: (i: number, f: 'key'|'label', v: string) => void
   newTemplateSkills?: { name: string; description: string; formula: string }[]; editTemplateSkills?: { name: string; description: string; formula: string }[]
   onAddSkill?: () => void; onRemoveSkill?: (i: number) => void; onUpdateSkill?: (i: number, f: 'name'|'description'|'formula', v: string) => void
@@ -301,17 +311,19 @@ function TemplatesSection(props: {
   editAcEnabled?: boolean; editAcFormula?: string; editAcFields?: { name: string; key: string; defaultValue: string; editableByPlayer: boolean; description: string }[]
   onEditAcEnabledChange?: (v: boolean) => void; onEditAcFormulaChange?: (v: string) => void
   onAddEditAcField?: () => void; onRemoveEditAcField?: (i: number) => void; onUpdateEditAcField?: (i: number, f: 'name'|'key'|'defaultValue'|'description', v: string) => void; onUpdateEditAcFieldEditable?: (i: number, v: boolean) => void
+  onNewAttrModifierFormulaChange?: (v: string) => void
+  onEditAttrModifierFormulaChange?: (v: string) => void
 }) {
   return <div className="space-y-4">
     {props.templates.length===0&&!props.showNewTemplate ? <div className="text-center py-6 text-muted-foreground text-sm italic">No templates defined yet.{props.isGM&&' Create one below to allow players to build character sheets.'}</div>
-    : <div className="space-y-3">{props.templates.map(t=><TemplateRow key={t.id} template={t} isGM={props.isGM} isEditing={props.editingTemplateId===t.id} editName={props.editTemplateName} editDescription={props.editTemplateDescription} editAttrs={props.editTemplateAttrs} editFields={props.editTemplateFields} editSkills={props.editTemplateSkills} editError={props.editingTemplateError} saving={props.templateSaving} onStartEdit={()=>props.onStartEdit(t)} onCancelEdit={props.onCancelEdit} onUpdate={props.onUpdateTemplate} onDelete={()=>props.onDeleteTemplate(t.id)} onEditNameChange={props.onEditNameChange} onEditDescriptionChange={props.onEditDescriptionChange} onAddAttr={props.onAddEditAttr} onRemoveAttr={props.onRemoveEditAttr} onUpdateAttr={props.onUpdateEditAttr} onAddField={props.onAddEditField} onRemoveField={props.onRemoveEditField} onUpdateField={props.onUpdateEditField} onAddSkill={props.onAddEditSkill} onRemoveSkill={props.onRemoveEditSkill} onUpdateSkill={props.onUpdateEditSkill} editProfiles={props.editTemplateProfiles} onAddProfile={props.onAddEditProfile} onRemoveProfile={props.onRemoveEditProfile} onUpdateProfile={props.onUpdateEditProfile} onAddProfileOption={props.onAddEditProfileOption} onRemoveProfileOption={props.onRemoveEditProfileOption} onUpdateProfileOption={props.onUpdateEditProfileOption} editModifiers={props.editTemplateModifiers} onAddModifier={props.onAddEditModifier} onRemoveModifier={props.onRemoveEditModifier} onUpdateModifier={props.onUpdateEditModifier} onAddComponent={props.onAddEditComponent} onRemoveComponent={props.onRemoveEditComponent} onUpdateComponent={props.onUpdateEditComponent} onUpdateComponentLocked={props.onUpdateEditComponentLocked} editAcEnabled={props.editAcEnabled} editAcFormula={props.editAcFormula} editAcFields={props.editAcFields} onEditAcEnabledChange={props.onEditAcEnabledChange} onEditAcFormulaChange={props.onEditAcFormulaChange} onAddEditAcField={props.onAddEditAcField} onRemoveEditAcField={props.onRemoveEditAcField} onUpdateEditAcField={props.onUpdateEditAcField} onUpdateEditAcFieldEditable={props.onUpdateEditAcFieldEditable} />)}</div>}
+    : <div className="space-y-3">{props.templates.map(t=><TemplateRow key={t.id} template={t} isGM={props.isGM} isEditing={props.editingTemplateId===t.id} editName={props.editTemplateName} editDescription={props.editTemplateDescription} editAttrs={props.editTemplateAttrs} editAttrModifierFormula={props.editAttrModifierFormula} editFields={props.editTemplateFields} editSkills={props.editTemplateSkills} editError={props.editingTemplateError} saving={props.templateSaving} onStartEdit={()=>props.onStartEdit(t)} onCancelEdit={props.onCancelEdit} onUpdate={props.onUpdateTemplate} onDelete={()=>props.onDeleteTemplate(t.id)} onEditNameChange={props.onEditNameChange} onEditDescriptionChange={props.onEditDescriptionChange} onAddAttr={props.onAddEditAttr} onRemoveAttr={props.onRemoveEditAttr} onUpdateAttr={props.onUpdateEditAttr} onAddField={props.onAddEditField} onRemoveField={props.onRemoveEditField} onUpdateField={props.onUpdateEditField} onAddSkill={props.onAddEditSkill} onRemoveSkill={props.onRemoveEditSkill} onUpdateSkill={props.onUpdateEditSkill} editProfiles={props.editTemplateProfiles} onAddProfile={props.onAddEditProfile} onRemoveProfile={props.onRemoveEditProfile} onUpdateProfile={props.onUpdateEditProfile} onAddProfileOption={props.onAddEditProfileOption} onRemoveProfileOption={props.onRemoveEditProfileOption} onUpdateProfileOption={props.onUpdateEditProfileOption} editModifiers={props.editTemplateModifiers} onAddModifier={props.onAddEditModifier} onRemoveModifier={props.onRemoveEditModifier} onUpdateModifier={props.onUpdateEditModifier} onAddComponent={props.onAddEditComponent} onRemoveComponent={props.onRemoveEditComponent} onUpdateComponent={props.onUpdateEditComponent} onUpdateComponentLocked={props.onUpdateEditComponentLocked} editAcEnabled={props.editAcEnabled} editAcFormula={props.editAcFormula} editAcFields={props.editAcFields} onEditAcEnabledChange={props.onEditAcEnabledChange} onEditAcFormulaChange={props.onEditAcFormulaChange} onAddEditAcField={props.onAddEditAcField} onRemoveEditAcField={props.onRemoveEditAcField} onUpdateEditAcField={props.onUpdateEditAcField} onUpdateEditAcFieldEditable={props.onUpdateEditAcFieldEditable} onEditAttrModifierFormulaChange={props.onEditAttrModifierFormulaChange} />)}</div>}
     {props.isGM&&!props.showNewTemplate&&<button onClick={props.onNewClick} className="btn-primary text-sm">+ New Template</button>}
-    {props.isGM&&props.showNewTemplate&&<NewTemplateForm newTemplateName={props.newTemplateName} newTemplateDescription={props.newTemplateDescription} newTemplateAttrs={props.newTemplateAttrs} newTemplateSkills={props.newTemplateSkills} newTemplateProfiles={props.newTemplateProfiles} newTemplateFields={props.newTemplateFields} templateError={props.templateError} templateCreating={props.templateCreating} onNameChange={props.onNameChange} onDescriptionChange={props.onDescriptionChange} onAddAttr={props.onAddAttr} onRemoveAttr={props.onRemoveAttr} onUpdateAttr={props.onUpdateAttr} onAddSkill={props.onAddSkill} onRemoveSkill={props.onRemoveSkill} onUpdateSkill={props.onUpdateSkill} onAddProfile={props.onAddProfile} onRemoveProfile={props.onRemoveProfile} onUpdateProfile={props.onUpdateProfile} onAddProfileOption={props.onAddProfileOption} onRemoveProfileOption={props.onRemoveProfileOption} onUpdateProfileOption={props.onUpdateProfileOption} onAddField={props.onAddField} onRemoveField={props.onRemoveField} onUpdateField={props.onUpdateField} onCancelNew={props.onCancelNew} onCreateTemplate={props.onCreateTemplate} newTemplateModifiers={props.newTemplateModifiers} onAddModifier={props.onAddModifier} onRemoveModifier={props.onRemoveModifier} onUpdateModifier={props.onUpdateModifier} onAddComponent={props.onAddComponent} onRemoveComponent={props.onRemoveComponent} onUpdateComponent={props.onUpdateComponent} onUpdateComponentLocked={props.onUpdateComponentLocked} newAcEnabled={props.newAcEnabled} newAcFormula={props.newAcFormula} newAcFields={props.newAcFields} onNewAcEnabledChange={props.onNewAcEnabledChange} onNewAcFormulaChange={props.onNewAcFormulaChange} onAddNewAcField={props.onAddNewAcField} onRemoveNewAcField={props.onRemoveNewAcField} onUpdateNewAcField={props.onUpdateNewAcField} onUpdateNewAcFieldEditable={props.onUpdateNewAcFieldEditable} />}
+    {props.isGM&&props.showNewTemplate&&<NewTemplateForm newTemplateName={props.newTemplateName} newTemplateDescription={props.newTemplateDescription} newTemplateAttrs={props.newTemplateAttrs} newAttrModifierFormula={props.newAttrModifierFormula} newTemplateSkills={props.newTemplateSkills} newTemplateProfiles={props.newTemplateProfiles} newTemplateFields={props.newTemplateFields} templateError={props.templateError} templateCreating={props.templateCreating} onNameChange={props.onNameChange} onDescriptionChange={props.onDescriptionChange} onAddAttr={props.onAddAttr} onRemoveAttr={props.onRemoveAttr} onUpdateAttr={props.onUpdateAttr} onAddSkill={props.onAddSkill} onRemoveSkill={props.onRemoveSkill} onUpdateSkill={props.onUpdateSkill} onAddProfile={props.onAddProfile} onRemoveProfile={props.onRemoveProfile} onUpdateProfile={props.onUpdateProfile} onAddProfileOption={props.onAddProfileOption} onRemoveProfileOption={props.onRemoveProfileOption} onUpdateProfileOption={props.onUpdateProfileOption} onAddField={props.onAddField} onRemoveField={props.onRemoveField} onUpdateField={props.onUpdateField} onCancelNew={props.onCancelNew} onCreateTemplate={props.onCreateTemplate} newTemplateModifiers={props.newTemplateModifiers} onAddModifier={props.onAddModifier} onRemoveModifier={props.onRemoveModifier} onUpdateModifier={props.onUpdateModifier} onAddComponent={props.onAddComponent} onRemoveComponent={props.onRemoveComponent} onUpdateComponent={props.onUpdateComponent} onUpdateComponentLocked={props.onUpdateComponentLocked} newAcEnabled={props.newAcEnabled} newAcFormula={props.newAcFormula} newAcFields={props.newAcFields} onNewAcEnabledChange={props.onNewAcEnabledChange} onNewAcFormulaChange={props.onNewAcFormulaChange} onAddNewAcField={props.onAddNewAcField} onRemoveNewAcField={props.onRemoveNewAcField} onUpdateNewAcField={props.onUpdateNewAcField} onUpdateNewAcFieldEditable={props.onUpdateNewAcFieldEditable} onNewAttrModifierFormulaChange={props.onNewAttrModifierFormulaChange} />}
   </div>
 }
 
-function CollapsibleAttrCard({ index, attr, isExpanded, onToggle, onUpdateAttr, onRemove, allAttrs, runtimeModifiers }: { index: number; attr: { key: string; name: string; modifier: string }; isExpanded: boolean; onToggle: () => void; onUpdateAttr: (i: number, f: 'key'|'name'|'modifier', v: string) => void; onRemove: () => void; allAttrs: { key: string; name: string; modifier: string }[]; runtimeModifiers?: { key: string; name: string }[] }) {
-  return <div className="rounded-lg border border-border bg-background/30 overflow-hidden"><button type="button" onClick={onToggle} className="flex items-center justify-between w-full px-3 py-2 text-left hover:bg-background/50 transition-colors"><div className="flex items-center gap-2 min-w-0"><span className="text-sm font-medium text-foreground truncate">{attr.name||'New Attribute'}</span>{attr.key&&<span className="text-[0.6rem] text-muted font-mono shrink-0">({attr.key})</span>}</div><svg className={`w-4 h-4 text-muted transition-transform shrink-0 ${isExpanded?'rotate-180':''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg></button>{isExpanded&&<div className="px-3 py-3 space-y-2 border-t border-border"><div className="flex items-center gap-1.5"><input className="input-field flex-1" value={attr.key} onChange={e=>onUpdateAttr(index,'key',e.target.value)} placeholder="Key (e.g. strength)"/><input className="input-field flex-1" value={attr.name} onChange={e=>onUpdateAttr(index,'name',e.target.value)} placeholder="Name (e.g. Strength)"/></div><div><label className="text-xs text-muted mb-1 block">Formula Builder (optional)</label><FormulaBuilder value={attr.modifier} onChange={v=>onUpdateAttr(index,'modifier',v)} attributes={allAttrs.filter(a=>a.key.trim()&&a.name.trim()).map(a=>({key:a.key.trim(),name:a.name.trim()}))} runtimeModifiers={runtimeModifiers}/></div><div className="flex justify-end"><button type="button" onClick={onRemove} className="text-xs text-danger hover:text-danger/80 transition-colors">Remove Attribute</button></div></div>}</div>
+function CollapsibleAttrCard({ index, attr, isExpanded, onToggle, onUpdateAttr, onRemove }: { index: number; attr: { key: string; name: string }; isExpanded: boolean; onToggle: () => void; onUpdateAttr: (i: number, f: 'key'|'name', v: string) => void; onRemove: () => void }) {
+  return <div className="rounded-lg border border-border bg-background/30 overflow-hidden"><button type="button" onClick={onToggle} className="flex items-center justify-between w-full px-3 py-2 text-left hover:bg-background/50 transition-colors"><div className="flex items-center gap-2 min-w-0"><span className="text-sm font-medium text-foreground truncate">{attr.name||'New Attribute'}</span>{attr.key&&<span className="text-[0.6rem] text-muted font-mono shrink-0">({attr.key})</span>}</div><svg className={`w-4 h-4 text-muted transition-transform shrink-0 ${isExpanded?'rotate-180':''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg></button>{isExpanded&&<div className="px-3 py-3 space-y-2 border-t border-border"><div className="flex items-center gap-1.5"><input className="input-field flex-1" value={attr.key} onChange={e=>onUpdateAttr(index,'key',e.target.value)} placeholder="Key (e.g. strength)"/><input className="input-field flex-1" value={attr.name} onChange={e=>onUpdateAttr(index,'name',e.target.value)} placeholder="Name (e.g. Strength)"/></div><div className="flex justify-end"><button type="button" onClick={onRemove} className="text-xs text-danger hover:text-danger/80 transition-colors">Remove Attribute</button></div></div>}</div>
 }
 
 function CollapsibleSkillCard({ index, skill, onUpdateSkill, onRemove, attributes, customFields, skillProfiles, runtimeModifiers }: { index: number; skill: { name: string; description: string; formula: string }; onUpdateSkill?: (i: number, f: 'name'|'description'|'formula', v: string) => void; onRemove?: () => void; attributes: { key: string; name: string }[]; customFields: { key: string; label: string }[]; skillProfiles: { id: string; name: string; options: { id: string; label: string; value: number }[] }[]; runtimeModifiers?: { key: string; name: string }[] }) {
@@ -320,10 +332,10 @@ function CollapsibleSkillCard({ index, skill, onUpdateSkill, onRemove, attribute
 }
 
 function NewTemplateForm(props: {
-  newTemplateName: string; newTemplateDescription: string; newTemplateAttrs: { key: string; name: string; modifier: string }[]
-  newTemplateSkills?: { name: string; description: string; formula: string }[]; newTemplateProfiles?: { name: string; options: { label: string; value: number }[] }[]; newTemplateFields?: { key: string; label: string }[]
+  newTemplateName: string; newTemplateDescription: string; newTemplateAttrs: { key: string; name: string }[]
+  newAttrModifierFormula: string; newTemplateSkills?: { name: string; description: string; formula: string }[]; newTemplateProfiles?: { name: string; options: { label: string; value: number }[] }[]; newTemplateFields?: { key: string; label: string }[]
   templateError: string | null; templateCreating: boolean; onNameChange: (v: string) => void; onDescriptionChange: (v: string) => void
-  onAddAttr: () => void; onRemoveAttr: (i: number) => void; onUpdateAttr: (i: number, f: 'key'|'name'|'modifier', v: string) => void
+  onAddAttr: () => void; onRemoveAttr: (i: number) => void; onUpdateAttr: (i: number, f: 'key'|'name', v: string) => void
   onAddSkill?: () => void; onRemoveSkill?: (i: number) => void; onUpdateSkill?: (i: number, f: 'name'|'description'|'formula', v: string) => void
   onAddProfile?: () => void; onRemoveProfile?: (i: number) => void; onUpdateProfile?: (i: number, n: string) => void
   onAddProfileOption?: (pIdx: number) => void; onRemoveProfileOption?: (pIdx: number, oIdx: number) => void; onUpdateProfileOption?: (pIdx: number, oIdx: number, f: 'label'|'value', v: string|number) => void
@@ -336,6 +348,7 @@ function NewTemplateForm(props: {
   newAcEnabled?: boolean; newAcFormula?: string; newAcFields?: { name: string; key: string; defaultValue: string; editableByPlayer: boolean; description: string }[]
   onNewAcEnabledChange?: (v: boolean) => void; onNewAcFormulaChange?: (v: string) => void
   onAddNewAcField?: () => void; onRemoveNewAcField?: (i: number) => void; onUpdateNewAcField?: (i: number, f: 'name'|'key'|'defaultValue'|'description', v: string) => void; onUpdateNewAcFieldEditable?: (i: number, v: boolean) => void
+  onNewAttrModifierFormulaChange?: (v: string) => void
 }) {
   const [activeTab, setActiveTab] = useState<'attrs'|'skills'|'profiles'|'modifiers'|'fields'|'ac'>('attrs')
   const [expandedAttrs, setExpandedAttrs] = useState<Record<number,boolean>>({}); const prevCount = useRef(0)
@@ -359,7 +372,9 @@ function NewTemplateForm(props: {
       {props.onNewAcEnabledChange&&<button type="button" onClick={()=>setActiveTab('ac')} className={tabClass('ac')}>Armor Class</button>}
     </div>
 
-    {activeTab==='attrs'&&<div><div className="space-y-2 mt-1">{props.newTemplateAttrs.map((attr,idx)=><CollapsibleAttrCard key={idx} index={idx} attr={attr} isExpanded={!!expandedAttrs[idx]} onToggle={()=>setExpandedAttrs(p=>({...p,[idx]:!p[idx]}))} onUpdateAttr={props.onUpdateAttr} onRemove={()=>props.onRemoveAttr(idx)} allAttrs={props.newTemplateAttrs} runtimeModifiers={activeModifiers}/>)}</div><button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button></div>}
+    {activeTab==='attrs'&&<div>
+      <div className="mb-3"><label className="text-xs text-muted mb-1 block">Attribute Modifier Formula</label><FormulaBuilder value={props.newAttrModifierFormula} onChange={v=>props.onNewAttrModifierFormulaChange?.(v)} attributes={activeAttrs} placeholder="floor((value - 10) / 2)"/></div>
+      <div className="space-y-2 mt-1">{props.newTemplateAttrs.map((attr,idx)=><CollapsibleAttrCard key={idx} index={idx} attr={attr} isExpanded={!!expandedAttrs[idx]} onToggle={()=>setExpandedAttrs(p=>({...p,[idx]:!p[idx]}))} onUpdateAttr={props.onUpdateAttr} onRemove={()=>props.onRemoveAttr(idx)}/>)}</div><button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button></div>}
     {activeTab==='skills'&&<div><div className="space-y-2 mt-1">{(props.newTemplateSkills||[]).map((s,idx)=><CollapsibleSkillCard key={idx} index={idx} skill={s} onUpdateSkill={props.onUpdateSkill} onRemove={()=>props.onRemoveSkill?.(idx)} attributes={activeAttrs} customFields={activeFields} skillProfiles={activeProfiles} runtimeModifiers={activeModifiers}/>)}</div><button type="button" onClick={props.onAddSkill} className="btn-ghost text-xs mt-2">+ Add Skill</button></div>}
 
     {activeTab==='profiles'&&<div><div className="space-y-2 mt-1">{(props.newTemplateProfiles||[]).map((p,pIdx)=><div key={pIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2"><div className="flex items-center gap-1.5"><input className="input-field flex-1" value={p.name} onChange={e=>props.onUpdateProfile?.(pIdx,e.target.value)} placeholder="Profile name (e.g. mastery)"/><button type="button" onClick={()=>props.onRemoveProfile?.(pIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div><div className="space-y-1 pl-2">{p.options.map((o,oIdx)=><div key={oIdx} className="flex items-center gap-1.5"><input className="input-field flex-1 text-xs" value={o.label} onChange={e=>props.onUpdateProfileOption?.(pIdx,oIdx,'label',e.target.value)} placeholder="Option label (e.g. Expert)"/><input className="input-field w-20 text-xs" type="number" value={o.value} onChange={e=>props.onUpdateProfileOption?.(pIdx,oIdx,'value',e.target.value)} placeholder="Value"/><button type="button" onClick={()=>props.onRemoveProfileOption?.(pIdx,oIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div>)}</div><button type="button" onClick={()=>props.onAddProfileOption?.(pIdx)} className="btn-ghost text-xs">+ Add Option</button></div>)}</div><button type="button" onClick={props.onAddProfile} className="btn-ghost text-xs mt-2">+ Add Skill Modifier Profile</button></div>}
@@ -395,9 +410,9 @@ function NewTemplateForm(props: {
 }
 
 function TemplateRow(props: {
-  template: Template; isGM: boolean; isEditing: boolean; editName: string; editDescription: string; editAttrs: { key: string; name: string; modifier: string }[]; editFields?: { key: string; label: string }[]; editSkills?: { name: string; description: string; formula: string }[]; editError: string | null; saving: boolean
+  template: Template; isGM: boolean; isEditing: boolean; editName: string; editDescription: string; editAttrs: { key: string; name: string }[]; editAttrModifierFormula: string; editFields?: { key: string; label: string }[]; editSkills?: { name: string; description: string; formula: string }[]; editError: string | null; saving: boolean
   onStartEdit: () => void; onCancelEdit: () => void; onUpdate: (e: FormEvent) => void; onDelete: () => void; onEditNameChange: (v: string) => void; onEditDescriptionChange: (v: string) => void
-  onAddAttr: () => void; onRemoveAttr: (i: number) => void; onUpdateAttr: (i: number, f: 'key'|'name'|'modifier', v: string) => void
+  onAddAttr: () => void; onRemoveAttr: (i: number) => void; onUpdateAttr: (i: number, f: 'key'|'name', v: string) => void
   onAddField?: () => void; onRemoveField?: (i: number) => void; onUpdateField?: (i: number, f: 'key'|'label', v: string) => void
   onAddSkill?: () => void; onRemoveSkill?: (i: number) => void; onUpdateSkill?: (i: number, f: 'name'|'description'|'formula', v: string) => void
   editProfiles?: { name: string; options: { label: string; value: number }[] }[]; onAddProfile?: () => void; onRemoveProfile?: (i: number) => void; onUpdateProfile?: (i: number, n: string) => void
@@ -408,6 +423,7 @@ function TemplateRow(props: {
   editAcEnabled?: boolean; editAcFormula?: string; editAcFields?: { name: string; key: string; defaultValue: string; editableByPlayer: boolean; description: string }[]
   onEditAcEnabledChange?: (v: boolean) => void; onEditAcFormulaChange?: (v: string) => void
   onAddEditAcField?: () => void; onRemoveEditAcField?: (i: number) => void; onUpdateEditAcField?: (i: number, f: 'name'|'key'|'defaultValue'|'description', v: string) => void; onUpdateEditAcFieldEditable?: (i: number, v: boolean) => void
+  onEditAttrModifierFormulaChange?: (v: string) => void
 }) {
   const [expandedEditAttrs, setExpandedEditAttrs] = useState<Record<number,boolean>>({}); const prevEditCount = useRef(0)
   useEffect(()=>{if(props.editAttrs.length>prevEditCount.current){setExpandedEditAttrs(p=>({...p,[props.editAttrs.length-1]:true}))};prevEditCount.current=props.editAttrs.length},[props.editAttrs.length])
@@ -424,7 +440,9 @@ function TemplateRow(props: {
     <div><label className="label">Description <span className="text-muted font-normal">(optional)</span></label><input className="input-field" value={props.editDescription} onChange={e=>props.onEditDescriptionChange(e.target.value)} maxLength={200}/></div>
     <div className="flex gap-1 flex-wrap"><button type="button" onClick={()=>setEditTab('attrs')} className={etabClass('attrs')}>Attributes</button><button type="button" onClick={()=>setEditTab('skills')} className={etabClass('skills')}>Skills</button>{props.onAddProfile&&<button type="button" onClick={()=>setEditTab('profiles')} className={etabClass('profiles')}>Skill Modifier Profiles</button>}{props.onAddModifier&&<button type="button" onClick={()=>setEditTab('modifiers')} className={etabClass('modifiers')}>Runtime Modifiers</button>}{props.onAddField&&<button type="button" onClick={()=>setEditTab('fields')} className={etabClass('fields')}>Custom Fields</button>}{props.onAddEditAcField&&<button type="button" onClick={()=>setEditTab('ac')} className={etabClass('ac')}>Armor Class</button>}</div>
 
-    {editTab==='attrs'&&<div><div className="space-y-2 mt-1">{props.editAttrs.map((attr,idx)=><CollapsibleAttrCard key={idx} index={idx} attr={attr} isExpanded={!!expandedEditAttrs[idx]} onToggle={()=>setExpandedEditAttrs(p=>({...p,[idx]:!p[idx]}))} onUpdateAttr={props.onUpdateAttr} onRemove={()=>props.onRemoveAttr(idx)} allAttrs={props.editAttrs} runtimeModifiers={activeModifiers}/>)}</div><button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button></div>}
+    {editTab==='attrs'&&<div>
+      <div className="mb-3"><label className="text-xs text-muted mb-1 block">Attribute Modifier Formula</label><FormulaBuilder value={props.editAttrModifierFormula} onChange={v=>props.onEditAttrModifierFormulaChange?.(v)} attributes={activeAttrs} placeholder="floor((value - 10) / 2)"/></div>
+      <div className="space-y-2 mt-1">{props.editAttrs.map((attr,idx)=><CollapsibleAttrCard key={idx} index={idx} attr={attr} isExpanded={!!expandedEditAttrs[idx]} onToggle={()=>setExpandedEditAttrs(p=>({...p,[idx]:!p[idx]}))} onUpdateAttr={props.onUpdateAttr} onRemove={()=>props.onRemoveAttr(idx)}/>)}</div><button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button></div>}
     {editTab==='skills'&&<div><div className="space-y-2 mt-1">{(props.editSkills||[]).map((s,idx)=><CollapsibleSkillCard key={idx} index={idx} skill={s} onUpdateSkill={props.onUpdateSkill} onRemove={()=>props.onRemoveSkill?.(idx)} attributes={activeAttrs} customFields={activeFields} skillProfiles={activeProfiles} runtimeModifiers={activeModifiers}/>)}</div><button type="button" onClick={props.onAddSkill} className="btn-ghost text-xs mt-2">+ Add Skill</button></div>}
     {editTab==='profiles'&&<div><div className="space-y-2 mt-1">{(props.editProfiles||[]).map((p,pIdx)=><div key={pIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2"><div className="flex items-center gap-1.5"><input className="input-field flex-1" value={p.name} onChange={e=>props.onUpdateProfile?.(pIdx,e.target.value)} placeholder="Profile name (e.g. mastery)"/><button type="button" onClick={()=>props.onRemoveProfile?.(pIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div><div className="space-y-1 pl-2">{p.options.map((o,oIdx)=><div key={oIdx} className="flex items-center gap-1.5"><input className="input-field flex-1 text-xs" value={o.label} onChange={e=>props.onUpdateProfileOption?.(pIdx,oIdx,'label',e.target.value)} placeholder="Option label (e.g. Expert)"/><input className="input-field w-20 text-xs" type="number" value={o.value} onChange={e=>props.onUpdateProfileOption?.(pIdx,oIdx,'value',e.target.value)} placeholder="Value"/><button type="button" onClick={()=>props.onRemoveProfileOption?.(pIdx,oIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div>)}</div><button type="button" onClick={()=>props.onAddProfileOption?.(pIdx)} className="btn-ghost text-xs">+ Add Option</button></div>)}</div><button type="button" onClick={props.onAddProfile} className="btn-ghost text-xs mt-2">+ Add Skill Modifier Profile</button></div>}
 

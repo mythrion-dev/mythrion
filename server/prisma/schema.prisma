@@ -119,20 +119,21 @@ model RefreshToken {
 // ── Character Sheet Templates ──
 
 model Template {
-  id                    String                      @id @default(cuid())
-  adventureId           String
-  adventure             Adventure                   @relation(fields: [adventureId], references: [id], onDelete: Cascade)
-  name                  String
-  description           String?
-  attributes            TemplateAttribute[]
-  templateFields        TemplateField[]
-  templateSkills        TemplateSkill[]
-  skillModifierProfiles SkillModifierProfile[]
-  runtimeModifiers      TemplateRuntimeModifier[]
-  armorClass            TemplateArmorClass?
-  characterSheets       CharacterSheet[]
-  createdAt             DateTime                    @default(now())
-  updatedAt             DateTime                    @updatedAt
+  id                       String                      @id @default(cuid())
+  adventureId              String
+  adventure                Adventure                   @relation(fields: [adventureId], references: [id], onDelete: Cascade)
+  name                     String
+  description              String?
+  attributeModifierFormula String?
+  attributes               TemplateAttribute[]
+  templateFields           TemplateField[]
+  templateSkills           TemplateSkill[]
+  skillModifierProfiles    SkillModifierProfile[]
+  runtimeModifiers         TemplateRuntimeModifier[]
+  armorClass               TemplateArmorClass?
+  characterSheets          CharacterSheet[]
+  createdAt                DateTime                    @default(now())
+  updatedAt                DateTime                    @updatedAt
 
   @@index([adventureId])
 }
@@ -195,7 +196,6 @@ model TemplateAttribute {
   template    Template              @relation(fields: [templateId], references: [id], onDelete: Cascade)
   key         String
   name        String
-  modifier    String?
   order       Int                   @default(0)
   sheetValues CharacterSheetValue[]
   createdAt   DateTime              @default(now())

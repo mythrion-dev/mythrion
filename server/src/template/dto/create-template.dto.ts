@@ -15,10 +15,6 @@ export class AttributeDefDto {
 
   @IsString()
   name!: string
-
-  @IsString()
-  @IsOptional()
-  modifier?: string
 }
 
 export class TemplateFieldDefDto {
@@ -173,4 +169,8 @@ export class CreateTemplateDto {
   @IsOptional()
   @Type(() => ArmorClassDefDto)
   armorClass?: ArmorClassDefDto
+
+  @IsString()
+  @IsOptional()
+  attributeModifierFormula?: string
 }

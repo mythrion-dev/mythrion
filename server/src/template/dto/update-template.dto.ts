@@ -7,10 +7,6 @@ export class UpdateAttributeDefDto {
 
   @IsString()
   name!: string
-
-  @IsString()
-  @IsOptional()
-  modifier?: string
 }
 
 export class UpdateTemplateFieldDefDto {
@@ -169,4 +165,8 @@ export class UpdateTemplateDto {
   @IsOptional()
   @Type(() => UpdateArmorClassDefDto)
   armorClass?: UpdateArmorClassDefDto
+
+  @IsString()
+  @IsOptional()
+  attributeModifierFormula?: string
 }

@@ -8,7 +8,7 @@ import { InlineText, InlineNumber, InlineTextarea } from '@/lib/inline-editable'
 import Link from 'next/link'
 import { PageNav } from '@/lib/breadcrumb'
 
-interface SheetAttribute { id: string; attributeId: string; value: string; attribute: { id: string; key: string; name: string; modifier: string | null } }
+interface SheetAttribute { id: string; attributeId: string; value: string; attribute: { id: string; key: string; name: string } }
 interface FieldValue { id: string; templateFieldId: string; value: string; templateField: { id: string; key: string; label: string } }
 interface SkillValue { id: string; skillId: string; value: string; skill: { id: string; name: string; description: string | null; formula: string | null } }
 interface ProfileOption { id: string; label: string; value: number }
@@ -48,7 +48,8 @@ interface CharacterSheet {
   adventure: { id: string; name: string; campaign: string } | null
   template: {
     id: string; name: string
-    attributes: { id: string; key: string; name: string; modifier: string | null }[]
+    attributeModifierFormula?: string | null
+    attributes: { id: string; key: string; name: string }[]
     skillModifierProfiles: SkillModifierProfile[]
     runtimeModifiers: RuntimeModifierDef[]
     armorClass: ArmorClassDef | null
@@ -109,16 +110,19 @@ export default function CharacterSheetDetailPage() {
       sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); vars[rcv.component.modifier.key] = isNaN(v) ? 0 : v })
       sd.fieldValues.forEach(fv => { const v = parseFloat(fv.value); vars[fv.templateField.key] = isNaN(v) ? 0 : v })
       sd.acValues.forEach(acv => { const v = parseFloat(acv.value); vars[acv.field.key] = isNaN(v) ? 0 : v })
-      // Compute attribute modifiers for formula support
-      for (const attr of sd.template.attributes) {
-        if (!attr.modifier?.trim()) continue
-        try {
-          const modVars: Record<string, number> = {}
-          sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv => sv.attributeId === a.id)?.value || '0'); modVars[a.key] = isNaN(v) ? 0 : v })
-          sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); modVars[rcv.component.modifier.key] = isNaN(v) ? 0 : v })
-          const mr = await api.post<{ result: number }>('/formula/evaluate', { formula: attr.modifier, variables: modVars })
-          vars[`${attr.key}_mod`] = mr.result
-        } catch { vars[`${attr.key}_mod`] = 0 }
+      // Compute attribute modifiers using global template formula
+      const globalFormula = sd.template.attributeModifierFormula
+      if (globalFormula?.trim()) {
+        for (const attr of sd.template.attributes) {
+          try {
+            const modVars: Record<string, number> = {}
+            sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv => sv.attributeId === a.id)?.value || '0'); modVars[a.key] = isNaN(v) ? 0 : v })
+            sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); modVars[rcv.component.modifier.key] = isNaN(v) ? 0 : v })
+            modVars['value'] = parseFloat(sd.values.find(sv => sv.attributeId === attr.id)?.value || '0') || 0
+            const mr = await api.post<{ result: number }>('/formula/evaluate', { formula: globalFormula, variables: modVars })
+            vars[`${attr.key}_mod`] = mr.result
+          } catch { vars[`${attr.key}_mod`] = 0 }
+        }
       }
       const res = await api.post<{ result: number }>('/formula/evaluate', { formula: ac.formula, variables: vars })
       setAcResult(res.result)
@@ -127,13 +131,15 @@ export default function CharacterSheetDetailPage() {
 
   const computeModifiers = useCallback(async (sd: CharacterSheet) => {
     const results: Record<string, number | null> = {}
+    const globalFormula = sd.template.attributeModifierFormula
+    if (!globalFormula?.trim()) { setModifierResults(results); return }
     for (const attr of sd.template.attributes) {
-      if (!attr.modifier?.trim()) continue
       try {
         const vars: Record<string, number> = {}
         sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv => sv.attributeId === a.id)?.value || '0'); vars[a.key] = isNaN(v) ? 0 : v })
         sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); vars[rcv.component.modifier.key] = isNaN(v) ? 0 : v })
-        const res = await api.post<{ result: number }>('/formula/evaluate', { formula: attr.modifier, variables: vars })
+        vars['value'] = parseFloat(sd.values.find(sv => sv.attributeId === attr.id)?.value || '0') || 0
+        const res = await api.post<{ result: number }>('/formula/evaluate', { formula: globalFormula, variables: vars })
         results[attr.id] = res.result
       } catch { results[attr.id] = null }
     }
@@ -143,15 +149,18 @@ export default function CharacterSheetDetailPage() {
   const computeSkills = useCallback(async (sd: CharacterSheet, selections?: Record<string, Record<string, string | null>>, othersOverrides?: Record<string, number>) => {
     const results: Record<string, number | null> = {}; const selMap = selections || profileSelectionsRef.current; const effOthers = othersOverrides ?? othersValuesRef.current
     const modifierVars: Record<string, number> = {}
-    for (const attr of sd.template.attributes) {
-      if (!attr.modifier?.trim()) continue
-      try {
-        const modVars: Record<string, number> = {}
-        sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv => sv.attributeId === a.id)?.value || '0'); modVars[a.key] = isNaN(v) ? 0 : v })
-        sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); modVars[rcv.component.modifier.key] = isNaN(v) ? 0 : v })
-        const mr = await api.post<{ result: number }>('/formula/evaluate', { formula: attr.modifier, variables: modVars })
-        modifierVars[`${attr.key}_mod`] = mr.result
-      } catch { modifierVars[`${attr.key}_mod`] = 0 }
+    const globalFormula = sd.template.attributeModifierFormula
+    if (globalFormula?.trim()) {
+      for (const attr of sd.template.attributes) {
+        try {
+          const modVars: Record<string, number> = {}
+          sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv => sv.attributeId === a.id)?.value || '0'); modVars[a.key] = isNaN(v) ? 0 : v })
+          sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); modVars[rcv.component.modifier.key] = isNaN(v) ? 0 : v })
+          modVars['value'] = parseFloat(sd.values.find(sv => sv.attributeId === attr.id)?.value || '0') || 0
+          const mr = await api.post<{ result: number }>('/formula/evaluate', { formula: globalFormula, variables: modVars })
+          modifierVars[`${attr.key}_mod`] = mr.result
+        } catch { modifierVars[`${attr.key}_mod`] = 0 }
+      }
     }
     for (const sv of sd.skillValues) {
       if (!sv.skill.formula?.trim()) continue
@@ -486,7 +495,7 @@ export default function CharacterSheetDetailPage() {
               const modResult = modifierResults[attr.id]
               return (
                 <div key={attr.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
-                  <span className="text-sm text-foreground">{attr.name}{attr.modifier && <span className="text-[0.6rem] text-primary ml-1">mod</span>}</span>
+                  <span className="text-sm text-foreground">{attr.name}{sheet.template.attributeModifierFormula && <span className="text-[0.6rem] text-primary ml-1">mod</span>}</span>
                   <div className="flex items-center gap-3">
                     {isOwner ? (
                       <InlineText value={val?.value ?? ''} onSave={(v) => saveAttributeValue(attr.id, v)} className="text-sm font-semibold text-foreground" />

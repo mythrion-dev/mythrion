@@ -14,6 +14,7 @@ const sheetInclude = {
     select: {
       id: true,
       name: true,
+      attributeModifierFormula: true,
       attributes: { orderBy: { order: 'asc' as const } },
       skillModifierProfiles: {
         orderBy: { order: 'asc' as const },
@@ -30,7 +31,7 @@ const sheetInclude = {
   },
   values: {
     include: {
-      attribute: { select: { id: true, key: true, name: true, modifier: true } },
+      attribute: { select: { id: true, key: true, name: true } },
     },
   },
   fieldValues: {
