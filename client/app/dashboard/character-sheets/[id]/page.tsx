@@ -10,7 +10,7 @@ import { PageNav } from '@/lib/breadcrumb'
 
 interface SheetAttribute { id: string; attributeId: string; value: string; attribute: { id: string; key: string; name: string } }
 interface FieldValue { id: string; templateFieldId: string; value: string; templateField: { id: string; key: string; label: string } }
-interface SkillValue { id: string; skillId: string; value: string; skill: { id: string; name: string; description: string | null } }
+interface SkillValue { id: string; skillId: string; value: string; skill: { id: string; name: string; description: string | null; attributeId: string | null; attribute: { id: string; key: string; name: string } | null } }
 interface ProfileOption { id: string; label: string; value: number }
 interface SkillModifierProfile { id: string; name: string; options: ProfileOption[] }
 interface SkillProfileValue { id: string; skillId: string; profileId: string; optionId: string | null; profile: { id: string; name: string }; option: { id: string; label: string; value: number } | null }
@@ -167,7 +167,14 @@ export default function CharacterSheetDetailPage() {
     if (!skillFormula) { setSkillResults({}); return }
     for (const sv of sd.skillValues) {
       try {
+        // Resolve the assigned attribute value for this skill
+        const skillAttr = sv.skill.attribute
+        const skillAttrValue = skillAttr
+          ? parseFloat(sd.values.find(sv2 => sv2.attributeId === skillAttr.id)?.value || '0')
+          : 0
         const variables: Record<string, number> = { ...modifierVars }
+        // value = assigned attribute value (generic placeholder)
+        variables['value'] = isNaN(skillAttrValue) ? 0 : skillAttrValue
         sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv2 => sv2.attributeId === a.id)?.value || '0'); variables[a.key] = isNaN(v) ? 0 : v })
         sd.fieldValues.forEach(fv => { const v = parseFloat(fv.value); variables[fv.templateField.key] = isNaN(v) ? 0 : v })
         sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); variables[rcv.component.modifier.key] = isNaN(v) ? 0 : v })

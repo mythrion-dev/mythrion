@@ -32,6 +32,10 @@ export class TemplateSkillDefDto {
   @IsString()
   @IsOptional()
   description?: string
+
+  @IsString()
+  @IsOptional()
+  attributeId?: string
 }
 
 export class ProfileOptionDefDto {

@@ -24,6 +24,10 @@ export class UpdateTemplateSkillDefDto {
   @IsString()
   @IsOptional()
   description?: string
+
+  @IsString()
+  @IsOptional()
+  attributeId?: string
 }
 
 export class UpdateProfileOptionDefDto {

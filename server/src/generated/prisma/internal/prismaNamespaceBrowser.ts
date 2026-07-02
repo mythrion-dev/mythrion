@@ -249,6 +249,7 @@ export const TemplateSkillScalarFieldEnum = {
   templateId: 'templateId',
   name: 'name',
   description: 'description',
+  attributeId: 'attributeId',
   order: 'order',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

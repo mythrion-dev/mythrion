@@ -42,7 +42,7 @@ const sheetInclude = {
   },
   skillValues: {
     include: {
-      skill: { select: { id: true, name: true, description: true } },
+      skill: { select: { id: true, name: true, description: true, attributeId: true, attribute: { select: { id: true, key: true, name: true } } } },
     },
   },
   skillProfileValues: {

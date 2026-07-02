@@ -7,7 +7,7 @@ import { UpdateTemplateDto } from './dto/update-template.dto.js'
 const templateInclude = {
   attributes: { orderBy: { order: 'asc' as const } },
   templateFields: { orderBy: { order: 'asc' as const } },
-  templateSkills: { orderBy: { order: 'asc' as const } },
+  templateSkills: { orderBy: { order: 'asc' as const }, include: { attribute: { select: { id: true, key: true, name: true } } } },
   skillModifierProfiles: {
     orderBy: { order: 'asc' as const },
     include: { options: { orderBy: { order: 'asc' as const } } },
@@ -47,7 +47,7 @@ export class TemplateService {
         },
         templateSkills: {
           create: (dto.skills || []).map((s, idx) => ({
-            name: s.name, description: s.description ?? null, order: idx,
+            name: s.name, description: s.description ?? null, attributeId: s.attributeId || null, order: idx,
           })),
         },
         skillModifierProfiles: {
@@ -178,8 +178,8 @@ export class TemplateService {
       for (let idx = 0; idx < dto.skills.length; idx++) {
         const s = dto.skills[idx]; const name = s.name.trim()
         const existing = existingSkills.find(e => e.name === name)
-        if (existing) { await this.prisma.templateSkill.update({ where: { id: existing.id }, data: { description: s.description ?? null, order: idx } }) }
-        else { await this.prisma.templateSkill.create({ data: { templateId: id, name, description: s.description ?? null, order: idx } }) }
+        if (existing) { await this.prisma.templateSkill.update({ where: { id: existing.id }, data: { description: s.description ?? null, attributeId: s.attributeId || null, order: idx } }) }
+        else { await this.prisma.templateSkill.create({ data: { templateId: id, name, description: s.description ?? null, attributeId: s.attributeId || null, order: idx } }) }
       }
       const addedSkillNames = newSkillNames.filter(n => !existingSkillNames.includes(n))
       if (addedSkillNames.length > 0) {
