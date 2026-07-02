@@ -30,7 +30,9 @@ export class TemplateService {
 
   async create(adventureId: string, userId: string, dto: CreateTemplateDto) {
     await this.membership.requireRole(adventureId, userId, 'GM')
-    return this.prisma.template.create({
+
+    // Create the template with attributes and skills (initially without attribute links)
+    const created = await this.prisma.template.create({
       data: {
         adventureId, name: dto.name, description: dto.description ?? null,
         attributeModifierFormula: dto.attributeModifierFormula ?? null,
@@ -47,7 +49,7 @@ export class TemplateService {
         },
         templateSkills: {
           create: (dto.skills || []).map((s, idx) => ({
-            name: s.name, description: s.description ?? null, attributeId: s.attributeId || null, order: idx,
+            name: s.name, description: s.description ?? null, order: idx,
           })),
         },
         skillModifierProfiles: {
@@ -103,6 +105,24 @@ export class TemplateService {
       },
       include: templateInclude,
     })
+
+    // Post-create: link skills to their attributes by resolving keys to IDs
+    if (dto.skills?.length) {
+      const createdAttrs = await this.prisma.templateAttribute.findMany({ where: { templateId: created.id } })
+      const attrKeyToId = new Map(createdAttrs.map(a => [a.key, a.id]))
+      for (const s of dto.skills) {
+        if (!s.attributeId) continue
+        const attrId = attrKeyToId.get(s.attributeId)
+        if (!attrId) continue
+        const skill = (created.templateSkills || []).find(sk => sk.name === s.name)
+        if (skill) {
+          await this.prisma.templateSkill.update({ where: { id: skill.id }, data: { attributeId: attrId } })
+        }
+      }
+    }
+
+    // Re-fetch to include updated attribute links
+    return this.prisma.template.findUnique({ where: { id: created.id }, include: templateInclude })
   }
 
   async findAllByAdventure(adventureId: string, userId: string) {
@@ -178,8 +198,11 @@ export class TemplateService {
       for (let idx = 0; idx < dto.skills.length; idx++) {
         const s = dto.skills[idx]; const name = s.name.trim()
         const existing = existingSkills.find(e => e.name === name)
-        if (existing) { await this.prisma.templateSkill.update({ where: { id: existing.id }, data: { description: s.description ?? null, attributeId: s.attributeId || null, order: idx } }) }
-        else { await this.prisma.templateSkill.create({ data: { templateId: id, name, description: s.description ?? null, attributeId: s.attributeId || null, order: idx } }) }
+        const attrId = s.attributeId
+          ? (await this.prisma.templateAttribute.findFirst({ where: { templateId: id, key: s.attributeId }, select: { id: true } }))?.id ?? null
+          : null
+        if (existing) { await this.prisma.templateSkill.update({ where: { id: existing.id }, data: { description: s.description ?? null, attributeId: attrId, order: idx } }) }
+        else { await this.prisma.templateSkill.create({ data: { templateId: id, name, description: s.description ?? null, attributeId: attrId, order: idx } }) }
       }
       const addedSkillNames = newSkillNames.filter(n => !existingSkillNames.includes(n))
       if (addedSkillNames.length > 0) {
