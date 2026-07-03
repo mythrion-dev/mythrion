@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context'
 import { api } from '@/lib/api'
 import Link from 'next/link'
 import FormulaBuilder from '@/lib/formula-builder'
+import AttributeModifierConfig from '@/lib/attribute-modifier-config'
 import { PageNav } from '@/lib/breadcrumb'
 
 interface Adventure {
@@ -385,7 +386,7 @@ function NewTemplateForm(props: {
     </div>
 
     {activeTab==='attrs'&&<div>
-      <div className="mb-3"><label className="text-xs text-muted mb-1 block">Attribute Modifier Formula</label><FormulaBuilder value={props.newAttrModifierFormula} onChange={v=>props.onNewAttrModifierFormulaChange?.(v)} attributes={activeAttrs} placeholder="floor((value - 10) / 2)"/></div>
+      <div className="mb-3"><AttributeModifierConfig value={props.newAttrModifierFormula} onChange={v=>props.onNewAttrModifierFormulaChange?.(v)} placeholder="floor((value - 10) / 2)"/></div>
       <div className="space-y-2 mt-1">{props.newTemplateAttrs.map((attr,idx)=><CollapsibleAttrCard key={idx} index={idx} attr={attr} isExpanded={!!expandedAttrs[idx]} onToggle={()=>setExpandedAttrs(p=>({...p,[idx]:!p[idx]}))} onUpdateAttr={props.onUpdateAttr} onRemove={()=>props.onRemoveAttr(idx)}/>)}</div><button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button></div>}
     {activeTab==='skills'&&<div>
       <div className="mb-3"><label className="text-xs text-muted mb-1 block">Skill Formula</label><FormulaBuilder value={props.newSkillFormula} onChange={v=>props.onNewSkillFormulaChange?.(v)} attributes={activeAttrs} customFields={activeFields} skillModifierProfiles={activeProfiles} runtimeModifiers={activeModifiers} useModPrefix placeholder="e.g. value + mod(value)"/></div>
@@ -457,7 +458,7 @@ function TemplateRow(props: {
     <div className="flex gap-1 flex-wrap"><button type="button" onClick={()=>setEditTab('attrs')} className={etabClass('attrs')}>Attributes</button><button type="button" onClick={()=>setEditTab('skills')} className={etabClass('skills')}>Skills</button>{props.onAddProfile&&<button type="button" onClick={()=>setEditTab('profiles')} className={etabClass('profiles')}>Skill Modifier Profiles</button>}{props.onAddModifier&&<button type="button" onClick={()=>setEditTab('modifiers')} className={etabClass('modifiers')}>Runtime Modifiers</button>}{props.onAddField&&<button type="button" onClick={()=>setEditTab('fields')} className={etabClass('fields')}>Custom Fields</button>}{props.onAddEditAcField&&<button type="button" onClick={()=>setEditTab('ac')} className={etabClass('ac')}>Armor Class</button>}</div>
 
     {editTab==='attrs'&&<div>
-      <div className="mb-3"><label className="text-xs text-muted mb-1 block">Attribute Modifier Formula</label><FormulaBuilder value={props.editAttrModifierFormula} onChange={v=>props.onEditAttrModifierFormulaChange?.(v)} attributes={activeAttrs} placeholder="floor((value - 10) / 2)"/></div>
+      <div className="mb-3"><AttributeModifierConfig value={props.editAttrModifierFormula} onChange={v=>props.onEditAttrModifierFormulaChange?.(v)} placeholder="floor((value - 10) / 2)"/></div>
       <div className="space-y-2 mt-1">{props.editAttrs.map((attr,idx)=><CollapsibleAttrCard key={idx} index={idx} attr={attr} isExpanded={!!expandedEditAttrs[idx]} onToggle={()=>setExpandedEditAttrs(p=>({...p,[idx]:!p[idx]}))} onUpdateAttr={props.onUpdateAttr} onRemove={()=>props.onRemoveAttr(idx)}/>)}</div><button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button></div>}
     {editTab==='skills'&&<div>
       <div className="mb-3"><label className="text-xs text-muted mb-1 block">Skill Formula</label><FormulaBuilder value={props.editSkillFormula} onChange={v=>props.onEditSkillFormulaChange?.(v)} attributes={activeAttrs} customFields={activeFields} skillModifierProfiles={activeProfiles} runtimeModifiers={activeModifiers} useModPrefix placeholder="e.g. value + mod(value)"/></div>
