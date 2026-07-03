@@ -104,7 +104,7 @@ export class CharacterSheetController {
   }
 
   @Patch(':id/abilities/:abilityId')
-  updateAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('abilityId') abilityId: string, @Body() dto: { name?: string; icon?: string }) {
+  updateAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('abilityId') abilityId: string, @Body() dto: { name?: string }) {
     return this.sheetService.updateAbility(abilityId, req.user.sub, dto)
   }
 

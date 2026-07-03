@@ -38,7 +38,6 @@ export type CharacterAbilityMinAggregateOutputType = {
   id: string | null
   sheetId: string | null
   name: string | null
-  icon: string | null
   order: number | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -48,7 +47,6 @@ export type CharacterAbilityMaxAggregateOutputType = {
   id: string | null
   sheetId: string | null
   name: string | null
-  icon: string | null
   order: number | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -58,7 +56,6 @@ export type CharacterAbilityCountAggregateOutputType = {
   id: number
   sheetId: number
   name: number
-  icon: number
   order: number
   createdAt: number
   updatedAt: number
@@ -78,7 +75,6 @@ export type CharacterAbilityMinAggregateInputType = {
   id?: true
   sheetId?: true
   name?: true
-  icon?: true
   order?: true
   createdAt?: true
   updatedAt?: true
@@ -88,7 +84,6 @@ export type CharacterAbilityMaxAggregateInputType = {
   id?: true
   sheetId?: true
   name?: true
-  icon?: true
   order?: true
   createdAt?: true
   updatedAt?: true
@@ -98,7 +93,6 @@ export type CharacterAbilityCountAggregateInputType = {
   id?: true
   sheetId?: true
   name?: true
-  icon?: true
   order?: true
   createdAt?: true
   updatedAt?: true
@@ -195,7 +189,6 @@ export type CharacterAbilityGroupByOutputType = {
   id: string
   sheetId: string
   name: string
-  icon: string | null
   order: number
   createdAt: Date
   updatedAt: Date
@@ -228,7 +221,6 @@ export type CharacterAbilityWhereInput = {
   id?: Prisma.StringFilter<"CharacterAbility"> | string
   sheetId?: Prisma.StringFilter<"CharacterAbility"> | string
   name?: Prisma.StringFilter<"CharacterAbility"> | string
-  icon?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
   order?: Prisma.IntFilter<"CharacterAbility"> | number
   createdAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
@@ -240,7 +232,6 @@ export type CharacterAbilityOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  icon?: Prisma.SortOrderInput | Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -255,7 +246,6 @@ export type CharacterAbilityWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.CharacterAbilityWhereInput | Prisma.CharacterAbilityWhereInput[]
   sheetId?: Prisma.StringFilter<"CharacterAbility"> | string
   name?: Prisma.StringFilter<"CharacterAbility"> | string
-  icon?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
   order?: Prisma.IntFilter<"CharacterAbility"> | number
   createdAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
@@ -267,7 +257,6 @@ export type CharacterAbilityOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  icon?: Prisma.SortOrderInput | Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -285,7 +274,6 @@ export type CharacterAbilityScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"CharacterAbility"> | string
   sheetId?: Prisma.StringWithAggregatesFilter<"CharacterAbility"> | string
   name?: Prisma.StringWithAggregatesFilter<"CharacterAbility"> | string
-  icon?: Prisma.StringNullableWithAggregatesFilter<"CharacterAbility"> | string | null
   order?: Prisma.IntWithAggregatesFilter<"CharacterAbility"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"CharacterAbility"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"CharacterAbility"> | Date | string
@@ -294,7 +282,6 @@ export type CharacterAbilityScalarWhereWithAggregatesInput = {
 export type CharacterAbilityCreateInput = {
   id?: string
   name: string
-  icon?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -306,7 +293,6 @@ export type CharacterAbilityUncheckedCreateInput = {
   id?: string
   sheetId: string
   name: string
-  icon?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -316,7 +302,6 @@ export type CharacterAbilityUncheckedCreateInput = {
 export type CharacterAbilityUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -328,7 +313,6 @@ export type CharacterAbilityUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sheetId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -339,7 +323,6 @@ export type CharacterAbilityCreateManyInput = {
   id?: string
   sheetId: string
   name: string
-  icon?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -348,7 +331,6 @@ export type CharacterAbilityCreateManyInput = {
 export type CharacterAbilityUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -358,7 +340,6 @@ export type CharacterAbilityUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sheetId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -378,7 +359,6 @@ export type CharacterAbilityCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  icon?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -392,7 +372,6 @@ export type CharacterAbilityMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  icon?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -402,7 +381,6 @@ export type CharacterAbilityMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  icon?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -476,7 +454,6 @@ export type CharacterAbilityUpdateOneRequiredWithoutLevelsNestedInput = {
 export type CharacterAbilityCreateWithoutSheetInput = {
   id?: string
   name: string
-  icon?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -486,7 +463,6 @@ export type CharacterAbilityCreateWithoutSheetInput = {
 export type CharacterAbilityUncheckedCreateWithoutSheetInput = {
   id?: string
   name: string
-  icon?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -526,7 +502,6 @@ export type CharacterAbilityScalarWhereInput = {
   id?: Prisma.StringFilter<"CharacterAbility"> | string
   sheetId?: Prisma.StringFilter<"CharacterAbility"> | string
   name?: Prisma.StringFilter<"CharacterAbility"> | string
-  icon?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
   order?: Prisma.IntFilter<"CharacterAbility"> | number
   createdAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
@@ -535,7 +510,6 @@ export type CharacterAbilityScalarWhereInput = {
 export type CharacterAbilityCreateWithoutLevelsInput = {
   id?: string
   name: string
-  icon?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -546,7 +520,6 @@ export type CharacterAbilityUncheckedCreateWithoutLevelsInput = {
   id?: string
   sheetId: string
   name: string
-  icon?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -571,7 +544,6 @@ export type CharacterAbilityUpdateToOneWithWhereWithoutLevelsInput = {
 export type CharacterAbilityUpdateWithoutLevelsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -582,7 +554,6 @@ export type CharacterAbilityUncheckedUpdateWithoutLevelsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sheetId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -591,7 +562,6 @@ export type CharacterAbilityUncheckedUpdateWithoutLevelsInput = {
 export type CharacterAbilityCreateManySheetInput = {
   id?: string
   name: string
-  icon?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -600,7 +570,6 @@ export type CharacterAbilityCreateManySheetInput = {
 export type CharacterAbilityUpdateWithoutSheetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -610,7 +579,6 @@ export type CharacterAbilityUpdateWithoutSheetInput = {
 export type CharacterAbilityUncheckedUpdateWithoutSheetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -620,7 +588,6 @@ export type CharacterAbilityUncheckedUpdateWithoutSheetInput = {
 export type CharacterAbilityUncheckedUpdateManyWithoutSheetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -661,7 +628,6 @@ export type CharacterAbilitySelect<ExtArgs extends runtime.Types.Extensions.Inte
   id?: boolean
   sheetId?: boolean
   name?: boolean
-  icon?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -674,7 +640,6 @@ export type CharacterAbilitySelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   id?: boolean
   sheetId?: boolean
   name?: boolean
-  icon?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -685,7 +650,6 @@ export type CharacterAbilitySelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   id?: boolean
   sheetId?: boolean
   name?: boolean
-  icon?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -696,13 +660,12 @@ export type CharacterAbilitySelectScalar = {
   id?: boolean
   sheetId?: boolean
   name?: boolean
-  icon?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CharacterAbilityOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sheetId" | "name" | "icon" | "order" | "createdAt" | "updatedAt", ExtArgs["result"]["characterAbility"]>
+export type CharacterAbilityOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sheetId" | "name" | "order" | "createdAt" | "updatedAt", ExtArgs["result"]["characterAbility"]>
 export type CharacterAbilityInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
   levels?: boolean | Prisma.CharacterAbility$levelsArgs<ExtArgs>
@@ -725,7 +688,6 @@ export type $CharacterAbilityPayload<ExtArgs extends runtime.Types.Extensions.In
     id: string
     sheetId: string
     name: string
-    icon: string | null
     order: number
     createdAt: Date
     updatedAt: Date
@@ -1157,7 +1119,6 @@ export interface CharacterAbilityFieldRefs {
   readonly id: Prisma.FieldRef<"CharacterAbility", 'String'>
   readonly sheetId: Prisma.FieldRef<"CharacterAbility", 'String'>
   readonly name: Prisma.FieldRef<"CharacterAbility", 'String'>
-  readonly icon: Prisma.FieldRef<"CharacterAbility", 'String'>
   readonly order: Prisma.FieldRef<"CharacterAbility", 'Int'>
   readonly createdAt: Prisma.FieldRef<"CharacterAbility", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"CharacterAbility", 'DateTime'>

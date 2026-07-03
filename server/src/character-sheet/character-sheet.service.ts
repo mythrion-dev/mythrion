@@ -375,7 +375,7 @@ export class CharacterSheetService {
     })
   }
 
-  async updateAbility(abilityId: string, userId: string, dto: { name?: string; icon?: string }) {
+  async updateAbility(abilityId: string, userId: string, dto: { name?: string }) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
     if (!ability) throw new NotFoundException('Ability not found')
     await this.requireOwnership(ability.sheetId, userId)

@@ -411,7 +411,6 @@ export const CharacterAbilityScalarFieldEnum = {
   id: 'id',
   sheetId: 'sheetId',
   name: 'name',
-  icon: 'icon',
   order: 'order',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

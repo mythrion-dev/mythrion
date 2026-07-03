@@ -428,7 +428,6 @@ model CharacterAbility {
   sheetId     String
   sheet       CharacterSheet          @relation(fields: [sheetId], references: [id], onDelete: Cascade)
   name        String
-  icon        String?
   order       Int                     @default(0)
   levels      CharacterAbilityLevel[]
   createdAt   DateTime                @default(now())
