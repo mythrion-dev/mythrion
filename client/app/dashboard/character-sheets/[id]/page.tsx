@@ -985,6 +985,12 @@ function AbilitiesTab({
   levelModalError: string | null; setLevelModalError: React.Dispatch<React.SetStateAction<string | null>>
   inlineSaveLevelField: (levelId: string, field: string, value: string) => Promise<void>
 }) {
+  // Confirmation state
+  const [confirmDeleteAbility, setConfirmDeleteAbility] = useState<string | null>(null) // abilityId
+  const [confirmDeleteLevel, setConfirmDeleteLevel] = useState<string | null>(null) // levelId
+  const [deletingAbility, setDeletingAbility] = useState(false)
+  const [deletingLevel, setDeletingLevel] = useState(false)
+
   function getSelectedLevel(ability: Ability): AbilityLevel | undefined {
     const selId = selectedLevels[ability.id]
     if (selId) return ability.levels.find(l => l.id === selId)
@@ -1005,6 +1011,46 @@ function AbilitiesTab({
     } catch (err) {
       setLevelModalError(err instanceof Error ? err.message : 'Failed to create level')
     } finally { setLevelModalSaving(false) }
+  }
+
+  async function handleConfirmDeleteAbility() {
+    if (!confirmDeleteAbility) return
+    setDeletingAbility(true)
+    try {
+      await handleDeleteAbility(confirmDeleteAbility)
+    } finally {
+      setDeletingAbility(false)
+      setConfirmDeleteAbility(null)
+    }
+  }
+
+  async function handleConfirmDeleteLevel() {
+    if (!confirmDeleteLevel || !sheetId) return
+    setDeletingLevel(true)
+    try {
+      await api.delete(`/character-sheets/${sheetId}/abilities/x/levels/${confirmDeleteLevel}`)
+      setAbilities(prev => prev.map(a => ({
+        ...a,
+        levels: a.levels.filter(l => l.id !== confirmDeleteLevel),
+      })))
+      // If the deleted level was selected, auto-select the last available
+      setSelectedLevels(prev => {
+        const next = { ...prev }
+        for (const a of abilities) {
+          if (a.levels.some(l => l.id === confirmDeleteLevel)) {
+            const remaining = a.levels.filter(l => l.id !== confirmDeleteLevel)
+            if (next[a.id] === confirmDeleteLevel) {
+              next[a.id] = remaining.length > 0 ? remaining[remaining.length - 1].id : ''
+            }
+            break
+          }
+        }
+        return next
+      })
+    } catch {} finally {
+      setDeletingLevel(false)
+      setConfirmDeleteLevel(null)
+    }
   }
 
   return (
@@ -1047,7 +1093,7 @@ function AbilitiesTab({
                   </select>
                 )}
                 {isOwner && (
-                  <button onClick={() => handleDeleteAbility(a.id)} className="text-xs text-danger hover:text-danger/80 px-1 py-1 transition-colors shrink-0">
+                  <button onClick={() => setConfirmDeleteAbility(a.id)} className="text-xs text-danger hover:text-danger/80 px-1 py-1 transition-colors shrink-0" title="Delete ability">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                   </button>
                 )}
@@ -1056,6 +1102,21 @@ function AbilitiesTab({
               {/* Current level data */}
               {selLevel ? (
                 <>
+                  {/* Level info bar: delete level button */}
+                  {isOwner && a.levels.length > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[0.65rem] text-muted font-medium">Level {selLevel.level}</span>
+                      {a.levels.length > 1 && (
+                        <button
+                          onClick={() => setConfirmDeleteLevel(selLevel.id)}
+                          className="text-[0.6rem] text-danger/70 hover:text-danger px-1 py-0.5 transition-colors"
+                          title="Delete this level"
+                        >
+                          Delete Level
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-3 text-xs text-muted">
                     {isOwner ? (
                       <>
@@ -1174,6 +1235,52 @@ function AbilitiesTab({
             <div className="flex gap-2 justify-end">
               <button type="button" onClick={() => setShowAddLevelModal(null)} disabled={levelModalSaving} className="btn-ghost text-sm">Cancel</button>
               <button type="button" onClick={() => handleAddLevel(showAddLevelModal)} disabled={levelModalSaving} className="btn-primary text-sm">{levelModalSaving ? 'Creating...' : 'Create'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Ability Modal */}
+      {confirmDeleteAbility && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center">
+                <svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+              </div>
+              <div>
+                <h2 className="font-semibold">Delete Ability</h2>
+                <p className="text-sm text-muted-foreground">This will permanently delete this ability and all its levels.</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">Are you sure you want to delete <strong>{abilities.find(a => a.id === confirmDeleteAbility)?.name ?? 'this ability'}</strong>?</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setConfirmDeleteAbility(null)} disabled={deletingAbility} className="btn-ghost">Cancel</button>
+              <button onClick={handleConfirmDeleteAbility} disabled={deletingAbility} className="btn-danger-solid">{deletingAbility ? 'Deleting...' : 'Delete'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Level Modal */}
+      {confirmDeleteLevel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center">
+                <svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+              </div>
+              <div>
+                <h2 className="font-semibold">Delete Level</h2>
+                <p className="text-sm text-muted-foreground">This will permanently delete this level and all its data.</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete <strong>Level {(() => { for (const a of abilities) { const l = a.levels.find(l => l.id === confirmDeleteLevel); if (l) return l.level } return '?' })()}</strong>?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setConfirmDeleteLevel(null)} disabled={deletingLevel} className="btn-ghost">Cancel</button>
+              <button onClick={handleConfirmDeleteLevel} disabled={deletingLevel} className="btn-danger-solid">{deletingLevel ? 'Deleting...' : 'Delete'}</button>
             </div>
           </div>
         </div>
