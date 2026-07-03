@@ -649,7 +649,11 @@ export default function CharacterSheetDetailPage() {
                   key={sv.id}
                   skill={sv}
                   result={skillResults[sv.skillId]}
-                  profiles={allProfiles}
+                  profiles={allProfiles.filter(p => {
+                    const tm = (p as any).targetMode ?? 'ALL_SKILLS'
+                    const tids: string[] = (p as any).targetSkillIds ?? []
+                    return tm === 'ALL_SKILLS' || tids.length === 0 || tids.includes(sv.skillId)
+                  })}
                   selections={profileSelections[sv.skillId] || {}}
                   active={activeSkills[sv.skillId] ?? false}
                   others={othersValues[sv.skillId] ?? 0}
