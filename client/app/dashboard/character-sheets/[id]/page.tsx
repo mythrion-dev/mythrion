@@ -229,7 +229,7 @@ export default function CharacterSheetDetailPage() {
           // Check targeting: only apply if ALL_SKILLS or this skill is in the selected list
           const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
           const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
-          if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(sv.skillId)) {
+          if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(sv.skill.name)) {
             continue
           }
           const selId = skillSelections[profile.id]
@@ -652,7 +652,7 @@ export default function CharacterSheetDetailPage() {
                   profiles={allProfiles.filter(p => {
                     const tm = (p as any).targetMode ?? 'ALL_SKILLS'
                     const tids: string[] = (p as any).targetSkillIds ?? []
-                    return tm === 'ALL_SKILLS' || tids.length === 0 || tids.includes(sv.skillId)
+                    return tm === 'ALL_SKILLS' || tids.length === 0 || tids.includes(sv.skill.name)
                   })}
                   selections={profileSelections[sv.skillId] || {}}
                   active={activeSkills[sv.skillId] ?? false}

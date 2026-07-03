@@ -255,10 +255,14 @@ export class TemplateService {
           if (!globalSkillFormula) continue
           const formulaVars = this.extractVariableNames(globalSkillFormula)
           for (const profile of newProfiles) {
-            if (formulaVars.includes(profile.name)) {
-              const firstOption = await this.prisma.profileOption.findFirst({ where: { profileId: profile.id }, orderBy: { order: 'asc' } })
-              await this.prisma.characterSheetSkillProfileValue.upsert({ where: { sheetId_skillId_profileId: { sheetId: sheet.id, skillId: skill.id, profileId: profile.id } }, create: { sheetId: sheet.id, skillId: skill.id, profileId: profile.id, optionId: firstOption?.id ?? null }, update: {} })
+            if (!formulaVars.includes(profile.name)) continue
+            const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
+            const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
+            if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(skill.name)) {
+              continue
             }
+            const firstOption = await this.prisma.profileOption.findFirst({ where: { profileId: profile.id }, orderBy: { order: 'asc' } })
+            await this.prisma.characterSheetSkillProfileValue.upsert({ where: { sheetId_skillId_profileId: { sheetId: sheet.id, skillId: skill.id, profileId: profile.id } }, create: { sheetId: sheet.id, skillId: skill.id, profileId: profile.id, optionId: firstOption?.id ?? null }, update: {} })
           }
         }
       }
