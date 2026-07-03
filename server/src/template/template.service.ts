@@ -56,6 +56,8 @@ export class TemplateService {
           create: (dto.skillModifierProfiles || []).map((p, pIdx) => ({
             name: p.name,
             order: pIdx,
+            targetMode: p.targetMode ?? 'ALL_SKILLS',
+            targetSkillIds: p.targetSkillIds ?? [],
             options: {
               create: p.options.map((o, oIdx) => ({
                 label: o.label,
@@ -227,7 +229,7 @@ export class TemplateService {
         const p = dto.skillModifierProfiles[pIdx]; const name = p.name.trim()
         const existing = existingProfiles.find(e => e.name === name)
         if (existing) {
-          await this.prisma.skillModifierProfile.update({ where: { id: existing.id }, data: { name, order: pIdx } })
+          await this.prisma.skillModifierProfile.update({ where: { id: existing.id }, data: { name, order: pIdx, targetMode: p.targetMode ?? 'ALL_SKILLS', targetSkillIds: p.targetSkillIds ?? [] } })
           const existingOptions = existing.options
           const newOptionLabels = p.options.map(o => o.label.trim())
           const existingOptionLabels = existingOptions.map(o => o.label)
@@ -240,7 +242,7 @@ export class TemplateService {
             else { await this.prisma.profileOption.create({ data: { profileId: existing.id, label, value: o.value, order: oIdx } }) }
           }
         } else {
-          await this.prisma.skillModifierProfile.create({ data: { templateId: id, name, order: pIdx, options: { create: p.options.map((o, oIdx) => ({ label: o.label.trim(), value: o.value, order: oIdx })) } } })
+          await this.prisma.skillModifierProfile.create({ data: { templateId: id, name, order: pIdx, targetMode: p.targetMode ?? 'ALL_SKILLS', targetSkillIds: p.targetSkillIds ?? [], options: { create: p.options.map((o, oIdx) => ({ label: o.label.trim(), value: o.value, order: oIdx })) } } })
         }
       }
       const addedProfileNames = newProfileNames.filter(n => !existingProfileNames.includes(n))

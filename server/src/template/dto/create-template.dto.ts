@@ -50,6 +50,15 @@ export class SkillModifierProfileDefDto {
   @IsString()
   name!: string
 
+  @IsString()
+  @IsOptional()
+  targetMode?: string
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  targetSkillIds?: string[]
+
   @IsArray()
   @ValidateNested({ each: true })
   @ArrayMinSize(1)

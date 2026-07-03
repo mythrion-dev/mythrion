@@ -226,6 +226,12 @@ export default function CharacterSheetDetailPage() {
         finalResult += (effOthers[sv.skillId] ?? 0)
         const skillSelections = selMap[sv.skillId] || {}
         for (const profile of sd.template.skillModifierProfiles) {
+          // Check targeting: only apply if ALL_SKILLS or this skill is in the selected list
+          const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
+          const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
+          if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(sv.skillId)) {
+            continue
+          }
           const selId = skillSelections[profile.id]
           if (selId) { const opt = profile.options.find(o => o.id === selId); if (opt) finalResult += opt.value }
           else { const stored = sd.skillProfileValues.find(spv => spv.skillId === sv.skillId && spv.profileId === profile.id); if (stored?.option?.value !== undefined) finalResult += stored.option.value }

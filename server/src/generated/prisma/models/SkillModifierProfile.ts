@@ -39,6 +39,7 @@ export type SkillModifierProfileMinAggregateOutputType = {
   templateId: string | null
   name: string | null
   order: number | null
+  targetMode: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -48,6 +49,7 @@ export type SkillModifierProfileMaxAggregateOutputType = {
   templateId: string | null
   name: string | null
   order: number | null
+  targetMode: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -57,6 +59,8 @@ export type SkillModifierProfileCountAggregateOutputType = {
   templateId: number
   name: number
   order: number
+  targetMode: number
+  targetSkillIds: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -76,6 +80,7 @@ export type SkillModifierProfileMinAggregateInputType = {
   templateId?: true
   name?: true
   order?: true
+  targetMode?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -85,6 +90,7 @@ export type SkillModifierProfileMaxAggregateInputType = {
   templateId?: true
   name?: true
   order?: true
+  targetMode?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -94,6 +100,8 @@ export type SkillModifierProfileCountAggregateInputType = {
   templateId?: true
   name?: true
   order?: true
+  targetMode?: true
+  targetSkillIds?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -190,6 +198,8 @@ export type SkillModifierProfileGroupByOutputType = {
   templateId: string
   name: string
   order: number
+  targetMode: string
+  targetSkillIds: string[]
   createdAt: Date
   updatedAt: Date
   _count: SkillModifierProfileCountAggregateOutputType | null
@@ -222,6 +232,8 @@ export type SkillModifierProfileWhereInput = {
   templateId?: Prisma.StringFilter<"SkillModifierProfile"> | string
   name?: Prisma.StringFilter<"SkillModifierProfile"> | string
   order?: Prisma.IntFilter<"SkillModifierProfile"> | number
+  targetMode?: Prisma.StringFilter<"SkillModifierProfile"> | string
+  targetSkillIds?: Prisma.StringNullableListFilter<"SkillModifierProfile">
   createdAt?: Prisma.DateTimeFilter<"SkillModifierProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SkillModifierProfile"> | Date | string
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
@@ -234,6 +246,8 @@ export type SkillModifierProfileOrderByWithRelationInput = {
   templateId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   order?: Prisma.SortOrder
+  targetMode?: Prisma.SortOrder
+  targetSkillIds?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   template?: Prisma.TemplateOrderByWithRelationInput
@@ -250,6 +264,8 @@ export type SkillModifierProfileWhereUniqueInput = Prisma.AtLeast<{
   templateId?: Prisma.StringFilter<"SkillModifierProfile"> | string
   name?: Prisma.StringFilter<"SkillModifierProfile"> | string
   order?: Prisma.IntFilter<"SkillModifierProfile"> | number
+  targetMode?: Prisma.StringFilter<"SkillModifierProfile"> | string
+  targetSkillIds?: Prisma.StringNullableListFilter<"SkillModifierProfile">
   createdAt?: Prisma.DateTimeFilter<"SkillModifierProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SkillModifierProfile"> | Date | string
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
@@ -262,6 +278,8 @@ export type SkillModifierProfileOrderByWithAggregationInput = {
   templateId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   order?: Prisma.SortOrder
+  targetMode?: Prisma.SortOrder
+  targetSkillIds?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.SkillModifierProfileCountOrderByAggregateInput
@@ -279,6 +297,8 @@ export type SkillModifierProfileScalarWhereWithAggregatesInput = {
   templateId?: Prisma.StringWithAggregatesFilter<"SkillModifierProfile"> | string
   name?: Prisma.StringWithAggregatesFilter<"SkillModifierProfile"> | string
   order?: Prisma.IntWithAggregatesFilter<"SkillModifierProfile"> | number
+  targetMode?: Prisma.StringWithAggregatesFilter<"SkillModifierProfile"> | string
+  targetSkillIds?: Prisma.StringNullableListFilter<"SkillModifierProfile">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SkillModifierProfile"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"SkillModifierProfile"> | Date | string
 }
@@ -287,6 +307,8 @@ export type SkillModifierProfileCreateInput = {
   id?: string
   name: string
   order?: number
+  targetMode?: string
+  targetSkillIds?: Prisma.SkillModifierProfileCreatetargetSkillIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   template: Prisma.TemplateCreateNestedOneWithoutSkillModifierProfilesInput
@@ -299,6 +321,8 @@ export type SkillModifierProfileUncheckedCreateInput = {
   templateId: string
   name: string
   order?: number
+  targetMode?: string
+  targetSkillIds?: Prisma.SkillModifierProfileCreatetargetSkillIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   options?: Prisma.ProfileOptionUncheckedCreateNestedManyWithoutProfileInput
@@ -309,6 +333,8 @@ export type SkillModifierProfileUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  targetMode?: Prisma.StringFieldUpdateOperationsInput | string
+  targetSkillIds?: Prisma.SkillModifierProfileUpdatetargetSkillIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   template?: Prisma.TemplateUpdateOneRequiredWithoutSkillModifierProfilesNestedInput
@@ -321,6 +347,8 @@ export type SkillModifierProfileUncheckedUpdateInput = {
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  targetMode?: Prisma.StringFieldUpdateOperationsInput | string
+  targetSkillIds?: Prisma.SkillModifierProfileUpdatetargetSkillIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   options?: Prisma.ProfileOptionUncheckedUpdateManyWithoutProfileNestedInput
@@ -332,6 +360,8 @@ export type SkillModifierProfileCreateManyInput = {
   templateId: string
   name: string
   order?: number
+  targetMode?: string
+  targetSkillIds?: Prisma.SkillModifierProfileCreatetargetSkillIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -340,6 +370,8 @@ export type SkillModifierProfileUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  targetMode?: Prisma.StringFieldUpdateOperationsInput | string
+  targetSkillIds?: Prisma.SkillModifierProfileUpdatetargetSkillIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -349,6 +381,8 @@ export type SkillModifierProfileUncheckedUpdateManyInput = {
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  targetMode?: Prisma.StringFieldUpdateOperationsInput | string
+  targetSkillIds?: Prisma.SkillModifierProfileUpdatetargetSkillIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -363,6 +397,14 @@ export type SkillModifierProfileOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type StringNullableListFilter<$PrismaModel = never> = {
+  equals?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel> | null
+  has?: string | Prisma.StringFieldRefInput<$PrismaModel> | null
+  hasEvery?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  hasSome?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  isEmpty?: boolean
+}
+
 export type SkillModifierProfileTemplateIdNameCompoundUniqueInput = {
   templateId: string
   name: string
@@ -373,6 +415,8 @@ export type SkillModifierProfileCountOrderByAggregateInput = {
   templateId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   order?: Prisma.SortOrder
+  targetMode?: Prisma.SortOrder
+  targetSkillIds?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -386,6 +430,7 @@ export type SkillModifierProfileMaxOrderByAggregateInput = {
   templateId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   order?: Prisma.SortOrder
+  targetMode?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -395,6 +440,7 @@ export type SkillModifierProfileMinOrderByAggregateInput = {
   templateId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   order?: Prisma.SortOrder
+  targetMode?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -450,6 +496,15 @@ export type SkillModifierProfileUncheckedUpdateManyWithoutTemplateNestedInput = 
   deleteMany?: Prisma.SkillModifierProfileScalarWhereInput | Prisma.SkillModifierProfileScalarWhereInput[]
 }
 
+export type SkillModifierProfileCreatetargetSkillIdsInput = {
+  set: string[]
+}
+
+export type SkillModifierProfileUpdatetargetSkillIdsInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
 export type SkillModifierProfileCreateNestedOneWithoutOptionsInput = {
   create?: Prisma.XOR<Prisma.SkillModifierProfileCreateWithoutOptionsInput, Prisma.SkillModifierProfileUncheckedCreateWithoutOptionsInput>
   connectOrCreate?: Prisma.SkillModifierProfileCreateOrConnectWithoutOptionsInput
@@ -482,6 +537,8 @@ export type SkillModifierProfileCreateWithoutTemplateInput = {
   id?: string
   name: string
   order?: number
+  targetMode?: string
+  targetSkillIds?: Prisma.SkillModifierProfileCreatetargetSkillIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   options?: Prisma.ProfileOptionCreateNestedManyWithoutProfileInput
@@ -492,6 +549,8 @@ export type SkillModifierProfileUncheckedCreateWithoutTemplateInput = {
   id?: string
   name: string
   order?: number
+  targetMode?: string
+  targetSkillIds?: Prisma.SkillModifierProfileCreatetargetSkillIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   options?: Prisma.ProfileOptionUncheckedCreateNestedManyWithoutProfileInput
@@ -532,6 +591,8 @@ export type SkillModifierProfileScalarWhereInput = {
   templateId?: Prisma.StringFilter<"SkillModifierProfile"> | string
   name?: Prisma.StringFilter<"SkillModifierProfile"> | string
   order?: Prisma.IntFilter<"SkillModifierProfile"> | number
+  targetMode?: Prisma.StringFilter<"SkillModifierProfile"> | string
+  targetSkillIds?: Prisma.StringNullableListFilter<"SkillModifierProfile">
   createdAt?: Prisma.DateTimeFilter<"SkillModifierProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SkillModifierProfile"> | Date | string
 }
@@ -540,6 +601,8 @@ export type SkillModifierProfileCreateWithoutOptionsInput = {
   id?: string
   name: string
   order?: number
+  targetMode?: string
+  targetSkillIds?: Prisma.SkillModifierProfileCreatetargetSkillIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   template: Prisma.TemplateCreateNestedOneWithoutSkillModifierProfilesInput
@@ -551,6 +614,8 @@ export type SkillModifierProfileUncheckedCreateWithoutOptionsInput = {
   templateId: string
   name: string
   order?: number
+  targetMode?: string
+  targetSkillIds?: Prisma.SkillModifierProfileCreatetargetSkillIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutProfileInput
@@ -576,6 +641,8 @@ export type SkillModifierProfileUpdateWithoutOptionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  targetMode?: Prisma.StringFieldUpdateOperationsInput | string
+  targetSkillIds?: Prisma.SkillModifierProfileUpdatetargetSkillIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   template?: Prisma.TemplateUpdateOneRequiredWithoutSkillModifierProfilesNestedInput
@@ -587,6 +654,8 @@ export type SkillModifierProfileUncheckedUpdateWithoutOptionsInput = {
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  targetMode?: Prisma.StringFieldUpdateOperationsInput | string
+  targetSkillIds?: Prisma.SkillModifierProfileUpdatetargetSkillIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutProfileNestedInput
@@ -596,6 +665,8 @@ export type SkillModifierProfileCreateWithoutSkillProfileValuesInput = {
   id?: string
   name: string
   order?: number
+  targetMode?: string
+  targetSkillIds?: Prisma.SkillModifierProfileCreatetargetSkillIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   template: Prisma.TemplateCreateNestedOneWithoutSkillModifierProfilesInput
@@ -607,6 +678,8 @@ export type SkillModifierProfileUncheckedCreateWithoutSkillProfileValuesInput = 
   templateId: string
   name: string
   order?: number
+  targetMode?: string
+  targetSkillIds?: Prisma.SkillModifierProfileCreatetargetSkillIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   options?: Prisma.ProfileOptionUncheckedCreateNestedManyWithoutProfileInput
@@ -632,6 +705,8 @@ export type SkillModifierProfileUpdateWithoutSkillProfileValuesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  targetMode?: Prisma.StringFieldUpdateOperationsInput | string
+  targetSkillIds?: Prisma.SkillModifierProfileUpdatetargetSkillIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   template?: Prisma.TemplateUpdateOneRequiredWithoutSkillModifierProfilesNestedInput
@@ -643,6 +718,8 @@ export type SkillModifierProfileUncheckedUpdateWithoutSkillProfileValuesInput = 
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  targetMode?: Prisma.StringFieldUpdateOperationsInput | string
+  targetSkillIds?: Prisma.SkillModifierProfileUpdatetargetSkillIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   options?: Prisma.ProfileOptionUncheckedUpdateManyWithoutProfileNestedInput
@@ -652,6 +729,8 @@ export type SkillModifierProfileCreateManyTemplateInput = {
   id?: string
   name: string
   order?: number
+  targetMode?: string
+  targetSkillIds?: Prisma.SkillModifierProfileCreatetargetSkillIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -660,6 +739,8 @@ export type SkillModifierProfileUpdateWithoutTemplateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  targetMode?: Prisma.StringFieldUpdateOperationsInput | string
+  targetSkillIds?: Prisma.SkillModifierProfileUpdatetargetSkillIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   options?: Prisma.ProfileOptionUpdateManyWithoutProfileNestedInput
@@ -670,6 +751,8 @@ export type SkillModifierProfileUncheckedUpdateWithoutTemplateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  targetMode?: Prisma.StringFieldUpdateOperationsInput | string
+  targetSkillIds?: Prisma.SkillModifierProfileUpdatetargetSkillIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   options?: Prisma.ProfileOptionUncheckedUpdateManyWithoutProfileNestedInput
@@ -680,6 +763,8 @@ export type SkillModifierProfileUncheckedUpdateManyWithoutTemplateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  targetMode?: Prisma.StringFieldUpdateOperationsInput | string
+  targetSkillIds?: Prisma.SkillModifierProfileUpdatetargetSkillIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -729,6 +814,8 @@ export type SkillModifierProfileSelect<ExtArgs extends runtime.Types.Extensions.
   templateId?: boolean
   name?: boolean
   order?: boolean
+  targetMode?: boolean
+  targetSkillIds?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
@@ -742,6 +829,8 @@ export type SkillModifierProfileSelectCreateManyAndReturn<ExtArgs extends runtim
   templateId?: boolean
   name?: boolean
   order?: boolean
+  targetMode?: boolean
+  targetSkillIds?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
@@ -752,6 +841,8 @@ export type SkillModifierProfileSelectUpdateManyAndReturn<ExtArgs extends runtim
   templateId?: boolean
   name?: boolean
   order?: boolean
+  targetMode?: boolean
+  targetSkillIds?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
@@ -762,11 +853,13 @@ export type SkillModifierProfileSelectScalar = {
   templateId?: boolean
   name?: boolean
   order?: boolean
+  targetMode?: boolean
+  targetSkillIds?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type SkillModifierProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "templateId" | "name" | "order" | "createdAt" | "updatedAt", ExtArgs["result"]["skillModifierProfile"]>
+export type SkillModifierProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "templateId" | "name" | "order" | "targetMode" | "targetSkillIds" | "createdAt" | "updatedAt", ExtArgs["result"]["skillModifierProfile"]>
 export type SkillModifierProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   options?: boolean | Prisma.SkillModifierProfile$optionsArgs<ExtArgs>
@@ -792,6 +885,8 @@ export type $SkillModifierProfilePayload<ExtArgs extends runtime.Types.Extension
     templateId: string
     name: string
     order: number
+    targetMode: string
+    targetSkillIds: string[]
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["skillModifierProfile"]>
@@ -1224,6 +1319,8 @@ export interface SkillModifierProfileFieldRefs {
   readonly templateId: Prisma.FieldRef<"SkillModifierProfile", 'String'>
   readonly name: Prisma.FieldRef<"SkillModifierProfile", 'String'>
   readonly order: Prisma.FieldRef<"SkillModifierProfile", 'Int'>
+  readonly targetMode: Prisma.FieldRef<"SkillModifierProfile", 'String'>
+  readonly targetSkillIds: Prisma.FieldRef<"SkillModifierProfile", 'String[]'>
   readonly createdAt: Prisma.FieldRef<"SkillModifierProfile", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"SkillModifierProfile", 'DateTime'>
 }

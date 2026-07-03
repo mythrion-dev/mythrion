@@ -2570,6 +2570,8 @@ export const SkillModifierProfileScalarFieldEnum = {
   templateId: 'templateId',
   name: 'name',
   order: 'order',
+  targetMode: 'targetMode',
+  targetSkillIds: 'targetSkillIds',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

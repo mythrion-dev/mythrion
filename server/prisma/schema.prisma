@@ -147,6 +147,8 @@ model SkillModifierProfile {
   template           Template                          @relation(fields: [templateId], references: [id], onDelete: Cascade)
   name               String
   order              Int                               @default(0)
+  targetMode         String                            @default("ALL_SKILLS")
+  targetSkillIds     String[]
   options            ProfileOption[]
   skillProfileValues CharacterSheetSkillProfileValue[]
   createdAt          DateTime                          @default(now())

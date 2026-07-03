@@ -126,9 +126,14 @@ export class CharacterSheetService {
       const formulaVars = this.extractVariableNames(globalSkillFormula)
       for (const skill of template.templateSkills) {
         for (const profile of template.skillModifierProfiles) {
-          if (formulaVars.includes(profile.name)) {
-            skillProfileValues.push({ skillId: skill.id, profileId: profile.id, optionId: profile.options[0]?.id ?? null })
+          if (!formulaVars.includes(profile.name)) continue
+          // Check targeting: only include if ALL_SKILLS or skill is in selected list
+          const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
+          const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
+          if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(skill.id)) {
+            continue
           }
+          skillProfileValues.push({ skillId: skill.id, profileId: profile.id, optionId: profile.options[0]?.id ?? null })
         }
       }
     }
