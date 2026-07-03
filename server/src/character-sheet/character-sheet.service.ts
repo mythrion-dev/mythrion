@@ -42,7 +42,8 @@ const sheetInclude = {
   },
   skillValues: {
     include: {
-      skill: { select: { id: true, name: true, description: true, attributeId: true, attribute: { select: { id: true, key: true, name: true } } } },
+      skill: { select: { id: true, name: true, description: true, attributeId: true, allowedAttributeIds: true, defaultAttributeId: true, attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } } },
+      selectedAttribute: { select: { id: true, key: true, name: true } },
     },
   },
   skillProfileValues: {
@@ -160,7 +161,7 @@ export class CharacterSheetService {
           create: (template.templateFields || []).map(f => ({ templateFieldId: f.id, value: '' })),
         },
         skillValues: {
-          create: (template.templateSkills || []).map(s => ({ skillId: s.id, value: '' })),
+          create: (template.templateSkills || []).map(s => ({ skillId: s.id, value: '', selectedAttributeId: (s as any).defaultAttributeId ?? s.attributeId ?? null })),
         },
         skillProfileValues: {
           create: skillProfileValues.map(spv => ({ skillId: spv.skillId, profileId: spv.profileId, optionId: spv.optionId })),
@@ -260,8 +261,8 @@ export class CharacterSheetService {
       for (const sv of dto.skillValues)
         await this.prisma.characterSheetSkillValue.upsert({
           where: { sheetId_skillId: { sheetId: id, skillId: sv.skillId } },
-          create: { sheetId: id, skillId: sv.skillId, value: sv.value },
-          update: { value: sv.value },
+          create: { sheetId: id, skillId: sv.skillId, value: sv.value, selectedAttributeId: sv.selectedAttributeId ?? null },
+          update: { value: sv.value, ...(sv.selectedAttributeId !== undefined ? { selectedAttributeId: sv.selectedAttributeId } : {}) },
         })
     }
     if (dto.skillProfileValues) {
@@ -338,6 +339,17 @@ export class CharacterSheetService {
       where: { sheetId_skillId_profileId: { sheetId, skillId, profileId } },
       create: { sheetId, skillId, profileId, optionId },
       update: { optionId },
+    })
+  }
+
+  async updateSkillAttribute(sheetId: string, skillId: string, attributeId: string | null, userId: string) {
+    const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
+    if (!sheet) throw new NotFoundException('Character sheet not found')
+    if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can edit this character sheet')
+    return this.prisma.characterSheetSkillValue.upsert({
+      where: { sheetId_skillId: { sheetId, skillId } },
+      create: { sheetId, skillId, value: '', selectedAttributeId: attributeId },
+      update: { selectedAttributeId: attributeId },
     })
   }
 

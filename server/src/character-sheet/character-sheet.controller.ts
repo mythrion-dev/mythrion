@@ -91,6 +91,16 @@ export class CharacterSheetController {
     )
   }
 
+  @Patch(':id/skills/:skillId/attribute')
+  updateSkillAttribute(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('skillId') skillId: string,
+    @Body('attributeId') attributeId: string | null,
+  ) {
+    return this.sheetService.updateSkillAttribute(id, skillId, attributeId, req.user.sub)
+  }
+
   // ── Abilities ──
 
   @Get(':id/abilities')

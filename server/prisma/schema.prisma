@@ -217,7 +217,10 @@ model TemplateSkill {
   name               String
   description        String?
   attributeId        String?
-  attribute          TemplateAttribute?                @relation(fields: [attributeId], references: [id], onDelete: SetNull)
+  attribute          TemplateAttribute?                @relation("SkillDefaultAttribute", fields: [attributeId], references: [id], onDelete: SetNull)
+  allowedAttributeIds String[]
+  defaultAttributeId String?
+  defaultAttribute   TemplateAttribute?                @relation("SkillAllowedAttributes", fields: [defaultAttributeId], references: [id], onDelete: SetNull)
   order              Int                               @default(0)
   skillValues        CharacterSheetSkillValue[]
   skillProfileValues CharacterSheetSkillProfileValue[]
@@ -226,23 +229,27 @@ model TemplateSkill {
 
   @@index([templateId])
   @@index([attributeId])
+  @@index([defaultAttributeId])
 }
 
 // ── Character Sheet Skill Values ──
 
 model CharacterSheetSkillValue {
-  id        String         @id @default(cuid())
-  sheetId   String
-  sheet     CharacterSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
-  skillId   String
-  skill     TemplateSkill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
-  value     String         @default("")
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id                  String              @id @default(cuid())
+  sheetId             String
+  sheet               CharacterSheet      @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  skillId             String
+  skill               TemplateSkill       @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  value               String              @default("")
+  selectedAttributeId String?
+  selectedAttribute   TemplateAttribute?  @relation(fields: [selectedAttributeId], references: [id], onDelete: SetNull)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
 
   @@unique([sheetId, skillId])
   @@index([sheetId])
   @@index([skillId])
+  @@index([selectedAttributeId])
 }
 
 // ── Character Sheets ──

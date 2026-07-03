@@ -7,7 +7,7 @@ import { UpdateTemplateDto } from './dto/update-template.dto.js'
 const templateInclude = {
   attributes: { orderBy: { order: 'asc' as const } },
   templateFields: { orderBy: { order: 'asc' as const } },
-  templateSkills: { orderBy: { order: 'asc' as const }, include: { attribute: { select: { id: true, key: true, name: true } } } },
+  templateSkills: { orderBy: { order: 'asc' as const }, include: { attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } } },
   skillModifierProfiles: {
     orderBy: { order: 'asc' as const },
     include: { options: { orderBy: { order: 'asc' as const } } },
@@ -50,6 +50,8 @@ export class TemplateService {
         templateSkills: {
           create: (dto.skills || []).map((s, idx) => ({
             name: s.name, description: s.description ?? null, order: idx,
+            allowedAttributeIds: s.allowedAttributeIds ?? [],
+            defaultAttributeId: null, // Set after attributes are created
           })),
         },
         skillModifierProfiles: {
@@ -113,13 +115,30 @@ export class TemplateService {
       const createdAttrs = await this.prisma.templateAttribute.findMany({ where: { templateId: created.id } })
       const attrKeyToId = new Map(createdAttrs.map(a => [a.key, a.id]))
       for (const s of dto.skills) {
-        if (!s.attributeId) continue
-        const attrId = attrKeyToId.get(s.attributeId)
-        if (!attrId) continue
         const skill = (created.templateSkills || []).find(sk => sk.name === s.name)
-        if (skill) {
-          await this.prisma.templateSkill.update({ where: { id: skill.id }, data: { attributeId: attrId } })
-        }
+        if (!skill) continue
+
+        // Legacy: single attributeId
+        const legacyAttrId = s.attributeId ? attrKeyToId.get(s.attributeId) ?? null : null
+
+        // Resolve allowedAttributeIds from keys to real IDs
+        const allowedIds = (s.allowedAttributeIds || []).map(k => attrKeyToId.get(k)).filter(Boolean) as string[]
+        // If allowedAttributeIds not provided but legacy attributeId is, auto-populate
+        const effectiveAllowed = allowedIds.length > 0 ? allowedIds : (legacyAttrId ? [legacyAttrId] : [])
+
+        // Resolve defaultAttributeId from key to real ID
+        const defaultAttrId = s.defaultAttributeId
+          ? (attrKeyToId.get(s.defaultAttributeId) ?? null)
+          : (effectiveAllowed.length > 0 ? effectiveAllowed[0] : null)
+
+        await this.prisma.templateSkill.update({
+          where: { id: skill.id },
+          data: {
+            attributeId: legacyAttrId,
+            allowedAttributeIds: effectiveAllowed,
+            defaultAttributeId: defaultAttrId,
+          },
+        })
       }
     }
 
@@ -197,21 +216,39 @@ export class TemplateService {
       const existingSkillNames = existingSkills.map(s => s.name)
       const skillNamesToDelete = existingSkillNames.filter(n => !newSkillNames.includes(n))
       if (skillNamesToDelete.length) await this.prisma.templateSkill.deleteMany({ where: { templateId: id, name: { in: skillNamesToDelete } } })
+
+      // Pre-fetch all attributes for key->id resolution
+      const allAttrs = await this.prisma.templateAttribute.findMany({ where: { templateId: id } })
+      const attrKeyToId = new Map(allAttrs.map(a => [a.key, a.id]))
+
       for (let idx = 0; idx < dto.skills.length; idx++) {
         const s = dto.skills[idx]; const name = s.name.trim()
         const existing = existingSkills.find(e => e.name === name)
-        const attrId = s.attributeId
-          ? (await this.prisma.templateAttribute.findFirst({ where: { templateId: id, key: s.attributeId }, select: { id: true } }))?.id ?? null
-          : null
-        if (existing) { await this.prisma.templateSkill.update({ where: { id: existing.id }, data: { description: s.description ?? null, attributeId: attrId, order: idx } }) }
-        else { await this.prisma.templateSkill.create({ data: { templateId: id, name, description: s.description ?? null, attributeId: attrId, order: idx } }) }
+
+        const legacyAttrId = s.attributeId ? (attrKeyToId.get(s.attributeId) ?? null) : null
+        const allowedIds = (s.allowedAttributeIds || []).map(k => attrKeyToId.get(k)).filter(Boolean) as string[]
+        const effectiveAllowed = allowedIds.length > 0 ? allowedIds : (legacyAttrId ? [legacyAttrId] : [])
+        const defaultAttrId = s.defaultAttributeId
+          ? (attrKeyToId.get(s.defaultAttributeId) ?? null)
+          : (effectiveAllowed.length > 0 ? effectiveAllowed[0] : null)
+
+        const data = {
+          description: s.description ?? null,
+          attributeId: legacyAttrId,
+          allowedAttributeIds: effectiveAllowed,
+          defaultAttributeId: defaultAttrId,
+          order: idx,
+        }
+
+        if (existing) { await this.prisma.templateSkill.update({ where: { id: existing.id }, data }) }
+        else { await this.prisma.templateSkill.create({ data: { templateId: id, name, ...data } }) }
       }
       const addedSkillNames = newSkillNames.filter(n => !existingSkillNames.includes(n))
       if (addedSkillNames.length > 0) {
         const newSkills = await this.prisma.templateSkill.findMany({ where: { templateId: id, name: { in: addedSkillNames } } })
         const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
         for (const sheet of sheets) for (const skill of newSkills)
-          await this.prisma.characterSheetSkillValue.upsert({ where: { sheetId_skillId: { sheetId: sheet.id, skillId: skill.id } }, create: { sheetId: sheet.id, skillId: skill.id, value: '' }, update: {} })
+          await this.prisma.characterSheetSkillValue.upsert({ where: { sheetId_skillId: { sheetId: sheet.id, skillId: skill.id } }, create: { sheetId: sheet.id, skillId: skill.id, value: '', selectedAttributeId: skill.defaultAttributeId }, update: {} })
       }
     }
 

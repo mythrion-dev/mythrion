@@ -23,6 +23,10 @@ export class SkillValueDto {
 
   @IsString()
   value!: string
+
+  @IsString()
+  @IsOptional()
+  selectedAttributeId?: string | null
 }
 
 export class SkillProfileValueDto {

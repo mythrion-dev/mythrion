@@ -36,6 +36,15 @@ export class TemplateSkillDefDto {
   @IsString()
   @IsOptional()
   attributeId?: string
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  allowedAttributeIds?: string[]
+
+  @IsString()
+  @IsOptional()
+  defaultAttributeId?: string
 }
 
 export class ProfileOptionDefDto {

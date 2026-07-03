@@ -10,7 +10,7 @@ import { PageNav } from '@/lib/breadcrumb'
 
 interface SheetAttribute { id: string; attributeId: string; value: string; attribute: { id: string; key: string; name: string } }
 interface FieldValue { id: string; templateFieldId: string; value: string; templateField: { id: string; key: string; label: string } }
-interface SkillValue { id: string; skillId: string; value: string; skill: { id: string; name: string; description: string | null; attributeId: string | null; attribute: { id: string; key: string; name: string } | null } }
+interface SkillValue { id: string; skillId: string; value: string; selectedAttributeId: string | null; selectedAttribute: { id: string; key: string; name: string } | null; skill: { id: string; name: string; description: string | null; attributeId: string | null; allowedAttributeIds: string[]; defaultAttributeId: string | null; attribute: { id: string; key: string; name: string } | null; defaultAttribute: { id: string; key: string; name: string } | null } }
 interface ProfileOption { id: string; label: string; value: number }
 interface SkillModifierProfile { id: string; name: string; options: ProfileOption[] }
 interface SkillProfileValue { id: string; skillId: string; profileId: string; optionId: string | null; profile: { id: string; name: string }; option: { id: string; label: string; value: number } | null }
@@ -190,9 +190,10 @@ export default function CharacterSheetDetailPage() {
         if (skillConfig) {
           // New structured config: compute locally
           if (skillConfig.useAttributeModifier) {
-            const skillAttr = sv.skill.attribute
-            if (skillAttr) {
-              finalResult += modifierVars[`${skillAttr.key}_mod`] ?? 0
+            // Use the player's selected attribute (or fallback to skill's default/legacy attribute)
+            const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
+            if (selectedAttr) {
+              finalResult += modifierVars[`${selectedAttr.key}_mod`] ?? 0
             }
           }
           // Add selected custom field values
@@ -206,14 +207,15 @@ export default function CharacterSheetDetailPage() {
           }
         } else {
           // Legacy formula: evaluate server-side
-          const skillAttr = sv.skill.attribute
-          const skillAttrValue = skillAttr
-            ? parseFloat(sd.values.find(sv2 => sv2.attributeId === skillAttr.id)?.value || '0')
+          // Use player's selected attribute (or fallback to default/legacy)
+          const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
+          const skillAttrValue = selectedAttr
+            ? parseFloat(sd.values.find(sv2 => sv2.attributeId === selectedAttr.id)?.value || '0')
             : 0
           const variables: Record<string, number> = { ...modifierVars }
           variables['value'] = isNaN(skillAttrValue) ? 0 : skillAttrValue
-          if (skillAttr) {
-            variables['value_mod'] = modifierVars[`${skillAttr.key}_mod`] ?? 0
+          if (selectedAttr) {
+            variables['value_mod'] = modifierVars[`${selectedAttr.key}_mod`] ?? 0
           }
           sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv2 => sv2.attributeId === a.id)?.value || '0'); variables[a.key] = isNaN(v) ? 0 : v })
           sd.fieldValues.forEach(fv => { const v = parseFloat(fv.value); variables[fv.templateField.key] = isNaN(v) ? 0 : v })
@@ -339,6 +341,39 @@ export default function CharacterSheetDetailPage() {
     }
     const us = { ...profileSelections }; if (!us[skillId]) us[skillId] = {}; us[skillId] = { ...us[skillId], [profileId]: optionId }
     computeSkills(sheet, us)
+  }
+
+  async function handleSkillAttributeChange(skillId: string, attributeId: string | null) {
+    if (!sheet) return
+    // Optimistic update
+    setSheet(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        skillValues: prev.skillValues.map(sv =>
+          sv.skillId === skillId ? {
+            ...sv,
+            selectedAttributeId: attributeId,
+            selectedAttribute: attributeId
+              ? sv.skill.allowedAttributeIds.includes(attributeId)
+                ? { id: attributeId, key: prev.template.attributes.find(a => a.id === attributeId)?.key ?? '', name: prev.template.attributes.find(a => a.id === attributeId)?.name ?? '' }
+                : sv.selectedAttribute
+              : null,
+          } : sv
+        ),
+      }
+    })
+    try {
+      await api.patch(`/character-sheets/${sheet.id}/skills/${skillId}/attribute`, { attributeId })
+    } catch {
+      // Revert on failure
+      fetchSheet()
+      return
+    }
+    // Recompute skills with the new attribute
+    const updated = await api.get<CharacterSheet>(`/character-sheets/${sheet.id}`)
+    setSheet(updated)
+    computeSkills(updated, profileSelections)
   }
 
   async function handleSkillToggle(skillId: string) {
@@ -660,6 +695,8 @@ export default function CharacterSheetDetailPage() {
                   onToggleActive={() => handleSkillToggle(sv.skillId)}
                   onOthersChange={(no) => handleOthersChange(sv.skillId, no)}
                   onProfileChange={(pid, oid) => handleProfileChange(sv.skillId, pid, oid)}
+                  onAttributeChange={(attrId) => handleSkillAttributeChange(sv.skillId, attrId)}
+                  templateAttributes={sheet.template.attributes}
                 />
               ))}
             </div>
@@ -838,7 +875,7 @@ function CollapsibleRuntimeModifier({ modDef, compValues, total, isOwner, onChan
   </div>
 }
 
-function CollapsibleSkillRow({ skill, result, profiles, selections, active, others, onToggleActive, onOthersChange, onProfileChange }: { skill: SkillValue; result: number | null; profiles: SkillModifierProfile[]; selections: Record<string, string | null>; active: boolean; others: number; onToggleActive: () => void; onOthersChange: (v: number) => void; onProfileChange: (profileId: string, optionId: string | null) => void }) {
+function CollapsibleSkillRow({ skill, result, profiles, selections, active, others, onToggleActive, onOthersChange, onProfileChange, onAttributeChange, templateAttributes }: { skill: SkillValue; result: number | null; profiles: SkillModifierProfile[]; selections: Record<string, string | null>; active: boolean; others: number; onToggleActive: () => void; onOthersChange: (v: number) => void; onProfileChange: (profileId: string, optionId: string | null) => void; onAttributeChange?: (attributeId: string | null) => void; templateAttributes?: { id: string; key: string; name: string }[] }) {
   const [expanded, setExpanded] = useState(false)
   return (
     <div className={`rounded-lg border border-border bg-background/30 overflow-hidden transition-opacity ${active ? '' : 'opacity-40'}`}>
@@ -873,6 +910,22 @@ function CollapsibleSkillRow({ skill, result, profiles, selections, active, othe
               </div>
             )
           })}
+          {(skill.skill.allowedAttributeIds?.length ?? 0) > 0 && templateAttributes && onAttributeChange && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted shrink-0 min-w-[80px]">Attribute:</span>
+              <select
+                className="input-field py-1 text-xs flex-1"
+                value={skill.selectedAttributeId ?? ''}
+                onChange={e => onAttributeChange(e.target.value || null)}
+              >
+                {skill.skill.allowedAttributeIds.map(attrId => {
+                  const attr = templateAttributes.find(a => a.id === attrId)
+                  if (!attr) return null
+                  return <option key={attrId} value={attrId}>{attr.name}</option>
+                })}
+              </select>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted shrink-0 min-w-[80px]">Others:</span>
             <input type="number" min={0} step={1} className="input-field py-1 text-xs w-20" value={others || ''} placeholder="0" onChange={e => onOthersChange(parseInt(e.target.value, 10) || 0)} />
