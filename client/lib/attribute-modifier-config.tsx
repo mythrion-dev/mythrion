@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import MythrionPopover from '@/lib/mythrion-popover'
 
 interface AttributeModifierConfigProps {
   value: string
@@ -231,7 +232,45 @@ export default function AttributeModifierConfig({
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-border bg-background/30 p-4 space-y-4">
-        <h4 className="text-sm font-semibold text-foreground">Attribute Modifier Progression</h4>
+        <div className="flex items-center gap-2">
+          <h4 className="text-sm font-semibold text-foreground">Attribute Modifier Progression</h4>
+          <MythrionPopover
+            side="top"
+            align="center"
+            content={
+              <div className="space-y-3">
+                <h5 className="text-sm font-semibold text-primary">How does this work?</h5>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  This rule automatically calculates the modifier for every attribute in this template.
+                </p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  <span className="text-foreground font-medium">Example:</span> if you set <span className="text-foreground font-medium">Every 5</span> attribute points, modifier increases by <span className="text-foreground font-medium">1</span>, starting at attribute <span className="text-foreground font-medium">10</span>, with modifier <span className="text-foreground font-medium">0</span>, the result will be:
+                </p>
+                <ul className="space-y-0.5 pl-3 border-l-2 border-primary/20">
+                  <li className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">10–14</span> → Modifier <span className="text-foreground">0</span>
+                  </li>
+                  <li className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">15–19</span> → Modifier <span className="text-foreground">+1</span>
+                  </li>
+                  <li className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">20–24</span> → Modifier <span className="text-foreground">+2</span>
+                  </li>
+                  <li className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">25–29</span> → Modifier <span className="text-foreground">+3</span>
+                  </li>
+                </ul>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  You only configure this once, and every attribute will use the same progression automatically.
+                </p>
+              </div>
+            }
+          >
+            <div className="w-5 h-5 rounded-full border border-primary/30 bg-primary/10 flex items-center justify-center text-[0.65rem] text-primary font-bold leading-none hover:bg-primary/20 hover:border-primary/50 transition-colors select-none">
+              ?
+            </div>
+          </MythrionPopover>
+        </div>
 
         <div className="space-y-3">
           {/* Every N attribute points */}
