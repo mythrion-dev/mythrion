@@ -103,7 +103,7 @@ export class CharacterSheetService {
         skillFormula: true,
         attributes: true,
         templateFields: true,
-      templateSkills: { select: { id: true, name: true, description: true, templateId: true, order: true } },
+      templateSkills: { select: { id: true, name: true, description: true, templateId: true, order: true, attributeId: true, defaultAttributeId: true, allowedAttributeIds: true } },
         skillModifierProfiles: { include: { options: { orderBy: { order: 'asc' } } } },
         runtimeModifiers: { include: { components: { orderBy: { order: 'asc' } } } },
       },

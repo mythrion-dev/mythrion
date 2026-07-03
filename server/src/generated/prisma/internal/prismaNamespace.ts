@@ -2624,6 +2624,8 @@ export const TemplateSkillScalarFieldEnum = {
   name: 'name',
   description: 'description',
   attributeId: 'attributeId',
+  allowedAttributeIds: 'allowedAttributeIds',
+  defaultAttributeId: 'defaultAttributeId',
   order: 'order',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -2637,6 +2639,7 @@ export const CharacterSheetSkillValueScalarFieldEnum = {
   sheetId: 'sheetId',
   skillId: 'skillId',
   value: 'value',
+  selectedAttributeId: 'selectedAttributeId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

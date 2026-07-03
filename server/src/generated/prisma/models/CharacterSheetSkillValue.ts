@@ -29,6 +29,7 @@ export type CharacterSheetSkillValueMinAggregateOutputType = {
   sheetId: string | null
   skillId: string | null
   value: string | null
+  selectedAttributeId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -38,6 +39,7 @@ export type CharacterSheetSkillValueMaxAggregateOutputType = {
   sheetId: string | null
   skillId: string | null
   value: string | null
+  selectedAttributeId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -47,6 +49,7 @@ export type CharacterSheetSkillValueCountAggregateOutputType = {
   sheetId: number
   skillId: number
   value: number
+  selectedAttributeId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -58,6 +61,7 @@ export type CharacterSheetSkillValueMinAggregateInputType = {
   sheetId?: true
   skillId?: true
   value?: true
+  selectedAttributeId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -67,6 +71,7 @@ export type CharacterSheetSkillValueMaxAggregateInputType = {
   sheetId?: true
   skillId?: true
   value?: true
+  selectedAttributeId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -76,6 +81,7 @@ export type CharacterSheetSkillValueCountAggregateInputType = {
   sheetId?: true
   skillId?: true
   value?: true
+  selectedAttributeId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -158,6 +164,7 @@ export type CharacterSheetSkillValueGroupByOutputType = {
   sheetId: string
   skillId: string
   value: string
+  selectedAttributeId: string | null
   createdAt: Date
   updatedAt: Date
   _count: CharacterSheetSkillValueCountAggregateOutputType | null
@@ -188,10 +195,12 @@ export type CharacterSheetSkillValueWhereInput = {
   sheetId?: Prisma.StringFilter<"CharacterSheetSkillValue"> | string
   skillId?: Prisma.StringFilter<"CharacterSheetSkillValue"> | string
   value?: Prisma.StringFilter<"CharacterSheetSkillValue"> | string
+  selectedAttributeId?: Prisma.StringNullableFilter<"CharacterSheetSkillValue"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CharacterSheetSkillValue"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterSheetSkillValue"> | Date | string
   sheet?: Prisma.XOR<Prisma.CharacterSheetScalarRelationFilter, Prisma.CharacterSheetWhereInput>
   skill?: Prisma.XOR<Prisma.TemplateSkillScalarRelationFilter, Prisma.TemplateSkillWhereInput>
+  selectedAttribute?: Prisma.XOR<Prisma.TemplateAttributeNullableScalarRelationFilter, Prisma.TemplateAttributeWhereInput> | null
 }
 
 export type CharacterSheetSkillValueOrderByWithRelationInput = {
@@ -199,10 +208,12 @@ export type CharacterSheetSkillValueOrderByWithRelationInput = {
   sheetId?: Prisma.SortOrder
   skillId?: Prisma.SortOrder
   value?: Prisma.SortOrder
+  selectedAttributeId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   sheet?: Prisma.CharacterSheetOrderByWithRelationInput
   skill?: Prisma.TemplateSkillOrderByWithRelationInput
+  selectedAttribute?: Prisma.TemplateAttributeOrderByWithRelationInput
 }
 
 export type CharacterSheetSkillValueWhereUniqueInput = Prisma.AtLeast<{
@@ -214,10 +225,12 @@ export type CharacterSheetSkillValueWhereUniqueInput = Prisma.AtLeast<{
   sheetId?: Prisma.StringFilter<"CharacterSheetSkillValue"> | string
   skillId?: Prisma.StringFilter<"CharacterSheetSkillValue"> | string
   value?: Prisma.StringFilter<"CharacterSheetSkillValue"> | string
+  selectedAttributeId?: Prisma.StringNullableFilter<"CharacterSheetSkillValue"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CharacterSheetSkillValue"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterSheetSkillValue"> | Date | string
   sheet?: Prisma.XOR<Prisma.CharacterSheetScalarRelationFilter, Prisma.CharacterSheetWhereInput>
   skill?: Prisma.XOR<Prisma.TemplateSkillScalarRelationFilter, Prisma.TemplateSkillWhereInput>
+  selectedAttribute?: Prisma.XOR<Prisma.TemplateAttributeNullableScalarRelationFilter, Prisma.TemplateAttributeWhereInput> | null
 }, "id" | "sheetId_skillId">
 
 export type CharacterSheetSkillValueOrderByWithAggregationInput = {
@@ -225,6 +238,7 @@ export type CharacterSheetSkillValueOrderByWithAggregationInput = {
   sheetId?: Prisma.SortOrder
   skillId?: Prisma.SortOrder
   value?: Prisma.SortOrder
+  selectedAttributeId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.CharacterSheetSkillValueCountOrderByAggregateInput
@@ -240,6 +254,7 @@ export type CharacterSheetSkillValueScalarWhereWithAggregatesInput = {
   sheetId?: Prisma.StringWithAggregatesFilter<"CharacterSheetSkillValue"> | string
   skillId?: Prisma.StringWithAggregatesFilter<"CharacterSheetSkillValue"> | string
   value?: Prisma.StringWithAggregatesFilter<"CharacterSheetSkillValue"> | string
+  selectedAttributeId?: Prisma.StringNullableWithAggregatesFilter<"CharacterSheetSkillValue"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"CharacterSheetSkillValue"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"CharacterSheetSkillValue"> | Date | string
 }
@@ -251,6 +266,7 @@ export type CharacterSheetSkillValueCreateInput = {
   updatedAt?: Date | string
   sheet: Prisma.CharacterSheetCreateNestedOneWithoutSkillValuesInput
   skill: Prisma.TemplateSkillCreateNestedOneWithoutSkillValuesInput
+  selectedAttribute?: Prisma.TemplateAttributeCreateNestedOneWithoutSkillSelectionsInput
 }
 
 export type CharacterSheetSkillValueUncheckedCreateInput = {
@@ -258,6 +274,7 @@ export type CharacterSheetSkillValueUncheckedCreateInput = {
   sheetId: string
   skillId: string
   value?: string
+  selectedAttributeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -269,6 +286,7 @@ export type CharacterSheetSkillValueUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutSkillValuesNestedInput
   skill?: Prisma.TemplateSkillUpdateOneRequiredWithoutSkillValuesNestedInput
+  selectedAttribute?: Prisma.TemplateAttributeUpdateOneWithoutSkillSelectionsNestedInput
 }
 
 export type CharacterSheetSkillValueUncheckedUpdateInput = {
@@ -276,6 +294,7 @@ export type CharacterSheetSkillValueUncheckedUpdateInput = {
   sheetId?: Prisma.StringFieldUpdateOperationsInput | string
   skillId?: Prisma.StringFieldUpdateOperationsInput | string
   value?: Prisma.StringFieldUpdateOperationsInput | string
+  selectedAttributeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -285,6 +304,7 @@ export type CharacterSheetSkillValueCreateManyInput = {
   sheetId: string
   skillId: string
   value?: string
+  selectedAttributeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -301,6 +321,7 @@ export type CharacterSheetSkillValueUncheckedUpdateManyInput = {
   sheetId?: Prisma.StringFieldUpdateOperationsInput | string
   skillId?: Prisma.StringFieldUpdateOperationsInput | string
   value?: Prisma.StringFieldUpdateOperationsInput | string
+  selectedAttributeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -325,6 +346,7 @@ export type CharacterSheetSkillValueCountOrderByAggregateInput = {
   sheetId?: Prisma.SortOrder
   skillId?: Prisma.SortOrder
   value?: Prisma.SortOrder
+  selectedAttributeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -334,6 +356,7 @@ export type CharacterSheetSkillValueMaxOrderByAggregateInput = {
   sheetId?: Prisma.SortOrder
   skillId?: Prisma.SortOrder
   value?: Prisma.SortOrder
+  selectedAttributeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -343,8 +366,51 @@ export type CharacterSheetSkillValueMinOrderByAggregateInput = {
   sheetId?: Prisma.SortOrder
   skillId?: Prisma.SortOrder
   value?: Prisma.SortOrder
+  selectedAttributeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type CharacterSheetSkillValueCreateNestedManyWithoutSelectedAttributeInput = {
+  create?: Prisma.XOR<Prisma.CharacterSheetSkillValueCreateWithoutSelectedAttributeInput, Prisma.CharacterSheetSkillValueUncheckedCreateWithoutSelectedAttributeInput> | Prisma.CharacterSheetSkillValueCreateWithoutSelectedAttributeInput[] | Prisma.CharacterSheetSkillValueUncheckedCreateWithoutSelectedAttributeInput[]
+  connectOrCreate?: Prisma.CharacterSheetSkillValueCreateOrConnectWithoutSelectedAttributeInput | Prisma.CharacterSheetSkillValueCreateOrConnectWithoutSelectedAttributeInput[]
+  createMany?: Prisma.CharacterSheetSkillValueCreateManySelectedAttributeInputEnvelope
+  connect?: Prisma.CharacterSheetSkillValueWhereUniqueInput | Prisma.CharacterSheetSkillValueWhereUniqueInput[]
+}
+
+export type CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSelectedAttributeInput = {
+  create?: Prisma.XOR<Prisma.CharacterSheetSkillValueCreateWithoutSelectedAttributeInput, Prisma.CharacterSheetSkillValueUncheckedCreateWithoutSelectedAttributeInput> | Prisma.CharacterSheetSkillValueCreateWithoutSelectedAttributeInput[] | Prisma.CharacterSheetSkillValueUncheckedCreateWithoutSelectedAttributeInput[]
+  connectOrCreate?: Prisma.CharacterSheetSkillValueCreateOrConnectWithoutSelectedAttributeInput | Prisma.CharacterSheetSkillValueCreateOrConnectWithoutSelectedAttributeInput[]
+  createMany?: Prisma.CharacterSheetSkillValueCreateManySelectedAttributeInputEnvelope
+  connect?: Prisma.CharacterSheetSkillValueWhereUniqueInput | Prisma.CharacterSheetSkillValueWhereUniqueInput[]
+}
+
+export type CharacterSheetSkillValueUpdateManyWithoutSelectedAttributeNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterSheetSkillValueCreateWithoutSelectedAttributeInput, Prisma.CharacterSheetSkillValueUncheckedCreateWithoutSelectedAttributeInput> | Prisma.CharacterSheetSkillValueCreateWithoutSelectedAttributeInput[] | Prisma.CharacterSheetSkillValueUncheckedCreateWithoutSelectedAttributeInput[]
+  connectOrCreate?: Prisma.CharacterSheetSkillValueCreateOrConnectWithoutSelectedAttributeInput | Prisma.CharacterSheetSkillValueCreateOrConnectWithoutSelectedAttributeInput[]
+  upsert?: Prisma.CharacterSheetSkillValueUpsertWithWhereUniqueWithoutSelectedAttributeInput | Prisma.CharacterSheetSkillValueUpsertWithWhereUniqueWithoutSelectedAttributeInput[]
+  createMany?: Prisma.CharacterSheetSkillValueCreateManySelectedAttributeInputEnvelope
+  set?: Prisma.CharacterSheetSkillValueWhereUniqueInput | Prisma.CharacterSheetSkillValueWhereUniqueInput[]
+  disconnect?: Prisma.CharacterSheetSkillValueWhereUniqueInput | Prisma.CharacterSheetSkillValueWhereUniqueInput[]
+  delete?: Prisma.CharacterSheetSkillValueWhereUniqueInput | Prisma.CharacterSheetSkillValueWhereUniqueInput[]
+  connect?: Prisma.CharacterSheetSkillValueWhereUniqueInput | Prisma.CharacterSheetSkillValueWhereUniqueInput[]
+  update?: Prisma.CharacterSheetSkillValueUpdateWithWhereUniqueWithoutSelectedAttributeInput | Prisma.CharacterSheetSkillValueUpdateWithWhereUniqueWithoutSelectedAttributeInput[]
+  updateMany?: Prisma.CharacterSheetSkillValueUpdateManyWithWhereWithoutSelectedAttributeInput | Prisma.CharacterSheetSkillValueUpdateManyWithWhereWithoutSelectedAttributeInput[]
+  deleteMany?: Prisma.CharacterSheetSkillValueScalarWhereInput | Prisma.CharacterSheetSkillValueScalarWhereInput[]
+}
+
+export type CharacterSheetSkillValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterSheetSkillValueCreateWithoutSelectedAttributeInput, Prisma.CharacterSheetSkillValueUncheckedCreateWithoutSelectedAttributeInput> | Prisma.CharacterSheetSkillValueCreateWithoutSelectedAttributeInput[] | Prisma.CharacterSheetSkillValueUncheckedCreateWithoutSelectedAttributeInput[]
+  connectOrCreate?: Prisma.CharacterSheetSkillValueCreateOrConnectWithoutSelectedAttributeInput | Prisma.CharacterSheetSkillValueCreateOrConnectWithoutSelectedAttributeInput[]
+  upsert?: Prisma.CharacterSheetSkillValueUpsertWithWhereUniqueWithoutSelectedAttributeInput | Prisma.CharacterSheetSkillValueUpsertWithWhereUniqueWithoutSelectedAttributeInput[]
+  createMany?: Prisma.CharacterSheetSkillValueCreateManySelectedAttributeInputEnvelope
+  set?: Prisma.CharacterSheetSkillValueWhereUniqueInput | Prisma.CharacterSheetSkillValueWhereUniqueInput[]
+  disconnect?: Prisma.CharacterSheetSkillValueWhereUniqueInput | Prisma.CharacterSheetSkillValueWhereUniqueInput[]
+  delete?: Prisma.CharacterSheetSkillValueWhereUniqueInput | Prisma.CharacterSheetSkillValueWhereUniqueInput[]
+  connect?: Prisma.CharacterSheetSkillValueWhereUniqueInput | Prisma.CharacterSheetSkillValueWhereUniqueInput[]
+  update?: Prisma.CharacterSheetSkillValueUpdateWithWhereUniqueWithoutSelectedAttributeInput | Prisma.CharacterSheetSkillValueUpdateWithWhereUniqueWithoutSelectedAttributeInput[]
+  updateMany?: Prisma.CharacterSheetSkillValueUpdateManyWithWhereWithoutSelectedAttributeInput | Prisma.CharacterSheetSkillValueUpdateManyWithWhereWithoutSelectedAttributeInput[]
+  deleteMany?: Prisma.CharacterSheetSkillValueScalarWhereInput | Prisma.CharacterSheetSkillValueScalarWhereInput[]
 }
 
 export type CharacterSheetSkillValueCreateNestedManyWithoutSkillInput = {
@@ -431,18 +497,77 @@ export type CharacterSheetSkillValueUncheckedUpdateManyWithoutSheetNestedInput =
   deleteMany?: Prisma.CharacterSheetSkillValueScalarWhereInput | Prisma.CharacterSheetSkillValueScalarWhereInput[]
 }
 
+export type CharacterSheetSkillValueCreateWithoutSelectedAttributeInput = {
+  id?: string
+  value?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sheet: Prisma.CharacterSheetCreateNestedOneWithoutSkillValuesInput
+  skill: Prisma.TemplateSkillCreateNestedOneWithoutSkillValuesInput
+}
+
+export type CharacterSheetSkillValueUncheckedCreateWithoutSelectedAttributeInput = {
+  id?: string
+  sheetId: string
+  skillId: string
+  value?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type CharacterSheetSkillValueCreateOrConnectWithoutSelectedAttributeInput = {
+  where: Prisma.CharacterSheetSkillValueWhereUniqueInput
+  create: Prisma.XOR<Prisma.CharacterSheetSkillValueCreateWithoutSelectedAttributeInput, Prisma.CharacterSheetSkillValueUncheckedCreateWithoutSelectedAttributeInput>
+}
+
+export type CharacterSheetSkillValueCreateManySelectedAttributeInputEnvelope = {
+  data: Prisma.CharacterSheetSkillValueCreateManySelectedAttributeInput | Prisma.CharacterSheetSkillValueCreateManySelectedAttributeInput[]
+  skipDuplicates?: boolean
+}
+
+export type CharacterSheetSkillValueUpsertWithWhereUniqueWithoutSelectedAttributeInput = {
+  where: Prisma.CharacterSheetSkillValueWhereUniqueInput
+  update: Prisma.XOR<Prisma.CharacterSheetSkillValueUpdateWithoutSelectedAttributeInput, Prisma.CharacterSheetSkillValueUncheckedUpdateWithoutSelectedAttributeInput>
+  create: Prisma.XOR<Prisma.CharacterSheetSkillValueCreateWithoutSelectedAttributeInput, Prisma.CharacterSheetSkillValueUncheckedCreateWithoutSelectedAttributeInput>
+}
+
+export type CharacterSheetSkillValueUpdateWithWhereUniqueWithoutSelectedAttributeInput = {
+  where: Prisma.CharacterSheetSkillValueWhereUniqueInput
+  data: Prisma.XOR<Prisma.CharacterSheetSkillValueUpdateWithoutSelectedAttributeInput, Prisma.CharacterSheetSkillValueUncheckedUpdateWithoutSelectedAttributeInput>
+}
+
+export type CharacterSheetSkillValueUpdateManyWithWhereWithoutSelectedAttributeInput = {
+  where: Prisma.CharacterSheetSkillValueScalarWhereInput
+  data: Prisma.XOR<Prisma.CharacterSheetSkillValueUpdateManyMutationInput, Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSelectedAttributeInput>
+}
+
+export type CharacterSheetSkillValueScalarWhereInput = {
+  AND?: Prisma.CharacterSheetSkillValueScalarWhereInput | Prisma.CharacterSheetSkillValueScalarWhereInput[]
+  OR?: Prisma.CharacterSheetSkillValueScalarWhereInput[]
+  NOT?: Prisma.CharacterSheetSkillValueScalarWhereInput | Prisma.CharacterSheetSkillValueScalarWhereInput[]
+  id?: Prisma.StringFilter<"CharacterSheetSkillValue"> | string
+  sheetId?: Prisma.StringFilter<"CharacterSheetSkillValue"> | string
+  skillId?: Prisma.StringFilter<"CharacterSheetSkillValue"> | string
+  value?: Prisma.StringFilter<"CharacterSheetSkillValue"> | string
+  selectedAttributeId?: Prisma.StringNullableFilter<"CharacterSheetSkillValue"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"CharacterSheetSkillValue"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"CharacterSheetSkillValue"> | Date | string
+}
+
 export type CharacterSheetSkillValueCreateWithoutSkillInput = {
   id?: string
   value?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   sheet: Prisma.CharacterSheetCreateNestedOneWithoutSkillValuesInput
+  selectedAttribute?: Prisma.TemplateAttributeCreateNestedOneWithoutSkillSelectionsInput
 }
 
 export type CharacterSheetSkillValueUncheckedCreateWithoutSkillInput = {
   id?: string
   sheetId: string
   value?: string
+  selectedAttributeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -473,30 +598,20 @@ export type CharacterSheetSkillValueUpdateManyWithWhereWithoutSkillInput = {
   data: Prisma.XOR<Prisma.CharacterSheetSkillValueUpdateManyMutationInput, Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSkillInput>
 }
 
-export type CharacterSheetSkillValueScalarWhereInput = {
-  AND?: Prisma.CharacterSheetSkillValueScalarWhereInput | Prisma.CharacterSheetSkillValueScalarWhereInput[]
-  OR?: Prisma.CharacterSheetSkillValueScalarWhereInput[]
-  NOT?: Prisma.CharacterSheetSkillValueScalarWhereInput | Prisma.CharacterSheetSkillValueScalarWhereInput[]
-  id?: Prisma.StringFilter<"CharacterSheetSkillValue"> | string
-  sheetId?: Prisma.StringFilter<"CharacterSheetSkillValue"> | string
-  skillId?: Prisma.StringFilter<"CharacterSheetSkillValue"> | string
-  value?: Prisma.StringFilter<"CharacterSheetSkillValue"> | string
-  createdAt?: Prisma.DateTimeFilter<"CharacterSheetSkillValue"> | Date | string
-  updatedAt?: Prisma.DateTimeFilter<"CharacterSheetSkillValue"> | Date | string
-}
-
 export type CharacterSheetSkillValueCreateWithoutSheetInput = {
   id?: string
   value?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   skill: Prisma.TemplateSkillCreateNestedOneWithoutSkillValuesInput
+  selectedAttribute?: Prisma.TemplateAttributeCreateNestedOneWithoutSkillSelectionsInput
 }
 
 export type CharacterSheetSkillValueUncheckedCreateWithoutSheetInput = {
   id?: string
   skillId: string
   value?: string
+  selectedAttributeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -527,10 +642,47 @@ export type CharacterSheetSkillValueUpdateManyWithWhereWithoutSheetInput = {
   data: Prisma.XOR<Prisma.CharacterSheetSkillValueUpdateManyMutationInput, Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSheetInput>
 }
 
+export type CharacterSheetSkillValueCreateManySelectedAttributeInput = {
+  id?: string
+  sheetId: string
+  skillId: string
+  value?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type CharacterSheetSkillValueUpdateWithoutSelectedAttributeInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  value?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutSkillValuesNestedInput
+  skill?: Prisma.TemplateSkillUpdateOneRequiredWithoutSkillValuesNestedInput
+}
+
+export type CharacterSheetSkillValueUncheckedUpdateWithoutSelectedAttributeInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sheetId?: Prisma.StringFieldUpdateOperationsInput | string
+  skillId?: Prisma.StringFieldUpdateOperationsInput | string
+  value?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type CharacterSheetSkillValueUncheckedUpdateManyWithoutSelectedAttributeInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sheetId?: Prisma.StringFieldUpdateOperationsInput | string
+  skillId?: Prisma.StringFieldUpdateOperationsInput | string
+  value?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type CharacterSheetSkillValueCreateManySkillInput = {
   id?: string
   sheetId: string
   value?: string
+  selectedAttributeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -541,12 +693,14 @@ export type CharacterSheetSkillValueUpdateWithoutSkillInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutSkillValuesNestedInput
+  selectedAttribute?: Prisma.TemplateAttributeUpdateOneWithoutSkillSelectionsNestedInput
 }
 
 export type CharacterSheetSkillValueUncheckedUpdateWithoutSkillInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sheetId?: Prisma.StringFieldUpdateOperationsInput | string
   value?: Prisma.StringFieldUpdateOperationsInput | string
+  selectedAttributeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -555,6 +709,7 @@ export type CharacterSheetSkillValueUncheckedUpdateManyWithoutSkillInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sheetId?: Prisma.StringFieldUpdateOperationsInput | string
   value?: Prisma.StringFieldUpdateOperationsInput | string
+  selectedAttributeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -563,6 +718,7 @@ export type CharacterSheetSkillValueCreateManySheetInput = {
   id?: string
   skillId: string
   value?: string
+  selectedAttributeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -573,12 +729,14 @@ export type CharacterSheetSkillValueUpdateWithoutSheetInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   skill?: Prisma.TemplateSkillUpdateOneRequiredWithoutSkillValuesNestedInput
+  selectedAttribute?: Prisma.TemplateAttributeUpdateOneWithoutSkillSelectionsNestedInput
 }
 
 export type CharacterSheetSkillValueUncheckedUpdateWithoutSheetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   skillId?: Prisma.StringFieldUpdateOperationsInput | string
   value?: Prisma.StringFieldUpdateOperationsInput | string
+  selectedAttributeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -587,6 +745,7 @@ export type CharacterSheetSkillValueUncheckedUpdateManyWithoutSheetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   skillId?: Prisma.StringFieldUpdateOperationsInput | string
   value?: Prisma.StringFieldUpdateOperationsInput | string
+  selectedAttributeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -598,10 +757,12 @@ export type CharacterSheetSkillValueSelect<ExtArgs extends runtime.Types.Extensi
   sheetId?: boolean
   skillId?: boolean
   value?: boolean
+  selectedAttributeId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
   skill?: boolean | Prisma.TemplateSkillDefaultArgs<ExtArgs>
+  selectedAttribute?: boolean | Prisma.CharacterSheetSkillValue$selectedAttributeArgs<ExtArgs>
 }, ExtArgs["result"]["characterSheetSkillValue"]>
 
 export type CharacterSheetSkillValueSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -609,10 +770,12 @@ export type CharacterSheetSkillValueSelectCreateManyAndReturn<ExtArgs extends ru
   sheetId?: boolean
   skillId?: boolean
   value?: boolean
+  selectedAttributeId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
   skill?: boolean | Prisma.TemplateSkillDefaultArgs<ExtArgs>
+  selectedAttribute?: boolean | Prisma.CharacterSheetSkillValue$selectedAttributeArgs<ExtArgs>
 }, ExtArgs["result"]["characterSheetSkillValue"]>
 
 export type CharacterSheetSkillValueSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -620,10 +783,12 @@ export type CharacterSheetSkillValueSelectUpdateManyAndReturn<ExtArgs extends ru
   sheetId?: boolean
   skillId?: boolean
   value?: boolean
+  selectedAttributeId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
   skill?: boolean | Prisma.TemplateSkillDefaultArgs<ExtArgs>
+  selectedAttribute?: boolean | Prisma.CharacterSheetSkillValue$selectedAttributeArgs<ExtArgs>
 }, ExtArgs["result"]["characterSheetSkillValue"]>
 
 export type CharacterSheetSkillValueSelectScalar = {
@@ -631,22 +796,26 @@ export type CharacterSheetSkillValueSelectScalar = {
   sheetId?: boolean
   skillId?: boolean
   value?: boolean
+  selectedAttributeId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CharacterSheetSkillValueOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sheetId" | "skillId" | "value" | "createdAt" | "updatedAt", ExtArgs["result"]["characterSheetSkillValue"]>
+export type CharacterSheetSkillValueOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sheetId" | "skillId" | "value" | "selectedAttributeId" | "createdAt" | "updatedAt", ExtArgs["result"]["characterSheetSkillValue"]>
 export type CharacterSheetSkillValueInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
   skill?: boolean | Prisma.TemplateSkillDefaultArgs<ExtArgs>
+  selectedAttribute?: boolean | Prisma.CharacterSheetSkillValue$selectedAttributeArgs<ExtArgs>
 }
 export type CharacterSheetSkillValueIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
   skill?: boolean | Prisma.TemplateSkillDefaultArgs<ExtArgs>
+  selectedAttribute?: boolean | Prisma.CharacterSheetSkillValue$selectedAttributeArgs<ExtArgs>
 }
 export type CharacterSheetSkillValueIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
   skill?: boolean | Prisma.TemplateSkillDefaultArgs<ExtArgs>
+  selectedAttribute?: boolean | Prisma.CharacterSheetSkillValue$selectedAttributeArgs<ExtArgs>
 }
 
 export type $CharacterSheetSkillValuePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -654,12 +823,14 @@ export type $CharacterSheetSkillValuePayload<ExtArgs extends runtime.Types.Exten
   objects: {
     sheet: Prisma.$CharacterSheetPayload<ExtArgs>
     skill: Prisma.$TemplateSkillPayload<ExtArgs>
+    selectedAttribute: Prisma.$TemplateAttributePayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     sheetId: string
     skillId: string
     value: string
+    selectedAttributeId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["characterSheetSkillValue"]>
@@ -1058,6 +1229,7 @@ export interface Prisma__CharacterSheetSkillValueClient<T, Null = never, ExtArgs
   readonly [Symbol.toStringTag]: "PrismaPromise"
   sheet<T extends Prisma.CharacterSheetDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheetDefaultArgs<ExtArgs>>): Prisma.Prisma__CharacterSheetClient<runtime.Types.Result.GetResult<Prisma.$CharacterSheetPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   skill<T extends Prisma.TemplateSkillDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateSkillDefaultArgs<ExtArgs>>): Prisma.Prisma__TemplateSkillClient<runtime.Types.Result.GetResult<Prisma.$TemplateSkillPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  selectedAttribute<T extends Prisma.CharacterSheetSkillValue$selectedAttributeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheetSkillValue$selectedAttributeArgs<ExtArgs>>): Prisma.Prisma__TemplateAttributeClient<runtime.Types.Result.GetResult<Prisma.$TemplateAttributePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1091,6 +1263,7 @@ export interface CharacterSheetSkillValueFieldRefs {
   readonly sheetId: Prisma.FieldRef<"CharacterSheetSkillValue", 'String'>
   readonly skillId: Prisma.FieldRef<"CharacterSheetSkillValue", 'String'>
   readonly value: Prisma.FieldRef<"CharacterSheetSkillValue", 'String'>
+  readonly selectedAttributeId: Prisma.FieldRef<"CharacterSheetSkillValue", 'String'>
   readonly createdAt: Prisma.FieldRef<"CharacterSheetSkillValue", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"CharacterSheetSkillValue", 'DateTime'>
 }
@@ -1491,6 +1664,25 @@ export type CharacterSheetSkillValueDeleteManyArgs<ExtArgs extends runtime.Types
    * Limit how many CharacterSheetSkillValues to delete.
    */
   limit?: number
+}
+
+/**
+ * CharacterSheetSkillValue.selectedAttribute
+ */
+export type CharacterSheetSkillValue$selectedAttributeArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TemplateAttribute
+   */
+  select?: Prisma.TemplateAttributeSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TemplateAttribute
+   */
+  omit?: Prisma.TemplateAttributeOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TemplateAttributeInclude<ExtArgs> | null
+  where?: Prisma.TemplateAttributeWhereInput
 }
 
 /**

@@ -235,6 +235,8 @@ export type TemplateAttributeWhereInput = {
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
   sheetValues?: Prisma.CharacterSheetValueListRelationFilter
   skills?: Prisma.TemplateSkillListRelationFilter
+  skillsAllowed?: Prisma.TemplateSkillListRelationFilter
+  skillSelections?: Prisma.CharacterSheetSkillValueListRelationFilter
 }
 
 export type TemplateAttributeOrderByWithRelationInput = {
@@ -248,6 +250,8 @@ export type TemplateAttributeOrderByWithRelationInput = {
   template?: Prisma.TemplateOrderByWithRelationInput
   sheetValues?: Prisma.CharacterSheetValueOrderByRelationAggregateInput
   skills?: Prisma.TemplateSkillOrderByRelationAggregateInput
+  skillsAllowed?: Prisma.TemplateSkillOrderByRelationAggregateInput
+  skillSelections?: Prisma.CharacterSheetSkillValueOrderByRelationAggregateInput
 }
 
 export type TemplateAttributeWhereUniqueInput = Prisma.AtLeast<{
@@ -264,6 +268,8 @@ export type TemplateAttributeWhereUniqueInput = Prisma.AtLeast<{
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
   sheetValues?: Prisma.CharacterSheetValueListRelationFilter
   skills?: Prisma.TemplateSkillListRelationFilter
+  skillsAllowed?: Prisma.TemplateSkillListRelationFilter
+  skillSelections?: Prisma.CharacterSheetSkillValueListRelationFilter
 }, "id">
 
 export type TemplateAttributeOrderByWithAggregationInput = {
@@ -304,6 +310,8 @@ export type TemplateAttributeCreateInput = {
   template: Prisma.TemplateCreateNestedOneWithoutAttributesInput
   sheetValues?: Prisma.CharacterSheetValueCreateNestedManyWithoutAttributeInput
   skills?: Prisma.TemplateSkillCreateNestedManyWithoutAttributeInput
+  skillsAllowed?: Prisma.TemplateSkillCreateNestedManyWithoutDefaultAttributeInput
+  skillSelections?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUncheckedCreateInput = {
@@ -316,6 +324,8 @@ export type TemplateAttributeUncheckedCreateInput = {
   updatedAt?: Date | string
   sheetValues?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutAttributeInput
   skills?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutAttributeInput
+  skillsAllowed?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutDefaultAttributeInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUpdateInput = {
@@ -328,6 +338,8 @@ export type TemplateAttributeUpdateInput = {
   template?: Prisma.TemplateUpdateOneRequiredWithoutAttributesNestedInput
   sheetValues?: Prisma.CharacterSheetValueUpdateManyWithoutAttributeNestedInput
   skills?: Prisma.TemplateSkillUpdateManyWithoutAttributeNestedInput
+  skillsAllowed?: Prisma.TemplateSkillUpdateManyWithoutDefaultAttributeNestedInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateInput = {
@@ -340,6 +352,8 @@ export type TemplateAttributeUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheetValues?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutAttributeNestedInput
   skills?: Prisma.TemplateSkillUncheckedUpdateManyWithoutAttributeNestedInput
+  skillsAllowed?: Prisma.TemplateSkillUncheckedUpdateManyWithoutDefaultAttributeNestedInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeCreateManyInput = {
@@ -477,6 +491,12 @@ export type TemplateAttributeCreateNestedOneWithoutSkillsInput = {
   connect?: Prisma.TemplateAttributeWhereUniqueInput
 }
 
+export type TemplateAttributeCreateNestedOneWithoutSkillsAllowedInput = {
+  create?: Prisma.XOR<Prisma.TemplateAttributeCreateWithoutSkillsAllowedInput, Prisma.TemplateAttributeUncheckedCreateWithoutSkillsAllowedInput>
+  connectOrCreate?: Prisma.TemplateAttributeCreateOrConnectWithoutSkillsAllowedInput
+  connect?: Prisma.TemplateAttributeWhereUniqueInput
+}
+
 export type TemplateAttributeUpdateOneWithoutSkillsNestedInput = {
   create?: Prisma.XOR<Prisma.TemplateAttributeCreateWithoutSkillsInput, Prisma.TemplateAttributeUncheckedCreateWithoutSkillsInput>
   connectOrCreate?: Prisma.TemplateAttributeCreateOrConnectWithoutSkillsInput
@@ -485,6 +505,32 @@ export type TemplateAttributeUpdateOneWithoutSkillsNestedInput = {
   delete?: Prisma.TemplateAttributeWhereInput | boolean
   connect?: Prisma.TemplateAttributeWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.TemplateAttributeUpdateToOneWithWhereWithoutSkillsInput, Prisma.TemplateAttributeUpdateWithoutSkillsInput>, Prisma.TemplateAttributeUncheckedUpdateWithoutSkillsInput>
+}
+
+export type TemplateAttributeUpdateOneWithoutSkillsAllowedNestedInput = {
+  create?: Prisma.XOR<Prisma.TemplateAttributeCreateWithoutSkillsAllowedInput, Prisma.TemplateAttributeUncheckedCreateWithoutSkillsAllowedInput>
+  connectOrCreate?: Prisma.TemplateAttributeCreateOrConnectWithoutSkillsAllowedInput
+  upsert?: Prisma.TemplateAttributeUpsertWithoutSkillsAllowedInput
+  disconnect?: Prisma.TemplateAttributeWhereInput | boolean
+  delete?: Prisma.TemplateAttributeWhereInput | boolean
+  connect?: Prisma.TemplateAttributeWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TemplateAttributeUpdateToOneWithWhereWithoutSkillsAllowedInput, Prisma.TemplateAttributeUpdateWithoutSkillsAllowedInput>, Prisma.TemplateAttributeUncheckedUpdateWithoutSkillsAllowedInput>
+}
+
+export type TemplateAttributeCreateNestedOneWithoutSkillSelectionsInput = {
+  create?: Prisma.XOR<Prisma.TemplateAttributeCreateWithoutSkillSelectionsInput, Prisma.TemplateAttributeUncheckedCreateWithoutSkillSelectionsInput>
+  connectOrCreate?: Prisma.TemplateAttributeCreateOrConnectWithoutSkillSelectionsInput
+  connect?: Prisma.TemplateAttributeWhereUniqueInput
+}
+
+export type TemplateAttributeUpdateOneWithoutSkillSelectionsNestedInput = {
+  create?: Prisma.XOR<Prisma.TemplateAttributeCreateWithoutSkillSelectionsInput, Prisma.TemplateAttributeUncheckedCreateWithoutSkillSelectionsInput>
+  connectOrCreate?: Prisma.TemplateAttributeCreateOrConnectWithoutSkillSelectionsInput
+  upsert?: Prisma.TemplateAttributeUpsertWithoutSkillSelectionsInput
+  disconnect?: Prisma.TemplateAttributeWhereInput | boolean
+  delete?: Prisma.TemplateAttributeWhereInput | boolean
+  connect?: Prisma.TemplateAttributeWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TemplateAttributeUpdateToOneWithWhereWithoutSkillSelectionsInput, Prisma.TemplateAttributeUpdateWithoutSkillSelectionsInput>, Prisma.TemplateAttributeUncheckedUpdateWithoutSkillSelectionsInput>
 }
 
 export type TemplateAttributeCreateNestedOneWithoutSheetValuesInput = {
@@ -510,6 +556,8 @@ export type TemplateAttributeCreateWithoutTemplateInput = {
   updatedAt?: Date | string
   sheetValues?: Prisma.CharacterSheetValueCreateNestedManyWithoutAttributeInput
   skills?: Prisma.TemplateSkillCreateNestedManyWithoutAttributeInput
+  skillsAllowed?: Prisma.TemplateSkillCreateNestedManyWithoutDefaultAttributeInput
+  skillSelections?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUncheckedCreateWithoutTemplateInput = {
@@ -521,6 +569,8 @@ export type TemplateAttributeUncheckedCreateWithoutTemplateInput = {
   updatedAt?: Date | string
   sheetValues?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutAttributeInput
   skills?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutAttributeInput
+  skillsAllowed?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutDefaultAttributeInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeCreateOrConnectWithoutTemplateInput = {
@@ -571,6 +621,8 @@ export type TemplateAttributeCreateWithoutSkillsInput = {
   updatedAt?: Date | string
   template: Prisma.TemplateCreateNestedOneWithoutAttributesInput
   sheetValues?: Prisma.CharacterSheetValueCreateNestedManyWithoutAttributeInput
+  skillsAllowed?: Prisma.TemplateSkillCreateNestedManyWithoutDefaultAttributeInput
+  skillSelections?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUncheckedCreateWithoutSkillsInput = {
@@ -582,11 +634,44 @@ export type TemplateAttributeUncheckedCreateWithoutSkillsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sheetValues?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutAttributeInput
+  skillsAllowed?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutDefaultAttributeInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeCreateOrConnectWithoutSkillsInput = {
   where: Prisma.TemplateAttributeWhereUniqueInput
   create: Prisma.XOR<Prisma.TemplateAttributeCreateWithoutSkillsInput, Prisma.TemplateAttributeUncheckedCreateWithoutSkillsInput>
+}
+
+export type TemplateAttributeCreateWithoutSkillsAllowedInput = {
+  id?: string
+  key: string
+  name: string
+  order?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  template: Prisma.TemplateCreateNestedOneWithoutAttributesInput
+  sheetValues?: Prisma.CharacterSheetValueCreateNestedManyWithoutAttributeInput
+  skills?: Prisma.TemplateSkillCreateNestedManyWithoutAttributeInput
+  skillSelections?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSelectedAttributeInput
+}
+
+export type TemplateAttributeUncheckedCreateWithoutSkillsAllowedInput = {
+  id?: string
+  templateId: string
+  key: string
+  name: string
+  order?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sheetValues?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutAttributeInput
+  skills?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutAttributeInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
+}
+
+export type TemplateAttributeCreateOrConnectWithoutSkillsAllowedInput = {
+  where: Prisma.TemplateAttributeWhereUniqueInput
+  create: Prisma.XOR<Prisma.TemplateAttributeCreateWithoutSkillsAllowedInput, Prisma.TemplateAttributeUncheckedCreateWithoutSkillsAllowedInput>
 }
 
 export type TemplateAttributeUpsertWithoutSkillsInput = {
@@ -609,6 +694,8 @@ export type TemplateAttributeUpdateWithoutSkillsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   template?: Prisma.TemplateUpdateOneRequiredWithoutAttributesNestedInput
   sheetValues?: Prisma.CharacterSheetValueUpdateManyWithoutAttributeNestedInput
+  skillsAllowed?: Prisma.TemplateSkillUpdateManyWithoutDefaultAttributeNestedInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateWithoutSkillsInput = {
@@ -620,6 +707,113 @@ export type TemplateAttributeUncheckedUpdateWithoutSkillsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheetValues?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutAttributeNestedInput
+  skillsAllowed?: Prisma.TemplateSkillUncheckedUpdateManyWithoutDefaultAttributeNestedInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
+}
+
+export type TemplateAttributeUpsertWithoutSkillsAllowedInput = {
+  update: Prisma.XOR<Prisma.TemplateAttributeUpdateWithoutSkillsAllowedInput, Prisma.TemplateAttributeUncheckedUpdateWithoutSkillsAllowedInput>
+  create: Prisma.XOR<Prisma.TemplateAttributeCreateWithoutSkillsAllowedInput, Prisma.TemplateAttributeUncheckedCreateWithoutSkillsAllowedInput>
+  where?: Prisma.TemplateAttributeWhereInput
+}
+
+export type TemplateAttributeUpdateToOneWithWhereWithoutSkillsAllowedInput = {
+  where?: Prisma.TemplateAttributeWhereInput
+  data: Prisma.XOR<Prisma.TemplateAttributeUpdateWithoutSkillsAllowedInput, Prisma.TemplateAttributeUncheckedUpdateWithoutSkillsAllowedInput>
+}
+
+export type TemplateAttributeUpdateWithoutSkillsAllowedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  template?: Prisma.TemplateUpdateOneRequiredWithoutAttributesNestedInput
+  sheetValues?: Prisma.CharacterSheetValueUpdateManyWithoutAttributeNestedInput
+  skills?: Prisma.TemplateSkillUpdateManyWithoutAttributeNestedInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSelectedAttributeNestedInput
+}
+
+export type TemplateAttributeUncheckedUpdateWithoutSkillsAllowedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  templateId?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sheetValues?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutAttributeNestedInput
+  skills?: Prisma.TemplateSkillUncheckedUpdateManyWithoutAttributeNestedInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
+}
+
+export type TemplateAttributeCreateWithoutSkillSelectionsInput = {
+  id?: string
+  key: string
+  name: string
+  order?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  template: Prisma.TemplateCreateNestedOneWithoutAttributesInput
+  sheetValues?: Prisma.CharacterSheetValueCreateNestedManyWithoutAttributeInput
+  skills?: Prisma.TemplateSkillCreateNestedManyWithoutAttributeInput
+  skillsAllowed?: Prisma.TemplateSkillCreateNestedManyWithoutDefaultAttributeInput
+}
+
+export type TemplateAttributeUncheckedCreateWithoutSkillSelectionsInput = {
+  id?: string
+  templateId: string
+  key: string
+  name: string
+  order?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sheetValues?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutAttributeInput
+  skills?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutAttributeInput
+  skillsAllowed?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutDefaultAttributeInput
+}
+
+export type TemplateAttributeCreateOrConnectWithoutSkillSelectionsInput = {
+  where: Prisma.TemplateAttributeWhereUniqueInput
+  create: Prisma.XOR<Prisma.TemplateAttributeCreateWithoutSkillSelectionsInput, Prisma.TemplateAttributeUncheckedCreateWithoutSkillSelectionsInput>
+}
+
+export type TemplateAttributeUpsertWithoutSkillSelectionsInput = {
+  update: Prisma.XOR<Prisma.TemplateAttributeUpdateWithoutSkillSelectionsInput, Prisma.TemplateAttributeUncheckedUpdateWithoutSkillSelectionsInput>
+  create: Prisma.XOR<Prisma.TemplateAttributeCreateWithoutSkillSelectionsInput, Prisma.TemplateAttributeUncheckedCreateWithoutSkillSelectionsInput>
+  where?: Prisma.TemplateAttributeWhereInput
+}
+
+export type TemplateAttributeUpdateToOneWithWhereWithoutSkillSelectionsInput = {
+  where?: Prisma.TemplateAttributeWhereInput
+  data: Prisma.XOR<Prisma.TemplateAttributeUpdateWithoutSkillSelectionsInput, Prisma.TemplateAttributeUncheckedUpdateWithoutSkillSelectionsInput>
+}
+
+export type TemplateAttributeUpdateWithoutSkillSelectionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  template?: Prisma.TemplateUpdateOneRequiredWithoutAttributesNestedInput
+  sheetValues?: Prisma.CharacterSheetValueUpdateManyWithoutAttributeNestedInput
+  skills?: Prisma.TemplateSkillUpdateManyWithoutAttributeNestedInput
+  skillsAllowed?: Prisma.TemplateSkillUpdateManyWithoutDefaultAttributeNestedInput
+}
+
+export type TemplateAttributeUncheckedUpdateWithoutSkillSelectionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  templateId?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sheetValues?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutAttributeNestedInput
+  skills?: Prisma.TemplateSkillUncheckedUpdateManyWithoutAttributeNestedInput
+  skillsAllowed?: Prisma.TemplateSkillUncheckedUpdateManyWithoutDefaultAttributeNestedInput
 }
 
 export type TemplateAttributeCreateWithoutSheetValuesInput = {
@@ -631,6 +825,8 @@ export type TemplateAttributeCreateWithoutSheetValuesInput = {
   updatedAt?: Date | string
   template: Prisma.TemplateCreateNestedOneWithoutAttributesInput
   skills?: Prisma.TemplateSkillCreateNestedManyWithoutAttributeInput
+  skillsAllowed?: Prisma.TemplateSkillCreateNestedManyWithoutDefaultAttributeInput
+  skillSelections?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUncheckedCreateWithoutSheetValuesInput = {
@@ -642,6 +838,8 @@ export type TemplateAttributeUncheckedCreateWithoutSheetValuesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   skills?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutAttributeInput
+  skillsAllowed?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutDefaultAttributeInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeCreateOrConnectWithoutSheetValuesInput = {
@@ -669,6 +867,8 @@ export type TemplateAttributeUpdateWithoutSheetValuesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   template?: Prisma.TemplateUpdateOneRequiredWithoutAttributesNestedInput
   skills?: Prisma.TemplateSkillUpdateManyWithoutAttributeNestedInput
+  skillsAllowed?: Prisma.TemplateSkillUpdateManyWithoutDefaultAttributeNestedInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateWithoutSheetValuesInput = {
@@ -680,6 +880,8 @@ export type TemplateAttributeUncheckedUpdateWithoutSheetValuesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   skills?: Prisma.TemplateSkillUncheckedUpdateManyWithoutAttributeNestedInput
+  skillsAllowed?: Prisma.TemplateSkillUncheckedUpdateManyWithoutDefaultAttributeNestedInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeCreateManyTemplateInput = {
@@ -700,6 +902,8 @@ export type TemplateAttributeUpdateWithoutTemplateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheetValues?: Prisma.CharacterSheetValueUpdateManyWithoutAttributeNestedInput
   skills?: Prisma.TemplateSkillUpdateManyWithoutAttributeNestedInput
+  skillsAllowed?: Prisma.TemplateSkillUpdateManyWithoutDefaultAttributeNestedInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateWithoutTemplateInput = {
@@ -711,6 +915,8 @@ export type TemplateAttributeUncheckedUpdateWithoutTemplateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheetValues?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutAttributeNestedInput
   skills?: Prisma.TemplateSkillUncheckedUpdateManyWithoutAttributeNestedInput
+  skillsAllowed?: Prisma.TemplateSkillUncheckedUpdateManyWithoutDefaultAttributeNestedInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateManyWithoutTemplateInput = {
@@ -730,11 +936,15 @@ export type TemplateAttributeUncheckedUpdateManyWithoutTemplateInput = {
 export type TemplateAttributeCountOutputType = {
   sheetValues: number
   skills: number
+  skillsAllowed: number
+  skillSelections: number
 }
 
 export type TemplateAttributeCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sheetValues?: boolean | TemplateAttributeCountOutputTypeCountSheetValuesArgs
   skills?: boolean | TemplateAttributeCountOutputTypeCountSkillsArgs
+  skillsAllowed?: boolean | TemplateAttributeCountOutputTypeCountSkillsAllowedArgs
+  skillSelections?: boolean | TemplateAttributeCountOutputTypeCountSkillSelectionsArgs
 }
 
 /**
@@ -761,6 +971,20 @@ export type TemplateAttributeCountOutputTypeCountSkillsArgs<ExtArgs extends runt
   where?: Prisma.TemplateSkillWhereInput
 }
 
+/**
+ * TemplateAttributeCountOutputType without action
+ */
+export type TemplateAttributeCountOutputTypeCountSkillsAllowedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TemplateSkillWhereInput
+}
+
+/**
+ * TemplateAttributeCountOutputType without action
+ */
+export type TemplateAttributeCountOutputTypeCountSkillSelectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CharacterSheetSkillValueWhereInput
+}
+
 
 export type TemplateAttributeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -773,6 +997,8 @@ export type TemplateAttributeSelect<ExtArgs extends runtime.Types.Extensions.Int
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   sheetValues?: boolean | Prisma.TemplateAttribute$sheetValuesArgs<ExtArgs>
   skills?: boolean | Prisma.TemplateAttribute$skillsArgs<ExtArgs>
+  skillsAllowed?: boolean | Prisma.TemplateAttribute$skillsAllowedArgs<ExtArgs>
+  skillSelections?: boolean | Prisma.TemplateAttribute$skillSelectionsArgs<ExtArgs>
   _count?: boolean | Prisma.TemplateAttributeCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["templateAttribute"]>
 
@@ -813,6 +1039,8 @@ export type TemplateAttributeInclude<ExtArgs extends runtime.Types.Extensions.In
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   sheetValues?: boolean | Prisma.TemplateAttribute$sheetValuesArgs<ExtArgs>
   skills?: boolean | Prisma.TemplateAttribute$skillsArgs<ExtArgs>
+  skillsAllowed?: boolean | Prisma.TemplateAttribute$skillsAllowedArgs<ExtArgs>
+  skillSelections?: boolean | Prisma.TemplateAttribute$skillSelectionsArgs<ExtArgs>
   _count?: boolean | Prisma.TemplateAttributeCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TemplateAttributeIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -828,6 +1056,8 @@ export type $TemplateAttributePayload<ExtArgs extends runtime.Types.Extensions.I
     template: Prisma.$TemplatePayload<ExtArgs>
     sheetValues: Prisma.$CharacterSheetValuePayload<ExtArgs>[]
     skills: Prisma.$TemplateSkillPayload<ExtArgs>[]
+    skillsAllowed: Prisma.$TemplateSkillPayload<ExtArgs>[]
+    skillSelections: Prisma.$CharacterSheetSkillValuePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1234,6 +1464,8 @@ export interface Prisma__TemplateAttributeClient<T, Null = never, ExtArgs extend
   template<T extends Prisma.TemplateDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateDefaultArgs<ExtArgs>>): Prisma.Prisma__TemplateClient<runtime.Types.Result.GetResult<Prisma.$TemplatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   sheetValues<T extends Prisma.TemplateAttribute$sheetValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateAttribute$sheetValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   skills<T extends Prisma.TemplateAttribute$skillsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateAttribute$skillsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TemplateSkillPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  skillsAllowed<T extends Prisma.TemplateAttribute$skillsAllowedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateAttribute$skillsAllowedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TemplateSkillPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  skillSelections<T extends Prisma.TemplateAttribute$skillSelectionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateAttribute$skillSelectionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetSkillValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1716,6 +1948,54 @@ export type TemplateAttribute$skillsArgs<ExtArgs extends runtime.Types.Extension
   take?: number
   skip?: number
   distinct?: Prisma.TemplateSkillScalarFieldEnum | Prisma.TemplateSkillScalarFieldEnum[]
+}
+
+/**
+ * TemplateAttribute.skillsAllowed
+ */
+export type TemplateAttribute$skillsAllowedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TemplateSkill
+   */
+  select?: Prisma.TemplateSkillSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TemplateSkill
+   */
+  omit?: Prisma.TemplateSkillOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TemplateSkillInclude<ExtArgs> | null
+  where?: Prisma.TemplateSkillWhereInput
+  orderBy?: Prisma.TemplateSkillOrderByWithRelationInput | Prisma.TemplateSkillOrderByWithRelationInput[]
+  cursor?: Prisma.TemplateSkillWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TemplateSkillScalarFieldEnum | Prisma.TemplateSkillScalarFieldEnum[]
+}
+
+/**
+ * TemplateAttribute.skillSelections
+ */
+export type TemplateAttribute$skillSelectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CharacterSheetSkillValue
+   */
+  select?: Prisma.CharacterSheetSkillValueSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CharacterSheetSkillValue
+   */
+  omit?: Prisma.CharacterSheetSkillValueOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CharacterSheetSkillValueInclude<ExtArgs> | null
+  where?: Prisma.CharacterSheetSkillValueWhereInput
+  orderBy?: Prisma.CharacterSheetSkillValueOrderByWithRelationInput | Prisma.CharacterSheetSkillValueOrderByWithRelationInput[]
+  cursor?: Prisma.CharacterSheetSkillValueWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CharacterSheetSkillValueScalarFieldEnum | Prisma.CharacterSheetSkillValueScalarFieldEnum[]
 }
 
 /**

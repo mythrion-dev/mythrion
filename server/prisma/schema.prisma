@@ -194,16 +194,18 @@ model CharacterSheetSkillProfileValue {
 }
 
 model TemplateAttribute {
-  id          String                @id @default(cuid())
-  templateId  String
-  template    Template              @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  key         String
-  name        String
-  order       Int                   @default(0)
-  sheetValues CharacterSheetValue[]
-  skills      TemplateSkill[]
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
+  id                String                            @id @default(cuid())
+  templateId        String
+  template          Template                          @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  key               String
+  name              String
+  order             Int                               @default(0)
+  sheetValues       CharacterSheetValue[]
+  skills            TemplateSkill[]                   @relation("SkillDefaultAttribute")
+  skillsAllowed     TemplateSkill[]                   @relation("SkillAllowedAttributes")
+  skillSelections   CharacterSheetSkillValue[]
+  createdAt         DateTime                          @default(now())
+  updatedAt         DateTime                          @updatedAt
 
   @@index([templateId])
 }
