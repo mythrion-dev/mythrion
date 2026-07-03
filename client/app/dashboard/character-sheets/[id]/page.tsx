@@ -877,18 +877,22 @@ function CollapsibleRuntimeModifier({ modDef, compValues, total, isOwner, onChan
 
 function CollapsibleSkillRow({ skill, result, profiles, selections, active, others, onToggleActive, onOthersChange, onProfileChange, onAttributeChange, templateAttributes }: { skill: SkillValue; result: number | null; profiles: SkillModifierProfile[]; selections: Record<string, string | null>; active: boolean; others: number; onToggleActive: () => void; onOthersChange: (v: number) => void; onProfileChange: (profileId: string, optionId: string | null) => void; onAttributeChange?: (attributeId: string | null) => void; templateAttributes?: { id: string; key: string; name: string }[] }) {
   const [expanded, setExpanded] = useState(false)
+  const hasAttrDropdown = (skill.skill.allowedAttributeIds?.length ?? 0) > 0 && !!templateAttributes && !!onAttributeChange
   return (
     <div className={`rounded-lg border border-border bg-background/30 overflow-hidden transition-opacity ${active ? '' : 'opacity-40'}`}>
       <div className="flex items-center px-4 py-3">
         <input type="checkbox" checked={active} onChange={onToggleActive} className="shrink-0 w-4 h-4 rounded border-border accent-primary cursor-pointer mr-3" />
         <button type="button" onClick={() => setExpanded(!expanded)} disabled={!active} className="flex items-center justify-between flex-1 min-w-0 text-left hover:bg-background/50 transition-colors disabled:cursor-default disabled:hover:bg-transparent">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-foreground truncate">{skill.skill.name}</span>
-              {skill.skill.description && <span className="text-xs text-muted truncate hidden sm:inline">— {skill.skill.description}</span>}
-            </div>
+          <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium text-foreground truncate">{skill.skill.name}</span>
+            {skill.skill.description && <span className="text-xs text-muted truncate hidden sm:inline">— {skill.skill.description}</span>}
           </div>
-          <div className="flex items-center gap-3 shrink-0 ml-3">
+          <div className="flex items-center gap-2 shrink-0 ml-3" onClick={e => e.stopPropagation()}>
+            {hasAttrDropdown && (
+              <select className="input-field py-0.5 text-xs w-auto min-w-[90px]" value={skill.selectedAttributeId ?? ''} onChange={e => onAttributeChange!(e.target.value || null)}>
+                {skill.skill.allowedAttributeIds.map(attrId => { const a = templateAttributes!.find(x => x.id === attrId); if (!a) return null; return <option key={attrId} value={attrId}>{a.name}</option> })}
+              </select>
+            )}
             <span className="text-base font-bold text-primary">{active ? (result != null ? result : '—') : '0'}</span>
             <svg className={`w-4 h-4 text-muted transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
           </div>
@@ -910,22 +914,6 @@ function CollapsibleSkillRow({ skill, result, profiles, selections, active, othe
               </div>
             )
           })}
-          {(skill.skill.allowedAttributeIds?.length ?? 0) > 0 && templateAttributes && onAttributeChange && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted shrink-0 min-w-[80px]">Attribute:</span>
-              <select
-                className="input-field py-1 text-xs flex-1"
-                value={skill.selectedAttributeId ?? ''}
-                onChange={e => onAttributeChange(e.target.value || null)}
-              >
-                {skill.skill.allowedAttributeIds.map(attrId => {
-                  const attr = templateAttributes.find(a => a.id === attrId)
-                  if (!attr) return null
-                  return <option key={attrId} value={attrId}>{attr.name}</option>
-                })}
-              </select>
-            </div>
-          )}
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted shrink-0 min-w-[80px]">Others:</span>
             <input type="number" min={0} step={1} className="input-field py-1 text-xs w-20" value={others || ''} placeholder="0" onChange={e => onOthersChange(parseInt(e.target.value, 10) || 0)} />
