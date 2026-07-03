@@ -163,28 +163,59 @@ export default function CharacterSheetDetailPage() {
         } catch { modifierVars[`${attr.key}_mod`] = 0 }
       }
     }
-    const skillFormula = sd.template.skillFormula?.trim()
-    if (!skillFormula) { setSkillResults({}); return }
+    const skillFormulaRaw = sd.template.skillFormula?.trim()
+    if (!skillFormulaRaw) { setSkillResults({}); return }
+
+    // Try to parse as JSON config (new structured format)
+    let skillConfig: { useAttributeModifier?: boolean; customFieldKeys?: string[] } | null = null
+    try {
+      const parsed = JSON.parse(skillFormulaRaw)
+      if (parsed && typeof parsed === 'object' && typeof parsed.useAttributeModifier === 'boolean') {
+        skillConfig = parsed
+      }
+    } catch { /* not JSON, treat as legacy formula */ }
+
     for (const sv of sd.skillValues) {
       try {
-        // Resolve the assigned attribute value for this skill
-        const skillAttr = sv.skill.attribute
-        const skillAttrValue = skillAttr
-          ? parseFloat(sd.values.find(sv2 => sv2.attributeId === skillAttr.id)?.value || '0')
-          : 0
-        const variables: Record<string, number> = { ...modifierVars }
-        // value = assigned attribute value (generic placeholder)
-        variables['value'] = isNaN(skillAttrValue) ? 0 : skillAttrValue
-        // value_mod = modifier of the assigned attribute (computed via global attribute modifier formula)
-        if (skillAttr) {
-          variables['value_mod'] = modifierVars[`${skillAttr.key}_mod`] ?? 0
+        let finalResult = 0
+
+        if (skillConfig) {
+          // New structured config: compute locally
+          if (skillConfig.useAttributeModifier) {
+            const skillAttr = sv.skill.attribute
+            if (skillAttr) {
+              finalResult += modifierVars[`${skillAttr.key}_mod`] ?? 0
+            }
+          }
+          // Add selected custom field values
+          const customKeys = skillConfig.customFieldKeys || []
+          for (const key of customKeys) {
+            const fv = sd.fieldValues.find(f => f.templateField.key === key)
+            if (fv) {
+              const v = parseFloat(fv.value)
+              if (!isNaN(v)) finalResult += v
+            }
+          }
+        } else {
+          // Legacy formula: evaluate server-side
+          const skillAttr = sv.skill.attribute
+          const skillAttrValue = skillAttr
+            ? parseFloat(sd.values.find(sv2 => sv2.attributeId === skillAttr.id)?.value || '0')
+            : 0
+          const variables: Record<string, number> = { ...modifierVars }
+          variables['value'] = isNaN(skillAttrValue) ? 0 : skillAttrValue
+          if (skillAttr) {
+            variables['value_mod'] = modifierVars[`${skillAttr.key}_mod`] ?? 0
+          }
+          sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv2 => sv2.attributeId === a.id)?.value || '0'); variables[a.key] = isNaN(v) ? 0 : v })
+          sd.fieldValues.forEach(fv => { const v = parseFloat(fv.value); variables[fv.templateField.key] = isNaN(v) ? 0 : v })
+          sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); variables[rcv.component.modifier.key] = isNaN(v) ? 0 : v })
+          variables['level'] = sd.level ?? 1
+          const res = await api.post<{ result: number }>('/formula/evaluate', { formula: skillFormulaRaw, variables })
+          finalResult = res.result
         }
-        sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv2 => sv2.attributeId === a.id)?.value || '0'); variables[a.key] = isNaN(v) ? 0 : v })
-        sd.fieldValues.forEach(fv => { const v = parseFloat(fv.value); variables[fv.templateField.key] = isNaN(v) ? 0 : v })
-        sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); variables[rcv.component.modifier.key] = isNaN(v) ? 0 : v })
-        variables['level'] = sd.level ?? 1
-        const res = await api.post<{ result: number }>('/formula/evaluate', { formula: skillFormula, variables })
-        let finalResult = res.result + (effOthers[sv.skillId] ?? 0)
+
+        finalResult += (effOthers[sv.skillId] ?? 0)
         const skillSelections = selMap[sv.skillId] || {}
         for (const profile of sd.template.skillModifierProfiles) {
           const selId = skillSelections[profile.id]
