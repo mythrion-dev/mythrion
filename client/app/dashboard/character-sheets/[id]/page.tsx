@@ -38,7 +38,8 @@ interface ArmorClassValue {
   id: string; fieldId: string; value: string; field: ArmorClassFieldDef
 }
 
-interface Ability { id: string; name: string; description: string | null; manaCost: number | null; cooldown: string | null; notes: string | null; order: number }
+interface AbilityLevel { id: string; abilityId: string; level: number; manaCost: number | null; range: string | null; cooldown: string | null; description: string | null; notes: string | null; damage: string | null }
+interface Ability { id: string; name: string; description: string | null; manaCost: number | null; cooldown: string | null; notes: string | null; order: number; icon: string | null; levels: AbilityLevel[] }
 interface InventoryItem { id: string; name: string; weight: number | null; cost: string | null; description: string | null; order: number }
 interface Story { id: string; appearance: string | null; backstory: string | null; personality: string | null; goals: string | null; notes: string | null }
 
@@ -87,8 +88,15 @@ export default function CharacterSheetDetailPage() {
 
   // ability/inventory/story state
   const [abilities, setAbilities] = useState<Ability[]>([]); const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]); const [story, setStory] = useState<Story | null>(null)
+  // ability level state
+  const [selectedLevels, setSelectedLevels] = useState<Record<string, string>>({}) // abilityId -> levelId
   const [showNewAbility, setShowNewAbility] = useState(false); const [newAbility, setNewAbility] = useState({ name: '', description: '', manaCost: '', cooldown: '', notes: '' })
   const [abilitySaving, setAbilitySaving] = useState(false); const [abilityError, setAbilityError] = useState<string | null>(null)
+  // add level modal
+  const [showAddLevelModal, setShowAddLevelModal] = useState<string | null>(null) // abilityId
+  const [newLevelForm, setNewLevelForm] = useState({ level: 2, copyFromPrevious: true })
+  const [levelModalSaving, setLevelModalSaving] = useState(false); const [levelModalError, setLevelModalError] = useState<string | null>(null)
+  // inventory state
   const [showNewItem, setShowNewItem] = useState(false); const [newItem, setNewItem] = useState({ name: '', weight: '', cost: '', description: '' })
   const [itemSaving, setItemSaving] = useState(false); const [itemError, setItemError] = useState<string | null>(null)
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
@@ -349,6 +357,26 @@ export default function CharacterSheetDetailPage() {
     } catch {
       setOthersValues(p => ({ ...p, [skillId]: othersValues[skillId] ?? 0 }))
     }
+  }
+
+  // ── Inline ability level field saves ──
+  async function saveLevelField(levelId: string, field: string, value: string) {
+    if (!sheet) return
+    const body: Record<string, unknown> = {}
+    if (field === 'description') body.description = value.trim() || null
+    else if (field === 'manaCost') body.manaCost = value.trim() ? parseInt(value, 10) : null
+    else if (field === 'range') body.range = value.trim() || null
+    else if (field === 'cooldown') body.cooldown = value.trim() || null
+    else if (field === 'notes') body.notes = value.trim() || null
+    else if (field === 'damage') body.damage = value.trim() || null
+    try {
+      await api.patch(`/character-sheets/${sheet.id}/abilities/x/levels/${levelId}`, body)
+      // refresh abilities to get updated level data
+      setAbilities(prev => prev.map(a => ({
+        ...a,
+        levels: a.levels.map(l => l.id === levelId ? { ...l, ...body } : l),
+      })))
+    } catch {}
   }
 
   // ── Inline ability field saves ──
@@ -634,91 +662,32 @@ export default function CharacterSheetDetailPage() {
       </div>}
 
       {/* Abilities Tab */}
-      {activeTab === 'abilities' && <div className="space-y-4">
-        {abilities.length === 0 && !showNewAbility && <div className="text-center py-6 text-muted-foreground text-sm italic">No abilities yet. {isOwner && 'Create one below.'}</div>}
-        <div className="space-y-3">
-          {abilities.map(a => (
-            <div key={a.id} className="card !p-4 space-y-2">
-              <div className="flex items-start justify-between">
-                {isOwner ? (
-                  <InlineClickEdit
-                    value={a.name}
-                    onSave={async (v) => saveAbilityField(a.id, 'name', v)}
-                    className="font-semibold text-foreground"
-                    inputClassName="font-semibold text-foreground"
-                  />
-                ) : (
-                  <h4 className="font-semibold text-foreground">{a.name}</h4>
-                )}
-                {isOwner && (
-                  <button onClick={() => handleDeleteAbility(a.id)} className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors shrink-0 ml-2">Delete</button>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-3 text-xs text-muted">
-                {isOwner ? (
-                  <>
-                    <span className="inline-flex items-center gap-1">Mana: <InlineClickEdit value={a.manaCost?.toString() ?? ''} onSave={async (v) => saveAbilityField(a.id, 'manaCost', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" /></span>
-                    <span className="inline-flex items-center gap-1">Cooldown: <InlineClickEdit value={a.cooldown ?? ''} onSave={async (v) => saveAbilityField(a.id, 'cooldown', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-20" emptyDisplay="—" /></span>
-                  </>
-                ) : (
-                  <>
-                    {a.manaCost != null && <span>Mana: {a.manaCost}</span>}
-                    {a.cooldown && <span>Cooldown: {a.cooldown}</span>}
-                  </>
-                )}
-              </div>
-              {isOwner ? (
-                <div>
-                  <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
-                  <InlineClickEdit
-                    value={a.description ?? ''}
-                    onSave={async (v) => saveAbilityField(a.id, 'description', v)}
-                    as="textarea"
-                    className="text-sm text-muted-foreground whitespace-pre-wrap"
-                    emptyDisplay="Add description..."
-                  />
-                </div>
-              ) : (
-                a.description && (
-                  <div>
-                    <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{a.description}</p>
-                  </div>
-                )
-              )}
-              {isOwner ? (
-                <div>
-                  <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
-                  <InlineClickEdit
-                    value={a.notes ?? ''}
-                    onSave={async (v) => saveAbilityField(a.id, 'notes', v)}
-                    as="textarea"
-                    className="text-xs text-muted italic whitespace-pre-wrap"
-                    emptyDisplay="Add notes..."
-                  />
-                </div>
-              ) : (
-                a.notes && (
-                  <div>
-                    <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
-                    <p className="text-xs text-muted italic whitespace-pre-wrap">{a.notes}</p>
-                  </div>
-                )
-              )}
-            </div>
-          ))}
-        </div>
-        {isOwner && !showNewAbility && <button onClick={() => setShowNewAbility(true)} className="btn-primary text-sm">+ New Ability</button>}
-        {isOwner && showNewAbility && <form onSubmit={handleCreateAbility} className="card !p-4 space-y-3 border-primary/20">
-          <h4 className="text-sm font-semibold text-primary">New Ability</h4>
-          <div><label className="text-xs text-muted">Name</label><input className="input-field" value={newAbility.name} onChange={e => setNewAbility(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Fireball"/></div>
-          <div><label className="text-xs text-muted">Description</label><textarea className="input-field resize-none" rows={2} value={newAbility.description} onChange={e => setNewAbility(p => ({ ...p, description: e.target.value }))} placeholder="Throws a fireball causing area damage."/></div>
-          <div className="grid grid-cols-2 gap-2"><div><label className="text-xs text-muted">Mana Cost</label><input type="number" className="input-field" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder="20"/></div><div><label className="text-xs text-muted">Cooldown</label><input className="input-field" value={newAbility.cooldown} onChange={e => setNewAbility(p => ({ ...p, cooldown: e.target.value }))} placeholder="2 Turns"/></div></div>
-          <div><label className="text-xs text-muted">Notes</label><textarea className="input-field resize-none" rows={2} value={newAbility.notes} onChange={e => setNewAbility(p => ({ ...p, notes: e.target.value }))}/></div>
-          {abilityError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{abilityError}</div>}
-          <div className="flex gap-2 justify-end"><button type="button" onClick={resetNewAbility} disabled={abilitySaving} className="btn-ghost text-sm">Cancel</button><button type="submit" disabled={abilitySaving || !newAbility.name.trim()} className="btn-primary text-sm">{abilitySaving ? 'Creating...' : 'Create'}</button></div>
-        </form>}
-      </div>}
+      {activeTab === 'abilities' && <AbilitiesTab
+        abilities={abilities}
+        isOwner={isOwner}
+        sheetId={sheet.id}
+        selectedLevels={selectedLevels}
+        setAbilities={setAbilities}
+        setSelectedLevels={setSelectedLevels}
+        showNewAbility={showNewAbility}
+        setShowNewAbility={setShowNewAbility}
+        newAbility={newAbility}
+        setNewAbility={setNewAbility}
+        abilitySaving={abilitySaving}
+        abilityError={abilityError}
+        handleCreateAbility={handleCreateAbility}
+        resetNewAbility={resetNewAbility}
+        handleDeleteAbility={handleDeleteAbility}
+        showAddLevelModal={showAddLevelModal}
+        setShowAddLevelModal={setShowAddLevelModal}
+        newLevelForm={newLevelForm}
+        setNewLevelForm={setNewLevelForm}
+        levelModalSaving={levelModalSaving}
+        setLevelModalSaving={setLevelModalSaving}
+        levelModalError={levelModalError}
+        setLevelModalError={setLevelModalError}
+        inlineSaveLevelField={saveLevelField}
+      />}
 
       {/* Inventory Tab */}
       {activeTab === 'inventory' && <div className="space-y-4">
@@ -985,6 +954,230 @@ function InlineClickEdit({
         disabled={saving}
       />
       {saving && <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 border border-primary/30 border-t-primary rounded-full animate-spin" />}
+    </div>
+  )
+}
+
+// ── AbilitiesTab component ──
+
+function AbilitiesTab({
+  abilities, isOwner, sheetId, selectedLevels, setAbilities, setSelectedLevels,
+  showNewAbility, setShowNewAbility, newAbility, setNewAbility,
+  abilitySaving, abilityError, handleCreateAbility, resetNewAbility, handleDeleteAbility,
+  showAddLevelModal, setShowAddLevelModal, newLevelForm, setNewLevelForm,
+  levelModalSaving, setLevelModalSaving, levelModalError, setLevelModalError,
+  inlineSaveLevelField,
+}: {
+  abilities: Ability[]; isOwner: boolean; sheetId: string
+  selectedLevels: Record<string, string>
+  setAbilities: React.Dispatch<React.SetStateAction<Ability[]>>
+  setSelectedLevels: React.Dispatch<React.SetStateAction<Record<string, string>>>
+  showNewAbility: boolean; setShowNewAbility: React.Dispatch<React.SetStateAction<boolean>>
+  newAbility: { name: string; description: string; manaCost: string; cooldown: string; notes: string }
+  setNewAbility: React.Dispatch<React.SetStateAction<{ name: string; description: string; manaCost: string; cooldown: string; notes: string }>>
+  abilitySaving: boolean; abilityError: string | null
+  handleCreateAbility: (e: FormEvent) => Promise<void>
+  resetNewAbility: () => void; handleDeleteAbility: (aid: string) => Promise<void>
+  showAddLevelModal: string | null; setShowAddLevelModal: React.Dispatch<React.SetStateAction<string | null>>
+  newLevelForm: { level: number; copyFromPrevious: boolean }
+  setNewLevelForm: React.Dispatch<React.SetStateAction<{ level: number; copyFromPrevious: boolean }>>
+  levelModalSaving: boolean; setLevelModalSaving: React.Dispatch<React.SetStateAction<boolean>>
+  levelModalError: string | null; setLevelModalError: React.Dispatch<React.SetStateAction<string | null>>
+  inlineSaveLevelField: (levelId: string, field: string, value: string) => Promise<void>
+}) {
+  function getSelectedLevel(ability: Ability): AbilityLevel | undefined {
+    const selId = selectedLevels[ability.id]
+    if (selId) return ability.levels.find(l => l.id === selId)
+    return ability.levels[ability.levels.length - 1]
+  }
+
+  async function handleAddLevel(abilityId: string) {
+    if (!sheetId) return
+    setLevelModalSaving(true); setLevelModalError(null)
+    try {
+      const level = await api.post<AbilityLevel>(`/character-sheets/${sheetId}/abilities/${abilityId}/levels`, {
+        level: newLevelForm.level,
+        copyFromPrevious: newLevelForm.copyFromPrevious,
+      })
+      setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, levels: [...a.levels, level] } : a))
+      setSelectedLevels(prev => ({ ...prev, [abilityId]: level.id }))
+      setShowAddLevelModal(null)
+    } catch (err) {
+      setLevelModalError(err instanceof Error ? err.message : 'Failed to create level')
+    } finally { setLevelModalSaving(false) }
+  }
+
+  return (
+    <div className="space-y-4">
+      {abilities.length === 0 && !showNewAbility && (
+        <div className="text-center py-6 text-muted-foreground text-sm italic">
+          No abilities yet. {isOwner && 'Create one below.'}
+        </div>
+      )}
+      <div className="space-y-3">
+        {abilities.map(a => {
+          const selLevel = getSelectedLevel(a)
+          const maxLevel = a.levels.length > 0 ? Math.max(...a.levels.map(l => l.level)) : 0
+          return (
+            <div key={a.id} className="card !p-4 space-y-3">
+              {/* Header: name + level selector + actions */}
+              <div className="flex items-start gap-2 flex-wrap">
+                {isOwner ? (
+                  <InlineClickEdit
+                    value={a.name}
+                    onSave={async (v) => {
+                      await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}`, { name: v.trim() })
+                      setAbilities(prev => prev.map(x => x.id === a.id ? { ...x, name: v.trim() } : x))
+                    }}
+                    className="font-semibold text-foreground"
+                  />
+                ) : (
+                  <h4 className="font-semibold text-foreground">{a.name}</h4>
+                )}
+                {/* Level selector */}
+                {a.levels.length > 0 && (
+                  <select
+                    className="input-field py-0.5 px-2 text-xs shrink-0 ml-auto"
+                    value={selLevel?.id ?? ''}
+                    onChange={e => setSelectedLevels(prev => ({ ...prev, [a.id]: e.target.value }))}
+                  >
+                    {a.levels.map(l => (
+                      <option key={l.id} value={l.id}>Level {l.level}</option>
+                    ))}
+                  </select>
+                )}
+                {isOwner && (
+                  <button onClick={() => handleDeleteAbility(a.id)} className="text-xs text-danger hover:text-danger/80 px-1 py-1 transition-colors shrink-0">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                )}
+              </div>
+
+              {/* Current level data */}
+              {selLevel ? (
+                <>
+                  <div className="flex flex-wrap gap-3 text-xs text-muted">
+                    {isOwner ? (
+                      <>
+                        <span className="inline-flex items-center gap-1">Mana:
+                          <InlineClickEdit value={selLevel.manaCost?.toString() ?? ''} onSave={async (v) => inlineSaveLevelField(selLevel.id, 'manaCost', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" />
+                        </span>
+                        <span className="inline-flex items-center gap-1">Range:
+                          <InlineClickEdit value={selLevel.range ?? ''} onSave={async (v) => inlineSaveLevelField(selLevel.id, 'range', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" />
+                        </span>
+                        <span className="inline-flex items-center gap-1">Cooldown:
+                          <InlineClickEdit value={selLevel.cooldown ?? ''} onSave={async (v) => inlineSaveLevelField(selLevel.id, 'cooldown', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-20" emptyDisplay="—" />
+                        </span>
+                        {selLevel.damage != null && (
+                          <span className="inline-flex items-center gap-1">Damage:
+                            <InlineClickEdit value={selLevel.damage ?? ''} onSave={async (v) => inlineSaveLevelField(selLevel.id, 'damage', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" />
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {selLevel.manaCost != null && <span>Mana: {selLevel.manaCost}</span>}
+                        {selLevel.range && <span>Range: {selLevel.range}</span>}
+                        {selLevel.cooldown && <span>Cooldown: {selLevel.cooldown}</span>}
+                        {selLevel.damage && <span>Damage: {selLevel.damage}</span>}
+                      </>
+                    )}
+                  </div>
+                  {isOwner ? (
+                    <div>
+                      <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
+                      <InlineClickEdit value={selLevel.description ?? ''} onSave={async (v) => inlineSaveLevelField(selLevel.id, 'description', v)} as="textarea" className="text-sm text-muted-foreground whitespace-pre-wrap" emptyDisplay="Add description..." />
+                    </div>
+                  ) : (
+                    selLevel.description && (
+                      <div><h5 className="text-xs font-medium text-muted mb-1">Description</h5><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selLevel.description}</p></div>
+                    )
+                  )}
+                  {isOwner ? (
+                    <div>
+                      <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
+                      <InlineClickEdit value={selLevel.notes ?? ''} onSave={async (v) => inlineSaveLevelField(selLevel.id, 'notes', v)} as="textarea" className="text-xs text-muted italic whitespace-pre-wrap" emptyDisplay="Add notes..." />
+                    </div>
+                  ) : (
+                    selLevel.notes && (
+                      <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><p className="text-xs text-muted italic whitespace-pre-wrap">{selLevel.notes}</p></div>
+                    )
+                  )}
+                </>
+              ) : (
+                <p className="text-xs text-muted italic">No levels added yet.</p>
+              )}
+
+              {/* Add Level button */}
+              {isOwner && (
+                <button
+                  onClick={() => {
+                    setShowAddLevelModal(a.id)
+                    setNewLevelForm({ level: maxLevel + 1, copyFromPrevious: a.levels.length > 0 })
+                    setLevelModalError(null)
+                  }}
+                  className="btn-ghost text-xs"
+                >
+                  + Add Level
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* New Ability creation */}
+      {isOwner && !showNewAbility && (
+        <button onClick={() => setShowNewAbility(true)} className="btn-primary text-sm">+ New Ability</button>
+      )}
+      {isOwner && showNewAbility && (
+        <form onSubmit={handleCreateAbility} className="card !p-4 space-y-3 border-primary/20">
+          <h4 className="text-sm font-semibold text-primary">New Ability</h4>
+          <div><label className="text-xs text-muted">Name</label><input className="input-field" value={newAbility.name} onChange={e => setNewAbility(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Fireball" /></div>
+          <div><label className="text-xs text-muted">Description</label><textarea className="input-field resize-none" rows={2} value={newAbility.description} onChange={e => setNewAbility(p => ({ ...p, description: e.target.value }))} placeholder="Throws a fireball causing area damage." /></div>
+          <div className="grid grid-cols-2 gap-2">
+            <div><label className="text-xs text-muted">Mana Cost</label><input type="number" className="input-field" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder="20" /></div>
+            <div><label className="text-xs text-muted">Cooldown</label><input className="input-field" value={newAbility.cooldown} onChange={e => setNewAbility(p => ({ ...p, cooldown: e.target.value }))} placeholder="2 Turns" /></div>
+          </div>
+          <div><label className="text-xs text-muted">Notes</label><textarea className="input-field resize-none" rows={2} value={newAbility.notes} onChange={e => setNewAbility(p => ({ ...p, notes: e.target.value }))} /></div>
+          {abilityError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{abilityError}</div>}
+          <div className="flex gap-2 justify-end">
+            <button type="button" onClick={resetNewAbility} disabled={abilitySaving} className="btn-ghost text-sm">Cancel</button>
+            <button type="submit" disabled={abilitySaving || !newAbility.name.trim()} className="btn-primary text-sm">{abilitySaving ? 'Creating...' : 'Create'}</button>
+          </div>
+        </form>
+      )}
+
+      {/* Add Level Modal */}
+      {showAddLevelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="card !p-6 max-w-sm w-full space-y-4 border-primary/20">
+            <h3 className="font-semibold text-primary">Create Ability Level</h3>
+            <div>
+              <label className="text-xs text-muted block mb-1">Level</label>
+              <input type="number" min={2} className="input-field w-full" value={newLevelForm.level} onChange={e => setNewLevelForm(p => ({ ...p, level: parseInt(e.target.value, 10) || 1 }))} />
+            </div>
+            <div>
+              <label className="text-xs text-muted block mb-2">Copy information from previous level?</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="copyPrev" checked={newLevelForm.copyFromPrevious} onChange={() => setNewLevelForm(p => ({ ...p, copyFromPrevious: true }))} className="accent-primary" />
+                  <span className="text-sm">Yes</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="copyPrev" checked={!newLevelForm.copyFromPrevious} onChange={() => setNewLevelForm(p => ({ ...p, copyFromPrevious: false }))} className="accent-primary" />
+                  <span className="text-sm">No</span>
+                </label>
+              </div>
+            </div>
+            {levelModalError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{levelModalError}</div>}
+            <div className="flex gap-2 justify-end">
+              <button type="button" onClick={() => setShowAddLevelModal(null)} disabled={levelModalSaving} className="btn-ghost text-sm">Cancel</button>
+              <button type="button" onClick={() => handleAddLevel(showAddLevelModal)} disabled={levelModalSaving} className="btn-primary text-sm">{levelModalSaving ? 'Creating...' : 'Create'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

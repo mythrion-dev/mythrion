@@ -99,18 +99,40 @@ export class CharacterSheetController {
   }
 
   @Post(':id/abilities')
-  createAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: { name: string; description?: string; manaCost?: number; cooldown?: string; notes?: string }) {
+  createAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: { name: string; description?: string; manaCost?: number; range?: string; cooldown?: string; notes?: string; damage?: string }) {
     return this.sheetService.createAbility(id, req.user.sub, dto)
   }
 
   @Patch(':id/abilities/:abilityId')
-  updateAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('abilityId') abilityId: string, @Body() dto: { name?: string; description?: string; manaCost?: number; cooldown?: string; notes?: string }) {
+  updateAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('abilityId') abilityId: string, @Body() dto: { name?: string; icon?: string }) {
     return this.sheetService.updateAbility(abilityId, req.user.sub, dto)
   }
 
   @Delete(':id/abilities/:abilityId')
   removeAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('abilityId') abilityId: string) {
     return this.sheetService.removeAbility(abilityId, req.user.sub)
+  }
+
+  // ── Ability Levels ──
+
+  @Get(':id/abilities/:abilityId/levels')
+  listAbilityLevels(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string) {
+    return this.sheetService.listAbilityLevels(abilityId, req.user.sub)
+  }
+
+  @Post(':id/abilities/:abilityId/levels')
+  createAbilityLevel(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Body() dto: { level: number; description?: string; manaCost?: number; range?: string; cooldown?: string; notes?: string; damage?: string; copyFromPrevious?: boolean }) {
+    return this.sheetService.createAbilityLevel(abilityId, req.user.sub, dto)
+  }
+
+  @Patch(':id/abilities/:abilityId/levels/:levelId')
+  updateAbilityLevel(@Req() req: AuthenticatedRequest, @Param('levelId') levelId: string, @Body() dto: { level?: number; description?: string; manaCost?: number; range?: string; cooldown?: string; notes?: string; damage?: string }) {
+    return this.sheetService.updateAbilityLevel(levelId, req.user.sub, dto)
+  }
+
+  @Delete(':id/abilities/:abilityId/levels/:levelId')
+  removeAbilityLevel(@Req() req: AuthenticatedRequest, @Param('levelId') levelId: string) {
+    return this.sheetService.deleteAbilityLevel(levelId, req.user.sub)
   }
 
   // ── Inventory ──

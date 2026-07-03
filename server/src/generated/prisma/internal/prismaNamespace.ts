@@ -408,6 +408,7 @@ export const ModelName = {
   ArmorClassField: 'ArmorClassField',
   CharacterSheetArmorClassValue: 'CharacterSheetArmorClassValue',
   CharacterAbility: 'CharacterAbility',
+  CharacterAbilityLevel: 'CharacterAbilityLevel',
   CharacterInventoryItem: 'CharacterInventoryItem',
   CharacterStory: 'CharacterStory'
 } as const
@@ -425,7 +426,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateRuntimeModifier" | "runtimeModifierComponent" | "characterSheetRuntimeModifierComponentValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "characterAbility" | "characterInventoryItem" | "characterStory"
+    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateRuntimeModifier" | "runtimeModifierComponent" | "characterSheetRuntimeModifierComponentValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "characterAbility" | "characterAbilityLevel" | "characterInventoryItem" | "characterStory"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2205,6 +2206,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    CharacterAbilityLevel: {
+      payload: Prisma.$CharacterAbilityLevelPayload<ExtArgs>
+      fields: Prisma.CharacterAbilityLevelFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CharacterAbilityLevelFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterAbilityLevelPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CharacterAbilityLevelFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterAbilityLevelPayload>
+        }
+        findFirst: {
+          args: Prisma.CharacterAbilityLevelFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterAbilityLevelPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CharacterAbilityLevelFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterAbilityLevelPayload>
+        }
+        findMany: {
+          args: Prisma.CharacterAbilityLevelFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterAbilityLevelPayload>[]
+        }
+        create: {
+          args: Prisma.CharacterAbilityLevelCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterAbilityLevelPayload>
+        }
+        createMany: {
+          args: Prisma.CharacterAbilityLevelCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CharacterAbilityLevelCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterAbilityLevelPayload>[]
+        }
+        delete: {
+          args: Prisma.CharacterAbilityLevelDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterAbilityLevelPayload>
+        }
+        update: {
+          args: Prisma.CharacterAbilityLevelUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterAbilityLevelPayload>
+        }
+        deleteMany: {
+          args: Prisma.CharacterAbilityLevelDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CharacterAbilityLevelUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CharacterAbilityLevelUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterAbilityLevelPayload>[]
+        }
+        upsert: {
+          args: Prisma.CharacterAbilityLevelUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterAbilityLevelPayload>
+        }
+        aggregate: {
+          args: Prisma.CharacterAbilityLevelAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCharacterAbilityLevel>
+        }
+        groupBy: {
+          args: Prisma.CharacterAbilityLevelGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterAbilityLevelGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CharacterAbilityLevelCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterAbilityLevelCountAggregateOutputType> | number
+        }
+      }
+    }
     CharacterInventoryItem: {
       payload: Prisma.$CharacterInventoryItemPayload<ExtArgs>
       fields: Prisma.CharacterInventoryItemFieldRefs
@@ -2707,16 +2782,30 @@ export const CharacterAbilityScalarFieldEnum = {
   id: 'id',
   sheetId: 'sheetId',
   name: 'name',
-  description: 'description',
-  manaCost: 'manaCost',
-  cooldown: 'cooldown',
-  notes: 'notes',
+  icon: 'icon',
   order: 'order',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type CharacterAbilityScalarFieldEnum = (typeof CharacterAbilityScalarFieldEnum)[keyof typeof CharacterAbilityScalarFieldEnum]
+
+
+export const CharacterAbilityLevelScalarFieldEnum = {
+  id: 'id',
+  abilityId: 'abilityId',
+  level: 'level',
+  manaCost: 'manaCost',
+  range: 'range',
+  cooldown: 'cooldown',
+  description: 'description',
+  notes: 'notes',
+  damage: 'damage',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterAbilityLevelScalarFieldEnum = (typeof CharacterAbilityLevelScalarFieldEnum)[keyof typeof CharacterAbilityLevelScalarFieldEnum]
 
 
 export const CharacterInventoryItemScalarFieldEnum = {
@@ -3003,6 +3092,7 @@ export type GlobalOmitConfig = {
   armorClassField?: Prisma.ArmorClassFieldOmit
   characterSheetArmorClassValue?: Prisma.CharacterSheetArmorClassValueOmit
   characterAbility?: Prisma.CharacterAbilityOmit
+  characterAbilityLevel?: Prisma.CharacterAbilityLevelOmit
   characterInventoryItem?: Prisma.CharacterInventoryItemOmit
   characterStory?: Prisma.CharacterStoryOmit
 }

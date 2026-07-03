@@ -27,12 +27,10 @@ export type AggregateCharacterAbility = {
 }
 
 export type CharacterAbilityAvgAggregateOutputType = {
-  manaCost: number | null
   order: number | null
 }
 
 export type CharacterAbilitySumAggregateOutputType = {
-  manaCost: number | null
   order: number | null
 }
 
@@ -40,10 +38,7 @@ export type CharacterAbilityMinAggregateOutputType = {
   id: string | null
   sheetId: string | null
   name: string | null
-  description: string | null
-  manaCost: number | null
-  cooldown: string | null
-  notes: string | null
+  icon: string | null
   order: number | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -53,10 +48,7 @@ export type CharacterAbilityMaxAggregateOutputType = {
   id: string | null
   sheetId: string | null
   name: string | null
-  description: string | null
-  manaCost: number | null
-  cooldown: string | null
-  notes: string | null
+  icon: string | null
   order: number | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -66,10 +58,7 @@ export type CharacterAbilityCountAggregateOutputType = {
   id: number
   sheetId: number
   name: number
-  description: number
-  manaCost: number
-  cooldown: number
-  notes: number
+  icon: number
   order: number
   createdAt: number
   updatedAt: number
@@ -78,12 +67,10 @@ export type CharacterAbilityCountAggregateOutputType = {
 
 
 export type CharacterAbilityAvgAggregateInputType = {
-  manaCost?: true
   order?: true
 }
 
 export type CharacterAbilitySumAggregateInputType = {
-  manaCost?: true
   order?: true
 }
 
@@ -91,10 +78,7 @@ export type CharacterAbilityMinAggregateInputType = {
   id?: true
   sheetId?: true
   name?: true
-  description?: true
-  manaCost?: true
-  cooldown?: true
-  notes?: true
+  icon?: true
   order?: true
   createdAt?: true
   updatedAt?: true
@@ -104,10 +88,7 @@ export type CharacterAbilityMaxAggregateInputType = {
   id?: true
   sheetId?: true
   name?: true
-  description?: true
-  manaCost?: true
-  cooldown?: true
-  notes?: true
+  icon?: true
   order?: true
   createdAt?: true
   updatedAt?: true
@@ -117,10 +98,7 @@ export type CharacterAbilityCountAggregateInputType = {
   id?: true
   sheetId?: true
   name?: true
-  description?: true
-  manaCost?: true
-  cooldown?: true
-  notes?: true
+  icon?: true
   order?: true
   createdAt?: true
   updatedAt?: true
@@ -217,10 +195,7 @@ export type CharacterAbilityGroupByOutputType = {
   id: string
   sheetId: string
   name: string
-  description: string | null
-  manaCost: number | null
-  cooldown: string | null
-  notes: string | null
+  icon: string | null
   order: number
   createdAt: Date
   updatedAt: Date
@@ -253,28 +228,24 @@ export type CharacterAbilityWhereInput = {
   id?: Prisma.StringFilter<"CharacterAbility"> | string
   sheetId?: Prisma.StringFilter<"CharacterAbility"> | string
   name?: Prisma.StringFilter<"CharacterAbility"> | string
-  description?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
-  manaCost?: Prisma.IntNullableFilter<"CharacterAbility"> | number | null
-  cooldown?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
-  notes?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
+  icon?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
   order?: Prisma.IntFilter<"CharacterAbility"> | number
   createdAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
   sheet?: Prisma.XOR<Prisma.CharacterSheetScalarRelationFilter, Prisma.CharacterSheetWhereInput>
+  levels?: Prisma.CharacterAbilityLevelListRelationFilter
 }
 
 export type CharacterAbilityOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  description?: Prisma.SortOrderInput | Prisma.SortOrder
-  manaCost?: Prisma.SortOrderInput | Prisma.SortOrder
-  cooldown?: Prisma.SortOrderInput | Prisma.SortOrder
-  notes?: Prisma.SortOrderInput | Prisma.SortOrder
+  icon?: Prisma.SortOrderInput | Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   sheet?: Prisma.CharacterSheetOrderByWithRelationInput
+  levels?: Prisma.CharacterAbilityLevelOrderByRelationAggregateInput
 }
 
 export type CharacterAbilityWhereUniqueInput = Prisma.AtLeast<{
@@ -284,24 +255,19 @@ export type CharacterAbilityWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.CharacterAbilityWhereInput | Prisma.CharacterAbilityWhereInput[]
   sheetId?: Prisma.StringFilter<"CharacterAbility"> | string
   name?: Prisma.StringFilter<"CharacterAbility"> | string
-  description?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
-  manaCost?: Prisma.IntNullableFilter<"CharacterAbility"> | number | null
-  cooldown?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
-  notes?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
+  icon?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
   order?: Prisma.IntFilter<"CharacterAbility"> | number
   createdAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
   sheet?: Prisma.XOR<Prisma.CharacterSheetScalarRelationFilter, Prisma.CharacterSheetWhereInput>
+  levels?: Prisma.CharacterAbilityLevelListRelationFilter
 }, "id">
 
 export type CharacterAbilityOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  description?: Prisma.SortOrderInput | Prisma.SortOrder
-  manaCost?: Prisma.SortOrderInput | Prisma.SortOrder
-  cooldown?: Prisma.SortOrderInput | Prisma.SortOrder
-  notes?: Prisma.SortOrderInput | Prisma.SortOrder
+  icon?: Prisma.SortOrderInput | Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -319,10 +285,7 @@ export type CharacterAbilityScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"CharacterAbility"> | string
   sheetId?: Prisma.StringWithAggregatesFilter<"CharacterAbility"> | string
   name?: Prisma.StringWithAggregatesFilter<"CharacterAbility"> | string
-  description?: Prisma.StringNullableWithAggregatesFilter<"CharacterAbility"> | string | null
-  manaCost?: Prisma.IntNullableWithAggregatesFilter<"CharacterAbility"> | number | null
-  cooldown?: Prisma.StringNullableWithAggregatesFilter<"CharacterAbility"> | string | null
-  notes?: Prisma.StringNullableWithAggregatesFilter<"CharacterAbility"> | string | null
+  icon?: Prisma.StringNullableWithAggregatesFilter<"CharacterAbility"> | string | null
   order?: Prisma.IntWithAggregatesFilter<"CharacterAbility"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"CharacterAbility"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"CharacterAbility"> | Date | string
@@ -331,63 +294,52 @@ export type CharacterAbilityScalarWhereWithAggregatesInput = {
 export type CharacterAbilityCreateInput = {
   id?: string
   name: string
-  description?: string | null
-  manaCost?: number | null
-  cooldown?: string | null
-  notes?: string | null
+  icon?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   sheet: Prisma.CharacterSheetCreateNestedOneWithoutAbilitiesInput
+  levels?: Prisma.CharacterAbilityLevelCreateNestedManyWithoutAbilityInput
 }
 
 export type CharacterAbilityUncheckedCreateInput = {
   id?: string
   sheetId: string
   name: string
-  description?: string | null
-  manaCost?: number | null
-  cooldown?: string | null
-  notes?: string | null
+  icon?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedCreateNestedManyWithoutAbilityInput
 }
 
 export type CharacterAbilityUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  cooldown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutAbilitiesNestedInput
+  levels?: Prisma.CharacterAbilityLevelUpdateManyWithoutAbilityNestedInput
 }
 
 export type CharacterAbilityUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sheetId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  cooldown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedUpdateManyWithoutAbilityNestedInput
 }
 
 export type CharacterAbilityCreateManyInput = {
   id?: string
   sheetId: string
   name: string
-  description?: string | null
-  manaCost?: number | null
-  cooldown?: string | null
-  notes?: string | null
+  icon?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -396,10 +348,7 @@ export type CharacterAbilityCreateManyInput = {
 export type CharacterAbilityUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  cooldown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -409,10 +358,7 @@ export type CharacterAbilityUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sheetId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  cooldown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -432,17 +378,13 @@ export type CharacterAbilityCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  description?: Prisma.SortOrder
-  manaCost?: Prisma.SortOrder
-  cooldown?: Prisma.SortOrder
-  notes?: Prisma.SortOrder
+  icon?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type CharacterAbilityAvgOrderByAggregateInput = {
-  manaCost?: Prisma.SortOrder
   order?: Prisma.SortOrder
 }
 
@@ -450,10 +392,7 @@ export type CharacterAbilityMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  description?: Prisma.SortOrder
-  manaCost?: Prisma.SortOrder
-  cooldown?: Prisma.SortOrder
-  notes?: Prisma.SortOrder
+  icon?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -463,18 +402,19 @@ export type CharacterAbilityMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  description?: Prisma.SortOrder
-  manaCost?: Prisma.SortOrder
-  cooldown?: Prisma.SortOrder
-  notes?: Prisma.SortOrder
+  icon?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type CharacterAbilitySumOrderByAggregateInput = {
-  manaCost?: Prisma.SortOrder
   order?: Prisma.SortOrder
+}
+
+export type CharacterAbilityScalarRelationFilter = {
+  is?: Prisma.CharacterAbilityWhereInput
+  isNot?: Prisma.CharacterAbilityWhereInput
 }
 
 export type CharacterAbilityCreateNestedManyWithoutSheetInput = {
@@ -519,28 +459,38 @@ export type CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput = {
   deleteMany?: Prisma.CharacterAbilityScalarWhereInput | Prisma.CharacterAbilityScalarWhereInput[]
 }
 
+export type CharacterAbilityCreateNestedOneWithoutLevelsInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutLevelsInput, Prisma.CharacterAbilityUncheckedCreateWithoutLevelsInput>
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutLevelsInput
+  connect?: Prisma.CharacterAbilityWhereUniqueInput
+}
+
+export type CharacterAbilityUpdateOneRequiredWithoutLevelsNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutLevelsInput, Prisma.CharacterAbilityUncheckedCreateWithoutLevelsInput>
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutLevelsInput
+  upsert?: Prisma.CharacterAbilityUpsertWithoutLevelsInput
+  connect?: Prisma.CharacterAbilityWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterAbilityUpdateToOneWithWhereWithoutLevelsInput, Prisma.CharacterAbilityUpdateWithoutLevelsInput>, Prisma.CharacterAbilityUncheckedUpdateWithoutLevelsInput>
+}
+
 export type CharacterAbilityCreateWithoutSheetInput = {
   id?: string
   name: string
-  description?: string | null
-  manaCost?: number | null
-  cooldown?: string | null
-  notes?: string | null
+  icon?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  levels?: Prisma.CharacterAbilityLevelCreateNestedManyWithoutAbilityInput
 }
 
 export type CharacterAbilityUncheckedCreateWithoutSheetInput = {
   id?: string
   name: string
-  description?: string | null
-  manaCost?: number | null
-  cooldown?: string | null
-  notes?: string | null
+  icon?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedCreateNestedManyWithoutAbilityInput
 }
 
 export type CharacterAbilityCreateOrConnectWithoutSheetInput = {
@@ -576,22 +526,72 @@ export type CharacterAbilityScalarWhereInput = {
   id?: Prisma.StringFilter<"CharacterAbility"> | string
   sheetId?: Prisma.StringFilter<"CharacterAbility"> | string
   name?: Prisma.StringFilter<"CharacterAbility"> | string
-  description?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
-  manaCost?: Prisma.IntNullableFilter<"CharacterAbility"> | number | null
-  cooldown?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
-  notes?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
+  icon?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
   order?: Prisma.IntFilter<"CharacterAbility"> | number
   createdAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
 }
 
+export type CharacterAbilityCreateWithoutLevelsInput = {
+  id?: string
+  name: string
+  icon?: string | null
+  order?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sheet: Prisma.CharacterSheetCreateNestedOneWithoutAbilitiesInput
+}
+
+export type CharacterAbilityUncheckedCreateWithoutLevelsInput = {
+  id?: string
+  sheetId: string
+  name: string
+  icon?: string | null
+  order?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type CharacterAbilityCreateOrConnectWithoutLevelsInput = {
+  where: Prisma.CharacterAbilityWhereUniqueInput
+  create: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutLevelsInput, Prisma.CharacterAbilityUncheckedCreateWithoutLevelsInput>
+}
+
+export type CharacterAbilityUpsertWithoutLevelsInput = {
+  update: Prisma.XOR<Prisma.CharacterAbilityUpdateWithoutLevelsInput, Prisma.CharacterAbilityUncheckedUpdateWithoutLevelsInput>
+  create: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutLevelsInput, Prisma.CharacterAbilityUncheckedCreateWithoutLevelsInput>
+  where?: Prisma.CharacterAbilityWhereInput
+}
+
+export type CharacterAbilityUpdateToOneWithWhereWithoutLevelsInput = {
+  where?: Prisma.CharacterAbilityWhereInput
+  data: Prisma.XOR<Prisma.CharacterAbilityUpdateWithoutLevelsInput, Prisma.CharacterAbilityUncheckedUpdateWithoutLevelsInput>
+}
+
+export type CharacterAbilityUpdateWithoutLevelsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutAbilitiesNestedInput
+}
+
+export type CharacterAbilityUncheckedUpdateWithoutLevelsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sheetId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type CharacterAbilityCreateManySheetInput = {
   id?: string
   name: string
-  description?: string | null
-  manaCost?: number | null
-  cooldown?: string | null
-  notes?: string | null
+  icon?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -600,63 +600,81 @@ export type CharacterAbilityCreateManySheetInput = {
 export type CharacterAbilityUpdateWithoutSheetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  cooldown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  levels?: Prisma.CharacterAbilityLevelUpdateManyWithoutAbilityNestedInput
 }
 
 export type CharacterAbilityUncheckedUpdateWithoutSheetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  cooldown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedUpdateManyWithoutAbilityNestedInput
 }
 
 export type CharacterAbilityUncheckedUpdateManyWithoutSheetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  cooldown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+
+/**
+ * Count Type CharacterAbilityCountOutputType
+ */
+
+export type CharacterAbilityCountOutputType = {
+  levels: number
+}
+
+export type CharacterAbilityCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  levels?: boolean | CharacterAbilityCountOutputTypeCountLevelsArgs
+}
+
+/**
+ * CharacterAbilityCountOutputType without action
+ */
+export type CharacterAbilityCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CharacterAbilityCountOutputType
+   */
+  select?: Prisma.CharacterAbilityCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * CharacterAbilityCountOutputType without action
+ */
+export type CharacterAbilityCountOutputTypeCountLevelsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CharacterAbilityLevelWhereInput
+}
 
 
 export type CharacterAbilitySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   sheetId?: boolean
   name?: boolean
-  description?: boolean
-  manaCost?: boolean
-  cooldown?: boolean
-  notes?: boolean
+  icon?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
+  levels?: boolean | Prisma.CharacterAbility$levelsArgs<ExtArgs>
+  _count?: boolean | Prisma.CharacterAbilityCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["characterAbility"]>
 
 export type CharacterAbilitySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   sheetId?: boolean
   name?: boolean
-  description?: boolean
-  manaCost?: boolean
-  cooldown?: boolean
-  notes?: boolean
+  icon?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -667,10 +685,7 @@ export type CharacterAbilitySelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   id?: boolean
   sheetId?: boolean
   name?: boolean
-  description?: boolean
-  manaCost?: boolean
-  cooldown?: boolean
-  notes?: boolean
+  icon?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -681,18 +696,17 @@ export type CharacterAbilitySelectScalar = {
   id?: boolean
   sheetId?: boolean
   name?: boolean
-  description?: boolean
-  manaCost?: boolean
-  cooldown?: boolean
-  notes?: boolean
+  icon?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CharacterAbilityOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sheetId" | "name" | "description" | "manaCost" | "cooldown" | "notes" | "order" | "createdAt" | "updatedAt", ExtArgs["result"]["characterAbility"]>
+export type CharacterAbilityOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sheetId" | "name" | "icon" | "order" | "createdAt" | "updatedAt", ExtArgs["result"]["characterAbility"]>
 export type CharacterAbilityInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
+  levels?: boolean | Prisma.CharacterAbility$levelsArgs<ExtArgs>
+  _count?: boolean | Prisma.CharacterAbilityCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CharacterAbilityIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
@@ -705,15 +719,13 @@ export type $CharacterAbilityPayload<ExtArgs extends runtime.Types.Extensions.In
   name: "CharacterAbility"
   objects: {
     sheet: Prisma.$CharacterSheetPayload<ExtArgs>
+    levels: Prisma.$CharacterAbilityLevelPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     sheetId: string
     name: string
-    description: string | null
-    manaCost: number | null
-    cooldown: string | null
-    notes: string | null
+    icon: string | null
     order: number
     createdAt: Date
     updatedAt: Date
@@ -1112,6 +1124,7 @@ readonly fields: CharacterAbilityFieldRefs;
 export interface Prisma__CharacterAbilityClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   sheet<T extends Prisma.CharacterSheetDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheetDefaultArgs<ExtArgs>>): Prisma.Prisma__CharacterSheetClient<runtime.Types.Result.GetResult<Prisma.$CharacterSheetPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  levels<T extends Prisma.CharacterAbility$levelsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterAbility$levelsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterAbilityLevelPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1144,10 +1157,7 @@ export interface CharacterAbilityFieldRefs {
   readonly id: Prisma.FieldRef<"CharacterAbility", 'String'>
   readonly sheetId: Prisma.FieldRef<"CharacterAbility", 'String'>
   readonly name: Prisma.FieldRef<"CharacterAbility", 'String'>
-  readonly description: Prisma.FieldRef<"CharacterAbility", 'String'>
-  readonly manaCost: Prisma.FieldRef<"CharacterAbility", 'Int'>
-  readonly cooldown: Prisma.FieldRef<"CharacterAbility", 'String'>
-  readonly notes: Prisma.FieldRef<"CharacterAbility", 'String'>
+  readonly icon: Prisma.FieldRef<"CharacterAbility", 'String'>
   readonly order: Prisma.FieldRef<"CharacterAbility", 'Int'>
   readonly createdAt: Prisma.FieldRef<"CharacterAbility", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"CharacterAbility", 'DateTime'>
@@ -1549,6 +1559,30 @@ export type CharacterAbilityDeleteManyArgs<ExtArgs extends runtime.Types.Extensi
    * Limit how many CharacterAbilities to delete.
    */
   limit?: number
+}
+
+/**
+ * CharacterAbility.levels
+ */
+export type CharacterAbility$levelsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CharacterAbilityLevel
+   */
+  select?: Prisma.CharacterAbilityLevelSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CharacterAbilityLevel
+   */
+  omit?: Prisma.CharacterAbilityLevelOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CharacterAbilityLevelInclude<ExtArgs> | null
+  where?: Prisma.CharacterAbilityLevelWhereInput
+  orderBy?: Prisma.CharacterAbilityLevelOrderByWithRelationInput | Prisma.CharacterAbilityLevelOrderByWithRelationInput[]
+  cursor?: Prisma.CharacterAbilityLevelWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CharacterAbilityLevelScalarFieldEnum | Prisma.CharacterAbilityLevelScalarFieldEnum[]
 }
 
 /**

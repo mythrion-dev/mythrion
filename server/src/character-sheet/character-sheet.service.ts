@@ -77,7 +77,10 @@ const sheetInclude = {
       },
     },
   },
-  abilities: { orderBy: { order: 'asc' as const } },
+  abilities: {
+    orderBy: { order: 'asc' as const },
+    include: { levels: { orderBy: { level: 'asc' as const } } },
+  },
   inventoryItems: { orderBy: { order: 'asc' as const } },
   story: true,
 }
@@ -335,22 +338,48 @@ export class CharacterSheetService {
 
   // ── Abilities (CRUD) ──
 
+  private abilityInclude = {
+    levels: { orderBy: { level: 'asc' as const } },
+  }
+
   async listAbilities(sheetId: string, userId: string) {
     await this.requireOwnership(sheetId, userId)
-    return this.prisma.characterAbility.findMany({ where: { sheetId }, orderBy: { order: 'asc' } })
+    return this.prisma.characterAbility.findMany({
+      where: { sheetId },
+      orderBy: { order: 'asc' },
+      include: this.abilityInclude,
+    })
   }
 
-  async createAbility(sheetId: string, userId: string, dto: { name: string; description?: string; manaCost?: number; cooldown?: string; notes?: string }) {
+  async createAbility(sheetId: string, userId: string, dto: { name: string; description?: string; manaCost?: number; range?: string; cooldown?: string; notes?: string; damage?: string }) {
     await this.requireOwnership(sheetId, userId)
     const count = await this.prisma.characterAbility.count({ where: { sheetId } })
-    return this.prisma.characterAbility.create({ data: { sheetId, name: dto.name, description: dto.description ?? null, manaCost: dto.manaCost ?? null, cooldown: dto.cooldown ?? null, notes: dto.notes ?? null, order: count } })
+    return this.prisma.characterAbility.create({
+      data: {
+        sheetId,
+        name: dto.name,
+        order: count,
+        levels: {
+          create: {
+            level: 1,
+            description: dto.description ?? null,
+            manaCost: dto.manaCost ?? null,
+            range: dto.range ?? null,
+            cooldown: dto.cooldown ?? null,
+            notes: dto.notes ?? null,
+            damage: dto.damage ?? null,
+          },
+        },
+      },
+      include: this.abilityInclude,
+    })
   }
 
-  async updateAbility(abilityId: string, userId: string, dto: { name?: string; description?: string; manaCost?: number; cooldown?: string; notes?: string }) {
+  async updateAbility(abilityId: string, userId: string, dto: { name?: string; icon?: string }) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
     if (!ability) throw new NotFoundException('Ability not found')
     await this.requireOwnership(ability.sheetId, userId)
-    return this.prisma.characterAbility.update({ where: { id: abilityId }, data: { ...dto } })
+    return this.prisma.characterAbility.update({ where: { id: abilityId }, data: { ...dto }, include: this.abilityInclude })
   }
 
   async removeAbility(abilityId: string, userId: string) {
@@ -358,6 +387,74 @@ export class CharacterSheetService {
     if (!ability) throw new NotFoundException('Ability not found')
     await this.requireOwnership(ability.sheetId, userId)
     return this.prisma.characterAbility.delete({ where: { id: abilityId } })
+  }
+
+  // ── Ability Levels (CRUD) ──
+
+  async listAbilityLevels(abilityId: string, userId: string) {
+    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
+    if (!ability) throw new NotFoundException('Ability not found')
+    await this.requireOwnership(ability.sheetId, userId)
+    return this.prisma.characterAbilityLevel.findMany({ where: { abilityId }, orderBy: { level: 'asc' } })
+  }
+
+  async createAbilityLevel(
+    abilityId: string,
+    userId: string,
+    dto: { level: number; description?: string; manaCost?: number; range?: string; cooldown?: string; notes?: string; damage?: string; copyFromPrevious?: boolean },
+  ) {
+    const ability = await this.prisma.characterAbility.findUnique({
+      where: { id: abilityId },
+      include: { levels: { orderBy: { level: 'desc' }, take: 1 } },
+    })
+    if (!ability) throw new NotFoundException('Ability not found')
+    await this.requireOwnership(ability.sheetId, userId)
+
+    let data = {
+      level: dto.level,
+      description: dto.description ?? null,
+      manaCost: dto.manaCost ?? null,
+      range: dto.range ?? null,
+      cooldown: dto.cooldown ?? null,
+      notes: dto.notes ?? null,
+      damage: dto.damage ?? null,
+    }
+
+    // Copy from previous level if requested
+    if (dto.copyFromPrevious && ability.levels.length > 0) {
+      const prev = ability.levels[0]
+      data = {
+        level: dto.level,
+        description: dto.description ?? prev.description,
+        manaCost: dto.manaCost ?? prev.manaCost,
+        range: dto.range ?? prev.range,
+        cooldown: dto.cooldown ?? prev.cooldown,
+        notes: dto.notes ?? prev.notes,
+        damage: dto.damage ?? prev.damage,
+      }
+    }
+
+    return this.prisma.characterAbilityLevel.create({
+      data: { abilityId, ...data },
+    })
+  }
+
+  async updateAbilityLevel(levelId: string, userId: string, dto: { level?: number; description?: string; manaCost?: number; range?: string; cooldown?: string; notes?: string; damage?: string }) {
+    const abilityLevel = await this.prisma.characterAbilityLevel.findUnique({ where: { id: levelId } })
+    if (!abilityLevel) throw new NotFoundException('Ability level not found')
+    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityLevel.abilityId } })
+    if (!ability) throw new NotFoundException('Ability not found')
+    await this.requireOwnership(ability.sheetId, userId)
+    return this.prisma.characterAbilityLevel.update({ where: { id: levelId }, data: { ...dto } })
+  }
+
+  async deleteAbilityLevel(levelId: string, userId: string) {
+    const abilityLevel = await this.prisma.characterAbilityLevel.findUnique({ where: { id: levelId } })
+    if (!abilityLevel) throw new NotFoundException('Ability level not found')
+    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityLevel.abilityId } })
+    if (!ability) throw new NotFoundException('Ability not found')
+    await this.requireOwnership(ability.sheetId, userId)
+    return this.prisma.characterAbilityLevel.delete({ where: { id: levelId } })
   }
 
   // ── Inventory (CRUD) ──

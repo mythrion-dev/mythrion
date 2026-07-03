@@ -162,6 +162,11 @@ export type CharacterSheetArmorClassValue = Prisma.CharacterSheetArmorClassValue
  */
 export type CharacterAbility = Prisma.CharacterAbilityModel
 /**
+ * Model CharacterAbilityLevel
+ * 
+ */
+export type CharacterAbilityLevel = Prisma.CharacterAbilityLevelModel
+/**
  * Model CharacterInventoryItem
  * 
  */

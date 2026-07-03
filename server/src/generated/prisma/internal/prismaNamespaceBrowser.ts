@@ -75,6 +75,7 @@ export const ModelName = {
   ArmorClassField: 'ArmorClassField',
   CharacterSheetArmorClassValue: 'CharacterSheetArmorClassValue',
   CharacterAbility: 'CharacterAbility',
+  CharacterAbilityLevel: 'CharacterAbilityLevel',
   CharacterInventoryItem: 'CharacterInventoryItem',
   CharacterStory: 'CharacterStory'
 } as const
@@ -410,16 +411,30 @@ export const CharacterAbilityScalarFieldEnum = {
   id: 'id',
   sheetId: 'sheetId',
   name: 'name',
-  description: 'description',
-  manaCost: 'manaCost',
-  cooldown: 'cooldown',
-  notes: 'notes',
+  icon: 'icon',
   order: 'order',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type CharacterAbilityScalarFieldEnum = (typeof CharacterAbilityScalarFieldEnum)[keyof typeof CharacterAbilityScalarFieldEnum]
+
+
+export const CharacterAbilityLevelScalarFieldEnum = {
+  id: 'id',
+  abilityId: 'abilityId',
+  level: 'level',
+  manaCost: 'manaCost',
+  range: 'range',
+  cooldown: 'cooldown',
+  description: 'description',
+  notes: 'notes',
+  damage: 'damage',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterAbilityLevelScalarFieldEnum = (typeof CharacterAbilityLevelScalarFieldEnum)[keyof typeof CharacterAbilityLevelScalarFieldEnum]
 
 
 export const CharacterInventoryItemScalarFieldEnum = {

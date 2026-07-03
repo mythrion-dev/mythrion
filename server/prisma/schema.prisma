@@ -424,19 +424,35 @@ model CharacterSheetArmorClassValue {
 // ── Character Abilities (Player-only) ──
 
 model CharacterAbility {
-  id          String         @id @default(cuid())
+  id          String                  @id @default(cuid())
   sheetId     String
-  sheet       CharacterSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  sheet       CharacterSheet          @relation(fields: [sheetId], references: [id], onDelete: Cascade)
   name        String
-  description String?
-  manaCost    Int?
-  cooldown    String?
-  notes       String?
-  order       Int            @default(0)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  icon        String?
+  order       Int                     @default(0)
+  levels      CharacterAbilityLevel[]
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
 
   @@index([sheetId])
+}
+
+model CharacterAbilityLevel {
+  id          String           @id @default(cuid())
+  abilityId   String
+  ability     CharacterAbility @relation(fields: [abilityId], references: [id], onDelete: Cascade)
+  level       Int
+  manaCost    Int?
+  range       String?
+  cooldown    String?
+  description String?
+  notes       String?
+  damage      String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([abilityId, level])
+  @@index([abilityId])
 }
 
 // ── Character Inventory Items (Player-only) ──
