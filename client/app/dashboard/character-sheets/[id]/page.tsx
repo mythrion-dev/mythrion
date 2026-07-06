@@ -108,8 +108,8 @@ function CoreResourceCard({ resource, value, isOwner, onSave, onModify }: {
             <input type="number" min={0} className="input-field py-1 text-xs flex-1" value={modifier || ''} placeholder="Amount" onChange={e => setModifier(parseInt(e.target.value, 10) || 0)} />
           </div>
           <div className="flex gap-2">
-            <button type="button" onClick={() => { onModify(value.coreResourceId, 1); setModifier(0) }} disabled={!modifier} className="btn-primary text-xs flex-1 py-1">+ Heal / Recover</button>
-            <button type="button" onClick={() => { onModify(value.coreResourceId, -1); setModifier(0) }} disabled={!modifier} className="btn-danger text-xs flex-1 py-1">− Damage / Lose</button>
+            <button type="button" onClick={() => { onModify(value.coreResourceId, Math.abs(modifier)); setModifier(0) }} disabled={!modifier} className="btn-primary text-xs flex-1 py-1">+ Heal / Recover</button>
+            <button type="button" onClick={() => { onModify(value.coreResourceId, -Math.abs(modifier)); setModifier(0) }} disabled={!modifier} className="btn-danger text-xs flex-1 py-1">− Damage / Lose</button>
           </div>
         </div>
       )}
