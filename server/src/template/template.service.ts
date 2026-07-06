@@ -12,10 +12,7 @@ const templateInclude = {
     orderBy: { order: 'asc' as const },
     include: { options: { orderBy: { order: 'asc' as const } } },
   },
-  runtimeModifiers: {
-    orderBy: { order: 'asc' as const },
-    include: { components: { orderBy: { order: 'asc' as const } } },
-  },
+  pointPools: { orderBy: { order: 'asc' as const } },
   armorClass: {
     include: { fields: { orderBy: { order: 'asc' as const } } },
   },
@@ -69,21 +66,15 @@ export class TemplateService {
             },
           })),
         },
-        runtimeModifiers: {
-          create: (dto.runtimeModifiers || []).map((mod, modIdx) => ({
-            key: mod.key,
-            name: mod.name,
-            description: mod.description ?? null,
-            order: modIdx,
-            components: {
-              create: (mod.components || []).map((c, cIdx) => ({
-                name: c.name,
-                defaultValue: c.defaultValue ?? null,
-                locked: c.locked ?? false,
-                formula: c.formula ?? null,
-                order: cIdx,
-              })),
-            },
+        pointPools: {
+          create: (dto.pointPools || []).map((pool, poolIdx) => ({
+            name: pool.name,
+            slug: pool.slug,
+            description: pool.description ?? null,
+            defaultMaximum: pool.defaultMaximum,
+            currentStartsFull: pool.currentStartsFull ?? true,
+            editableByPlayer: pool.editableByPlayer ?? true,
+            order: poolIdx,
           })),
         },
         ...(dto.armorClass?.enabled
@@ -396,69 +387,58 @@ export class TemplateService {
       }
     }
 
-    // Handle runtime modifiers (component-based)
-    if (dto.runtimeModifiers) {
-      const existingModifiers = await this.prisma.templateRuntimeModifier.findMany({
+    // Handle point pools
+    if (dto.pointPools) {
+      const existingPools = await this.prisma.templatePointPool.findMany({
         where: { templateId: id },
-        include: { components: true },
       })
-      const newModifierKeys = dto.runtimeModifiers.map(m => m.key.trim())
-      const existingModifierKeys = existingModifiers.map(m => m.key)
-      const modifierKeysToDelete = existingModifierKeys.filter(k => !newModifierKeys.includes(k))
-      if (modifierKeysToDelete.length) {
-        await this.prisma.templateRuntimeModifier.deleteMany({ where: { templateId: id, key: { in: modifierKeysToDelete } } })
+      const newPoolSlugs = dto.pointPools.map(p => p.slug.trim())
+      const existingPoolSlugs = existingPools.map(p => p.slug)
+      const poolSlugsToDelete = existingPoolSlugs.filter(s => !newPoolSlugs.includes(s))
+      if (poolSlugsToDelete.length) {
+        await this.prisma.templatePointPool.deleteMany({ where: { templateId: id, slug: { in: poolSlugsToDelete } } })
       }
 
-      for (let mIdx = 0; mIdx < dto.runtimeModifiers.length; mIdx++) {
-        const mod = dto.runtimeModifiers[mIdx]
-        const key = mod.key.trim()
-        const existing = existingModifiers.find(e => e.key === key)
+      for (let pIdx = 0; pIdx < dto.pointPools.length; pIdx++) {
+        const pool = dto.pointPools[pIdx]
+        const slug = pool.slug.trim()
+        const existing = existingPools.find(e => e.slug === slug)
 
         if (existing) {
-          await this.prisma.templateRuntimeModifier.update({
+          await this.prisma.templatePointPool.update({
             where: { id: existing.id },
-            data: { name: mod.name.trim(), description: mod.description ?? null, order: mIdx },
-          })
-          // Handle components for existing modifier
-          const existingComponents = existing.components
-          const newCompNames = (mod.components || []).map(c => c.name.trim())
-          const existingCompNames = existingComponents.map(c => c.name)
-          const compNamesToDelete = existingCompNames.filter(n => !newCompNames.includes(n))
-          if (compNamesToDelete.length) {
-            await this.prisma.runtimeModifierComponent.deleteMany({ where: { modifierId: existing.id, name: { in: compNamesToDelete } } })
-          }
-          for (let cIdx = 0; cIdx < (mod.components || []).length; cIdx++) {
-            const c = mod.components![cIdx]; const cName = c.name.trim()
-            const existingComp = existingComponents.find(ec => ec.name === cName)
-            if (existingComp) {
-              await this.prisma.runtimeModifierComponent.update({ where: { id: existingComp.id }, data: { defaultValue: c.defaultValue ?? null, locked: c.locked ?? false, formula: c.formula ?? null, order: cIdx } })
-            } else {
-              await this.prisma.runtimeModifierComponent.create({ data: { modifierId: existing.id, name: cName, defaultValue: c.defaultValue ?? null, locked: c.locked ?? false, formula: c.formula ?? null, order: cIdx } })
-            }
-          }
-          // For newly added components, auto-create values on existing sheets
-          const addedCompNames = newCompNames.filter(n => !existingCompNames.includes(n))
-          if (addedCompNames.length > 0) {
-            const newComps = await this.prisma.runtimeModifierComponent.findMany({ where: { modifierId: existing.id, name: { in: addedCompNames } } })
-            const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
-            for (const sheet of sheets) for (const comp of newComps)
-              await this.prisma.characterSheetRuntimeModifierComponentValue.upsert({
-                where: { sheetId_componentId: { sheetId: sheet.id, componentId: comp.id } },
-                create: { sheetId: sheet.id, componentId: comp.id, value: comp.defaultValue ?? '0' },
-                update: {},
-              })
-          }
-        } else {
-          await this.prisma.templateRuntimeModifier.create({
             data: {
-              templateId: id, key, name: mod.name.trim(), description: mod.description ?? null, order: mIdx,
-              components: {
-                create: (mod.components || []).map((c, cIdx) => ({
-                  name: c.name, defaultValue: c.defaultValue ?? null, locked: c.locked ?? false, formula: c.formula ?? null, order: cIdx,
-                })),
-              },
+              name: pool.name.trim(),
+              description: pool.description ?? null,
+              defaultMaximum: pool.defaultMaximum,
+              currentStartsFull: pool.currentStartsFull ?? true,
+              editableByPlayer: pool.editableByPlayer ?? true,
+              order: pIdx,
             },
           })
+        } else {
+          const newPool = await this.prisma.templatePointPool.create({
+            data: {
+              templateId: id,
+              name: pool.name.trim(),
+              slug,
+              description: pool.description ?? null,
+              defaultMaximum: pool.defaultMaximum,
+              currentStartsFull: pool.currentStartsFull ?? true,
+              editableByPlayer: pool.editableByPlayer ?? true,
+              order: pIdx,
+            },
+          })
+          // Auto-create values on existing sheets for the new pool
+          const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
+          for (const sheet of sheets) {
+            const initialCurrent = newPool.currentStartsFull ? newPool.defaultMaximum : 0
+            await this.prisma.characterSheetPointPoolValue.upsert({
+              where: { sheetId_pointPoolId: { sheetId: sheet.id, pointPoolId: newPool.id } },
+              create: { sheetId: sheet.id, pointPoolId: newPool.id, current: initialCurrent, maximum: newPool.defaultMaximum },
+              update: {},
+            })
+          }
         }
       }
     }

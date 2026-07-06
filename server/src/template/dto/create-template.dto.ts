@@ -6,6 +6,7 @@ import {
   ArrayMinSize,
   IsNumber,
   IsBoolean,
+  IsInt,
 } from 'class-validator'
 import { Type } from 'class-transformer'
 
@@ -75,39 +76,27 @@ export class SkillModifierProfileDefDto {
   options!: ProfileOptionDefDto[]
 }
 
-export class RuntimeModifierComponentDefDto {
+export class PointPoolDefDto {
   @IsString()
   name!: string
 
   @IsString()
-  @IsOptional()
-  defaultValue?: string
-
-  @IsBoolean()
-  @IsOptional()
-  locked?: boolean
-
-  @IsString()
-  @IsOptional()
-  formula?: string
-}
-
-export class RuntimeModifierDefDto {
-  @IsString()
-  key!: string
-
-  @IsString()
-  name!: string
+  slug!: string
 
   @IsString()
   @IsOptional()
   description?: string
 
-  @IsArray()
-  @ValidateNested({ each: true })
+  @IsInt()
+  defaultMaximum!: number
+
+  @IsBoolean()
   @IsOptional()
-  @Type(() => RuntimeModifierComponentDefDto)
-  components?: RuntimeModifierComponentDefDto[]
+  currentStartsFull?: boolean
+
+  @IsBoolean()
+  @IsOptional()
+  editableByPlayer?: boolean
 }
 
 export class ArmorClassFieldDefDto {
@@ -181,8 +170,8 @@ export class CreateTemplateDto {
   @IsArray()
   @ValidateNested({ each: true })
   @IsOptional()
-  @Type(() => RuntimeModifierDefDto)
-  runtimeModifiers?: RuntimeModifierDefDto[]
+  @Type(() => PointPoolDefDto)
+  pointPools?: PointPoolDefDto[]
 
   @ValidateNested()
   @IsOptional()

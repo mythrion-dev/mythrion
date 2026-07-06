@@ -12,7 +12,7 @@ interface FormulaBuilderProps {
   attributes: { key: string; name: string }[]
   customFields?: { key: string; label: string }[]
   skillModifierProfiles?: SkillModifierProfile[]
-  runtimeModifiers?: { key: string; name: string }[]
+  pointPools?: { slug: string; name: string }[]
   acFields?: { key: string; name: string }[]
   placeholder?: string
   useModPrefix?: boolean

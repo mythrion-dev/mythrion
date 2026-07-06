@@ -211,7 +211,7 @@ export type TemplateWhereInput = {
   templateFields?: Prisma.TemplateFieldListRelationFilter
   templateSkills?: Prisma.TemplateSkillListRelationFilter
   skillModifierProfiles?: Prisma.SkillModifierProfileListRelationFilter
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierListRelationFilter
+  pointPools?: Prisma.TemplatePointPoolListRelationFilter
   armorClass?: Prisma.XOR<Prisma.TemplateArmorClassNullableScalarRelationFilter, Prisma.TemplateArmorClassWhereInput> | null
   characterSheets?: Prisma.CharacterSheetListRelationFilter
 }
@@ -230,7 +230,7 @@ export type TemplateOrderByWithRelationInput = {
   templateFields?: Prisma.TemplateFieldOrderByRelationAggregateInput
   templateSkills?: Prisma.TemplateSkillOrderByRelationAggregateInput
   skillModifierProfiles?: Prisma.SkillModifierProfileOrderByRelationAggregateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierOrderByRelationAggregateInput
+  pointPools?: Prisma.TemplatePointPoolOrderByRelationAggregateInput
   armorClass?: Prisma.TemplateArmorClassOrderByWithRelationInput
   characterSheets?: Prisma.CharacterSheetOrderByRelationAggregateInput
 }
@@ -252,7 +252,7 @@ export type TemplateWhereUniqueInput = Prisma.AtLeast<{
   templateFields?: Prisma.TemplateFieldListRelationFilter
   templateSkills?: Prisma.TemplateSkillListRelationFilter
   skillModifierProfiles?: Prisma.SkillModifierProfileListRelationFilter
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierListRelationFilter
+  pointPools?: Prisma.TemplatePointPoolListRelationFilter
   armorClass?: Prisma.XOR<Prisma.TemplateArmorClassNullableScalarRelationFilter, Prisma.TemplateArmorClassWhereInput> | null
   characterSheets?: Prisma.CharacterSheetListRelationFilter
 }, "id">
@@ -298,7 +298,7 @@ export type TemplateCreateInput = {
   templateFields?: Prisma.TemplateFieldCreateNestedManyWithoutTemplateInput
   templateSkills?: Prisma.TemplateSkillCreateNestedManyWithoutTemplateInput
   skillModifierProfiles?: Prisma.SkillModifierProfileCreateNestedManyWithoutTemplateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierCreateNestedManyWithoutTemplateInput
+  pointPools?: Prisma.TemplatePointPoolCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
@@ -316,7 +316,7 @@ export type TemplateUncheckedCreateInput = {
   templateFields?: Prisma.TemplateFieldUncheckedCreateNestedManyWithoutTemplateInput
   templateSkills?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutTemplateInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedCreateNestedManyWithoutTemplateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUncheckedCreateNestedManyWithoutTemplateInput
+  pointPools?: Prisma.TemplatePointPoolUncheckedCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
@@ -334,7 +334,7 @@ export type TemplateUpdateInput = {
   templateFields?: Prisma.TemplateFieldUpdateManyWithoutTemplateNestedInput
   templateSkills?: Prisma.TemplateSkillUpdateManyWithoutTemplateNestedInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUpdateManyWithoutTemplateNestedInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUpdateManyWithoutTemplateNestedInput
+  pointPools?: Prisma.TemplatePointPoolUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
@@ -352,7 +352,7 @@ export type TemplateUncheckedUpdateInput = {
   templateFields?: Prisma.TemplateFieldUncheckedUpdateManyWithoutTemplateNestedInput
   templateSkills?: Prisma.TemplateSkillUncheckedUpdateManyWithoutTemplateNestedInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedUpdateManyWithoutTemplateNestedInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUncheckedUpdateManyWithoutTemplateNestedInput
+  pointPools?: Prisma.TemplatePointPoolUncheckedUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
 }
@@ -549,18 +549,18 @@ export type TemplateUpdateOneRequiredWithoutTemplateFieldsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.TemplateUpdateToOneWithWhereWithoutTemplateFieldsInput, Prisma.TemplateUpdateWithoutTemplateFieldsInput>, Prisma.TemplateUncheckedUpdateWithoutTemplateFieldsInput>
 }
 
-export type TemplateCreateNestedOneWithoutRuntimeModifiersInput = {
-  create?: Prisma.XOR<Prisma.TemplateCreateWithoutRuntimeModifiersInput, Prisma.TemplateUncheckedCreateWithoutRuntimeModifiersInput>
-  connectOrCreate?: Prisma.TemplateCreateOrConnectWithoutRuntimeModifiersInput
+export type TemplateCreateNestedOneWithoutPointPoolsInput = {
+  create?: Prisma.XOR<Prisma.TemplateCreateWithoutPointPoolsInput, Prisma.TemplateUncheckedCreateWithoutPointPoolsInput>
+  connectOrCreate?: Prisma.TemplateCreateOrConnectWithoutPointPoolsInput
   connect?: Prisma.TemplateWhereUniqueInput
 }
 
-export type TemplateUpdateOneRequiredWithoutRuntimeModifiersNestedInput = {
-  create?: Prisma.XOR<Prisma.TemplateCreateWithoutRuntimeModifiersInput, Prisma.TemplateUncheckedCreateWithoutRuntimeModifiersInput>
-  connectOrCreate?: Prisma.TemplateCreateOrConnectWithoutRuntimeModifiersInput
-  upsert?: Prisma.TemplateUpsertWithoutRuntimeModifiersInput
+export type TemplateUpdateOneRequiredWithoutPointPoolsNestedInput = {
+  create?: Prisma.XOR<Prisma.TemplateCreateWithoutPointPoolsInput, Prisma.TemplateUncheckedCreateWithoutPointPoolsInput>
+  connectOrCreate?: Prisma.TemplateCreateOrConnectWithoutPointPoolsInput
+  upsert?: Prisma.TemplateUpsertWithoutPointPoolsInput
   connect?: Prisma.TemplateWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.TemplateUpdateToOneWithWhereWithoutRuntimeModifiersInput, Prisma.TemplateUpdateWithoutRuntimeModifiersInput>, Prisma.TemplateUncheckedUpdateWithoutRuntimeModifiersInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TemplateUpdateToOneWithWhereWithoutPointPoolsInput, Prisma.TemplateUpdateWithoutPointPoolsInput>, Prisma.TemplateUncheckedUpdateWithoutPointPoolsInput>
 }
 
 export type TemplateCreateNestedOneWithoutArmorClassInput = {
@@ -589,7 +589,7 @@ export type TemplateCreateWithoutAdventureInput = {
   templateFields?: Prisma.TemplateFieldCreateNestedManyWithoutTemplateInput
   templateSkills?: Prisma.TemplateSkillCreateNestedManyWithoutTemplateInput
   skillModifierProfiles?: Prisma.SkillModifierProfileCreateNestedManyWithoutTemplateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierCreateNestedManyWithoutTemplateInput
+  pointPools?: Prisma.TemplatePointPoolCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
@@ -606,7 +606,7 @@ export type TemplateUncheckedCreateWithoutAdventureInput = {
   templateFields?: Prisma.TemplateFieldUncheckedCreateNestedManyWithoutTemplateInput
   templateSkills?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutTemplateInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedCreateNestedManyWithoutTemplateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUncheckedCreateNestedManyWithoutTemplateInput
+  pointPools?: Prisma.TemplatePointPoolUncheckedCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
@@ -663,7 +663,7 @@ export type TemplateCreateWithoutSkillModifierProfilesInput = {
   attributes?: Prisma.TemplateAttributeCreateNestedManyWithoutTemplateInput
   templateFields?: Prisma.TemplateFieldCreateNestedManyWithoutTemplateInput
   templateSkills?: Prisma.TemplateSkillCreateNestedManyWithoutTemplateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierCreateNestedManyWithoutTemplateInput
+  pointPools?: Prisma.TemplatePointPoolCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
@@ -680,7 +680,7 @@ export type TemplateUncheckedCreateWithoutSkillModifierProfilesInput = {
   attributes?: Prisma.TemplateAttributeUncheckedCreateNestedManyWithoutTemplateInput
   templateFields?: Prisma.TemplateFieldUncheckedCreateNestedManyWithoutTemplateInput
   templateSkills?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutTemplateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUncheckedCreateNestedManyWithoutTemplateInput
+  pointPools?: Prisma.TemplatePointPoolUncheckedCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
@@ -713,7 +713,7 @@ export type TemplateUpdateWithoutSkillModifierProfilesInput = {
   attributes?: Prisma.TemplateAttributeUpdateManyWithoutTemplateNestedInput
   templateFields?: Prisma.TemplateFieldUpdateManyWithoutTemplateNestedInput
   templateSkills?: Prisma.TemplateSkillUpdateManyWithoutTemplateNestedInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUpdateManyWithoutTemplateNestedInput
+  pointPools?: Prisma.TemplatePointPoolUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
@@ -730,7 +730,7 @@ export type TemplateUncheckedUpdateWithoutSkillModifierProfilesInput = {
   attributes?: Prisma.TemplateAttributeUncheckedUpdateManyWithoutTemplateNestedInput
   templateFields?: Prisma.TemplateFieldUncheckedUpdateManyWithoutTemplateNestedInput
   templateSkills?: Prisma.TemplateSkillUncheckedUpdateManyWithoutTemplateNestedInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUncheckedUpdateManyWithoutTemplateNestedInput
+  pointPools?: Prisma.TemplatePointPoolUncheckedUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
 }
@@ -747,7 +747,7 @@ export type TemplateCreateWithoutAttributesInput = {
   templateFields?: Prisma.TemplateFieldCreateNestedManyWithoutTemplateInput
   templateSkills?: Prisma.TemplateSkillCreateNestedManyWithoutTemplateInput
   skillModifierProfiles?: Prisma.SkillModifierProfileCreateNestedManyWithoutTemplateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierCreateNestedManyWithoutTemplateInput
+  pointPools?: Prisma.TemplatePointPoolCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
@@ -764,7 +764,7 @@ export type TemplateUncheckedCreateWithoutAttributesInput = {
   templateFields?: Prisma.TemplateFieldUncheckedCreateNestedManyWithoutTemplateInput
   templateSkills?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutTemplateInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedCreateNestedManyWithoutTemplateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUncheckedCreateNestedManyWithoutTemplateInput
+  pointPools?: Prisma.TemplatePointPoolUncheckedCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
@@ -797,7 +797,7 @@ export type TemplateUpdateWithoutAttributesInput = {
   templateFields?: Prisma.TemplateFieldUpdateManyWithoutTemplateNestedInput
   templateSkills?: Prisma.TemplateSkillUpdateManyWithoutTemplateNestedInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUpdateManyWithoutTemplateNestedInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUpdateManyWithoutTemplateNestedInput
+  pointPools?: Prisma.TemplatePointPoolUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
@@ -814,7 +814,7 @@ export type TemplateUncheckedUpdateWithoutAttributesInput = {
   templateFields?: Prisma.TemplateFieldUncheckedUpdateManyWithoutTemplateNestedInput
   templateSkills?: Prisma.TemplateSkillUncheckedUpdateManyWithoutTemplateNestedInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedUpdateManyWithoutTemplateNestedInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUncheckedUpdateManyWithoutTemplateNestedInput
+  pointPools?: Prisma.TemplatePointPoolUncheckedUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
 }
@@ -831,7 +831,7 @@ export type TemplateCreateWithoutTemplateSkillsInput = {
   attributes?: Prisma.TemplateAttributeCreateNestedManyWithoutTemplateInput
   templateFields?: Prisma.TemplateFieldCreateNestedManyWithoutTemplateInput
   skillModifierProfiles?: Prisma.SkillModifierProfileCreateNestedManyWithoutTemplateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierCreateNestedManyWithoutTemplateInput
+  pointPools?: Prisma.TemplatePointPoolCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
@@ -848,7 +848,7 @@ export type TemplateUncheckedCreateWithoutTemplateSkillsInput = {
   attributes?: Prisma.TemplateAttributeUncheckedCreateNestedManyWithoutTemplateInput
   templateFields?: Prisma.TemplateFieldUncheckedCreateNestedManyWithoutTemplateInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedCreateNestedManyWithoutTemplateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUncheckedCreateNestedManyWithoutTemplateInput
+  pointPools?: Prisma.TemplatePointPoolUncheckedCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
@@ -881,7 +881,7 @@ export type TemplateUpdateWithoutTemplateSkillsInput = {
   attributes?: Prisma.TemplateAttributeUpdateManyWithoutTemplateNestedInput
   templateFields?: Prisma.TemplateFieldUpdateManyWithoutTemplateNestedInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUpdateManyWithoutTemplateNestedInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUpdateManyWithoutTemplateNestedInput
+  pointPools?: Prisma.TemplatePointPoolUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
@@ -898,7 +898,7 @@ export type TemplateUncheckedUpdateWithoutTemplateSkillsInput = {
   attributes?: Prisma.TemplateAttributeUncheckedUpdateManyWithoutTemplateNestedInput
   templateFields?: Prisma.TemplateFieldUncheckedUpdateManyWithoutTemplateNestedInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedUpdateManyWithoutTemplateNestedInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUncheckedUpdateManyWithoutTemplateNestedInput
+  pointPools?: Prisma.TemplatePointPoolUncheckedUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
 }
@@ -916,7 +916,7 @@ export type TemplateCreateWithoutCharacterSheetsInput = {
   templateFields?: Prisma.TemplateFieldCreateNestedManyWithoutTemplateInput
   templateSkills?: Prisma.TemplateSkillCreateNestedManyWithoutTemplateInput
   skillModifierProfiles?: Prisma.SkillModifierProfileCreateNestedManyWithoutTemplateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierCreateNestedManyWithoutTemplateInput
+  pointPools?: Prisma.TemplatePointPoolCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
 }
 
@@ -933,7 +933,7 @@ export type TemplateUncheckedCreateWithoutCharacterSheetsInput = {
   templateFields?: Prisma.TemplateFieldUncheckedCreateNestedManyWithoutTemplateInput
   templateSkills?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutTemplateInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedCreateNestedManyWithoutTemplateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUncheckedCreateNestedManyWithoutTemplateInput
+  pointPools?: Prisma.TemplatePointPoolUncheckedCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
 }
 
@@ -966,7 +966,7 @@ export type TemplateUpdateWithoutCharacterSheetsInput = {
   templateFields?: Prisma.TemplateFieldUpdateManyWithoutTemplateNestedInput
   templateSkills?: Prisma.TemplateSkillUpdateManyWithoutTemplateNestedInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUpdateManyWithoutTemplateNestedInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUpdateManyWithoutTemplateNestedInput
+  pointPools?: Prisma.TemplatePointPoolUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
 }
 
@@ -983,7 +983,7 @@ export type TemplateUncheckedUpdateWithoutCharacterSheetsInput = {
   templateFields?: Prisma.TemplateFieldUncheckedUpdateManyWithoutTemplateNestedInput
   templateSkills?: Prisma.TemplateSkillUncheckedUpdateManyWithoutTemplateNestedInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedUpdateManyWithoutTemplateNestedInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUncheckedUpdateManyWithoutTemplateNestedInput
+  pointPools?: Prisma.TemplatePointPoolUncheckedUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
 }
 
@@ -999,7 +999,7 @@ export type TemplateCreateWithoutTemplateFieldsInput = {
   attributes?: Prisma.TemplateAttributeCreateNestedManyWithoutTemplateInput
   templateSkills?: Prisma.TemplateSkillCreateNestedManyWithoutTemplateInput
   skillModifierProfiles?: Prisma.SkillModifierProfileCreateNestedManyWithoutTemplateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierCreateNestedManyWithoutTemplateInput
+  pointPools?: Prisma.TemplatePointPoolCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
@@ -1016,7 +1016,7 @@ export type TemplateUncheckedCreateWithoutTemplateFieldsInput = {
   attributes?: Prisma.TemplateAttributeUncheckedCreateNestedManyWithoutTemplateInput
   templateSkills?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutTemplateInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedCreateNestedManyWithoutTemplateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUncheckedCreateNestedManyWithoutTemplateInput
+  pointPools?: Prisma.TemplatePointPoolUncheckedCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
@@ -1049,7 +1049,7 @@ export type TemplateUpdateWithoutTemplateFieldsInput = {
   attributes?: Prisma.TemplateAttributeUpdateManyWithoutTemplateNestedInput
   templateSkills?: Prisma.TemplateSkillUpdateManyWithoutTemplateNestedInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUpdateManyWithoutTemplateNestedInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUpdateManyWithoutTemplateNestedInput
+  pointPools?: Prisma.TemplatePointPoolUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
@@ -1066,12 +1066,12 @@ export type TemplateUncheckedUpdateWithoutTemplateFieldsInput = {
   attributes?: Prisma.TemplateAttributeUncheckedUpdateManyWithoutTemplateNestedInput
   templateSkills?: Prisma.TemplateSkillUncheckedUpdateManyWithoutTemplateNestedInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedUpdateManyWithoutTemplateNestedInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUncheckedUpdateManyWithoutTemplateNestedInput
+  pointPools?: Prisma.TemplatePointPoolUncheckedUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
 }
 
-export type TemplateCreateWithoutRuntimeModifiersInput = {
+export type TemplateCreateWithoutPointPoolsInput = {
   id?: string
   name: string
   description?: string | null
@@ -1088,7 +1088,7 @@ export type TemplateCreateWithoutRuntimeModifiersInput = {
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
 
-export type TemplateUncheckedCreateWithoutRuntimeModifiersInput = {
+export type TemplateUncheckedCreateWithoutPointPoolsInput = {
   id?: string
   adventureId: string
   name: string
@@ -1105,23 +1105,23 @@ export type TemplateUncheckedCreateWithoutRuntimeModifiersInput = {
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
 
-export type TemplateCreateOrConnectWithoutRuntimeModifiersInput = {
+export type TemplateCreateOrConnectWithoutPointPoolsInput = {
   where: Prisma.TemplateWhereUniqueInput
-  create: Prisma.XOR<Prisma.TemplateCreateWithoutRuntimeModifiersInput, Prisma.TemplateUncheckedCreateWithoutRuntimeModifiersInput>
+  create: Prisma.XOR<Prisma.TemplateCreateWithoutPointPoolsInput, Prisma.TemplateUncheckedCreateWithoutPointPoolsInput>
 }
 
-export type TemplateUpsertWithoutRuntimeModifiersInput = {
-  update: Prisma.XOR<Prisma.TemplateUpdateWithoutRuntimeModifiersInput, Prisma.TemplateUncheckedUpdateWithoutRuntimeModifiersInput>
-  create: Prisma.XOR<Prisma.TemplateCreateWithoutRuntimeModifiersInput, Prisma.TemplateUncheckedCreateWithoutRuntimeModifiersInput>
+export type TemplateUpsertWithoutPointPoolsInput = {
+  update: Prisma.XOR<Prisma.TemplateUpdateWithoutPointPoolsInput, Prisma.TemplateUncheckedUpdateWithoutPointPoolsInput>
+  create: Prisma.XOR<Prisma.TemplateCreateWithoutPointPoolsInput, Prisma.TemplateUncheckedCreateWithoutPointPoolsInput>
   where?: Prisma.TemplateWhereInput
 }
 
-export type TemplateUpdateToOneWithWhereWithoutRuntimeModifiersInput = {
+export type TemplateUpdateToOneWithWhereWithoutPointPoolsInput = {
   where?: Prisma.TemplateWhereInput
-  data: Prisma.XOR<Prisma.TemplateUpdateWithoutRuntimeModifiersInput, Prisma.TemplateUncheckedUpdateWithoutRuntimeModifiersInput>
+  data: Prisma.XOR<Prisma.TemplateUpdateWithoutPointPoolsInput, Prisma.TemplateUncheckedUpdateWithoutPointPoolsInput>
 }
 
-export type TemplateUpdateWithoutRuntimeModifiersInput = {
+export type TemplateUpdateWithoutPointPoolsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1138,7 +1138,7 @@ export type TemplateUpdateWithoutRuntimeModifiersInput = {
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
 
-export type TemplateUncheckedUpdateWithoutRuntimeModifiersInput = {
+export type TemplateUncheckedUpdateWithoutPointPoolsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   adventureId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1168,7 +1168,7 @@ export type TemplateCreateWithoutArmorClassInput = {
   templateFields?: Prisma.TemplateFieldCreateNestedManyWithoutTemplateInput
   templateSkills?: Prisma.TemplateSkillCreateNestedManyWithoutTemplateInput
   skillModifierProfiles?: Prisma.SkillModifierProfileCreateNestedManyWithoutTemplateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierCreateNestedManyWithoutTemplateInput
+  pointPools?: Prisma.TemplatePointPoolCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
 
@@ -1185,7 +1185,7 @@ export type TemplateUncheckedCreateWithoutArmorClassInput = {
   templateFields?: Prisma.TemplateFieldUncheckedCreateNestedManyWithoutTemplateInput
   templateSkills?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutTemplateInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedCreateNestedManyWithoutTemplateInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUncheckedCreateNestedManyWithoutTemplateInput
+  pointPools?: Prisma.TemplatePointPoolUncheckedCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
 
@@ -1218,7 +1218,7 @@ export type TemplateUpdateWithoutArmorClassInput = {
   templateFields?: Prisma.TemplateFieldUpdateManyWithoutTemplateNestedInput
   templateSkills?: Prisma.TemplateSkillUpdateManyWithoutTemplateNestedInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUpdateManyWithoutTemplateNestedInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUpdateManyWithoutTemplateNestedInput
+  pointPools?: Prisma.TemplatePointPoolUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
 
@@ -1235,7 +1235,7 @@ export type TemplateUncheckedUpdateWithoutArmorClassInput = {
   templateFields?: Prisma.TemplateFieldUncheckedUpdateManyWithoutTemplateNestedInput
   templateSkills?: Prisma.TemplateSkillUncheckedUpdateManyWithoutTemplateNestedInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedUpdateManyWithoutTemplateNestedInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUncheckedUpdateManyWithoutTemplateNestedInput
+  pointPools?: Prisma.TemplatePointPoolUncheckedUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
 }
 
@@ -1261,7 +1261,7 @@ export type TemplateUpdateWithoutAdventureInput = {
   templateFields?: Prisma.TemplateFieldUpdateManyWithoutTemplateNestedInput
   templateSkills?: Prisma.TemplateSkillUpdateManyWithoutTemplateNestedInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUpdateManyWithoutTemplateNestedInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUpdateManyWithoutTemplateNestedInput
+  pointPools?: Prisma.TemplatePointPoolUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
@@ -1278,7 +1278,7 @@ export type TemplateUncheckedUpdateWithoutAdventureInput = {
   templateFields?: Prisma.TemplateFieldUncheckedUpdateManyWithoutTemplateNestedInput
   templateSkills?: Prisma.TemplateSkillUncheckedUpdateManyWithoutTemplateNestedInput
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedUpdateManyWithoutTemplateNestedInput
-  runtimeModifiers?: Prisma.TemplateRuntimeModifierUncheckedUpdateManyWithoutTemplateNestedInput
+  pointPools?: Prisma.TemplatePointPoolUncheckedUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
 }
@@ -1303,7 +1303,7 @@ export type TemplateCountOutputType = {
   templateFields: number
   templateSkills: number
   skillModifierProfiles: number
-  runtimeModifiers: number
+  pointPools: number
   characterSheets: number
 }
 
@@ -1312,7 +1312,7 @@ export type TemplateCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensio
   templateFields?: boolean | TemplateCountOutputTypeCountTemplateFieldsArgs
   templateSkills?: boolean | TemplateCountOutputTypeCountTemplateSkillsArgs
   skillModifierProfiles?: boolean | TemplateCountOutputTypeCountSkillModifierProfilesArgs
-  runtimeModifiers?: boolean | TemplateCountOutputTypeCountRuntimeModifiersArgs
+  pointPools?: boolean | TemplateCountOutputTypeCountPointPoolsArgs
   characterSheets?: boolean | TemplateCountOutputTypeCountCharacterSheetsArgs
 }
 
@@ -1357,8 +1357,8 @@ export type TemplateCountOutputTypeCountSkillModifierProfilesArgs<ExtArgs extend
 /**
  * TemplateCountOutputType without action
  */
-export type TemplateCountOutputTypeCountRuntimeModifiersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.TemplateRuntimeModifierWhereInput
+export type TemplateCountOutputTypeCountPointPoolsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TemplatePointPoolWhereInput
 }
 
 /**
@@ -1383,7 +1383,7 @@ export type TemplateSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   templateFields?: boolean | Prisma.Template$templateFieldsArgs<ExtArgs>
   templateSkills?: boolean | Prisma.Template$templateSkillsArgs<ExtArgs>
   skillModifierProfiles?: boolean | Prisma.Template$skillModifierProfilesArgs<ExtArgs>
-  runtimeModifiers?: boolean | Prisma.Template$runtimeModifiersArgs<ExtArgs>
+  pointPools?: boolean | Prisma.Template$pointPoolsArgs<ExtArgs>
   armorClass?: boolean | Prisma.Template$armorClassArgs<ExtArgs>
   characterSheets?: boolean | Prisma.Template$characterSheetsArgs<ExtArgs>
   _count?: boolean | Prisma.TemplateCountOutputTypeDefaultArgs<ExtArgs>
@@ -1431,7 +1431,7 @@ export type TemplateInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   templateFields?: boolean | Prisma.Template$templateFieldsArgs<ExtArgs>
   templateSkills?: boolean | Prisma.Template$templateSkillsArgs<ExtArgs>
   skillModifierProfiles?: boolean | Prisma.Template$skillModifierProfilesArgs<ExtArgs>
-  runtimeModifiers?: boolean | Prisma.Template$runtimeModifiersArgs<ExtArgs>
+  pointPools?: boolean | Prisma.Template$pointPoolsArgs<ExtArgs>
   armorClass?: boolean | Prisma.Template$armorClassArgs<ExtArgs>
   characterSheets?: boolean | Prisma.Template$characterSheetsArgs<ExtArgs>
   _count?: boolean | Prisma.TemplateCountOutputTypeDefaultArgs<ExtArgs>
@@ -1451,7 +1451,7 @@ export type $TemplatePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     templateFields: Prisma.$TemplateFieldPayload<ExtArgs>[]
     templateSkills: Prisma.$TemplateSkillPayload<ExtArgs>[]
     skillModifierProfiles: Prisma.$SkillModifierProfilePayload<ExtArgs>[]
-    runtimeModifiers: Prisma.$TemplateRuntimeModifierPayload<ExtArgs>[]
+    pointPools: Prisma.$TemplatePointPoolPayload<ExtArgs>[]
     armorClass: Prisma.$TemplateArmorClassPayload<ExtArgs> | null
     characterSheets: Prisma.$CharacterSheetPayload<ExtArgs>[]
   }
@@ -1863,7 +1863,7 @@ export interface Prisma__TemplateClient<T, Null = never, ExtArgs extends runtime
   templateFields<T extends Prisma.Template$templateFieldsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Template$templateFieldsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TemplateFieldPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   templateSkills<T extends Prisma.Template$templateSkillsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Template$templateSkillsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TemplateSkillPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   skillModifierProfiles<T extends Prisma.Template$skillModifierProfilesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Template$skillModifierProfilesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SkillModifierProfilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  runtimeModifiers<T extends Prisma.Template$runtimeModifiersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Template$runtimeModifiersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TemplateRuntimeModifierPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  pointPools<T extends Prisma.Template$pointPoolsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Template$pointPoolsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TemplatePointPoolPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   armorClass<T extends Prisma.Template$armorClassArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Template$armorClassArgs<ExtArgs>>): Prisma.Prisma__TemplateArmorClassClient<runtime.Types.Result.GetResult<Prisma.$TemplateArmorClassPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   characterSheets<T extends Prisma.Template$characterSheetsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Template$characterSheetsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -2400,27 +2400,27 @@ export type Template$skillModifierProfilesArgs<ExtArgs extends runtime.Types.Ext
 }
 
 /**
- * Template.runtimeModifiers
+ * Template.pointPools
  */
-export type Template$runtimeModifiersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type Template$pointPoolsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the TemplateRuntimeModifier
+   * Select specific fields to fetch from the TemplatePointPool
    */
-  select?: Prisma.TemplateRuntimeModifierSelect<ExtArgs> | null
+  select?: Prisma.TemplatePointPoolSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the TemplateRuntimeModifier
+   * Omit specific fields from the TemplatePointPool
    */
-  omit?: Prisma.TemplateRuntimeModifierOmit<ExtArgs> | null
+  omit?: Prisma.TemplatePointPoolOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.TemplateRuntimeModifierInclude<ExtArgs> | null
-  where?: Prisma.TemplateRuntimeModifierWhereInput
-  orderBy?: Prisma.TemplateRuntimeModifierOrderByWithRelationInput | Prisma.TemplateRuntimeModifierOrderByWithRelationInput[]
-  cursor?: Prisma.TemplateRuntimeModifierWhereUniqueInput
+  include?: Prisma.TemplatePointPoolInclude<ExtArgs> | null
+  where?: Prisma.TemplatePointPoolWhereInput
+  orderBy?: Prisma.TemplatePointPoolOrderByWithRelationInput | Prisma.TemplatePointPoolOrderByWithRelationInput[]
+  cursor?: Prisma.TemplatePointPoolWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.TemplateRuntimeModifierScalarFieldEnum | Prisma.TemplateRuntimeModifierScalarFieldEnum[]
+  distinct?: Prisma.TemplatePointPoolScalarFieldEnum | Prisma.TemplatePointPoolScalarFieldEnum[]
 }
 
 /**

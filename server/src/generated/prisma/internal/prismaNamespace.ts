@@ -401,9 +401,8 @@ export const ModelName = {
   CharacterSheetValue: 'CharacterSheetValue',
   TemplateField: 'TemplateField',
   CharacterSheetFieldValue: 'CharacterSheetFieldValue',
-  TemplateRuntimeModifier: 'TemplateRuntimeModifier',
-  RuntimeModifierComponent: 'RuntimeModifierComponent',
-  CharacterSheetRuntimeModifierComponentValue: 'CharacterSheetRuntimeModifierComponentValue',
+  TemplatePointPool: 'TemplatePointPool',
+  CharacterSheetPointPoolValue: 'CharacterSheetPointPoolValue',
   TemplateArmorClass: 'TemplateArmorClass',
   ArmorClassField: 'ArmorClassField',
   CharacterSheetArmorClassValue: 'CharacterSheetArmorClassValue',
@@ -426,7 +425,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateRuntimeModifier" | "runtimeModifierComponent" | "characterSheetRuntimeModifierComponentValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "characterAbility" | "characterAbilityLevel" | "characterInventoryItem" | "characterStory"
+    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templatePointPool" | "characterSheetPointPoolValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "characterAbility" | "characterAbilityLevel" | "characterInventoryItem" | "characterStory"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1688,225 +1687,151 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    TemplateRuntimeModifier: {
-      payload: Prisma.$TemplateRuntimeModifierPayload<ExtArgs>
-      fields: Prisma.TemplateRuntimeModifierFieldRefs
+    TemplatePointPool: {
+      payload: Prisma.$TemplatePointPoolPayload<ExtArgs>
+      fields: Prisma.TemplatePointPoolFieldRefs
       operations: {
         findUnique: {
-          args: Prisma.TemplateRuntimeModifierFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload> | null
+          args: Prisma.TemplatePointPoolFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplatePointPoolPayload> | null
         }
         findUniqueOrThrow: {
-          args: Prisma.TemplateRuntimeModifierFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>
+          args: Prisma.TemplatePointPoolFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplatePointPoolPayload>
         }
         findFirst: {
-          args: Prisma.TemplateRuntimeModifierFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload> | null
+          args: Prisma.TemplatePointPoolFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplatePointPoolPayload> | null
         }
         findFirstOrThrow: {
-          args: Prisma.TemplateRuntimeModifierFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>
+          args: Prisma.TemplatePointPoolFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplatePointPoolPayload>
         }
         findMany: {
-          args: Prisma.TemplateRuntimeModifierFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>[]
+          args: Prisma.TemplatePointPoolFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplatePointPoolPayload>[]
         }
         create: {
-          args: Prisma.TemplateRuntimeModifierCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>
+          args: Prisma.TemplatePointPoolCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplatePointPoolPayload>
         }
         createMany: {
-          args: Prisma.TemplateRuntimeModifierCreateManyArgs<ExtArgs>
+          args: Prisma.TemplatePointPoolCreateManyArgs<ExtArgs>
           result: BatchPayload
         }
         createManyAndReturn: {
-          args: Prisma.TemplateRuntimeModifierCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>[]
+          args: Prisma.TemplatePointPoolCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplatePointPoolPayload>[]
         }
         delete: {
-          args: Prisma.TemplateRuntimeModifierDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>
+          args: Prisma.TemplatePointPoolDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplatePointPoolPayload>
         }
         update: {
-          args: Prisma.TemplateRuntimeModifierUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>
+          args: Prisma.TemplatePointPoolUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplatePointPoolPayload>
         }
         deleteMany: {
-          args: Prisma.TemplateRuntimeModifierDeleteManyArgs<ExtArgs>
+          args: Prisma.TemplatePointPoolDeleteManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateMany: {
-          args: Prisma.TemplateRuntimeModifierUpdateManyArgs<ExtArgs>
+          args: Prisma.TemplatePointPoolUpdateManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateManyAndReturn: {
-          args: Prisma.TemplateRuntimeModifierUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>[]
+          args: Prisma.TemplatePointPoolUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplatePointPoolPayload>[]
         }
         upsert: {
-          args: Prisma.TemplateRuntimeModifierUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateRuntimeModifierPayload>
+          args: Prisma.TemplatePointPoolUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplatePointPoolPayload>
         }
         aggregate: {
-          args: Prisma.TemplateRuntimeModifierAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateTemplateRuntimeModifier>
+          args: Prisma.TemplatePointPoolAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTemplatePointPool>
         }
         groupBy: {
-          args: Prisma.TemplateRuntimeModifierGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.TemplateRuntimeModifierGroupByOutputType>[]
+          args: Prisma.TemplatePointPoolGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TemplatePointPoolGroupByOutputType>[]
         }
         count: {
-          args: Prisma.TemplateRuntimeModifierCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.TemplateRuntimeModifierCountAggregateOutputType> | number
+          args: Prisma.TemplatePointPoolCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TemplatePointPoolCountAggregateOutputType> | number
         }
       }
     }
-    RuntimeModifierComponent: {
-      payload: Prisma.$RuntimeModifierComponentPayload<ExtArgs>
-      fields: Prisma.RuntimeModifierComponentFieldRefs
+    CharacterSheetPointPoolValue: {
+      payload: Prisma.$CharacterSheetPointPoolValuePayload<ExtArgs>
+      fields: Prisma.CharacterSheetPointPoolValueFieldRefs
       operations: {
         findUnique: {
-          args: Prisma.RuntimeModifierComponentFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierComponentPayload> | null
+          args: Prisma.CharacterSheetPointPoolValueFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetPointPoolValuePayload> | null
         }
         findUniqueOrThrow: {
-          args: Prisma.RuntimeModifierComponentFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierComponentPayload>
+          args: Prisma.CharacterSheetPointPoolValueFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetPointPoolValuePayload>
         }
         findFirst: {
-          args: Prisma.RuntimeModifierComponentFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierComponentPayload> | null
+          args: Prisma.CharacterSheetPointPoolValueFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetPointPoolValuePayload> | null
         }
         findFirstOrThrow: {
-          args: Prisma.RuntimeModifierComponentFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierComponentPayload>
+          args: Prisma.CharacterSheetPointPoolValueFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetPointPoolValuePayload>
         }
         findMany: {
-          args: Prisma.RuntimeModifierComponentFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierComponentPayload>[]
+          args: Prisma.CharacterSheetPointPoolValueFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetPointPoolValuePayload>[]
         }
         create: {
-          args: Prisma.RuntimeModifierComponentCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierComponentPayload>
+          args: Prisma.CharacterSheetPointPoolValueCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetPointPoolValuePayload>
         }
         createMany: {
-          args: Prisma.RuntimeModifierComponentCreateManyArgs<ExtArgs>
+          args: Prisma.CharacterSheetPointPoolValueCreateManyArgs<ExtArgs>
           result: BatchPayload
         }
         createManyAndReturn: {
-          args: Prisma.RuntimeModifierComponentCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierComponentPayload>[]
+          args: Prisma.CharacterSheetPointPoolValueCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetPointPoolValuePayload>[]
         }
         delete: {
-          args: Prisma.RuntimeModifierComponentDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierComponentPayload>
+          args: Prisma.CharacterSheetPointPoolValueDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetPointPoolValuePayload>
         }
         update: {
-          args: Prisma.RuntimeModifierComponentUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierComponentPayload>
+          args: Prisma.CharacterSheetPointPoolValueUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetPointPoolValuePayload>
         }
         deleteMany: {
-          args: Prisma.RuntimeModifierComponentDeleteManyArgs<ExtArgs>
+          args: Prisma.CharacterSheetPointPoolValueDeleteManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateMany: {
-          args: Prisma.RuntimeModifierComponentUpdateManyArgs<ExtArgs>
+          args: Prisma.CharacterSheetPointPoolValueUpdateManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateManyAndReturn: {
-          args: Prisma.RuntimeModifierComponentUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierComponentPayload>[]
+          args: Prisma.CharacterSheetPointPoolValueUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetPointPoolValuePayload>[]
         }
         upsert: {
-          args: Prisma.RuntimeModifierComponentUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$RuntimeModifierComponentPayload>
+          args: Prisma.CharacterSheetPointPoolValueUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetPointPoolValuePayload>
         }
         aggregate: {
-          args: Prisma.RuntimeModifierComponentAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateRuntimeModifierComponent>
+          args: Prisma.CharacterSheetPointPoolValueAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCharacterSheetPointPoolValue>
         }
         groupBy: {
-          args: Prisma.RuntimeModifierComponentGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.RuntimeModifierComponentGroupByOutputType>[]
+          args: Prisma.CharacterSheetPointPoolValueGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterSheetPointPoolValueGroupByOutputType>[]
         }
         count: {
-          args: Prisma.RuntimeModifierComponentCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.RuntimeModifierComponentCountAggregateOutputType> | number
-        }
-      }
-    }
-    CharacterSheetRuntimeModifierComponentValue: {
-      payload: Prisma.$CharacterSheetRuntimeModifierComponentValuePayload<ExtArgs>
-      fields: Prisma.CharacterSheetRuntimeModifierComponentValueFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierComponentValuePayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierComponentValuePayload>
-        }
-        findFirst: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierComponentValuePayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierComponentValuePayload>
-        }
-        findMany: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierComponentValuePayload>[]
-        }
-        create: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierComponentValuePayload>
-        }
-        createMany: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierComponentValuePayload>[]
-        }
-        delete: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierComponentValuePayload>
-        }
-        update: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierComponentValuePayload>
-        }
-        deleteMany: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierComponentValuePayload>[]
-        }
-        upsert: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetRuntimeModifierComponentValuePayload>
-        }
-        aggregate: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateCharacterSheetRuntimeModifierComponentValue>
-        }
-        groupBy: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.CharacterSheetRuntimeModifierComponentValueGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.CharacterSheetRuntimeModifierComponentValueCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.CharacterSheetRuntimeModifierComponentValueCountAggregateOutputType> | number
+          args: Prisma.CharacterSheetPointPoolValueCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterSheetPointPoolValueCountAggregateOutputType> | number
         }
       }
     }
@@ -2702,52 +2627,41 @@ export const CharacterSheetFieldValueScalarFieldEnum = {
 export type CharacterSheetFieldValueScalarFieldEnum = (typeof CharacterSheetFieldValueScalarFieldEnum)[keyof typeof CharacterSheetFieldValueScalarFieldEnum]
 
 
-export const TemplateRuntimeModifierScalarFieldEnum = {
+export const TemplatePointPoolScalarFieldEnum = {
   id: 'id',
   templateId: 'templateId',
-  key: 'key',
   name: 'name',
+  slug: 'slug',
   description: 'description',
+  defaultMaximum: 'defaultMaximum',
+  currentStartsFull: 'currentStartsFull',
+  editableByPlayer: 'editableByPlayer',
   order: 'order',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type TemplateRuntimeModifierScalarFieldEnum = (typeof TemplateRuntimeModifierScalarFieldEnum)[keyof typeof TemplateRuntimeModifierScalarFieldEnum]
+export type TemplatePointPoolScalarFieldEnum = (typeof TemplatePointPoolScalarFieldEnum)[keyof typeof TemplatePointPoolScalarFieldEnum]
 
 
-export const RuntimeModifierComponentScalarFieldEnum = {
-  id: 'id',
-  modifierId: 'modifierId',
-  name: 'name',
-  defaultValue: 'defaultValue',
-  locked: 'locked',
-  formula: 'formula',
-  order: 'order',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type RuntimeModifierComponentScalarFieldEnum = (typeof RuntimeModifierComponentScalarFieldEnum)[keyof typeof RuntimeModifierComponentScalarFieldEnum]
-
-
-export const CharacterSheetRuntimeModifierComponentValueScalarFieldEnum = {
+export const CharacterSheetPointPoolValueScalarFieldEnum = {
   id: 'id',
   sheetId: 'sheetId',
-  componentId: 'componentId',
-  value: 'value',
+  pointPoolId: 'pointPoolId',
+  current: 'current',
+  maximum: 'maximum',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type CharacterSheetRuntimeModifierComponentValueScalarFieldEnum = (typeof CharacterSheetRuntimeModifierComponentValueScalarFieldEnum)[keyof typeof CharacterSheetRuntimeModifierComponentValueScalarFieldEnum]
+export type CharacterSheetPointPoolValueScalarFieldEnum = (typeof CharacterSheetPointPoolValueScalarFieldEnum)[keyof typeof CharacterSheetPointPoolValueScalarFieldEnum]
 
 
 export const TemplateArmorClassScalarFieldEnum = {
   id: 'id',
   templateId: 'templateId',
   enabled: 'enabled',
-  formula: 'formula',
+  attributeModifierIds: 'attributeModifierIds',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -3089,9 +3003,8 @@ export type GlobalOmitConfig = {
   characterSheetValue?: Prisma.CharacterSheetValueOmit
   templateField?: Prisma.TemplateFieldOmit
   characterSheetFieldValue?: Prisma.CharacterSheetFieldValueOmit
-  templateRuntimeModifier?: Prisma.TemplateRuntimeModifierOmit
-  runtimeModifierComponent?: Prisma.RuntimeModifierComponentOmit
-  characterSheetRuntimeModifierComponentValue?: Prisma.CharacterSheetRuntimeModifierComponentValueOmit
+  templatePointPool?: Prisma.TemplatePointPoolOmit
+  characterSheetPointPoolValue?: Prisma.CharacterSheetPointPoolValueOmit
   templateArmorClass?: Prisma.TemplateArmorClassOmit
   armorClassField?: Prisma.ArmorClassFieldOmit
   characterSheetArmorClassValue?: Prisma.CharacterSheetArmorClassValueOmit

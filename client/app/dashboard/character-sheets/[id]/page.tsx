@@ -15,16 +15,13 @@ interface ProfileOption { id: string; label: string; value: number }
 interface SkillModifierProfile { id: string; name: string; options: ProfileOption[] }
 interface SkillProfileValue { id: string; skillId: string; profileId: string; optionId: string | null; profile: { id: string; name: string }; option: { id: string; label: string; value: number } | null }
 
-interface RuntimeModifierComponentDef {
-  id: string; name: string; defaultValue: string | null; locked: boolean; formula: string | null
-  modifier: { id: string; key: string; name: string; description: string | null }
+interface PointPoolDef {
+  id: string; name: string; slug: string; description: string | null
+  defaultMaximum: number; currentStartsFull: boolean; editableByPlayer: boolean
 }
-interface RuntimeModifierDef {
-  id: string; key: string; name: string; description: string | null; components: RuntimeModifierComponentDef[]
-}
-interface RuntimeModifierComponentValue {
-  id: string; componentId: string; value: string
-  component: RuntimeModifierComponentDef
+interface PointPoolValue {
+  id: string; pointPoolId: string; current: number; maximum: number
+  pointPool: PointPoolDef
 }
 
 interface ArmorClassFieldDef {
@@ -53,12 +50,12 @@ interface CharacterSheet {
     skillFormula?: string | null
     attributes: { id: string; key: string; name: string }[]
     skillModifierProfiles: SkillModifierProfile[]
-    runtimeModifiers: RuntimeModifierDef[]
+    pointPools: PointPoolDef[]
     armorClass: ArmorClassDef | null
   }
   values: SheetAttribute[]; fieldValues: FieldValue[]; skillValues: SkillValue[]
   skillProfileValues: SkillProfileValue[]
-  runtimeModifierComponentValues: RuntimeModifierComponentValue[]
+  pointPoolValues: PointPoolValue[]
   acValues: ArmorClassValue[]
   abilities: Ability[]; inventoryItems: InventoryItem[]; story: Story | null
   ownerId: string; createdAt: string
@@ -120,7 +117,6 @@ export default function CharacterSheetDetailPage() {
       if (!isNaN(v)) total += v
     })
     // Add attribute modifiers for each selected attribute
-    // attributeModifierIds stores attribute keys (e.g., "dex"), need to resolve to IDs
     const attrModKeys = ac.attributeModifierIds ?? []
     const fallback = mods ?? modifierResults
     for (const attrKey of attrModKeys) {
@@ -128,7 +124,6 @@ export default function CharacterSheetDetailPage() {
       if (!attr) continue
       const modResult = fallback[attr.id]
       if (modResult !== null && modResult !== undefined && !isNaN(modResult)) {
-        // Negative modifiers do not reduce Armor Class
         total += Math.max(0, modResult)
       }
     }
@@ -143,7 +138,6 @@ export default function CharacterSheetDetailPage() {
       try {
         const vars: Record<string, number> = {}
         sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv => sv.attributeId === a.id)?.value || '0'); vars[a.key] = isNaN(v) ? 0 : v })
-        sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); vars[rcv.component.modifier.key] = isNaN(v) ? 0 : v })
         vars['value'] = parseFloat(sd.values.find(sv => sv.attributeId === attr.id)?.value || '0') || 0
         const res = await api.post<{ result: number }>('/formula/evaluate', { formula: globalFormula, variables: vars })
         results[attr.id] = res.result
@@ -162,7 +156,6 @@ export default function CharacterSheetDetailPage() {
         try {
           const modVars: Record<string, number> = {}
           sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv => sv.attributeId === a.id)?.value || '0'); modVars[a.key] = isNaN(v) ? 0 : v })
-          sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); modVars[rcv.component.modifier.key] = isNaN(v) ? 0 : v })
           modVars['value'] = parseFloat(sd.values.find(sv => sv.attributeId === attr.id)?.value || '0') || 0
           const mr = await api.post<{ result: number }>('/formula/evaluate', { formula: globalFormula, variables: modVars })
           modifierVars[`${attr.key}_mod`] = mr.result
@@ -186,15 +179,12 @@ export default function CharacterSheetDetailPage() {
         let finalResult = 0
 
         if (skillConfig) {
-          // New structured config: compute locally
           if (skillConfig.useAttributeModifier) {
-            // Use the player's selected attribute (or fallback to skill's default/legacy attribute)
             const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
             if (selectedAttr) {
               finalResult += modifierVars[`${selectedAttr.key}_mod`] ?? 0
             }
           }
-          // Add selected custom field values
           const customKeys = skillConfig.customFieldKeys || []
           for (const key of customKeys) {
             const fv = sd.fieldValues.find(f => f.templateField.key === key)
@@ -204,8 +194,6 @@ export default function CharacterSheetDetailPage() {
             }
           }
         } else {
-          // Legacy formula: evaluate server-side
-          // Use player's selected attribute (or fallback to default/legacy)
           const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
           const skillAttrValue = selectedAttr
             ? parseFloat(sd.values.find(sv2 => sv2.attributeId === selectedAttr.id)?.value || '0')
@@ -217,7 +205,6 @@ export default function CharacterSheetDetailPage() {
           }
           sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv2 => sv2.attributeId === a.id)?.value || '0'); variables[a.key] = isNaN(v) ? 0 : v })
           sd.fieldValues.forEach(fv => { const v = parseFloat(fv.value); variables[fv.templateField.key] = isNaN(v) ? 0 : v })
-          sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); variables[rcv.component.modifier.key] = isNaN(v) ? 0 : v })
           variables['level'] = sd.level ?? 1
           const res = await api.post<{ result: number }>('/formula/evaluate', { formula: skillFormulaRaw, variables })
           finalResult = res.result
@@ -226,7 +213,6 @@ export default function CharacterSheetDetailPage() {
         finalResult += (effOthers[sv.skillId] ?? 0)
         const skillSelections = selMap[sv.skillId] || {}
         for (const profile of sd.template.skillModifierProfiles) {
-          // Check targeting: only apply if ALL_SKILLS or this skill is in the selected list
           const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
           const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
           if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(sv.skill.name)) {
@@ -295,13 +281,21 @@ export default function CharacterSheetDetailPage() {
     const mods = await computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated, mods)
   }
 
-  async function handleComponentChange(componentId: string, value: string) {
+  async function handlePointPoolChange(pointPoolId: string, current: number) {
     if (!sheet) return
-    const optimisticSheet = { ...sheet, runtimeModifierComponentValues: sheet.runtimeModifierComponentValues.map(rcv => rcv.componentId === componentId ? { ...rcv, value } : rcv) }
+    const ppv = sheet.pointPoolValues.find(p => p.pointPoolId === pointPoolId)
+    if (!ppv) return
+    // Clamp between 0 and maximum
+    const clamped = Math.max(0, Math.min(current, ppv.maximum))
+    const optimisticSheet = {
+      ...sheet,
+      pointPoolValues: sheet.pointPoolValues.map(p =>
+        p.pointPoolId === pointPoolId ? { ...p, current: clamped } : p
+      ),
+    }
     setSheet(optimisticSheet)
     try {
-      const updated = await updateSheet({ runtimeModifierComponentValues: [{ componentId, value }] })
-      const mods = await computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated, mods)
+      await updateSheet({ pointPoolValues: [{ pointPoolId, current: clamped }] })
     } catch {
       setSheet(sheet)
     }
@@ -343,7 +337,6 @@ export default function CharacterSheetDetailPage() {
 
   async function handleSkillAttributeChange(skillId: string, attributeId: string | null) {
     if (!sheet) return
-    // Optimistic update
     setSheet(prev => {
       if (!prev) return prev
       return {
@@ -364,11 +357,9 @@ export default function CharacterSheetDetailPage() {
     try {
       await api.patch(`/character-sheets/${sheet.id}/skills/${skillId}/attribute`, { attributeId })
     } catch {
-      // Revert on failure
       fetchSheet()
       return
     }
-    // Recompute skills with the new attribute
     const updated = await api.get<CharacterSheet>(`/character-sheets/${sheet.id}`)
     setSheet(updated)
     computeSkills(updated, profileSelections)
@@ -410,7 +401,6 @@ export default function CharacterSheetDetailPage() {
     else if (field === 'damage') body.damage = value.trim() || null
     try {
       await api.patch(`/character-sheets/${sheet.id}/abilities/x/levels/${levelId}`, body)
-      // refresh abilities to get updated level data
       setAbilities(prev => prev.map(a => ({
         ...a,
         levels: a.levels.map(l => l.id === levelId ? { ...l, ...body } : l),
@@ -680,15 +670,40 @@ export default function CharacterSheetDetailPage() {
           </div>
         )}
 
-        {/* Runtime Modifiers */}
-        {sheet.template.runtimeModifiers.length > 0 && (
+        {/* Point Pools */}
+        {sheet.template.pointPools.length > 0 && (
           <div className="card !p-6">
-            <h3 className="font-semibold mb-4">Runtime Modifiers</h3>
+            <h3 className="font-semibold mb-4">Point Pools</h3>
             <div className="grid gap-3 sm:grid-cols-1">
-              {sheet.template.runtimeModifiers.map(modDef => {
-                const compValues = sheet.runtimeModifierComponentValues.filter(rcv => rcv.component.modifier.id === modDef.id)
-                const total = compValues.reduce((sum, rcv) => { const v = parseFloat(rcv.value); return sum + (isNaN(v) ? 0 : v) }, 0)
-                return <CollapsibleRuntimeModifier key={modDef.id} modDef={modDef} compValues={compValues} total={total} isOwner={isOwner} onChange={handleComponentChange} />
+              {sheet.template.pointPools.map(pool => {
+                const ppv = sheet.pointPoolValues.find(v => v.pointPoolId === pool.id)
+                const current = ppv?.current ?? (pool.currentStartsFull ? pool.defaultMaximum : 0)
+                const maximum = ppv?.maximum ?? pool.defaultMaximum
+                const canEdit = isOwner && pool.editableByPlayer
+                return (
+                  <div key={pool.id} className="rounded-lg border border-border bg-background/30 p-4 flex items-center justify-between">
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium text-foreground">{pool.name}</span>
+                      {pool.description && <span className="text-xs text-muted ml-2">— {pool.description}</span>}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-3">
+                      {canEdit ? (
+                        <input
+                          type="number"
+                          min={0}
+                          max={maximum}
+                          className="input-field py-1 text-xs w-20 text-center font-semibold"
+                          value={current}
+                          onChange={e => handlePointPoolChange(pool.id, parseInt(e.target.value, 10) || 0)}
+                        />
+                      ) : (
+                        <span className="text-sm font-semibold text-foreground">{current}</span>
+                      )}
+                      <span className="text-sm text-muted">/</span>
+                      <span className="text-sm font-semibold text-foreground">{maximum}</span>
+                    </div>
+                  </div>
+                )
               })}
             </div>
           </div>
@@ -753,7 +768,6 @@ export default function CharacterSheetDetailPage() {
         setLevelModalSaving={setLevelModalSaving}
         levelModalError={levelModalError}
         setLevelModalError={setLevelModalError}
-        inlineSaveLevelField={saveLevelField}
       />}
 
       {/* Inventory Tab */}
@@ -863,36 +877,6 @@ function StoryField({ label, value }: { label: string; value: string | null | un
   const text = value?.trim()
   if (!text) return null
   return <div><h4 className="text-sm font-medium text-muted mb-1">{label}</h4><p className="text-sm text-foreground/80 whitespace-pre-wrap">{text}</p></div>
-}
-
-function CollapsibleRuntimeModifier({ modDef, compValues, total, isOwner, onChange }: { modDef: RuntimeModifierDef; compValues: RuntimeModifierComponentValue[]; total: number; isOwner: boolean; onChange: (componentId: string, value: string) => void }) {
-  const [expanded, setExpanded] = useState(false)
-  return <div className="rounded-lg border border-border bg-background/30 overflow-hidden">
-    <button type="button" onClick={() => setExpanded(!expanded)} className="flex items-center justify-between w-full px-4 py-3 text-left hover:bg-background/50 transition-colors">
-      <div className="min-w-0"><span className="text-sm font-medium text-foreground">{modDef.name}</span>{modDef.description && <span className="text-xs text-muted ml-2">— {modDef.description}</span>}</div>
-      <div className="flex items-center gap-2 shrink-0 ml-3"><span className="text-base font-bold text-primary">{total}</span><svg className={`w-4 h-4 text-muted transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg></div>
-    </button>
-    {expanded && <div className="px-4 py-3 space-y-2 border-t border-border ml-4">
-      {modDef.components.map(comp => {
-        const rcv = compValues.find(v => v.componentId === comp.id)
-        const val = rcv?.value ?? comp.defaultValue ?? '0'
-        const isLocked = comp.locked || !!comp.formula
-        const displayVal = comp.formula ? comp.formula : val
-        return (
-          <div key={comp.id} className="flex items-center gap-2">
-            <span className="text-xs text-muted shrink-0 min-w-[100px]">{comp.name}</span>
-            {isOwner && !isLocked ? (
-              <input type="number" className="input-field py-1 text-xs w-20" value={val} onChange={e => onChange(comp.id, e.target.value)} />
-            ) : (
-              <span className="text-sm font-semibold text-foreground">{displayVal}</span>
-            )}
-            {comp.formula && <span className="text-[0.6rem] text-primary ml-1">formula</span>}
-            {comp.locked && !comp.formula && <span className="text-[0.6rem] text-muted ml-1">locked</span>}
-          </div>
-        )
-      })}
-    </div>}
-  </div>
 }
 
 function CollapsibleSkillRow({ skill, result, profiles, selections, active, others, onToggleActive, onOthersChange, onProfileChange, onAttributeChange, templateAttributes }: { skill: SkillValue; result: number | null; profiles: SkillModifierProfile[]; selections: Record<string, string | null>; active: boolean; others: number; onToggleActive: () => void; onOthersChange: (v: number) => void; onProfileChange: (profileId: string, optionId: string | null) => void; onAttributeChange?: (attributeId: string | null) => void; templateAttributes?: { id: string; key: string; name: string }[] }) {
@@ -1037,7 +1021,6 @@ function AbilitiesTab({
   abilitySaving, abilityError, handleCreateAbility, resetNewAbility, handleDeleteAbility,
   showAddLevelModal, setShowAddLevelModal, newLevelForm, setNewLevelForm,
   levelModalSaving, setLevelModalSaving, levelModalError, setLevelModalError,
-  inlineSaveLevelField,
 }: {
   abilities: Ability[]; isOwner: boolean; sheetId: string
   selectedLevels: Record<string, string>
@@ -1054,7 +1037,6 @@ function AbilitiesTab({
   setNewLevelForm: React.Dispatch<React.SetStateAction<{ level: number; copyFromPrevious: boolean }>>
   levelModalSaving: boolean; setLevelModalSaving: React.Dispatch<React.SetStateAction<boolean>>
   levelModalError: string | null; setLevelModalError: React.Dispatch<React.SetStateAction<string | null>>
-  inlineSaveLevelField: (levelId: string, field: string, value: string) => Promise<void>
 }) {
   // Confirmation state
   const [confirmDeleteAbility, setConfirmDeleteAbility] = useState<string | null>(null) // abilityId
@@ -1192,17 +1174,17 @@ function AbilitiesTab({
                     {isOwner ? (
                       <>
                         <span className="inline-flex items-center gap-1">Mana:
-                          <InlineClickEdit value={selLevel.manaCost?.toString() ?? ''} onSave={async (v) => inlineSaveLevelField(selLevel.id, 'manaCost', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" />
+                          <InlineClickEdit value={selLevel.manaCost?.toString() ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { manaCost: v.trim() ? parseInt(v, 10) : null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, manaCost: v.trim() ? parseInt(v, 10) : null } : l) }))) } catch {} }} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" />
                         </span>
                         <span className="inline-flex items-center gap-1">Range:
-                          <InlineClickEdit value={selLevel.range ?? ''} onSave={async (v) => inlineSaveLevelField(selLevel.id, 'range', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" />
+                          <InlineClickEdit value={selLevel.range ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { range: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, range: v.trim() || null } : l) }))) } catch {} }} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" />
                         </span>
                         <span className="inline-flex items-center gap-1">Cooldown:
-                          <InlineClickEdit value={selLevel.cooldown ?? ''} onSave={async (v) => inlineSaveLevelField(selLevel.id, 'cooldown', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-20" emptyDisplay="—" />
+                          <InlineClickEdit value={selLevel.cooldown ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { cooldown: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, cooldown: v.trim() || null } : l) }))) } catch {} }} className="!text-xs !text-muted" inputClassName="!text-xs w-20" emptyDisplay="—" />
                         </span>
                         {selLevel.damage != null && (
                           <span className="inline-flex items-center gap-1">Damage:
-                            <InlineClickEdit value={selLevel.damage ?? ''} onSave={async (v) => inlineSaveLevelField(selLevel.id, 'damage', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" />
+                            <InlineClickEdit value={selLevel.damage ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { damage: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, damage: v.trim() || null } : l) }))) } catch {} }} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" />
                           </span>
                         )}
                       </>
@@ -1218,7 +1200,7 @@ function AbilitiesTab({
                   {isOwner ? (
                     <div>
                       <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
-                      <InlineClickEdit value={selLevel.description ?? ''} onSave={async (v) => inlineSaveLevelField(selLevel.id, 'description', v)} as="textarea" className="text-sm text-muted-foreground whitespace-pre-wrap" emptyDisplay="Add description..." />
+                      <InlineClickEdit value={selLevel.description ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { description: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, description: v.trim() || null } : l) }))) } catch {} }} as="textarea" className="text-sm text-muted-foreground whitespace-pre-wrap" emptyDisplay="Add description..." />
                     </div>
                   ) : (
                     selLevel.description && (
@@ -1228,7 +1210,7 @@ function AbilitiesTab({
                   {isOwner ? (
                     <div>
                       <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
-                      <InlineClickEdit value={selLevel.notes ?? ''} onSave={async (v) => inlineSaveLevelField(selLevel.id, 'notes', v)} as="textarea" className="text-xs text-muted italic whitespace-pre-wrap" emptyDisplay="Add notes..." />
+                      <InlineClickEdit value={selLevel.notes ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { notes: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, notes: v.trim() || null } : l) }))) } catch {} }} as="textarea" className="text-xs text-muted italic whitespace-pre-wrap" emptyDisplay="Add notes..." />
                     </div>
                   ) : (
                     selLevel.notes && (

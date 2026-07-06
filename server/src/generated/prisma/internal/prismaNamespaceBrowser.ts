@@ -68,9 +68,8 @@ export const ModelName = {
   CharacterSheetValue: 'CharacterSheetValue',
   TemplateField: 'TemplateField',
   CharacterSheetFieldValue: 'CharacterSheetFieldValue',
-  TemplateRuntimeModifier: 'TemplateRuntimeModifier',
-  RuntimeModifierComponent: 'RuntimeModifierComponent',
-  CharacterSheetRuntimeModifierComponentValue: 'CharacterSheetRuntimeModifierComponentValue',
+  TemplatePointPool: 'TemplatePointPool',
+  CharacterSheetPointPoolValue: 'CharacterSheetPointPoolValue',
   TemplateArmorClass: 'TemplateArmorClass',
   ArmorClassField: 'ArmorClassField',
   CharacterSheetArmorClassValue: 'CharacterSheetArmorClassValue',
@@ -331,52 +330,41 @@ export const CharacterSheetFieldValueScalarFieldEnum = {
 export type CharacterSheetFieldValueScalarFieldEnum = (typeof CharacterSheetFieldValueScalarFieldEnum)[keyof typeof CharacterSheetFieldValueScalarFieldEnum]
 
 
-export const TemplateRuntimeModifierScalarFieldEnum = {
+export const TemplatePointPoolScalarFieldEnum = {
   id: 'id',
   templateId: 'templateId',
-  key: 'key',
   name: 'name',
+  slug: 'slug',
   description: 'description',
+  defaultMaximum: 'defaultMaximum',
+  currentStartsFull: 'currentStartsFull',
+  editableByPlayer: 'editableByPlayer',
   order: 'order',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type TemplateRuntimeModifierScalarFieldEnum = (typeof TemplateRuntimeModifierScalarFieldEnum)[keyof typeof TemplateRuntimeModifierScalarFieldEnum]
+export type TemplatePointPoolScalarFieldEnum = (typeof TemplatePointPoolScalarFieldEnum)[keyof typeof TemplatePointPoolScalarFieldEnum]
 
 
-export const RuntimeModifierComponentScalarFieldEnum = {
-  id: 'id',
-  modifierId: 'modifierId',
-  name: 'name',
-  defaultValue: 'defaultValue',
-  locked: 'locked',
-  formula: 'formula',
-  order: 'order',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type RuntimeModifierComponentScalarFieldEnum = (typeof RuntimeModifierComponentScalarFieldEnum)[keyof typeof RuntimeModifierComponentScalarFieldEnum]
-
-
-export const CharacterSheetRuntimeModifierComponentValueScalarFieldEnum = {
+export const CharacterSheetPointPoolValueScalarFieldEnum = {
   id: 'id',
   sheetId: 'sheetId',
-  componentId: 'componentId',
-  value: 'value',
+  pointPoolId: 'pointPoolId',
+  current: 'current',
+  maximum: 'maximum',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type CharacterSheetRuntimeModifierComponentValueScalarFieldEnum = (typeof CharacterSheetRuntimeModifierComponentValueScalarFieldEnum)[keyof typeof CharacterSheetRuntimeModifierComponentValueScalarFieldEnum]
+export type CharacterSheetPointPoolValueScalarFieldEnum = (typeof CharacterSheetPointPoolValueScalarFieldEnum)[keyof typeof CharacterSheetPointPoolValueScalarFieldEnum]
 
 
 export const TemplateArmorClassScalarFieldEnum = {
   id: 'id',
   templateId: 'templateId',
   enabled: 'enabled',
-  formula: 'formula',
+  attributeModifierIds: 'attributeModifierIds',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

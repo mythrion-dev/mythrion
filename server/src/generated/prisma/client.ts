@@ -127,20 +127,15 @@ export type TemplateField = Prisma.TemplateFieldModel
  */
 export type CharacterSheetFieldValue = Prisma.CharacterSheetFieldValueModel
 /**
- * Model TemplateRuntimeModifier
+ * Model TemplatePointPool
  * 
  */
-export type TemplateRuntimeModifier = Prisma.TemplateRuntimeModifierModel
+export type TemplatePointPool = Prisma.TemplatePointPoolModel
 /**
- * Model RuntimeModifierComponent
+ * Model CharacterSheetPointPoolValue
  * 
  */
-export type RuntimeModifierComponent = Prisma.RuntimeModifierComponentModel
-/**
- * Model CharacterSheetRuntimeModifierComponentValue
- * 
- */
-export type CharacterSheetRuntimeModifierComponentValue = Prisma.CharacterSheetRuntimeModifierComponentValueModel
+export type CharacterSheetPointPoolValue = Prisma.CharacterSheetPointPoolValueModel
 /**
  * Model TemplateArmorClass
  * 

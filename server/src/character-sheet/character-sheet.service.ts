@@ -21,10 +21,7 @@ const sheetInclude = {
         orderBy: { order: 'asc' as const },
         include: { options: { orderBy: { order: 'asc' as const } } },
       },
-      runtimeModifiers: {
-        orderBy: { order: 'asc' as const },
-        include: { components: { orderBy: { order: 'asc' as const } } },
-      },
+      pointPools: { orderBy: { order: 'asc' as const } },
       armorClass: {
         include: { fields: { orderBy: { order: 'asc' as const } } },
       },
@@ -57,23 +54,17 @@ const sheetInclude = {
       field: { select: { id: true, name: true, key: true, defaultValue: true, editableByPlayer: true, description: true, armorClass: { select: { id: true, attributeModifierIds: true } } } },
     },
   },
-  runtimeModifierComponentValues: {
+  pointPoolValues: {
     include: {
-      component: {
+      pointPool: {
         select: {
           id: true,
           name: true,
-          defaultValue: true,
-          locked: true,
-          formula: true,
-          modifier: {
-            select: {
-              id: true,
-              key: true,
-              name: true,
-              description: true,
-            },
-          },
+          slug: true,
+          description: true,
+          defaultMaximum: true,
+          currentStartsFull: true,
+          editableByPlayer: true,
         },
       },
     },
@@ -105,7 +96,7 @@ export class CharacterSheetService {
         templateFields: true,
       templateSkills: { select: { id: true, name: true, description: true, templateId: true, order: true, attributeId: true, defaultAttributeId: true, allowedAttributeIds: true } },
         skillModifierProfiles: { include: { options: { orderBy: { order: 'asc' } } } },
-        runtimeModifiers: { include: { components: { orderBy: { order: 'asc' } } } },
+        pointPools: true,
       },
     })
     if (!template) throw new NotFoundException('Template not found')
@@ -139,7 +130,6 @@ export class CharacterSheetService {
       }
     }
 
-
     // Fetch AC config for this template
     const armorClass = await this.prisma.templateArmorClass.findUnique({
       where: { templateId: template.id },
@@ -166,13 +156,12 @@ export class CharacterSheetService {
         skillProfileValues: {
           create: skillProfileValues.map(spv => ({ skillId: spv.skillId, profileId: spv.profileId, optionId: spv.optionId })),
         },
-        runtimeModifierComponentValues: {
-          create: template.runtimeModifiers.flatMap(mod =>
-            mod.components.map(c => ({
-              componentId: c.id,
-              value: c.defaultValue ?? '0',
-            })),
-          ),
+        pointPoolValues: {
+          create: (template.pointPools || []).map(pool => ({
+            pointPoolId: pool.id,
+            current: pool.currentStartsFull ? pool.defaultMaximum : 0,
+            maximum: pool.defaultMaximum,
+          })),
         },
         ...(armorClass?.enabled && armorClass.fields.length > 0
           ? {
@@ -273,13 +262,25 @@ export class CharacterSheetService {
           update: { optionId: spv.optionId },
         })
     }
-    if (dto.runtimeModifierComponentValues) {
-      for (const rmc of dto.runtimeModifierComponentValues)
-        await this.prisma.characterSheetRuntimeModifierComponentValue.upsert({
-          where: { sheetId_componentId: { sheetId: id, componentId: rmc.componentId } },
-          create: { sheetId: id, componentId: rmc.componentId, value: rmc.value },
-          update: { value: rmc.value },
+    if (dto.pointPoolValues) {
+      for (const ppv of dto.pointPoolValues) {
+        // Validate: 0 <= current <= maximum
+        const existingPoolValue = await this.prisma.characterSheetPointPoolValue.findFirst({
+          where: { pointPoolId: ppv.pointPoolId },
+          include: { pointPool: { select: { name: true, editableByPlayer: true } } },
         })
+        // Only allow editing if pool is editable by player
+        if (existingPoolValue && !existingPoolValue.pointPool.editableByPlayer) {
+          throw new ForbiddenException(`Point pool "${existingPoolValue.pointPool.name}" is not editable by players`)
+        }
+        const max = ppv.maximum ?? (existingPoolValue?.maximum ?? 0)
+        const clampedCurrent = Math.max(0, Math.min(ppv.current, max))
+        await this.prisma.characterSheetPointPoolValue.upsert({
+          where: { sheetId_pointPoolId: { sheetId: id, pointPoolId: ppv.pointPoolId } },
+          create: { sheetId: id, pointPoolId: ppv.pointPoolId, current: clampedCurrent, maximum: max },
+          update: { current: clampedCurrent },
+        })
+      }
     }
     if (dto.acValues) {
       for (const acv of dto.acValues)

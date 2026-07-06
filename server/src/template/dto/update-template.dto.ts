@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, ValidateNested, IsNumber, ArrayMinSize, IsBoolean } from 'class-validator'
+import { IsString, IsOptional, IsArray, ValidateNested, IsNumber, ArrayMinSize, IsInt, IsBoolean } from 'class-validator'
 import { Type } from 'class-transformer'
 
 export class UpdateAttributeDefDto {
@@ -67,39 +67,27 @@ export class UpdateSkillModifierProfileDefDto {
   options!: UpdateProfileOptionDefDto[]
 }
 
-export class UpdateRuntimeModifierComponentDefDto {
+export class UpdatePointPoolDefDto {
   @IsString()
   name!: string
 
   @IsString()
-  @IsOptional()
-  defaultValue?: string
-
-  @IsBoolean()
-  @IsOptional()
-  locked?: boolean
-
-  @IsString()
-  @IsOptional()
-  formula?: string
-}
-
-export class UpdateRuntimeModifierDefDto {
-  @IsString()
-  key!: string
-
-  @IsString()
-  name!: string
+  slug!: string
 
   @IsString()
   @IsOptional()
   description?: string
 
-  @IsArray()
-  @ValidateNested({ each: true })
+  @IsInt()
+  defaultMaximum!: number
+
+  @IsBoolean()
   @IsOptional()
-  @Type(() => UpdateRuntimeModifierComponentDefDto)
-  components?: UpdateRuntimeModifierComponentDefDto[]
+  currentStartsFull?: boolean
+
+  @IsBoolean()
+  @IsOptional()
+  editableByPlayer?: boolean
 }
 
 export class UpdateArmorClassFieldDefDto {
@@ -177,8 +165,8 @@ export class UpdateTemplateDto {
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
-  @Type(() => UpdateRuntimeModifierDefDto)
-  runtimeModifiers?: UpdateRuntimeModifierDefDto[]
+  @Type(() => UpdatePointPoolDefDto)
+  pointPools?: UpdatePointPoolDefDto[]
 
   @ValidateNested()
   @IsOptional()

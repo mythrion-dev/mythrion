@@ -28,7 +28,6 @@ export type TemplateArmorClassMinAggregateOutputType = {
   id: string | null
   templateId: string | null
   enabled: boolean | null
-  formula: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -37,7 +36,6 @@ export type TemplateArmorClassMaxAggregateOutputType = {
   id: string | null
   templateId: string | null
   enabled: boolean | null
-  formula: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -46,7 +44,7 @@ export type TemplateArmorClassCountAggregateOutputType = {
   id: number
   templateId: number
   enabled: number
-  formula: number
+  attributeModifierIds: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -57,7 +55,6 @@ export type TemplateArmorClassMinAggregateInputType = {
   id?: true
   templateId?: true
   enabled?: true
-  formula?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -66,7 +63,6 @@ export type TemplateArmorClassMaxAggregateInputType = {
   id?: true
   templateId?: true
   enabled?: true
-  formula?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -75,7 +71,7 @@ export type TemplateArmorClassCountAggregateInputType = {
   id?: true
   templateId?: true
   enabled?: true
-  formula?: true
+  attributeModifierIds?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -157,7 +153,7 @@ export type TemplateArmorClassGroupByOutputType = {
   id: string
   templateId: string
   enabled: boolean
-  formula: string | null
+  attributeModifierIds: string[]
   createdAt: Date
   updatedAt: Date
   _count: TemplateArmorClassCountAggregateOutputType | null
@@ -187,7 +183,7 @@ export type TemplateArmorClassWhereInput = {
   id?: Prisma.StringFilter<"TemplateArmorClass"> | string
   templateId?: Prisma.StringFilter<"TemplateArmorClass"> | string
   enabled?: Prisma.BoolFilter<"TemplateArmorClass"> | boolean
-  formula?: Prisma.StringNullableFilter<"TemplateArmorClass"> | string | null
+  attributeModifierIds?: Prisma.StringNullableListFilter<"TemplateArmorClass">
   createdAt?: Prisma.DateTimeFilter<"TemplateArmorClass"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TemplateArmorClass"> | Date | string
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
@@ -198,7 +194,7 @@ export type TemplateArmorClassOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   templateId?: Prisma.SortOrder
   enabled?: Prisma.SortOrder
-  formula?: Prisma.SortOrderInput | Prisma.SortOrder
+  attributeModifierIds?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   template?: Prisma.TemplateOrderByWithRelationInput
@@ -212,7 +208,7 @@ export type TemplateArmorClassWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.TemplateArmorClassWhereInput[]
   NOT?: Prisma.TemplateArmorClassWhereInput | Prisma.TemplateArmorClassWhereInput[]
   enabled?: Prisma.BoolFilter<"TemplateArmorClass"> | boolean
-  formula?: Prisma.StringNullableFilter<"TemplateArmorClass"> | string | null
+  attributeModifierIds?: Prisma.StringNullableListFilter<"TemplateArmorClass">
   createdAt?: Prisma.DateTimeFilter<"TemplateArmorClass"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TemplateArmorClass"> | Date | string
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
@@ -223,7 +219,7 @@ export type TemplateArmorClassOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   templateId?: Prisma.SortOrder
   enabled?: Prisma.SortOrder
-  formula?: Prisma.SortOrderInput | Prisma.SortOrder
+  attributeModifierIds?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.TemplateArmorClassCountOrderByAggregateInput
@@ -238,7 +234,7 @@ export type TemplateArmorClassScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"TemplateArmorClass"> | string
   templateId?: Prisma.StringWithAggregatesFilter<"TemplateArmorClass"> | string
   enabled?: Prisma.BoolWithAggregatesFilter<"TemplateArmorClass"> | boolean
-  formula?: Prisma.StringNullableWithAggregatesFilter<"TemplateArmorClass"> | string | null
+  attributeModifierIds?: Prisma.StringNullableListFilter<"TemplateArmorClass">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"TemplateArmorClass"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"TemplateArmorClass"> | Date | string
 }
@@ -246,7 +242,7 @@ export type TemplateArmorClassScalarWhereWithAggregatesInput = {
 export type TemplateArmorClassCreateInput = {
   id?: string
   enabled?: boolean
-  formula?: string | null
+  attributeModifierIds?: Prisma.TemplateArmorClassCreateattributeModifierIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   template: Prisma.TemplateCreateNestedOneWithoutArmorClassInput
@@ -257,7 +253,7 @@ export type TemplateArmorClassUncheckedCreateInput = {
   id?: string
   templateId: string
   enabled?: boolean
-  formula?: string | null
+  attributeModifierIds?: Prisma.TemplateArmorClassCreateattributeModifierIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   fields?: Prisma.ArmorClassFieldUncheckedCreateNestedManyWithoutArmorClassInput
@@ -266,7 +262,7 @@ export type TemplateArmorClassUncheckedCreateInput = {
 export type TemplateArmorClassUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  formula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifierIds?: Prisma.TemplateArmorClassUpdateattributeModifierIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   template?: Prisma.TemplateUpdateOneRequiredWithoutArmorClassNestedInput
@@ -277,7 +273,7 @@ export type TemplateArmorClassUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  formula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifierIds?: Prisma.TemplateArmorClassUpdateattributeModifierIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fields?: Prisma.ArmorClassFieldUncheckedUpdateManyWithoutArmorClassNestedInput
@@ -287,7 +283,7 @@ export type TemplateArmorClassCreateManyInput = {
   id?: string
   templateId: string
   enabled?: boolean
-  formula?: string | null
+  attributeModifierIds?: Prisma.TemplateArmorClassCreateattributeModifierIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -295,7 +291,7 @@ export type TemplateArmorClassCreateManyInput = {
 export type TemplateArmorClassUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  formula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifierIds?: Prisma.TemplateArmorClassUpdateattributeModifierIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -304,7 +300,7 @@ export type TemplateArmorClassUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  formula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifierIds?: Prisma.TemplateArmorClassUpdateattributeModifierIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -318,7 +314,7 @@ export type TemplateArmorClassCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   templateId?: Prisma.SortOrder
   enabled?: Prisma.SortOrder
-  formula?: Prisma.SortOrder
+  attributeModifierIds?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -327,7 +323,6 @@ export type TemplateArmorClassMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   templateId?: Prisma.SortOrder
   enabled?: Prisma.SortOrder
-  formula?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -336,7 +331,6 @@ export type TemplateArmorClassMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   templateId?: Prisma.SortOrder
   enabled?: Prisma.SortOrder
-  formula?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -378,6 +372,15 @@ export type TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.TemplateArmorClassUpdateToOneWithWhereWithoutTemplateInput, Prisma.TemplateArmorClassUpdateWithoutTemplateInput>, Prisma.TemplateArmorClassUncheckedUpdateWithoutTemplateInput>
 }
 
+export type TemplateArmorClassCreateattributeModifierIdsInput = {
+  set: string[]
+}
+
+export type TemplateArmorClassUpdateattributeModifierIdsInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
 export type TemplateArmorClassCreateNestedOneWithoutFieldsInput = {
   create?: Prisma.XOR<Prisma.TemplateArmorClassCreateWithoutFieldsInput, Prisma.TemplateArmorClassUncheckedCreateWithoutFieldsInput>
   connectOrCreate?: Prisma.TemplateArmorClassCreateOrConnectWithoutFieldsInput
@@ -395,7 +398,7 @@ export type TemplateArmorClassUpdateOneRequiredWithoutFieldsNestedInput = {
 export type TemplateArmorClassCreateWithoutTemplateInput = {
   id?: string
   enabled?: boolean
-  formula?: string | null
+  attributeModifierIds?: Prisma.TemplateArmorClassCreateattributeModifierIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   fields?: Prisma.ArmorClassFieldCreateNestedManyWithoutArmorClassInput
@@ -404,7 +407,7 @@ export type TemplateArmorClassCreateWithoutTemplateInput = {
 export type TemplateArmorClassUncheckedCreateWithoutTemplateInput = {
   id?: string
   enabled?: boolean
-  formula?: string | null
+  attributeModifierIds?: Prisma.TemplateArmorClassCreateattributeModifierIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   fields?: Prisma.ArmorClassFieldUncheckedCreateNestedManyWithoutArmorClassInput
@@ -429,7 +432,7 @@ export type TemplateArmorClassUpdateToOneWithWhereWithoutTemplateInput = {
 export type TemplateArmorClassUpdateWithoutTemplateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  formula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifierIds?: Prisma.TemplateArmorClassUpdateattributeModifierIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fields?: Prisma.ArmorClassFieldUpdateManyWithoutArmorClassNestedInput
@@ -438,7 +441,7 @@ export type TemplateArmorClassUpdateWithoutTemplateInput = {
 export type TemplateArmorClassUncheckedUpdateWithoutTemplateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  formula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifierIds?: Prisma.TemplateArmorClassUpdateattributeModifierIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fields?: Prisma.ArmorClassFieldUncheckedUpdateManyWithoutArmorClassNestedInput
@@ -447,7 +450,7 @@ export type TemplateArmorClassUncheckedUpdateWithoutTemplateInput = {
 export type TemplateArmorClassCreateWithoutFieldsInput = {
   id?: string
   enabled?: boolean
-  formula?: string | null
+  attributeModifierIds?: Prisma.TemplateArmorClassCreateattributeModifierIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   template: Prisma.TemplateCreateNestedOneWithoutArmorClassInput
@@ -457,7 +460,7 @@ export type TemplateArmorClassUncheckedCreateWithoutFieldsInput = {
   id?: string
   templateId: string
   enabled?: boolean
-  formula?: string | null
+  attributeModifierIds?: Prisma.TemplateArmorClassCreateattributeModifierIdsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -481,7 +484,7 @@ export type TemplateArmorClassUpdateToOneWithWhereWithoutFieldsInput = {
 export type TemplateArmorClassUpdateWithoutFieldsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  formula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifierIds?: Prisma.TemplateArmorClassUpdateattributeModifierIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   template?: Prisma.TemplateUpdateOneRequiredWithoutArmorClassNestedInput
@@ -491,7 +494,7 @@ export type TemplateArmorClassUncheckedUpdateWithoutFieldsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  formula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifierIds?: Prisma.TemplateArmorClassUpdateattributeModifierIdsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -531,7 +534,7 @@ export type TemplateArmorClassSelect<ExtArgs extends runtime.Types.Extensions.In
   id?: boolean
   templateId?: boolean
   enabled?: boolean
-  formula?: boolean
+  attributeModifierIds?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
@@ -543,7 +546,7 @@ export type TemplateArmorClassSelectCreateManyAndReturn<ExtArgs extends runtime.
   id?: boolean
   templateId?: boolean
   enabled?: boolean
-  formula?: boolean
+  attributeModifierIds?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
@@ -553,7 +556,7 @@ export type TemplateArmorClassSelectUpdateManyAndReturn<ExtArgs extends runtime.
   id?: boolean
   templateId?: boolean
   enabled?: boolean
-  formula?: boolean
+  attributeModifierIds?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
@@ -563,12 +566,12 @@ export type TemplateArmorClassSelectScalar = {
   id?: boolean
   templateId?: boolean
   enabled?: boolean
-  formula?: boolean
+  attributeModifierIds?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TemplateArmorClassOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "templateId" | "enabled" | "formula" | "createdAt" | "updatedAt", ExtArgs["result"]["templateArmorClass"]>
+export type TemplateArmorClassOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "templateId" | "enabled" | "attributeModifierIds" | "createdAt" | "updatedAt", ExtArgs["result"]["templateArmorClass"]>
 export type TemplateArmorClassInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   fields?: boolean | Prisma.TemplateArmorClass$fieldsArgs<ExtArgs>
@@ -591,7 +594,7 @@ export type $TemplateArmorClassPayload<ExtArgs extends runtime.Types.Extensions.
     id: string
     templateId: string
     enabled: boolean
-    formula: string | null
+    attributeModifierIds: string[]
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["templateArmorClass"]>
@@ -1022,7 +1025,7 @@ export interface TemplateArmorClassFieldRefs {
   readonly id: Prisma.FieldRef<"TemplateArmorClass", 'String'>
   readonly templateId: Prisma.FieldRef<"TemplateArmorClass", 'String'>
   readonly enabled: Prisma.FieldRef<"TemplateArmorClass", 'Boolean'>
-  readonly formula: Prisma.FieldRef<"TemplateArmorClass", 'String'>
+  readonly attributeModifierIds: Prisma.FieldRef<"TemplateArmorClass", 'String[]'>
   readonly createdAt: Prisma.FieldRef<"TemplateArmorClass", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"TemplateArmorClass", 'DateTime'>
 }

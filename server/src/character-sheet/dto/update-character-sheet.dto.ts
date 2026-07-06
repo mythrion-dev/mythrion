@@ -41,6 +41,28 @@ export class SkillProfileValueDto {
   optionId?: string | null
 }
 
+export class PointPoolValueDto {
+  @IsString()
+  pointPoolId!: string
+
+  @IsInt()
+  @Type(() => Number)
+  current!: number
+
+  @IsInt()
+  @IsOptional()
+  @Type(() => Number)
+  maximum?: number
+}
+
+export class ArmorClassValueDto {
+  @IsString()
+  fieldId!: string
+
+  @IsString()
+  value!: string
+}
+
 export class UpdateCharacterSheetDto {
   @IsString()
   @IsOptional()
@@ -97,28 +119,12 @@ export class UpdateCharacterSheetDto {
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
-  @Type(() => RuntimeModifierComponentValueDto)
-  runtimeModifierComponentValues?: RuntimeModifierComponentValueDto[]
+  @Type(() => PointPoolValueDto)
+  pointPoolValues?: PointPoolValueDto[]
 
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => ArmorClassValueDto)
   acValues?: ArmorClassValueDto[]
-}
-
-export class RuntimeModifierComponentValueDto {
-  @IsString()
-  componentId!: string
-
-  @IsString()
-  value!: string
-}
-
-export class ArmorClassValueDto {
-  @IsString()
-  fieldId!: string
-
-  @IsString()
-  value!: string
 }
