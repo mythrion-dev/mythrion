@@ -128,7 +128,8 @@ export default function CharacterSheetDetailPage() {
       if (!attr) continue
       const modResult = fallback[attr.id]
       if (modResult !== null && modResult !== undefined && !isNaN(modResult)) {
-        total += modResult
+        // Negative modifiers do not reduce Armor Class
+        total += Math.max(0, modResult)
       }
     }
     setAcResult(total)
