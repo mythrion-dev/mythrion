@@ -134,7 +134,7 @@ export default function CharacterSheetDetailPage() {
   const computeModifiers = useCallback(async (sd: CharacterSheet) => {
     const results: Record<string, number | null> = {}
     const globalFormula = sd.template.attributeModifierFormula
-    if (!globalFormula?.trim()) { setModifierResults(results); return }
+    if (!globalFormula?.trim()) { setModifierResults(results); return results }
     for (const attr of sd.template.attributes) {
       try {
         const vars: Record<string, number> = {}
@@ -146,6 +146,7 @@ export default function CharacterSheetDetailPage() {
       } catch { results[attr.id] = null }
     }
     setModifierResults(results)
+    return results
   }, [])
 
   const computeSkills = useCallback(async (sd: CharacterSheet, selections?: Record<string, Record<string, string | null>>, othersOverrides?: Record<string, number>) => {
@@ -246,7 +247,7 @@ export default function CharacterSheetDetailPage() {
       setActiveSkills(actives); setOthersValues(others)
       const selMap: Record<string, Record<string, string | null>> = {}; d.skillProfileValues.forEach(spv => { if (!selMap[spv.skillId]) selMap[spv.skillId] = {}; selMap[spv.skillId][spv.profileId] = spv.optionId }); setProfileSelections(selMap)
       setAbilities(d.abilities || []); setInventoryItems(d.inventoryItems || []); setStory(d.story || null)
-      computeModifiers(d); computeSkills(d, selMap, others); computeAC(d)
+      const mods = await computeModifiers(d); computeSkills(d, selMap, others); computeAC(d, mods)
     } catch (e: unknown) { if ((e as { statusCode?: number }).statusCode === 401 || (e as { statusCode?: number }).statusCode === 403) router.replace('/login') }
     finally { setFetching(false) }
   }, [id, router, computeModifiers, computeSkills, computeAC])
@@ -256,7 +257,7 @@ export default function CharacterSheetDetailPage() {
   // ── Inline save handlers ──
   async function saveCharacterName(name: string) {
     const updated = await updateSheet({ characterName: name })
-    computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated)
+    const mods = await computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated, mods)
   }
 
   async function savePlayerName(name: string) {
@@ -265,7 +266,7 @@ export default function CharacterSheetDetailPage() {
 
   async function saveLevel(level: number) {
     const updated = await updateSheet({ level })
-    computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated)
+    const mods = await computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated, mods)
   }
 
   async function saveHpActual(hp: number) {
@@ -282,12 +283,12 @@ export default function CharacterSheetDetailPage() {
 
   async function saveAttributeValue(attributeId: string, value: string) {
     const updated = await updateSheet({ values: [{ attributeId, value }] })
-    computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated)
+    const mods = await computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated, mods)
   }
 
   async function saveFieldValue(templateFieldId: string, value: string) {
     const updated = await updateSheet({ fieldValues: [{ templateFieldId, value }] })
-    computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated)
+    const mods = await computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated, mods)
   }
 
   async function handleComponentChange(componentId: string, value: string) {
@@ -296,7 +297,7 @@ export default function CharacterSheetDetailPage() {
     setSheet(optimisticSheet)
     try {
       const updated = await updateSheet({ runtimeModifierComponentValues: [{ componentId, value }] })
-      computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated)
+      const mods = await computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated, mods)
     } catch {
       setSheet(sheet)
     }
