@@ -29,10 +29,10 @@ interface RuntimeModifierComponentValue {
 
 interface ArmorClassFieldDef {
   id: string; name: string; key: string; defaultValue: string; editableByPlayer: boolean; description: string | null
-  armorClass: { id: string; formula: string | null }
+  armorClass: { id: string; attributeModifierIds: string[] }
 }
 interface ArmorClassDef {
-  id: string; enabled: boolean; formula: string | null; fields: ArmorClassFieldDef[]
+  id: string; enabled: boolean; attributeModifierIds: string[]; fields: ArmorClassFieldDef[]
 }
 interface ArmorClassValue {
   id: string; fieldId: string; value: string; field: ArmorClassFieldDef
@@ -109,34 +109,27 @@ export default function CharacterSheetDetailPage() {
     return updated
   }, [sheet])
 
-  // ── Formula computation ──
-  const computeAC = useCallback(async (sd: CharacterSheet) => {
+  // ── AC computation (purely local, no formula parsing) ──
+  const computeAC = useCallback((sd: CharacterSheet, mods?: Record<string, number | null>) => {
     const ac = sd.template.armorClass
-    if (!ac?.enabled || !ac.formula?.trim()) { setAcResult(null); return }
-    try {
-      const vars: Record<string, number> = {}
-      sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv => sv.attributeId === a.id)?.value || '0'); vars[a.key] = isNaN(v) ? 0 : v })
-      sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); vars[rcv.component.modifier.key] = isNaN(v) ? 0 : v })
-      sd.fieldValues.forEach(fv => { const v = parseFloat(fv.value); vars[fv.templateField.key] = isNaN(v) ? 0 : v })
-      sd.acValues.forEach(acv => { const v = parseFloat(acv.value); vars[acv.field.key] = isNaN(v) ? 0 : v })
-      // Compute attribute modifiers using global template formula
-      const globalFormula = sd.template.attributeModifierFormula
-      if (globalFormula?.trim()) {
-        for (const attr of sd.template.attributes) {
-          try {
-            const modVars: Record<string, number> = {}
-            sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv => sv.attributeId === a.id)?.value || '0'); modVars[a.key] = isNaN(v) ? 0 : v })
-            sd.runtimeModifierComponentValues.forEach(rcv => { const v = parseFloat(rcv.value); modVars[rcv.component.modifier.key] = isNaN(v) ? 0 : v })
-            modVars['value'] = parseFloat(sd.values.find(sv => sv.attributeId === attr.id)?.value || '0') || 0
-            const mr = await api.post<{ result: number }>('/formula/evaluate', { formula: globalFormula, variables: modVars })
-            vars[`${attr.key}_mod`] = mr.result
-          } catch { vars[`${attr.key}_mod`] = 0 }
-        }
+    if (!ac?.enabled) { setAcResult(null); return }
+    // Sum all AC component values
+    let total = 0
+    sd.acValues.forEach(acv => {
+      const v = parseFloat(acv.value)
+      if (!isNaN(v)) total += v
+    })
+    // Add attribute modifiers for each selected attribute
+    const attrModIds = ac.attributeModifierIds ?? []
+    const fallback = mods ?? modifierResults
+    for (const attrId of attrModIds) {
+      const modResult = fallback[attrId]
+      if (modResult !== null && modResult !== undefined && !isNaN(modResult)) {
+        total += modResult
       }
-      const res = await api.post<{ result: number }>('/formula/evaluate', { formula: ac.formula, variables: vars })
-      setAcResult(res.result)
-    } catch { setAcResult(null) }
-  }, [])
+    }
+    setAcResult(total)
+  }, [modifierResults])
 
   const computeModifiers = useCallback(async (sd: CharacterSheet) => {
     const results: Record<string, number | null> = {}
@@ -634,28 +627,50 @@ export default function CharacterSheetDetailPage() {
                 <span className="text-4xl font-bold text-primary">{acResult !== null ? acResult : '—'}</span>
               </div>
             </div>
-            {armorClass.formula && (
-              <div className="text-center mb-3 text-xs text-muted">Formula: <span className="font-mono text-foreground">{armorClass.formula}</span></div>
-            )}
-            <div className="grid gap-2 sm:grid-cols-2">
-              {armorClass.fields.map(field => {
-                const acv = sheet.acValues.find(v => v.fieldId === field.id)
-                const val = acv?.value ?? field.defaultValue
-                const canEdit = isOwner && field.editableByPlayer
-                return (
-                  <div key={field.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
-                    <div className="flex items-center gap-1 min-w-0">
-                      <span className="text-sm text-foreground truncate">{field.name}</span>
-                      {field.description && <span className="text-[0.6rem] text-muted hidden sm:inline">— {field.description}</span>}
-                    </div>
-                    {canEdit ? (
-                      <input type="number" className="input-field py-1 text-xs w-16 text-right" value={val} onChange={e => handleAcFieldChange(field.id, e.target.value)} />
-                    ) : (
-                      <span className="text-sm font-semibold text-foreground">{val}</span>
-                    )}
+            <div className="space-y-3">
+              <div>
+                <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Components</h4>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {armorClass.fields.map(field => {
+                    const acv = sheet.acValues.find(v => v.fieldId === field.id)
+                    const val = acv?.value ?? field.defaultValue
+                    const canEdit = isOwner && field.editableByPlayer
+                    return (
+                      <div key={field.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
+                        <div className="flex items-center gap-1 min-w-0">
+                          <span className="text-sm text-foreground truncate">{field.name}</span>
+                          {field.description && <span className="text-[0.6rem] text-muted hidden sm:inline">— {field.description}</span>}
+                        </div>
+                        {canEdit ? (
+                          <input type="number" className="input-field py-1 text-xs w-16 text-right" value={val} onChange={e => handleAcFieldChange(field.id, e.target.value)} />
+                        ) : (
+                          <span className="text-sm font-semibold text-foreground">{val}</span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+              {armorClass.attributeModifierIds.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Attribute Modifiers</h4>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {armorClass.attributeModifierIds.map(attrId => {
+                      const attr = sheet.template.attributes.find(a => a.id === attrId)
+                      const modResult = modifierResults[attrId]
+                      if (!attr) return null
+                      return (
+                        <div key={attrId} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border opacity-80">
+                          <span className="text-sm text-foreground truncate">{attr.name} Modifier</span>
+                          <span className="text-sm font-semibold text-muted" style={{opacity: 0.6}}>
+                            {modResult !== null && modResult !== undefined ? `${modResult >= 0 ? '+' : ''}${modResult}` : '—'}
+                          </span>
+                        </div>
+                      )
+                    })}
                   </div>
-                )
-              })}
+                </div>
+              )}
             </div>
           </div>
         )}
