@@ -27,12 +27,10 @@ export type AggregateTemplatePointPool = {
 }
 
 export type TemplatePointPoolAvgAggregateOutputType = {
-  defaultMaximum: number | null
   order: number | null
 }
 
 export type TemplatePointPoolSumAggregateOutputType = {
-  defaultMaximum: number | null
   order: number | null
 }
 
@@ -42,8 +40,6 @@ export type TemplatePointPoolMinAggregateOutputType = {
   name: string | null
   slug: string | null
   description: string | null
-  defaultMaximum: number | null
-  currentStartsFull: boolean | null
   editableByPlayer: boolean | null
   order: number | null
   createdAt: Date | null
@@ -56,8 +52,6 @@ export type TemplatePointPoolMaxAggregateOutputType = {
   name: string | null
   slug: string | null
   description: string | null
-  defaultMaximum: number | null
-  currentStartsFull: boolean | null
   editableByPlayer: boolean | null
   order: number | null
   createdAt: Date | null
@@ -70,8 +64,6 @@ export type TemplatePointPoolCountAggregateOutputType = {
   name: number
   slug: number
   description: number
-  defaultMaximum: number
-  currentStartsFull: number
   editableByPlayer: number
   order: number
   createdAt: number
@@ -81,12 +73,10 @@ export type TemplatePointPoolCountAggregateOutputType = {
 
 
 export type TemplatePointPoolAvgAggregateInputType = {
-  defaultMaximum?: true
   order?: true
 }
 
 export type TemplatePointPoolSumAggregateInputType = {
-  defaultMaximum?: true
   order?: true
 }
 
@@ -96,8 +86,6 @@ export type TemplatePointPoolMinAggregateInputType = {
   name?: true
   slug?: true
   description?: true
-  defaultMaximum?: true
-  currentStartsFull?: true
   editableByPlayer?: true
   order?: true
   createdAt?: true
@@ -110,8 +98,6 @@ export type TemplatePointPoolMaxAggregateInputType = {
   name?: true
   slug?: true
   description?: true
-  defaultMaximum?: true
-  currentStartsFull?: true
   editableByPlayer?: true
   order?: true
   createdAt?: true
@@ -124,8 +110,6 @@ export type TemplatePointPoolCountAggregateInputType = {
   name?: true
   slug?: true
   description?: true
-  defaultMaximum?: true
-  currentStartsFull?: true
   editableByPlayer?: true
   order?: true
   createdAt?: true
@@ -225,8 +209,6 @@ export type TemplatePointPoolGroupByOutputType = {
   name: string
   slug: string
   description: string | null
-  defaultMaximum: number
-  currentStartsFull: boolean
   editableByPlayer: boolean
   order: number
   createdAt: Date
@@ -262,8 +244,6 @@ export type TemplatePointPoolWhereInput = {
   name?: Prisma.StringFilter<"TemplatePointPool"> | string
   slug?: Prisma.StringFilter<"TemplatePointPool"> | string
   description?: Prisma.StringNullableFilter<"TemplatePointPool"> | string | null
-  defaultMaximum?: Prisma.IntFilter<"TemplatePointPool"> | number
-  currentStartsFull?: Prisma.BoolFilter<"TemplatePointPool"> | boolean
   editableByPlayer?: Prisma.BoolFilter<"TemplatePointPool"> | boolean
   order?: Prisma.IntFilter<"TemplatePointPool"> | number
   createdAt?: Prisma.DateTimeFilter<"TemplatePointPool"> | Date | string
@@ -278,8 +258,6 @@ export type TemplatePointPoolOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
-  defaultMaximum?: Prisma.SortOrder
-  currentStartsFull?: Prisma.SortOrder
   editableByPlayer?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -298,8 +276,6 @@ export type TemplatePointPoolWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"TemplatePointPool"> | string
   slug?: Prisma.StringFilter<"TemplatePointPool"> | string
   description?: Prisma.StringNullableFilter<"TemplatePointPool"> | string | null
-  defaultMaximum?: Prisma.IntFilter<"TemplatePointPool"> | number
-  currentStartsFull?: Prisma.BoolFilter<"TemplatePointPool"> | boolean
   editableByPlayer?: Prisma.BoolFilter<"TemplatePointPool"> | boolean
   order?: Prisma.IntFilter<"TemplatePointPool"> | number
   createdAt?: Prisma.DateTimeFilter<"TemplatePointPool"> | Date | string
@@ -314,8 +290,6 @@ export type TemplatePointPoolOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
-  defaultMaximum?: Prisma.SortOrder
-  currentStartsFull?: Prisma.SortOrder
   editableByPlayer?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -336,8 +310,6 @@ export type TemplatePointPoolScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"TemplatePointPool"> | string
   slug?: Prisma.StringWithAggregatesFilter<"TemplatePointPool"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"TemplatePointPool"> | string | null
-  defaultMaximum?: Prisma.IntWithAggregatesFilter<"TemplatePointPool"> | number
-  currentStartsFull?: Prisma.BoolWithAggregatesFilter<"TemplatePointPool"> | boolean
   editableByPlayer?: Prisma.BoolWithAggregatesFilter<"TemplatePointPool"> | boolean
   order?: Prisma.IntWithAggregatesFilter<"TemplatePointPool"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"TemplatePointPool"> | Date | string
@@ -349,8 +321,6 @@ export type TemplatePointPoolCreateInput = {
   name: string
   slug: string
   description?: string | null
-  defaultMaximum?: number
-  currentStartsFull?: boolean
   editableByPlayer?: boolean
   order?: number
   createdAt?: Date | string
@@ -365,8 +335,6 @@ export type TemplatePointPoolUncheckedCreateInput = {
   name: string
   slug: string
   description?: string | null
-  defaultMaximum?: number
-  currentStartsFull?: boolean
   editableByPlayer?: boolean
   order?: number
   createdAt?: Date | string
@@ -379,8 +347,6 @@ export type TemplatePointPoolUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  defaultMaximum?: Prisma.IntFieldUpdateOperationsInput | number
-  currentStartsFull?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -395,8 +361,6 @@ export type TemplatePointPoolUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  defaultMaximum?: Prisma.IntFieldUpdateOperationsInput | number
-  currentStartsFull?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -410,8 +374,6 @@ export type TemplatePointPoolCreateManyInput = {
   name: string
   slug: string
   description?: string | null
-  defaultMaximum?: number
-  currentStartsFull?: boolean
   editableByPlayer?: boolean
   order?: number
   createdAt?: Date | string
@@ -423,8 +385,6 @@ export type TemplatePointPoolUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  defaultMaximum?: Prisma.IntFieldUpdateOperationsInput | number
-  currentStartsFull?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -437,8 +397,6 @@ export type TemplatePointPoolUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  defaultMaximum?: Prisma.IntFieldUpdateOperationsInput | number
-  currentStartsFull?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -466,8 +424,6 @@ export type TemplatePointPoolCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  defaultMaximum?: Prisma.SortOrder
-  currentStartsFull?: Prisma.SortOrder
   editableByPlayer?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -475,7 +431,6 @@ export type TemplatePointPoolCountOrderByAggregateInput = {
 }
 
 export type TemplatePointPoolAvgOrderByAggregateInput = {
-  defaultMaximum?: Prisma.SortOrder
   order?: Prisma.SortOrder
 }
 
@@ -485,8 +440,6 @@ export type TemplatePointPoolMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  defaultMaximum?: Prisma.SortOrder
-  currentStartsFull?: Prisma.SortOrder
   editableByPlayer?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -499,8 +452,6 @@ export type TemplatePointPoolMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  defaultMaximum?: Prisma.SortOrder
-  currentStartsFull?: Prisma.SortOrder
   editableByPlayer?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -508,7 +459,6 @@ export type TemplatePointPoolMinOrderByAggregateInput = {
 }
 
 export type TemplatePointPoolSumOrderByAggregateInput = {
-  defaultMaximum?: Prisma.SortOrder
   order?: Prisma.SortOrder
 }
 
@@ -578,8 +528,6 @@ export type TemplatePointPoolCreateWithoutTemplateInput = {
   name: string
   slug: string
   description?: string | null
-  defaultMaximum?: number
-  currentStartsFull?: boolean
   editableByPlayer?: boolean
   order?: number
   createdAt?: Date | string
@@ -592,8 +540,6 @@ export type TemplatePointPoolUncheckedCreateWithoutTemplateInput = {
   name: string
   slug: string
   description?: string | null
-  defaultMaximum?: number
-  currentStartsFull?: boolean
   editableByPlayer?: boolean
   order?: number
   createdAt?: Date | string
@@ -636,8 +582,6 @@ export type TemplatePointPoolScalarWhereInput = {
   name?: Prisma.StringFilter<"TemplatePointPool"> | string
   slug?: Prisma.StringFilter<"TemplatePointPool"> | string
   description?: Prisma.StringNullableFilter<"TemplatePointPool"> | string | null
-  defaultMaximum?: Prisma.IntFilter<"TemplatePointPool"> | number
-  currentStartsFull?: Prisma.BoolFilter<"TemplatePointPool"> | boolean
   editableByPlayer?: Prisma.BoolFilter<"TemplatePointPool"> | boolean
   order?: Prisma.IntFilter<"TemplatePointPool"> | number
   createdAt?: Prisma.DateTimeFilter<"TemplatePointPool"> | Date | string
@@ -649,8 +593,6 @@ export type TemplatePointPoolCreateWithoutSheetValuesInput = {
   name: string
   slug: string
   description?: string | null
-  defaultMaximum?: number
-  currentStartsFull?: boolean
   editableByPlayer?: boolean
   order?: number
   createdAt?: Date | string
@@ -664,8 +606,6 @@ export type TemplatePointPoolUncheckedCreateWithoutSheetValuesInput = {
   name: string
   slug: string
   description?: string | null
-  defaultMaximum?: number
-  currentStartsFull?: boolean
   editableByPlayer?: boolean
   order?: number
   createdAt?: Date | string
@@ -693,8 +633,6 @@ export type TemplatePointPoolUpdateWithoutSheetValuesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  defaultMaximum?: Prisma.IntFieldUpdateOperationsInput | number
-  currentStartsFull?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -708,8 +646,6 @@ export type TemplatePointPoolUncheckedUpdateWithoutSheetValuesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  defaultMaximum?: Prisma.IntFieldUpdateOperationsInput | number
-  currentStartsFull?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -721,8 +657,6 @@ export type TemplatePointPoolCreateManyTemplateInput = {
   name: string
   slug: string
   description?: string | null
-  defaultMaximum?: number
-  currentStartsFull?: boolean
   editableByPlayer?: boolean
   order?: number
   createdAt?: Date | string
@@ -734,8 +668,6 @@ export type TemplatePointPoolUpdateWithoutTemplateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  defaultMaximum?: Prisma.IntFieldUpdateOperationsInput | number
-  currentStartsFull?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -748,8 +680,6 @@ export type TemplatePointPoolUncheckedUpdateWithoutTemplateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  defaultMaximum?: Prisma.IntFieldUpdateOperationsInput | number
-  currentStartsFull?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -762,8 +692,6 @@ export type TemplatePointPoolUncheckedUpdateManyWithoutTemplateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  defaultMaximum?: Prisma.IntFieldUpdateOperationsInput | number
-  currentStartsFull?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -807,8 +735,6 @@ export type TemplatePointPoolSelect<ExtArgs extends runtime.Types.Extensions.Int
   name?: boolean
   slug?: boolean
   description?: boolean
-  defaultMaximum?: boolean
-  currentStartsFull?: boolean
   editableByPlayer?: boolean
   order?: boolean
   createdAt?: boolean
@@ -824,8 +750,6 @@ export type TemplatePointPoolSelectCreateManyAndReturn<ExtArgs extends runtime.T
   name?: boolean
   slug?: boolean
   description?: boolean
-  defaultMaximum?: boolean
-  currentStartsFull?: boolean
   editableByPlayer?: boolean
   order?: boolean
   createdAt?: boolean
@@ -839,8 +763,6 @@ export type TemplatePointPoolSelectUpdateManyAndReturn<ExtArgs extends runtime.T
   name?: boolean
   slug?: boolean
   description?: boolean
-  defaultMaximum?: boolean
-  currentStartsFull?: boolean
   editableByPlayer?: boolean
   order?: boolean
   createdAt?: boolean
@@ -854,15 +776,13 @@ export type TemplatePointPoolSelectScalar = {
   name?: boolean
   slug?: boolean
   description?: boolean
-  defaultMaximum?: boolean
-  currentStartsFull?: boolean
   editableByPlayer?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TemplatePointPoolOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "templateId" | "name" | "slug" | "description" | "defaultMaximum" | "currentStartsFull" | "editableByPlayer" | "order" | "createdAt" | "updatedAt", ExtArgs["result"]["templatePointPool"]>
+export type TemplatePointPoolOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "templateId" | "name" | "slug" | "description" | "editableByPlayer" | "order" | "createdAt" | "updatedAt", ExtArgs["result"]["templatePointPool"]>
 export type TemplatePointPoolInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   sheetValues?: boolean | Prisma.TemplatePointPool$sheetValuesArgs<ExtArgs>
@@ -887,8 +807,6 @@ export type $TemplatePointPoolPayload<ExtArgs extends runtime.Types.Extensions.I
     name: string
     slug: string
     description: string | null
-    defaultMaximum: number
-    currentStartsFull: boolean
     editableByPlayer: boolean
     order: number
     createdAt: Date
@@ -1323,8 +1241,6 @@ export interface TemplatePointPoolFieldRefs {
   readonly name: Prisma.FieldRef<"TemplatePointPool", 'String'>
   readonly slug: Prisma.FieldRef<"TemplatePointPool", 'String'>
   readonly description: Prisma.FieldRef<"TemplatePointPool", 'String'>
-  readonly defaultMaximum: Prisma.FieldRef<"TemplatePointPool", 'Int'>
-  readonly currentStartsFull: Prisma.FieldRef<"TemplatePointPool", 'Boolean'>
   readonly editableByPlayer: Prisma.FieldRef<"TemplatePointPool", 'Boolean'>
   readonly order: Prisma.FieldRef<"TemplatePointPool", 'Int'>
   readonly createdAt: Prisma.FieldRef<"TemplatePointPool", 'DateTime'>

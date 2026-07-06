@@ -71,8 +71,6 @@ export class TemplateService {
             name: pool.name,
             slug: pool.slug,
             description: pool.description ?? null,
-            defaultMaximum: pool.defaultMaximum,
-            currentStartsFull: pool.currentStartsFull ?? true,
             editableByPlayer: pool.editableByPlayer ?? true,
             order: poolIdx,
           })),
@@ -387,7 +385,7 @@ export class TemplateService {
       }
     }
 
-    // Handle point pools
+    // Handle point pools (system-agnostic: template only defines the pool definition)
     if (dto.pointPools) {
       const existingPools = await this.prisma.templatePointPool.findMany({
         where: { templateId: id },
@@ -410,8 +408,6 @@ export class TemplateService {
             data: {
               name: pool.name.trim(),
               description: pool.description ?? null,
-              defaultMaximum: pool.defaultMaximum,
-              currentStartsFull: pool.currentStartsFull ?? true,
               editableByPlayer: pool.editableByPlayer ?? true,
               order: pIdx,
             },
@@ -423,19 +419,16 @@ export class TemplateService {
               name: pool.name.trim(),
               slug,
               description: pool.description ?? null,
-              defaultMaximum: pool.defaultMaximum,
-              currentStartsFull: pool.currentStartsFull ?? true,
               editableByPlayer: pool.editableByPlayer ?? true,
               order: pIdx,
             },
           })
-          // Auto-create values on existing sheets for the new pool
+          // Auto-create values (empty) on existing sheets for the new pool
           const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
           for (const sheet of sheets) {
-            const initialCurrent = newPool.currentStartsFull ? newPool.defaultMaximum : 0
             await this.prisma.characterSheetPointPoolValue.upsert({
               where: { sheetId_pointPoolId: { sheetId: sheet.id, pointPoolId: newPool.id } },
-              create: { sheetId: sheet.id, pointPoolId: newPool.id, current: initialCurrent, maximum: newPool.defaultMaximum },
+              create: { sheetId: sheet.id, pointPoolId: newPool.id },
               update: {},
             })
           }

@@ -45,14 +45,15 @@ export class PointPoolValueDto {
   @IsString()
   pointPoolId!: string
 
-  @IsInt()
-  @Type(() => Number)
-  current!: number
-
-  @IsInt()
   @IsOptional()
+  @IsInt()
   @Type(() => Number)
-  maximum?: number
+  current?: number | null
+
+  @IsOptional()
+  @IsInt()
+  @Type(() => Number)
+  maximum?: number | null
 }
 
 export class ArmorClassValueDto {

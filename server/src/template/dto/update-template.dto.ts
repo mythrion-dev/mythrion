@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, ValidateNested, IsNumber, ArrayMinSize, IsInt, IsBoolean } from 'class-validator'
+import { IsString, IsOptional, IsArray, ValidateNested, IsNumber, ArrayMinSize, IsBoolean } from 'class-validator'
 import { Type } from 'class-transformer'
 
 export class UpdateAttributeDefDto {
@@ -77,13 +77,6 @@ export class UpdatePointPoolDefDto {
   @IsString()
   @IsOptional()
   description?: string
-
-  @IsInt()
-  defaultMaximum!: number
-
-  @IsBoolean()
-  @IsOptional()
-  currentStartsFull?: boolean
 
   @IsBoolean()
   @IsOptional()

@@ -3,15 +3,13 @@ DROP TABLE IF EXISTS "CharacterSheetRuntimeModifierComponentValue" CASCADE;
 DROP TABLE IF EXISTS "RuntimeModifierComponent" CASCADE;
 DROP TABLE IF EXISTS "TemplateRuntimeModifier" CASCADE;
 
--- Create Point Pools tables
+-- Create Point Pools tables (system-agnostic: template only defines the pool, character owns all values)
 CREATE TABLE "TemplatePointPool" (
     "id" TEXT NOT NULL,
     "templateId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "description" TEXT,
-    "defaultMaximum" INTEGER NOT NULL DEFAULT 0,
-    "currentStartsFull" BOOLEAN NOT NULL DEFAULT true,
     "editableByPlayer" BOOLEAN NOT NULL DEFAULT true,
     "order" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -27,8 +25,8 @@ CREATE TABLE "CharacterSheetPointPoolValue" (
     "id" TEXT NOT NULL,
     "sheetId" TEXT NOT NULL,
     "pointPoolId" TEXT NOT NULL,
-    "current" INTEGER NOT NULL DEFAULT 0,
-    "maximum" INTEGER NOT NULL DEFAULT 0,
+    "current" INTEGER,
+    "maximum" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

@@ -17,10 +17,10 @@ interface SkillProfileValue { id: string; skillId: string; profileId: string; op
 
 interface PointPoolDef {
   id: string; name: string; slug: string; description: string | null
-  defaultMaximum: number; currentStartsFull: boolean; editableByPlayer: boolean
+  editableByPlayer: boolean
 }
 interface PointPoolValue {
-  id: string; pointPoolId: string; current: number; maximum: number
+  id: string; pointPoolId: string; current: number | null; maximum: number | null
   pointPool: PointPoolDef
 }
 
@@ -106,17 +106,15 @@ export default function CharacterSheetDetailPage() {
     return updated
   }, [sheet])
 
-  // ── AC computation (purely local, no formula parsing) ──
+  // ── AC computation ──
   const computeAC = useCallback((sd: CharacterSheet, mods?: Record<string, number | null>) => {
     const ac = sd.template.armorClass
     if (!ac?.enabled) { setAcResult(null); return }
-    // Sum all AC component values
     let total = 0
     sd.acValues.forEach(acv => {
       const v = parseFloat(acv.value)
       if (!isNaN(v)) total += v
     })
-    // Add attribute modifiers for each selected attribute
     const attrModKeys = ac.attributeModifierIds ?? []
     const fallback = mods ?? modifierResults
     for (const attrKey of attrModKeys) {
@@ -165,59 +163,45 @@ export default function CharacterSheetDetailPage() {
     const skillFormulaRaw = sd.template.skillFormula?.trim()
     if (!skillFormulaRaw) { setSkillResults({}); return }
 
-    // Try to parse as JSON config (new structured format)
     let skillConfig: { useAttributeModifier?: boolean; customFieldKeys?: string[] } | null = null
     try {
       const parsed = JSON.parse(skillFormulaRaw)
       if (parsed && typeof parsed === 'object' && typeof parsed.useAttributeModifier === 'boolean') {
         skillConfig = parsed
       }
-    } catch { /* not JSON, treat as legacy formula */ }
+    } catch { /* not JSON */ }
 
     for (const sv of sd.skillValues) {
       try {
         let finalResult = 0
-
         if (skillConfig) {
           if (skillConfig.useAttributeModifier) {
             const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
-            if (selectedAttr) {
-              finalResult += modifierVars[`${selectedAttr.key}_mod`] ?? 0
-            }
+            if (selectedAttr) finalResult += modifierVars[`${selectedAttr.key}_mod`] ?? 0
           }
           const customKeys = skillConfig.customFieldKeys || []
           for (const key of customKeys) {
             const fv = sd.fieldValues.find(f => f.templateField.key === key)
-            if (fv) {
-              const v = parseFloat(fv.value)
-              if (!isNaN(v)) finalResult += v
-            }
+            if (fv) { const v = parseFloat(fv.value); if (!isNaN(v)) finalResult += v }
           }
         } else {
           const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
-          const skillAttrValue = selectedAttr
-            ? parseFloat(sd.values.find(sv2 => sv2.attributeId === selectedAttr.id)?.value || '0')
-            : 0
+          const skillAttrValue = selectedAttr ? parseFloat(sd.values.find(sv2 => sv2.attributeId === selectedAttr.id)?.value || '0') : 0
           const variables: Record<string, number> = { ...modifierVars }
           variables['value'] = isNaN(skillAttrValue) ? 0 : skillAttrValue
-          if (selectedAttr) {
-            variables['value_mod'] = modifierVars[`${selectedAttr.key}_mod`] ?? 0
-          }
+          if (selectedAttr) variables['value_mod'] = modifierVars[`${selectedAttr.key}_mod`] ?? 0
           sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv2 => sv2.attributeId === a.id)?.value || '0'); variables[a.key] = isNaN(v) ? 0 : v })
           sd.fieldValues.forEach(fv => { const v = parseFloat(fv.value); variables[fv.templateField.key] = isNaN(v) ? 0 : v })
           variables['level'] = sd.level ?? 1
           const res = await api.post<{ result: number }>('/formula/evaluate', { formula: skillFormulaRaw, variables })
           finalResult = res.result
         }
-
         finalResult += (effOthers[sv.skillId] ?? 0)
         const skillSelections = selMap[sv.skillId] || {}
         for (const profile of sd.template.skillModifierProfiles) {
           const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
           const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
-          if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(sv.skill.name)) {
-            continue
-          }
+          if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(sv.skill.name)) continue
           const selId = skillSelections[profile.id]
           if (selId) { const opt = profile.options.find(o => o.id === selId); if (opt) finalResult += opt.value }
           else { const stored = sd.skillProfileValues.find(spv => spv.skillId === sv.skillId && spv.profileId === profile.id); if (stored?.option?.value !== undefined) finalResult += stored.option.value }
@@ -249,53 +233,35 @@ export default function CharacterSheetDetailPage() {
     const updated = await updateSheet({ characterName: name })
     const mods = await computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated, mods)
   }
-
-  async function savePlayerName(name: string) {
-    await updateSheet({ playerName: name || undefined })
-  }
-
+  async function savePlayerName(name: string) { await updateSheet({ playerName: name || undefined }) }
   async function saveLevel(level: number) {
     const updated = await updateSheet({ level })
     const mods = await computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated, mods)
   }
-
-  async function saveHpActual(hp: number) {
-    await updateSheet({ hpActual: hp })
-  }
-
-  async function saveHpMax(hp: number) {
-    await updateSheet({ hpMax: hp })
-  }
-
-  async function saveHpNotes(notes: string) {
-    await updateSheet({ hpNotes: notes || undefined })
-  }
-
+  async function saveHpActual(hp: number) { await updateSheet({ hpActual: hp }) }
+  async function saveHpMax(hp: number) { await updateSheet({ hpMax: hp }) }
+  async function saveHpNotes(notes: string) { await updateSheet({ hpNotes: notes || undefined }) }
   async function saveAttributeValue(attributeId: string, value: string) {
     const updated = await updateSheet({ values: [{ attributeId, value }] })
     const mods = await computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated, mods)
   }
-
   async function saveFieldValue(templateFieldId: string, value: string) {
     const updated = await updateSheet({ fieldValues: [{ templateFieldId, value }] })
     const mods = await computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated, mods)
   }
 
-  async function handlePointPoolChange(pointPoolId: string, current: number) {
+  async function handlePointPoolChange(pointPoolId: string, field: 'current' | 'maximum', value: string) {
     if (!sheet) return
-    const ppv = sheet.pointPoolValues.find(p => p.pointPoolId === pointPoolId)
-    if (!ppv) return
-    // Clamp between 0 and maximum
-    const clamped = Math.max(0, Math.min(current, ppv.maximum))
+    const numVal = value.trim() === '' ? null : parseInt(value, 10)
     const optimisticSheet = {
       ...sheet,
       pointPoolValues: sheet.pointPoolValues.map(p =>
-        p.pointPoolId === pointPoolId ? { ...p, current: clamped } : p
+        p.pointPoolId === pointPoolId ? { ...p, [field]: numVal } : p
       ),
     }
     setSheet(optimisticSheet)
     try {
-      await updateSheet({ pointPoolValues: [{ pointPoolId, current: clamped }] })
+      await updateSheet({ pointPoolValues: [{ pointPoolId, [field]: numVal }] })
     } catch {
       setSheet(sheet)
     }
@@ -305,14 +271,8 @@ export default function CharacterSheetDetailPage() {
     if (!sheet) return
     const optimisticSheet = { ...sheet, acValues: sheet.acValues.map(acv => acv.fieldId === fieldId ? { ...acv, value } : acv) }
     setSheet(optimisticSheet)
-    try {
-      const updated = await updateSheet({ acValues: [{ fieldId, value }] })
-      computeAC(updated)
-    } catch {
-      setSheet(sheet)
-    }
+    try { const updated = await updateSheet({ acValues: [{ fieldId, value }] }); computeAC(updated) } catch { setSheet(sheet) }
   }
-
   async function handleHpModify(delta: number) {
     if (!sheet) return; const a = Math.abs(hpModifier) || 0; if (a === 0) return
     const nh = Math.max(0, (sheet.hpActual ?? 0) + delta * a)
@@ -320,76 +280,35 @@ export default function CharacterSheetDetailPage() {
     setSheet(optimistic)
     try { await updateSheet({ hpActual: nh }) } catch { setSheet(sheet) }
   }
-
   async function handleProfileChange(skillId: string, profileId: string, optionId: string | null) {
     if (!sheet) return
     setProfileSelections(p => { const n = { ...p }; if (!n[skillId]) n[skillId] = {}; n[skillId] = { ...n[skillId], [profileId]: optionId }; return n })
-    try {
-      await api.patch(`/character-sheets/${sheet.id}/skills/${skillId}/profiles/${profileId}`, { optionId })
-    } catch {
+    try { await api.patch(`/character-sheets/${sheet.id}/skills/${skillId}/profiles/${profileId}`, { optionId }) } catch {
       const s = sheet.skillProfileValues.find(spv => spv.skillId === skillId && spv.profileId === profileId)
       setProfileSelections(p => { const n = { ...p }; if (!n[skillId]) n[skillId] = {}; n[skillId] = { ...n[skillId], [profileId]: s?.optionId ?? null }; return n })
       return
     }
-    const us = { ...profileSelections }; if (!us[skillId]) us[skillId] = {}; us[skillId] = { ...us[skillId], [profileId]: optionId }
-    computeSkills(sheet, us)
+    computeSkills(sheet, { ...profileSelections, [skillId]: { ...profileSelections[skillId], [profileId]: optionId } })
   }
-
   async function handleSkillAttributeChange(skillId: string, attributeId: string | null) {
     if (!sheet) return
     setSheet(prev => {
       if (!prev) return prev
-      return {
-        ...prev,
-        skillValues: prev.skillValues.map(sv =>
-          sv.skillId === skillId ? {
-            ...sv,
-            selectedAttributeId: attributeId,
-            selectedAttribute: attributeId
-              ? sv.skill.allowedAttributeIds.includes(attributeId)
-                ? { id: attributeId, key: prev.template.attributes.find(a => a.id === attributeId)?.key ?? '', name: prev.template.attributes.find(a => a.id === attributeId)?.name ?? '' }
-                : sv.selectedAttribute
-              : null,
-          } : sv
-        ),
-      }
+      return { ...prev, skillValues: prev.skillValues.map(sv => sv.skillId === skillId ? { ...sv, selectedAttributeId: attributeId, selectedAttribute: attributeId ? { id: attributeId, key: prev.template.attributes.find(a => a.id === attributeId)?.key ?? '', name: prev.template.attributes.find(a => a.id === attributeId)?.name ?? '' } : null } : sv) }
     })
-    try {
-      await api.patch(`/character-sheets/${sheet.id}/skills/${skillId}/attribute`, { attributeId })
-    } catch {
-      fetchSheet()
-      return
-    }
+    try { await api.patch(`/character-sheets/${sheet.id}/skills/${skillId}/attribute`, { attributeId }) } catch { fetchSheet(); return }
     const updated = await api.get<CharacterSheet>(`/character-sheets/${sheet.id}`)
-    setSheet(updated)
-    computeSkills(updated, profileSelections)
+    setSheet(updated); computeSkills(updated, profileSelections)
   }
-
   async function handleSkillToggle(skillId: string) {
-    const nv = !activeSkills[skillId]
-    setActiveSkills(p => ({ ...p, [skillId]: nv }))
-    const ov = othersValues[skillId] ?? 0
-    try {
-      await api.patch(`/character-sheets/${sheet!.id}`, { skillValues: [{ skillId, value: `${nv ? '1' : '0'}|${ov}` }] })
-    } catch {
-      setActiveSkills(p => ({ ...p, [skillId]: !nv }))
-    }
+    const nv = !activeSkills[skillId]; setActiveSkills(p => ({ ...p, [skillId]: nv }))
+    try { await api.patch(`/character-sheets/${sheet!.id}`, { skillValues: [{ skillId, value: `${nv ? '1' : '0'}|${othersValues[skillId] ?? 0}` }] }) } catch { setActiveSkills(p => ({ ...p, [skillId]: !nv })) }
   }
-
   async function handleOthersChange(skillId: string, no: number) {
-    const ov = Math.max(0, Math.floor(no))
-    const next = { ...othersValues, [skillId]: ov }
-    setOthersValues(next)
-    if (sheet) computeSkills(sheet, profileSelections, next)
-    const av = activeSkills[skillId] ?? false
-    try {
-      await api.patch(`/character-sheets/${sheet!.id}`, { skillValues: [{ skillId, value: `${av ? '1' : '0'}|${ov}` }] })
-    } catch {
-      setOthersValues(p => ({ ...p, [skillId]: othersValues[skillId] ?? 0 }))
-    }
+    const ov = Math.max(0, Math.floor(no)); setOthersValues(p => ({ ...p, [skillId]: ov }))
+    if (sheet) computeSkills(sheet, profileSelections, { ...othersValues, [skillId]: ov })
+    try { await api.patch(`/character-sheets/${sheet!.id}`, { skillValues: [{ skillId, value: `${activeSkills[skillId] ?? false ? '1' : '0'}|${ov}` }] }) } catch { setOthersValues(p => ({ ...p, [skillId]: othersValues[skillId] ?? 0 })) }
   }
-
-  // ── Inline ability level field saves ──
   async function saveLevelField(levelId: string, field: string, value: string) {
     if (!sheet) return
     const body: Record<string, unknown> = {}
@@ -399,29 +318,8 @@ export default function CharacterSheetDetailPage() {
     else if (field === 'cooldown') body.cooldown = value.trim() || null
     else if (field === 'notes') body.notes = value.trim() || null
     else if (field === 'damage') body.damage = value.trim() || null
-    try {
-      await api.patch(`/character-sheets/${sheet.id}/abilities/x/levels/${levelId}`, body)
-      setAbilities(prev => prev.map(a => ({
-        ...a,
-        levels: a.levels.map(l => l.id === levelId ? { ...l, ...body } : l),
-      })))
-    } catch {}
+    try { await api.patch(`/character-sheets/${sheet.id}/abilities/x/levels/${levelId}`, body); setAbilities(prev => prev.map(a => ({ ...a, levels: a.levels.map(l => l.id === levelId ? { ...l, ...body } : l) }))) } catch {}
   }
-
-  // ── Inline ability field saves ──
-  async function saveAbilityField(abilityId: string, field: string, value: string) {
-    if (!sheet) return
-    const body: Record<string, unknown> = {}
-    if (field === 'manaCost') body.manaCost = value.trim() ? parseInt(value, 10) : undefined
-    else if (field === 'cooldown') body.cooldown = value.trim() || undefined
-    else if (field === 'notes') body.notes = value.trim() || undefined
-    else if (field === 'description') body.description = value.trim() || undefined
-    else if (field === 'name') body.name = value.trim()
-    const updated = await api.patch<Ability>(`/character-sheets/${sheet.id}/abilities/${abilityId}`, body)
-    setAbilities(p => p.map(a => a.id === abilityId ? updated : a))
-  }
-
-  // ── Inline item field saves ──
   async function saveItemField(itemId: string, field: string, value: string) {
     if (!sheet) return
     const body: Record<string, unknown> = {}
@@ -432,33 +330,16 @@ export default function CharacterSheetDetailPage() {
     const updated = await api.patch<InventoryItem>(`/character-sheets/${sheet.id}/inventory/${itemId}`, body)
     setInventoryItems(p => p.map(i => i.id === itemId ? updated : i))
   }
-
-  async function handleDelete() { setDeleteError(null); setDeleting(true); try { await api.delete(`/character-sheets/${id}`); router.push('/dashboard?tab=character-sheets') } catch (err) { setDeleteError(err instanceof Error ? err.message : 'Failed to delete'); setDeleting(false); setConfirmDelete(false) } }
-
-  // ── Abilities CRUD ──
+  async function handleDelete() { setDeleting(true); try { await api.delete(`/character-sheets/${id}`); router.push('/dashboard?tab=character-sheets') } catch (err) { setDeleteError(err instanceof Error ? err.message : 'Failed to delete'); setDeleting(false); setConfirmDelete(false) } }
   function resetNewAbility() { setShowNewAbility(false); setNewAbility({ name: '', description: '', manaCost: '', cooldown: '', notes: '' }); setAbilityError(null) }
-  async function handleCreateAbility(e: FormEvent) { e.preventDefault(); if (!newAbility.name.trim() || !sheet) return; setAbilitySaving(true); setAbilityError(null)
-    try { const a = await api.post<Ability>(`/character-sheets/${sheet.id}/abilities`, { name: newAbility.name.trim(), description: newAbility.description.trim() || undefined, manaCost: newAbility.manaCost.trim() ? parseInt(newAbility.manaCost, 10) : undefined, cooldown: newAbility.cooldown.trim() || undefined, notes: newAbility.notes.trim() || undefined })
-      setAbilities(p => [...p, a]); resetNewAbility()
-    } catch (err) { setAbilityError(err instanceof Error ? err.message : 'Failed to create ability') } finally { setAbilitySaving(false) } }
+  async function handleCreateAbility(e: FormEvent) { e.preventDefault(); if (!newAbility.name.trim() || !sheet) return; setAbilitySaving(true)
+    try { const a = await api.post<Ability>(`/character-sheets/${sheet.id}/abilities`, { name: newAbility.name.trim(), description: newAbility.description.trim() || undefined, manaCost: newAbility.manaCost.trim() ? parseInt(newAbility.manaCost, 10) : undefined, cooldown: newAbility.cooldown.trim() || undefined, notes: newAbility.notes.trim() || undefined }); setAbilities(p => [...p, a]); resetNewAbility() } catch (err) { setAbilityError(err instanceof Error ? err.message : 'Failed to create ability') } finally { setAbilitySaving(false) } }
   async function handleDeleteAbility(aid: string) { if (!sheet) return; try { await api.delete(`/character-sheets/${sheet.id}/abilities/${aid}`); setAbilities(p => p.filter(a => a.id !== aid)) } catch {} }
-
-  // ── Inventory CRUD ──
   function resetNewItem() { setShowNewItem(false); setNewItem({ name: '', weight: '', cost: '', description: '' }); setItemError(null) }
-  async function handleCreateItem(e: FormEvent) { e.preventDefault(); if (!newItem.name.trim() || !sheet) return; setItemSaving(true); setItemError(null)
-    try { const i = await api.post<InventoryItem>(`/character-sheets/${sheet.id}/inventory`, { name: newItem.name.trim(), weight: newItem.weight.trim() ? parseFloat(newItem.weight) : undefined, cost: newItem.cost.trim() || undefined, description: newItem.description.trim() || undefined })
-      setInventoryItems(p => [...p, i]); resetNewItem()
-    } catch (err) { setItemError(err instanceof Error ? err.message : 'Failed to create item') } finally { setItemSaving(false) } }
+  async function handleCreateItem(e: FormEvent) { e.preventDefault(); if (!newItem.name.trim() || !sheet) return; setItemSaving(true)
+    try { const i = await api.post<InventoryItem>(`/character-sheets/${sheet.id}/inventory`, { name: newItem.name.trim(), weight: newItem.weight.trim() ? parseFloat(newItem.weight) : undefined, cost: newItem.cost.trim() || undefined, description: newItem.description.trim() || undefined }); setInventoryItems(p => [...p, i]); resetNewItem() } catch (err) { setItemError(err instanceof Error ? err.message : 'Failed to create item') } finally { setItemSaving(false) } }
   async function handleDeleteItem(iid: string) { if (!sheet) return; try { await api.delete(`/character-sheets/${sheet.id}/inventory/${iid}`); setInventoryItems(p => p.filter(i => i.id !== iid)) } catch {} }
-
-  // ── Story inline saves ──
-  async function saveStoryField(field: string, value: string) {
-    if (!sheet) return
-    try {
-      const s = await api.patch<Story>(`/character-sheets/${sheet.id}/story`, { [field]: value.trim() || null })
-      setStory(s)
-    } catch {}
-  }
+  async function saveStoryField(field: string, value: string) { if (!sheet) return; try { const s = await api.patch<Story>(`/character-sheets/${sheet.id}/story`, { [field]: value.trim() || null }); setStory(s) } catch {} }
 
   if (authLoading || fetching) return <main className="flex-1 flex items-center justify-center p-4"><div className="flex flex-col items-center gap-3 text-muted-foreground"><div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"/><span className="text-sm">Loading...</span></div></main>
   if (!sheet) return <main className="flex-1 flex items-center justify-center p-4"><div className="text-sm text-muted-foreground">Character sheet not found.</div></main>
@@ -476,47 +357,25 @@ export default function CharacterSheetDetailPage() {
     ]} />
 
     <div className="space-y-6">
-      {/* Header Card */}
       <div className="card !p-6 space-y-4">
         <div className="flex gap-4">
           <div className="shrink-0">
             {avatarUrl ? <img src={avatarUrl} alt="Avatar" className="w-20 h-20 rounded-lg object-cover border border-border"/> : isOwner ? <label className="w-20 h-20 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/30 transition-colors"><span className="text-2xl text-muted">+</span><input type="file" accept="image/*" className="hidden" onChange={e=>{const f=e.target.files?.[0];if(f)setAvatarUrl(URL.createObjectURL(f))}}/></label> : null}
           </div>
           <div className="flex-1 min-w-0">
-            {isOwner ? (
-              <InlineText value={sheet.characterName} onSave={saveCharacterName} maxLength={100} className="text-2xl font-bold text-gradient truncate block" />
-            ) : (
-              <h1 className="text-2xl font-bold text-gradient truncate">{sheet.characterName}</h1>
-            )}
+            {isOwner ? <InlineText value={sheet.characterName} onSave={saveCharacterName} maxLength={100} className="text-2xl font-bold text-gradient truncate block" /> : <h1 className="text-2xl font-bold text-gradient truncate">{sheet.characterName}</h1>}
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              {isOwner ? (
-                <>
-                  <span className="badge badge-gold inline-flex items-center gap-1">Player: <InlineText value={sheet.playerName ?? ''} onSave={savePlayerName} maxLength={100} emptyDisplay="—" /></span>
-                  <span className="badge badge-gold inline-flex items-center gap-1">Level: <InlineNumber value={sheet.level} onSave={saveLevel} min={1} /></span>
-                </>
-              ) : (
-                <>
-                  {sheet.playerName && <span className="badge badge-gold">Player: {sheet.playerName}</span>}
-                  {sheet.level && <span className="badge badge-gold">Level: {sheet.level}</span>}
-                </>
-              )}
+              {isOwner ? (<><span className="badge badge-gold inline-flex items-center gap-1">Player: <InlineText value={sheet.playerName ?? ''} onSave={savePlayerName} maxLength={100} emptyDisplay="—" /></span><span className="badge badge-gold inline-flex items-center gap-1">Level: <InlineNumber value={sheet.level} onSave={saveLevel} min={1} /></span></>) : (<>{sheet.playerName && <span className="badge badge-gold">Player: {sheet.playerName}</span>}{sheet.level && <span className="badge badge-gold">Level: {sheet.level}</span>}</>)}
               {sheet.adventure && <span className="badge badge-gold">{sheet.adventure.campaign}</span>}
               <span className="badge badge-gold">{sheet.template.name}</span>
               <span className="text-xs text-muted">Created {new Date(sheet.createdAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</span>
             </div>
           </div>
-          {isOwner && (
-            <div className="flex gap-2 shrink-0">
-              <button onClick={() => setConfirmDelete(true)} className="btn-danger">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>Delete
-              </button>
-            </div>
-          )}
+          {isOwner && <div className="flex gap-2 shrink-0"><button onClick={() => setConfirmDelete(true)} className="btn-danger"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>Delete</button></div>}
         </div>
         {sheet.adventure && <><hr className="divider"/><div><h3 className="text-sm font-medium text-muted mb-1">Adventure</h3><p className="text-foreground/80 text-sm">{sheet.adventure.name}</p></div></>}
       </div>
 
-      {/* Tab Navigation */}
       <nav className="flex gap-1 flex-wrap">
         <button onClick={()=>setActiveTab('character')} className={tabClass('character')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Character</button>
         <button onClick={()=>setActiveTab('abilities')} className={tabClass('abilities')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>Abilities</button>
@@ -524,824 +383,60 @@ export default function CharacterSheetDetailPage() {
         <button onClick={()=>setActiveTab('story')} className={tabClass('story')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>Story</button>
       </nav>
 
-      {/* Character Tab */}
       {activeTab === 'character' && <div className="space-y-6">
-        {/* HP Card */}
         <div className="card !p-4 space-y-3">
-          <h3 className="font-semibold text-sm flex items-center gap-2">
-            Health Points
-            {isOwner ? (
-              <InlineText value={sheet.hpNotes ?? ''} onSave={saveHpNotes} placeholder="notes..." emptyDisplay="add notes" className="!text-xs !text-muted !font-normal" />
-            ) : (
-              sheet.hpNotes && <span className="text-xs text-muted font-normal">— {sheet.hpNotes}</span>
-            )}
-          </h3>
+          <h3 className="font-semibold text-sm flex items-center gap-2">Health Points{isOwner ? <InlineText value={sheet.hpNotes ?? ''} onSave={saveHpNotes} placeholder="notes..." emptyDisplay="add notes" className="!text-xs !text-muted !font-normal" /> : sheet.hpNotes && <span className="text-xs text-muted font-normal">— {sheet.hpNotes}</span>}</h3>
           <div className="flex items-center justify-between gap-3">
-            <div className="text-center">
-              <span className="text-muted text-xs block">Actual</span>
-              {isOwner ? (
-                <InlineNumber value={sheet.hpActual ?? 0} onSave={saveHpActual} min={0} className="text-xl font-bold text-foreground" />
-              ) : (
-                <span className="text-xl font-bold text-foreground">{sheet.hpActual ?? 0}</span>
-              )}
-            </div>
+            <div className="text-center"><span className="text-muted text-xs block">Actual</span>{isOwner ? <InlineNumber value={sheet.hpActual ?? 0} onSave={saveHpActual} min={0} className="text-xl font-bold text-foreground" /> : <span className="text-xl font-bold text-foreground">{sheet.hpActual ?? 0}</span>}</div>
             <span className="text-muted text-lg">/</span>
-            <div className="text-center">
-              <span className="text-muted text-xs block">Max</span>
-              {isOwner ? (
-                <InlineNumber value={sheet.hpMax ?? 0} onSave={saveHpMax} min={0} className="text-xl font-bold text-foreground" />
-              ) : (
-                <span className="text-xl font-bold text-foreground">{sheet.hpMax ?? 0}</span>
-              )}
-            </div>
+            <div className="text-center"><span className="text-muted text-xs block">Max</span>{isOwner ? <InlineNumber value={sheet.hpMax ?? 0} onSave={saveHpMax} min={0} className="text-xl font-bold text-foreground" /> : <span className="text-xl font-bold text-foreground">{sheet.hpMax ?? 0}</span>}</div>
           </div>
-          {isOwner && (
-            <div className="space-y-2 pt-2 border-t border-border">
-              <div className="flex items-center gap-2">
-                <input type="number" min={0} className="input-field py-1 text-xs flex-1" value={hpModifier||''} placeholder="Amount" onChange={e=>setHpModifier(parseInt(e.target.value,10)||0)}/>
-              </div>
-              <div className="flex gap-2">
-                <button type="button" onClick={()=>handleHpModify(1)} disabled={!hpModifier} className="btn-primary text-xs flex-1 py-1">+ Heal</button>
-                <button type="button" onClick={()=>handleHpModify(-1)} disabled={!hpModifier} className="btn-danger text-xs flex-1 py-1">− Damage</button>
-              </div>
-            </div>
-          )}
+          {isOwner && <div className="space-y-2 pt-2 border-t border-border"><div className="flex items-center gap-2"><input type="number" min={0} className="input-field py-1 text-xs flex-1" value={hpModifier||''} placeholder="Amount" onChange={e=>setHpModifier(parseInt(e.target.value,10)||0)}/></div><div className="flex gap-2"><button type="button" onClick={()=>handleHpModify(1)} disabled={!hpModifier} className="btn-primary text-xs flex-1 py-1">+ Heal</button><button type="button" onClick={()=>handleHpModify(-1)} disabled={!hpModifier} className="btn-danger text-xs flex-1 py-1">− Damage</button></div></div>}
         </div>
 
-        {/* Character Info */}
-        {sheet.fieldValues.length > 0 && (
-          <div className="card !p-6">
-            <h3 className="font-semibold mb-3">Character Info</h3>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {sheet.fieldValues.map(fv => (
-                <div key={fv.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
-                  <span className="text-sm text-muted">{fv.templateField.label}</span>
-                  {isOwner ? (
-                    <InlineText value={fv.value} onSave={(v) => saveFieldValue(fv.templateFieldId, v)} className="text-sm font-medium text-foreground" />
-                  ) : (
-                    <span className="text-sm font-medium text-foreground">{fv.value || '—'}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {sheet.fieldValues.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-3">Character Info</h3><div className="grid gap-2 sm:grid-cols-2">{sheet.fieldValues.map(fv => <div key={fv.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border"><span className="text-sm text-muted">{fv.templateField.label}</span>{isOwner ? <InlineText value={fv.value} onSave={(v) => saveFieldValue(fv.templateFieldId, v)} className="text-sm font-medium text-foreground" /> : <span className="text-sm font-medium text-foreground">{fv.value || '—'}</span>}</div>)}</div></div>}
 
-        {/* Attributes */}
-        <div className="card !p-6">
-          <h3 className="font-semibold mb-4">Attributes</h3>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {sheet.template.attributes.map(attr => {
-              const val = sheet.values.find(v => v.attributeId === attr.id)
-              const modResult = modifierResults[attr.id]
-              return (
-                <div key={attr.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
-                  <span className="text-sm text-foreground">{attr.name}{sheet.template.attributeModifierFormula && <span className="text-[0.6rem] text-primary ml-1">mod</span>}</span>
-                  <div className="flex items-center gap-3">
-                    {isOwner ? (
-                      <InlineText value={val?.value ?? ''} onSave={(v) => saveAttributeValue(attr.id, v)} className="text-sm font-semibold text-foreground" />
-                    ) : (
-                      <span className="text-sm font-semibold text-foreground">{val?.value || '—'}</span>
-                    )}
-                    {modResult !== undefined && modResult !== null && (
-                      <span className="text-sm font-semibold text-primary">({modResult >= 0 ? '+' : ''}{modResult})</span>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+        <div className="card !p-6"><h3 className="font-semibold mb-4">Attributes</h3><div className="grid gap-3 sm:grid-cols-2">{sheet.template.attributes.map(attr => { const val = sheet.values.find(v => v.attributeId === attr.id); const modResult = modifierResults[attr.id]; return <div key={attr.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border"><span className="text-sm text-foreground">{attr.name}{sheet.template.attributeModifierFormula && <span className="text-[0.6rem] text-primary ml-1">mod</span>}</span><div className="flex items-center gap-3">{isOwner ? <InlineText value={val?.value ?? ''} onSave={(v) => saveAttributeValue(attr.id, v)} className="text-sm font-semibold text-foreground" /> : <span className="text-sm font-semibold text-foreground">{val?.value || '—'}</span>}{modResult !== undefined && modResult !== null && <span className="text-sm font-semibold text-primary">({modResult >= 0 ? '+' : ''}{modResult})</span>}</div></div> })}</div></div>
 
-        {/* Armor Class */}
-        {armorClass?.enabled && armorClass.fields.length > 0 && (
-          <div className="card !p-6">
-            <h3 className="font-semibold mb-4">Armor Class</h3>
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-24 h-24 rounded-full border-4 border-primary/30 flex items-center justify-center bg-background/50">
-                <span className="text-4xl font-bold text-primary">{acResult !== null ? acResult : '—'}</span>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Components</h4>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {armorClass.fields.map(field => {
-                    const acv = sheet.acValues.find(v => v.fieldId === field.id)
-                    const val = acv?.value ?? field.defaultValue
-                    const canEdit = isOwner && field.editableByPlayer
-                    return (
-                      <div key={field.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
-                        <div className="flex items-center gap-1 min-w-0">
-                          <span className="text-sm text-foreground truncate">{field.name}</span>
-                          {field.description && <span className="text-[0.6rem] text-muted hidden sm:inline">— {field.description}</span>}
-                        </div>
-                        {canEdit ? (
-                          <input type="number" className="input-field py-1 text-xs w-16 text-right" value={val} onChange={e => handleAcFieldChange(field.id, e.target.value)} />
-                        ) : (
-                          <span className="text-sm font-semibold text-foreground">{val}</span>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-              {armorClass.attributeModifierIds.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Attribute Modifiers</h4>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                  {armorClass.attributeModifierIds.map(attrKey => {
-                      const attr = sheet.template.attributes.find(a => a.key === attrKey)
-                      if (!attr) return null
-                      const modResult = modifierResults[attr.id]
-                      return (
-                        <div key={attrKey} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border opacity-80">
-                          <span className="text-sm text-foreground truncate">{attr.name} Modifier</span>
-                          <span className="text-sm font-semibold text-muted" style={{opacity: 0.6}}>
-                            {modResult !== null && modResult !== undefined ? `${modResult >= 0 ? '+' : ''}${modResult}` : '—'}
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        {armorClass?.enabled && armorClass.fields.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-4">Armor Class</h3><div className="flex items-center justify-center mb-4"><div className="w-24 h-24 rounded-full border-4 border-primary/30 flex items-center justify-center bg-background/50"><span className="text-4xl font-bold text-primary">{acResult !== null ? acResult : '—'}</span></div></div><div className="space-y-3"><div><h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Components</h4><div className="grid gap-2 sm:grid-cols-2">{armorClass.fields.map(field => { const acv = sheet.acValues.find(v => v.fieldId === field.id); const val = acv?.value ?? field.defaultValue; const canEdit = isOwner && field.editableByPlayer; return <div key={field.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border"><div className="flex items-center gap-1 min-w-0"><span className="text-sm text-foreground truncate">{field.name}</span>{field.description && <span className="text-[0.6rem] text-muted hidden sm:inline">— {field.description}</span>}</div>{canEdit ? <input type="number" className="input-field py-1 text-xs w-16 text-right" value={val} onChange={e => handleAcFieldChange(field.id, e.target.value)} /> : <span className="text-sm font-semibold text-foreground">{val}</span>}</div> })}</div></div>{armorClass.attributeModifierIds.length > 0 && <div><h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Attribute Modifiers</h4><div className="grid gap-2 sm:grid-cols-2">{armorClass.attributeModifierIds.map(attrKey => { const attr = sheet.template.attributes.find(a => a.key === attrKey); if (!attr) return null; const modResult = modifierResults[attr.id]; return <div key={attrKey} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border opacity-80"><span className="text-sm text-foreground truncate">{attr.name} Modifier</span><span className="text-sm font-semibold text-muted" style={{opacity: 0.6}}>{modResult !== null && modResult !== undefined ? `${modResult >= 0 ? '+' : ''}${modResult}` : '—'}</span></div> })}</div></div>}</div></div>}
 
-        {/* Point Pools */}
-        {sheet.template.pointPools.length > 0 && (
-          <div className="card !p-6">
-            <h3 className="font-semibold mb-4">Point Pools</h3>
-            <div className="grid gap-3 sm:grid-cols-1">
-              {sheet.template.pointPools.map(pool => {
-                const ppv = sheet.pointPoolValues.find(v => v.pointPoolId === pool.id)
-                const current = ppv?.current ?? (pool.currentStartsFull ? pool.defaultMaximum : 0)
-                const maximum = ppv?.maximum ?? pool.defaultMaximum
-                const canEdit = isOwner && pool.editableByPlayer
-                return (
-                  <div key={pool.id} className="rounded-lg border border-border bg-background/30 p-4 flex items-center justify-between">
-                    <div className="min-w-0">
-                      <span className="text-sm font-medium text-foreground">{pool.name}</span>
-                      {pool.description && <span className="text-xs text-muted ml-2">— {pool.description}</span>}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-3">
-                      {canEdit ? (
-                        <input
-                          type="number"
-                          min={0}
-                          max={maximum}
-                          className="input-field py-1 text-xs w-20 text-center font-semibold"
-                          value={current}
-                          onChange={e => handlePointPoolChange(pool.id, parseInt(e.target.value, 10) || 0)}
-                        />
-                      ) : (
-                        <span className="text-sm font-semibold text-foreground">{current}</span>
-                      )}
-                      <span className="text-sm text-muted">/</span>
-                      <span className="text-sm font-semibold text-foreground">{maximum}</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
+        {/* Point Pools — system-agnostic: player fills both Current and Maximum */}
+        {sheet.template.pointPools.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-4">Point Pools</h3><div className="grid gap-3 sm:grid-cols-1">{sheet.template.pointPools.map(pool => { const ppv = sheet.pointPoolValues.find(v => v.pointPoolId === pool.id); const canEdit = isOwner && pool.editableByPlayer; return <div key={pool.id} className="rounded-lg border border-border bg-background/30 p-4"><div className="mb-2"><span className="text-sm font-medium text-foreground">{pool.name}</span>{pool.description && <span className="text-xs text-muted ml-2">— {pool.description}</span>}</div><div className="flex items-center gap-3"><div className="flex-1"><span className="text-xs text-muted block mb-1">Current</span>{canEdit ? <input type="number" className="input-field py-1 text-xs w-full" value={ppv?.current ?? ''} placeholder="—" onChange={e => handlePointPoolChange(pool.id, 'current', e.target.value)} /> : <span className="text-sm font-semibold text-foreground">{ppv?.current ?? '—'}</span>}</div><div className="flex-1"><span className="text-xs text-muted block mb-1">Maximum</span>{canEdit ? <input type="number" className="input-field py-1 text-xs w-full" value={ppv?.maximum ?? ''} placeholder="—" onChange={e => handlePointPoolChange(pool.id, 'maximum', e.target.value)} /> : <span className="text-sm font-semibold text-foreground">{ppv?.maximum ?? '—'}</span>}</div></div></div> })}</div></div>}
 
-        {/* Skills */}
-        {sheet.skillValues.length > 0 && (
-          <div className="card !p-6">
-            <h3 className="font-semibold mb-4">Skills</h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {sheet.skillValues.map(sv => (
-                <CollapsibleSkillRow
-                  key={sv.id}
-                  skill={sv}
-                  result={skillResults[sv.skillId]}
-                  profiles={allProfiles.filter(p => {
-                    const tm = (p as any).targetMode ?? 'ALL_SKILLS'
-                    const tids: string[] = (p as any).targetSkillIds ?? []
-                    return tm === 'ALL_SKILLS' || tids.length === 0 || tids.includes(sv.skill.name)
-                  })}
-                  selections={profileSelections[sv.skillId] || {}}
-                  active={activeSkills[sv.skillId] ?? false}
-                  others={othersValues[sv.skillId] ?? 0}
-                  onToggleActive={() => handleSkillToggle(sv.skillId)}
-                  onOthersChange={(no) => handleOthersChange(sv.skillId, no)}
-                  onProfileChange={(pid, oid) => handleProfileChange(sv.skillId, pid, oid)}
-                  onAttributeChange={(attrId) => handleSkillAttributeChange(sv.skillId, attrId)}
-                  templateAttributes={sheet.template.attributes}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="text-center">
-          <p className="text-xs text-muted">{isOwner ? 'You own this character sheet.' : 'This character sheet belongs to another player.'}</p>
-        </div>
+        {sheet.skillValues.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-4">Skills</h3><div className="grid gap-3 sm:grid-cols-2">{sheet.skillValues.map(sv => <CollapsibleSkillRow key={sv.id} skill={sv} result={skillResults[sv.skillId]} profiles={allProfiles.filter(p => { const tm = (p as any).targetMode ?? 'ALL_SKILLS'; const tids: string[] = (p as any).targetSkillIds ?? []; return tm === 'ALL_SKILLS' || tids.length === 0 || tids.includes(sv.skill.name) })} selections={profileSelections[sv.skillId] || {}} active={activeSkills[sv.skillId] ?? false} others={othersValues[sv.skillId] ?? 0} onToggleActive={() => handleSkillToggle(sv.skillId)} onOthersChange={(no) => handleOthersChange(sv.skillId, no)} onProfileChange={(pid, oid) => handleProfileChange(sv.skillId, pid, oid)} onAttributeChange={(attrId) => handleSkillAttributeChange(sv.skillId, attrId)} templateAttributes={sheet.template.attributes} />)}</div></div>}
+        <div className="text-center"><p className="text-xs text-muted">{isOwner ? 'You own this character sheet.' : 'This character sheet belongs to another player.'}</p></div>
       </div>}
 
-      {/* Abilities Tab */}
-      {activeTab === 'abilities' && <AbilitiesTab
-        abilities={abilities}
-        isOwner={isOwner}
-        sheetId={sheet.id}
-        selectedLevels={selectedLevels}
-        setAbilities={setAbilities}
-        setSelectedLevels={setSelectedLevels}
-        showNewAbility={showNewAbility}
-        setShowNewAbility={setShowNewAbility}
-        newAbility={newAbility}
-        setNewAbility={setNewAbility}
-        abilitySaving={abilitySaving}
-        abilityError={abilityError}
-        handleCreateAbility={handleCreateAbility}
-        resetNewAbility={resetNewAbility}
-        handleDeleteAbility={handleDeleteAbility}
-        showAddLevelModal={showAddLevelModal}
-        setShowAddLevelModal={setShowAddLevelModal}
-        newLevelForm={newLevelForm}
-        setNewLevelForm={setNewLevelForm}
-        levelModalSaving={levelModalSaving}
-        setLevelModalSaving={setLevelModalSaving}
-        levelModalError={levelModalError}
-        setLevelModalError={setLevelModalError}
-      />}
-
-      {/* Inventory Tab */}
-      {activeTab === 'inventory' && <div className="space-y-4">
-        {inventoryItems.length > 0 && <div className="text-sm text-muted text-right">Total Weight: <span className="font-semibold text-foreground">{totalWeight.toFixed(1)} kg</span></div>}
-        {inventoryItems.length === 0 && !showNewItem && <div className="text-center py-6 text-muted-foreground text-sm italic">No items in inventory. {isOwner && 'Add one below.'}</div>}
-        <div className="space-y-3">
-          {inventoryItems.map(item => (
-            <div key={item.id} className="card !p-4 space-y-2">
-              <div className="flex items-start justify-between">
-                {isOwner ? (
-                  <InlineClickEdit value={item.name} onSave={async (v) => saveItemField(item.id, 'name', v)} className="font-semibold text-foreground" />
-                ) : (
-                  <h4 className="font-semibold text-foreground">{item.name}</h4>
-                )}
-                {isOwner && (
-                  <button onClick={() => handleDeleteItem(item.id)} className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors shrink-0 ml-2">Delete</button>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-3 text-xs text-muted">
-                {isOwner ? (
-                  <>
-                    <span className="inline-flex items-center gap-1">Weight: <InlineClickEdit value={item.weight?.toString() ?? ''} onSave={async (v) => saveItemField(item.id, 'weight', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" /> kg</span>
-                    <span className="inline-flex items-center gap-1">Cost: <InlineClickEdit value={item.cost ?? ''} onSave={async (v) => saveItemField(item.id, 'cost', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-20" emptyDisplay="—" /></span>
-                  </>
-                ) : (
-                  <>
-                    {item.weight != null && <span>Weight: {item.weight} kg</span>}
-                    {item.cost && <span>Cost: {item.cost}</span>}
-                  </>
-                )}
-              </div>
-              {isOwner ? (
-                <div>
-                  <button type="button" onClick={() => setExpandedItems(p => ({ ...p, [item.id]: !p[item.id] }))} className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors">
-                    <svg className={`w-3 h-3 transition-transform ${expandedItems[item.id] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                    Description
-                  </button>
-                  {expandedItems[item.id] && (
-                    <div className="mt-1 pl-4">
-                      <InlineClickEdit
-                        value={item.description ?? ''}
-                        onSave={async (v) => saveItemField(item.id, 'description', v)}
-                        as="textarea"
-                        className="text-sm text-muted-foreground whitespace-pre-wrap"
-                        emptyDisplay="Add description..."
-                      />
-                    </div>
-                  )}
-                </div>
-              ) : (
-                item.description && (
-                  <div>
-                    <button type="button" onClick={() => setExpandedItems(p => ({ ...p, [item.id]: !p[item.id] }))} className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors">
-                      <svg className={`w-3 h-3 transition-transform ${expandedItems[item.id] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                      Description
-                    </button>
-                    {expandedItems[item.id] && <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1 pl-4">{item.description}</p>}
-                  </div>
-                )
-              )}
-            </div>
-          ))}
-        </div>
-        {isOwner && !showNewItem && <button onClick={() => setShowNewItem(true)} className="btn-primary text-sm">+ Add Item</button>}
-        {isOwner && showNewItem && <form onSubmit={handleCreateItem} className="card !p-4 space-y-3 border-primary/20">
-          <h4 className="text-sm font-semibold text-primary">New Item</h4>
-          <div><label className="text-xs text-muted">Name</label><input className="input-field" value={newItem.name} onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Long Sword"/></div>
-          <div className="grid grid-cols-2 gap-2"><div><label className="text-xs text-muted">Weight (kg)</label><input type="number" step="any" className="input-field" value={newItem.weight} onChange={e => setNewItem(p => ({ ...p, weight: e.target.value }))} placeholder="3"/></div><div><label className="text-xs text-muted">Cost</label><input className="input-field" value={newItem.cost} onChange={e => setNewItem(p => ({ ...p, cost: e.target.value }))} placeholder="150 gp"/></div></div>
-          <div><label className="text-xs text-muted">Description</label><textarea className="input-field resize-none" rows={2} value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))} placeholder="Steel longsword forged by..."/></div>
-          {itemError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{itemError}</div>}
-          <div className="flex gap-2 justify-end"><button type="button" onClick={resetNewItem} disabled={itemSaving} className="btn-ghost text-sm">Cancel</button><button type="submit" disabled={itemSaving || !newItem.name.trim()} className="btn-primary text-sm">{itemSaving ? 'Creating...' : 'Create'}</button></div>
-        </form>}
-      </div>}
-
-      {/* Story Tab */}
-      {activeTab === 'story' && <div className="space-y-4">
-        <div className="card !p-6 space-y-4">
-          {isOwner ? (
-            <>
-              <InlineTextarea value={story?.appearance ?? ''} label="Appearance" onSave={(v) => saveStoryField('appearance', v)} rows={3} emptyDisplay="Add appearance description..." />
-              <InlineTextarea value={story?.backstory ?? ''} label="Backstory" onSave={(v) => saveStoryField('backstory', v)} rows={5} emptyDisplay="Add backstory..." />
-              <InlineTextarea value={story?.personality ?? ''} label="Personality" onSave={(v) => saveStoryField('personality', v)} rows={3} emptyDisplay="Add personality description..." />
-              <InlineTextarea value={story?.goals ?? ''} label="Goals" onSave={(v) => saveStoryField('goals', v)} rows={3} emptyDisplay="Add character goals..." />
-              <InlineTextarea value={story?.notes ?? ''} label="Notes" onSave={(v) => saveStoryField('notes', v)} rows={3} emptyDisplay="Add notes..." />
-            </>
-          ) : (
-            <>
-              <StoryField label="Appearance" value={story?.appearance} />
-              <StoryField label="Backstory" value={story?.backstory} />
-              <StoryField label="Personality" value={story?.personality} />
-              <StoryField label="Goals" value={story?.goals} />
-              <StoryField label="Notes" value={story?.notes} />
-            </>
-          )}
-        </div>
-      </div>}
-
+      {activeTab === 'abilities' && <AbilitiesTab abilities={abilities} isOwner={isOwner} sheetId={sheet.id} selectedLevels={selectedLevels} setAbilities={setAbilities} setSelectedLevels={setSelectedLevels} showNewAbility={showNewAbility} setShowNewAbility={setShowNewAbility} newAbility={newAbility} setNewAbility={setNewAbility} abilitySaving={abilitySaving} abilityError={abilityError} handleCreateAbility={handleCreateAbility} resetNewAbility={resetNewAbility} handleDeleteAbility={handleDeleteAbility} showAddLevelModal={showAddLevelModal} setShowAddLevelModal={setShowAddLevelModal} newLevelForm={newLevelForm} setNewLevelForm={setNewLevelForm} levelModalSaving={levelModalSaving} setLevelModalSaving={setLevelModalSaving} levelModalError={levelModalError} setLevelModalError={setLevelModalError} />}
+      {activeTab === 'inventory' && <div className="space-y-4">{inventoryItems.length > 0 && <div className="text-sm text-muted text-right">Total Weight: <span className="font-semibold text-foreground">{totalWeight.toFixed(1)} kg</span></div>}{inventoryItems.length === 0 && !showNewItem && <div className="text-center py-6 text-muted-foreground text-sm italic">No items in inventory. {isOwner && 'Add one below.'}</div>}<div className="space-y-3">{inventoryItems.map(item => <div key={item.id} className="card !p-4 space-y-2"><div className="flex items-start justify-between">{isOwner ? <InlineClickEdit value={item.name} onSave={async (v) => saveItemField(item.id, 'name', v)} className="font-semibold text-foreground" /> : <h4 className="font-semibold text-foreground">{item.name}</h4>}{isOwner && <button onClick={() => handleDeleteItem(item.id)} className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors shrink-0 ml-2">Delete</button>}</div><div className="flex flex-wrap gap-3 text-xs text-muted">{isOwner ? <><span className="inline-flex items-center gap-1">Weight: <InlineClickEdit value={item.weight?.toString() ?? ''} onSave={async (v) => saveItemField(item.id, 'weight', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" /> kg</span><span className="inline-flex items-center gap-1">Cost: <InlineClickEdit value={item.cost ?? ''} onSave={async (v) => saveItemField(item.id, 'cost', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-20" emptyDisplay="—" /></span></> : <>{item.weight != null && <span>Weight: {item.weight} kg</span>}{item.cost && <span>Cost: {item.cost}</span>}</>}</div>{isOwner ? <div><button type="button" onClick={() => setExpandedItems(p => ({ ...p, [item.id]: !p[item.id] }))} className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors"><svg className={`w-3 h-3 transition-transform ${expandedItems[item.id] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>Description</button>{expandedItems[item.id] && <div className="mt-1 pl-4"><InlineClickEdit value={item.description ?? ''} onSave={async (v) => saveItemField(item.id, 'description', v)} as="textarea" className="text-sm text-muted-foreground whitespace-pre-wrap" emptyDisplay="Add description..." /></div>}</div> : item.description && <div><button type="button" onClick={() => setExpandedItems(p => ({ ...p, [item.id]: !p[item.id] }))} className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors"><svg className={`w-3 h-3 transition-transform ${expandedItems[item.id] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>Description</button>{expandedItems[item.id] && <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1 pl-4">{item.description}</p>}</div>}</div>)}</div>{isOwner && !showNewItem && <button onClick={() => setShowNewItem(true)} className="btn-primary text-sm">+ Add Item</button>}{isOwner && showNewItem && <form onSubmit={handleCreateItem} className="card !p-4 space-y-3 border-primary/20"><h4 className="text-sm font-semibold text-primary">New Item</h4><div><label className="text-xs text-muted">Name</label><input className="input-field" value={newItem.name} onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Long Sword"/></div><div className="grid grid-cols-2 gap-2"><div><label className="text-xs text-muted">Weight (kg)</label><input type="number" step="any" className="input-field" value={newItem.weight} onChange={e => setNewItem(p => ({ ...p, weight: e.target.value }))} placeholder="3"/></div><div><label className="text-xs text-muted">Cost</label><input className="input-field" value={newItem.cost} onChange={e => setNewItem(p => ({ ...p, cost: e.target.value }))} placeholder="150 gp"/></div></div><div><label className="text-xs text-muted">Description</label><textarea className="input-field resize-none" rows={2} value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))} placeholder="Steel longsword forged by..."/></div>{itemError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{itemError}</div>}<div className="flex gap-2 justify-end"><button type="button" onClick={resetNewItem} disabled={itemSaving} className="btn-ghost text-sm">Cancel</button><button type="submit" disabled={itemSaving || !newItem.name.trim()} className="btn-primary text-sm">{itemSaving ? 'Creating...' : 'Create'}</button></div></form>}</div>}
+      {activeTab === 'story' && <div className="space-y-4"><div className="card !p-6 space-y-4">{isOwner ? <><InlineTextarea value={story?.appearance ?? ''} label="Appearance" onSave={(v) => saveStoryField('appearance', v)} rows={3} emptyDisplay="Add appearance description..." /><InlineTextarea value={story?.backstory ?? ''} label="Backstory" onSave={(v) => saveStoryField('backstory', v)} rows={5} emptyDisplay="Add backstory..." /><InlineTextarea value={story?.personality ?? ''} label="Personality" onSave={(v) => saveStoryField('personality', v)} rows={3} emptyDisplay="Add personality description..." /><InlineTextarea value={story?.goals ?? ''} label="Goals" onSave={(v) => saveStoryField('goals', v)} rows={3} emptyDisplay="Add character goals..." /><InlineTextarea value={story?.notes ?? ''} label="Notes" onSave={(v) => saveStoryField('notes', v)} rows={3} emptyDisplay="Add notes..." /></> : <><StoryField label="Appearance" value={story?.appearance} /><StoryField label="Backstory" value={story?.backstory} /><StoryField label="Personality" value={story?.personality} /><StoryField label="Goals" value={story?.goals} /><StoryField label="Notes" value={story?.notes} /></>}</div></div>}
       {confirmDelete && <DeleteModal name={sheet.characterName} error={deleteError} loading={deleting} onCancel={() => setConfirmDelete(false)} onConfirm={handleDelete} />}
     </div>
   </main>)
 }
 
-// ── Helper components ──
-
-function StoryField({ label, value }: { label: string; value: string | null | undefined }) {
-  const text = value?.trim()
-  if (!text) return null
-  return <div><h4 className="text-sm font-medium text-muted mb-1">{label}</h4><p className="text-sm text-foreground/80 whitespace-pre-wrap">{text}</p></div>
-}
+function StoryField({ label, value }: { label: string; value: string | null | undefined }) { const text = value?.trim(); if (!text) return null; return <div><h4 className="text-sm font-medium text-muted mb-1">{label}</h4><p className="text-sm text-foreground/80 whitespace-pre-wrap">{text}</p></div> }
 
 function CollapsibleSkillRow({ skill, result, profiles, selections, active, others, onToggleActive, onOthersChange, onProfileChange, onAttributeChange, templateAttributes }: { skill: SkillValue; result: number | null; profiles: SkillModifierProfile[]; selections: Record<string, string | null>; active: boolean; others: number; onToggleActive: () => void; onOthersChange: (v: number) => void; onProfileChange: (profileId: string, optionId: string | null) => void; onAttributeChange?: (attributeId: string | null) => void; templateAttributes?: { id: string; key: string; name: string }[] }) {
   const [expanded, setExpanded] = useState(false)
   const hasAttrDropdown = (skill.skill.allowedAttributeIds?.length ?? 0) > 0 && !!templateAttributes && !!onAttributeChange
-  return (
-    <div className={`rounded-lg border border-border bg-background/30 overflow-hidden transition-opacity ${active ? '' : 'opacity-40'}`}>
-      <div className="flex items-center px-4 py-3">
-        <input type="checkbox" checked={active} onChange={onToggleActive} className="shrink-0 w-4 h-4 rounded border-border accent-primary cursor-pointer mr-3" />
-        <button type="button" onClick={() => setExpanded(!expanded)} disabled={!active} className="flex items-center justify-between flex-1 min-w-0 text-left hover:bg-background/50 transition-colors disabled:cursor-default disabled:hover:bg-transparent">
-          <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium text-foreground truncate">{skill.skill.name}</span>
-            {skill.skill.description && <span className="text-xs text-muted truncate hidden sm:inline">— {skill.skill.description}</span>}
-          </div>
-          <div className="flex items-center gap-2 shrink-0 ml-3" onClick={e => e.stopPropagation()}>
-            {hasAttrDropdown && (
-              <select className="input-field py-0.5 text-xs w-auto min-w-[90px]" value={skill.selectedAttributeId ?? ''} onChange={e => onAttributeChange!(e.target.value || null)}>
-                {skill.skill.allowedAttributeIds.map(attrId => { const a = templateAttributes!.find(x => x.id === attrId); if (!a) return null; return <option key={attrId} value={attrId}>{a.name}</option> })}
-              </select>
-            )}
-            <span className="text-base font-bold text-primary">{active ? (result != null ? result : '—') : '0'}</span>
-            <svg className={`w-4 h-4 text-muted transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
-          </div>
-        </button>
-      </div>
-      {expanded && active && (
-        <div className="px-4 py-3 space-y-2 border-t border-border ml-10">
-          {profiles.map(profile => {
-            const sid = selections[profile.id]
-            const so = sid ? profile.options.find(o => o.id === sid) : null
-            return (
-              <div key={profile.id} className="flex items-center gap-2">
-                <span className="text-xs text-muted shrink-0 min-w-[80px]">{profile.name}:</span>
-                <select className="input-field py-1 text-xs flex-1" value={sid ?? ''} onChange={e => { onProfileChange(profile.id, e.target.value || null) }}>
-                  <option value="">— Select —</option>
-                  {profile.options.map(opt => <option key={opt.id} value={opt.id}>{opt.label} ({opt.value >= 0 ? '+' : ''}{opt.value})</option>)}
-                </select>
-                {so && <span className="text-xs font-mono text-primary shrink-0">{so.value >= 0 ? '+' : ''}{so.value}</span>}
-              </div>
-            )
-          })}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted shrink-0 min-w-[80px]">Others:</span>
-            <input type="number" min={0} step={1} className="input-field py-1 text-xs w-20" value={others || ''} placeholder="0" onChange={e => onOthersChange(parseInt(e.target.value, 10) || 0)} />
-            {others > 0 && <span className="text-xs font-mono text-primary">+{others}</span>}
-          </div>
-        </div>
-      )}
-    </div>
-  )
+  return <div className={`rounded-lg border border-border bg-background/30 overflow-hidden transition-opacity ${active ? '' : 'opacity-40'}`}><div className="flex items-center px-4 py-3"><input type="checkbox" checked={active} onChange={onToggleActive} className="shrink-0 w-4 h-4 rounded border-border accent-primary cursor-pointer mr-3" /><button type="button" onClick={() => setExpanded(!expanded)} disabled={!active} className="flex items-center justify-between flex-1 min-w-0 text-left hover:bg-background/50 transition-colors disabled:cursor-default disabled:hover:bg-transparent"><div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap"><span className="text-sm font-medium text-foreground truncate">{skill.skill.name}</span>{skill.skill.description && <span className="text-xs text-muted truncate hidden sm:inline">— {skill.skill.description}</span>}</div><div className="flex items-center gap-2 shrink-0 ml-3" onClick={e => e.stopPropagation()}>{hasAttrDropdown && <select className="input-field py-0.5 text-xs w-auto min-w-[90px]" value={skill.selectedAttributeId ?? ''} onChange={e => onAttributeChange!(e.target.value || null)}>{skill.skill.allowedAttributeIds.map(attrId => { const a = templateAttributes!.find(x => x.id === attrId); if (!a) return null; return <option key={attrId} value={attrId}>{a.name}</option> })}</select>}<span className="text-base font-bold text-primary">{active ? (result != null ? result : '—') : '0'}</span><svg className={`w-4 h-4 text-muted transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg></div></button></div>{expanded && active && <div className="px-4 py-3 space-y-2 border-t border-border ml-10">{profiles.map(profile => { const sid = selections[profile.id]; const so = sid ? profile.options.find(o => o.id === sid) : null; return <div key={profile.id} className="flex items-center gap-2"><span className="text-xs text-muted shrink-0 min-w-[80px]">{profile.name}:</span><select className="input-field py-1 text-xs flex-1" value={sid ?? ''} onChange={e => { onProfileChange(profile.id, e.target.value || null) }}><option value="">— Select —</option>{profile.options.map(opt => <option key={opt.id} value={opt.id}>{opt.label} ({opt.value >= 0 ? '+' : ''}{opt.value})</option>)}</select>{so && <span className="text-xs font-mono text-primary shrink-0">{so.value >= 0 ? '+' : ''}{so.value}</span>}</div> })}{others > 0 && <div className="flex items-center gap-2"><span className="text-xs text-muted shrink-0 min-w-[80px]">Others:</span><input type="number" min={0} step={1} className="input-field py-1 text-xs w-20" value={others || ''} placeholder="0" onChange={e => onOthersChange(parseInt(e.target.value, 10) || 0)} /><span className="text-xs font-mono text-primary">+{others}</span></div>}</div>}</div>
 }
 
-// ── InlineClickEdit: click-to-edit for ability/item fields ──
-function InlineClickEdit({
-  value,
-  onSave,
-  as = 'input',
-  className = '',
-  inputClassName = '',
-  emptyDisplay = '—',
-  rows = 2,
-}: {
-  value: string
-  onSave: (value: string) => Promise<void>
-  as?: 'input' | 'textarea'
-  className?: string
-  inputClassName?: string
-  emptyDisplay?: string
-  rows?: number
-}) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(value)
-  const [saving, setSaving] = useState(false)
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
-
+function InlineClickEdit({ value, onSave, as = 'input', className = '', inputClassName = '', emptyDisplay = '—', rows = 2 }: { value: string; onSave: (value: string) => Promise<void>; as?: 'input' | 'textarea'; className?: string; inputClassName?: string; emptyDisplay?: string; rows?: number }) {
+  const [editing, setEditing] = useState(false); const [draft, setDraft] = useState(value); const [saving, setSaving] = useState(false); const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
   useEffect(() => { setDraft(value) }, [value])
-
-  const commit = useCallback(async () => {
-    const trimmed = draft.trim()
-    if (trimmed === value.trim()) { setEditing(false); return }
-    setSaving(true)
-    try { await onSave(trimmed); setEditing(false) }
-    catch { setDraft(value) }
-    finally { setSaving(false) }
-  }, [draft, value, onSave])
-
-  if (!editing) {
-    const display = value?.trim()
-    return (
-      <button
-        type="button"
-        onClick={() => { setEditing(true); setTimeout(() => { if (inputRef.current) (inputRef.current as HTMLInputElement).focus() }, 0) }}
-        className={`text-left hover:bg-foreground/5 rounded px-1 -mx-1 transition-colors cursor-pointer ${display ? '' : 'text-muted italic'} ${className}`}
-      >
-        {display || emptyDisplay}
-      </button>
-    )
-  }
-
-  if (as === 'textarea') {
-    return (
-      <div className="relative">
-        <textarea
-          ref={inputRef as React.RefObject<HTMLTextAreaElement>}
-          value={draft}
-          rows={rows}
-          onChange={e => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={e => { if (e.key === 'Escape') { setDraft(value); setEditing(false) } }}
-          className={`input-field resize-none text-sm w-full ${inputClassName}`}
-          autoFocus
-          disabled={saving}
-        />
-        {saving && <div className="absolute top-2 right-2 w-3 h-3 border border-primary/30 border-t-primary rounded-full animate-spin" />}
-      </div>
-    )
-  }
-
-  return (
-    <div className="relative inline-block">
-      <input
-        ref={inputRef as React.RefObject<HTMLInputElement>}
-        type="text"
-        value={draft}
-        onChange={e => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setDraft(value); setEditing(false) } }}
-        className={`input-field py-0.5 px-1 text-sm ${inputClassName}`}
-        autoFocus
-        disabled={saving}
-      />
-      {saving && <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 border border-primary/30 border-t-primary rounded-full animate-spin" />}
-    </div>
-  )
+  const commit = useCallback(async () => { const trimmed = draft.trim(); if (trimmed === value.trim()) { setEditing(false); return }; setSaving(true); try { await onSave(trimmed); setEditing(false) } catch { setDraft(value) } finally { setSaving(false) } }, [draft, value, onSave])
+  if (!editing) { const display = value?.trim(); return <button type="button" onClick={() => { setEditing(true); setTimeout(() => { if (inputRef.current) (inputRef.current as HTMLInputElement).focus() }, 0) }} className={`text-left hover:bg-foreground/5 rounded px-1 -mx-1 transition-colors cursor-pointer ${display ? '' : 'text-muted italic'} ${className}`}>{display || emptyDisplay}</button> }
+  if (as === 'textarea') return <div className="relative"><textarea ref={inputRef as React.RefObject<HTMLTextAreaElement>} value={draft} rows={rows} onChange={e => setDraft(e.target.value)} onBlur={commit} onKeyDown={e => { if (e.key === 'Escape') { setDraft(value); setEditing(false) } }} className={`input-field resize-none text-sm w-full ${inputClassName}`} autoFocus disabled={saving} />{saving && <div className="absolute top-2 right-2 w-3 h-3 border border-primary/30 border-t-primary rounded-full animate-spin" />}</div>
+  return <div className="relative inline-block"><input ref={inputRef as React.RefObject<HTMLInputElement>} type="text" value={draft} onChange={e => setDraft(e.target.value)} onBlur={commit} onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setDraft(value); setEditing(false) } }} className={`input-field py-0.5 px-1 text-sm ${inputClassName}`} autoFocus disabled={saving} />{saving && <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 border border-primary/30 border-t-primary rounded-full animate-spin" />}</div>
 }
 
-// ── AbilitiesTab component ──
-
-function AbilitiesTab({
-  abilities, isOwner, sheetId, selectedLevels, setAbilities, setSelectedLevels,
-  showNewAbility, setShowNewAbility, newAbility, setNewAbility,
-  abilitySaving, abilityError, handleCreateAbility, resetNewAbility, handleDeleteAbility,
-  showAddLevelModal, setShowAddLevelModal, newLevelForm, setNewLevelForm,
-  levelModalSaving, setLevelModalSaving, levelModalError, setLevelModalError,
-}: {
-  abilities: Ability[]; isOwner: boolean; sheetId: string
-  selectedLevels: Record<string, string>
-  setAbilities: React.Dispatch<React.SetStateAction<Ability[]>>
-  setSelectedLevels: React.Dispatch<React.SetStateAction<Record<string, string>>>
-  showNewAbility: boolean; setShowNewAbility: React.Dispatch<React.SetStateAction<boolean>>
-  newAbility: { name: string; description: string; manaCost: string; cooldown: string; notes: string }
-  setNewAbility: React.Dispatch<React.SetStateAction<{ name: string; description: string; manaCost: string; cooldown: string; notes: string }>>
-  abilitySaving: boolean; abilityError: string | null
-  handleCreateAbility: (e: FormEvent) => Promise<void>
-  resetNewAbility: () => void; handleDeleteAbility: (aid: string) => Promise<void>
-  showAddLevelModal: string | null; setShowAddLevelModal: React.Dispatch<React.SetStateAction<string | null>>
-  newLevelForm: { level: number; copyFromPrevious: boolean }
-  setNewLevelForm: React.Dispatch<React.SetStateAction<{ level: number; copyFromPrevious: boolean }>>
-  levelModalSaving: boolean; setLevelModalSaving: React.Dispatch<React.SetStateAction<boolean>>
-  levelModalError: string | null; setLevelModalError: React.Dispatch<React.SetStateAction<string | null>>
-}) {
-  // Confirmation state
-  const [confirmDeleteAbility, setConfirmDeleteAbility] = useState<string | null>(null) // abilityId
-  const [confirmDeleteLevel, setConfirmDeleteLevel] = useState<string | null>(null) // levelId
-  const [deletingAbility, setDeletingAbility] = useState(false)
-  const [deletingLevel, setDeletingLevel] = useState(false)
-
-  function getSelectedLevel(ability: Ability): AbilityLevel | undefined {
-    const selId = selectedLevels[ability.id]
-    if (selId) return ability.levels.find(l => l.id === selId)
-    return ability.levels[ability.levels.length - 1]
-  }
-
-  async function handleAddLevel(abilityId: string) {
-    if (!sheetId) return
-    setLevelModalSaving(true); setLevelModalError(null)
-    try {
-      const level = await api.post<AbilityLevel>(`/character-sheets/${sheetId}/abilities/${abilityId}/levels`, {
-        level: newLevelForm.level,
-        copyFromPrevious: newLevelForm.copyFromPrevious,
-      })
-      setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, levels: [...a.levels, level] } : a))
-      setSelectedLevels(prev => ({ ...prev, [abilityId]: level.id }))
-      setShowAddLevelModal(null)
-    } catch (err) {
-      setLevelModalError(err instanceof Error ? err.message : 'Failed to create level')
-    } finally { setLevelModalSaving(false) }
-  }
-
-  async function handleConfirmDeleteAbility() {
-    if (!confirmDeleteAbility) return
-    setDeletingAbility(true)
-    try {
-      await handleDeleteAbility(confirmDeleteAbility)
-    } finally {
-      setDeletingAbility(false)
-      setConfirmDeleteAbility(null)
-    }
-  }
-
-  async function handleConfirmDeleteLevel() {
-    if (!confirmDeleteLevel || !sheetId) return
-    setDeletingLevel(true)
-    try {
-      await api.delete(`/character-sheets/${sheetId}/abilities/x/levels/${confirmDeleteLevel}`)
-      setAbilities(prev => prev.map(a => ({
-        ...a,
-        levels: a.levels.filter(l => l.id !== confirmDeleteLevel),
-      })))
-      // If the deleted level was selected, auto-select the last available
-      setSelectedLevels(prev => {
-        const next = { ...prev }
-        for (const a of abilities) {
-          if (a.levels.some(l => l.id === confirmDeleteLevel)) {
-            const remaining = a.levels.filter(l => l.id !== confirmDeleteLevel)
-            if (next[a.id] === confirmDeleteLevel) {
-              next[a.id] = remaining.length > 0 ? remaining[remaining.length - 1].id : ''
-            }
-            break
-          }
-        }
-        return next
-      })
-    } catch {} finally {
-      setDeletingLevel(false)
-      setConfirmDeleteLevel(null)
-    }
-  }
-
-  return (
-    <div className="space-y-4">
-      {abilities.length === 0 && !showNewAbility && (
-        <div className="text-center py-6 text-muted-foreground text-sm italic">
-          No abilities yet. {isOwner && 'Create one below.'}
-        </div>
-      )}
-      <div className="space-y-3">
-        {abilities.map(a => {
-          const selLevel = getSelectedLevel(a)
-          const maxLevel = a.levels.length > 0 ? Math.max(...a.levels.map(l => l.level)) : 0
-          return (
-            <div key={a.id} className="card !p-4 space-y-3">
-              {/* Header: name + level selector + actions */}
-              <div className="flex items-start gap-2 flex-wrap">
-                {isOwner ? (
-                  <InlineClickEdit
-                    value={a.name}
-                    onSave={async (v) => {
-                      await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}`, { name: v.trim() })
-                      setAbilities(prev => prev.map(x => x.id === a.id ? { ...x, name: v.trim() } : x))
-                    }}
-                    className="font-semibold text-foreground"
-                  />
-                ) : (
-                  <h4 className="font-semibold text-foreground">{a.name}</h4>
-                )}
-                {/* Level selector */}
-                {a.levels.length > 0 && (
-                  <select
-                    className="input-field py-0.5 px-2 text-xs shrink-0 ml-auto"
-                    value={selLevel?.id ?? ''}
-                    onChange={e => setSelectedLevels(prev => ({ ...prev, [a.id]: e.target.value }))}
-                  >
-                    {a.levels.map(l => (
-                      <option key={l.id} value={l.id}>Level {l.level}</option>
-                    ))}
-                  </select>
-                )}
-                {isOwner && (
-                  <button onClick={() => setConfirmDeleteAbility(a.id)} className="text-xs text-danger hover:text-danger/80 px-1 py-1 transition-colors shrink-0" title="Delete ability">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                  </button>
-                )}
-              </div>
-
-              {/* Current level data */}
-              {selLevel ? (
-                <>
-                  {/* Level info bar: delete level button */}
-                  {isOwner && a.levels.length > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-[0.65rem] text-muted font-medium">Level {selLevel.level}</span>
-                      {a.levels.length > 1 && (
-                        <button
-                          onClick={() => setConfirmDeleteLevel(selLevel.id)}
-                          className="text-[0.6rem] text-danger/70 hover:text-danger px-1 py-0.5 transition-colors"
-                          title="Delete this level"
-                        >
-                          Delete Level
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  <div className="flex flex-wrap gap-3 text-xs text-muted">
-                    {isOwner ? (
-                      <>
-                        <span className="inline-flex items-center gap-1">Mana:
-                          <InlineClickEdit value={selLevel.manaCost?.toString() ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { manaCost: v.trim() ? parseInt(v, 10) : null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, manaCost: v.trim() ? parseInt(v, 10) : null } : l) }))) } catch {} }} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" />
-                        </span>
-                        <span className="inline-flex items-center gap-1">Range:
-                          <InlineClickEdit value={selLevel.range ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { range: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, range: v.trim() || null } : l) }))) } catch {} }} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" />
-                        </span>
-                        <span className="inline-flex items-center gap-1">Cooldown:
-                          <InlineClickEdit value={selLevel.cooldown ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { cooldown: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, cooldown: v.trim() || null } : l) }))) } catch {} }} className="!text-xs !text-muted" inputClassName="!text-xs w-20" emptyDisplay="—" />
-                        </span>
-                        {selLevel.damage != null && (
-                          <span className="inline-flex items-center gap-1">Damage:
-                            <InlineClickEdit value={selLevel.damage ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { damage: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, damage: v.trim() || null } : l) }))) } catch {} }} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" />
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        {selLevel.manaCost != null && <span>Mana: {selLevel.manaCost}</span>}
-                        {selLevel.range && <span>Range: {selLevel.range}</span>}
-                        {selLevel.cooldown && <span>Cooldown: {selLevel.cooldown}</span>}
-                        {selLevel.damage && <span>Damage: {selLevel.damage}</span>}
-                      </>
-                    )}
-                  </div>
-                  {isOwner ? (
-                    <div>
-                      <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
-                      <InlineClickEdit value={selLevel.description ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { description: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, description: v.trim() || null } : l) }))) } catch {} }} as="textarea" className="text-sm text-muted-foreground whitespace-pre-wrap" emptyDisplay="Add description..." />
-                    </div>
-                  ) : (
-                    selLevel.description && (
-                      <div><h5 className="text-xs font-medium text-muted mb-1">Description</h5><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selLevel.description}</p></div>
-                    )
-                  )}
-                  {isOwner ? (
-                    <div>
-                      <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
-                      <InlineClickEdit value={selLevel.notes ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { notes: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, notes: v.trim() || null } : l) }))) } catch {} }} as="textarea" className="text-xs text-muted italic whitespace-pre-wrap" emptyDisplay="Add notes..." />
-                    </div>
-                  ) : (
-                    selLevel.notes && (
-                      <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><p className="text-xs text-muted italic whitespace-pre-wrap">{selLevel.notes}</p></div>
-                    )
-                  )}
-                </>
-              ) : (
-                <p className="text-xs text-muted italic">No levels added yet.</p>
-              )}
-
-              {/* Add Level button */}
-              {isOwner && (
-                <button
-                  onClick={() => {
-                    setShowAddLevelModal(a.id)
-                    setNewLevelForm({ level: maxLevel + 1, copyFromPrevious: a.levels.length > 0 })
-                    setLevelModalError(null)
-                  }}
-                  className="btn-ghost text-xs"
-                >
-                  + Add Level
-                </button>
-              )}
-            </div>
-          )
-        })}
-      </div>
-
-      {/* New Ability creation */}
-      {isOwner && !showNewAbility && (
-        <button onClick={() => setShowNewAbility(true)} className="btn-primary text-sm">+ New Ability</button>
-      )}
-      {isOwner && showNewAbility && (
-        <form onSubmit={handleCreateAbility} className="card !p-4 space-y-3 border-primary/20">
-          <h4 className="text-sm font-semibold text-primary">New Ability</h4>
-          <div><label className="text-xs text-muted">Name</label><input className="input-field" value={newAbility.name} onChange={e => setNewAbility(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Fireball" /></div>
-          <div><label className="text-xs text-muted">Description</label><textarea className="input-field resize-none" rows={2} value={newAbility.description} onChange={e => setNewAbility(p => ({ ...p, description: e.target.value }))} placeholder="Throws a fireball causing area damage." /></div>
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className="text-xs text-muted">Mana Cost</label><input type="number" className="input-field" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder="20" /></div>
-            <div><label className="text-xs text-muted">Cooldown</label><input className="input-field" value={newAbility.cooldown} onChange={e => setNewAbility(p => ({ ...p, cooldown: e.target.value }))} placeholder="2 Turns" /></div>
-          </div>
-          <div><label className="text-xs text-muted">Notes</label><textarea className="input-field resize-none" rows={2} value={newAbility.notes} onChange={e => setNewAbility(p => ({ ...p, notes: e.target.value }))} /></div>
-          {abilityError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{abilityError}</div>}
-          <div className="flex gap-2 justify-end">
-            <button type="button" onClick={resetNewAbility} disabled={abilitySaving} className="btn-ghost text-sm">Cancel</button>
-            <button type="submit" disabled={abilitySaving || !newAbility.name.trim()} className="btn-primary text-sm">{abilitySaving ? 'Creating...' : 'Create'}</button>
-          </div>
-        </form>
-      )}
-
-      {/* Add Level Modal */}
-      {showAddLevelModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="card !p-6 max-w-sm w-full space-y-4 border-primary/20">
-            <h3 className="font-semibold text-primary">Create Ability Level</h3>
-            <div>
-              <label className="text-xs text-muted block mb-1">Level</label>
-              <input type="number" min={2} className="input-field w-full" value={newLevelForm.level} onChange={e => setNewLevelForm(p => ({ ...p, level: parseInt(e.target.value, 10) || 1 }))} />
-            </div>
-            <div>
-              <label className="text-xs text-muted block mb-2">Copy information from previous level?</label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="copyPrev" checked={newLevelForm.copyFromPrevious} onChange={() => setNewLevelForm(p => ({ ...p, copyFromPrevious: true }))} className="accent-primary" />
-                  <span className="text-sm">Yes</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="copyPrev" checked={!newLevelForm.copyFromPrevious} onChange={() => setNewLevelForm(p => ({ ...p, copyFromPrevious: false }))} className="accent-primary" />
-                  <span className="text-sm">No</span>
-                </label>
-              </div>
-            </div>
-            {levelModalError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{levelModalError}</div>}
-            <div className="flex gap-2 justify-end">
-              <button type="button" onClick={() => setShowAddLevelModal(null)} disabled={levelModalSaving} className="btn-ghost text-sm">Cancel</button>
-              <button type="button" onClick={() => handleAddLevel(showAddLevelModal)} disabled={levelModalSaving} className="btn-primary text-sm">{levelModalSaving ? 'Creating...' : 'Create'}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Confirm Delete Ability Modal */}
-      {confirmDeleteAbility && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center">
-                <svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
-              </div>
-              <div>
-                <h2 className="font-semibold">Delete Ability</h2>
-                <p className="text-sm text-muted-foreground">This will permanently delete this ability and all its levels.</p>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">Are you sure you want to delete <strong>{abilities.find(a => a.id === confirmDeleteAbility)?.name ?? 'this ability'}</strong>?</p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setConfirmDeleteAbility(null)} disabled={deletingAbility} className="btn-ghost">Cancel</button>
-              <button onClick={handleConfirmDeleteAbility} disabled={deletingAbility} className="btn-danger-solid">{deletingAbility ? 'Deleting...' : 'Delete'}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Confirm Delete Level Modal */}
-      {confirmDeleteLevel && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center">
-                <svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
-              </div>
-              <div>
-                <h2 className="font-semibold">Delete Level</h2>
-                <p className="text-sm text-muted-foreground">This will permanently delete this level and all its data.</p>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Are you sure you want to delete <strong>Level {(() => { for (const a of abilities) { const l = a.levels.find(l => l.id === confirmDeleteLevel); if (l) return l.level } return '?' })()}</strong>?
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setConfirmDeleteLevel(null)} disabled={deletingLevel} className="btn-ghost">Cancel</button>
-              <button onClick={handleConfirmDeleteLevel} disabled={deletingLevel} className="btn-danger-solid">{deletingLevel ? 'Deleting...' : 'Delete'}</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
+function AbilitiesTab({ abilities, isOwner, sheetId, selectedLevels, setAbilities, setSelectedLevels, showNewAbility, setShowNewAbility, newAbility, setNewAbility, abilitySaving, abilityError, handleCreateAbility, resetNewAbility, handleDeleteAbility, showAddLevelModal, setShowAddLevelModal, newLevelForm, setNewLevelForm, levelModalSaving, setLevelModalSaving, levelModalError, setLevelModalError }: { abilities: Ability[]; isOwner: boolean; sheetId: string; selectedLevels: Record<string, string>; setAbilities: React.Dispatch<React.SetStateAction<Ability[]>>; setSelectedLevels: React.Dispatch<React.SetStateAction<Record<string, string>>>; showNewAbility: boolean; setShowNewAbility: React.Dispatch<React.SetStateAction<boolean>>; newAbility: { name: string; description: string; manaCost: string; cooldown: string; notes: string }; setNewAbility: React.Dispatch<React.SetStateAction<{ name: string; description: string; manaCost: string; cooldown: string; notes: string }>>; abilitySaving: boolean; abilityError: string | null; handleCreateAbility: (e: FormEvent) => Promise<void>; resetNewAbility: () => void; handleDeleteAbility: (aid: string) => Promise<void>; showAddLevelModal: string | null; setShowAddLevelModal: React.Dispatch<React.SetStateAction<string | null>>; newLevelForm: { level: number; copyFromPrevious: boolean }; setNewLevelForm: React.Dispatch<React.SetStateAction<{ level: number; copyFromPrevious: boolean }>>; levelModalSaving: boolean; setLevelModalSaving: React.Dispatch<React.SetStateAction<boolean>>; levelModalError: string | null; setLevelModalError: React.Dispatch<React.SetStateAction<string | null>> }) {
+  const [confirmDeleteAbility, setConfirmDeleteAbility] = useState<string | null>(null); const [confirmDeleteLevel, setConfirmDeleteLevel] = useState<string | null>(null); const [deletingAbility, setDeletingAbility] = useState(false); const [deletingLevel, setDeletingLevel] = useState(false)
+  function getSelectedLevel(ability: Ability): AbilityLevel | undefined { const selId = selectedLevels[ability.id]; if (selId) return ability.levels.find(l => l.id === selId); return ability.levels[ability.levels.length - 1] }
+  async function handleAddLevel(abilityId: string) { if (!sheetId) return; setLevelModalSaving(true); try { const level = await api.post<AbilityLevel>(`/character-sheets/${sheetId}/abilities/${abilityId}/levels`, { level: newLevelForm.level, copyFromPrevious: newLevelForm.copyFromPrevious }); setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, levels: [...a.levels, level] } : a)); setSelectedLevels(prev => ({ ...prev, [abilityId]: level.id })); setShowAddLevelModal(null) } catch (err) { setLevelModalError(err instanceof Error ? err.message : 'Failed to create level') } finally { setLevelModalSaving(false) } }
+  return <div className="space-y-4">{abilities.length === 0 && !showNewAbility && <div className="text-center py-6 text-muted-foreground text-sm italic">No abilities yet. {isOwner && 'Create one below.'}</div>}<div className="space-y-3">{abilities.map(a => { const selLevel = getSelectedLevel(a); const maxLevel = a.levels.length > 0 ? Math.max(...a.levels.map(l => l.level)) : 0; return <div key={a.id} className="card !p-4 space-y-3"><div className="flex items-start gap-2 flex-wrap">{isOwner ? <InlineClickEdit value={a.name} onSave={async (v) => { await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}`, { name: v.trim() }); setAbilities(prev => prev.map(x => x.id === a.id ? { ...x, name: v.trim() } : x)) }} className="font-semibold text-foreground" /> : <h4 className="font-semibold text-foreground">{a.name}</h4>}{a.levels.length > 0 && <select className="input-field py-0.5 px-2 text-xs shrink-0 ml-auto" value={selLevel?.id ?? ''} onChange={e => setSelectedLevels(prev => ({ ...prev, [a.id]: e.target.value }))}>{a.levels.map(l => <option key={l.id} value={l.id}>Level {l.level}</option>)}</select>}{isOwner && <button onClick={() => setConfirmDeleteAbility(a.id)} className="text-xs text-danger hover:text-danger/80 px-1 py-1 transition-colors shrink-0" title="Delete ability"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>}</div>{selLevel ? <>{isOwner && a.levels.length > 0 && <div className="flex items-center justify-between"><span className="text-[0.65rem] text-muted font-medium">Level {selLevel.level}</span>{a.levels.length > 1 && <button onClick={() => setConfirmDeleteLevel(selLevel.id)} className="text-[0.6rem] text-danger/70 hover:text-danger px-1 py-0.5 transition-colors" title="Delete this level">Delete Level</button>}</div>}<div className="flex flex-wrap gap-3 text-xs text-muted">{isOwner ? <><span className="inline-flex items-center gap-1">Mana:<InlineClickEdit value={selLevel.manaCost?.toString() ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { manaCost: v.trim() ? parseInt(v, 10) : null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, manaCost: v.trim() ? parseInt(v, 10) : null } : l) }))) } catch {} }} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" /></span><span className="inline-flex items-center gap-1">Range:<InlineClickEdit value={selLevel.range ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { range: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, range: v.trim() || null } : l) }))) } catch {} }} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" /></span><span className="inline-flex items-center gap-1">Cooldown:<InlineClickEdit value={selLevel.cooldown ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { cooldown: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, cooldown: v.trim() || null } : l) }))) } catch {} }} className="!text-xs !text-muted" inputClassName="!text-xs w-20" emptyDisplay="—" /></span>{selLevel.damage != null && <span className="inline-flex items-center gap-1">Damage:<InlineClickEdit value={selLevel.damage ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { damage: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, damage: v.trim() || null } : l) }))) } catch {} }} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" /></span>}</> : <>{selLevel.manaCost != null && <span>Mana: {selLevel.manaCost}</span>}{selLevel.range && <span>Range: {selLevel.range}</span>}{selLevel.cooldown && <span>Cooldown: {selLevel.cooldown}</span>}{selLevel.damage && <span>Damage: {selLevel.damage}</span>}</>}</div>{isOwner ? <div><h5 className="text-xs font-medium text-muted mb-1">Description</h5><InlineClickEdit value={selLevel.description ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { description: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, description: v.trim() || null } : l) }))) } catch {} }} as="textarea" className="text-sm text-muted-foreground whitespace-pre-wrap" emptyDisplay="Add description..." /></div> : selLevel.description && <div><h5 className="text-xs font-medium text-muted mb-1">Description</h5><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selLevel.description}</p></div>}{isOwner ? <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><InlineClickEdit value={selLevel.notes ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${selLevel.id}`, { notes: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === selLevel.id ? { ...l, notes: v.trim() || null } : l) }))) } catch {} }} as="textarea" className="text-xs text-muted italic whitespace-pre-wrap" emptyDisplay="Add notes..." /></div> : selLevel.notes && <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><p className="text-xs text-muted italic whitespace-pre-wrap">{selLevel.notes}</p></div>}</> : <p className="text-xs text-muted italic">No levels added yet.</p>}{isOwner && <button onClick={() => { setShowAddLevelModal(a.id); setNewLevelForm({ level: maxLevel + 1, copyFromPrevious: a.levels.length > 0 }); setLevelModalError(null) }} className="btn-ghost text-xs">+ Add Level</button>}</div> })}</div>{isOwner && !showNewAbility && <button onClick={() => setShowNewAbility(true)} className="btn-primary text-sm">+ New Ability</button>}{isOwner && showNewAbility && <form onSubmit={handleCreateAbility} className="card !p-4 space-y-3 border-primary/20"><h4 className="text-sm font-semibold text-primary">New Ability</h4><div><label className="text-xs text-muted">Name</label><input className="input-field" value={newAbility.name} onChange={e => setNewAbility(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Fireball" /></div><div><label className="text-xs text-muted">Description</label><textarea className="input-field resize-none" rows={2} value={newAbility.description} onChange={e => setNewAbility(p => ({ ...p, description: e.target.value }))} placeholder="Throws a fireball causing area damage." /></div><div className="grid grid-cols-2 gap-2"><div><label className="text-xs text-muted">Mana Cost</label><input type="number" className="input-field" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder="20" /></div><div><label className="text-xs text-muted">Cooldown</label><input className="input-field" value={newAbility.cooldown} onChange={e => setNewAbility(p => ({ ...p, cooldown: e.target.value }))} placeholder="2 Turns" /></div></div><div><label className="text-xs text-muted">Notes</label><textarea className="input-field resize-none" rows={2} value={newAbility.notes} onChange={e => setNewAbility(p => ({ ...p, notes: e.target.value }))} /></div>{abilityError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{abilityError}</div>}<div className="flex gap-2 justify-end"><button type="button" onClick={resetNewAbility} disabled={abilitySaving} className="btn-ghost text-sm">Cancel</button><button type="submit" disabled={abilitySaving || !newAbility.name.trim()} className="btn-primary text-sm">{abilitySaving ? 'Creating...' : 'Create'}</button></div></form>}{showAddLevelModal && <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in"><div className="card !p-6 max-w-sm w-full space-y-4 border-primary/20"><h3 className="font-semibold text-primary">Create Ability Level</h3><div><label className="text-xs text-muted block mb-1">Level</label><input type="number" min={2} className="input-field w-full" value={newLevelForm.level} onChange={e => setNewLevelForm(p => ({ ...p, level: parseInt(e.target.value, 10) || 1 }))} /></div><div><label className="text-xs text-muted block mb-2">Copy information from previous level?</label><div className="flex gap-4"><label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="copyPrev" checked={newLevelForm.copyFromPrevious} onChange={() => setNewLevelForm(p => ({ ...p, copyFromPrevious: true }))} className="accent-primary" /><span className="text-sm">Yes</span></label><label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="copyPrev" checked={!newLevelForm.copyFromPrevious} onChange={() => setNewLevelForm(p => ({ ...p, copyFromPrevious: false }))} className="accent-primary" /><span className="text-sm">No</span></label></div></div>{levelModalError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{levelModalError}</div>}<div className="flex gap-2 justify-end"><button type="button" onClick={() => setShowAddLevelModal(null)} disabled={levelModalSaving} className="btn-ghost text-sm">Cancel</button><button type="button" onClick={() => handleAddLevel(showAddLevelModal)} disabled={levelModalSaving} className="btn-primary text-sm">{levelModalSaving ? 'Creating...' : 'Create'}</button></div></div></div>}{confirmDeleteAbility && <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in"><div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center"><svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg></div><div><h2 className="font-semibold">Delete Ability</h2><p className="text-sm text-muted-foreground">This will permanently delete this ability and all its levels.</p></div></div><p className="text-sm text-muted-foreground">Are you sure you want to delete <strong>{abilities.find(a => a.id === confirmDeleteAbility)?.name ?? 'this ability'}</strong>?</p><div className="flex gap-3 justify-end"><button onClick={() => setConfirmDeleteAbility(null)} disabled={deletingAbility} className="btn-ghost">Cancel</button><button onClick={() => { setDeletingAbility(true); handleDeleteAbility(confirmDeleteAbility).finally(() => { setDeletingAbility(false); setConfirmDeleteAbility(null) }) }} disabled={deletingAbility} className="btn-danger-solid">{deletingAbility ? 'Deleting...' : 'Delete'}</button></div></div></div>}{confirmDeleteLevel && <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in"><div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center"><svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg></div><div><h2 className="font-semibold">Delete Level</h2><p className="text-sm text-muted-foreground">This will permanently delete this level and all its data.</p></div></div><p className="text-sm text-muted-foreground">Are you sure you want to delete <strong>Level {(() => { for (const a of abilities) { const l = a.levels.find(l => l.id === confirmDeleteLevel); if (l) return l.level } return '?' })()}</strong>?</p><div className="flex gap-3 justify-end"><button onClick={() => setConfirmDeleteLevel(null)} disabled={deletingLevel} className="btn-ghost">Cancel</button><button onClick={async () => { setDeletingLevel(true); try { await api.delete(`/character-sheets/${sheetId}/abilities/x/levels/${confirmDeleteLevel}`); setAbilities(prev => prev.map(a => ({ ...a, levels: a.levels.filter(l => l.id !== confirmDeleteLevel) }))); setSelectedLevels(prev => { const next = { ...prev }; for (const a of abilities) { if (a.levels.some(l => l.id === confirmDeleteLevel)) { const remaining = a.levels.filter(l => l.id !== confirmDeleteLevel); if (next[a.id] === confirmDeleteLevel) next[a.id] = remaining.length > 0 ? remaining[remaining.length - 1].id : ''; break } } return next }) } catch {} finally { setDeletingLevel(false); setConfirmDeleteLevel(null) } }} disabled={deletingLevel} className="btn-danger-solid">{deletingLevel ? 'Deleting...' : 'Delete'}</button></div></div></div>}</div>
 }
 
-function DeleteModal({ name, error, loading, onCancel, onConfirm }: { name: string; error: string | null; loading: boolean; onCancel: () => void; onConfirm: () => void }) {
-  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in"><div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center"><svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg></div><div><h2 className="font-semibold">Delete Character Sheet</h2><p className="text-sm text-muted-foreground">This action cannot be undone.</p></div></div><p className="text-sm text-muted-foreground">Are you sure you want to delete "{name}"?</p>{error && <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">{error}</div>}<div className="flex gap-3 justify-end"><button onClick={onCancel} disabled={loading} className="btn-ghost">Cancel</button><button onClick={onConfirm} disabled={loading} className="btn-danger-solid">{loading ? 'Deleting...' : 'Delete forever'}</button></div></div></div>
-}
+function DeleteModal({ name, error, loading, onCancel, onConfirm }: { name: string; error: string | null; loading: boolean; onCancel: () => void; onConfirm: () => void }) { return <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in"><div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center"><svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg></div><div><h2 className="font-semibold">Delete Character Sheet</h2><p className="text-sm text-muted-foreground">This action cannot be undone.</p></div></div><p className="text-sm text-muted-foreground">Are you sure you want to delete "{name}"?</p>{error && <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">{error}</div>}<div className="flex gap-3 justify-end"><button onClick={onCancel} disabled={loading} className="btn-ghost">Cancel</button><button onClick={onConfirm} disabled={loading} className="btn-danger-solid">{loading ? 'Deleting...' : 'Delete forever'}</button></div></div></div> }

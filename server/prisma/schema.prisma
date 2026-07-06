@@ -339,19 +339,17 @@ model CharacterSheetFieldValue {
 // ── Point Pools ──
 
 model TemplatePointPool {
-  id                String                         @id @default(cuid())
-  templateId        String
-  template          Template                       @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  name              String
-  slug              String
-  description       String?
-  defaultMaximum    Int                            @default(0)
-  currentStartsFull Boolean                        @default(true)
-  editableByPlayer  Boolean                        @default(true)
-  order             Int                            @default(0)
-  sheetValues       CharacterSheetPointPoolValue[]
-  createdAt         DateTime                       @default(now())
-  updatedAt         DateTime                       @updatedAt
+  id               String                         @id @default(cuid())
+  templateId       String
+  template         Template                       @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  name             String
+  slug             String
+  description      String?
+  editableByPlayer Boolean                        @default(true)
+  order            Int                            @default(0)
+  sheetValues      CharacterSheetPointPoolValue[]
+  createdAt        DateTime                       @default(now())
+  updatedAt        DateTime                       @updatedAt
 
   @@unique([templateId, slug])
   @@index([templateId])
@@ -365,8 +363,8 @@ model CharacterSheetPointPoolValue {
   sheet       CharacterSheet    @relation(fields: [sheetId], references: [id], onDelete: Cascade)
   pointPoolId String
   pointPool   TemplatePointPool @relation(fields: [pointPoolId], references: [id], onDelete: Cascade)
-  current     Int               @default(0)
-  maximum     Int               @default(0)
+  current     Int?
+  maximum     Int?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 

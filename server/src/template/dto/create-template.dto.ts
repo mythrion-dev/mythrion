@@ -6,7 +6,6 @@ import {
   ArrayMinSize,
   IsNumber,
   IsBoolean,
-  IsInt,
 } from 'class-validator'
 import { Type } from 'class-transformer'
 
@@ -86,13 +85,6 @@ export class PointPoolDefDto {
   @IsString()
   @IsOptional()
   description?: string
-
-  @IsInt()
-  defaultMaximum!: number
-
-  @IsBoolean()
-  @IsOptional()
-  currentStartsFull?: boolean
 
   @IsBoolean()
   @IsOptional()

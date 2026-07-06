@@ -199,8 +199,8 @@ export type CharacterSheetPointPoolValueGroupByOutputType = {
   id: string
   sheetId: string
   pointPoolId: string
-  current: number
-  maximum: number
+  current: number | null
+  maximum: number | null
   createdAt: Date
   updatedAt: Date
   _count: CharacterSheetPointPoolValueCountAggregateOutputType | null
@@ -232,8 +232,8 @@ export type CharacterSheetPointPoolValueWhereInput = {
   id?: Prisma.StringFilter<"CharacterSheetPointPoolValue"> | string
   sheetId?: Prisma.StringFilter<"CharacterSheetPointPoolValue"> | string
   pointPoolId?: Prisma.StringFilter<"CharacterSheetPointPoolValue"> | string
-  current?: Prisma.IntFilter<"CharacterSheetPointPoolValue"> | number
-  maximum?: Prisma.IntFilter<"CharacterSheetPointPoolValue"> | number
+  current?: Prisma.IntNullableFilter<"CharacterSheetPointPoolValue"> | number | null
+  maximum?: Prisma.IntNullableFilter<"CharacterSheetPointPoolValue"> | number | null
   createdAt?: Prisma.DateTimeFilter<"CharacterSheetPointPoolValue"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterSheetPointPoolValue"> | Date | string
   sheet?: Prisma.XOR<Prisma.CharacterSheetScalarRelationFilter, Prisma.CharacterSheetWhereInput>
@@ -244,8 +244,8 @@ export type CharacterSheetPointPoolValueOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
   pointPoolId?: Prisma.SortOrder
-  current?: Prisma.SortOrder
-  maximum?: Prisma.SortOrder
+  current?: Prisma.SortOrderInput | Prisma.SortOrder
+  maximum?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   sheet?: Prisma.CharacterSheetOrderByWithRelationInput
@@ -260,8 +260,8 @@ export type CharacterSheetPointPoolValueWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.CharacterSheetPointPoolValueWhereInput | Prisma.CharacterSheetPointPoolValueWhereInput[]
   sheetId?: Prisma.StringFilter<"CharacterSheetPointPoolValue"> | string
   pointPoolId?: Prisma.StringFilter<"CharacterSheetPointPoolValue"> | string
-  current?: Prisma.IntFilter<"CharacterSheetPointPoolValue"> | number
-  maximum?: Prisma.IntFilter<"CharacterSheetPointPoolValue"> | number
+  current?: Prisma.IntNullableFilter<"CharacterSheetPointPoolValue"> | number | null
+  maximum?: Prisma.IntNullableFilter<"CharacterSheetPointPoolValue"> | number | null
   createdAt?: Prisma.DateTimeFilter<"CharacterSheetPointPoolValue"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterSheetPointPoolValue"> | Date | string
   sheet?: Prisma.XOR<Prisma.CharacterSheetScalarRelationFilter, Prisma.CharacterSheetWhereInput>
@@ -272,8 +272,8 @@ export type CharacterSheetPointPoolValueOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
   pointPoolId?: Prisma.SortOrder
-  current?: Prisma.SortOrder
-  maximum?: Prisma.SortOrder
+  current?: Prisma.SortOrderInput | Prisma.SortOrder
+  maximum?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.CharacterSheetPointPoolValueCountOrderByAggregateInput
@@ -290,16 +290,16 @@ export type CharacterSheetPointPoolValueScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"CharacterSheetPointPoolValue"> | string
   sheetId?: Prisma.StringWithAggregatesFilter<"CharacterSheetPointPoolValue"> | string
   pointPoolId?: Prisma.StringWithAggregatesFilter<"CharacterSheetPointPoolValue"> | string
-  current?: Prisma.IntWithAggregatesFilter<"CharacterSheetPointPoolValue"> | number
-  maximum?: Prisma.IntWithAggregatesFilter<"CharacterSheetPointPoolValue"> | number
+  current?: Prisma.IntNullableWithAggregatesFilter<"CharacterSheetPointPoolValue"> | number | null
+  maximum?: Prisma.IntNullableWithAggregatesFilter<"CharacterSheetPointPoolValue"> | number | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"CharacterSheetPointPoolValue"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"CharacterSheetPointPoolValue"> | Date | string
 }
 
 export type CharacterSheetPointPoolValueCreateInput = {
   id?: string
-  current?: number
-  maximum?: number
+  current?: number | null
+  maximum?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   sheet: Prisma.CharacterSheetCreateNestedOneWithoutPointPoolValuesInput
@@ -310,16 +310,16 @@ export type CharacterSheetPointPoolValueUncheckedCreateInput = {
   id?: string
   sheetId: string
   pointPoolId: string
-  current?: number
-  maximum?: number
+  current?: number | null
+  maximum?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
 export type CharacterSheetPointPoolValueUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  current?: Prisma.IntFieldUpdateOperationsInput | number
-  maximum?: Prisma.IntFieldUpdateOperationsInput | number
+  current?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  maximum?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutPointPoolValuesNestedInput
@@ -330,8 +330,8 @@ export type CharacterSheetPointPoolValueUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sheetId?: Prisma.StringFieldUpdateOperationsInput | string
   pointPoolId?: Prisma.StringFieldUpdateOperationsInput | string
-  current?: Prisma.IntFieldUpdateOperationsInput | number
-  maximum?: Prisma.IntFieldUpdateOperationsInput | number
+  current?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  maximum?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -340,16 +340,16 @@ export type CharacterSheetPointPoolValueCreateManyInput = {
   id?: string
   sheetId: string
   pointPoolId: string
-  current?: number
-  maximum?: number
+  current?: number | null
+  maximum?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
 export type CharacterSheetPointPoolValueUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  current?: Prisma.IntFieldUpdateOperationsInput | number
-  maximum?: Prisma.IntFieldUpdateOperationsInput | number
+  current?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  maximum?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -358,8 +358,8 @@ export type CharacterSheetPointPoolValueUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sheetId?: Prisma.StringFieldUpdateOperationsInput | string
   pointPoolId?: Prisma.StringFieldUpdateOperationsInput | string
-  current?: Prisma.IntFieldUpdateOperationsInput | number
-  maximum?: Prisma.IntFieldUpdateOperationsInput | number
+  current?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  maximum?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -505,8 +505,8 @@ export type CharacterSheetPointPoolValueUncheckedUpdateManyWithoutPointPoolNeste
 
 export type CharacterSheetPointPoolValueCreateWithoutSheetInput = {
   id?: string
-  current?: number
-  maximum?: number
+  current?: number | null
+  maximum?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   pointPool: Prisma.TemplatePointPoolCreateNestedOneWithoutSheetValuesInput
@@ -515,8 +515,8 @@ export type CharacterSheetPointPoolValueCreateWithoutSheetInput = {
 export type CharacterSheetPointPoolValueUncheckedCreateWithoutSheetInput = {
   id?: string
   pointPoolId: string
-  current?: number
-  maximum?: number
+  current?: number | null
+  maximum?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -554,16 +554,16 @@ export type CharacterSheetPointPoolValueScalarWhereInput = {
   id?: Prisma.StringFilter<"CharacterSheetPointPoolValue"> | string
   sheetId?: Prisma.StringFilter<"CharacterSheetPointPoolValue"> | string
   pointPoolId?: Prisma.StringFilter<"CharacterSheetPointPoolValue"> | string
-  current?: Prisma.IntFilter<"CharacterSheetPointPoolValue"> | number
-  maximum?: Prisma.IntFilter<"CharacterSheetPointPoolValue"> | number
+  current?: Prisma.IntNullableFilter<"CharacterSheetPointPoolValue"> | number | null
+  maximum?: Prisma.IntNullableFilter<"CharacterSheetPointPoolValue"> | number | null
   createdAt?: Prisma.DateTimeFilter<"CharacterSheetPointPoolValue"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterSheetPointPoolValue"> | Date | string
 }
 
 export type CharacterSheetPointPoolValueCreateWithoutPointPoolInput = {
   id?: string
-  current?: number
-  maximum?: number
+  current?: number | null
+  maximum?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   sheet: Prisma.CharacterSheetCreateNestedOneWithoutPointPoolValuesInput
@@ -572,8 +572,8 @@ export type CharacterSheetPointPoolValueCreateWithoutPointPoolInput = {
 export type CharacterSheetPointPoolValueUncheckedCreateWithoutPointPoolInput = {
   id?: string
   sheetId: string
-  current?: number
-  maximum?: number
+  current?: number | null
+  maximum?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -607,16 +607,16 @@ export type CharacterSheetPointPoolValueUpdateManyWithWhereWithoutPointPoolInput
 export type CharacterSheetPointPoolValueCreateManySheetInput = {
   id?: string
   pointPoolId: string
-  current?: number
-  maximum?: number
+  current?: number | null
+  maximum?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
 export type CharacterSheetPointPoolValueUpdateWithoutSheetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  current?: Prisma.IntFieldUpdateOperationsInput | number
-  maximum?: Prisma.IntFieldUpdateOperationsInput | number
+  current?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  maximum?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pointPool?: Prisma.TemplatePointPoolUpdateOneRequiredWithoutSheetValuesNestedInput
@@ -625,8 +625,8 @@ export type CharacterSheetPointPoolValueUpdateWithoutSheetInput = {
 export type CharacterSheetPointPoolValueUncheckedUpdateWithoutSheetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   pointPoolId?: Prisma.StringFieldUpdateOperationsInput | string
-  current?: Prisma.IntFieldUpdateOperationsInput | number
-  maximum?: Prisma.IntFieldUpdateOperationsInput | number
+  current?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  maximum?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -634,8 +634,8 @@ export type CharacterSheetPointPoolValueUncheckedUpdateWithoutSheetInput = {
 export type CharacterSheetPointPoolValueUncheckedUpdateManyWithoutSheetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   pointPoolId?: Prisma.StringFieldUpdateOperationsInput | string
-  current?: Prisma.IntFieldUpdateOperationsInput | number
-  maximum?: Prisma.IntFieldUpdateOperationsInput | number
+  current?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  maximum?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -643,16 +643,16 @@ export type CharacterSheetPointPoolValueUncheckedUpdateManyWithoutSheetInput = {
 export type CharacterSheetPointPoolValueCreateManyPointPoolInput = {
   id?: string
   sheetId: string
-  current?: number
-  maximum?: number
+  current?: number | null
+  maximum?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
 export type CharacterSheetPointPoolValueUpdateWithoutPointPoolInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  current?: Prisma.IntFieldUpdateOperationsInput | number
-  maximum?: Prisma.IntFieldUpdateOperationsInput | number
+  current?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  maximum?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutPointPoolValuesNestedInput
@@ -661,8 +661,8 @@ export type CharacterSheetPointPoolValueUpdateWithoutPointPoolInput = {
 export type CharacterSheetPointPoolValueUncheckedUpdateWithoutPointPoolInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sheetId?: Prisma.StringFieldUpdateOperationsInput | string
-  current?: Prisma.IntFieldUpdateOperationsInput | number
-  maximum?: Prisma.IntFieldUpdateOperationsInput | number
+  current?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  maximum?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -670,8 +670,8 @@ export type CharacterSheetPointPoolValueUncheckedUpdateWithoutPointPoolInput = {
 export type CharacterSheetPointPoolValueUncheckedUpdateManyWithoutPointPoolInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sheetId?: Prisma.StringFieldUpdateOperationsInput | string
-  current?: Prisma.IntFieldUpdateOperationsInput | number
-  maximum?: Prisma.IntFieldUpdateOperationsInput | number
+  current?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  maximum?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -748,8 +748,8 @@ export type $CharacterSheetPointPoolValuePayload<ExtArgs extends runtime.Types.E
     id: string
     sheetId: string
     pointPoolId: string
-    current: number
-    maximum: number
+    current: number | null
+    maximum: number | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["characterSheetPointPoolValue"]>

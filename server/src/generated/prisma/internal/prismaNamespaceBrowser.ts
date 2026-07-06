@@ -336,8 +336,6 @@ export const TemplatePointPoolScalarFieldEnum = {
   name: 'name',
   slug: 'slug',
   description: 'description',
-  defaultMaximum: 'defaultMaximum',
-  currentStartsFull: 'currentStartsFull',
   editableByPlayer: 'editableByPlayer',
   order: 'order',
   createdAt: 'createdAt',

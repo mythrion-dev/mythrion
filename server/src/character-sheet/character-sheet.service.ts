@@ -62,8 +62,6 @@ const sheetInclude = {
           name: true,
           slug: true,
           description: true,
-          defaultMaximum: true,
-          currentStartsFull: true,
           editableByPlayer: true,
         },
       },
@@ -159,8 +157,7 @@ export class CharacterSheetService {
         pointPoolValues: {
           create: (template.pointPools || []).map(pool => ({
             pointPoolId: pool.id,
-            current: pool.currentStartsFull ? pool.defaultMaximum : 0,
-            maximum: pool.defaultMaximum,
+            // Start empty — the player fills in both values
           })),
         },
         ...(armorClass?.enabled && armorClass.fields.length > 0
@@ -264,21 +261,10 @@ export class CharacterSheetService {
     }
     if (dto.pointPoolValues) {
       for (const ppv of dto.pointPoolValues) {
-        // Validate: 0 <= current <= maximum
-        const existingPoolValue = await this.prisma.characterSheetPointPoolValue.findFirst({
-          where: { pointPoolId: ppv.pointPoolId },
-          include: { pointPool: { select: { name: true, editableByPlayer: true } } },
-        })
-        // Only allow editing if pool is editable by player
-        if (existingPoolValue && !existingPoolValue.pointPool.editableByPlayer) {
-          throw new ForbiddenException(`Point pool "${existingPoolValue.pointPool.name}" is not editable by players`)
-        }
-        const max = ppv.maximum ?? (existingPoolValue?.maximum ?? 0)
-        const clampedCurrent = Math.max(0, Math.min(ppv.current, max))
         await this.prisma.characterSheetPointPoolValue.upsert({
           where: { sheetId_pointPoolId: { sheetId: id, pointPoolId: ppv.pointPoolId } },
-          create: { sheetId: id, pointPoolId: ppv.pointPoolId, current: clampedCurrent, maximum: max },
-          update: { current: clampedCurrent },
+          create: { sheetId: id, pointPoolId: ppv.pointPoolId, current: ppv.current ?? null, maximum: ppv.maximum ?? null },
+          update: { current: ppv.current, maximum: ppv.maximum },
         })
       }
     }
