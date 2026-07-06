@@ -134,9 +134,10 @@ export class ArmorClassDefDto {
   @IsBoolean()
   enabled!: boolean
 
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
-  formula?: string
+  attributeModifierIds?: string[]
 
   @IsArray()
   @ValidateNested({ each: true })

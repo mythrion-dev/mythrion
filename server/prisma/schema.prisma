@@ -389,14 +389,14 @@ model CharacterSheetRuntimeModifierComponentValue {
 // ── Armor Class (AC) System ──
 
 model TemplateArmorClass {
-  id         String            @id @default(cuid())
-  templateId String            @unique
-  template   Template          @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  enabled    Boolean           @default(false)
-  formula    String?
-  fields     ArmorClassField[]
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
+  id                  String            @id @default(cuid())
+  templateId          String            @unique
+  template            Template          @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  enabled             Boolean           @default(false)
+  attributeModifierIds String[]         @default([])
+  fields              ArmorClassField[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 }
 
 model ArmorClassField {

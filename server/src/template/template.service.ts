@@ -91,7 +91,7 @@ export class TemplateService {
               armorClass: {
                 create: {
                   enabled: true,
-                  formula: dto.armorClass.formula ?? null,
+                  attributeModifierIds: dto.armorClass.attributeModifierIds ?? [],
                   fields: {
                     create: (dto.armorClass.fields || []).map((f, fIdx) => ({
                       name: f.name,
@@ -314,14 +314,14 @@ export class TemplateService {
         if (existingAC) {
           await this.prisma.templateArmorClass.delete({ where: { templateId: id } })
         }
-      } else if (dto.armorClass.enabled === true || dto.armorClass.formula !== undefined || dto.armorClass.fields) {
+      } else if (dto.armorClass.enabled === true || dto.armorClass.attributeModifierIds !== undefined || dto.armorClass.fields) {
         if (existingAC) {
           // Update existing
           await this.prisma.templateArmorClass.update({
             where: { templateId: id },
             data: {
               ...(dto.armorClass.enabled !== undefined && { enabled: dto.armorClass.enabled }),
-              ...(dto.armorClass.formula !== undefined && { formula: dto.armorClass.formula || null }),
+              ...(dto.armorClass.attributeModifierIds !== undefined && { attributeModifierIds: dto.armorClass.attributeModifierIds }),
             },
           })
 
@@ -379,7 +379,7 @@ export class TemplateService {
             data: {
               templateId: id,
               enabled: dto.armorClass.enabled ?? true,
-              formula: dto.armorClass.formula ?? null,
+              attributeModifierIds: dto.armorClass.attributeModifierIds ?? [],
               fields: {
                 create: (dto.armorClass.fields || []).map((f, fIdx) => ({
                   name: f.name ?? f.key?.trim() ?? '',

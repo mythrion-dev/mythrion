@@ -54,7 +54,7 @@ const sheetInclude = {
   },
   acValues: {
     include: {
-      field: { select: { id: true, name: true, key: true, defaultValue: true, editableByPlayer: true, description: true, armorClass: { select: { id: true, formula: true } } } },
+      field: { select: { id: true, name: true, key: true, defaultValue: true, editableByPlayer: true, description: true, armorClass: { select: { id: true, attributeModifierIds: true } } } },
     },
   },
   runtimeModifierComponentValues: {
