@@ -67,20 +67,26 @@ export class UpdateSkillModifierProfileDefDto {
   options!: UpdateProfileOptionDefDto[]
 }
 
-export class UpdatePointPoolDefDto {
+export class UpdateCoreResourceDefDto {
   @IsString()
-  name!: string
-
-  @IsString()
-  slug!: string
+  @IsOptional()
+  displayName?: string
 
   @IsString()
   @IsOptional()
-  description?: string
+  slug?: string
+
+  @IsBoolean()
+  @IsOptional()
+  enabled?: boolean
 
   @IsBoolean()
   @IsOptional()
   editableByPlayer?: boolean
+
+  @IsBoolean()
+  @IsOptional()
+  showNotes?: boolean
 }
 
 export class UpdateArmorClassFieldDefDto {
@@ -158,8 +164,8 @@ export class UpdateTemplateDto {
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
-  @Type(() => UpdatePointPoolDefDto)
-  pointPools?: UpdatePointPoolDefDto[]
+  @Type(() => UpdateCoreResourceDefDto)
+  coreResources?: UpdateCoreResourceDefDto[]
 
   @ValidateNested()
   @IsOptional()

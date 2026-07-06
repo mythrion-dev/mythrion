@@ -41,9 +41,9 @@ export class SkillProfileValueDto {
   optionId?: string | null
 }
 
-export class PointPoolValueDto {
+export class CoreResourceValueDto {
   @IsString()
-  pointPoolId!: string
+  coreResourceId!: string
 
   @IsOptional()
   @IsInt()
@@ -54,6 +54,10 @@ export class PointPoolValueDto {
   @IsInt()
   @Type(() => Number)
   maximum?: number | null
+
+  @IsOptional()
+  @IsString()
+  notes?: string | null
 }
 
 export class ArmorClassValueDto {
@@ -120,8 +124,8 @@ export class UpdateCharacterSheetDto {
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
-  @Type(() => PointPoolValueDto)
-  pointPoolValues?: PointPoolValueDto[]
+  @Type(() => CoreResourceValueDto)
+  coreResourceValues?: CoreResourceValueDto[]
 
   @IsArray()
   @IsOptional()

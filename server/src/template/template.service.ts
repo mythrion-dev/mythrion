@@ -12,7 +12,7 @@ const templateInclude = {
     orderBy: { order: 'asc' as const },
     include: { options: { orderBy: { order: 'asc' as const } } },
   },
-  pointPools: { orderBy: { order: 'asc' as const } },
+  coreResources: { orderBy: { order: 'asc' as const } },
   armorClass: {
     include: { fields: { orderBy: { order: 'asc' as const } } },
   },
@@ -66,13 +66,14 @@ export class TemplateService {
             },
           })),
         },
-        pointPools: {
-          create: (dto.pointPools || []).map((pool, poolIdx) => ({
-            name: pool.name,
-            slug: pool.slug,
-            description: pool.description ?? null,
-            editableByPlayer: pool.editableByPlayer ?? true,
-            order: poolIdx,
+        coreResources: {
+          create: (dto.coreResources || []).map((cr, crIdx) => ({
+            slug: cr.slug.trim(),
+            displayName: cr.displayName?.trim() ?? cr.slug.trim(),
+            enabled: cr.enabled ?? true,
+            editableByPlayer: cr.editableByPlayer ?? true,
+            showNotes: cr.showNotes ?? true,
+            order: crIdx,
           })),
         },
         ...(dto.armorClass?.enabled
@@ -385,50 +386,53 @@ export class TemplateService {
       }
     }
 
-    // Handle point pools (system-agnostic: template only defines the pool definition)
-    if (dto.pointPools) {
-      const existingPools = await this.prisma.templatePointPool.findMany({
+    // Handle core resources
+    if (dto.coreResources) {
+      const existingResources = await this.prisma.templateCoreResource.findMany({
         where: { templateId: id },
       })
-      const newPoolSlugs = dto.pointPools.map(p => p.slug.trim())
-      const existingPoolSlugs = existingPools.map(p => p.slug)
-      const poolSlugsToDelete = existingPoolSlugs.filter(s => !newPoolSlugs.includes(s))
-      if (poolSlugsToDelete.length) {
-        await this.prisma.templatePointPool.deleteMany({ where: { templateId: id, slug: { in: poolSlugsToDelete } } })
+      const newSlugs = dto.coreResources.map(cr => cr.slug?.trim() ?? '').filter(Boolean)
+      const existingSlugs = existingResources.map(cr => cr.slug)
+      const slugsToDelete = existingSlugs.filter(s => !newSlugs.includes(s))
+      if (slugsToDelete.length) {
+        await this.prisma.templateCoreResource.deleteMany({ where: { templateId: id, slug: { in: slugsToDelete } } })
       }
 
-      for (let pIdx = 0; pIdx < dto.pointPools.length; pIdx++) {
-        const pool = dto.pointPools[pIdx]
-        const slug = pool.slug.trim()
-        const existing = existingPools.find(e => e.slug === slug)
+      for (let crIdx = 0; crIdx < dto.coreResources.length; crIdx++) {
+        const cr = dto.coreResources[crIdx]
+        const slug = (cr.slug ?? '').trim()
+        if (!slug) continue
+        const existing = existingResources.find(e => e.slug === slug)
 
         if (existing) {
-          await this.prisma.templatePointPool.update({
+          await this.prisma.templateCoreResource.update({
             where: { id: existing.id },
             data: {
-              name: pool.name.trim(),
-              description: pool.description ?? null,
-              editableByPlayer: pool.editableByPlayer ?? true,
-              order: pIdx,
+              ...(cr.displayName !== undefined && { displayName: cr.displayName.trim() }),
+              ...(cr.enabled !== undefined && { enabled: cr.enabled }),
+              ...(cr.editableByPlayer !== undefined && { editableByPlayer: cr.editableByPlayer }),
+              ...(cr.showNotes !== undefined && { showNotes: cr.showNotes }),
+              order: crIdx,
             },
           })
         } else {
-          const newPool = await this.prisma.templatePointPool.create({
+          const newResource = await this.prisma.templateCoreResource.create({
             data: {
               templateId: id,
-              name: pool.name.trim(),
               slug,
-              description: pool.description ?? null,
-              editableByPlayer: pool.editableByPlayer ?? true,
-              order: pIdx,
+              displayName: cr.displayName?.trim() ?? slug,
+              enabled: cr.enabled ?? true,
+              editableByPlayer: cr.editableByPlayer ?? true,
+              showNotes: cr.showNotes ?? true,
+              order: crIdx,
             },
           })
-          // Auto-create values (empty) on existing sheets for the new pool
+          // Auto-create values (empty) on existing sheets for the new resource
           const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
           for (const sheet of sheets) {
-            await this.prisma.characterSheetPointPoolValue.upsert({
-              where: { sheetId_pointPoolId: { sheetId: sheet.id, pointPoolId: newPool.id } },
-              create: { sheetId: sheet.id, pointPoolId: newPool.id },
+            await this.prisma.characterSheetCoreResourceValue.upsert({
+              where: { sheetId_coreResourceId: { sheetId: sheet.id, coreResourceId: newResource.id } },
+              create: { sheetId: sheet.id, coreResourceId: newResource.id },
               update: {},
             })
           }

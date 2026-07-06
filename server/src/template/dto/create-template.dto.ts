@@ -75,20 +75,25 @@ export class SkillModifierProfileDefDto {
   options!: ProfileOptionDefDto[]
 }
 
-export class PointPoolDefDto {
+export class CoreResourceDefDto {
   @IsString()
-  name!: string
+  @IsOptional()
+  displayName?: string
 
   @IsString()
   slug!: string
 
-  @IsString()
+  @IsBoolean()
   @IsOptional()
-  description?: string
+  enabled?: boolean
 
   @IsBoolean()
   @IsOptional()
   editableByPlayer?: boolean
+
+  @IsBoolean()
+  @IsOptional()
+  showNotes?: boolean
 }
 
 export class ArmorClassFieldDefDto {
@@ -162,8 +167,8 @@ export class CreateTemplateDto {
   @IsArray()
   @ValidateNested({ each: true })
   @IsOptional()
-  @Type(() => PointPoolDefDto)
-  pointPools?: PointPoolDefDto[]
+  @Type(() => CoreResourceDefDto)
+  coreResources?: CoreResourceDefDto[]
 
   @ValidateNested()
   @IsOptional()

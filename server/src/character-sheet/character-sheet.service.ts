@@ -21,7 +21,7 @@ const sheetInclude = {
         orderBy: { order: 'asc' as const },
         include: { options: { orderBy: { order: 'asc' as const } } },
       },
-      pointPools: { orderBy: { order: 'asc' as const } },
+      coreResources: { orderBy: { order: 'asc' as const } },
       armorClass: {
         include: { fields: { orderBy: { order: 'asc' as const } } },
       },
@@ -54,15 +54,16 @@ const sheetInclude = {
       field: { select: { id: true, name: true, key: true, defaultValue: true, editableByPlayer: true, description: true, armorClass: { select: { id: true, attributeModifierIds: true } } } },
     },
   },
-  pointPoolValues: {
+  coreResourceValues: {
     include: {
-      pointPool: {
+      coreResource: {
         select: {
           id: true,
-          name: true,
+          displayName: true,
           slug: true,
-          description: true,
+          enabled: true,
           editableByPlayer: true,
+          showNotes: true,
         },
       },
     },
@@ -94,7 +95,7 @@ export class CharacterSheetService {
         templateFields: true,
       templateSkills: { select: { id: true, name: true, description: true, templateId: true, order: true, attributeId: true, defaultAttributeId: true, allowedAttributeIds: true } },
         skillModifierProfiles: { include: { options: { orderBy: { order: 'asc' } } } },
-        pointPools: true,
+        coreResources: true,
       },
     })
     if (!template) throw new NotFoundException('Template not found')
@@ -117,7 +118,6 @@ export class CharacterSheetService {
       for (const skill of template.templateSkills) {
         for (const profile of template.skillModifierProfiles) {
           if (!formulaVars.includes(profile.name)) continue
-          // Check targeting: only include if ALL_SKILLS or skill is in selected list
           const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
           const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
           if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(skill.name)) {
@@ -154,10 +154,9 @@ export class CharacterSheetService {
         skillProfileValues: {
           create: skillProfileValues.map(spv => ({ skillId: spv.skillId, profileId: spv.profileId, optionId: spv.optionId })),
         },
-        pointPoolValues: {
-          create: (template.pointPools || []).map(pool => ({
-            pointPoolId: pool.id,
-            // Start empty — the player fills in both values
+        coreResourceValues: {
+          create: (template.coreResources || []).filter(cr => cr.enabled).map(cr => ({
+            coreResourceId: cr.id,
           })),
         },
         ...(armorClass?.enabled && armorClass.fields.length > 0
@@ -192,7 +191,6 @@ export class CharacterSheetService {
     })
     if (!member) throw new ForbiddenException('You are not a member of this adventure')
 
-    // GMs can see all sheets in the adventure; PLAYERs only see their own
     const where = member.role === 'GM'
       ? { adventureId }
       : { adventureId, ownerId: userId }
@@ -259,12 +257,12 @@ export class CharacterSheetService {
           update: { optionId: spv.optionId },
         })
     }
-    if (dto.pointPoolValues) {
-      for (const ppv of dto.pointPoolValues) {
-        await this.prisma.characterSheetPointPoolValue.upsert({
-          where: { sheetId_pointPoolId: { sheetId: id, pointPoolId: ppv.pointPoolId } },
-          create: { sheetId: id, pointPoolId: ppv.pointPoolId, current: ppv.current ?? null, maximum: ppv.maximum ?? null },
-          update: { current: ppv.current, maximum: ppv.maximum },
+    if (dto.coreResourceValues) {
+      for (const crv of dto.coreResourceValues) {
+        await this.prisma.characterSheetCoreResourceValue.upsert({
+          where: { sheetId_coreResourceId: { sheetId: id, coreResourceId: crv.coreResourceId } },
+          create: { sheetId: id, coreResourceId: crv.coreResourceId, current: crv.current ?? null, maximum: crv.maximum ?? null, notes: crv.notes ?? null },
+          update: { current: crv.current, maximum: crv.maximum, notes: crv.notes },
         })
       }
     }
@@ -424,7 +422,6 @@ export class CharacterSheetService {
       damage: dto.damage ?? null,
     }
 
-    // Copy from previous level if requested
     if (dto.copyFromPrevious && ability.levels.length > 0) {
       const prev = ability.levels[0]
       data = {

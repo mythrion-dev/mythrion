@@ -15,13 +15,15 @@ interface ProfileOption { id: string; label: string; value: number }
 interface SkillModifierProfile { id: string; name: string; options: ProfileOption[] }
 interface SkillProfileValue { id: string; skillId: string; profileId: string; optionId: string | null; profile: { id: string; name: string }; option: { id: string; label: string; value: number } | null }
 
-interface PointPoolDef {
-  id: string; name: string; slug: string; description: string | null
+interface CoreResourceDef {
+  id: string; slug: string; displayName: string
+  enabled: boolean
   editableByPlayer: boolean
+  showNotes: boolean
 }
-interface PointPoolValue {
-  id: string; pointPoolId: string; current: number | null; maximum: number | null
-  pointPool: PointPoolDef
+interface CoreResourceValue {
+  id: string; coreResourceId: string; current: number | null; maximum: number | null; notes: string | null
+  coreResource: CoreResourceDef
 }
 
 interface ArmorClassFieldDef {
@@ -50,18 +52,70 @@ interface CharacterSheet {
     skillFormula?: string | null
     attributes: { id: string; key: string; name: string }[]
     skillModifierProfiles: SkillModifierProfile[]
-    pointPools: PointPoolDef[]
+    coreResources: CoreResourceDef[]
     armorClass: ArmorClassDef | null
   }
   values: SheetAttribute[]; fieldValues: FieldValue[]; skillValues: SkillValue[]
   skillProfileValues: SkillProfileValue[]
-  pointPoolValues: PointPoolValue[]
+  coreResourceValues: CoreResourceValue[]
   acValues: ArmorClassValue[]
   abilities: Ability[]; inventoryItems: InventoryItem[]; story: Story | null
   ownerId: string; createdAt: string
 }
 
 type Tab = 'character' | 'abilities' | 'inventory' | 'story'
+
+function CoreResourceCard({ resource, value, isOwner, onSave, onModify }: {
+  resource: CoreResourceDef
+  value: CoreResourceValue
+  isOwner: boolean
+  onSave: (coreResourceId: string, field: 'current' | 'maximum' | 'notes', val: string) => Promise<void>
+  onModify?: (coreResourceId: string, delta: number) => void
+}) {
+  const [modifier, setModifier] = useState(0)
+  const canEdit = isOwner && resource.editableByPlayer
+
+  return (
+    <div className="card !p-4 space-y-3">
+      <h3 className="font-semibold text-sm flex items-center gap-2">
+        {resource.displayName}
+        {resource.showNotes && (
+          isOwner
+            ? <InlineText value={value.notes ?? ''} onSave={(v) => onSave(value.coreResourceId, 'notes', v)} placeholder="notes..." emptyDisplay="add notes" className="!text-xs !text-muted !font-normal" />
+            : value.notes && <span className="text-xs text-muted font-normal">— {value.notes}</span>
+        )}
+      </h3>
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-center">
+          <span className="text-muted text-xs block">Current</span>
+          {canEdit
+            ? <InlineNumber value={value.current ?? 0} onSave={(v) => onSave(value.coreResourceId, 'current', String(v))} min={0} className="text-xl font-bold text-foreground" />
+            : <span className="text-xl font-bold text-foreground">{value.current ?? '—'}</span>
+          }
+        </div>
+        <span className="text-muted text-lg">/</span>
+        <div className="text-center">
+          <span className="text-muted text-xs block">Max</span>
+          {canEdit
+            ? <InlineNumber value={value.maximum ?? 0} onSave={(v) => onSave(value.coreResourceId, 'maximum', String(v))} min={0} className="text-xl font-bold text-foreground" />
+            : <span className="text-xl font-bold text-foreground">{value.maximum ?? '—'}</span>
+          }
+        </div>
+      </div>
+      {canEdit && onModify && (
+        <div className="space-y-2 pt-2 border-t border-border">
+          <div className="flex items-center gap-2">
+            <input type="number" min={0} className="input-field py-1 text-xs flex-1" value={modifier || ''} placeholder="Amount" onChange={e => setModifier(parseInt(e.target.value, 10) || 0)} />
+          </div>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => { onModify(value.coreResourceId, 1); setModifier(0) }} disabled={!modifier} className="btn-primary text-xs flex-1 py-1">+ Heal / Recover</button>
+            <button type="button" onClick={() => { onModify(value.coreResourceId, -1); setModifier(0) }} disabled={!modifier} className="btn-danger text-xs flex-1 py-1">− Damage / Lose</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function CharacterSheetDetailPage() {
   const router = useRouter(); const params = useParams(); const id = params.id as string
@@ -79,7 +133,6 @@ export default function CharacterSheetDetailPage() {
   const [othersValues, setOthersValues] = useState<Record<string, number>>({})
   const othersValuesRef = useRef(othersValues)
   othersValuesRef.current = othersValues
-  const [hpModifier, setHpModifier] = useState(0)
   const [activeTab, setActiveTab] = useState<Tab>('character')
   const isOwner = sheet?.ownerId === user?.id
 
@@ -230,9 +283,6 @@ export default function CharacterSheetDetailPage() {
     const updated = await updateSheet({ level })
     const mods = await computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated, mods)
   }
-  async function saveHpActual(hp: number) { await updateSheet({ hpActual: hp }) }
-  async function saveHpMax(hp: number) { await updateSheet({ hpMax: hp }) }
-  async function saveHpNotes(notes: string) { await updateSheet({ hpNotes: notes || undefined }) }
   async function saveAttributeValue(attributeId: string, value: string) {
     const updated = await updateSheet({ values: [{ attributeId, value }] })
     const mods = await computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated, mods)
@@ -242,18 +292,37 @@ export default function CharacterSheetDetailPage() {
     const mods = await computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated, mods)
   }
 
-  async function handlePointPoolChange(pointPoolId: string, field: 'current' | 'maximum', value: string) {
+  async function handleCoreResourceChange(coreResourceId: string, field: 'current' | 'maximum' | 'notes', value: string) {
     if (!sheet) return
-    const numVal = value.trim() === '' ? null : parseInt(value, 10)
+    const numVal = value.trim() === '' ? null : (field === 'notes' ? value : parseInt(value, 10))
     const optimisticSheet = {
       ...sheet,
-      pointPoolValues: sheet.pointPoolValues.map(p =>
-        p.pointPoolId === pointPoolId ? { ...p, [field]: numVal } : p
+      coreResourceValues: sheet.coreResourceValues.map(v =>
+        v.coreResourceId === coreResourceId ? { ...v, [field]: numVal } : v
       ),
     }
     setSheet(optimisticSheet)
     try {
-      await updateSheet({ pointPoolValues: [{ pointPoolId, [field]: numVal }] })
+      await updateSheet({ coreResourceValues: [{ coreResourceId, [field]: numVal }] })
+    } catch {
+      setSheet(sheet)
+    }
+  }
+
+  async function handleCoreResourceModify(coreResourceId: string, delta: number) {
+    if (!sheet) return
+    const crv = sheet.coreResourceValues.find(v => v.coreResourceId === coreResourceId)
+    if (!crv) return
+    const newVal = Math.max(0, (crv.current ?? 0) + delta)
+    const optimisticSheet = {
+      ...sheet,
+      coreResourceValues: sheet.coreResourceValues.map(v =>
+        v.coreResourceId === coreResourceId ? { ...v, current: newVal } : v
+      ),
+    }
+    setSheet(optimisticSheet)
+    try {
+      await updateSheet({ coreResourceValues: [{ coreResourceId, current: newVal }] })
     } catch {
       setSheet(sheet)
     }
@@ -264,13 +333,6 @@ export default function CharacterSheetDetailPage() {
     const optimisticSheet = { ...sheet, acValues: sheet.acValues.map(acv => acv.fieldId === fieldId ? { ...acv, value } : acv) }
     setSheet(optimisticSheet)
     try { const updated = await updateSheet({ acValues: [{ fieldId, value }] }); computeAC(updated, modifierResults) } catch { setSheet(sheet) }
-  }
-  async function handleHpModify(delta: number) {
-    if (!sheet) return; const a = Math.abs(hpModifier) || 0; if (a === 0) return
-    const nh = Math.max(0, (sheet.hpActual ?? 0) + delta * a)
-    const optimistic = { ...sheet, hpActual: nh }
-    setSheet(optimistic)
-    try { await updateSheet({ hpActual: nh }) } catch { setSheet(sheet) }
   }
   async function handleProfileChange(skillId: string, profileId: string, optionId: string | null) {
     if (!sheet) return
@@ -340,6 +402,7 @@ export default function CharacterSheetDetailPage() {
   const armorClass = sheet?.template.armorClass
   const totalWeight = inventoryItems.reduce((s, i) => s + (i.weight ?? 0), 0)
   const tabClass = (t: Tab) => `flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === t ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`
+  const enabledCoreResources = (sheet.template.coreResources || []).filter(cr => cr.enabled)
 
   return (<main className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 animate-fade-in">
     <PageNav crumbs={[
@@ -376,23 +439,27 @@ export default function CharacterSheetDetailPage() {
       </nav>
 
       {activeTab === 'character' && <div className="space-y-6">
-        <div className="card !p-4 space-y-3">
-          <h3 className="font-semibold text-sm flex items-center gap-2">Health Points{isOwner ? <InlineText value={sheet.hpNotes ?? ''} onSave={saveHpNotes} placeholder="notes..." emptyDisplay="add notes" className="!text-xs !text-muted !font-normal" /> : sheet.hpNotes && <span className="text-xs text-muted font-normal">— {sheet.hpNotes}</span>}</h3>
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-center"><span className="text-muted text-xs block">Actual</span>{isOwner ? <InlineNumber value={sheet.hpActual ?? 0} onSave={saveHpActual} min={0} className="text-xl font-bold text-foreground" /> : <span className="text-xl font-bold text-foreground">{sheet.hpActual ?? 0}</span>}</div>
-            <span className="text-muted text-lg">/</span>
-            <div className="text-center"><span className="text-muted text-xs block">Max</span>{isOwner ? <InlineNumber value={sheet.hpMax ?? 0} onSave={saveHpMax} min={0} className="text-xl font-bold text-foreground" /> : <span className="text-xl font-bold text-foreground">{sheet.hpMax ?? 0}</span>}</div>
-          </div>
-          {isOwner && <div className="space-y-2 pt-2 border-t border-border"><div className="flex items-center gap-2"><input type="number" min={0} className="input-field py-1 text-xs flex-1" value={hpModifier||''} placeholder="Amount" onChange={e=>setHpModifier(parseInt(e.target.value,10)||0)}/></div><div className="flex gap-2"><button type="button" onClick={()=>handleHpModify(1)} disabled={!hpModifier} className="btn-primary text-xs flex-1 py-1">+ Heal</button><button type="button" onClick={()=>handleHpModify(-1)} disabled={!hpModifier} className="btn-danger text-xs flex-1 py-1">− Damage</button></div></div>}
-        </div>
+        {/* Dynamic Core Resources - replaces hardcoded Health Points */}
+        {enabledCoreResources.map(cr => {
+          const crv = sheet.coreResourceValues.find(v => v.coreResourceId === cr.id)
+          if (!crv) return null
+          return (
+            <CoreResourceCard
+              key={cr.id}
+              resource={cr}
+              value={crv}
+              isOwner={!!isOwner}
+              onSave={handleCoreResourceChange}
+              onModify={isOwner && cr.editableByPlayer ? handleCoreResourceModify : undefined}
+            />
+          )
+        })}
 
         {sheet.fieldValues.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-3">Character Info</h3><div className="grid gap-2 sm:grid-cols-2">{sheet.fieldValues.map(fv => <div key={fv.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border"><span className="text-sm text-muted">{fv.templateField.label}</span>{isOwner ? <InlineText value={fv.value} onSave={(v) => saveFieldValue(fv.templateFieldId, v)} className="text-sm font-medium text-foreground" /> : <span className="text-sm font-medium text-foreground">{fv.value || '—'}</span>}</div>)}</div></div>}
 
         <div className="card !p-6"><h3 className="font-semibold mb-4">Attributes</h3><div className="grid gap-3 sm:grid-cols-2">{sheet.template.attributes.map(attr => { const val = sheet.values.find(v => v.attributeId === attr.id); const modResult = modifierResults[attr.id]; return <div key={attr.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border"><span className="text-sm text-foreground">{attr.name}{sheet.template.attributeModifierFormula && <span className="text-[0.6rem] text-primary ml-1">mod</span>}</span><div className="flex items-center gap-3">{isOwner ? <InlineText value={val?.value ?? ''} onSave={(v) => saveAttributeValue(attr.id, v)} className="text-sm font-semibold text-foreground" /> : <span className="text-sm font-semibold text-foreground">{val?.value || '—'}</span>}{modResult !== undefined && modResult !== null && <span className="text-sm font-semibold text-primary">({modResult >= 0 ? '+' : ''}{modResult})</span>}</div></div> })}</div></div>
 
         {armorClass?.enabled && armorClass.fields.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-4">Armor Class</h3><div className="flex items-center justify-center mb-4"><div className="w-24 h-24 rounded-full border-4 border-primary/30 flex items-center justify-center bg-background/50"><span className="text-4xl font-bold text-primary">{acResult !== null ? acResult : '—'}</span></div></div><div className="space-y-3"><div><h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Components</h4><div className="grid gap-2 sm:grid-cols-2">{armorClass.fields.map(field => { const acv = sheet.acValues.find(v => v.fieldId === field.id); const val = acv?.value ?? field.defaultValue; const canEdit = isOwner && field.editableByPlayer; return <div key={field.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border"><div className="flex items-center gap-1 min-w-0"><span className="text-sm text-foreground truncate">{field.name}</span>{field.description && <span className="text-[0.6rem] text-muted hidden sm:inline">— {field.description}</span>}</div>{canEdit ? <input type="number" className="input-field py-1 text-xs w-16 text-right" value={val} onChange={e => handleAcFieldChange(field.id, e.target.value)} /> : <span className="text-sm font-semibold text-foreground">{val}</span>}</div> })}</div></div>{armorClass.attributeModifierIds.length > 0 && <div><h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Attribute Modifiers</h4><div className="grid gap-2 sm:grid-cols-2">{armorClass.attributeModifierIds.map(attrKey => { const attr = sheet.template.attributes.find(a => a.key === attrKey); if (!attr) return null; const modResult = modifierResults[attr.id]; return <div key={attrKey} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border opacity-80"><span className="text-sm text-foreground truncate">{attr.name} Modifier</span><span className="text-sm font-semibold text-muted" style={{opacity: 0.6}}>{modResult !== null && modResult !== undefined ? `${modResult >= 0 ? '+' : ''}${modResult}` : '—'}</span></div> })}</div></div>}</div></div>}
-
-        {sheet.template.pointPools.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-4">Point Pools</h3><div className="grid gap-3 sm:grid-cols-1">{sheet.template.pointPools.map(pool => { const ppv = sheet.pointPoolValues.find(v => v.pointPoolId === pool.id); const canEdit = isOwner && pool.editableByPlayer; return <div key={pool.id} className="rounded-lg border border-border bg-background/30 p-4"><div className="mb-2"><span className="text-sm font-medium text-foreground">{pool.name}</span>{pool.description && <span className="text-xs text-muted ml-2">— {pool.description}</span>}</div><div className="flex items-center gap-3"><div className="flex-1"><span className="text-xs text-muted block mb-1">Current</span>{canEdit ? <input type="number" className="input-field py-1 text-xs w-full" value={ppv?.current ?? ''} placeholder="—" onChange={e => handlePointPoolChange(pool.id, 'current', e.target.value)} /> : <span className="text-sm font-semibold text-foreground">{ppv?.current ?? '—'}</span>}</div><div className="flex-1"><span className="text-xs text-muted block mb-1">Maximum</span>{canEdit ? <input type="number" className="input-field py-1 text-xs w-full" value={ppv?.maximum ?? ''} placeholder="—" onChange={e => handlePointPoolChange(pool.id, 'maximum', e.target.value)} /> : <span className="text-sm font-semibold text-foreground">{ppv?.maximum ?? '—'}</span>}</div></div></div> })}</div></div>}
 
         {sheet.skillValues.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-4">Skills</h3><div className="grid gap-3 sm:grid-cols-2">{sheet.skillValues.map(sv => <CollapsibleSkillRow key={sv.id} skill={sv} result={skillResults[sv.skillId]} profiles={allProfiles.filter(p => { const tm = (p as any).targetMode ?? 'ALL_SKILLS'; const tids: string[] = (p as any).targetSkillIds ?? []; return tm === 'ALL_SKILLS' || tids.length === 0 || tids.includes(sv.skill.name) })} selections={profileSelections[sv.skillId] || {}} active={activeSkills[sv.skillId] ?? false} others={othersValues[sv.skillId] ?? 0} onToggleActive={() => handleSkillToggle(sv.skillId)} onOthersChange={(no) => handleOthersChange(sv.skillId, no)} onProfileChange={(pid, oid) => handleProfileChange(sv.skillId, pid, oid)} onAttributeChange={(attrId) => handleSkillAttributeChange(sv.skillId, attrId)} templateAttributes={sheet.template.attributes} />)}</div></div>}
         <div className="text-center"><p className="text-xs text-muted">{isOwner ? 'You own this character sheet.' : 'This character sheet belongs to another player.'}</p></div>

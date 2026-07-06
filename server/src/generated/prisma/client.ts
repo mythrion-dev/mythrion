@@ -127,15 +127,15 @@ export type TemplateField = Prisma.TemplateFieldModel
  */
 export type CharacterSheetFieldValue = Prisma.CharacterSheetFieldValueModel
 /**
- * Model TemplatePointPool
+ * Model TemplateCoreResource
  * 
  */
-export type TemplatePointPool = Prisma.TemplatePointPoolModel
+export type TemplateCoreResource = Prisma.TemplateCoreResourceModel
 /**
- * Model CharacterSheetPointPoolValue
+ * Model CharacterSheetCoreResourceValue
  * 
  */
-export type CharacterSheetPointPoolValue = Prisma.CharacterSheetPointPoolValueModel
+export type CharacterSheetCoreResourceValue = Prisma.CharacterSheetCoreResourceValueModel
 /**
  * Model TemplateArmorClass
  * 

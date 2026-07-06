@@ -68,8 +68,8 @@ export const ModelName = {
   CharacterSheetValue: 'CharacterSheetValue',
   TemplateField: 'TemplateField',
   CharacterSheetFieldValue: 'CharacterSheetFieldValue',
-  TemplatePointPool: 'TemplatePointPool',
-  CharacterSheetPointPoolValue: 'CharacterSheetPointPoolValue',
+  TemplateCoreResource: 'TemplateCoreResource',
+  CharacterSheetCoreResourceValue: 'CharacterSheetCoreResourceValue',
   TemplateArmorClass: 'TemplateArmorClass',
   ArmorClassField: 'ArmorClassField',
   CharacterSheetArmorClassValue: 'CharacterSheetArmorClassValue',
@@ -330,32 +330,34 @@ export const CharacterSheetFieldValueScalarFieldEnum = {
 export type CharacterSheetFieldValueScalarFieldEnum = (typeof CharacterSheetFieldValueScalarFieldEnum)[keyof typeof CharacterSheetFieldValueScalarFieldEnum]
 
 
-export const TemplatePointPoolScalarFieldEnum = {
+export const TemplateCoreResourceScalarFieldEnum = {
   id: 'id',
   templateId: 'templateId',
-  name: 'name',
   slug: 'slug',
-  description: 'description',
+  displayName: 'displayName',
+  enabled: 'enabled',
   editableByPlayer: 'editableByPlayer',
+  showNotes: 'showNotes',
   order: 'order',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type TemplatePointPoolScalarFieldEnum = (typeof TemplatePointPoolScalarFieldEnum)[keyof typeof TemplatePointPoolScalarFieldEnum]
+export type TemplateCoreResourceScalarFieldEnum = (typeof TemplateCoreResourceScalarFieldEnum)[keyof typeof TemplateCoreResourceScalarFieldEnum]
 
 
-export const CharacterSheetPointPoolValueScalarFieldEnum = {
+export const CharacterSheetCoreResourceValueScalarFieldEnum = {
   id: 'id',
   sheetId: 'sheetId',
-  pointPoolId: 'pointPoolId',
+  coreResourceId: 'coreResourceId',
   current: 'current',
   maximum: 'maximum',
+  notes: 'notes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type CharacterSheetPointPoolValueScalarFieldEnum = (typeof CharacterSheetPointPoolValueScalarFieldEnum)[keyof typeof CharacterSheetPointPoolValueScalarFieldEnum]
+export type CharacterSheetCoreResourceValueScalarFieldEnum = (typeof CharacterSheetCoreResourceValueScalarFieldEnum)[keyof typeof CharacterSheetCoreResourceValueScalarFieldEnum]
 
 
 export const TemplateArmorClassScalarFieldEnum = {
