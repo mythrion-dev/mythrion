@@ -120,10 +120,13 @@ export default function CharacterSheetDetailPage() {
       if (!isNaN(v)) total += v
     })
     // Add attribute modifiers for each selected attribute
-    const attrModIds = ac.attributeModifierIds ?? []
+    // attributeModifierIds stores attribute keys (e.g., "dex"), need to resolve to IDs
+    const attrModKeys = ac.attributeModifierIds ?? []
     const fallback = mods ?? modifierResults
-    for (const attrId of attrModIds) {
-      const modResult = fallback[attrId]
+    for (const attrKey of attrModKeys) {
+      const attr = sd.template.attributes.find(a => a.key === attrKey)
+      if (!attr) continue
+      const modResult = fallback[attr.id]
       if (modResult !== null && modResult !== undefined && !isNaN(modResult)) {
         total += modResult
       }
@@ -656,12 +659,12 @@ export default function CharacterSheetDetailPage() {
                 <div>
                   <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Attribute Modifiers</h4>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {armorClass.attributeModifierIds.map(attrId => {
-                      const attr = sheet.template.attributes.find(a => a.id === attrId)
-                      const modResult = modifierResults[attrId]
+                  {armorClass.attributeModifierIds.map(attrKey => {
+                      const attr = sheet.template.attributes.find(a => a.key === attrKey)
                       if (!attr) return null
+                      const modResult = modifierResults[attr.id]
                       return (
-                        <div key={attrId} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border opacity-80">
+                        <div key={attrKey} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border opacity-80">
                           <span className="text-sm text-foreground truncate">{attr.name} Modifier</span>
                           <span className="text-sm font-semibold text-muted" style={{opacity: 0.6}}>
                             {modResult !== null && modResult !== undefined ? `${modResult >= 0 ? '+' : ''}${modResult}` : '—'}
