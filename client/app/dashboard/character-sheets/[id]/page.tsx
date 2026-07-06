@@ -83,22 +83,17 @@ export default function CharacterSheetDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>('character')
   const isOwner = sheet?.ownerId === user?.id
 
-  // ability/inventory/story state
   const [abilities, setAbilities] = useState<Ability[]>([]); const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]); const [story, setStory] = useState<Story | null>(null)
-  // ability level state
-  const [selectedLevels, setSelectedLevels] = useState<Record<string, string>>({}) // abilityId -> levelId
+  const [selectedLevels, setSelectedLevels] = useState<Record<string, string>>({})
   const [showNewAbility, setShowNewAbility] = useState(false); const [newAbility, setNewAbility] = useState({ name: '', description: '', manaCost: '', cooldown: '', notes: '' })
   const [abilitySaving, setAbilitySaving] = useState(false); const [abilityError, setAbilityError] = useState<string | null>(null)
-  // add level modal
-  const [showAddLevelModal, setShowAddLevelModal] = useState<string | null>(null) // abilityId
+  const [showAddLevelModal, setShowAddLevelModal] = useState<string | null>(null)
   const [newLevelForm, setNewLevelForm] = useState({ level: 2, copyFromPrevious: true })
   const [levelModalSaving, setLevelModalSaving] = useState(false); const [levelModalError, setLevelModalError] = useState<string | null>(null)
-  // inventory state
   const [showNewItem, setShowNewItem] = useState(false); const [newItem, setNewItem] = useState({ name: '', weight: '', cost: '', description: '' })
   const [itemSaving, setItemSaving] = useState(false); const [itemError, setItemError] = useState<string | null>(null)
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
 
-  // ── Shared sheet update helper ──
   const updateSheet = useCallback(async (data: Record<string, unknown>): Promise<CharacterSheet> => {
     const current = sheet!
     const updated = await api.patch<CharacterSheet>(`/character-sheets/${current.id}`, data)
@@ -106,8 +101,7 @@ export default function CharacterSheetDetailPage() {
     return updated
   }, [sheet])
 
-  // ── AC computation ──
-  const computeAC = useCallback((sd: CharacterSheet, mods?: Record<string, number | null>) => {
+  const computeAC = useCallback((sd: CharacterSheet, mods: Record<string, number | null>) => {
     const ac = sd.template.armorClass
     if (!ac?.enabled) { setAcResult(null); return }
     let total = 0
@@ -116,17 +110,16 @@ export default function CharacterSheetDetailPage() {
       if (!isNaN(v)) total += v
     })
     const attrModKeys = ac.attributeModifierIds ?? []
-    const fallback = mods ?? modifierResults
     for (const attrKey of attrModKeys) {
       const attr = sd.template.attributes.find(a => a.key === attrKey)
       if (!attr) continue
-      const modResult = fallback[attr.id]
+      const modResult = mods[attr.id]
       if (modResult !== null && modResult !== undefined && !isNaN(modResult)) {
         total += Math.max(0, modResult)
       }
     }
     setAcResult(total)
-  }, [modifierResults])
+  }, [])
 
   const computeModifiers = useCallback(async (sd: CharacterSheet) => {
     const results: Record<string, number | null> = {}
@@ -228,7 +221,6 @@ export default function CharacterSheetDetailPage() {
 
   useEffect(() => { if (!authLoading && !user) { router.replace('/login'); return }; if (user) fetchSheet() }, [authLoading, user, fetchSheet])
 
-  // ── Inline save handlers ──
   async function saveCharacterName(name: string) {
     const updated = await updateSheet({ characterName: name })
     const mods = await computeModifiers(updated); computeSkills(updated, profileSelections); computeAC(updated, mods)
@@ -271,7 +263,7 @@ export default function CharacterSheetDetailPage() {
     if (!sheet) return
     const optimisticSheet = { ...sheet, acValues: sheet.acValues.map(acv => acv.fieldId === fieldId ? { ...acv, value } : acv) }
     setSheet(optimisticSheet)
-    try { const updated = await updateSheet({ acValues: [{ fieldId, value }] }); computeAC(updated) } catch { setSheet(sheet) }
+    try { const updated = await updateSheet({ acValues: [{ fieldId, value }] }); computeAC(updated, modifierResults) } catch { setSheet(sheet) }
   }
   async function handleHpModify(delta: number) {
     if (!sheet) return; const a = Math.abs(hpModifier) || 0; if (a === 0) return
@@ -400,7 +392,6 @@ export default function CharacterSheetDetailPage() {
 
         {armorClass?.enabled && armorClass.fields.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-4">Armor Class</h3><div className="flex items-center justify-center mb-4"><div className="w-24 h-24 rounded-full border-4 border-primary/30 flex items-center justify-center bg-background/50"><span className="text-4xl font-bold text-primary">{acResult !== null ? acResult : '—'}</span></div></div><div className="space-y-3"><div><h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Components</h4><div className="grid gap-2 sm:grid-cols-2">{armorClass.fields.map(field => { const acv = sheet.acValues.find(v => v.fieldId === field.id); const val = acv?.value ?? field.defaultValue; const canEdit = isOwner && field.editableByPlayer; return <div key={field.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border"><div className="flex items-center gap-1 min-w-0"><span className="text-sm text-foreground truncate">{field.name}</span>{field.description && <span className="text-[0.6rem] text-muted hidden sm:inline">— {field.description}</span>}</div>{canEdit ? <input type="number" className="input-field py-1 text-xs w-16 text-right" value={val} onChange={e => handleAcFieldChange(field.id, e.target.value)} /> : <span className="text-sm font-semibold text-foreground">{val}</span>}</div> })}</div></div>{armorClass.attributeModifierIds.length > 0 && <div><h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Attribute Modifiers</h4><div className="grid gap-2 sm:grid-cols-2">{armorClass.attributeModifierIds.map(attrKey => { const attr = sheet.template.attributes.find(a => a.key === attrKey); if (!attr) return null; const modResult = modifierResults[attr.id]; return <div key={attrKey} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border opacity-80"><span className="text-sm text-foreground truncate">{attr.name} Modifier</span><span className="text-sm font-semibold text-muted" style={{opacity: 0.6}}>{modResult !== null && modResult !== undefined ? `${modResult >= 0 ? '+' : ''}${modResult}` : '—'}</span></div> })}</div></div>}</div></div>}
 
-        {/* Point Pools — system-agnostic: player fills both Current and Maximum */}
         {sheet.template.pointPools.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-4">Point Pools</h3><div className="grid gap-3 sm:grid-cols-1">{sheet.template.pointPools.map(pool => { const ppv = sheet.pointPoolValues.find(v => v.pointPoolId === pool.id); const canEdit = isOwner && pool.editableByPlayer; return <div key={pool.id} className="rounded-lg border border-border bg-background/30 p-4"><div className="mb-2"><span className="text-sm font-medium text-foreground">{pool.name}</span>{pool.description && <span className="text-xs text-muted ml-2">— {pool.description}</span>}</div><div className="flex items-center gap-3"><div className="flex-1"><span className="text-xs text-muted block mb-1">Current</span>{canEdit ? <input type="number" className="input-field py-1 text-xs w-full" value={ppv?.current ?? ''} placeholder="—" onChange={e => handlePointPoolChange(pool.id, 'current', e.target.value)} /> : <span className="text-sm font-semibold text-foreground">{ppv?.current ?? '—'}</span>}</div><div className="flex-1"><span className="text-xs text-muted block mb-1">Maximum</span>{canEdit ? <input type="number" className="input-field py-1 text-xs w-full" value={ppv?.maximum ?? ''} placeholder="—" onChange={e => handlePointPoolChange(pool.id, 'maximum', e.target.value)} /> : <span className="text-sm font-semibold text-foreground">{ppv?.maximum ?? '—'}</span>}</div></div></div> })}</div></div>}
 
         {sheet.skillValues.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-4">Skills</h3><div className="grid gap-3 sm:grid-cols-2">{sheet.skillValues.map(sv => <CollapsibleSkillRow key={sv.id} skill={sv} result={skillResults[sv.skillId]} profiles={allProfiles.filter(p => { const tm = (p as any).targetMode ?? 'ALL_SKILLS'; const tids: string[] = (p as any).targetSkillIds ?? []; return tm === 'ALL_SKILLS' || tids.length === 0 || tids.includes(sv.skill.name) })} selections={profileSelections[sv.skillId] || {}} active={activeSkills[sv.skillId] ?? false} others={othersValues[sv.skillId] ?? 0} onToggleActive={() => handleSkillToggle(sv.skillId)} onOthersChange={(no) => handleOthersChange(sv.skillId, no)} onProfileChange={(pid, oid) => handleProfileChange(sv.skillId, pid, oid)} onAttributeChange={(attrId) => handleSkillAttributeChange(sv.skillId, attrId)} templateAttributes={sheet.template.attributes} />)}</div></div>}
