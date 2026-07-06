@@ -70,7 +70,12 @@ const sheetInclude = {
   },
   abilities: {
     orderBy: { order: 'asc' as const },
-    include: { levels: { orderBy: { level: 'asc' as const } } },
+    include: {
+      levels: { orderBy: { level: 'asc' as const } },
+      summonAttributes: { orderBy: { createdAt: 'asc' as const } },
+      summonAcValues: { orderBy: { createdAt: 'asc' as const } },
+      summonHealth: true,
+    },
   },
   inventoryItems: { orderBy: { order: 'asc' as const } },
   story: true,
@@ -338,10 +343,13 @@ export class CharacterSheetService {
     })
   }
 
-  // ── Abilities (CRUD) ──
+  // ── Abilities & Summons (CRUD) ──
 
   private abilityInclude = {
     levels: { orderBy: { level: 'asc' as const } },
+    summonAttributes: { orderBy: { createdAt: 'asc' as const } },
+    summonAcValues: { orderBy: { createdAt: 'asc' as const } },
+    summonHealth: true,
   }
 
   async listAbilities(sheetId: string, userId: string) {
@@ -353,13 +361,65 @@ export class CharacterSheetService {
     })
   }
 
-  async createAbility(sheetId: string, userId: string, dto: { name: string; description?: string; manaCost?: number; range?: string; cooldown?: string; notes?: string; damage?: string }) {
+  async createAbility(sheetId: string, userId: string, dto: {
+    name: string; type?: string; description?: string; notes?: string
+    manaCost?: number; range?: string; damage?: string
+    // Summon-specific
+    summonAttributeValues?: { attributeId: string; value: string }[]
+    summonHealthCurrent?: number; summonHealthMax?: number
+  }) {
     await this.requireOwnership(sheetId, userId)
     const count = await this.prisma.characterAbility.count({ where: { sheetId } })
+    const abilityType = dto.type ?? 'ABILITY'
+
+    if (abilityType === 'SUMMON') {
+      // Fetch template attributes & AC fields to create summon data
+      const sheet = await this.prisma.characterSheet.findUnique({
+        where: { id: sheetId },
+        select: {
+          template: {
+            select: {
+              attributes: true,
+              armorClass: { include: { fields: true } },
+            },
+          },
+        },
+      })
+      const templateAttrs = sheet?.template?.attributes ?? []
+      const acFields = sheet?.template?.armorClass?.fields ?? []
+
+      const summonAttrData = dto.summonAttributeValues ?? templateAttrs.map(a => ({ attributeId: a.id, value: '' }))
+
+      return this.prisma.characterAbility.create({
+        data: {
+          sheetId,
+          name: dto.name,
+          type: abilityType,
+          description: dto.description ?? null,
+          notes: dto.notes ?? null,
+          order: count,
+          summonAttributes: summonAttrData.length > 0
+            ? { create: summonAttrData.map(sa => ({ attributeId: sa.attributeId, value: sa.value })) }
+            : undefined,
+          summonAcValues: acFields.length > 0
+            ? { create: acFields.map(f => ({ fieldId: f.id, value: f.defaultValue })) }
+            : undefined,
+          summonHealth: (dto.summonHealthCurrent !== undefined || dto.summonHealthMax !== undefined)
+            ? { create: { current: dto.summonHealthCurrent ?? null, maximum: dto.summonHealthMax ?? null } }
+            : undefined,
+        },
+        include: this.abilityInclude,
+      })
+    }
+
+    // Regular ABILITY
     return this.prisma.characterAbility.create({
       data: {
         sheetId,
         name: dto.name,
+        type: abilityType,
+        description: dto.description ?? null,
+        notes: dto.notes ?? null,
         order: count,
         levels: {
           create: {
@@ -367,7 +427,6 @@ export class CharacterSheetService {
             description: dto.description ?? null,
             manaCost: dto.manaCost ?? null,
             range: dto.range ?? null,
-            cooldown: dto.cooldown ?? null,
             notes: dto.notes ?? null,
             damage: dto.damage ?? null,
           },
@@ -377,7 +436,7 @@ export class CharacterSheetService {
     })
   }
 
-  async updateAbility(abilityId: string, userId: string, dto: { name?: string }) {
+  async updateAbility(abilityId: string, userId: string, dto: { name?: string; description?: string; notes?: string }) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
     if (!ability) throw new NotFoundException('Ability not found')
     await this.requireOwnership(ability.sheetId, userId)
@@ -391,7 +450,7 @@ export class CharacterSheetService {
     return this.prisma.characterAbility.delete({ where: { id: abilityId } })
   }
 
-  // ── Ability Levels (CRUD) ──
+  // ── Ability Levels (CRUD — for ABILITY type only) ──
 
   async listAbilityLevels(abilityId: string, userId: string) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
@@ -403,7 +462,7 @@ export class CharacterSheetService {
   async createAbilityLevel(
     abilityId: string,
     userId: string,
-    dto: { level: number; description?: string; manaCost?: number; range?: string; cooldown?: string; notes?: string; damage?: string; copyFromPrevious?: boolean },
+    dto: { level: number; description?: string; manaCost?: number; range?: string; notes?: string; damage?: string; copyFromPrevious?: boolean },
   ) {
     const ability = await this.prisma.characterAbility.findUnique({
       where: { id: abilityId },
@@ -417,7 +476,6 @@ export class CharacterSheetService {
       description: dto.description ?? null,
       manaCost: dto.manaCost ?? null,
       range: dto.range ?? null,
-      cooldown: dto.cooldown ?? null,
       notes: dto.notes ?? null,
       damage: dto.damage ?? null,
     }
@@ -429,7 +487,6 @@ export class CharacterSheetService {
         description: dto.description ?? prev.description,
         manaCost: dto.manaCost ?? prev.manaCost,
         range: dto.range ?? prev.range,
-        cooldown: dto.cooldown ?? prev.cooldown,
         notes: dto.notes ?? prev.notes,
         damage: dto.damage ?? prev.damage,
       }
@@ -440,7 +497,7 @@ export class CharacterSheetService {
     })
   }
 
-  async updateAbilityLevel(levelId: string, userId: string, dto: { level?: number; description?: string; manaCost?: number; range?: string; cooldown?: string; notes?: string; damage?: string }) {
+  async updateAbilityLevel(levelId: string, userId: string, dto: { level?: number; description?: string; manaCost?: number; range?: string; notes?: string; damage?: string }) {
     const abilityLevel = await this.prisma.characterAbilityLevel.findUnique({ where: { id: levelId } })
     if (!abilityLevel) throw new NotFoundException('Ability level not found')
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityLevel.abilityId } })
@@ -456,6 +513,45 @@ export class CharacterSheetService {
     if (!ability) throw new NotFoundException('Ability not found')
     await this.requireOwnership(ability.sheetId, userId)
     return this.prisma.characterAbilityLevel.delete({ where: { id: levelId } })
+  }
+
+  // ── Summon Attribute Values ──
+
+  async updateSummonAttribute(abilityId: string, attributeId: string, value: string, userId: string) {
+    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
+    if (!ability) throw new NotFoundException('Ability not found')
+    await this.requireOwnership(ability.sheetId, userId)
+    return this.prisma.summonAttribute.upsert({
+      where: { abilityId_attributeId: { abilityId, attributeId } },
+      create: { abilityId, attributeId, value },
+      update: { value },
+    })
+  }
+
+  // ── Summon AC Values ──
+
+  async updateSummonAcValue(abilityId: string, fieldId: string, value: string, userId: string) {
+    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
+    if (!ability) throw new NotFoundException('Ability not found')
+    await this.requireOwnership(ability.sheetId, userId)
+    return this.prisma.summonArmorClassValue.upsert({
+      where: { abilityId_fieldId: { abilityId, fieldId } },
+      create: { abilityId, fieldId, value },
+      update: { value },
+    })
+  }
+
+  // ── Summon Health ──
+
+  async updateSummonHealth(abilityId: string, userId: string, dto: { current?: number | null; maximum?: number | null; notes?: string | null }) {
+    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
+    if (!ability) throw new NotFoundException('Ability not found')
+    await this.requireOwnership(ability.sheetId, userId)
+    return this.prisma.summonHealth.upsert({
+      where: { abilityId },
+      create: { abilityId, current: dto.current ?? null, maximum: dto.maximum ?? null, notes: dto.notes ?? null },
+      update: { current: dto.current, maximum: dto.maximum, notes: dto.notes },
+    })
   }
 
   // ── Inventory (CRUD) ──

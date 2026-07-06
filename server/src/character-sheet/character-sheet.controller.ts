@@ -101,7 +101,7 @@ export class CharacterSheetController {
     return this.sheetService.updateSkillAttribute(id, skillId, attributeId, req.user.sub)
   }
 
-  // ── Abilities ──
+  // ── Abilities & Summons ──
 
   @Get(':id/abilities')
   listAbilities(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
@@ -109,12 +109,12 @@ export class CharacterSheetController {
   }
 
   @Post(':id/abilities')
-  createAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: { name: string; description?: string; manaCost?: number; range?: string; cooldown?: string; notes?: string; damage?: string }) {
+  createAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: { name: string; type?: string; description?: string; notes?: string; manaCost?: number; range?: string; damage?: string; summonAttributeValues?: { attributeId: string; value: string }[]; summonHealthCurrent?: number; summonHealthMax?: number }) {
     return this.sheetService.createAbility(id, req.user.sub, dto)
   }
 
   @Patch(':id/abilities/:abilityId')
-  updateAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('abilityId') abilityId: string, @Body() dto: { name?: string }) {
+  updateAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('abilityId') abilityId: string, @Body() dto: { name?: string; description?: string; notes?: string }) {
     return this.sheetService.updateAbility(abilityId, req.user.sub, dto)
   }
 
@@ -131,18 +131,39 @@ export class CharacterSheetController {
   }
 
   @Post(':id/abilities/:abilityId/levels')
-  createAbilityLevel(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Body() dto: { level: number; description?: string; manaCost?: number; range?: string; cooldown?: string; notes?: string; damage?: string; copyFromPrevious?: boolean }) {
+  createAbilityLevel(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Body() dto: { level: number; description?: string; manaCost?: number; range?: string; notes?: string; damage?: string; copyFromPrevious?: boolean }) {
     return this.sheetService.createAbilityLevel(abilityId, req.user.sub, dto)
   }
 
   @Patch(':id/abilities/:abilityId/levels/:levelId')
-  updateAbilityLevel(@Req() req: AuthenticatedRequest, @Param('levelId') levelId: string, @Body() dto: { level?: number; description?: string; manaCost?: number; range?: string; cooldown?: string; notes?: string; damage?: string }) {
+  updateAbilityLevel(@Req() req: AuthenticatedRequest, @Param('levelId') levelId: string, @Body() dto: { level?: number; description?: string; manaCost?: number; range?: string; notes?: string; damage?: string }) {
     return this.sheetService.updateAbilityLevel(levelId, req.user.sub, dto)
   }
 
   @Delete(':id/abilities/:abilityId/levels/:levelId')
   removeAbilityLevel(@Req() req: AuthenticatedRequest, @Param('levelId') levelId: string) {
     return this.sheetService.deleteAbilityLevel(levelId, req.user.sub)
+  }
+
+  // ── Summon Attributes ──
+
+  @Patch(':id/abilities/:abilityId/summon-attributes/:attributeId')
+  updateSummonAttribute(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Param('attributeId') attributeId: string, @Body('value') value: string) {
+    return this.sheetService.updateSummonAttribute(abilityId, attributeId, value, req.user.sub)
+  }
+
+  // ── Summon AC ──
+
+  @Patch(':id/abilities/:abilityId/summon-ac/:fieldId')
+  updateSummonAcValue(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Param('fieldId') fieldId: string, @Body('value') value: string) {
+    return this.sheetService.updateSummonAcValue(abilityId, fieldId, value, req.user.sub)
+  }
+
+  // ── Summon Health ──
+
+  @Patch(':id/abilities/:abilityId/summon-health')
+  updateSummonHealth(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Body() dto: { current?: number | null; maximum?: number | null; notes?: string | null }) {
+    return this.sheetService.updateSummonHealth(abilityId, req.user.sub, dto)
   }
 
   // ── Inventory ──

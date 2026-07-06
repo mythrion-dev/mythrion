@@ -421,17 +421,23 @@ model CharacterSheetArmorClassValue {
   @@index([fieldId])
 }
 
-// ── Character Abilities (Player-only) ──
+// ── Character Abilities & Summons (Player-only) ──
 
 model CharacterAbility {
-  id          String                  @id @default(cuid())
-  sheetId     String
-  sheet       CharacterSheet          @relation(fields: [sheetId], references: [id], onDelete: Cascade)
-  name        String
-  order       Int                     @default(0)
-  levels      CharacterAbilityLevel[]
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
+  id              String                             @id @default(cuid())
+  sheetId         String
+  sheet           CharacterSheet                     @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  name            String
+  type            String                             @default("ABILITY") // "ABILITY" | "SUMMON"
+  order           Int                                @default(0)
+  description     String?
+  notes           String?
+  levels          CharacterAbilityLevel[]
+  summonAttributes SummonAttribute[]
+  summonAcValues   SummonArmorClassValue[]
+  summonHealth     SummonHealth?
+  createdAt       DateTime                           @default(now())
+  updatedAt       DateTime                           @updatedAt
 
   @@index([sheetId])
 }
@@ -443,7 +449,6 @@ model CharacterAbilityLevel {
   level       Int
   manaCost    Int?
   range       String?
-  cooldown    String?
   description String?
   notes       String?
   damage      String?
@@ -452,6 +457,49 @@ model CharacterAbilityLevel {
 
   @@unique([abilityId, level])
   @@index([abilityId])
+}
+
+// ── Summon Attribute Values (reuses template attributes) ──
+
+model SummonAttribute {
+  id          String           @id @default(cuid())
+  abilityId   String
+  ability     CharacterAbility @relation(fields: [abilityId], references: [id], onDelete: Cascade)
+  attributeId String
+  value       String           @default("")
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([abilityId, attributeId])
+  @@index([abilityId])
+}
+
+// ── Summon Armor Class Values (reuses template AC fields) ──
+
+model SummonArmorClassValue {
+  id        String           @id @default(cuid())
+  abilityId String
+  ability   CharacterAbility @relation(fields: [abilityId], references: [id], onDelete: Cascade)
+  fieldId   String
+  value     String           @default("0")
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([abilityId, fieldId])
+  @@index([abilityId])
+}
+
+// ── Summon Health ──
+
+model SummonHealth {
+  id        String           @id @default(cuid())
+  abilityId String           @unique
+  ability   CharacterAbility @relation(fields: [abilityId], references: [id], onDelete: Cascade)
+  current   Int?
+  maximum   Int?
+  notes     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 }
 
 // ── Character Inventory Items (Player-only) ──
