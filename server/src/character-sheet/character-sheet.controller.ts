@@ -147,12 +147,12 @@ export class CharacterSheetController {
   }
 
   @Post(':id/abilities/:abilityId/levels')
-  createAbilityLevel(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Body() dto: { level: number; description?: string; manaCost?: number; range?: string; notes?: string; damage?: string; copyFromPrevious?: boolean }) {
+  createAbilityLevel(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Body() dto: { level: string; description?: string; manaCost?: number; range?: string; notes?: string; damage?: string; copyFromPrevious?: boolean }) {
     return this.sheetService.createAbilityLevel(abilityId, req.user.sub, dto)
   }
 
   @Patch(':id/abilities/:abilityId/levels/:levelId')
-  updateAbilityLevel(@Req() req: AuthenticatedRequest, @Param('levelId') levelId: string, @Body() dto: { level?: number; description?: string; manaCost?: number; range?: string; notes?: string; damage?: string }) {
+  updateAbilityLevel(@Req() req: AuthenticatedRequest, @Param('levelId') levelId: string, @Body() dto: { level?: string; description?: string; manaCost?: number; range?: string; notes?: string; damage?: string }) {
     return this.sheetService.updateAbilityLevel(levelId, req.user.sub, dto)
   }
 

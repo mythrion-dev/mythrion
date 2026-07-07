@@ -473,7 +473,7 @@ export class CharacterSheetService {
         order: count,
         levels: {
           create: {
-            level: 1,
+            level: '1',
             description: dto.description ?? null,
             manaCost: dto.manaCost ?? null,
             range: dto.range ?? null,
@@ -533,7 +533,7 @@ export class CharacterSheetService {
         order: count,
         levels: {
           create: {
-            level: 1,
+            level: '1',
             description: dto.description ?? null,
             manaCost: dto.manaCost ?? null,
             range: dto.range ?? null,
@@ -558,7 +558,7 @@ export class CharacterSheetService {
   async createAbilityLevel(
     abilityId: string,
     userId: string,
-    dto: { level: number; description?: string; manaCost?: number; range?: string; notes?: string; damage?: string; copyFromPrevious?: boolean },
+    dto: { level: string; description?: string; manaCost?: number; range?: string; notes?: string; damage?: string; copyFromPrevious?: boolean },
   ) {
     const ability = await this.prisma.characterAbility.findUnique({
       where: { id: abilityId },
@@ -593,7 +593,7 @@ export class CharacterSheetService {
     })
   }
 
-  async updateAbilityLevel(levelId: string, userId: string, dto: { level?: number; description?: string; manaCost?: number; range?: string; notes?: string; damage?: string }) {
+  async updateAbilityLevel(levelId: string, userId: string, dto: { level?: string; description?: string; manaCost?: number; range?: string; notes?: string; damage?: string }) {
     const abilityLevel = await this.prisma.characterAbilityLevel.findUnique({ where: { id: levelId } })
     if (!abilityLevel) throw new NotFoundException('Ability level not found')
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityLevel.abilityId } })
