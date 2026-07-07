@@ -458,7 +458,7 @@ model CharacterAbilityLevel {
   id          String           @id @default(cuid())
   abilityId   String
   ability     CharacterAbility @relation(fields: [abilityId], references: [id], onDelete: Cascade)
-  level       Int
+  level       String
   manaCost    Int?
   range       String?
   description String?

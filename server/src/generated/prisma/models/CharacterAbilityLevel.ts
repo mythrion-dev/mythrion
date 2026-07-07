@@ -27,19 +27,17 @@ export type AggregateCharacterAbilityLevel = {
 }
 
 export type CharacterAbilityLevelAvgAggregateOutputType = {
-  level: number | null
   manaCost: number | null
 }
 
 export type CharacterAbilityLevelSumAggregateOutputType = {
-  level: number | null
   manaCost: number | null
 }
 
 export type CharacterAbilityLevelMinAggregateOutputType = {
   id: string | null
   abilityId: string | null
-  level: number | null
+  level: string | null
   manaCost: number | null
   range: string | null
   description: string | null
@@ -52,7 +50,7 @@ export type CharacterAbilityLevelMinAggregateOutputType = {
 export type CharacterAbilityLevelMaxAggregateOutputType = {
   id: string | null
   abilityId: string | null
-  level: number | null
+  level: string | null
   manaCost: number | null
   range: string | null
   description: string | null
@@ -78,12 +76,10 @@ export type CharacterAbilityLevelCountAggregateOutputType = {
 
 
 export type CharacterAbilityLevelAvgAggregateInputType = {
-  level?: true
   manaCost?: true
 }
 
 export type CharacterAbilityLevelSumAggregateInputType = {
-  level?: true
   manaCost?: true
 }
 
@@ -216,7 +212,7 @@ export type CharacterAbilityLevelGroupByArgs<ExtArgs extends runtime.Types.Exten
 export type CharacterAbilityLevelGroupByOutputType = {
   id: string
   abilityId: string
-  level: number
+  level: string
   manaCost: number | null
   range: string | null
   description: string | null
@@ -252,7 +248,7 @@ export type CharacterAbilityLevelWhereInput = {
   NOT?: Prisma.CharacterAbilityLevelWhereInput | Prisma.CharacterAbilityLevelWhereInput[]
   id?: Prisma.StringFilter<"CharacterAbilityLevel"> | string
   abilityId?: Prisma.StringFilter<"CharacterAbilityLevel"> | string
-  level?: Prisma.IntFilter<"CharacterAbilityLevel"> | number
+  level?: Prisma.StringFilter<"CharacterAbilityLevel"> | string
   manaCost?: Prisma.IntNullableFilter<"CharacterAbilityLevel"> | number | null
   range?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
   description?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
@@ -284,7 +280,7 @@ export type CharacterAbilityLevelWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.CharacterAbilityLevelWhereInput[]
   NOT?: Prisma.CharacterAbilityLevelWhereInput | Prisma.CharacterAbilityLevelWhereInput[]
   abilityId?: Prisma.StringFilter<"CharacterAbilityLevel"> | string
-  level?: Prisma.IntFilter<"CharacterAbilityLevel"> | number
+  level?: Prisma.StringFilter<"CharacterAbilityLevel"> | string
   manaCost?: Prisma.IntNullableFilter<"CharacterAbilityLevel"> | number | null
   range?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
   description?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
@@ -319,7 +315,7 @@ export type CharacterAbilityLevelScalarWhereWithAggregatesInput = {
   NOT?: Prisma.CharacterAbilityLevelScalarWhereWithAggregatesInput | Prisma.CharacterAbilityLevelScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"CharacterAbilityLevel"> | string
   abilityId?: Prisma.StringWithAggregatesFilter<"CharacterAbilityLevel"> | string
-  level?: Prisma.IntWithAggregatesFilter<"CharacterAbilityLevel"> | number
+  level?: Prisma.StringWithAggregatesFilter<"CharacterAbilityLevel"> | string
   manaCost?: Prisma.IntNullableWithAggregatesFilter<"CharacterAbilityLevel"> | number | null
   range?: Prisma.StringNullableWithAggregatesFilter<"CharacterAbilityLevel"> | string | null
   description?: Prisma.StringNullableWithAggregatesFilter<"CharacterAbilityLevel"> | string | null
@@ -331,7 +327,7 @@ export type CharacterAbilityLevelScalarWhereWithAggregatesInput = {
 
 export type CharacterAbilityLevelCreateInput = {
   id?: string
-  level: number
+  level: string
   manaCost?: number | null
   range?: string | null
   description?: string | null
@@ -345,7 +341,7 @@ export type CharacterAbilityLevelCreateInput = {
 export type CharacterAbilityLevelUncheckedCreateInput = {
   id?: string
   abilityId: string
-  level: number
+  level: string
   manaCost?: number | null
   range?: string | null
   description?: string | null
@@ -357,7 +353,7 @@ export type CharacterAbilityLevelUncheckedCreateInput = {
 
 export type CharacterAbilityLevelUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  level?: Prisma.IntFieldUpdateOperationsInput | number
+  level?: Prisma.StringFieldUpdateOperationsInput | string
   manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -371,7 +367,7 @@ export type CharacterAbilityLevelUpdateInput = {
 export type CharacterAbilityLevelUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   abilityId?: Prisma.StringFieldUpdateOperationsInput | string
-  level?: Prisma.IntFieldUpdateOperationsInput | number
+  level?: Prisma.StringFieldUpdateOperationsInput | string
   manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -384,7 +380,7 @@ export type CharacterAbilityLevelUncheckedUpdateInput = {
 export type CharacterAbilityLevelCreateManyInput = {
   id?: string
   abilityId: string
-  level: number
+  level: string
   manaCost?: number | null
   range?: string | null
   description?: string | null
@@ -396,7 +392,7 @@ export type CharacterAbilityLevelCreateManyInput = {
 
 export type CharacterAbilityLevelUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  level?: Prisma.IntFieldUpdateOperationsInput | number
+  level?: Prisma.StringFieldUpdateOperationsInput | string
   manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -409,7 +405,7 @@ export type CharacterAbilityLevelUpdateManyMutationInput = {
 export type CharacterAbilityLevelUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   abilityId?: Prisma.StringFieldUpdateOperationsInput | string
-  level?: Prisma.IntFieldUpdateOperationsInput | number
+  level?: Prisma.StringFieldUpdateOperationsInput | string
   manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -431,7 +427,7 @@ export type CharacterAbilityLevelOrderByRelationAggregateInput = {
 
 export type CharacterAbilityLevelAbilityIdLevelCompoundUniqueInput = {
   abilityId: string
-  level: number
+  level: string
 }
 
 export type CharacterAbilityLevelCountOrderByAggregateInput = {
@@ -448,7 +444,6 @@ export type CharacterAbilityLevelCountOrderByAggregateInput = {
 }
 
 export type CharacterAbilityLevelAvgOrderByAggregateInput = {
-  level?: Prisma.SortOrder
   manaCost?: Prisma.SortOrder
 }
 
@@ -479,7 +474,6 @@ export type CharacterAbilityLevelMinOrderByAggregateInput = {
 }
 
 export type CharacterAbilityLevelSumOrderByAggregateInput = {
-  level?: Prisma.SortOrder
   manaCost?: Prisma.SortOrder
 }
 
@@ -527,7 +521,7 @@ export type CharacterAbilityLevelUncheckedUpdateManyWithoutAbilityNestedInput = 
 
 export type CharacterAbilityLevelCreateWithoutAbilityInput = {
   id?: string
-  level: number
+  level: string
   manaCost?: number | null
   range?: string | null
   description?: string | null
@@ -539,7 +533,7 @@ export type CharacterAbilityLevelCreateWithoutAbilityInput = {
 
 export type CharacterAbilityLevelUncheckedCreateWithoutAbilityInput = {
   id?: string
-  level: number
+  level: string
   manaCost?: number | null
   range?: string | null
   description?: string | null
@@ -581,7 +575,7 @@ export type CharacterAbilityLevelScalarWhereInput = {
   NOT?: Prisma.CharacterAbilityLevelScalarWhereInput | Prisma.CharacterAbilityLevelScalarWhereInput[]
   id?: Prisma.StringFilter<"CharacterAbilityLevel"> | string
   abilityId?: Prisma.StringFilter<"CharacterAbilityLevel"> | string
-  level?: Prisma.IntFilter<"CharacterAbilityLevel"> | number
+  level?: Prisma.StringFilter<"CharacterAbilityLevel"> | string
   manaCost?: Prisma.IntNullableFilter<"CharacterAbilityLevel"> | number | null
   range?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
   description?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
@@ -593,7 +587,7 @@ export type CharacterAbilityLevelScalarWhereInput = {
 
 export type CharacterAbilityLevelCreateManyAbilityInput = {
   id?: string
-  level: number
+  level: string
   manaCost?: number | null
   range?: string | null
   description?: string | null
@@ -605,7 +599,7 @@ export type CharacterAbilityLevelCreateManyAbilityInput = {
 
 export type CharacterAbilityLevelUpdateWithoutAbilityInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  level?: Prisma.IntFieldUpdateOperationsInput | number
+  level?: Prisma.StringFieldUpdateOperationsInput | string
   manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -617,7 +611,7 @@ export type CharacterAbilityLevelUpdateWithoutAbilityInput = {
 
 export type CharacterAbilityLevelUncheckedUpdateWithoutAbilityInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  level?: Prisma.IntFieldUpdateOperationsInput | number
+  level?: Prisma.StringFieldUpdateOperationsInput | string
   manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -629,7 +623,7 @@ export type CharacterAbilityLevelUncheckedUpdateWithoutAbilityInput = {
 
 export type CharacterAbilityLevelUncheckedUpdateManyWithoutAbilityInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  level?: Prisma.IntFieldUpdateOperationsInput | number
+  level?: Prisma.StringFieldUpdateOperationsInput | string
   manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -715,7 +709,7 @@ export type $CharacterAbilityLevelPayload<ExtArgs extends runtime.Types.Extensio
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     abilityId: string
-    level: number
+    level: string
     manaCost: number | null
     range: string | null
     description: string | null
@@ -1149,7 +1143,7 @@ export interface Prisma__CharacterAbilityLevelClient<T, Null = never, ExtArgs ex
 export interface CharacterAbilityLevelFieldRefs {
   readonly id: Prisma.FieldRef<"CharacterAbilityLevel", 'String'>
   readonly abilityId: Prisma.FieldRef<"CharacterAbilityLevel", 'String'>
-  readonly level: Prisma.FieldRef<"CharacterAbilityLevel", 'Int'>
+  readonly level: Prisma.FieldRef<"CharacterAbilityLevel", 'String'>
   readonly manaCost: Prisma.FieldRef<"CharacterAbilityLevel", 'Int'>
   readonly range: Prisma.FieldRef<"CharacterAbilityLevel", 'String'>
   readonly description: Prisma.FieldRef<"CharacterAbilityLevel", 'String'>

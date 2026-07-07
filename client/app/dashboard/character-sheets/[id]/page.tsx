@@ -40,7 +40,7 @@ interface ArmorClassValue {
 interface TemplateCharacterSection { id: string; name: string; order: number }
 interface SectionEntry { id: string; sheetId: string; sectionId: string; name: string; description: string; order: number; section: { id: string; name: string } }
 
-interface AbilityLevel { id: string; abilityId: string; level: number; manaCost: number | null; range: string | null; description: string | null; notes: string | null; damage: string | null }
+interface AbilityLevel { id: string; abilityId: string; level: string; manaCost: number | null; range: string | null; description: string | null; notes: string | null; damage: string | null }
 interface SummonAttribute { id: string; abilityId: string; attributeId: string; value: string }
 interface SummonAcValue { id: string; abilityId: string; fieldId: string; value: string }
 interface SummonHealth { id: string; abilityId: string; current: number | null; maximum: number | null; notes: string | null }
@@ -1189,7 +1189,6 @@ function AbilitiesTab({
           const isExpanded = expandedAbilities[a.id] ?? false
           const isAbility = a.type !== 'SUMMON'
           const selLevel = isAbility ? getSelectedLevel(a) : undefined
-          const maxLevel = a.levels.length > 0 ? Math.max(...a.levels.map(l => l.level)) : 0
           const currentSummonTab = summonTabs[a.id] ?? 'stats'
 
           return (
@@ -1278,7 +1277,7 @@ function AbilitiesTab({
 
                       {isOwner && (
                         <button
-                          onClick={() => { setShowAddLevelModal(a.id); setNewLevelForm({ level: maxLevel + 1, copyFromPrevious: a.levels.length > 0 }); setLevelModalError(null) }}
+                          onClick={() => { setShowAddLevelModal(a.id); setNewLevelForm({ level: a.levels.length + 1, copyFromPrevious: a.levels.length > 0 }); setLevelModalError(null) }}
                           className="btn-ghost text-xs"
                         >
                           + Add Level
@@ -1541,7 +1540,6 @@ function AbilitiesTab({
                             {(a.childAbilities ?? []).map((ca: Ability) => {
                               const caExpanded = expandedAbilities[ca.id] ?? false
                               const caSelLevel = ca.levels[ca.levels.length - 1]
-                              const caMaxLevel = ca.levels.length > 0 ? Math.max(...ca.levels.map(l => l.level)) : 0
                               return (
                                 <div key={ca.id} className={`card !p-0 overflow-hidden transition-all duration-200 ${caExpanded ? 'border-primary/20' : ''}`}>
                                   <button
