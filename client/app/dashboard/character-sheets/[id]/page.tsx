@@ -905,7 +905,9 @@ export default function CharacterSheetDetailPage() {
 
         {armorClass?.enabled && armorClass.fields.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-4">Armor Class</h3><div className="flex items-center justify-center mb-4"><div className="w-24 h-24 rounded-full border-4 border-primary/30 flex items-center justify-center bg-background/50"><span className="text-4xl font-bold text-primary">{acResult !== null ? acResult : '—'}</span></div></div><div className="space-y-3"><div><h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Components</h4><div className="grid gap-2 sm:grid-cols-2">{armorClass.fields.map(field => { const acv = sheet.acValues.find(v => v.fieldId === field.id); const val = acv?.value ?? field.defaultValue; const canEdit = isOwner && field.editableByPlayer; return <div key={field.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border"><div className="flex items-center gap-1 min-w-0"><span className="text-sm text-foreground truncate">{field.name}</span>{field.description && <span className="text-[0.6rem] text-muted hidden sm:inline">— {field.description}</span>}</div>{canEdit ? <input type="number" className="input-field py-1 text-xs w-16 text-right" value={val} onChange={e => handleAcFieldChange(field.id, e.target.value)} /> : <span className="text-sm font-semibold text-foreground">{val}</span>}</div> })}</div></div>{armorClass.attributeModifierIds.length > 0 && <div><h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Attribute Modifiers</h4><div className="grid gap-2 sm:grid-cols-2">{armorClass.attributeModifierIds.map(attrKey => { const attr = sheet.template.attributes.find(a => a.key === attrKey); if (!attr) return null; const modResult = modifierResults[attr.id]; return <div key={attrKey} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border opacity-80"><span className="text-sm text-foreground truncate">{attr.name} Modifier</span><span className="text-sm font-semibold text-muted" style={{opacity: 0.6}}>{modResult !== null && modResult !== undefined ? `${modResult >= 0 ? '+' : ''}${modResult}` : '—'}</span></div> })}</div></div>}</div></div>}
 
-        {sheet.skillValues.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-4">Skills</h3><div className="grid gap-3 sm:grid-cols-2">{sheet.skillValues.map(sv => <CollapsibleSkillRow key={sv.id} skill={sv} result={skillResults[sv.skillId]} profiles={allProfiles.filter(p => { const tm = (p as any).targetMode ?? 'ALL_SKILLS'; const tids: string[] = (p as any).targetSkillIds ?? []; return tm === 'ALL_SKILLS' || tids.length === 0 || tids.includes(sv.skill.name) })} selections={profileSelections[sv.skillId] || {}} active={activeSkills[sv.skillId] ?? false} others={othersValues[sv.skillId] ?? 0} onToggleActive={() => handleSkillToggle(sv.skillId)} onOthersChange={(no) => handleOthersChange(sv.skillId, no)} onProfileChange={(pid, oid) => handleProfileChange(sv.skillId, pid, oid)} onAttributeChange={(attrId) => handleSkillAttributeChange(sv.skillId, attrId)} templateAttributes={sheet.template.attributes} expandedSkillId={expandedSkillId} onExpandToggle={(id) => setExpandedSkillId(prev => prev === id ? null : id)} />)}</div></div>}
+        {sheet.skillValues.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-4">Skills</h3><div className="grid gap-3 sm:grid-cols-2 items-start">
+          {sheet.skillValues.map(sv => <CollapsibleSkillRow key={sv.id} skill={sv} result={skillResults[sv.skillId]} profiles={allProfiles.filter(p => { const tm = (p as any).targetMode ?? 'ALL_SKILLS'; const tids: string[] = (p as any).targetSkillIds ?? []; return tm === 'ALL_SKILLS' || tids.length === 0 || tids.includes(sv.skill.name) })} selections={profileSelections[sv.skillId] || {}} active={activeSkills[sv.skillId] ?? false} others={othersValues[sv.skillId] ?? 0} onToggleActive={() => handleSkillToggle(sv.skillId)} onOthersChange={(no) => handleOthersChange(sv.skillId, no)} onProfileChange={(pid, oid) => handleProfileChange(sv.skillId, pid, oid)} onAttributeChange={(attrId) => handleSkillAttributeChange(sv.skillId, attrId)} templateAttributes={sheet.template.attributes} expandedSkillId={expandedSkillId} onExpandToggle={(id) => setExpandedSkillId(prev => prev === id ? null : id)} />)}
+        </div></div>}
         <div className="text-center"><p className="text-xs text-muted">{isOwner ? 'You own this character sheet.' : 'This character sheet belongs to another player.'}</p></div>
       </div>}
 
@@ -1195,7 +1197,6 @@ function AbilitiesTab({
 
           return (
             <div key={a.id} className={`card !p-0 overflow-hidden transition-all duration-200 ${isExpanded ? 'border-primary/20' : ''}`}>
-              {/* Collapsed Header */}
               <button
                 type="button"
                 onClick={() => toggleExpand(a.id)}
@@ -1237,10 +1238,8 @@ function AbilitiesTab({
                 </div>
               </button>
 
-              {/* Expanded Content */}
               {isExpanded && (
                 <div className="px-4 pb-4 space-y-3 border-t border-border animate-fade-in">
-                  {/* ABILITY type - show level details */}
                   {isAbility && selLevel ? (
                     <>
                       {isOwner && a.levels.length > 1 && (
@@ -1290,25 +1289,15 @@ function AbilitiesTab({
                     <p className="text-xs text-muted italic pt-2">No levels added yet.</p>
                   ) : null}
 
-                  {/* SUMMON type - Internal Tabs */}
                   {!isAbility && (
                     <div className="pt-2">
-                      {/* Internal tab nav */}
                       <div className="flex gap-1 mb-3 border-b border-border pb-2">
-                        <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'stats' }))} className={summonSkillTabClass(a.id, 'stats')}>
-                          Stats
-                        </button>
-                        <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'skills' }))} className={summonSkillTabClass(a.id, 'skills')}>
-                          Skills
-                        </button>
-                        <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'abilities' }))} className={summonSkillTabClass(a.id, 'abilities')}>
-                          Abilities
-                        </button>
+                        <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'stats' }))} className={summonSkillTabClass(a.id, 'stats')}>Stats</button>
+                        <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'skills' }))} className={summonSkillTabClass(a.id, 'skills')}>Skills</button>
+                        <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'abilities' }))} className={summonSkillTabClass(a.id, 'abilities')}>Abilities</button>
                       </div>
 
-                      {/* ── Stats Tab ── */}
                       {currentSummonTab === 'stats' && <div className="space-y-3">
-                        {/* Description & Notes */}
                         <div className="space-y-2">
                           {isOwner ? (
                             <>
@@ -1323,7 +1312,6 @@ function AbilitiesTab({
                           )}
                         </div>
 
-                        {/* Health */}
                         {a.summonHealth && (
                           <div className="card !p-3 !bg-background/30">
                             <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Health</h4>
@@ -1349,7 +1337,6 @@ function AbilitiesTab({
                           </div>
                         )}
 
-                        {/* Attributes */}
                         {(a.summonAttributes ?? []).length > 0 && (
                           <div className="card !p-3 !bg-background/30">
                             <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Attributes</h4>
@@ -1378,7 +1365,6 @@ function AbilitiesTab({
                           </div>
                         )}
 
-                        {/* Armor Class */}
                         {armorClass?.enabled && armorClass.fields.length > 0 && (a.summonAcValues ?? []).length > 0 && (
                           <div className="card !p-3 !bg-background/30">
                             <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Armor Class</h4>
@@ -1429,9 +1415,7 @@ function AbilitiesTab({
                         )}
                       </div>}
 
-                      {/* ── Skills Tab ── */}
                       {currentSummonTab === 'skills' && <div className="space-y-3">
-                        {/* Add skill button + search */}
                         {isOwner && (
                           <div>
                             {skillSearchOpen !== a.id ? (
@@ -1471,9 +1455,7 @@ function AbilitiesTab({
                                         type="button"
                                         onClick={() => { handleAddSummonSkill(a.id, s.id); setSkillSearchOpen(null); setSkillSearchQuery('') }}
                                         className="w-full text-left px-3 py-1.5 text-xs hover:bg-foreground/5 transition-colors"
-                                      >
-                                        {s.name}
-                                      </button>
+                                      >{s.name}</button>
                                     ))}
                                   {allTemplateSkills.filter(s => !(a.summonSkills ?? []).some(ss => ss.skillId === s.id) && (!skillSearchQuery.trim() || s.name.toLowerCase().includes(skillSearchQuery.toLowerCase()))).length === 0 && (
                                     <div className="px-3 py-2 text-xs text-muted italic">No skills found</div>
@@ -1484,7 +1466,6 @@ function AbilitiesTab({
                           </div>
                         )}
 
-                        {/* Skill list */}
                         {(a.summonSkills ?? []).length === 0 ? (
                           <div className="text-xs text-muted italic py-2">No skills added. Click "Add Skill" to select from the template.</div>
                         ) : (
@@ -1492,11 +1473,6 @@ function AbilitiesTab({
                             {(a.summonSkills ?? []).map(ss => {
                               const result = (summonSkillResults[a.id] ?? {})[ss.id]
                               const hasAttrDropdown = (ss.skill.allowedAttributeIds?.length ?? 0) > 0
-                              const skillProfiles = template.skillModifierProfiles.filter(p => {
-                                const tm = (p as any).targetMode ?? 'ALL_SKILLS'
-                                const tids: string[] = (p as any).targetSkillIds ?? []
-                                return tm === 'ALL_SKILLS' || tids.length === 0 || tids.includes(ss.skill.name)
-                              })
                               return (
                                 <div key={ss.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg bg-background/50 border border-border">
                                   <div className="flex-1 min-w-0 flex items-center gap-2">
@@ -1533,7 +1509,6 @@ function AbilitiesTab({
                         )}
                       </div>}
 
-                      {/* ── Abilities Tab ── */}
                       {currentSummonTab === 'abilities' && <div className="space-y-2">
                         {(a.childAbilities ?? []).length === 0 && !showNewSummonAbility ? (
                           <div className="text-xs text-muted italic py-2">No abilities yet.</div>
@@ -1549,9 +1524,7 @@ function AbilitiesTab({
                                     onClick={() => setExpandedAbilities(prev => ({ ...prev, [ca.id]: !prev[ca.id] }))}
                                     className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-foreground/5 transition-colors"
                                   >
-                                    <svg className={`w-3.5 h-3.5 text-muted transition-transform duration-200 shrink-0 ${caExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-                                    </svg>
+                                    <svg className={`w-3.5 h-3.5 text-muted transition-transform duration-200 shrink-0 ${caExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
                                     <span className="text-sm font-medium text-foreground truncate flex-1">{ca.name}</span>
                                     {caSelLevel && <span className="text-[0.6rem] text-muted">Lv {caSelLevel.level}</span>}
                                     <div onClick={e => e.stopPropagation()}>
@@ -1621,8 +1594,7 @@ function AbilitiesTab({
                                 onClick={() => { setShowNewSummonAbility(a.id); setNewAbility({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '' }) }}
                                 className="btn-ghost text-xs inline-flex items-center gap-1"
                               >
-                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
-                                Add Ability
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>Add Ability
                               </button>
                             )}
                           </>
@@ -1631,14 +1603,11 @@ function AbilitiesTab({
                     </div>
                   )}
 
-                  {/* Add Level button for ABILITY type only (shown also when no levels yet) */}
                   {isAbility && isOwner && !selLevel && (
                     <button
                       onClick={() => { setShowAddLevelModal(a.id); setNewLevelForm({ level: 1, copyFromPrevious: false }); setLevelModalError(null) }}
                       className="btn-ghost text-xs"
-                    >
-                      + Add Level
-                    </button>
+                    >+ Add Level</button>
                   )}
                 </div>
               )}
@@ -1647,7 +1616,6 @@ function AbilitiesTab({
         })}
       </div>
 
-      {/* Type Selection Modal / New Ability/Summon form */}
       {isOwner && !showNewAbility && (
         <button onClick={() => setShowNewAbility(true)} className="btn-primary text-sm">
           + New Ability or Summon
@@ -1660,44 +1628,23 @@ function AbilitiesTab({
             <>
               <h4 className="text-sm font-semibold text-primary">What would you like to create?</h4>
               <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setNewAbilityType('ABILITY')}
-                  className="card !p-4 hover:border-primary/30 transition-colors text-center space-y-2"
-                >
-                  <svg className="w-8 h-8 mx-auto text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                  </svg>
-                  <div>
-                    <div className="font-semibold text-foreground text-sm">Ability</div>
-                    <div className="text-xs text-muted">Spells, skills, attacks, etc.</div>
-                  </div>
+                <button type="button" onClick={() => setNewAbilityType('ABILITY')} className="card !p-4 hover:border-primary/30 transition-colors text-center space-y-2">
+                  <svg className="w-8 h-8 mx-auto text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                  <div><div className="font-semibold text-foreground text-sm">Ability</div><div className="text-xs text-muted">Spells, skills, attacks, etc.</div></div>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setNewAbilityType('SUMMON')}
-                  className="card !p-4 hover:border-primary/30 transition-colors text-center space-y-2"
-                >
-                  <svg className="w-8 h-8 mx-auto text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
-                  </svg>
-                  <div>
-                    <div className="font-semibold text-foreground text-sm">Summon</div>
-                    <div className="text-xs text-muted">Creatures, companions, minions</div>
-                  </div>
+                <button type="button" onClick={() => setNewAbilityType('SUMMON')} className="card !p-4 hover:border-primary/30 transition-colors text-center space-y-2">
+                  <svg className="w-8 h-8 mx-auto text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                  <div><div className="font-semibold text-foreground text-sm">Summon</div><div className="text-xs text-muted">Creatures, companions, minions</div></div>
                 </button>
               </div>
-              <div className="flex gap-2 justify-end">
-                <button type="button" onClick={resetNewAbility} className="btn-ghost text-sm">Cancel</button>
-              </div>
+              <div className="flex gap-2 justify-end"><button type="button" onClick={resetNewAbility} className="btn-ghost text-sm">Cancel</button></div>
             </>
           ) : newAbilityType === 'ABILITY' ? (
             <form onSubmit={handleCreateAbility} className="space-y-3">
               <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
                 <button type="button" onClick={() => setNewAbilityType(null)} className="text-muted hover:text-foreground transition-colors">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                </button>
-                New Ability
+                </button>New Ability
               </h4>
               <div><label className="text-xs text-muted">Name</label><input className="input-field" value={newAbility.name} onChange={e => setNewAbility(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Fireball" /></div>
               <div><label className="text-xs text-muted">Description</label><textarea className="input-field resize-none" rows={2} value={newAbility.description} onChange={e => setNewAbility(p => ({ ...p, description: e.target.value }))} placeholder="Throws a fireball causing area damage." /></div>
@@ -1718,8 +1665,7 @@ function AbilitiesTab({
               <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
                 <button type="button" onClick={() => setNewAbilityType(null)} className="text-muted hover:text-foreground transition-colors">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                </button>
-                New Summon
+                </button>New Summon
               </h4>
               <div><label className="text-xs text-muted">Name</label><input className="input-field" value={newAbility.name} onChange={e => setNewAbility(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Spirit Wolf" /></div>
               <div><label className="text-xs text-muted">Description</label><textarea className="input-field resize-none" rows={2} value={newAbility.description} onChange={e => setNewAbility(p => ({ ...p, description: e.target.value }))} placeholder="A loyal spirit wolf that follows commands." /></div>
@@ -1739,7 +1685,6 @@ function AbilitiesTab({
         </div>
       )}
 
-      {/* Add Level Modal */}
       {showAddLevelModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in">
           <div className="card !p-6 max-w-sm w-full space-y-4 border-primary/20">
@@ -1752,7 +1697,6 @@ function AbilitiesTab({
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {confirmDeleteAbility && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in">
           <div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20">
@@ -1771,7 +1715,6 @@ function AbilitiesTab({
         </div>
       )}
 
-      {/* Delete Level Modal */}
       {confirmDeleteLevel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in">
           <div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20">
