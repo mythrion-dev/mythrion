@@ -186,6 +186,10 @@ export default function CharacterSheetDetailPage() {
   const [newSectionEntryForm, setNewSectionEntryForm] = useState({ name: '', description: '' })
   const [sectionEntrySaving, setSectionEntrySaving] = useState(false)
 
+  // Search state
+  const [abilitiesSearch, setAbilitiesSearch] = useState('')
+  const [inventorySearch, setInventorySearch] = useState('')
+
   // Summon internal tab state
   const [summonTabs, setSummonTabs] = useState<Record<string, SummonTab>>({})
 
@@ -907,6 +911,7 @@ export default function CharacterSheetDetailPage() {
       {activeTab === 'abilities' && <AbilitiesTab
         abilities={abilities} isOwner={isOwner} sheetId={sheet.id} template={sheet.template}
         selectedLevels={selectedLevels} setAbilities={setAbilities} setSelectedLevels={setSelectedLevels}
+        searchQuery={abilitiesSearch} setSearchQuery={setAbilitiesSearch}
         showNewAbility={showNewAbility} setShowNewAbility={setShowNewAbility}
         newAbilityType={newAbilityType} setNewAbilityType={setNewAbilityType}
         newAbility={newAbility} setNewAbility={setNewAbility}
@@ -929,7 +934,19 @@ export default function CharacterSheetDetailPage() {
         handleSummonSkillProfileChange={handleSummonSkillProfileChange}
         handleCreateSummonAbility={handleCreateSummonAbility}
       />}
-      {activeTab === 'inventory' && <div className="space-y-4">{inventoryItems.length > 0 && <div className="text-sm text-muted text-right">Total Weight: <span className="font-semibold text-foreground">{totalWeight.toFixed(1)} kg</span></div>}{inventoryItems.length === 0 && !showNewItem && <div className="text-center py-6 text-muted-foreground text-sm italic">No items in inventory. {isOwner && 'Add one below.'}</div>}<div className="space-y-3">{inventoryItems.map(item => <div key={item.id} className="card !p-4 space-y-2"><div className="flex items-start justify-between">{isOwner ? <InlineClickEdit value={item.name} onSave={async (v) => saveItemField(item.id, 'name', v)} className="font-semibold text-foreground" /> : <h4 className="font-semibold text-foreground">{item.name}</h4>}{isOwner && <button onClick={() => handleDeleteItem(item.id)} className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors shrink-0 ml-2">Delete</button>}</div><div className="flex flex-wrap gap-3 text-xs text-muted">{isOwner ? <><span className="inline-flex items-center gap-1">Weight: <InlineClickEdit value={item.weight?.toString() ?? ''} onSave={async (v) => saveItemField(item.id, 'weight', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" /> kg</span><span className="inline-flex items-center gap-1">Cost: <InlineClickEdit value={item.cost ?? ''} onSave={async (v) => saveItemField(item.id, 'cost', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-20" emptyDisplay="—" /></span></> : <>{item.weight != null && <span>Weight: {item.weight} kg</span>}{item.cost && <span>Cost: {item.cost}</span>}</>}</div>{isOwner ? <div><button type="button" onClick={() => setExpandedItems(p => ({ ...p, [item.id]: !p[item.id] }))} className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors"><svg className={`w-3 h-3 transition-transform ${expandedItems[item.id] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>Description</button>{expandedItems[item.id] && <div className="mt-1 pl-4"><InlineClickEdit value={item.description ?? ''} onSave={async (v) => saveItemField(item.id, 'description', v)} as="textarea" className="text-sm text-muted-foreground whitespace-pre-wrap" emptyDisplay="Add description..." /></div>}</div> : item.description && <div><button type="button" onClick={() => setExpandedItems(p => ({ ...p, [item.id]: !p[item.id] }))} className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors"><svg className={`w-3 h-3 transition-transform ${expandedItems[item.id] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>Description</button>{expandedItems[item.id] && <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1 pl-4">{item.description}</p>}</div>}</div>)}</div>{isOwner && !showNewItem && <button onClick={() => setShowNewItem(true)} className="btn-primary text-sm">+ Add Item</button>}{isOwner && showNewItem && <form onSubmit={handleCreateItem} className="card !p-4 space-y-3 border-primary/20"><h4 className="text-sm font-semibold text-primary">New Item</h4><div><label className="text-xs text-muted">Name</label><input className="input-field" value={newItem.name} onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Long Sword"/></div><div className="grid grid-cols-2 gap-2"><div><label className="text-xs text-muted">Weight (kg)</label><input type="number" step="any" className="input-field" value={newItem.weight} onChange={e => setNewItem(p => ({ ...p, weight: e.target.value }))} placeholder="3"/></div><div><label className="text-xs text-muted">Cost</label><input className="input-field" value={newItem.cost} onChange={e => setNewItem(p => ({ ...p, cost: e.target.value }))} placeholder="150 gp"/></div></div><div><label className="text-xs text-muted">Description</label><textarea className="input-field resize-none" rows={2} value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))} placeholder="Steel longsword forged by..."/></div>{itemError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{itemError}</div>}<div className="flex gap-2 justify-end"><button type="button" onClick={resetNewItem} disabled={itemSaving} className="btn-ghost text-sm">Cancel</button><button type="submit" disabled={itemSaving || !newItem.name.trim()} className="btn-primary text-sm">{itemSaving ? 'Creating...' : 'Create'}</button></div></form>}</div>}
+      {activeTab === 'inventory' && <div className="space-y-4">
+        <div className="relative">
+          <svg className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input className="input-field pl-8 py-1.5 text-sm w-full" placeholder="Search inventory..." value={inventorySearch} onChange={e => setInventorySearch(e.target.value)} />
+        </div>
+        {inventoryItems.length > 0 && <div className="text-sm text-muted text-right">Total Weight: <span className="font-semibold text-foreground">{totalWeight.toFixed(1)} kg</span></div>}
+        {(() => {
+          const q = inventorySearch.toLowerCase()
+          const filtered = q ? inventoryItems.filter(i => i.name.toLowerCase().includes(q) || (i.description || '').toLowerCase().includes(q) || (i.cost || '').toLowerCase().includes(q)) : inventoryItems
+          if (filtered.length === 0 && !showNewItem) return <div className="text-center py-6 text-muted-foreground text-sm italic">{inventorySearch ? 'No items match your search.' : `No items in inventory. ${isOwner ? 'Add one below.' : ''}`}</div>
+          return <div className="space-y-3">{filtered.map(item => <div key={item.id} className="card !p-4 space-y-2"><div className="flex items-start justify-between">{isOwner ? <InlineClickEdit value={item.name} onSave={async (v) => saveItemField(item.id, 'name', v)} className="font-semibold text-foreground" /> : <h4 className="font-semibold text-foreground">{item.name}</h4>}{isOwner && <button onClick={() => handleDeleteItem(item.id)} className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors shrink-0 ml-2">Delete</button>}</div><div className="flex flex-wrap gap-3 text-xs text-muted">{isOwner ? <><span className="inline-flex items-center gap-1">Weight: <InlineClickEdit value={item.weight?.toString() ?? ''} onSave={async (v) => saveItemField(item.id, 'weight', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" /> kg</span><span className="inline-flex items-center gap-1">Cost: <InlineClickEdit value={item.cost ?? ''} onSave={async (v) => saveItemField(item.id, 'cost', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-20" emptyDisplay="—" /></span></> : <>{item.weight != null && <span>Weight: {item.weight} kg</span>}{item.cost && <span>Cost: {item.cost}</span>}</>}</div>{isOwner ? <div><button type="button" onClick={() => setExpandedItems(p => ({ ...p, [item.id]: !p[item.id] }))} className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors"><svg className={`w-3 h-3 transition-transform ${expandedItems[item.id] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>Description</button>{expandedItems[item.id] && <div className="mt-1 pl-4"><InlineClickEdit value={item.description ?? ''} onSave={async (v) => saveItemField(item.id, 'description', v)} as="textarea" className="text-sm text-muted-foreground whitespace-pre-wrap" emptyDisplay="Add description..." /></div>}</div> : item.description && <div><button type="button" onClick={() => setExpandedItems(p => ({ ...p, [item.id]: !p[item.id] }))} className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors"><svg className={`w-3 h-3 transition-transform ${expandedItems[item.id] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>Description</button>{expandedItems[item.id] && <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1 pl-4">{item.description}</p>}</div>}</div>)}</div>
+        })()}
+        {isOwner && !showNewItem && <button onClick={() => setShowNewItem(true)} className="btn-primary text-sm">+ Add Item</button>}{isOwner && showNewItem && <form onSubmit={handleCreateItem} className="card !p-4 space-y-3 border-primary/20"><h4 className="text-sm font-semibold text-primary">New Item</h4><div><label className="text-xs text-muted">Name</label><input className="input-field" value={newItem.name} onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Long Sword"/></div><div className="grid grid-cols-2 gap-2"><div><label className="text-xs text-muted">Weight (kg)</label><input type="number" step="any" className="input-field" value={newItem.weight} onChange={e => setNewItem(p => ({ ...p, weight: e.target.value }))} placeholder="3"/></div><div><label className="text-xs text-muted">Cost</label><input className="input-field" value={newItem.cost} onChange={e => setNewItem(p => ({ ...p, cost: e.target.value }))} placeholder="150 gp"/></div></div><div><label className="text-xs text-muted">Description</label><textarea className="input-field resize-none" rows={2} value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))} placeholder="Steel longsword forged by..."/></div>{itemError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{itemError}</div>}<div className="flex gap-2 justify-end"><button type="button" onClick={resetNewItem} disabled={itemSaving} className="btn-ghost text-sm">Cancel</button><button type="submit" disabled={itemSaving || !newItem.name.trim()} className="btn-primary text-sm">{itemSaving ? 'Creating...' : 'Create'}</button></div></form>}</div>}
       {activeTab === 'story' && <div className="space-y-4"><div className="card !p-6 space-y-4">{isOwner ? <><InlineTextarea value={story?.appearance ?? ''} label="Appearance" onSave={(v) => saveStoryField('appearance', v)} rows={3} emptyDisplay="Add appearance description..." /><InlineTextarea value={story?.backstory ?? ''} label="Backstory" onSave={(v) => saveStoryField('backstory', v)} rows={5} emptyDisplay="Add backstory..." /><InlineTextarea value={story?.personality ?? ''} label="Personality" onSave={(v) => saveStoryField('personality', v)} rows={3} emptyDisplay="Add personality description..." /><InlineTextarea value={story?.goals ?? ''} label="Goals" onSave={(v) => saveStoryField('goals', v)} rows={3} emptyDisplay="Add character goals..." /><InlineTextarea value={story?.notes ?? ''} label="Notes" onSave={(v) => saveStoryField('notes', v)} rows={3} emptyDisplay="Add notes..." /></> : <><StoryField label="Appearance" value={story?.appearance} /><StoryField label="Backstory" value={story?.backstory} /><StoryField label="Personality" value={story?.personality} /><StoryField label="Goals" value={story?.goals} /><StoryField label="Notes" value={story?.notes} /></>}</div></div>}
 
       {/* Personal Abilities tab */}
@@ -1060,6 +1077,7 @@ function AbilitiesTab({
   abilities, isOwner, sheetId, template,
   selectedLevels, setAbilities, setSelectedLevels,
   showNewAbility, setShowNewAbility,
+  searchQuery, setSearchQuery,
   newAbilityType, setNewAbilityType,
   newAbility, setNewAbility,
   abilitySaving, abilityError,
@@ -1094,6 +1112,7 @@ function AbilitiesTab({
   levelModalSaving: boolean; setLevelModalSaving: React.Dispatch<React.SetStateAction<boolean>>
   levelModalError: string | null; setLevelModalError: React.Dispatch<React.SetStateAction<string | null>>
   expandedAbilities: Record<string, boolean>; setExpandedAbilities: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+  searchQuery: string; setSearchQuery: React.Dispatch<React.SetStateAction<string>>
   summonModifierResults: Record<string, Record<string, number | null>>
   summonAcResults: Record<string, number | null>
   saveSummonAttribute: (abilityId: string, attributeId: string, value: string) => Promise<void>
@@ -1147,16 +1166,26 @@ function AbilitiesTab({
     return `px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${active === t ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`
   }
 
+  const q = searchQuery.toLowerCase()
+  const filteredAbilities = q ? abilities.filter(a => a.name.toLowerCase().includes(q) || (a.description || '').toLowerCase().includes(q) || (a.type || '').toLowerCase().includes(q)) : abilities
+
   return (
     <div className="space-y-4">
-      {abilities.length === 0 && !showNewAbility && (
+      <div className="relative">
+        <svg className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input className="input-field pl-8 py-1.5 text-sm w-full" placeholder="Search abilities & summons..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+      </div>
+      {filteredAbilities.length === 0 && !showNewAbility && searchQuery && (
+        <div className="text-center py-4 text-muted-foreground text-sm italic">No entries match your search.</div>
+      )}
+      {(!abilities || abilities.length === 0) && !showNewAbility && !searchQuery && (
         <div className="text-center py-6 text-muted-foreground text-sm italic">
           No abilities or summons yet. {isOwner && 'Create one below.'}
         </div>
       )}
 
       <div className="space-y-3">
-        {abilities.map(a => {
+        {filteredAbilities.map(a => {
           const isExpanded = expandedAbilities[a.id] ?? false
           const isAbility = a.type !== 'SUMMON'
           const selLevel = isAbility ? getSelectedLevel(a) : undefined
