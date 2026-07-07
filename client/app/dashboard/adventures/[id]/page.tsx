@@ -424,6 +424,7 @@ function NewTemplateForm(props: {
       {props.onAddCoreResource&&<button type="button" onClick={()=>setActiveTab('coreResources')} className={tabClass('coreResources')}>Core Resources</button>}
       {props.onAddField&&<button type="button" onClick={()=>setActiveTab('fields')} className={tabClass('fields')}>Custom Fields</button>}
       {props.onNewAcEnabledChange&&<button type="button" onClick={()=>setActiveTab('ac')} className={tabClass('ac')}>Armor Class</button>}
+      <button type="button" onClick={()=>setActiveTab('characterSections' as any)} className={tabClass('characterSections' as any)}>Character Sections</button>
     </div>
 
     {activeTab==='attrs'&&<div>
@@ -500,11 +501,13 @@ function TemplateRow(props: {
   onToggleEditAcAttributeId?: (attrId: string) => void
   onEditAttrModifierFormulaChange?: (v: string) => void
   onEditSkillFormulaChange?: (v: string) => void
+  editCharacterSections?: string[]
+  onAddEditCharacterSection?: () => void; onRemoveEditCharacterSection?: (i: number) => void; onUpdateEditCharacterSection?: (i: number, v: string) => void
 }) {
   const [expandedEditAttrs, setExpandedEditAttrs] = useState<Record<number,boolean>>({}); const prevEditCount = useRef(0)
   useEffect(()=>{if(props.editAttrs.length>prevEditCount.current){setExpandedEditAttrs(p=>({...p,[props.editAttrs.length-1]:true}))};prevEditCount.current=props.editAttrs.length},[props.editAttrs.length])
   useEffect(()=>{if(props.isEditing){setExpandedEditAttrs({});setEditTab('attrs')}},[props.isEditing])
-  const [editTab, setEditTab] = useState<'attrs'|'skills'|'profiles'|'coreResources'|'fields'|'ac'>('attrs'); const etabClass = (tab:string) => `px-3 py-1.5 rounded text-xs font-medium transition-colors ${editTab===tab?'bg-primary/15 text-primary border border-primary/20':'text-muted hover:text-foreground'}`
+  const [editTab, setEditTab] = useState<string>('attrs'); const etabClass = (tab:string) => `px-3 py-1.5 rounded text-xs font-medium transition-colors ${editTab===tab?'bg-primary/15 text-primary border border-primary/20':'text-muted hover:text-foreground'}`
   const allAttrs = props.editAttrs.filter(a=>a.key.trim()&&a.name.trim()).map(a=>({key:a.key.trim(),name:a.name.trim()}))
   const allEditAttrsForAc = props.editTemplateAttrs2 || props.editAttrs
   const editAcAttributeIdsValues = props.editAcAttributeIds ?? []
@@ -512,7 +515,15 @@ function TemplateRow(props: {
   if(props.isEditing) return <form onSubmit={props.onUpdate} className="rounded-lg border border-primary/30 bg-background/50 p-4 space-y-3">
     <div><label className="label">Name</label><input className="input-field" value={props.editName} onChange={e=>props.onEditNameChange(e.target.value)} maxLength={100} required/></div>
     <div><label className="label">Description <span className="text-muted font-normal">(optional)</span></label><input className="input-field" value={props.editDescription} onChange={e=>props.onEditDescriptionChange(e.target.value)} maxLength={200}/></div>
-    <div className="flex gap-1 flex-wrap"><button type="button" onClick={()=>setEditTab('attrs')} className={etabClass('attrs')}>Attributes</button><button type="button" onClick={()=>setEditTab('skills')} className={etabClass('skills')}>Skills</button>{props.onAddProfile&&<button type="button" onClick={()=>setEditTab('profiles')} className={etabClass('profiles')}>Skill Modifier Profiles</button>}{props.onAddCoreResource&&<button type="button" onClick={()=>setEditTab('coreResources')} className={etabClass('coreResources')}>Core Resources</button>}{props.onAddField&&<button type="button" onClick={()=>setEditTab('fields')} className={etabClass('fields')}>Custom Fields</button>}{props.onAddEditAcField&&<button type="button" onClick={()=>setEditTab('ac')} className={etabClass('ac')}>Armor Class</button>}</div>
+    <div className="flex gap-1 flex-wrap">
+      <button type="button" onClick={()=>setEditTab('attrs')} className={etabClass('attrs')}>Attributes</button>
+      <button type="button" onClick={()=>setEditTab('skills')} className={etabClass('skills')}>Skills</button>
+      {props.onAddProfile&&<button type="button" onClick={()=>setEditTab('profiles')} className={etabClass('profiles')}>Skill Profiles</button>}
+      {props.onAddCoreResource&&<button type="button" onClick={()=>setEditTab('coreResources')} className={etabClass('coreResources')}>Core Resources</button>}
+      {props.onAddField&&<button type="button" onClick={()=>setEditTab('fields')} className={etabClass('fields')}>Custom Fields</button>}
+      {props.onAddEditAcField&&<button type="button" onClick={()=>setEditTab('ac')} className={etabClass('ac')}>Armor Class</button>}
+      <button type="button" onClick={()=>setEditTab('characterSections')} className={etabClass('characterSections')}>Character Sections</button>
+    </div>
 
     {editTab==='attrs'&&<div>
       <div className="mb-3"><AttributeModifierConfig value={props.editAttrModifierFormula} onChange={v=>props.onEditAttrModifierFormulaChange?.(v)} placeholder="floor((value - 10) / 2)"/></div>
@@ -536,6 +547,18 @@ function TemplateRow(props: {
     </div>)}</div><button type="button" onClick={props.onAddCoreResource} className="btn-ghost text-xs mt-2">+ Add Core Resource</button></div>}
 
     {editTab==='fields'&&<div><div className="space-y-2 mt-1">{(props.editFields||[]).map((f: any,idx)=><div key={idx} className="flex items-center gap-1.5"><input className="input-field flex-1" value={f.key} onChange={e=>props.onUpdateField?.(idx,'key',e.target.value)} placeholder="Key (e.g. class)"/><input className="input-field flex-1" value={f.label} onChange={e=>props.onUpdateField?.(idx,'label',e.target.value)} placeholder="Label (e.g. Class)"/><button type="button" onClick={()=>props.onRemoveField?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div>)}</div><button type="button" onClick={props.onAddField} className="btn-ghost text-xs mt-2">+ Add Custom Field</button></div>}
+
+    {editTab==='characterSections'&&<div>
+      <div className="space-y-2 mt-1">
+        {(props.editCharacterSections||[]).map((name, idx) => (
+          <div key={idx} className="flex items-center gap-1.5">
+            <input className="input-field flex-1" value={name} onChange={e => props.onUpdateEditCharacterSection?.(idx, e.target.value)} placeholder="Section name (e.g. Talents)" />
+            <button type="button" onClick={() => props.onRemoveEditCharacterSection?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
+          </div>
+        ))}
+      </div>
+      <button type="button" onClick={props.onAddEditCharacterSection} className="btn-ghost text-xs mt-2">+ Add Section</button>
+    </div>}
 
     {editTab==='ac'&&props.onAddEditAcField&&<div><div className="space-y-2 mt-1">
       <div className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
