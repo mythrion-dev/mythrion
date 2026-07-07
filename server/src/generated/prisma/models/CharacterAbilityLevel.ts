@@ -42,7 +42,6 @@ export type CharacterAbilityLevelMinAggregateOutputType = {
   level: number | null
   manaCost: number | null
   range: string | null
-  cooldown: string | null
   description: string | null
   notes: string | null
   damage: string | null
@@ -56,7 +55,6 @@ export type CharacterAbilityLevelMaxAggregateOutputType = {
   level: number | null
   manaCost: number | null
   range: string | null
-  cooldown: string | null
   description: string | null
   notes: string | null
   damage: string | null
@@ -70,7 +68,6 @@ export type CharacterAbilityLevelCountAggregateOutputType = {
   level: number
   manaCost: number
   range: number
-  cooldown: number
   description: number
   notes: number
   damage: number
@@ -96,7 +93,6 @@ export type CharacterAbilityLevelMinAggregateInputType = {
   level?: true
   manaCost?: true
   range?: true
-  cooldown?: true
   description?: true
   notes?: true
   damage?: true
@@ -110,7 +106,6 @@ export type CharacterAbilityLevelMaxAggregateInputType = {
   level?: true
   manaCost?: true
   range?: true
-  cooldown?: true
   description?: true
   notes?: true
   damage?: true
@@ -124,7 +119,6 @@ export type CharacterAbilityLevelCountAggregateInputType = {
   level?: true
   manaCost?: true
   range?: true
-  cooldown?: true
   description?: true
   notes?: true
   damage?: true
@@ -225,7 +219,6 @@ export type CharacterAbilityLevelGroupByOutputType = {
   level: number
   manaCost: number | null
   range: string | null
-  cooldown: string | null
   description: string | null
   notes: string | null
   damage: string | null
@@ -262,7 +255,6 @@ export type CharacterAbilityLevelWhereInput = {
   level?: Prisma.IntFilter<"CharacterAbilityLevel"> | number
   manaCost?: Prisma.IntNullableFilter<"CharacterAbilityLevel"> | number | null
   range?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
-  cooldown?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
   description?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
   notes?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
   damage?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
@@ -277,7 +269,6 @@ export type CharacterAbilityLevelOrderByWithRelationInput = {
   level?: Prisma.SortOrder
   manaCost?: Prisma.SortOrderInput | Prisma.SortOrder
   range?: Prisma.SortOrderInput | Prisma.SortOrder
-  cooldown?: Prisma.SortOrderInput | Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   damage?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -296,7 +287,6 @@ export type CharacterAbilityLevelWhereUniqueInput = Prisma.AtLeast<{
   level?: Prisma.IntFilter<"CharacterAbilityLevel"> | number
   manaCost?: Prisma.IntNullableFilter<"CharacterAbilityLevel"> | number | null
   range?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
-  cooldown?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
   description?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
   notes?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
   damage?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
@@ -311,7 +301,6 @@ export type CharacterAbilityLevelOrderByWithAggregationInput = {
   level?: Prisma.SortOrder
   manaCost?: Prisma.SortOrderInput | Prisma.SortOrder
   range?: Prisma.SortOrderInput | Prisma.SortOrder
-  cooldown?: Prisma.SortOrderInput | Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   damage?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -333,7 +322,6 @@ export type CharacterAbilityLevelScalarWhereWithAggregatesInput = {
   level?: Prisma.IntWithAggregatesFilter<"CharacterAbilityLevel"> | number
   manaCost?: Prisma.IntNullableWithAggregatesFilter<"CharacterAbilityLevel"> | number | null
   range?: Prisma.StringNullableWithAggregatesFilter<"CharacterAbilityLevel"> | string | null
-  cooldown?: Prisma.StringNullableWithAggregatesFilter<"CharacterAbilityLevel"> | string | null
   description?: Prisma.StringNullableWithAggregatesFilter<"CharacterAbilityLevel"> | string | null
   notes?: Prisma.StringNullableWithAggregatesFilter<"CharacterAbilityLevel"> | string | null
   damage?: Prisma.StringNullableWithAggregatesFilter<"CharacterAbilityLevel"> | string | null
@@ -346,7 +334,6 @@ export type CharacterAbilityLevelCreateInput = {
   level: number
   manaCost?: number | null
   range?: string | null
-  cooldown?: string | null
   description?: string | null
   notes?: string | null
   damage?: string | null
@@ -361,7 +348,6 @@ export type CharacterAbilityLevelUncheckedCreateInput = {
   level: number
   manaCost?: number | null
   range?: string | null
-  cooldown?: string | null
   description?: string | null
   notes?: string | null
   damage?: string | null
@@ -374,7 +360,6 @@ export type CharacterAbilityLevelUpdateInput = {
   level?: Prisma.IntFieldUpdateOperationsInput | number
   manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cooldown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   damage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -389,7 +374,6 @@ export type CharacterAbilityLevelUncheckedUpdateInput = {
   level?: Prisma.IntFieldUpdateOperationsInput | number
   manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cooldown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   damage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -403,7 +387,6 @@ export type CharacterAbilityLevelCreateManyInput = {
   level: number
   manaCost?: number | null
   range?: string | null
-  cooldown?: string | null
   description?: string | null
   notes?: string | null
   damage?: string | null
@@ -416,7 +399,6 @@ export type CharacterAbilityLevelUpdateManyMutationInput = {
   level?: Prisma.IntFieldUpdateOperationsInput | number
   manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cooldown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   damage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -430,7 +412,6 @@ export type CharacterAbilityLevelUncheckedUpdateManyInput = {
   level?: Prisma.IntFieldUpdateOperationsInput | number
   manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cooldown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   damage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -459,7 +440,6 @@ export type CharacterAbilityLevelCountOrderByAggregateInput = {
   level?: Prisma.SortOrder
   manaCost?: Prisma.SortOrder
   range?: Prisma.SortOrder
-  cooldown?: Prisma.SortOrder
   description?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   damage?: Prisma.SortOrder
@@ -478,7 +458,6 @@ export type CharacterAbilityLevelMaxOrderByAggregateInput = {
   level?: Prisma.SortOrder
   manaCost?: Prisma.SortOrder
   range?: Prisma.SortOrder
-  cooldown?: Prisma.SortOrder
   description?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   damage?: Prisma.SortOrder
@@ -492,7 +471,6 @@ export type CharacterAbilityLevelMinOrderByAggregateInput = {
   level?: Prisma.SortOrder
   manaCost?: Prisma.SortOrder
   range?: Prisma.SortOrder
-  cooldown?: Prisma.SortOrder
   description?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   damage?: Prisma.SortOrder
@@ -552,7 +530,6 @@ export type CharacterAbilityLevelCreateWithoutAbilityInput = {
   level: number
   manaCost?: number | null
   range?: string | null
-  cooldown?: string | null
   description?: string | null
   notes?: string | null
   damage?: string | null
@@ -565,7 +542,6 @@ export type CharacterAbilityLevelUncheckedCreateWithoutAbilityInput = {
   level: number
   manaCost?: number | null
   range?: string | null
-  cooldown?: string | null
   description?: string | null
   notes?: string | null
   damage?: string | null
@@ -608,7 +584,6 @@ export type CharacterAbilityLevelScalarWhereInput = {
   level?: Prisma.IntFilter<"CharacterAbilityLevel"> | number
   manaCost?: Prisma.IntNullableFilter<"CharacterAbilityLevel"> | number | null
   range?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
-  cooldown?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
   description?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
   notes?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
   damage?: Prisma.StringNullableFilter<"CharacterAbilityLevel"> | string | null
@@ -621,7 +596,6 @@ export type CharacterAbilityLevelCreateManyAbilityInput = {
   level: number
   manaCost?: number | null
   range?: string | null
-  cooldown?: string | null
   description?: string | null
   notes?: string | null
   damage?: string | null
@@ -634,7 +608,6 @@ export type CharacterAbilityLevelUpdateWithoutAbilityInput = {
   level?: Prisma.IntFieldUpdateOperationsInput | number
   manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cooldown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   damage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -647,7 +620,6 @@ export type CharacterAbilityLevelUncheckedUpdateWithoutAbilityInput = {
   level?: Prisma.IntFieldUpdateOperationsInput | number
   manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cooldown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   damage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -660,7 +632,6 @@ export type CharacterAbilityLevelUncheckedUpdateManyWithoutAbilityInput = {
   level?: Prisma.IntFieldUpdateOperationsInput | number
   manaCost?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cooldown?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   damage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -676,7 +647,6 @@ export type CharacterAbilityLevelSelect<ExtArgs extends runtime.Types.Extensions
   level?: boolean
   manaCost?: boolean
   range?: boolean
-  cooldown?: boolean
   description?: boolean
   notes?: boolean
   damage?: boolean
@@ -691,7 +661,6 @@ export type CharacterAbilityLevelSelectCreateManyAndReturn<ExtArgs extends runti
   level?: boolean
   manaCost?: boolean
   range?: boolean
-  cooldown?: boolean
   description?: boolean
   notes?: boolean
   damage?: boolean
@@ -706,7 +675,6 @@ export type CharacterAbilityLevelSelectUpdateManyAndReturn<ExtArgs extends runti
   level?: boolean
   manaCost?: boolean
   range?: boolean
-  cooldown?: boolean
   description?: boolean
   notes?: boolean
   damage?: boolean
@@ -721,7 +689,6 @@ export type CharacterAbilityLevelSelectScalar = {
   level?: boolean
   manaCost?: boolean
   range?: boolean
-  cooldown?: boolean
   description?: boolean
   notes?: boolean
   damage?: boolean
@@ -729,7 +696,7 @@ export type CharacterAbilityLevelSelectScalar = {
   updatedAt?: boolean
 }
 
-export type CharacterAbilityLevelOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "abilityId" | "level" | "manaCost" | "range" | "cooldown" | "description" | "notes" | "damage" | "createdAt" | "updatedAt", ExtArgs["result"]["characterAbilityLevel"]>
+export type CharacterAbilityLevelOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "abilityId" | "level" | "manaCost" | "range" | "description" | "notes" | "damage" | "createdAt" | "updatedAt", ExtArgs["result"]["characterAbilityLevel"]>
 export type CharacterAbilityLevelInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   ability?: boolean | Prisma.CharacterAbilityDefaultArgs<ExtArgs>
 }
@@ -751,7 +718,6 @@ export type $CharacterAbilityLevelPayload<ExtArgs extends runtime.Types.Extensio
     level: number
     manaCost: number | null
     range: string | null
-    cooldown: string | null
     description: string | null
     notes: string | null
     damage: string | null
@@ -1186,7 +1152,6 @@ export interface CharacterAbilityLevelFieldRefs {
   readonly level: Prisma.FieldRef<"CharacterAbilityLevel", 'Int'>
   readonly manaCost: Prisma.FieldRef<"CharacterAbilityLevel", 'Int'>
   readonly range: Prisma.FieldRef<"CharacterAbilityLevel", 'String'>
-  readonly cooldown: Prisma.FieldRef<"CharacterAbilityLevel", 'String'>
   readonly description: Prisma.FieldRef<"CharacterAbilityLevel", 'String'>
   readonly notes: Prisma.FieldRef<"CharacterAbilityLevel", 'String'>
   readonly damage: Prisma.FieldRef<"CharacterAbilityLevel", 'String'>

@@ -37,8 +37,12 @@ export type CharacterAbilitySumAggregateOutputType = {
 export type CharacterAbilityMinAggregateOutputType = {
   id: string | null
   sheetId: string | null
+  summonId: string | null
   name: string | null
+  type: string | null
   order: number | null
+  description: string | null
+  notes: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -46,8 +50,12 @@ export type CharacterAbilityMinAggregateOutputType = {
 export type CharacterAbilityMaxAggregateOutputType = {
   id: string | null
   sheetId: string | null
+  summonId: string | null
   name: string | null
+  type: string | null
   order: number | null
+  description: string | null
+  notes: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -55,8 +63,12 @@ export type CharacterAbilityMaxAggregateOutputType = {
 export type CharacterAbilityCountAggregateOutputType = {
   id: number
   sheetId: number
+  summonId: number
   name: number
+  type: number
   order: number
+  description: number
+  notes: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -74,8 +86,12 @@ export type CharacterAbilitySumAggregateInputType = {
 export type CharacterAbilityMinAggregateInputType = {
   id?: true
   sheetId?: true
+  summonId?: true
   name?: true
+  type?: true
   order?: true
+  description?: true
+  notes?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -83,8 +99,12 @@ export type CharacterAbilityMinAggregateInputType = {
 export type CharacterAbilityMaxAggregateInputType = {
   id?: true
   sheetId?: true
+  summonId?: true
   name?: true
+  type?: true
   order?: true
+  description?: true
+  notes?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -92,8 +112,12 @@ export type CharacterAbilityMaxAggregateInputType = {
 export type CharacterAbilityCountAggregateInputType = {
   id?: true
   sheetId?: true
+  summonId?: true
   name?: true
+  type?: true
   order?: true
+  description?: true
+  notes?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -188,8 +212,12 @@ export type CharacterAbilityGroupByArgs<ExtArgs extends runtime.Types.Extensions
 export type CharacterAbilityGroupByOutputType = {
   id: string
   sheetId: string
+  summonId: string | null
   name: string
+  type: string
   order: number
+  description: string | null
+  notes: string | null
   createdAt: Date
   updatedAt: Date
   _count: CharacterAbilityCountAggregateOutputType | null
@@ -220,23 +248,43 @@ export type CharacterAbilityWhereInput = {
   NOT?: Prisma.CharacterAbilityWhereInput | Prisma.CharacterAbilityWhereInput[]
   id?: Prisma.StringFilter<"CharacterAbility"> | string
   sheetId?: Prisma.StringFilter<"CharacterAbility"> | string
+  summonId?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
   name?: Prisma.StringFilter<"CharacterAbility"> | string
+  type?: Prisma.StringFilter<"CharacterAbility"> | string
   order?: Prisma.IntFilter<"CharacterAbility"> | number
+  description?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
+  notes?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
   sheet?: Prisma.XOR<Prisma.CharacterSheetScalarRelationFilter, Prisma.CharacterSheetWhereInput>
+  parentSummon?: Prisma.XOR<Prisma.CharacterAbilityNullableScalarRelationFilter, Prisma.CharacterAbilityWhereInput> | null
   levels?: Prisma.CharacterAbilityLevelListRelationFilter
+  summonAttributes?: Prisma.SummonAttributeListRelationFilter
+  summonAcValues?: Prisma.SummonArmorClassValueListRelationFilter
+  summonHealth?: Prisma.XOR<Prisma.SummonHealthNullableScalarRelationFilter, Prisma.SummonHealthWhereInput> | null
+  summonSkills?: Prisma.SummonSkillListRelationFilter
+  childAbilities?: Prisma.CharacterAbilityListRelationFilter
 }
 
 export type CharacterAbilityOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
+  summonId?: Prisma.SortOrderInput | Prisma.SortOrder
   name?: Prisma.SortOrder
+  type?: Prisma.SortOrder
   order?: Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
+  notes?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   sheet?: Prisma.CharacterSheetOrderByWithRelationInput
+  parentSummon?: Prisma.CharacterAbilityOrderByWithRelationInput
   levels?: Prisma.CharacterAbilityLevelOrderByRelationAggregateInput
+  summonAttributes?: Prisma.SummonAttributeOrderByRelationAggregateInput
+  summonAcValues?: Prisma.SummonArmorClassValueOrderByRelationAggregateInput
+  summonHealth?: Prisma.SummonHealthOrderByWithRelationInput
+  summonSkills?: Prisma.SummonSkillOrderByRelationAggregateInput
+  childAbilities?: Prisma.CharacterAbilityOrderByRelationAggregateInput
 }
 
 export type CharacterAbilityWhereUniqueInput = Prisma.AtLeast<{
@@ -245,19 +293,33 @@ export type CharacterAbilityWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.CharacterAbilityWhereInput[]
   NOT?: Prisma.CharacterAbilityWhereInput | Prisma.CharacterAbilityWhereInput[]
   sheetId?: Prisma.StringFilter<"CharacterAbility"> | string
+  summonId?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
   name?: Prisma.StringFilter<"CharacterAbility"> | string
+  type?: Prisma.StringFilter<"CharacterAbility"> | string
   order?: Prisma.IntFilter<"CharacterAbility"> | number
+  description?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
+  notes?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
   sheet?: Prisma.XOR<Prisma.CharacterSheetScalarRelationFilter, Prisma.CharacterSheetWhereInput>
+  parentSummon?: Prisma.XOR<Prisma.CharacterAbilityNullableScalarRelationFilter, Prisma.CharacterAbilityWhereInput> | null
   levels?: Prisma.CharacterAbilityLevelListRelationFilter
+  summonAttributes?: Prisma.SummonAttributeListRelationFilter
+  summonAcValues?: Prisma.SummonArmorClassValueListRelationFilter
+  summonHealth?: Prisma.XOR<Prisma.SummonHealthNullableScalarRelationFilter, Prisma.SummonHealthWhereInput> | null
+  summonSkills?: Prisma.SummonSkillListRelationFilter
+  childAbilities?: Prisma.CharacterAbilityListRelationFilter
 }, "id">
 
 export type CharacterAbilityOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
+  summonId?: Prisma.SortOrderInput | Prisma.SortOrder
   name?: Prisma.SortOrder
+  type?: Prisma.SortOrder
   order?: Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
+  notes?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.CharacterAbilityCountOrderByAggregateInput
@@ -273,8 +335,12 @@ export type CharacterAbilityScalarWhereWithAggregatesInput = {
   NOT?: Prisma.CharacterAbilityScalarWhereWithAggregatesInput | Prisma.CharacterAbilityScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"CharacterAbility"> | string
   sheetId?: Prisma.StringWithAggregatesFilter<"CharacterAbility"> | string
+  summonId?: Prisma.StringNullableWithAggregatesFilter<"CharacterAbility"> | string | null
   name?: Prisma.StringWithAggregatesFilter<"CharacterAbility"> | string
+  type?: Prisma.StringWithAggregatesFilter<"CharacterAbility"> | string
   order?: Prisma.IntWithAggregatesFilter<"CharacterAbility"> | number
+  description?: Prisma.StringNullableWithAggregatesFilter<"CharacterAbility"> | string | null
+  notes?: Prisma.StringNullableWithAggregatesFilter<"CharacterAbility"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"CharacterAbility"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"CharacterAbility"> | Date | string
 }
@@ -282,48 +348,88 @@ export type CharacterAbilityScalarWhereWithAggregatesInput = {
 export type CharacterAbilityCreateInput = {
   id?: string
   name: string
+  type?: string
   order?: number
+  description?: string | null
+  notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   sheet: Prisma.CharacterSheetCreateNestedOneWithoutAbilitiesInput
+  parentSummon?: Prisma.CharacterAbilityCreateNestedOneWithoutChildAbilitiesInput
   levels?: Prisma.CharacterAbilityLevelCreateNestedManyWithoutAbilityInput
+  summonAttributes?: Prisma.SummonAttributeCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
 }
 
 export type CharacterAbilityUncheckedCreateInput = {
   id?: string
   sheetId: string
+  summonId?: string | null
   name: string
+  type?: string
   order?: number
+  description?: string | null
+  notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   levels?: Prisma.CharacterAbilityLevelUncheckedCreateNestedManyWithoutAbilityInput
+  summonAttributes?: Prisma.SummonAttributeUncheckedCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
 }
 
 export type CharacterAbilityUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutAbilitiesNestedInput
+  parentSummon?: Prisma.CharacterAbilityUpdateOneWithoutChildAbilitiesNestedInput
   levels?: Prisma.CharacterAbilityLevelUpdateManyWithoutAbilityNestedInput
+  summonAttributes?: Prisma.SummonAttributeUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
 }
 
 export type CharacterAbilityUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sheetId?: Prisma.StringFieldUpdateOperationsInput | string
+  summonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   levels?: Prisma.CharacterAbilityLevelUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAttributes?: Prisma.SummonAttributeUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
 }
 
 export type CharacterAbilityCreateManyInput = {
   id?: string
   sheetId: string
+  summonId?: string | null
   name: string
+  type?: string
   order?: number
+  description?: string | null
+  notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -331,7 +437,10 @@ export type CharacterAbilityCreateManyInput = {
 export type CharacterAbilityUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -339,8 +448,12 @@ export type CharacterAbilityUpdateManyMutationInput = {
 export type CharacterAbilityUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sheetId?: Prisma.StringFieldUpdateOperationsInput | string
+  summonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -355,11 +468,20 @@ export type CharacterAbilityOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type CharacterAbilityNullableScalarRelationFilter = {
+  is?: Prisma.CharacterAbilityWhereInput | null
+  isNot?: Prisma.CharacterAbilityWhereInput | null
+}
+
 export type CharacterAbilityCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
+  summonId?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  type?: Prisma.SortOrder
   order?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -371,8 +493,12 @@ export type CharacterAbilityAvgOrderByAggregateInput = {
 export type CharacterAbilityMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
+  summonId?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  type?: Prisma.SortOrder
   order?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -380,8 +506,12 @@ export type CharacterAbilityMaxOrderByAggregateInput = {
 export type CharacterAbilityMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sheetId?: Prisma.SortOrder
+  summonId?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  type?: Prisma.SortOrder
   order?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -437,6 +567,64 @@ export type CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput = {
   deleteMany?: Prisma.CharacterAbilityScalarWhereInput | Prisma.CharacterAbilityScalarWhereInput[]
 }
 
+export type CharacterAbilityCreateNestedOneWithoutChildAbilitiesInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutChildAbilitiesInput, Prisma.CharacterAbilityUncheckedCreateWithoutChildAbilitiesInput>
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutChildAbilitiesInput
+  connect?: Prisma.CharacterAbilityWhereUniqueInput
+}
+
+export type CharacterAbilityCreateNestedManyWithoutParentSummonInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutParentSummonInput, Prisma.CharacterAbilityUncheckedCreateWithoutParentSummonInput> | Prisma.CharacterAbilityCreateWithoutParentSummonInput[] | Prisma.CharacterAbilityUncheckedCreateWithoutParentSummonInput[]
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutParentSummonInput | Prisma.CharacterAbilityCreateOrConnectWithoutParentSummonInput[]
+  createMany?: Prisma.CharacterAbilityCreateManyParentSummonInputEnvelope
+  connect?: Prisma.CharacterAbilityWhereUniqueInput | Prisma.CharacterAbilityWhereUniqueInput[]
+}
+
+export type CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutParentSummonInput, Prisma.CharacterAbilityUncheckedCreateWithoutParentSummonInput> | Prisma.CharacterAbilityCreateWithoutParentSummonInput[] | Prisma.CharacterAbilityUncheckedCreateWithoutParentSummonInput[]
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutParentSummonInput | Prisma.CharacterAbilityCreateOrConnectWithoutParentSummonInput[]
+  createMany?: Prisma.CharacterAbilityCreateManyParentSummonInputEnvelope
+  connect?: Prisma.CharacterAbilityWhereUniqueInput | Prisma.CharacterAbilityWhereUniqueInput[]
+}
+
+export type CharacterAbilityUpdateOneWithoutChildAbilitiesNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutChildAbilitiesInput, Prisma.CharacterAbilityUncheckedCreateWithoutChildAbilitiesInput>
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutChildAbilitiesInput
+  upsert?: Prisma.CharacterAbilityUpsertWithoutChildAbilitiesInput
+  disconnect?: Prisma.CharacterAbilityWhereInput | boolean
+  delete?: Prisma.CharacterAbilityWhereInput | boolean
+  connect?: Prisma.CharacterAbilityWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterAbilityUpdateToOneWithWhereWithoutChildAbilitiesInput, Prisma.CharacterAbilityUpdateWithoutChildAbilitiesInput>, Prisma.CharacterAbilityUncheckedUpdateWithoutChildAbilitiesInput>
+}
+
+export type CharacterAbilityUpdateManyWithoutParentSummonNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutParentSummonInput, Prisma.CharacterAbilityUncheckedCreateWithoutParentSummonInput> | Prisma.CharacterAbilityCreateWithoutParentSummonInput[] | Prisma.CharacterAbilityUncheckedCreateWithoutParentSummonInput[]
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutParentSummonInput | Prisma.CharacterAbilityCreateOrConnectWithoutParentSummonInput[]
+  upsert?: Prisma.CharacterAbilityUpsertWithWhereUniqueWithoutParentSummonInput | Prisma.CharacterAbilityUpsertWithWhereUniqueWithoutParentSummonInput[]
+  createMany?: Prisma.CharacterAbilityCreateManyParentSummonInputEnvelope
+  set?: Prisma.CharacterAbilityWhereUniqueInput | Prisma.CharacterAbilityWhereUniqueInput[]
+  disconnect?: Prisma.CharacterAbilityWhereUniqueInput | Prisma.CharacterAbilityWhereUniqueInput[]
+  delete?: Prisma.CharacterAbilityWhereUniqueInput | Prisma.CharacterAbilityWhereUniqueInput[]
+  connect?: Prisma.CharacterAbilityWhereUniqueInput | Prisma.CharacterAbilityWhereUniqueInput[]
+  update?: Prisma.CharacterAbilityUpdateWithWhereUniqueWithoutParentSummonInput | Prisma.CharacterAbilityUpdateWithWhereUniqueWithoutParentSummonInput[]
+  updateMany?: Prisma.CharacterAbilityUpdateManyWithWhereWithoutParentSummonInput | Prisma.CharacterAbilityUpdateManyWithWhereWithoutParentSummonInput[]
+  deleteMany?: Prisma.CharacterAbilityScalarWhereInput | Prisma.CharacterAbilityScalarWhereInput[]
+}
+
+export type CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutParentSummonInput, Prisma.CharacterAbilityUncheckedCreateWithoutParentSummonInput> | Prisma.CharacterAbilityCreateWithoutParentSummonInput[] | Prisma.CharacterAbilityUncheckedCreateWithoutParentSummonInput[]
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutParentSummonInput | Prisma.CharacterAbilityCreateOrConnectWithoutParentSummonInput[]
+  upsert?: Prisma.CharacterAbilityUpsertWithWhereUniqueWithoutParentSummonInput | Prisma.CharacterAbilityUpsertWithWhereUniqueWithoutParentSummonInput[]
+  createMany?: Prisma.CharacterAbilityCreateManyParentSummonInputEnvelope
+  set?: Prisma.CharacterAbilityWhereUniqueInput | Prisma.CharacterAbilityWhereUniqueInput[]
+  disconnect?: Prisma.CharacterAbilityWhereUniqueInput | Prisma.CharacterAbilityWhereUniqueInput[]
+  delete?: Prisma.CharacterAbilityWhereUniqueInput | Prisma.CharacterAbilityWhereUniqueInput[]
+  connect?: Prisma.CharacterAbilityWhereUniqueInput | Prisma.CharacterAbilityWhereUniqueInput[]
+  update?: Prisma.CharacterAbilityUpdateWithWhereUniqueWithoutParentSummonInput | Prisma.CharacterAbilityUpdateWithWhereUniqueWithoutParentSummonInput[]
+  updateMany?: Prisma.CharacterAbilityUpdateManyWithWhereWithoutParentSummonInput | Prisma.CharacterAbilityUpdateManyWithWhereWithoutParentSummonInput[]
+  deleteMany?: Prisma.CharacterAbilityScalarWhereInput | Prisma.CharacterAbilityScalarWhereInput[]
+}
+
 export type CharacterAbilityCreateNestedOneWithoutLevelsInput = {
   create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutLevelsInput, Prisma.CharacterAbilityUncheckedCreateWithoutLevelsInput>
   connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutLevelsInput
@@ -451,22 +639,96 @@ export type CharacterAbilityUpdateOneRequiredWithoutLevelsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterAbilityUpdateToOneWithWhereWithoutLevelsInput, Prisma.CharacterAbilityUpdateWithoutLevelsInput>, Prisma.CharacterAbilityUncheckedUpdateWithoutLevelsInput>
 }
 
+export type CharacterAbilityCreateNestedOneWithoutSummonSkillsInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonSkillsInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonSkillsInput>
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutSummonSkillsInput
+  connect?: Prisma.CharacterAbilityWhereUniqueInput
+}
+
+export type CharacterAbilityUpdateOneRequiredWithoutSummonSkillsNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonSkillsInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonSkillsInput>
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutSummonSkillsInput
+  upsert?: Prisma.CharacterAbilityUpsertWithoutSummonSkillsInput
+  connect?: Prisma.CharacterAbilityWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterAbilityUpdateToOneWithWhereWithoutSummonSkillsInput, Prisma.CharacterAbilityUpdateWithoutSummonSkillsInput>, Prisma.CharacterAbilityUncheckedUpdateWithoutSummonSkillsInput>
+}
+
+export type CharacterAbilityCreateNestedOneWithoutSummonAttributesInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonAttributesInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonAttributesInput>
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutSummonAttributesInput
+  connect?: Prisma.CharacterAbilityWhereUniqueInput
+}
+
+export type CharacterAbilityUpdateOneRequiredWithoutSummonAttributesNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonAttributesInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonAttributesInput>
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutSummonAttributesInput
+  upsert?: Prisma.CharacterAbilityUpsertWithoutSummonAttributesInput
+  connect?: Prisma.CharacterAbilityWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterAbilityUpdateToOneWithWhereWithoutSummonAttributesInput, Prisma.CharacterAbilityUpdateWithoutSummonAttributesInput>, Prisma.CharacterAbilityUncheckedUpdateWithoutSummonAttributesInput>
+}
+
+export type CharacterAbilityCreateNestedOneWithoutSummonAcValuesInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonAcValuesInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonAcValuesInput>
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutSummonAcValuesInput
+  connect?: Prisma.CharacterAbilityWhereUniqueInput
+}
+
+export type CharacterAbilityUpdateOneRequiredWithoutSummonAcValuesNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonAcValuesInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonAcValuesInput>
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutSummonAcValuesInput
+  upsert?: Prisma.CharacterAbilityUpsertWithoutSummonAcValuesInput
+  connect?: Prisma.CharacterAbilityWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterAbilityUpdateToOneWithWhereWithoutSummonAcValuesInput, Prisma.CharacterAbilityUpdateWithoutSummonAcValuesInput>, Prisma.CharacterAbilityUncheckedUpdateWithoutSummonAcValuesInput>
+}
+
+export type CharacterAbilityCreateNestedOneWithoutSummonHealthInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonHealthInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonHealthInput>
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutSummonHealthInput
+  connect?: Prisma.CharacterAbilityWhereUniqueInput
+}
+
+export type CharacterAbilityUpdateOneRequiredWithoutSummonHealthNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonHealthInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonHealthInput>
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutSummonHealthInput
+  upsert?: Prisma.CharacterAbilityUpsertWithoutSummonHealthInput
+  connect?: Prisma.CharacterAbilityWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterAbilityUpdateToOneWithWhereWithoutSummonHealthInput, Prisma.CharacterAbilityUpdateWithoutSummonHealthInput>, Prisma.CharacterAbilityUncheckedUpdateWithoutSummonHealthInput>
+}
+
 export type CharacterAbilityCreateWithoutSheetInput = {
   id?: string
   name: string
+  type?: string
   order?: number
+  description?: string | null
+  notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  parentSummon?: Prisma.CharacterAbilityCreateNestedOneWithoutChildAbilitiesInput
   levels?: Prisma.CharacterAbilityLevelCreateNestedManyWithoutAbilityInput
+  summonAttributes?: Prisma.SummonAttributeCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
 }
 
 export type CharacterAbilityUncheckedCreateWithoutSheetInput = {
   id?: string
+  summonId?: string | null
   name: string
+  type?: string
   order?: number
+  description?: string | null
+  notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   levels?: Prisma.CharacterAbilityLevelUncheckedCreateNestedManyWithoutAbilityInput
+  summonAttributes?: Prisma.SummonAttributeUncheckedCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
 }
 
 export type CharacterAbilityCreateOrConnectWithoutSheetInput = {
@@ -501,28 +763,200 @@ export type CharacterAbilityScalarWhereInput = {
   NOT?: Prisma.CharacterAbilityScalarWhereInput | Prisma.CharacterAbilityScalarWhereInput[]
   id?: Prisma.StringFilter<"CharacterAbility"> | string
   sheetId?: Prisma.StringFilter<"CharacterAbility"> | string
+  summonId?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
   name?: Prisma.StringFilter<"CharacterAbility"> | string
+  type?: Prisma.StringFilter<"CharacterAbility"> | string
   order?: Prisma.IntFilter<"CharacterAbility"> | number
+  description?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
+  notes?: Prisma.StringNullableFilter<"CharacterAbility"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterAbility"> | Date | string
+}
+
+export type CharacterAbilityCreateWithoutChildAbilitiesInput = {
+  id?: string
+  name: string
+  type?: string
+  order?: number
+  description?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sheet: Prisma.CharacterSheetCreateNestedOneWithoutAbilitiesInput
+  parentSummon?: Prisma.CharacterAbilityCreateNestedOneWithoutChildAbilitiesInput
+  levels?: Prisma.CharacterAbilityLevelCreateNestedManyWithoutAbilityInput
+  summonAttributes?: Prisma.SummonAttributeCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+}
+
+export type CharacterAbilityUncheckedCreateWithoutChildAbilitiesInput = {
+  id?: string
+  sheetId: string
+  summonId?: string | null
+  name: string
+  type?: string
+  order?: number
+  description?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedCreateNestedManyWithoutAbilityInput
+  summonAttributes?: Prisma.SummonAttributeUncheckedCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+}
+
+export type CharacterAbilityCreateOrConnectWithoutChildAbilitiesInput = {
+  where: Prisma.CharacterAbilityWhereUniqueInput
+  create: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutChildAbilitiesInput, Prisma.CharacterAbilityUncheckedCreateWithoutChildAbilitiesInput>
+}
+
+export type CharacterAbilityCreateWithoutParentSummonInput = {
+  id?: string
+  name: string
+  type?: string
+  order?: number
+  description?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sheet: Prisma.CharacterSheetCreateNestedOneWithoutAbilitiesInput
+  levels?: Prisma.CharacterAbilityLevelCreateNestedManyWithoutAbilityInput
+  summonAttributes?: Prisma.SummonAttributeCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
+}
+
+export type CharacterAbilityUncheckedCreateWithoutParentSummonInput = {
+  id?: string
+  sheetId: string
+  name: string
+  type?: string
+  order?: number
+  description?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedCreateNestedManyWithoutAbilityInput
+  summonAttributes?: Prisma.SummonAttributeUncheckedCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
+}
+
+export type CharacterAbilityCreateOrConnectWithoutParentSummonInput = {
+  where: Prisma.CharacterAbilityWhereUniqueInput
+  create: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutParentSummonInput, Prisma.CharacterAbilityUncheckedCreateWithoutParentSummonInput>
+}
+
+export type CharacterAbilityCreateManyParentSummonInputEnvelope = {
+  data: Prisma.CharacterAbilityCreateManyParentSummonInput | Prisma.CharacterAbilityCreateManyParentSummonInput[]
+  skipDuplicates?: boolean
+}
+
+export type CharacterAbilityUpsertWithoutChildAbilitiesInput = {
+  update: Prisma.XOR<Prisma.CharacterAbilityUpdateWithoutChildAbilitiesInput, Prisma.CharacterAbilityUncheckedUpdateWithoutChildAbilitiesInput>
+  create: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutChildAbilitiesInput, Prisma.CharacterAbilityUncheckedCreateWithoutChildAbilitiesInput>
+  where?: Prisma.CharacterAbilityWhereInput
+}
+
+export type CharacterAbilityUpdateToOneWithWhereWithoutChildAbilitiesInput = {
+  where?: Prisma.CharacterAbilityWhereInput
+  data: Prisma.XOR<Prisma.CharacterAbilityUpdateWithoutChildAbilitiesInput, Prisma.CharacterAbilityUncheckedUpdateWithoutChildAbilitiesInput>
+}
+
+export type CharacterAbilityUpdateWithoutChildAbilitiesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutAbilitiesNestedInput
+  parentSummon?: Prisma.CharacterAbilityUpdateOneWithoutChildAbilitiesNestedInput
+  levels?: Prisma.CharacterAbilityLevelUpdateManyWithoutAbilityNestedInput
+  summonAttributes?: Prisma.SummonAttributeUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+}
+
+export type CharacterAbilityUncheckedUpdateWithoutChildAbilitiesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sheetId?: Prisma.StringFieldUpdateOperationsInput | string
+  summonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAttributes?: Prisma.SummonAttributeUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
+}
+
+export type CharacterAbilityUpsertWithWhereUniqueWithoutParentSummonInput = {
+  where: Prisma.CharacterAbilityWhereUniqueInput
+  update: Prisma.XOR<Prisma.CharacterAbilityUpdateWithoutParentSummonInput, Prisma.CharacterAbilityUncheckedUpdateWithoutParentSummonInput>
+  create: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutParentSummonInput, Prisma.CharacterAbilityUncheckedCreateWithoutParentSummonInput>
+}
+
+export type CharacterAbilityUpdateWithWhereUniqueWithoutParentSummonInput = {
+  where: Prisma.CharacterAbilityWhereUniqueInput
+  data: Prisma.XOR<Prisma.CharacterAbilityUpdateWithoutParentSummonInput, Prisma.CharacterAbilityUncheckedUpdateWithoutParentSummonInput>
+}
+
+export type CharacterAbilityUpdateManyWithWhereWithoutParentSummonInput = {
+  where: Prisma.CharacterAbilityScalarWhereInput
+  data: Prisma.XOR<Prisma.CharacterAbilityUpdateManyMutationInput, Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonInput>
 }
 
 export type CharacterAbilityCreateWithoutLevelsInput = {
   id?: string
   name: string
+  type?: string
   order?: number
+  description?: string | null
+  notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   sheet: Prisma.CharacterSheetCreateNestedOneWithoutAbilitiesInput
+  parentSummon?: Prisma.CharacterAbilityCreateNestedOneWithoutChildAbilitiesInput
+  summonAttributes?: Prisma.SummonAttributeCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
 }
 
 export type CharacterAbilityUncheckedCreateWithoutLevelsInput = {
   id?: string
   sheetId: string
+  summonId?: string | null
   name: string
+  type?: string
   order?: number
+  description?: string | null
+  notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  summonAttributes?: Prisma.SummonAttributeUncheckedCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
 }
 
 export type CharacterAbilityCreateOrConnectWithoutLevelsInput = {
@@ -544,25 +978,399 @@ export type CharacterAbilityUpdateToOneWithWhereWithoutLevelsInput = {
 export type CharacterAbilityUpdateWithoutLevelsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutAbilitiesNestedInput
+  parentSummon?: Prisma.CharacterAbilityUpdateOneWithoutChildAbilitiesNestedInput
+  summonAttributes?: Prisma.SummonAttributeUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
 }
 
 export type CharacterAbilityUncheckedUpdateWithoutLevelsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sheetId?: Prisma.StringFieldUpdateOperationsInput | string
+  summonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  summonAttributes?: Prisma.SummonAttributeUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
+}
+
+export type CharacterAbilityCreateWithoutSummonSkillsInput = {
+  id?: string
+  name: string
+  type?: string
+  order?: number
+  description?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sheet: Prisma.CharacterSheetCreateNestedOneWithoutAbilitiesInput
+  parentSummon?: Prisma.CharacterAbilityCreateNestedOneWithoutChildAbilitiesInput
+  levels?: Prisma.CharacterAbilityLevelCreateNestedManyWithoutAbilityInput
+  summonAttributes?: Prisma.SummonAttributeCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
+}
+
+export type CharacterAbilityUncheckedCreateWithoutSummonSkillsInput = {
+  id?: string
+  sheetId: string
+  summonId?: string | null
+  name: string
+  type?: string
+  order?: number
+  description?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedCreateNestedManyWithoutAbilityInput
+  summonAttributes?: Prisma.SummonAttributeUncheckedCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
+}
+
+export type CharacterAbilityCreateOrConnectWithoutSummonSkillsInput = {
+  where: Prisma.CharacterAbilityWhereUniqueInput
+  create: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonSkillsInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonSkillsInput>
+}
+
+export type CharacterAbilityUpsertWithoutSummonSkillsInput = {
+  update: Prisma.XOR<Prisma.CharacterAbilityUpdateWithoutSummonSkillsInput, Prisma.CharacterAbilityUncheckedUpdateWithoutSummonSkillsInput>
+  create: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonSkillsInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonSkillsInput>
+  where?: Prisma.CharacterAbilityWhereInput
+}
+
+export type CharacterAbilityUpdateToOneWithWhereWithoutSummonSkillsInput = {
+  where?: Prisma.CharacterAbilityWhereInput
+  data: Prisma.XOR<Prisma.CharacterAbilityUpdateWithoutSummonSkillsInput, Prisma.CharacterAbilityUncheckedUpdateWithoutSummonSkillsInput>
+}
+
+export type CharacterAbilityUpdateWithoutSummonSkillsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutAbilitiesNestedInput
+  parentSummon?: Prisma.CharacterAbilityUpdateOneWithoutChildAbilitiesNestedInput
+  levels?: Prisma.CharacterAbilityLevelUpdateManyWithoutAbilityNestedInput
+  summonAttributes?: Prisma.SummonAttributeUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
+}
+
+export type CharacterAbilityUncheckedUpdateWithoutSummonSkillsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sheetId?: Prisma.StringFieldUpdateOperationsInput | string
+  summonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAttributes?: Prisma.SummonAttributeUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
+}
+
+export type CharacterAbilityCreateWithoutSummonAttributesInput = {
+  id?: string
+  name: string
+  type?: string
+  order?: number
+  description?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sheet: Prisma.CharacterSheetCreateNestedOneWithoutAbilitiesInput
+  parentSummon?: Prisma.CharacterAbilityCreateNestedOneWithoutChildAbilitiesInput
+  levels?: Prisma.CharacterAbilityLevelCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
+}
+
+export type CharacterAbilityUncheckedCreateWithoutSummonAttributesInput = {
+  id?: string
+  sheetId: string
+  summonId?: string | null
+  name: string
+  type?: string
+  order?: number
+  description?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
+}
+
+export type CharacterAbilityCreateOrConnectWithoutSummonAttributesInput = {
+  where: Prisma.CharacterAbilityWhereUniqueInput
+  create: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonAttributesInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonAttributesInput>
+}
+
+export type CharacterAbilityUpsertWithoutSummonAttributesInput = {
+  update: Prisma.XOR<Prisma.CharacterAbilityUpdateWithoutSummonAttributesInput, Prisma.CharacterAbilityUncheckedUpdateWithoutSummonAttributesInput>
+  create: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonAttributesInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonAttributesInput>
+  where?: Prisma.CharacterAbilityWhereInput
+}
+
+export type CharacterAbilityUpdateToOneWithWhereWithoutSummonAttributesInput = {
+  where?: Prisma.CharacterAbilityWhereInput
+  data: Prisma.XOR<Prisma.CharacterAbilityUpdateWithoutSummonAttributesInput, Prisma.CharacterAbilityUncheckedUpdateWithoutSummonAttributesInput>
+}
+
+export type CharacterAbilityUpdateWithoutSummonAttributesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutAbilitiesNestedInput
+  parentSummon?: Prisma.CharacterAbilityUpdateOneWithoutChildAbilitiesNestedInput
+  levels?: Prisma.CharacterAbilityLevelUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
+}
+
+export type CharacterAbilityUncheckedUpdateWithoutSummonAttributesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sheetId?: Prisma.StringFieldUpdateOperationsInput | string
+  summonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
+}
+
+export type CharacterAbilityCreateWithoutSummonAcValuesInput = {
+  id?: string
+  name: string
+  type?: string
+  order?: number
+  description?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sheet: Prisma.CharacterSheetCreateNestedOneWithoutAbilitiesInput
+  parentSummon?: Prisma.CharacterAbilityCreateNestedOneWithoutChildAbilitiesInput
+  levels?: Prisma.CharacterAbilityLevelCreateNestedManyWithoutAbilityInput
+  summonAttributes?: Prisma.SummonAttributeCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
+}
+
+export type CharacterAbilityUncheckedCreateWithoutSummonAcValuesInput = {
+  id?: string
+  sheetId: string
+  summonId?: string | null
+  name: string
+  type?: string
+  order?: number
+  description?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedCreateNestedManyWithoutAbilityInput
+  summonAttributes?: Prisma.SummonAttributeUncheckedCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
+}
+
+export type CharacterAbilityCreateOrConnectWithoutSummonAcValuesInput = {
+  where: Prisma.CharacterAbilityWhereUniqueInput
+  create: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonAcValuesInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonAcValuesInput>
+}
+
+export type CharacterAbilityUpsertWithoutSummonAcValuesInput = {
+  update: Prisma.XOR<Prisma.CharacterAbilityUpdateWithoutSummonAcValuesInput, Prisma.CharacterAbilityUncheckedUpdateWithoutSummonAcValuesInput>
+  create: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonAcValuesInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonAcValuesInput>
+  where?: Prisma.CharacterAbilityWhereInput
+}
+
+export type CharacterAbilityUpdateToOneWithWhereWithoutSummonAcValuesInput = {
+  where?: Prisma.CharacterAbilityWhereInput
+  data: Prisma.XOR<Prisma.CharacterAbilityUpdateWithoutSummonAcValuesInput, Prisma.CharacterAbilityUncheckedUpdateWithoutSummonAcValuesInput>
+}
+
+export type CharacterAbilityUpdateWithoutSummonAcValuesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutAbilitiesNestedInput
+  parentSummon?: Prisma.CharacterAbilityUpdateOneWithoutChildAbilitiesNestedInput
+  levels?: Prisma.CharacterAbilityLevelUpdateManyWithoutAbilityNestedInput
+  summonAttributes?: Prisma.SummonAttributeUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
+}
+
+export type CharacterAbilityUncheckedUpdateWithoutSummonAcValuesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sheetId?: Prisma.StringFieldUpdateOperationsInput | string
+  summonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAttributes?: Prisma.SummonAttributeUncheckedUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
+}
+
+export type CharacterAbilityCreateWithoutSummonHealthInput = {
+  id?: string
+  name: string
+  type?: string
+  order?: number
+  description?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sheet: Prisma.CharacterSheetCreateNestedOneWithoutAbilitiesInput
+  parentSummon?: Prisma.CharacterAbilityCreateNestedOneWithoutChildAbilitiesInput
+  levels?: Prisma.CharacterAbilityLevelCreateNestedManyWithoutAbilityInput
+  summonAttributes?: Prisma.SummonAttributeCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
+}
+
+export type CharacterAbilityUncheckedCreateWithoutSummonHealthInput = {
+  id?: string
+  sheetId: string
+  summonId?: string | null
+  name: string
+  type?: string
+  order?: number
+  description?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedCreateNestedManyWithoutAbilityInput
+  summonAttributes?: Prisma.SummonAttributeUncheckedCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
+}
+
+export type CharacterAbilityCreateOrConnectWithoutSummonHealthInput = {
+  where: Prisma.CharacterAbilityWhereUniqueInput
+  create: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonHealthInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonHealthInput>
+}
+
+export type CharacterAbilityUpsertWithoutSummonHealthInput = {
+  update: Prisma.XOR<Prisma.CharacterAbilityUpdateWithoutSummonHealthInput, Prisma.CharacterAbilityUncheckedUpdateWithoutSummonHealthInput>
+  create: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonHealthInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonHealthInput>
+  where?: Prisma.CharacterAbilityWhereInput
+}
+
+export type CharacterAbilityUpdateToOneWithWhereWithoutSummonHealthInput = {
+  where?: Prisma.CharacterAbilityWhereInput
+  data: Prisma.XOR<Prisma.CharacterAbilityUpdateWithoutSummonHealthInput, Prisma.CharacterAbilityUncheckedUpdateWithoutSummonHealthInput>
+}
+
+export type CharacterAbilityUpdateWithoutSummonHealthInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutAbilitiesNestedInput
+  parentSummon?: Prisma.CharacterAbilityUpdateOneWithoutChildAbilitiesNestedInput
+  levels?: Prisma.CharacterAbilityLevelUpdateManyWithoutAbilityNestedInput
+  summonAttributes?: Prisma.SummonAttributeUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
+}
+
+export type CharacterAbilityUncheckedUpdateWithoutSummonHealthInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sheetId?: Prisma.StringFieldUpdateOperationsInput | string
+  summonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAttributes?: Prisma.SummonAttributeUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
 }
 
 export type CharacterAbilityCreateManySheetInput = {
   id?: string
+  summonId?: string | null
   name: string
+  type?: string
   order?: number
+  description?: string | null
+  notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -570,25 +1378,107 @@ export type CharacterAbilityCreateManySheetInput = {
 export type CharacterAbilityUpdateWithoutSheetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  parentSummon?: Prisma.CharacterAbilityUpdateOneWithoutChildAbilitiesNestedInput
   levels?: Prisma.CharacterAbilityLevelUpdateManyWithoutAbilityNestedInput
+  summonAttributes?: Prisma.SummonAttributeUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
 }
 
 export type CharacterAbilityUncheckedUpdateWithoutSheetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  summonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   levels?: Prisma.CharacterAbilityLevelUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAttributes?: Prisma.SummonAttributeUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
 }
 
 export type CharacterAbilityUncheckedUpdateManyWithoutSheetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  summonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type CharacterAbilityCreateManyParentSummonInput = {
+  id?: string
+  sheetId: string
+  name: string
+  type?: string
+  order?: number
+  description?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type CharacterAbilityUpdateWithoutParentSummonInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutAbilitiesNestedInput
+  levels?: Prisma.CharacterAbilityLevelUpdateManyWithoutAbilityNestedInput
+  summonAttributes?: Prisma.SummonAttributeUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
+}
+
+export type CharacterAbilityUncheckedUpdateWithoutParentSummonInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sheetId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAttributes?: Prisma.SummonAttributeUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
+}
+
+export type CharacterAbilityUncheckedUpdateManyWithoutParentSummonInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sheetId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -600,10 +1490,18 @@ export type CharacterAbilityUncheckedUpdateManyWithoutSheetInput = {
 
 export type CharacterAbilityCountOutputType = {
   levels: number
+  summonAttributes: number
+  summonAcValues: number
+  summonSkills: number
+  childAbilities: number
 }
 
 export type CharacterAbilityCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   levels?: boolean | CharacterAbilityCountOutputTypeCountLevelsArgs
+  summonAttributes?: boolean | CharacterAbilityCountOutputTypeCountSummonAttributesArgs
+  summonAcValues?: boolean | CharacterAbilityCountOutputTypeCountSummonAcValuesArgs
+  summonSkills?: boolean | CharacterAbilityCountOutputTypeCountSummonSkillsArgs
+  childAbilities?: boolean | CharacterAbilityCountOutputTypeCountChildAbilitiesArgs
 }
 
 /**
@@ -623,72 +1521,142 @@ export type CharacterAbilityCountOutputTypeCountLevelsArgs<ExtArgs extends runti
   where?: Prisma.CharacterAbilityLevelWhereInput
 }
 
+/**
+ * CharacterAbilityCountOutputType without action
+ */
+export type CharacterAbilityCountOutputTypeCountSummonAttributesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SummonAttributeWhereInput
+}
+
+/**
+ * CharacterAbilityCountOutputType without action
+ */
+export type CharacterAbilityCountOutputTypeCountSummonAcValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SummonArmorClassValueWhereInput
+}
+
+/**
+ * CharacterAbilityCountOutputType without action
+ */
+export type CharacterAbilityCountOutputTypeCountSummonSkillsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SummonSkillWhereInput
+}
+
+/**
+ * CharacterAbilityCountOutputType without action
+ */
+export type CharacterAbilityCountOutputTypeCountChildAbilitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CharacterAbilityWhereInput
+}
+
 
 export type CharacterAbilitySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   sheetId?: boolean
+  summonId?: boolean
   name?: boolean
+  type?: boolean
   order?: boolean
+  description?: boolean
+  notes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
+  parentSummon?: boolean | Prisma.CharacterAbility$parentSummonArgs<ExtArgs>
   levels?: boolean | Prisma.CharacterAbility$levelsArgs<ExtArgs>
+  summonAttributes?: boolean | Prisma.CharacterAbility$summonAttributesArgs<ExtArgs>
+  summonAcValues?: boolean | Prisma.CharacterAbility$summonAcValuesArgs<ExtArgs>
+  summonHealth?: boolean | Prisma.CharacterAbility$summonHealthArgs<ExtArgs>
+  summonSkills?: boolean | Prisma.CharacterAbility$summonSkillsArgs<ExtArgs>
+  childAbilities?: boolean | Prisma.CharacterAbility$childAbilitiesArgs<ExtArgs>
   _count?: boolean | Prisma.CharacterAbilityCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["characterAbility"]>
 
 export type CharacterAbilitySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   sheetId?: boolean
+  summonId?: boolean
   name?: boolean
+  type?: boolean
   order?: boolean
+  description?: boolean
+  notes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
+  parentSummon?: boolean | Prisma.CharacterAbility$parentSummonArgs<ExtArgs>
 }, ExtArgs["result"]["characterAbility"]>
 
 export type CharacterAbilitySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   sheetId?: boolean
+  summonId?: boolean
   name?: boolean
+  type?: boolean
   order?: boolean
+  description?: boolean
+  notes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
+  parentSummon?: boolean | Prisma.CharacterAbility$parentSummonArgs<ExtArgs>
 }, ExtArgs["result"]["characterAbility"]>
 
 export type CharacterAbilitySelectScalar = {
   id?: boolean
   sheetId?: boolean
+  summonId?: boolean
   name?: boolean
+  type?: boolean
   order?: boolean
+  description?: boolean
+  notes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CharacterAbilityOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sheetId" | "name" | "order" | "createdAt" | "updatedAt", ExtArgs["result"]["characterAbility"]>
+export type CharacterAbilityOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sheetId" | "summonId" | "name" | "type" | "order" | "description" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["characterAbility"]>
 export type CharacterAbilityInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
+  parentSummon?: boolean | Prisma.CharacterAbility$parentSummonArgs<ExtArgs>
   levels?: boolean | Prisma.CharacterAbility$levelsArgs<ExtArgs>
+  summonAttributes?: boolean | Prisma.CharacterAbility$summonAttributesArgs<ExtArgs>
+  summonAcValues?: boolean | Prisma.CharacterAbility$summonAcValuesArgs<ExtArgs>
+  summonHealth?: boolean | Prisma.CharacterAbility$summonHealthArgs<ExtArgs>
+  summonSkills?: boolean | Prisma.CharacterAbility$summonSkillsArgs<ExtArgs>
+  childAbilities?: boolean | Prisma.CharacterAbility$childAbilitiesArgs<ExtArgs>
   _count?: boolean | Prisma.CharacterAbilityCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CharacterAbilityIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
+  parentSummon?: boolean | Prisma.CharacterAbility$parentSummonArgs<ExtArgs>
 }
 export type CharacterAbilityIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
+  parentSummon?: boolean | Prisma.CharacterAbility$parentSummonArgs<ExtArgs>
 }
 
 export type $CharacterAbilityPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "CharacterAbility"
   objects: {
     sheet: Prisma.$CharacterSheetPayload<ExtArgs>
+    parentSummon: Prisma.$CharacterAbilityPayload<ExtArgs> | null
     levels: Prisma.$CharacterAbilityLevelPayload<ExtArgs>[]
+    summonAttributes: Prisma.$SummonAttributePayload<ExtArgs>[]
+    summonAcValues: Prisma.$SummonArmorClassValuePayload<ExtArgs>[]
+    summonHealth: Prisma.$SummonHealthPayload<ExtArgs> | null
+    summonSkills: Prisma.$SummonSkillPayload<ExtArgs>[]
+    childAbilities: Prisma.$CharacterAbilityPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     sheetId: string
+    summonId: string | null
     name: string
+    type: string
     order: number
+    description: string | null
+    notes: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["characterAbility"]>
@@ -1086,7 +2054,13 @@ readonly fields: CharacterAbilityFieldRefs;
 export interface Prisma__CharacterAbilityClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   sheet<T extends Prisma.CharacterSheetDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheetDefaultArgs<ExtArgs>>): Prisma.Prisma__CharacterSheetClient<runtime.Types.Result.GetResult<Prisma.$CharacterSheetPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  parentSummon<T extends Prisma.CharacterAbility$parentSummonArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterAbility$parentSummonArgs<ExtArgs>>): Prisma.Prisma__CharacterAbilityClient<runtime.Types.Result.GetResult<Prisma.$CharacterAbilityPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   levels<T extends Prisma.CharacterAbility$levelsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterAbility$levelsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterAbilityLevelPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  summonAttributes<T extends Prisma.CharacterAbility$summonAttributesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterAbility$summonAttributesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummonAttributePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  summonAcValues<T extends Prisma.CharacterAbility$summonAcValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterAbility$summonAcValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummonArmorClassValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  summonHealth<T extends Prisma.CharacterAbility$summonHealthArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterAbility$summonHealthArgs<ExtArgs>>): Prisma.Prisma__SummonHealthClient<runtime.Types.Result.GetResult<Prisma.$SummonHealthPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  summonSkills<T extends Prisma.CharacterAbility$summonSkillsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterAbility$summonSkillsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummonSkillPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  childAbilities<T extends Prisma.CharacterAbility$childAbilitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterAbility$childAbilitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterAbilityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1118,8 +2092,12 @@ export interface Prisma__CharacterAbilityClient<T, Null = never, ExtArgs extends
 export interface CharacterAbilityFieldRefs {
   readonly id: Prisma.FieldRef<"CharacterAbility", 'String'>
   readonly sheetId: Prisma.FieldRef<"CharacterAbility", 'String'>
+  readonly summonId: Prisma.FieldRef<"CharacterAbility", 'String'>
   readonly name: Prisma.FieldRef<"CharacterAbility", 'String'>
+  readonly type: Prisma.FieldRef<"CharacterAbility", 'String'>
   readonly order: Prisma.FieldRef<"CharacterAbility", 'Int'>
+  readonly description: Prisma.FieldRef<"CharacterAbility", 'String'>
+  readonly notes: Prisma.FieldRef<"CharacterAbility", 'String'>
   readonly createdAt: Prisma.FieldRef<"CharacterAbility", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"CharacterAbility", 'DateTime'>
 }
@@ -1523,6 +2501,25 @@ export type CharacterAbilityDeleteManyArgs<ExtArgs extends runtime.Types.Extensi
 }
 
 /**
+ * CharacterAbility.parentSummon
+ */
+export type CharacterAbility$parentSummonArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CharacterAbility
+   */
+  select?: Prisma.CharacterAbilitySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CharacterAbility
+   */
+  omit?: Prisma.CharacterAbilityOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CharacterAbilityInclude<ExtArgs> | null
+  where?: Prisma.CharacterAbilityWhereInput
+}
+
+/**
  * CharacterAbility.levels
  */
 export type CharacterAbility$levelsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1544,6 +2541,121 @@ export type CharacterAbility$levelsArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   distinct?: Prisma.CharacterAbilityLevelScalarFieldEnum | Prisma.CharacterAbilityLevelScalarFieldEnum[]
+}
+
+/**
+ * CharacterAbility.summonAttributes
+ */
+export type CharacterAbility$summonAttributesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SummonAttribute
+   */
+  select?: Prisma.SummonAttributeSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SummonAttribute
+   */
+  omit?: Prisma.SummonAttributeOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SummonAttributeInclude<ExtArgs> | null
+  where?: Prisma.SummonAttributeWhereInput
+  orderBy?: Prisma.SummonAttributeOrderByWithRelationInput | Prisma.SummonAttributeOrderByWithRelationInput[]
+  cursor?: Prisma.SummonAttributeWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SummonAttributeScalarFieldEnum | Prisma.SummonAttributeScalarFieldEnum[]
+}
+
+/**
+ * CharacterAbility.summonAcValues
+ */
+export type CharacterAbility$summonAcValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SummonArmorClassValue
+   */
+  select?: Prisma.SummonArmorClassValueSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SummonArmorClassValue
+   */
+  omit?: Prisma.SummonArmorClassValueOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SummonArmorClassValueInclude<ExtArgs> | null
+  where?: Prisma.SummonArmorClassValueWhereInput
+  orderBy?: Prisma.SummonArmorClassValueOrderByWithRelationInput | Prisma.SummonArmorClassValueOrderByWithRelationInput[]
+  cursor?: Prisma.SummonArmorClassValueWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SummonArmorClassValueScalarFieldEnum | Prisma.SummonArmorClassValueScalarFieldEnum[]
+}
+
+/**
+ * CharacterAbility.summonHealth
+ */
+export type CharacterAbility$summonHealthArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SummonHealth
+   */
+  select?: Prisma.SummonHealthSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SummonHealth
+   */
+  omit?: Prisma.SummonHealthOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SummonHealthInclude<ExtArgs> | null
+  where?: Prisma.SummonHealthWhereInput
+}
+
+/**
+ * CharacterAbility.summonSkills
+ */
+export type CharacterAbility$summonSkillsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SummonSkill
+   */
+  select?: Prisma.SummonSkillSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SummonSkill
+   */
+  omit?: Prisma.SummonSkillOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SummonSkillInclude<ExtArgs> | null
+  where?: Prisma.SummonSkillWhereInput
+  orderBy?: Prisma.SummonSkillOrderByWithRelationInput | Prisma.SummonSkillOrderByWithRelationInput[]
+  cursor?: Prisma.SummonSkillWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SummonSkillScalarFieldEnum | Prisma.SummonSkillScalarFieldEnum[]
+}
+
+/**
+ * CharacterAbility.childAbilities
+ */
+export type CharacterAbility$childAbilitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CharacterAbility
+   */
+  select?: Prisma.CharacterAbilitySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CharacterAbility
+   */
+  omit?: Prisma.CharacterAbilityOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CharacterAbilityInclude<ExtArgs> | null
+  where?: Prisma.CharacterAbilityWhereInput
+  orderBy?: Prisma.CharacterAbilityOrderByWithRelationInput | Prisma.CharacterAbilityOrderByWithRelationInput[]
+  cursor?: Prisma.CharacterAbilityWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CharacterAbilityScalarFieldEnum | Prisma.CharacterAbilityScalarFieldEnum[]
 }
 
 /**

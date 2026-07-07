@@ -151,6 +151,7 @@ model SkillModifierProfile {
   targetSkillIds     String[]
   options            ProfileOption[]
   skillProfileValues CharacterSheetSkillProfileValue[]
+  summonSkillProfileValues SummonSkillProfileValue[]
   createdAt          DateTime                          @default(now())
   updatedAt          DateTime                          @updatedAt
 
@@ -166,6 +167,7 @@ model ProfileOption {
   value      Float                             @default(0)
   order      Int                               @default(0)
   selections CharacterSheetSkillProfileValue[]
+  summonSelections SummonSkillProfileValue[]
   createdAt  DateTime                          @default(now())
   updatedAt  DateTime                          @updatedAt
 
@@ -204,6 +206,7 @@ model TemplateAttribute {
   skills            TemplateSkill[]                   @relation("SkillDefaultAttribute")
   skillsAllowed     TemplateSkill[]                   @relation("SkillAllowedAttributes")
   skillSelections   CharacterSheetSkillValue[]
+  summonSkillSelections SummonSkill[]
   createdAt         DateTime                          @default(now())
   updatedAt         DateTime                          @updatedAt
 
@@ -226,6 +229,7 @@ model TemplateSkill {
   order              Int                               @default(0)
   skillValues        CharacterSheetSkillValue[]
   skillProfileValues CharacterSheetSkillProfileValue[]
+  summonSkills       SummonSkill[]
   createdAt          DateTime                          @default(now())
   updatedAt          DateTime                          @updatedAt
 
@@ -399,6 +403,7 @@ model ArmorClassField {
   description      String?
   order            Int                             @default(0)
   sheetValues      CharacterSheetArmorClassValue[]
+  summonAcValues   SummonArmorClassValue[]
   createdAt        DateTime                        @default(now())
   updatedAt        DateTime                        @updatedAt
 
@@ -427,6 +432,8 @@ model CharacterAbility {
   id              String                             @id @default(cuid())
   sheetId         String
   sheet           CharacterSheet                     @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  summonId        String?
+  parentSummon    CharacterAbility?                  @relation("SummonAbilities", fields: [summonId], references: [id], onDelete: Cascade)
   name            String
   type            String                             @default("ABILITY") // "ABILITY" | "SUMMON"
   order           Int                                @default(0)
@@ -436,10 +443,13 @@ model CharacterAbility {
   summonAttributes SummonAttribute[]
   summonAcValues   SummonArmorClassValue[]
   summonHealth     SummonHealth?
+  summonSkills     SummonSkill[]
+  childAbilities   CharacterAbility[]                @relation("SummonAbilities")
   createdAt       DateTime                           @default(now())
   updatedAt       DateTime                           @updatedAt
 
   @@index([sheetId])
+  @@index([summonId])
 }
 
 model CharacterAbilityLevel {
@@ -457,6 +467,42 @@ model CharacterAbilityLevel {
 
   @@unique([abilityId, level])
   @@index([abilityId])
+}
+
+// ── Summon Skills (skills selected for a specific summon) ──
+
+model SummonSkill {
+  id                  String           @id @default(cuid())
+  abilityId           String
+  ability             CharacterAbility @relation(fields: [abilityId], references: [id], onDelete: Cascade)
+  skillId             String
+  skill               TemplateSkill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  selectedAttributeId String?
+  selectedAttribute   TemplateAttribute? @relation(fields: [selectedAttributeId], references: [id], onDelete: SetNull)
+  profileValues       SummonSkillProfileValue[]
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@unique([abilityId, skillId])
+  @@index([abilityId])
+  @@index([skillId])
+}
+
+// ── Summon Skill Profile Values ──
+
+model SummonSkillProfileValue {
+  id          String               @id @default(cuid())
+  summonSkillId String
+  summonSkill   SummonSkill        @relation(fields: [summonSkillId], references: [id], onDelete: Cascade)
+  profileId  String
+  profile    SkillModifierProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  optionId   String?
+  option     ProfileOption?       @relation(fields: [optionId], references: [id], onDelete: SetNull)
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+
+  @@unique([summonSkillId, profileId])
+  @@index([summonSkillId])
 }
 
 // ── Summon Attribute Values (reuses template attributes) ──
@@ -481,6 +527,7 @@ model SummonArmorClassValue {
   abilityId String
   ability   CharacterAbility @relation(fields: [abilityId], references: [id], onDelete: Cascade)
   fieldId   String
+  field     ArmorClassField  @relation(fields: [fieldId], references: [id], onDelete: Cascade)
   value     String           @default("0")
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt

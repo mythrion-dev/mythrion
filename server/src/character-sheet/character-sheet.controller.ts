@@ -109,7 +109,7 @@ export class CharacterSheetController {
   }
 
   @Post(':id/abilities')
-  createAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: { name: string; type?: string; description?: string; notes?: string; manaCost?: number; range?: string; damage?: string; summonAttributeValues?: { attributeId: string; value: string }[]; summonHealthCurrent?: number; summonHealthMax?: number }) {
+  createAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: { name: string; type?: string; description?: string; notes?: string; manaCost?: number; range?: string; damage?: string; summonAttributeValues?: { attributeId: string; value: string }[]; summonHealthCurrent?: number; summonHealthMax?: number; summonId?: string | null }) {
     return this.sheetService.createAbility(id, req.user.sub, dto)
   }
 
@@ -121,6 +121,22 @@ export class CharacterSheetController {
   @Delete(':id/abilities/:abilityId')
   removeAbility(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('abilityId') abilityId: string) {
     return this.sheetService.removeAbility(abilityId, req.user.sub)
+  }
+
+  // ── Summon-scoped abilities ──
+
+  @Get(':id/abilities/:abilityId/summon-abilities')
+  listSummonAbilities(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string) {
+    return this.sheetService.listSummonAbilities(abilityId, req.user.sub)
+  }
+
+  @Post(':id/abilities/:abilityId/summon-abilities')
+  createSummonAbility(
+    @Req() req: AuthenticatedRequest,
+    @Param('abilityId') abilityId: string,
+    @Body() dto: { name: string; description?: string; notes?: string; manaCost?: number; range?: string; damage?: string },
+  ) {
+    return this.sheetService.createSummonAbility(abilityId, req.user.sub, dto)
   }
 
   // ── Ability Levels ──
@@ -143,6 +159,41 @@ export class CharacterSheetController {
   @Delete(':id/abilities/:abilityId/levels/:levelId')
   removeAbilityLevel(@Req() req: AuthenticatedRequest, @Param('levelId') levelId: string) {
     return this.sheetService.deleteAbilityLevel(levelId, req.user.sub)
+  }
+
+  // ── Summon Skills ──
+
+  @Post(':id/abilities/:abilityId/summon-skills')
+  addSummonSkill(
+    @Req() req: AuthenticatedRequest,
+    @Param('abilityId') abilityId: string,
+    @Body('skillId') skillId: string,
+  ) {
+    return this.sheetService.addSummonSkill(abilityId, skillId, req.user.sub)
+  }
+
+  @Delete(':id/abilities/:abilityId/summon-skills/:summonSkillId')
+  removeSummonSkill(@Req() req: AuthenticatedRequest, @Param('summonSkillId') summonSkillId: string) {
+    return this.sheetService.removeSummonSkill(summonSkillId, req.user.sub)
+  }
+
+  @Patch(':id/abilities/:abilityId/summon-skills/:summonSkillId/attribute')
+  updateSummonSkillAttribute(
+    @Req() req: AuthenticatedRequest,
+    @Param('summonSkillId') summonSkillId: string,
+    @Body('attributeId') attributeId: string | null,
+  ) {
+    return this.sheetService.updateSummonSkillAttribute(summonSkillId, attributeId, req.user.sub)
+  }
+
+  @Patch(':id/abilities/:abilityId/summon-skills/:summonSkillId/profiles/:profileId')
+  updateSummonSkillProfile(
+    @Req() req: AuthenticatedRequest,
+    @Param('summonSkillId') summonSkillId: string,
+    @Param('profileId') profileId: string,
+    @Body('optionId') optionId: string | null,
+  ) {
+    return this.sheetService.updateSummonSkillProfile(summonSkillId, profileId, optionId, req.user.sub)
   }
 
   // ── Summon Attributes ──

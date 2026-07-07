@@ -408,6 +408,11 @@ export const ModelName = {
   CharacterSheetArmorClassValue: 'CharacterSheetArmorClassValue',
   CharacterAbility: 'CharacterAbility',
   CharacterAbilityLevel: 'CharacterAbilityLevel',
+  SummonSkill: 'SummonSkill',
+  SummonSkillProfileValue: 'SummonSkillProfileValue',
+  SummonAttribute: 'SummonAttribute',
+  SummonArmorClassValue: 'SummonArmorClassValue',
+  SummonHealth: 'SummonHealth',
   CharacterInventoryItem: 'CharacterInventoryItem',
   CharacterStory: 'CharacterStory'
 } as const
@@ -425,7 +430,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateCoreResource" | "characterSheetCoreResourceValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "characterAbility" | "characterAbilityLevel" | "characterInventoryItem" | "characterStory"
+    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateCoreResource" | "characterSheetCoreResourceValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "characterAbility" | "characterAbilityLevel" | "summonSkill" | "summonSkillProfileValue" | "summonAttribute" | "summonArmorClassValue" | "summonHealth" | "characterInventoryItem" | "characterStory"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2205,6 +2210,376 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    SummonSkill: {
+      payload: Prisma.$SummonSkillPayload<ExtArgs>
+      fields: Prisma.SummonSkillFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SummonSkillFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SummonSkillFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillPayload>
+        }
+        findFirst: {
+          args: Prisma.SummonSkillFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SummonSkillFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillPayload>
+        }
+        findMany: {
+          args: Prisma.SummonSkillFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillPayload>[]
+        }
+        create: {
+          args: Prisma.SummonSkillCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillPayload>
+        }
+        createMany: {
+          args: Prisma.SummonSkillCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SummonSkillCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillPayload>[]
+        }
+        delete: {
+          args: Prisma.SummonSkillDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillPayload>
+        }
+        update: {
+          args: Prisma.SummonSkillUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillPayload>
+        }
+        deleteMany: {
+          args: Prisma.SummonSkillDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SummonSkillUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SummonSkillUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillPayload>[]
+        }
+        upsert: {
+          args: Prisma.SummonSkillUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillPayload>
+        }
+        aggregate: {
+          args: Prisma.SummonSkillAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSummonSkill>
+        }
+        groupBy: {
+          args: Prisma.SummonSkillGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SummonSkillGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SummonSkillCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SummonSkillCountAggregateOutputType> | number
+        }
+      }
+    }
+    SummonSkillProfileValue: {
+      payload: Prisma.$SummonSkillProfileValuePayload<ExtArgs>
+      fields: Prisma.SummonSkillProfileValueFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SummonSkillProfileValueFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillProfileValuePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SummonSkillProfileValueFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillProfileValuePayload>
+        }
+        findFirst: {
+          args: Prisma.SummonSkillProfileValueFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillProfileValuePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SummonSkillProfileValueFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillProfileValuePayload>
+        }
+        findMany: {
+          args: Prisma.SummonSkillProfileValueFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillProfileValuePayload>[]
+        }
+        create: {
+          args: Prisma.SummonSkillProfileValueCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillProfileValuePayload>
+        }
+        createMany: {
+          args: Prisma.SummonSkillProfileValueCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SummonSkillProfileValueCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillProfileValuePayload>[]
+        }
+        delete: {
+          args: Prisma.SummonSkillProfileValueDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillProfileValuePayload>
+        }
+        update: {
+          args: Prisma.SummonSkillProfileValueUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillProfileValuePayload>
+        }
+        deleteMany: {
+          args: Prisma.SummonSkillProfileValueDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SummonSkillProfileValueUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SummonSkillProfileValueUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillProfileValuePayload>[]
+        }
+        upsert: {
+          args: Prisma.SummonSkillProfileValueUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonSkillProfileValuePayload>
+        }
+        aggregate: {
+          args: Prisma.SummonSkillProfileValueAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSummonSkillProfileValue>
+        }
+        groupBy: {
+          args: Prisma.SummonSkillProfileValueGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SummonSkillProfileValueGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SummonSkillProfileValueCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SummonSkillProfileValueCountAggregateOutputType> | number
+        }
+      }
+    }
+    SummonAttribute: {
+      payload: Prisma.$SummonAttributePayload<ExtArgs>
+      fields: Prisma.SummonAttributeFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SummonAttributeFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonAttributePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SummonAttributeFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonAttributePayload>
+        }
+        findFirst: {
+          args: Prisma.SummonAttributeFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonAttributePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SummonAttributeFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonAttributePayload>
+        }
+        findMany: {
+          args: Prisma.SummonAttributeFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonAttributePayload>[]
+        }
+        create: {
+          args: Prisma.SummonAttributeCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonAttributePayload>
+        }
+        createMany: {
+          args: Prisma.SummonAttributeCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SummonAttributeCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonAttributePayload>[]
+        }
+        delete: {
+          args: Prisma.SummonAttributeDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonAttributePayload>
+        }
+        update: {
+          args: Prisma.SummonAttributeUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonAttributePayload>
+        }
+        deleteMany: {
+          args: Prisma.SummonAttributeDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SummonAttributeUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SummonAttributeUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonAttributePayload>[]
+        }
+        upsert: {
+          args: Prisma.SummonAttributeUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonAttributePayload>
+        }
+        aggregate: {
+          args: Prisma.SummonAttributeAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSummonAttribute>
+        }
+        groupBy: {
+          args: Prisma.SummonAttributeGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SummonAttributeGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SummonAttributeCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SummonAttributeCountAggregateOutputType> | number
+        }
+      }
+    }
+    SummonArmorClassValue: {
+      payload: Prisma.$SummonArmorClassValuePayload<ExtArgs>
+      fields: Prisma.SummonArmorClassValueFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SummonArmorClassValueFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonArmorClassValuePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SummonArmorClassValueFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonArmorClassValuePayload>
+        }
+        findFirst: {
+          args: Prisma.SummonArmorClassValueFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonArmorClassValuePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SummonArmorClassValueFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonArmorClassValuePayload>
+        }
+        findMany: {
+          args: Prisma.SummonArmorClassValueFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonArmorClassValuePayload>[]
+        }
+        create: {
+          args: Prisma.SummonArmorClassValueCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonArmorClassValuePayload>
+        }
+        createMany: {
+          args: Prisma.SummonArmorClassValueCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SummonArmorClassValueCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonArmorClassValuePayload>[]
+        }
+        delete: {
+          args: Prisma.SummonArmorClassValueDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonArmorClassValuePayload>
+        }
+        update: {
+          args: Prisma.SummonArmorClassValueUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonArmorClassValuePayload>
+        }
+        deleteMany: {
+          args: Prisma.SummonArmorClassValueDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SummonArmorClassValueUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SummonArmorClassValueUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonArmorClassValuePayload>[]
+        }
+        upsert: {
+          args: Prisma.SummonArmorClassValueUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonArmorClassValuePayload>
+        }
+        aggregate: {
+          args: Prisma.SummonArmorClassValueAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSummonArmorClassValue>
+        }
+        groupBy: {
+          args: Prisma.SummonArmorClassValueGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SummonArmorClassValueGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SummonArmorClassValueCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SummonArmorClassValueCountAggregateOutputType> | number
+        }
+      }
+    }
+    SummonHealth: {
+      payload: Prisma.$SummonHealthPayload<ExtArgs>
+      fields: Prisma.SummonHealthFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SummonHealthFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonHealthPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SummonHealthFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonHealthPayload>
+        }
+        findFirst: {
+          args: Prisma.SummonHealthFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonHealthPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SummonHealthFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonHealthPayload>
+        }
+        findMany: {
+          args: Prisma.SummonHealthFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonHealthPayload>[]
+        }
+        create: {
+          args: Prisma.SummonHealthCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonHealthPayload>
+        }
+        createMany: {
+          args: Prisma.SummonHealthCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SummonHealthCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonHealthPayload>[]
+        }
+        delete: {
+          args: Prisma.SummonHealthDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonHealthPayload>
+        }
+        update: {
+          args: Prisma.SummonHealthUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonHealthPayload>
+        }
+        deleteMany: {
+          args: Prisma.SummonHealthDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SummonHealthUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SummonHealthUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonHealthPayload>[]
+        }
+        upsert: {
+          args: Prisma.SummonHealthUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SummonHealthPayload>
+        }
+        aggregate: {
+          args: Prisma.SummonHealthAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSummonHealth>
+        }
+        groupBy: {
+          args: Prisma.SummonHealthGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SummonHealthGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SummonHealthCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SummonHealthCountAggregateOutputType> | number
+        }
+      }
+    }
     CharacterInventoryItem: {
       payload: Prisma.$CharacterInventoryItemPayload<ExtArgs>
       fields: Prisma.CharacterInventoryItemFieldRefs
@@ -2700,8 +3075,12 @@ export type CharacterSheetArmorClassValueScalarFieldEnum = (typeof CharacterShee
 export const CharacterAbilityScalarFieldEnum = {
   id: 'id',
   sheetId: 'sheetId',
+  summonId: 'summonId',
   name: 'name',
+  type: 'type',
   order: 'order',
+  description: 'description',
+  notes: 'notes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -2715,7 +3094,6 @@ export const CharacterAbilityLevelScalarFieldEnum = {
   level: 'level',
   manaCost: 'manaCost',
   range: 'range',
-  cooldown: 'cooldown',
   description: 'description',
   notes: 'notes',
   damage: 'damage',
@@ -2724,6 +3102,67 @@ export const CharacterAbilityLevelScalarFieldEnum = {
 } as const
 
 export type CharacterAbilityLevelScalarFieldEnum = (typeof CharacterAbilityLevelScalarFieldEnum)[keyof typeof CharacterAbilityLevelScalarFieldEnum]
+
+
+export const SummonSkillScalarFieldEnum = {
+  id: 'id',
+  abilityId: 'abilityId',
+  skillId: 'skillId',
+  selectedAttributeId: 'selectedAttributeId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SummonSkillScalarFieldEnum = (typeof SummonSkillScalarFieldEnum)[keyof typeof SummonSkillScalarFieldEnum]
+
+
+export const SummonSkillProfileValueScalarFieldEnum = {
+  id: 'id',
+  summonSkillId: 'summonSkillId',
+  profileId: 'profileId',
+  optionId: 'optionId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SummonSkillProfileValueScalarFieldEnum = (typeof SummonSkillProfileValueScalarFieldEnum)[keyof typeof SummonSkillProfileValueScalarFieldEnum]
+
+
+export const SummonAttributeScalarFieldEnum = {
+  id: 'id',
+  abilityId: 'abilityId',
+  attributeId: 'attributeId',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SummonAttributeScalarFieldEnum = (typeof SummonAttributeScalarFieldEnum)[keyof typeof SummonAttributeScalarFieldEnum]
+
+
+export const SummonArmorClassValueScalarFieldEnum = {
+  id: 'id',
+  abilityId: 'abilityId',
+  fieldId: 'fieldId',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SummonArmorClassValueScalarFieldEnum = (typeof SummonArmorClassValueScalarFieldEnum)[keyof typeof SummonArmorClassValueScalarFieldEnum]
+
+
+export const SummonHealthScalarFieldEnum = {
+  id: 'id',
+  abilityId: 'abilityId',
+  current: 'current',
+  maximum: 'maximum',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SummonHealthScalarFieldEnum = (typeof SummonHealthScalarFieldEnum)[keyof typeof SummonHealthScalarFieldEnum]
 
 
 export const CharacterInventoryItemScalarFieldEnum = {
@@ -3010,6 +3449,11 @@ export type GlobalOmitConfig = {
   characterSheetArmorClassValue?: Prisma.CharacterSheetArmorClassValueOmit
   characterAbility?: Prisma.CharacterAbilityOmit
   characterAbilityLevel?: Prisma.CharacterAbilityLevelOmit
+  summonSkill?: Prisma.SummonSkillOmit
+  summonSkillProfileValue?: Prisma.SummonSkillProfileValueOmit
+  summonAttribute?: Prisma.SummonAttributeOmit
+  summonArmorClassValue?: Prisma.SummonArmorClassValueOmit
+  summonHealth?: Prisma.SummonHealthOmit
   characterInventoryItem?: Prisma.CharacterInventoryItemOmit
   characterStory?: Prisma.CharacterStoryOmit
 }

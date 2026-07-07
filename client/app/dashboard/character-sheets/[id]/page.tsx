@@ -12,7 +12,7 @@ interface SheetAttribute { id: string; attributeId: string; value: string; attri
 interface FieldValue { id: string; templateFieldId: string; value: string; templateField: { id: string; key: string; label: string } }
 interface SkillValue { id: string; skillId: string; value: string; selectedAttributeId: string | null; selectedAttribute: { id: string; key: string; name: string } | null; skill: { id: string; name: string; description: string | null; attributeId: string | null; allowedAttributeIds: string[]; defaultAttributeId: string | null; attribute: { id: string; key: string; name: string } | null; defaultAttribute: { id: string; key: string; name: string } | null } }
 interface ProfileOption { id: string; label: string; value: number }
-interface SkillModifierProfile { id: string; name: string; options: ProfileOption[] }
+interface SkillModifierProfile { id: string; name: string; options: ProfileOption[]; targetMode?: string; targetSkillIds?: string[] }
 interface SkillProfileValue { id: string; skillId: string; profileId: string; optionId: string | null; profile: { id: string; name: string }; option: { id: string; label: string; value: number } | null }
 
 interface CoreResourceDef {
@@ -41,15 +41,29 @@ interface AbilityLevel { id: string; abilityId: string; level: number; manaCost:
 interface SummonAttribute { id: string; abilityId: string; attributeId: string; value: string }
 interface SummonAcValue { id: string; abilityId: string; fieldId: string; value: string }
 interface SummonHealth { id: string; abilityId: string; current: number | null; maximum: number | null; notes: string | null }
+
+interface SummonSkillData {
+  id: string; abilityId: string; skillId: string; selectedAttributeId: string | null
+  selectedAttribute: { id: string; key: string; name: string } | null
+  skill: { id: string; name: string; description: string | null; attributeId: string | null; allowedAttributeIds: string[]; defaultAttributeId: string | null; attribute: { id: string; key: string; name: string } | null; defaultAttribute: { id: string; key: string; name: string } | null }
+  profileValues: SummonSkillProfileValueData[]
+}
+interface SummonSkillProfileValueData { id: string; summonSkillId: string; profileId: string; optionId: string | null; profile: { id: string; name: string; targetMode?: string; targetSkillIds?: string[] }; option: { id: string; label: string; value: number } | null }
+
 interface Ability {
   id: string; name: string; type: string; description: string | null; notes: string | null; order: number
+  summonId?: string | null
   levels: AbilityLevel[]
   summonAttributes: SummonAttribute[]
   summonAcValues: SummonAcValue[]
   summonHealth: SummonHealth | null
+  summonSkills?: SummonSkillData[]
+  childAbilities?: Ability[]
 }
 interface InventoryItem { id: string; name: string; weight: number | null; cost: string | null; description: string | null; order: number }
 interface Story { id: string; appearance: string | null; backstory: string | null; personality: string | null; goals: string | null; notes: string | null }
+
+interface TemplateSkill { id: string; name: string; description: string | null; attributeId: string | null; allowedAttributeIds: string[]; defaultAttributeId: string | null; attribute: { id: string; key: string; name: string } | null; defaultAttribute: { id: string; key: string; name: string } | null }
 
 interface CharacterSheet {
   id: string; characterName: string; playerName: string | null; level: number | null
@@ -60,6 +74,7 @@ interface CharacterSheet {
     attributeModifierFormula?: string | null
     skillFormula?: string | null
     attributes: { id: string; key: string; name: string }[]
+    templateSkills?: TemplateSkill[]
     skillModifierProfiles: SkillModifierProfile[]
     coreResources: CoreResourceDef[]
     armorClass: ArmorClassDef | null
@@ -73,6 +88,7 @@ interface CharacterSheet {
 }
 
 type Tab = 'character' | 'abilities' | 'inventory' | 'story'
+type SummonTab = 'stats' | 'skills' | 'abilities'
 
 function CoreResourceCard({ resource, value, isOwner, onSave, onModify }: {
   resource: CoreResourceDef
@@ -158,10 +174,18 @@ export default function CharacterSheetDetailPage() {
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
   const [expandedAbilities, setExpandedAbilities] = useState<Record<string, boolean>>({})
 
+  // Summon internal tab state
+  const [summonTabs, setSummonTabs] = useState<Record<string, SummonTab>>({})
+
   // Summon AC results per ability
   const [summonAcResults, setSummonAcResults] = useState<Record<string, number | null>>({})
   // Summon modifier results per ability (computed from summon attributes)
   const [summonModifierResults, setSummonModifierResults] = useState<Record<string, Record<string, number | null>>>({})
+
+  // Summon skill results
+  const [summonSkillResults, setSummonSkillResults] = useState<Record<string, Record<string, number | null>>>({})
+  // Summon skill profile selections per summon -> summonSkillId -> profile selection
+  const [summonSkillProfileSelections, setSummonSkillProfileSelections] = useState<Record<string, Record<string, string | null>>>({})
 
   const updateSheet = useCallback(async (data: Record<string, unknown>): Promise<CharacterSheet> => {
     const current = sheet!
@@ -209,6 +233,132 @@ export default function CharacterSheetDetailPage() {
       }
     }
     return total
+  }, [])
+
+  const computeSkillFormula = useCallback(async (
+    sd: CharacterSheet,
+    attributeValues: Record<string, string>,
+    summonModifierResultsLocal: Record<string, number | null>,
+    fieldValuesLocal: { key: string; value: string }[],
+    skillFormulaRaw: string | undefined | null,
+    level: number | null | undefined,
+  ): Promise<Record<string, number>> => {
+    const results: Record<string, number> = {}
+    if (!skillFormulaRaw?.trim()) return results
+
+    // Compute modifier vars
+    const modifierVars: Record<string, number> = {}
+    const globalFormula = sd.template.attributeModifierFormula
+    if (globalFormula?.trim()) {
+      for (const attr of sd.template.attributes) {
+        try {
+          const modVars: Record<string, number> = {}
+          sd.template.attributes.forEach(a => {
+            const v = parseFloat(attributeValues[a.id] ?? '0')
+            modVars[a.key] = isNaN(v) ? 0 : v
+          })
+          modVars['value'] = parseFloat(attributeValues[attr.id] ?? '0') || 0
+          const mr = await api.post<{ result: number }>('/formula/evaluate', { formula: globalFormula, variables: modVars })
+          modifierVars[`${attr.key}_mod`] = mr.result
+        } catch { modifierVars[`${attr.key}_mod`] = 0 }
+      }
+    } else {
+      // Use provided summon modifier results directly
+      for (const attr of sd.template.attributes) {
+        modifierVars[`${attr.key}_mod`] = summonModifierResultsLocal[attr.id] ?? 0
+      }
+    }
+
+    let skillConfig: { useAttributeModifier?: boolean; customFieldKeys?: string[] } | null = null
+    try {
+      const parsed = JSON.parse(skillFormulaRaw)
+      if (parsed && typeof parsed === 'object' && typeof parsed.useAttributeModifier === 'boolean') {
+        skillConfig = parsed
+      }
+    } catch { /* not JSON */ }
+
+    const skillFormulaFn = async (variables: Record<string, number>) => {
+      const res = await api.post<{ result: number }>('/formula/evaluate', { formula: skillFormulaRaw!, variables })
+      return res.result
+    }
+
+    return { modifierVars, skillConfig: skillConfig as any, evaluateFn: skillFormulaFn } as any
+  }, [])
+
+  const computeSummonSkills = useCallback(async (ability: Ability, sd: CharacterSheet) => {
+    const results: Record<string, number | null> = {}
+    const globalFormula = sd.template.attributeModifierFormula
+    const skillFormulaRaw = sd.template.skillFormula
+
+    if (!skillFormulaRaw?.trim() || !ability.summonSkills?.length) {
+      return results
+    }
+
+    // Compute modifier vars from summon attributes
+    const modifierVars: Record<string, number> = {}
+    if (globalFormula?.trim()) {
+      for (const attr of sd.template.attributes) {
+        try {
+          const modVars: Record<string, number> = {}
+          sd.template.attributes.forEach(a => {
+            const sa = ability.summonAttributes.find(s => s.attributeId === a.id)
+            const v = parseFloat(sa?.value ?? '0')
+            modVars[a.key] = isNaN(v) ? 0 : v
+          })
+          modVars['value'] = parseFloat(ability.summonAttributes.find(s => s.attributeId === attr.id)?.value ?? '0') || 0
+          const mr = await api.post<{ result: number }>('/formula/evaluate', { formula: globalFormula, variables: modVars })
+          modifierVars[`${attr.key}_mod`] = mr.result
+        } catch { modifierVars[`${attr.key}_mod`] = 0 }
+      }
+    }
+
+    let skillConfig: { useAttributeModifier?: boolean; customFieldKeys?: string[] } | null = null
+    try {
+      const parsed = JSON.parse(skillFormulaRaw)
+      if (parsed && typeof parsed === 'object' && typeof parsed.useAttributeModifier === 'boolean') {
+        skillConfig = parsed
+      }
+    } catch { /* not JSON */ }
+
+    for (const ss of ability.summonSkills) {
+      try {
+        let finalResult = 0
+        if (skillConfig) {
+          if (skillConfig.useAttributeModifier) {
+            const selectedAttr = ss.selectedAttribute || ss.skill.defaultAttribute || ss.skill.attribute
+            if (selectedAttr) finalResult += modifierVars[`${selectedAttr.key}_mod`] ?? 0
+          }
+          const customKeys = skillConfig.customFieldKeys || []
+          for (const key of customKeys) {
+            const fv = sd.fieldValues.find(f => f.templateField.key === key)
+            if (fv) { const v = parseFloat(fv.value); if (!isNaN(v)) finalResult += v }
+          }
+        } else {
+          const selectedAttr = ss.selectedAttribute || ss.skill.defaultAttribute || ss.skill.attribute
+          const skillAttrValue = selectedAttr ? parseFloat(ability.summonAttributes.find(sa => sa.attributeId === selectedAttr.id)?.value ?? '0') : 0
+          const variables: Record<string, number> = { ...modifierVars }
+          variables['value'] = isNaN(skillAttrValue) ? 0 : skillAttrValue
+          if (selectedAttr) variables['value_mod'] = modifierVars[`${selectedAttr.key}_mod`] ?? 0
+          sd.template.attributes.forEach(a => {
+            const sa = ability.summonAttributes.find(s => s.attributeId === a.id)
+            const v = parseFloat(sa?.value ?? '0')
+            variables[a.key] = isNaN(v) ? 0 : v
+          })
+          sd.fieldValues.forEach(fv => { const v = parseFloat(fv.value); variables[fv.templateField.key] = isNaN(v) ? 0 : v })
+          variables['level'] = sd.level ?? 1
+          const res = await api.post<{ result: number }>('/formula/evaluate', { formula: skillFormulaRaw, variables })
+          finalResult = res.result
+        }
+
+        // Add profile values
+        for (const spv of ss.profileValues ?? []) {
+          if (spv.option) finalResult += spv.option.value
+        }
+
+        results[ss.id] = finalResult
+      } catch { results[ss.id] = null }
+    }
+    return results
   }, [])
 
   const computeAC = useCallback((sd: CharacterSheet, mods: Record<string, number | null>) => {
@@ -328,21 +478,31 @@ export default function CharacterSheetDetailPage() {
       if (d.abilities && d.abilities.length > 0) {
         setExpandedAbilities({ [d.abilities[0].id]: true })
       }
+      // Initialize summon tabs
+      const st: Record<string, SummonTab> = {}
+      d.abilities.forEach(a => { if (a.type === 'SUMMON') { st[a.id] = 'stats' } })
+      setSummonTabs(st)
+
       const mods = await computeModifiers(d); computeSkills(d, selMap, others); computeAC(d, mods)
-      // Compute summon ACs
+      // Compute summon ACs, skills
       const summonAc: Record<string, number | null> = {}
       const summonMods: Record<string, Record<string, number | null>> = {}
+      const summonSkills: Record<string, Record<string, number | null>> = {}
       for (const ability of d.abilities || []) {
         if (ability.type === 'SUMMON') {
           const sm = await computeSummonModifiers(ability, d)
           summonMods[ability.id] = sm
           summonAc[ability.id] = computeSummonAC(ability, d, sm)
+          if (ability.summonSkills?.length) {
+            summonSkills[ability.id] = await computeSummonSkills(ability, d)
+          }
         }
       }
       setSummonModifierResults(summonMods); setSummonAcResults(summonAc)
+      setSummonSkillResults(summonSkills)
     } catch (e: unknown) { if ((e as { statusCode?: number }).statusCode === 401 || (e as { statusCode?: number }).statusCode === 403) router.replace('/login') }
     finally { setFetching(false) }
-  }, [id, router, computeModifiers, computeSkills, computeAC, computeSummonModifiers, computeSummonAC])
+  }, [id, router, computeModifiers, computeSkills, computeAC, computeSummonModifiers, computeSummonAC, computeSummonSkills])
 
   useEffect(() => { if (!authLoading && !user) { router.replace('/login'); return }; if (user) fetchSheet() }, [authLoading, user, fetchSheet])
 
@@ -464,13 +624,17 @@ export default function CharacterSheetDetailPage() {
     try {
       await api.patch(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-attributes/${attributeId}`, { value })
       setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, summonAttributes: a.summonAttributes.map(sa => sa.attributeId === attributeId ? { ...sa, value } : sa) } : a))
-      // Recompute summon modifiers
+      // Recompute summon modifiers & skills
       const updatedAbilities = abilities.map(a => a.id === abilityId ? { ...a, summonAttributes: a.summonAttributes.map(sa => sa.attributeId === attributeId ? { ...sa, value } : sa) } : a)
       const ability = updatedAbilities.find(a => a.id === abilityId)
       if (ability) {
         const sm = await computeSummonModifiers(ability, sheet)
         setSummonModifierResults(prev => ({ ...prev, [abilityId]: sm }))
         setSummonAcResults(prev => ({ ...prev, [abilityId]: computeSummonAC({ ...ability, summonAttributes: ability.summonAttributes.map(sa => sa.attributeId === attributeId ? { ...sa, value } : sa) }, sheet, sm) }))
+        if (ability.summonSkills?.length) {
+          const ss = await computeSummonSkills({ ...ability, summonAttributes: ability.summonAttributes.map(sa => sa.attributeId === attributeId ? { ...sa, value } : sa) }, sheet)
+          setSummonSkillResults(prev => ({ ...prev, [abilityId]: ss }))
+        }
       }
     } catch {}
   }
@@ -500,7 +664,105 @@ export default function CharacterSheetDetailPage() {
     } catch {}
   }
 
-  async function handleDelete() { setDeleting(true); try { await api.delete(`/character-sheets/${id}`); router.push('/dashboard?tab=character-sheets') } catch (err) { setDeleteError(err instanceof Error ? err.message : 'Failed to delete'); setDeleting(false); setConfirmDelete(false) } }
+  // ── Summon Skill operations ──
+  async function handleAddSummonSkill(abilityId: string, skillId: string) {
+    if (!sheet) return
+    try {
+      const ss = await api.post<SummonSkillData>(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-skills`, { skillId })
+      setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, summonSkills: [...(a.summonSkills ?? []), ss] } : a))
+      // Recompute summon skills
+      const ability = abilities.find(a => a.id === abilityId)
+      if (ability) {
+        const updated = { ...ability, summonSkills: [...(ability.summonSkills ?? []), ss] }
+        const sk = await computeSummonSkills(updated, sheet)
+        setSummonSkillResults(prev => ({ ...prev, [abilityId]: sk }))
+      }
+    } catch {}
+  }
+
+  async function handleRemoveSummonSkill(abilityId: string, summonSkillId: string) {
+    if (!sheet) return
+    try {
+      await api.delete(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-skills/${summonSkillId}`)
+      setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, summonSkills: (a.summonSkills ?? []).filter(s => s.id !== summonSkillId) } : a))
+      const ability = abilities.find(a => a.id === abilityId)
+      if (ability) {
+        const updated = { ...ability, summonSkills: (ability.summonSkills ?? []).filter(s => s.id !== summonSkillId) }
+        const sk = await computeSummonSkills(updated, sheet)
+        setSummonSkillResults(prev => ({ ...prev, [abilityId]: sk }))
+      }
+    } catch {}
+  }
+
+  async function handleSummonSkillAttributeChange(abilityId: string, summonSkillId: string, attributeId: string | null) {
+    if (!sheet) return
+    try {
+      const updatedSs = await api.patch<SummonSkillData>(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-skills/${summonSkillId}/attribute`, { attributeId })
+      setAbilities(prev => prev.map(a => a.id === abilityId ? {
+        ...a, summonSkills: (a.summonSkills ?? []).map(s => s.id === summonSkillId ? { ...s, selectedAttributeId: attributeId, selectedAttribute: updatedSs.selectedAttribute } : s)
+      } : a))
+      const ability = abilities.find(a => a.id === abilityId)
+      if (ability) {
+        const updated = {
+          ...ability, summonSkills: (ability.summonSkills ?? []).map(s => s.id === summonSkillId ? { ...s, selectedAttributeId: attributeId, selectedAttribute: updatedSs.selectedAttribute } : s)
+        }
+        const sk = await computeSummonSkills(updated, sheet)
+        setSummonSkillResults(prev => ({ ...prev, [abilityId]: sk }))
+      }
+    } catch {}
+  }
+
+  async function handleSummonSkillProfileChange(abilityId: string, summonSkillId: string, profileId: string, optionId: string | null) {
+    if (!sheet) return
+    // Optimistic update
+    setAbilities(prev => prev.map(a => {
+      if (a.id !== abilityId) return a
+      return {
+        ...a,
+        summonSkills: (a.summonSkills ?? []).map(s => {
+          if (s.id !== summonSkillId) return s
+          const existing = s.profileValues ?? []
+          const newPv = existing.map(pv => pv.profileId === profileId ? { ...pv, optionId, option: optionId ? (pv.option?.id === optionId ? pv.option : pv.option) : null } : pv)
+          return { ...s, profileValues: newPv }
+        })
+      }
+    }))
+    try {
+      await api.patch(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-skills/${summonSkillId}/profiles/${profileId}`, { optionId })
+      const ability = abilities.find(a => a.id === abilityId)
+      if (ability) {
+        const updated = {
+          ...ability,
+          summonSkills: (ability.summonSkills ?? []).map(s => {
+            if (s.id !== summonSkillId) return s
+            return { ...s, profileValues: (s.profileValues ?? []).map(pv => pv.profileId === profileId ? { ...pv, optionId, option: optionId ? (pv.option?.id === optionId ? pv.option : pv.option) : null } : pv) }
+          })
+        }
+        const sk = await computeSummonSkills(updated, sheet)
+        setSummonSkillResults(prev => ({ ...prev, [abilityId]: sk }))
+      }
+    } catch { fetchSheet() }
+  }
+
+  // ── Summon-scoped ability CRUD ──
+  async function handleCreateSummonAbility(summonId: string, e: FormEvent) {
+    e.preventDefault()
+    if (!sheet || !newAbility.name.trim()) return
+    setAbilitySaving(true)
+    try {
+      const body: Record<string, unknown> = { name: newAbility.name.trim(), description: newAbility.description.trim() || undefined, notes: newAbility.notes.trim() || undefined }
+      if (newAbility.manaCost) body.manaCost = parseInt(newAbility.manaCost, 10)
+      if (newAbility.range) body.range = newAbility.range.trim()
+      if (newAbility.damage) body.damage = newAbility.damage.trim()
+      const a = await api.post<Ability>(`/character-sheets/${sheet.id}/abilities/${summonId}/summon-abilities`, body)
+      setAbilities(prev => prev.map(ab => ab.id === summonId ? { ...ab, childAbilities: [...(ab.childAbilities ?? []), a] } : ab))
+      resetNewAbility()
+    } catch (err) { setAbilityError(err instanceof Error ? err.message : 'Failed to create') }
+    finally { setAbilitySaving(false) }
+  }
+
+  async function handleDeleteAbility(abilityId: string) { if (!sheet) return; try { await api.delete(`/character-sheets/${sheet.id}/abilities/${abilityId}`); setAbilities(p => p.filter(a => a.id !== abilityId).map(a => ({ ...a, childAbilities: (a.childAbilities ?? []).filter(c => c.id !== abilityId) }))) } catch {} }
+
   function resetNewAbility() { setShowNewAbility(false); setNewAbility({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '' }); setNewAbilityType(null); setAbilityError(null) }
   async function handleCreateAbility(e: FormEvent) { e.preventDefault(); if (!newAbility.name.trim() || !sheet) return; setAbilitySaving(true)
     try {
@@ -517,16 +779,18 @@ export default function CharacterSheetDetailPage() {
         const sm = await computeSummonModifiers(a, sheet)
         setSummonModifierResults(prev => ({ ...prev, [a.id]: sm }))
         setSummonAcResults(prev => ({ ...prev, [a.id]: computeSummonAC(a, sheet, sm) }))
+        setSummonTabs(prev => ({ ...prev, [a.id]: 'stats' }))
       }
       setExpandedAbilities(prev => ({ ...prev, [a.id]: true }))
       resetNewAbility()
     } catch (err) { setAbilityError(err instanceof Error ? err.message : 'Failed to create entry') } finally { setAbilitySaving(false) } }
-  async function handleDeleteAbility(aid: string) { if (!sheet) return; try { await api.delete(`/character-sheets/${sheet.id}/abilities/${aid}`); setAbilities(p => p.filter(a => a.id !== aid)) } catch {} }
   function resetNewItem() { setShowNewItem(false); setNewItem({ name: '', weight: '', cost: '', description: '' }); setItemError(null) }
   async function handleCreateItem(e: FormEvent) { e.preventDefault(); if (!newItem.name.trim() || !sheet) return; setItemSaving(true)
     try { const i = await api.post<InventoryItem>(`/character-sheets/${sheet.id}/inventory`, { name: newItem.name.trim(), weight: newItem.weight.trim() ? parseFloat(newItem.weight) : undefined, cost: newItem.cost.trim() || undefined, description: newItem.description.trim() || undefined }); setInventoryItems(p => [...p, i]); resetNewItem() } catch (err) { setItemError(err instanceof Error ? err.message : 'Failed to create item') } finally { setItemSaving(false) } }
   async function handleDeleteItem(iid: string) { if (!sheet) return; try { await api.delete(`/character-sheets/${sheet.id}/inventory/${iid}`); setInventoryItems(p => p.filter(i => i.id !== iid)) } catch {} }
   async function saveStoryField(field: string, value: string) { if (!sheet) return; try { const s = await api.patch<Story>(`/character-sheets/${sheet.id}/story`, { [field]: value.trim() || null }); setStory(s) } catch {} }
+
+  async function handleDelete() { setDeleting(true); try { await api.delete(`/character-sheets/${id}`); router.push('/dashboard?tab=character-sheets') } catch (err) { setDeleteError(err instanceof Error ? err.message : 'Failed to delete'); setDeleting(false); setConfirmDelete(false) } }
 
   if (authLoading || fetching) return <main className="flex-1 flex items-center justify-center p-4"><div className="flex flex-col items-center gap-3 text-muted-foreground"><div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"/><span className="text-sm">Loading...</span></div></main>
   if (!sheet) return <main className="flex-1 flex items-center justify-center p-4"><div className="text-sm text-muted-foreground">Character sheet not found.</div></main>
@@ -614,6 +878,13 @@ export default function CharacterSheetDetailPage() {
         summonModifierResults={summonModifierResults} summonAcResults={summonAcResults}
         saveSummonAttribute={saveSummonAttribute} saveSummonAcValue={saveSummonAcValue}
         saveSummonHealth={saveSummonHealth}
+        summonTabs={summonTabs} setSummonTabs={setSummonTabs}
+        summonSkillResults={summonSkillResults}
+        handleAddSummonSkill={handleAddSummonSkill}
+        handleRemoveSummonSkill={handleRemoveSummonSkill}
+        handleSummonSkillAttributeChange={handleSummonSkillAttributeChange}
+        handleSummonSkillProfileChange={handleSummonSkillProfileChange}
+        handleCreateSummonAbility={handleCreateSummonAbility}
       />}
       {activeTab === 'inventory' && <div className="space-y-4">{inventoryItems.length > 0 && <div className="text-sm text-muted text-right">Total Weight: <span className="font-semibold text-foreground">{totalWeight.toFixed(1)} kg</span></div>}{inventoryItems.length === 0 && !showNewItem && <div className="text-center py-6 text-muted-foreground text-sm italic">No items in inventory. {isOwner && 'Add one below.'}</div>}<div className="space-y-3">{inventoryItems.map(item => <div key={item.id} className="card !p-4 space-y-2"><div className="flex items-start justify-between">{isOwner ? <InlineClickEdit value={item.name} onSave={async (v) => saveItemField(item.id, 'name', v)} className="font-semibold text-foreground" /> : <h4 className="font-semibold text-foreground">{item.name}</h4>}{isOwner && <button onClick={() => handleDeleteItem(item.id)} className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors shrink-0 ml-2">Delete</button>}</div><div className="flex flex-wrap gap-3 text-xs text-muted">{isOwner ? <><span className="inline-flex items-center gap-1">Weight: <InlineClickEdit value={item.weight?.toString() ?? ''} onSave={async (v) => saveItemField(item.id, 'weight', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" /> kg</span><span className="inline-flex items-center gap-1">Cost: <InlineClickEdit value={item.cost ?? ''} onSave={async (v) => saveItemField(item.id, 'cost', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-20" emptyDisplay="—" /></span></> : <>{item.weight != null && <span>Weight: {item.weight} kg</span>}{item.cost && <span>Cost: {item.cost}</span>}</>}</div>{isOwner ? <div><button type="button" onClick={() => setExpandedItems(p => ({ ...p, [item.id]: !p[item.id] }))} className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors"><svg className={`w-3 h-3 transition-transform ${expandedItems[item.id] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>Description</button>{expandedItems[item.id] && <div className="mt-1 pl-4"><InlineClickEdit value={item.description ?? ''} onSave={async (v) => saveItemField(item.id, 'description', v)} as="textarea" className="text-sm text-muted-foreground whitespace-pre-wrap" emptyDisplay="Add description..." /></div>}</div> : item.description && <div><button type="button" onClick={() => setExpandedItems(p => ({ ...p, [item.id]: !p[item.id] }))} className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors"><svg className={`w-3 h-3 transition-transform ${expandedItems[item.id] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>Description</button>{expandedItems[item.id] && <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1 pl-4">{item.description}</p>}</div>}</div>)}</div>{isOwner && !showNewItem && <button onClick={() => setShowNewItem(true)} className="btn-primary text-sm">+ Add Item</button>}{isOwner && showNewItem && <form onSubmit={handleCreateItem} className="card !p-4 space-y-3 border-primary/20"><h4 className="text-sm font-semibold text-primary">New Item</h4><div><label className="text-xs text-muted">Name</label><input className="input-field" value={newItem.name} onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Long Sword"/></div><div className="grid grid-cols-2 gap-2"><div><label className="text-xs text-muted">Weight (kg)</label><input type="number" step="any" className="input-field" value={newItem.weight} onChange={e => setNewItem(p => ({ ...p, weight: e.target.value }))} placeholder="3"/></div><div><label className="text-xs text-muted">Cost</label><input className="input-field" value={newItem.cost} onChange={e => setNewItem(p => ({ ...p, cost: e.target.value }))} placeholder="150 gp"/></div></div><div><label className="text-xs text-muted">Description</label><textarea className="input-field resize-none" rows={2} value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))} placeholder="Steel longsword forged by..."/></div>{itemError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{itemError}</div>}<div className="flex gap-2 justify-end"><button type="button" onClick={resetNewItem} disabled={itemSaving} className="btn-ghost text-sm">Cancel</button><button type="submit" disabled={itemSaving || !newItem.name.trim()} className="btn-primary text-sm">{itemSaving ? 'Creating...' : 'Create'}</button></div></form>}</div>}
       {activeTab === 'story' && <div className="space-y-4"><div className="card !p-6 space-y-4">{isOwner ? <><InlineTextarea value={story?.appearance ?? ''} label="Appearance" onSave={(v) => saveStoryField('appearance', v)} rows={3} emptyDisplay="Add appearance description..." /><InlineTextarea value={story?.backstory ?? ''} label="Backstory" onSave={(v) => saveStoryField('backstory', v)} rows={5} emptyDisplay="Add backstory..." /><InlineTextarea value={story?.personality ?? ''} label="Personality" onSave={(v) => saveStoryField('personality', v)} rows={3} emptyDisplay="Add personality description..." /><InlineTextarea value={story?.goals ?? ''} label="Goals" onSave={(v) => saveStoryField('goals', v)} rows={3} emptyDisplay="Add character goals..." /><InlineTextarea value={story?.notes ?? ''} label="Notes" onSave={(v) => saveStoryField('notes', v)} rows={3} emptyDisplay="Add notes..." /></> : <><StoryField label="Appearance" value={story?.appearance} /><StoryField label="Backstory" value={story?.backstory} /><StoryField label="Personality" value={story?.personality} /><StoryField label="Goals" value={story?.goals} /><StoryField label="Notes" value={story?.notes} /></>}</div></div>}
@@ -667,6 +938,11 @@ function AbilitiesTab({
   expandedAbilities, setExpandedAbilities,
   summonModifierResults, summonAcResults,
   saveSummonAttribute, saveSummonAcValue, saveSummonHealth,
+  summonTabs, setSummonTabs,
+  summonSkillResults,
+  handleAddSummonSkill, handleRemoveSummonSkill,
+  handleSummonSkillAttributeChange, handleSummonSkillProfileChange,
+  handleCreateSummonAbility,
 }: {
   abilities: Ability[]; isOwner: boolean; sheetId: string
   template: CharacterSheet['template']
@@ -689,11 +965,25 @@ function AbilitiesTab({
   saveSummonAttribute: (abilityId: string, attributeId: string, value: string) => Promise<void>
   saveSummonAcValue: (abilityId: string, fieldId: string, value: string) => Promise<void>
   saveSummonHealth: (abilityId: string, field: 'current' | 'maximum', value: number | null) => Promise<void>
+  summonTabs: Record<string, SummonTab>; setSummonTabs: React.Dispatch<React.SetStateAction<Record<string, SummonTab>>>
+  summonSkillResults: Record<string, Record<string, number | null>>
+  handleAddSummonSkill: (abilityId: string, skillId: string) => Promise<void>
+  handleRemoveSummonSkill: (abilityId: string, summonSkillId: string) => Promise<void>
+  handleSummonSkillAttributeChange: (abilityId: string, summonSkillId: string, attributeId: string | null) => Promise<void>
+  handleSummonSkillProfileChange: (abilityId: string, summonSkillId: string, profileId: string, optionId: string | null) => Promise<void>
+  handleCreateSummonAbility: (summonId: string, e: FormEvent) => Promise<void>
 }) {
   const [confirmDeleteAbility, setConfirmDeleteAbility] = useState<string | null>(null)
   const [confirmDeleteLevel, setConfirmDeleteLevel] = useState<string | null>(null)
   const [deletingAbility, setDeletingAbility] = useState(false)
   const [deletingLevel, setDeletingLevel] = useState(false)
+
+  // Summon skill search state per summon
+  const [skillSearchOpen, setSkillSearchOpen] = useState<string | null>(null)
+  const [skillSearchQuery, setSkillSearchQuery] = useState('')
+
+  // Summon-scoped ability creation state
+  const [showNewSummonAbility, setShowNewSummonAbility] = useState<string | null>(null)
 
   const toggleExpand = (aid: string) => setExpandedAbilities(prev => ({ ...prev, [aid]: !prev[aid] }))
 
@@ -716,6 +1006,12 @@ function AbilitiesTab({
   }
 
   const armorClass = template.armorClass
+  const allTemplateSkills = template.templateSkills ?? []
+
+  const summonSkillTabClass = (aid: string, t: SummonTab) => {
+    const active = summonTabs[aid] ?? 'stats'
+    return `px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${active === t ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`
+  }
 
   return (
     <div className="space-y-4">
@@ -731,6 +1027,7 @@ function AbilitiesTab({
           const isAbility = a.type !== 'SUMMON'
           const selLevel = isAbility ? getSelectedLevel(a) : undefined
           const maxLevel = a.levels.length > 0 ? Math.max(...a.levels.map(l => l.level)) : 0
+          const currentSummonTab = summonTabs[a.id] ?? 'stats'
 
           return (
             <div key={a.id} className={`card !p-0 overflow-hidden transition-all duration-200 ${isExpanded ? 'border-primary/20' : ''}`}>
@@ -836,128 +1133,345 @@ function AbilitiesTab({
                     <p className="text-xs text-muted italic pt-2">No levels added yet.</p>
                   ) : null}
 
-                  {/* SUMMON type */}
+                  {/* SUMMON type - Internal Tabs */}
                   {!isAbility && (
-                    <div className="space-y-4 pt-2">
-                      {/* Basic info */}
-                      <div className="space-y-2">
-                        {isOwner ? (
-                          <>
-                            <div><h5 className="text-xs font-medium text-muted mb-1">Description</h5><InlineClickEdit value={a.description ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}`, { description: v.trim() || null }); setAbilities(prev => prev.map(ab => ab.id === a.id ? { ...ab, description: v.trim() || null } : ab)) } catch {} }} as="textarea" className="text-sm text-muted-foreground whitespace-pre-wrap" emptyDisplay="Add description..." /></div>
-                            <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><InlineClickEdit value={a.notes ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}`, { notes: v.trim() || null }); setAbilities(prev => prev.map(ab => ab.id === a.id ? { ...ab, notes: v.trim() || null } : ab)) } catch {} }} as="textarea" className="text-xs text-muted italic whitespace-pre-wrap" emptyDisplay="Add notes..." /></div>
-                          </>
-                        ) : (
-                          <>
-                            {a.description && <div><h5 className="text-xs font-medium text-muted mb-1">Description</h5><p className="text-sm text-muted-foreground whitespace-pre-wrap">{a.description}</p></div>}
-                            {a.notes && <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><p className="text-xs text-muted italic whitespace-pre-wrap">{a.notes}</p></div>}
-                          </>
-                        )}
+                    <div className="pt-2">
+                      {/* Internal tab nav */}
+                      <div className="flex gap-1 mb-3 border-b border-border pb-2">
+                        <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'stats' }))} className={summonSkillTabClass(a.id, 'stats')}>
+                          Stats
+                        </button>
+                        <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'skills' }))} className={summonSkillTabClass(a.id, 'skills')}>
+                          Skills
+                        </button>
+                        <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'abilities' }))} className={summonSkillTabClass(a.id, 'abilities')}>
+                          Abilities
+                        </button>
                       </div>
 
-                      {/* Stats - Health */}
-                      {a.summonHealth && (
-                        <div className="card !p-3 !bg-background/30">
-                          <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Health</h4>
-                          <div className="flex items-center justify-center gap-3">
-                            <div className="text-center">
-                              <span className="text-muted text-xs block">Current</span>
-                              {isOwner ? (
-                                <InlineNumber value={a.summonHealth.current ?? 0} onSave={(v) => saveSummonHealth(a.id, 'current', v)} min={0} className="text-xl font-bold text-foreground" />
-                              ) : (
-                                <span className="text-xl font-bold text-foreground">{a.summonHealth.current ?? '—'}</span>
-                              )}
-                            </div>
-                            <span className="text-muted text-lg">/</span>
-                            <div className="text-center">
-                              <span className="text-muted text-xs block">Max</span>
-                              {isOwner ? (
-                                <InlineNumber value={a.summonHealth.maximum ?? 0} onSave={(v) => saveSummonHealth(a.id, 'maximum', v)} min={0} className="text-xl font-bold text-foreground" />
-                              ) : (
-                                <span className="text-xl font-bold text-foreground">{a.summonHealth.maximum ?? '—'}</span>
-                              )}
+                      {/* ── Stats Tab ── */}
+                      {currentSummonTab === 'stats' && <div className="space-y-3">
+                        {/* Description & Notes */}
+                        <div className="space-y-2">
+                          {isOwner ? (
+                            <>
+                              <div><h5 className="text-xs font-medium text-muted mb-1">Description</h5><InlineClickEdit value={a.description ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}`, { description: v.trim() || null }); setAbilities(prev => prev.map(ab => ab.id === a.id ? { ...ab, description: v.trim() || null } : ab)) } catch {} }} as="textarea" className="text-sm text-muted-foreground whitespace-pre-wrap" emptyDisplay="Add description..." /></div>
+                              <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><InlineClickEdit value={a.notes ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}`, { notes: v.trim() || null }); setAbilities(prev => prev.map(ab => ab.id === a.id ? { ...ab, notes: v.trim() || null } : ab)) } catch {} }} as="textarea" className="text-xs text-muted italic whitespace-pre-wrap" emptyDisplay="Add notes..." /></div>
+                            </>
+                          ) : (
+                            <>
+                              {a.description && <div><h5 className="text-xs font-medium text-muted mb-1">Description</h5><p className="text-sm text-muted-foreground whitespace-pre-wrap">{a.description}</p></div>}
+                              {a.notes && <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><p className="text-xs text-muted italic whitespace-pre-wrap">{a.notes}</p></div>}
+                            </>
+                          )}
+                        </div>
+
+                        {/* Health */}
+                        {a.summonHealth && (
+                          <div className="card !p-3 !bg-background/30">
+                            <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Health</h4>
+                            <div className="flex items-center justify-center gap-3">
+                              <div className="text-center">
+                                <span className="text-muted text-xs block">Current</span>
+                                {isOwner ? (
+                                  <InlineNumber value={a.summonHealth.current ?? 0} onSave={(v) => saveSummonHealth(a.id, 'current', v)} min={0} className="text-xl font-bold text-foreground" />
+                                ) : (
+                                  <span className="text-xl font-bold text-foreground">{a.summonHealth.current ?? '—'}</span>
+                                )}
+                              </div>
+                              <span className="text-muted text-lg">/</span>
+                              <div className="text-center">
+                                <span className="text-muted text-xs block">Max</span>
+                                {isOwner ? (
+                                  <InlineNumber value={a.summonHealth.maximum ?? 0} onSave={(v) => saveSummonHealth(a.id, 'maximum', v)} min={0} className="text-xl font-bold text-foreground" />
+                                ) : (
+                                  <span className="text-xl font-bold text-foreground">{a.summonHealth.maximum ?? '—'}</span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
+                        )}
 
-                      {/* Attributes */}
-                      {(a.summonAttributes ?? []).length > 0 && (
-                        <div className="card !p-3 !bg-background/30">
-                          <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Attributes</h4>
-                          <div className="grid gap-2 sm:grid-cols-2">
-                            {a.summonAttributes.map(sa => {
-                              const attr = template.attributes.find(at => at.id === sa.attributeId)
-                              if (!attr) return null
-                              const modResult = (summonModifierResults[a.id] ?? {})[attr.id]
+                        {/* Attributes */}
+                        {(a.summonAttributes ?? []).length > 0 && (
+                          <div className="card !p-3 !bg-background/30">
+                            <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Attributes</h4>
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              {a.summonAttributes.map(sa => {
+                                const attr = template.attributes.find(at => at.id === sa.attributeId)
+                                if (!attr) return null
+                                const modResult = (summonModifierResults[a.id] ?? {})[attr.id]
+                                return (
+                                  <div key={sa.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-background/50 border border-border">
+                                    <span className="text-sm text-foreground">{attr.name}</span>
+                                    <div className="flex items-center gap-2">
+                                      {isOwner ? (
+                                        <InlineText value={sa.value} onSave={(v) => saveSummonAttribute(a.id, sa.attributeId, v)} className="text-sm font-semibold text-foreground" />
+                                      ) : (
+                                        <span className="text-sm font-semibold text-foreground">{sa.value || '—'}</span>
+                                      )}
+                                      {modResult !== undefined && modResult !== null && (
+                                        <span className="text-sm font-semibold text-primary">({modResult >= 0 ? '+' : ''}{modResult})</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Armor Class */}
+                        {armorClass?.enabled && armorClass.fields.length > 0 && (a.summonAcValues ?? []).length > 0 && (
+                          <div className="card !p-3 !bg-background/30">
+                            <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Armor Class</h4>
+                            <div className="flex items-center justify-center mb-3">
+                              <div className="w-20 h-20 rounded-full border-3 border-primary/30 flex items-center justify-center bg-background/50">
+                                <span className="text-3xl font-bold text-primary">{summonAcResults[a.id] !== null && summonAcResults[a.id] !== undefined ? summonAcResults[a.id] : '—'}</span>
+                              </div>
+                            </div>
+                            {armorClass.fields.map(field => {
+                              const acv = a.summonAcValues.find(v => v.fieldId === field.id)
+                              const val = acv?.value ?? field.defaultValue
+                              const canEdit = isOwner && field.editableByPlayer
                               return (
-                                <div key={sa.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-background/50 border border-border">
-                                  <span className="text-sm text-foreground">{attr.name}</span>
-                                  <div className="flex items-center gap-2">
-                                    {isOwner ? (
-                                      <InlineText value={sa.value} onSave={(v) => saveSummonAttribute(a.id, sa.attributeId, v)} className="text-sm font-semibold text-foreground" />
-                                    ) : (
-                                      <span className="text-sm font-semibold text-foreground">{sa.value || '—'}</span>
-                                    )}
-                                    {modResult !== undefined && modResult !== null && (
-                                      <span className="text-sm font-semibold text-primary">({modResult >= 0 ? '+' : ''}{modResult})</span>
+                                <div key={field.id} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-background/50 border border-border mb-1">
+                                  <div className="flex items-center gap-1 min-w-0">
+                                    <span className="text-sm text-foreground truncate">{field.name}</span>
+                                    {field.description && <span className="text-[0.6rem] text-muted hidden sm:inline">— {field.description}</span>}
+                                  </div>
+                                  {canEdit ? (
+                                    <input type="number" className="input-field py-0.5 text-xs w-16 text-right" value={val} onChange={e => saveSummonAcValue(a.id, field.id, e.target.value)} />
+                                  ) : (
+                                    <span className="text-sm font-semibold text-foreground">{val}</span>
+                                  )}
+                                </div>
+                              )
+                            })}
+                            {armorClass.attributeModifierIds.length > 0 && (
+                              <div className="mt-2">
+                                <h5 className="text-[0.6rem] font-semibold text-muted uppercase tracking-wider mb-1">Attribute Modifiers</h5>
+                                <div className="grid gap-1 sm:grid-cols-2">
+                                  {armorClass.attributeModifierIds.map(attrKey => {
+                                    const attr = template.attributes.find(at => at.key === attrKey)
+                                    if (!attr) return null
+                                    const modResult = (summonModifierResults[a.id] ?? {})[attr.id]
+                                    return (
+                                      <div key={attrKey} className="flex items-center justify-between py-1 px-2 rounded-lg bg-background/50 border border-border opacity-80">
+                                        <span className="text-xs text-foreground truncate">{attr.name} Mod</span>
+                                        <span className="text-xs font-semibold text-muted" style={{ opacity: 0.6 }}>
+                                          {modResult !== null && modResult !== undefined ? `${modResult >= 0 ? '+' : ''}${modResult}` : '—'}
+                                        </span>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>}
+
+                      {/* ── Skills Tab ── */}
+                      {currentSummonTab === 'skills' && <div className="space-y-3">
+                        {/* Add skill button + search */}
+                        {isOwner && (
+                          <div>
+                            {skillSearchOpen !== a.id ? (
+                              <button
+                                type="button"
+                                onClick={() => { setSkillSearchOpen(a.id); setSkillSearchQuery('') }}
+                                className="btn-ghost text-xs inline-flex items-center gap-1"
+                              >
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
+                                Add Skill
+                              </button>
+                            ) : (
+                              <div className="space-y-1">
+                                <div className="relative">
+                                  <svg className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                  <input
+                                    className="input-field pl-8 py-1 text-xs w-full"
+                                    placeholder="Search Skill..."
+                                    value={skillSearchQuery}
+                                    onChange={e => setSkillSearchQuery(e.target.value)}
+                                    autoFocus
+                                    onKeyDown={e => { if (e.key === 'Escape') setSkillSearchOpen(null) }}
+                                  />
+                                </div>
+                                <div className="max-h-40 overflow-y-auto border border-border rounded-lg divide-y divide-border">
+                                  {allTemplateSkills
+                                    .filter(s => {
+                                      const alreadyAdded = (a.summonSkills ?? []).some(ss => ss.skillId === s.id)
+                                      if (alreadyAdded) return false
+                                      if (!skillSearchQuery.trim()) return true
+                                      return s.name.toLowerCase().includes(skillSearchQuery.toLowerCase())
+                                    })
+                                    .slice(0, 25)
+                                    .map(s => (
+                                      <button
+                                        key={s.id}
+                                        type="button"
+                                        onClick={() => { handleAddSummonSkill(a.id, s.id); setSkillSearchOpen(null); setSkillSearchQuery('') }}
+                                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-foreground/5 transition-colors"
+                                      >
+                                        {s.name}
+                                      </button>
+                                    ))}
+                                  {allTemplateSkills.filter(s => !(a.summonSkills ?? []).some(ss => ss.skillId === s.id) && (!skillSearchQuery.trim() || s.name.toLowerCase().includes(skillSearchQuery.toLowerCase()))).length === 0 && (
+                                    <div className="px-3 py-2 text-xs text-muted italic">No skills found</div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Skill list */}
+                        {(a.summonSkills ?? []).length === 0 ? (
+                          <div className="text-xs text-muted italic py-2">No skills added. Click "Add Skill" to select from the template.</div>
+                        ) : (
+                          <div className="space-y-1.5">
+                            {(a.summonSkills ?? []).map(ss => {
+                              const result = (summonSkillResults[a.id] ?? {})[ss.id]
+                              const hasAttrDropdown = (ss.skill.allowedAttributeIds?.length ?? 0) > 0
+                              const skillProfiles = template.skillModifierProfiles.filter(p => {
+                                const tm = (p as any).targetMode ?? 'ALL_SKILLS'
+                                const tids: string[] = (p as any).targetSkillIds ?? []
+                                return tm === 'ALL_SKILLS' || tids.length === 0 || tids.includes(ss.skill.name)
+                              })
+                              return (
+                                <div key={ss.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg bg-background/50 border border-border">
+                                  <div className="flex-1 min-w-0 flex items-center gap-2">
+                                    <span className="text-sm font-medium text-foreground truncate">{ss.skill.name}</span>
+                                    {isOwner && hasAttrDropdown && (
+                                      <select
+                                        className="input-field py-0.5 text-xs w-auto min-w-[80px]"
+                                        value={ss.selectedAttributeId ?? ''}
+                                        onChange={e => handleSummonSkillAttributeChange(a.id, ss.id, e.target.value || null)}
+                                      >
+                                        {ss.skill.allowedAttributeIds.map(attrId => {
+                                          const attr = template.attributes.find(x => x.id === attrId)
+                                          if (!attr) return null
+                                          return <option key={attrId} value={attrId}>{attr.name}</option>
+                                        })}
+                                      </select>
                                     )}
                                   </div>
+                                  <span className="text-sm font-bold text-primary shrink-0">{result != null ? (result >= 0 ? '+' : '') + result : '—'}</span>
+                                  {isOwner && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveSummonSkill(a.id, ss.id)}
+                                      className="text-muted hover:text-danger shrink-0 p-0.5 transition-colors"
+                                      title="Remove skill"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                  )}
                                 </div>
                               )
                             })}
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>}
 
-                      {/* Armor Class */}
-                      {armorClass?.enabled && armorClass.fields.length > 0 && (a.summonAcValues ?? []).length > 0 && (
-                        <div className="card !p-3 !bg-background/30">
-                          <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Armor Class</h4>
-                          <div className="flex items-center justify-center mb-3">
-                            <div className="w-20 h-20 rounded-full border-3 border-primary/30 flex items-center justify-center bg-background/50">
-                              <span className="text-3xl font-bold text-primary">{summonAcResults[a.id] !== null && summonAcResults[a.id] !== undefined ? summonAcResults[a.id] : '—'}</span>
-                            </div>
-                          </div>
-                          {armorClass.fields.map(field => {
-                            const acv = a.summonAcValues.find(v => v.fieldId === field.id)
-                            const val = acv?.value ?? field.defaultValue
-                            const canEdit = isOwner && field.editableByPlayer
-                            return (
-                              <div key={field.id} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-background/50 border border-border mb-1">
-                                <div className="flex items-center gap-1 min-w-0">
-                                  <span className="text-sm text-foreground truncate">{field.name}</span>
-                                  {field.description && <span className="text-[0.6rem] text-muted hidden sm:inline">— {field.description}</span>}
-                                </div>
-                                {canEdit ? (
-                                  <input type="number" className="input-field py-0.5 text-xs w-16 text-right" value={val} onChange={e => saveSummonAcValue(a.id, field.id, e.target.value)} />
-                                ) : (
-                                  <span className="text-sm font-semibold text-foreground">{val}</span>
-                                )}
-                              </div>
-                            )
-                          })}
-                          {armorClass.attributeModifierIds.length > 0 && (
-                            <div className="mt-2">
-                              <h5 className="text-[0.6rem] font-semibold text-muted uppercase tracking-wider mb-1">Attribute Modifiers</h5>
-                              <div className="grid gap-1 sm:grid-cols-2">
-                                {armorClass.attributeModifierIds.map(attrKey => {
-                                  const attr = template.attributes.find(at => at.key === attrKey)
-                                  if (!attr) return null
-                                  const modResult = (summonModifierResults[a.id] ?? {})[attr.id]
-                                  return (
-                                    <div key={attrKey} className="flex items-center justify-between py-1 px-2 rounded-lg bg-background/50 border border-border opacity-80">
-                                      <span className="text-xs text-foreground truncate">{attr.name} Mod</span>
-                                      <span className="text-xs font-semibold text-muted" style={{ opacity: 0.6 }}>
-                                        {modResult !== null && modResult !== undefined ? `${modResult >= 0 ? '+' : ''}${modResult}` : '—'}
-                                      </span>
+                      {/* ── Abilities Tab ── */}
+                      {currentSummonTab === 'abilities' && <div className="space-y-2">
+                        {(a.childAbilities ?? []).length === 0 && !showNewSummonAbility ? (
+                          <div className="text-xs text-muted italic py-2">No abilities yet.</div>
+                        ) : (
+                          <div className="space-y-2">
+                            {(a.childAbilities ?? []).map((ca: Ability) => {
+                              const caExpanded = expandedAbilities[ca.id] ?? false
+                              const caSelLevel = ca.levels[ca.levels.length - 1]
+                              const caMaxLevel = ca.levels.length > 0 ? Math.max(...ca.levels.map(l => l.level)) : 0
+                              return (
+                                <div key={ca.id} className={`card !p-0 overflow-hidden transition-all duration-200 ${caExpanded ? 'border-primary/20' : ''}`}>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedAbilities(prev => ({ ...prev, [ca.id]: !prev[ca.id] }))}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-foreground/5 transition-colors"
+                                  >
+                                    <svg className={`w-3.5 h-3.5 text-muted transition-transform duration-200 shrink-0 ${caExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                    <span className="text-sm font-medium text-foreground truncate flex-1">{ca.name}</span>
+                                    {caSelLevel && <span className="text-[0.6rem] text-muted">Lv {caSelLevel.level}</span>}
+                                    <div onClick={e => e.stopPropagation()}>
+                                      {isOwner && (
+                                        <button onClick={() => handleDeleteAbility(ca.id)} className="text-xs text-danger hover:text-danger/80 px-1 py-0.5 transition-colors shrink-0">
+                                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        </button>
+                                      )}
                                     </div>
-                                  )
-                                })}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                                  </button>
+                                  {caExpanded && caSelLevel && (
+                                    <div className="px-3 pb-3 space-y-2 border-t border-border">
+                                      <div className="flex flex-wrap gap-2 text-xs text-muted pt-2">
+                                        {isOwner ? (
+                                          <>
+                                            <span className="inline-flex items-center gap-1">Mana: <InlineClickEdit value={caSelLevel.manaCost?.toString() ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { manaCost: v.trim() ? parseInt(v, 10) : null }); setAbilities(prev => prev.map(ab => ({ ...ab, childAbilities: (ab.childAbilities ?? []).map(c => c.id === ca.id ? { ...c, levels: c.levels.map(l => l.id === caSelLevel.id ? { ...l, manaCost: v.trim() ? parseInt(v, 10) : null } : l) } : c) }))) } catch {} }} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" /></span>
+                                            <span className="inline-flex items-center gap-1">Range: <InlineClickEdit value={caSelLevel.range ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { range: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, childAbilities: (ab.childAbilities ?? []).map(c => c.id === ca.id ? { ...c, levels: c.levels.map(l => l.id === caSelLevel.id ? { ...l, range: v.trim() || null } : l) } : c) }))) } catch {} }} className="!text-xs !text-muted" inputClassName="!text-xs w-20" emptyDisplay="—" /></span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            {caSelLevel.manaCost != null && <span>Mana: {caSelLevel.manaCost}</span>}
+                                            {caSelLevel.range && <span>Range: {caSelLevel.range}</span>}
+                                          </>
+                                        )}
+                                      </div>
+                                      {isOwner ? (
+                                        <>
+                                          <div><h5 className="text-xs font-medium text-muted mb-1">Description</h5><InlineClickEdit value={caSelLevel.description ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { description: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, childAbilities: (ab.childAbilities ?? []).map(c => c.id === ca.id ? { ...c, levels: c.levels.map(l => l.id === caSelLevel.id ? { ...l, description: v.trim() || null } : l) } : c) }))) } catch {} }} as="textarea" className="text-xs text-muted-foreground whitespace-pre-wrap" emptyDisplay="Add description..." /></div>
+                                          <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><InlineClickEdit value={caSelLevel.notes ?? ''} onSave={async (v) => { try { await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { notes: v.trim() || null }); setAbilities(prev => prev.map(ab => ({ ...ab, childAbilities: (ab.childAbilities ?? []).map(c => c.id === ca.id ? { ...c, levels: c.levels.map(l => l.id === caSelLevel.id ? { ...l, notes: v.trim() || null } : l) } : c) }))) } catch {} }} as="textarea" className="text-xs text-muted italic whitespace-pre-wrap" emptyDisplay="Add notes..." /></div>
+                                        </>
+                                      ) : (
+                                        <>
+                                          {caSelLevel.description && <div><h5 className="text-xs font-medium text-muted mb-1">Description</h5><p className="text-xs text-muted-foreground whitespace-pre-wrap">{caSelLevel.description}</p></div>}
+                                          {caSelLevel.notes && <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><p className="text-xs text-muted italic whitespace-pre-wrap">{caSelLevel.notes}</p></div>}
+                                        </>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+
+                        {isOwner && (
+                          <>
+                            {showNewSummonAbility === a.id ? (
+                              <form onSubmit={(e) => { handleCreateSummonAbility(a.id, e); setShowNewSummonAbility(null) }} className="card !p-3 space-y-2 border-primary/20">
+                                <h5 className="text-xs font-semibold text-primary">New Ability for {a.name}</h5>
+                                <div><label className="text-[0.65rem] text-muted">Name</label><input className="input-field text-xs" value={newAbility.name} onChange={e => setNewAbility(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Bite" /></div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div><label className="text-[0.65rem] text-muted">Mana Cost</label><input type="number" className="input-field text-xs" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder="0" /></div>
+                                  <div><label className="text-[0.65rem] text-muted">Range</label><input className="input-field text-xs" value={newAbility.range} onChange={e => setNewAbility(p => ({ ...p, range: e.target.value }))} placeholder="melee" /></div>
+                                </div>
+                                <div><label className="text-[0.65rem] text-muted">Damage</label><input className="input-field text-xs" value={newAbility.damage} onChange={e => setNewAbility(p => ({ ...p, damage: e.target.value }))} placeholder="1d6" /></div>
+                                <div><label className="text-[0.65rem] text-muted">Description</label><textarea className="input-field resize-none text-xs" rows={2} value={newAbility.description} onChange={e => setNewAbility(p => ({ ...p, description: e.target.value }))} /></div>
+                                <div><label className="text-[0.65rem] text-muted">Notes</label><textarea className="input-field resize-none text-xs" rows={1} value={newAbility.notes} onChange={e => setNewAbility(p => ({ ...p, notes: e.target.value }))} /></div>
+                                {abilityError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-2 py-1 text-[0.65rem] text-danger">{abilityError}</div>}
+                                <div className="flex gap-2 justify-end">
+                                  <button type="button" onClick={() => { setShowNewSummonAbility(null); resetNewAbility() }} className="btn-ghost text-xs">Cancel</button>
+                                  <button type="submit" disabled={abilitySaving || !newAbility.name.trim()} className="btn-primary text-xs">{abilitySaving ? 'Creating...' : 'Create'}</button>
+                                </div>
+                              </form>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => { setShowNewSummonAbility(a.id); setNewAbility({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '' }) }}
+                                className="btn-ghost text-xs inline-flex items-center gap-1"
+                              >
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
+                                Add Ability
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>}
                     </div>
                   )}
 

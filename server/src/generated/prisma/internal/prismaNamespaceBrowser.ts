@@ -75,6 +75,11 @@ export const ModelName = {
   CharacterSheetArmorClassValue: 'CharacterSheetArmorClassValue',
   CharacterAbility: 'CharacterAbility',
   CharacterAbilityLevel: 'CharacterAbilityLevel',
+  SummonSkill: 'SummonSkill',
+  SummonSkillProfileValue: 'SummonSkillProfileValue',
+  SummonAttribute: 'SummonAttribute',
+  SummonArmorClassValue: 'SummonArmorClassValue',
+  SummonHealth: 'SummonHealth',
   CharacterInventoryItem: 'CharacterInventoryItem',
   CharacterStory: 'CharacterStory'
 } as const
@@ -403,8 +408,12 @@ export type CharacterSheetArmorClassValueScalarFieldEnum = (typeof CharacterShee
 export const CharacterAbilityScalarFieldEnum = {
   id: 'id',
   sheetId: 'sheetId',
+  summonId: 'summonId',
   name: 'name',
+  type: 'type',
   order: 'order',
+  description: 'description',
+  notes: 'notes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -418,7 +427,6 @@ export const CharacterAbilityLevelScalarFieldEnum = {
   level: 'level',
   manaCost: 'manaCost',
   range: 'range',
-  cooldown: 'cooldown',
   description: 'description',
   notes: 'notes',
   damage: 'damage',
@@ -427,6 +435,67 @@ export const CharacterAbilityLevelScalarFieldEnum = {
 } as const
 
 export type CharacterAbilityLevelScalarFieldEnum = (typeof CharacterAbilityLevelScalarFieldEnum)[keyof typeof CharacterAbilityLevelScalarFieldEnum]
+
+
+export const SummonSkillScalarFieldEnum = {
+  id: 'id',
+  abilityId: 'abilityId',
+  skillId: 'skillId',
+  selectedAttributeId: 'selectedAttributeId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SummonSkillScalarFieldEnum = (typeof SummonSkillScalarFieldEnum)[keyof typeof SummonSkillScalarFieldEnum]
+
+
+export const SummonSkillProfileValueScalarFieldEnum = {
+  id: 'id',
+  summonSkillId: 'summonSkillId',
+  profileId: 'profileId',
+  optionId: 'optionId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SummonSkillProfileValueScalarFieldEnum = (typeof SummonSkillProfileValueScalarFieldEnum)[keyof typeof SummonSkillProfileValueScalarFieldEnum]
+
+
+export const SummonAttributeScalarFieldEnum = {
+  id: 'id',
+  abilityId: 'abilityId',
+  attributeId: 'attributeId',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SummonAttributeScalarFieldEnum = (typeof SummonAttributeScalarFieldEnum)[keyof typeof SummonAttributeScalarFieldEnum]
+
+
+export const SummonArmorClassValueScalarFieldEnum = {
+  id: 'id',
+  abilityId: 'abilityId',
+  fieldId: 'fieldId',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SummonArmorClassValueScalarFieldEnum = (typeof SummonArmorClassValueScalarFieldEnum)[keyof typeof SummonArmorClassValueScalarFieldEnum]
+
+
+export const SummonHealthScalarFieldEnum = {
+  id: 'id',
+  abilityId: 'abilityId',
+  current: 'current',
+  maximum: 'maximum',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SummonHealthScalarFieldEnum = (typeof SummonHealthScalarFieldEnum)[keyof typeof SummonHealthScalarFieldEnum]
 
 
 export const CharacterInventoryItemScalarFieldEnum = {

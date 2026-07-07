@@ -238,6 +238,7 @@ export type ProfileOptionWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"ProfileOption"> | Date | string
   profile?: Prisma.XOR<Prisma.SkillModifierProfileScalarRelationFilter, Prisma.SkillModifierProfileWhereInput>
   selections?: Prisma.CharacterSheetSkillProfileValueListRelationFilter
+  summonSelections?: Prisma.SummonSkillProfileValueListRelationFilter
 }
 
 export type ProfileOptionOrderByWithRelationInput = {
@@ -250,6 +251,7 @@ export type ProfileOptionOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   profile?: Prisma.SkillModifierProfileOrderByWithRelationInput
   selections?: Prisma.CharacterSheetSkillProfileValueOrderByRelationAggregateInput
+  summonSelections?: Prisma.SummonSkillProfileValueOrderByRelationAggregateInput
 }
 
 export type ProfileOptionWhereUniqueInput = Prisma.AtLeast<{
@@ -266,6 +268,7 @@ export type ProfileOptionWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"ProfileOption"> | Date | string
   profile?: Prisma.XOR<Prisma.SkillModifierProfileScalarRelationFilter, Prisma.SkillModifierProfileWhereInput>
   selections?: Prisma.CharacterSheetSkillProfileValueListRelationFilter
+  summonSelections?: Prisma.SummonSkillProfileValueListRelationFilter
 }, "id" | "profileId_label">
 
 export type ProfileOptionOrderByWithAggregationInput = {
@@ -305,6 +308,7 @@ export type ProfileOptionCreateInput = {
   updatedAt?: Date | string
   profile: Prisma.SkillModifierProfileCreateNestedOneWithoutOptionsInput
   selections?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutOptionInput
+  summonSelections?: Prisma.SummonSkillProfileValueCreateNestedManyWithoutOptionInput
 }
 
 export type ProfileOptionUncheckedCreateInput = {
@@ -316,6 +320,7 @@ export type ProfileOptionUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   selections?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
+  summonSelections?: Prisma.SummonSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
 }
 
 export type ProfileOptionUpdateInput = {
@@ -327,6 +332,7 @@ export type ProfileOptionUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profile?: Prisma.SkillModifierProfileUpdateOneRequiredWithoutOptionsNestedInput
   selections?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutOptionNestedInput
+  summonSelections?: Prisma.SummonSkillProfileValueUpdateManyWithoutOptionNestedInput
 }
 
 export type ProfileOptionUncheckedUpdateInput = {
@@ -338,6 +344,7 @@ export type ProfileOptionUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   selections?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
+  summonSelections?: Prisma.SummonSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
 }
 
 export type ProfileOptionCreateManyInput = {
@@ -495,6 +502,22 @@ export type ProfileOptionUpdateOneWithoutSelectionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProfileOptionUpdateToOneWithWhereWithoutSelectionsInput, Prisma.ProfileOptionUpdateWithoutSelectionsInput>, Prisma.ProfileOptionUncheckedUpdateWithoutSelectionsInput>
 }
 
+export type ProfileOptionCreateNestedOneWithoutSummonSelectionsInput = {
+  create?: Prisma.XOR<Prisma.ProfileOptionCreateWithoutSummonSelectionsInput, Prisma.ProfileOptionUncheckedCreateWithoutSummonSelectionsInput>
+  connectOrCreate?: Prisma.ProfileOptionCreateOrConnectWithoutSummonSelectionsInput
+  connect?: Prisma.ProfileOptionWhereUniqueInput
+}
+
+export type ProfileOptionUpdateOneWithoutSummonSelectionsNestedInput = {
+  create?: Prisma.XOR<Prisma.ProfileOptionCreateWithoutSummonSelectionsInput, Prisma.ProfileOptionUncheckedCreateWithoutSummonSelectionsInput>
+  connectOrCreate?: Prisma.ProfileOptionCreateOrConnectWithoutSummonSelectionsInput
+  upsert?: Prisma.ProfileOptionUpsertWithoutSummonSelectionsInput
+  disconnect?: Prisma.ProfileOptionWhereInput | boolean
+  delete?: Prisma.ProfileOptionWhereInput | boolean
+  connect?: Prisma.ProfileOptionWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProfileOptionUpdateToOneWithWhereWithoutSummonSelectionsInput, Prisma.ProfileOptionUpdateWithoutSummonSelectionsInput>, Prisma.ProfileOptionUncheckedUpdateWithoutSummonSelectionsInput>
+}
+
 export type ProfileOptionCreateWithoutProfileInput = {
   id?: string
   label: string
@@ -503,6 +526,7 @@ export type ProfileOptionCreateWithoutProfileInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   selections?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutOptionInput
+  summonSelections?: Prisma.SummonSkillProfileValueCreateNestedManyWithoutOptionInput
 }
 
 export type ProfileOptionUncheckedCreateWithoutProfileInput = {
@@ -513,6 +537,7 @@ export type ProfileOptionUncheckedCreateWithoutProfileInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   selections?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
+  summonSelections?: Prisma.SummonSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
 }
 
 export type ProfileOptionCreateOrConnectWithoutProfileInput = {
@@ -562,6 +587,7 @@ export type ProfileOptionCreateWithoutSelectionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   profile: Prisma.SkillModifierProfileCreateNestedOneWithoutOptionsInput
+  summonSelections?: Prisma.SummonSkillProfileValueCreateNestedManyWithoutOptionInput
 }
 
 export type ProfileOptionUncheckedCreateWithoutSelectionsInput = {
@@ -572,6 +598,7 @@ export type ProfileOptionUncheckedCreateWithoutSelectionsInput = {
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  summonSelections?: Prisma.SummonSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
 }
 
 export type ProfileOptionCreateOrConnectWithoutSelectionsInput = {
@@ -598,6 +625,7 @@ export type ProfileOptionUpdateWithoutSelectionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profile?: Prisma.SkillModifierProfileUpdateOneRequiredWithoutOptionsNestedInput
+  summonSelections?: Prisma.SummonSkillProfileValueUpdateManyWithoutOptionNestedInput
 }
 
 export type ProfileOptionUncheckedUpdateWithoutSelectionsInput = {
@@ -608,6 +636,67 @@ export type ProfileOptionUncheckedUpdateWithoutSelectionsInput = {
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  summonSelections?: Prisma.SummonSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
+}
+
+export type ProfileOptionCreateWithoutSummonSelectionsInput = {
+  id?: string
+  label: string
+  value?: number
+  order?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  profile: Prisma.SkillModifierProfileCreateNestedOneWithoutOptionsInput
+  selections?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutOptionInput
+}
+
+export type ProfileOptionUncheckedCreateWithoutSummonSelectionsInput = {
+  id?: string
+  profileId: string
+  label: string
+  value?: number
+  order?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  selections?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
+}
+
+export type ProfileOptionCreateOrConnectWithoutSummonSelectionsInput = {
+  where: Prisma.ProfileOptionWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProfileOptionCreateWithoutSummonSelectionsInput, Prisma.ProfileOptionUncheckedCreateWithoutSummonSelectionsInput>
+}
+
+export type ProfileOptionUpsertWithoutSummonSelectionsInput = {
+  update: Prisma.XOR<Prisma.ProfileOptionUpdateWithoutSummonSelectionsInput, Prisma.ProfileOptionUncheckedUpdateWithoutSummonSelectionsInput>
+  create: Prisma.XOR<Prisma.ProfileOptionCreateWithoutSummonSelectionsInput, Prisma.ProfileOptionUncheckedCreateWithoutSummonSelectionsInput>
+  where?: Prisma.ProfileOptionWhereInput
+}
+
+export type ProfileOptionUpdateToOneWithWhereWithoutSummonSelectionsInput = {
+  where?: Prisma.ProfileOptionWhereInput
+  data: Prisma.XOR<Prisma.ProfileOptionUpdateWithoutSummonSelectionsInput, Prisma.ProfileOptionUncheckedUpdateWithoutSummonSelectionsInput>
+}
+
+export type ProfileOptionUpdateWithoutSummonSelectionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  label?: Prisma.StringFieldUpdateOperationsInput | string
+  value?: Prisma.FloatFieldUpdateOperationsInput | number
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  profile?: Prisma.SkillModifierProfileUpdateOneRequiredWithoutOptionsNestedInput
+  selections?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutOptionNestedInput
+}
+
+export type ProfileOptionUncheckedUpdateWithoutSummonSelectionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  profileId?: Prisma.StringFieldUpdateOperationsInput | string
+  label?: Prisma.StringFieldUpdateOperationsInput | string
+  value?: Prisma.FloatFieldUpdateOperationsInput | number
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  selections?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
 }
 
 export type ProfileOptionCreateManyProfileInput = {
@@ -627,6 +716,7 @@ export type ProfileOptionUpdateWithoutProfileInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   selections?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutOptionNestedInput
+  summonSelections?: Prisma.SummonSkillProfileValueUpdateManyWithoutOptionNestedInput
 }
 
 export type ProfileOptionUncheckedUpdateWithoutProfileInput = {
@@ -637,6 +727,7 @@ export type ProfileOptionUncheckedUpdateWithoutProfileInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   selections?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
+  summonSelections?: Prisma.SummonSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
 }
 
 export type ProfileOptionUncheckedUpdateManyWithoutProfileInput = {
@@ -655,10 +746,12 @@ export type ProfileOptionUncheckedUpdateManyWithoutProfileInput = {
 
 export type ProfileOptionCountOutputType = {
   selections: number
+  summonSelections: number
 }
 
 export type ProfileOptionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   selections?: boolean | ProfileOptionCountOutputTypeCountSelectionsArgs
+  summonSelections?: boolean | ProfileOptionCountOutputTypeCountSummonSelectionsArgs
 }
 
 /**
@@ -678,6 +771,13 @@ export type ProfileOptionCountOutputTypeCountSelectionsArgs<ExtArgs extends runt
   where?: Prisma.CharacterSheetSkillProfileValueWhereInput
 }
 
+/**
+ * ProfileOptionCountOutputType without action
+ */
+export type ProfileOptionCountOutputTypeCountSummonSelectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SummonSkillProfileValueWhereInput
+}
+
 
 export type ProfileOptionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -689,6 +789,7 @@ export type ProfileOptionSelect<ExtArgs extends runtime.Types.Extensions.Interna
   updatedAt?: boolean
   profile?: boolean | Prisma.SkillModifierProfileDefaultArgs<ExtArgs>
   selections?: boolean | Prisma.ProfileOption$selectionsArgs<ExtArgs>
+  summonSelections?: boolean | Prisma.ProfileOption$summonSelectionsArgs<ExtArgs>
   _count?: boolean | Prisma.ProfileOptionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["profileOption"]>
 
@@ -728,6 +829,7 @@ export type ProfileOptionOmit<ExtArgs extends runtime.Types.Extensions.InternalA
 export type ProfileOptionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   profile?: boolean | Prisma.SkillModifierProfileDefaultArgs<ExtArgs>
   selections?: boolean | Prisma.ProfileOption$selectionsArgs<ExtArgs>
+  summonSelections?: boolean | Prisma.ProfileOption$summonSelectionsArgs<ExtArgs>
   _count?: boolean | Prisma.ProfileOptionCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ProfileOptionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -742,6 +844,7 @@ export type $ProfileOptionPayload<ExtArgs extends runtime.Types.Extensions.Inter
   objects: {
     profile: Prisma.$SkillModifierProfilePayload<ExtArgs>
     selections: Prisma.$CharacterSheetSkillProfileValuePayload<ExtArgs>[]
+    summonSelections: Prisma.$SummonSkillProfileValuePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1147,6 +1250,7 @@ export interface Prisma__ProfileOptionClient<T, Null = never, ExtArgs extends ru
   readonly [Symbol.toStringTag]: "PrismaPromise"
   profile<T extends Prisma.SkillModifierProfileDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SkillModifierProfileDefaultArgs<ExtArgs>>): Prisma.Prisma__SkillModifierProfileClient<runtime.Types.Result.GetResult<Prisma.$SkillModifierProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   selections<T extends Prisma.ProfileOption$selectionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProfileOption$selectionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetSkillProfileValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  summonSelections<T extends Prisma.ProfileOption$summonSelectionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProfileOption$summonSelectionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummonSkillProfileValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1605,6 +1709,30 @@ export type ProfileOption$selectionsArgs<ExtArgs extends runtime.Types.Extension
   take?: number
   skip?: number
   distinct?: Prisma.CharacterSheetSkillProfileValueScalarFieldEnum | Prisma.CharacterSheetSkillProfileValueScalarFieldEnum[]
+}
+
+/**
+ * ProfileOption.summonSelections
+ */
+export type ProfileOption$summonSelectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SummonSkillProfileValue
+   */
+  select?: Prisma.SummonSkillProfileValueSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SummonSkillProfileValue
+   */
+  omit?: Prisma.SummonSkillProfileValueOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SummonSkillProfileValueInclude<ExtArgs> | null
+  where?: Prisma.SummonSkillProfileValueWhereInput
+  orderBy?: Prisma.SummonSkillProfileValueOrderByWithRelationInput | Prisma.SummonSkillProfileValueOrderByWithRelationInput[]
+  cursor?: Prisma.SummonSkillProfileValueWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SummonSkillProfileValueScalarFieldEnum | Prisma.SummonSkillProfileValueScalarFieldEnum[]
 }
 
 /**
