@@ -172,7 +172,7 @@ export default function CharacterSheetDetailPage() {
   const [newAbility, setNewAbility] = useState({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '' })
   const [abilitySaving, setAbilitySaving] = useState(false); const [abilityError, setAbilityError] = useState<string | null>(null)
   const [showAddLevelModal, setShowAddLevelModal] = useState<string | null>(null)
-  const [newLevelForm, setNewLevelForm] = useState({ level: 2, copyFromPrevious: true })
+  const [newLevelForm, setNewLevelForm] = useState<{ level: number | string; copyFromPrevious: boolean }>({ level: 2, copyFromPrevious: true })
   const [levelModalSaving, setLevelModalSaving] = useState(false); const [levelModalError, setLevelModalError] = useState<string | null>(null)
   const [showNewItem, setShowNewItem] = useState(false); const [newItem, setNewItem] = useState({ name: '', weight: '', cost: '', description: '' })
   const [itemSaving, setItemSaving] = useState(false); const [itemError, setItemError] = useState<string | null>(null)
@@ -1108,7 +1108,7 @@ function AbilitiesTab({
   handleCreateAbility: (e: FormEvent) => Promise<void>; resetNewAbility: () => void
   handleDeleteAbility: (aid: string) => Promise<void>
   showAddLevelModal: string | null; setShowAddLevelModal: React.Dispatch<React.SetStateAction<string | null>>
-  newLevelForm: { level: number; copyFromPrevious: boolean }; setNewLevelForm: React.Dispatch<React.SetStateAction<{ level: number; copyFromPrevious: boolean }>>
+  newLevelForm: { level: number | string; copyFromPrevious: boolean }; setNewLevelForm: React.Dispatch<React.SetStateAction<{ level: number | string; copyFromPrevious: boolean }>>
   levelModalSaving: boolean; setLevelModalSaving: React.Dispatch<React.SetStateAction<boolean>>
   levelModalError: string | null; setLevelModalError: React.Dispatch<React.SetStateAction<string | null>>
   expandedAbilities: Record<string, boolean>; setExpandedAbilities: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
@@ -1744,7 +1744,7 @@ function AbilitiesTab({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in">
           <div className="card !p-6 max-w-sm w-full space-y-4 border-primary/20">
             <h3 className="font-semibold text-primary">Create Ability Level</h3>
-            <div><label className="text-xs text-muted block mb-1">Level</label><input type="number" min={2} className="input-field w-full" value={newLevelForm.level} onChange={e => setNewLevelForm(p => ({ ...p, level: parseInt(e.target.value, 10) || 1 }))} /></div>
+            <div><label className="text-xs text-muted block mb-1">Level</label><input className="input-field w-full" value={newLevelForm.level} onChange={e => setNewLevelForm(p => ({ ...p, level: e.target.value }))} /></div>
             <div><label className="text-xs text-muted block mb-2">Copy information from previous level?</label><div className="flex gap-4"><label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="copyPrev" checked={newLevelForm.copyFromPrevious} onChange={() => setNewLevelForm(p => ({ ...p, copyFromPrevious: true }))} className="accent-primary" /><span className="text-sm">Yes</span></label><label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="copyPrev" checked={!newLevelForm.copyFromPrevious} onChange={() => setNewLevelForm(p => ({ ...p, copyFromPrevious: false }))} className="accent-primary" /><span className="text-sm">No</span></label></div></div>
             {levelModalError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{levelModalError}</div>}
             <div className="flex gap-2 justify-end"><button type="button" onClick={() => setShowAddLevelModal(null)} disabled={levelModalSaving} className="btn-ghost text-sm">Cancel</button><button type="button" onClick={() => handleAddLevel(showAddLevelModal)} disabled={levelModalSaving} className="btn-primary text-sm">{levelModalSaving ? 'Creating...' : 'Create'}</button></div>
