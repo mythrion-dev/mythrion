@@ -175,6 +175,7 @@ export default function AdventureDetailPage() {
     const ta = newTemplateAttrs.map(a=>({key:a.key.trim(),name:a.name.trim()}))
     if(ta.some(a=>!a.key||!a.name)){setTemplateError('All attributes must have a key and name');return}
     const ve = validateCoreResources(newCoreResources); if(ve){setTemplateError(ve);return}
+    for (const p of newTemplateProfiles) { if ((p as any).targetMode === 'SELECTED_SKILLS' && ((p as any).targetSkillIds?.length ?? 0) === 0) { setTemplateError(`Profile "${p.name || 'Unnamed'}" uses "Selected Skills" mode but no skills are selected.`); return } }
     setTemplateCreating(true)
     try {
       await api.post(`/adventures/${id}/templates`, {
@@ -222,6 +223,7 @@ export default function AdventureDetailPage() {
     const ta = editTemplateAttrs.map(a=>({key:a.key.trim(),name:a.name.trim()}))
     if(ta.some(a=>!a.key||!a.name)){setEditingTemplateError('All attributes must have a key and name');return}
     const ve = validateCoreResources(editCoreResources); if(ve){setEditingTemplateError(ve);return}
+    for (const p of editTemplateProfiles) { if ((p as any).targetMode === 'SELECTED_SKILLS' && ((p as any).targetSkillIds?.length ?? 0) === 0) { setEditingTemplateError(`Profile "${p.name || 'Unnamed'}" uses "Selected Skills" mode but no skills are selected.`); return } }
     setTemplateSaving(true)
     try {
       await api.patch(`/adventures/${id}/templates/${editingTemplateId}`, {
