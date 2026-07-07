@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaClient } from './generated/prisma/client.js';
 import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
@@ -12,7 +13,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     // The prisma+postgres:// prefix (used by Prisma Accelerate) is not supported
     // by the pg driver, so we strip the "prisma+" prefix if present.
     const pgUrl = rawUrl.replace(/^prisma\+/, '');
-    const adapter = new PrismaPg(pgUrl);
+    // Use a pg.Pool instead of a raw connection string to enable concurrent
+    // queries without hitting pg's "client already executing" deprecation warning.
+    const pool = new pg.Pool({ connectionString: pgUrl });
+    const adapter = new PrismaPg(pool);
     super({ adapter });
   }
 
