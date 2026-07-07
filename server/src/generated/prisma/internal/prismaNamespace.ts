@@ -414,7 +414,9 @@ export const ModelName = {
   SummonArmorClassValue: 'SummonArmorClassValue',
   SummonHealth: 'SummonHealth',
   CharacterInventoryItem: 'CharacterInventoryItem',
-  CharacterStory: 'CharacterStory'
+  CharacterStory: 'CharacterStory',
+  TemplateCharacterSection: 'TemplateCharacterSection',
+  CharacterSectionEntry: 'CharacterSectionEntry'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -430,7 +432,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateCoreResource" | "characterSheetCoreResourceValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "characterAbility" | "characterAbilityLevel" | "summonSkill" | "summonSkillProfileValue" | "summonAttribute" | "summonArmorClassValue" | "summonHealth" | "characterInventoryItem" | "characterStory"
+    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateCoreResource" | "characterSheetCoreResourceValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "characterAbility" | "characterAbilityLevel" | "summonSkill" | "summonSkillProfileValue" | "summonAttribute" | "summonArmorClassValue" | "summonHealth" | "characterInventoryItem" | "characterStory" | "templateCharacterSection" | "characterSectionEntry"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2728,6 +2730,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    TemplateCharacterSection: {
+      payload: Prisma.$TemplateCharacterSectionPayload<ExtArgs>
+      fields: Prisma.TemplateCharacterSectionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TemplateCharacterSectionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateCharacterSectionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TemplateCharacterSectionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateCharacterSectionPayload>
+        }
+        findFirst: {
+          args: Prisma.TemplateCharacterSectionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateCharacterSectionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TemplateCharacterSectionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateCharacterSectionPayload>
+        }
+        findMany: {
+          args: Prisma.TemplateCharacterSectionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateCharacterSectionPayload>[]
+        }
+        create: {
+          args: Prisma.TemplateCharacterSectionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateCharacterSectionPayload>
+        }
+        createMany: {
+          args: Prisma.TemplateCharacterSectionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TemplateCharacterSectionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateCharacterSectionPayload>[]
+        }
+        delete: {
+          args: Prisma.TemplateCharacterSectionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateCharacterSectionPayload>
+        }
+        update: {
+          args: Prisma.TemplateCharacterSectionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateCharacterSectionPayload>
+        }
+        deleteMany: {
+          args: Prisma.TemplateCharacterSectionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TemplateCharacterSectionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TemplateCharacterSectionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateCharacterSectionPayload>[]
+        }
+        upsert: {
+          args: Prisma.TemplateCharacterSectionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateCharacterSectionPayload>
+        }
+        aggregate: {
+          args: Prisma.TemplateCharacterSectionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTemplateCharacterSection>
+        }
+        groupBy: {
+          args: Prisma.TemplateCharacterSectionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TemplateCharacterSectionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TemplateCharacterSectionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TemplateCharacterSectionCountAggregateOutputType> | number
+        }
+      }
+    }
+    CharacterSectionEntry: {
+      payload: Prisma.$CharacterSectionEntryPayload<ExtArgs>
+      fields: Prisma.CharacterSectionEntryFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CharacterSectionEntryFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSectionEntryPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CharacterSectionEntryFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSectionEntryPayload>
+        }
+        findFirst: {
+          args: Prisma.CharacterSectionEntryFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSectionEntryPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CharacterSectionEntryFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSectionEntryPayload>
+        }
+        findMany: {
+          args: Prisma.CharacterSectionEntryFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSectionEntryPayload>[]
+        }
+        create: {
+          args: Prisma.CharacterSectionEntryCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSectionEntryPayload>
+        }
+        createMany: {
+          args: Prisma.CharacterSectionEntryCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CharacterSectionEntryCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSectionEntryPayload>[]
+        }
+        delete: {
+          args: Prisma.CharacterSectionEntryDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSectionEntryPayload>
+        }
+        update: {
+          args: Prisma.CharacterSectionEntryUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSectionEntryPayload>
+        }
+        deleteMany: {
+          args: Prisma.CharacterSectionEntryDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CharacterSectionEntryUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CharacterSectionEntryUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSectionEntryPayload>[]
+        }
+        upsert: {
+          args: Prisma.CharacterSectionEntryUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSectionEntryPayload>
+        }
+        aggregate: {
+          args: Prisma.CharacterSectionEntryAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCharacterSectionEntry>
+        }
+        groupBy: {
+          args: Prisma.CharacterSectionEntryGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterSectionEntryGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CharacterSectionEntryCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterSectionEntryCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -3195,6 +3345,33 @@ export const CharacterStoryScalarFieldEnum = {
 export type CharacterStoryScalarFieldEnum = (typeof CharacterStoryScalarFieldEnum)[keyof typeof CharacterStoryScalarFieldEnum]
 
 
+export const TemplateCharacterSectionScalarFieldEnum = {
+  id: 'id',
+  templateId: 'templateId',
+  name: 'name',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TemplateCharacterSectionScalarFieldEnum = (typeof TemplateCharacterSectionScalarFieldEnum)[keyof typeof TemplateCharacterSectionScalarFieldEnum]
+
+
+export const CharacterSectionEntryScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  sectionId: 'sectionId',
+  name: 'name',
+  description: 'description',
+  notes: 'notes',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterSectionEntryScalarFieldEnum = (typeof CharacterSectionEntryScalarFieldEnum)[keyof typeof CharacterSectionEntryScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -3456,6 +3633,8 @@ export type GlobalOmitConfig = {
   summonHealth?: Prisma.SummonHealthOmit
   characterInventoryItem?: Prisma.CharacterInventoryItemOmit
   characterStory?: Prisma.CharacterStoryOmit
+  templateCharacterSection?: Prisma.TemplateCharacterSectionOmit
+  characterSectionEntry?: Prisma.CharacterSectionEntryOmit
 }
 
 /* Types for Logging */

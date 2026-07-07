@@ -172,3 +172,13 @@ export type CharacterInventoryItem = Prisma.CharacterInventoryItemModel
  * 
  */
 export type CharacterStory = Prisma.CharacterStoryModel
+/**
+ * Model TemplateCharacterSection
+ * 
+ */
+export type TemplateCharacterSection = Prisma.TemplateCharacterSectionModel
+/**
+ * Model CharacterSectionEntry
+ * 
+ */
+export type CharacterSectionEntry = Prisma.CharacterSectionEntryModel

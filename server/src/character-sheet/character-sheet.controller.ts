@@ -250,4 +250,26 @@ export class CharacterSheetController {
   updateStory(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: { appearance?: string; backstory?: string; personality?: string; goals?: string; notes?: string }) {
     return this.sheetService.updateStory(id, req.user.sub, dto)
   }
+
+  // ── Character Section Entries ──
+
+  @Get(':id/section-entries')
+  listSectionEntries(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.sheetService.listSectionEntries(id, req.user.sub)
+  }
+
+  @Post(':id/section-entries')
+  createSectionEntry(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: { sectionId: string; name: string; description?: string; notes?: string }) {
+    return this.sheetService.createSectionEntry(id, req.user.sub, dto)
+  }
+
+  @Patch(':id/section-entries/:entryId')
+  updateSectionEntry(@Req() req: AuthenticatedRequest, @Param('entryId') entryId: string, @Body() dto: { name?: string; description?: string; notes?: string }) {
+    return this.sheetService.updateSectionEntry(entryId, req.user.sub, dto)
+  }
+
+  @Delete(':id/section-entries/:entryId')
+  removeSectionEntry(@Req() req: AuthenticatedRequest, @Param('entryId') entryId: string) {
+    return this.sheetService.removeSectionEntry(entryId, req.user.sub)
+  }
 }

@@ -179,4 +179,15 @@ export class UpdateTemplateDto {
   @IsString()
   @IsOptional()
   skillFormula?: string
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateCharacterSectionDefDto)
+  characterSections?: UpdateCharacterSectionDefDto[]
+}
+
+export class UpdateCharacterSectionDefDto {
+  @IsString()
+  name!: string
 }

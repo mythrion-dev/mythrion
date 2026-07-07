@@ -85,6 +85,17 @@ export default function AdventureDetailPage() {
   const [newAcEnabled, setNewAcEnabled] = useState(false); const [newAcAttributeIds, setNewAcAttributeIds] = useState<string[]>([]); const [newAcFields, setNewAcFields] = useState<{ name: string; key: string; defaultValue: string; editableByPlayer: boolean; description: string }[]>([])
   const [editAcEnabled, setEditAcEnabled] = useState(false); const [editAcAttributeIds, setEditAcAttributeIds] = useState<string[]>([]); const [editAcFields, setEditAcFields] = useState<{ name: string; key: string; defaultValue: string; editableByPlayer: boolean; description: string }[]>([])
 
+  // Character Sections state
+  const [newCharacterSections, setNewCharacterSections] = useState<string[]>([])
+  const [editCharacterSections, setEditCharacterSections] = useState<string[]>([])
+
+  function addNewCharacterSection() { setNewCharacterSections(p => [...p, '']) }
+  function removeNewCharacterSection(i: number) { setNewCharacterSections(p => p.filter((_,j) => j!==i)) }
+  function updateNewCharacterSection(i: number, v: string) { setNewCharacterSections(p => p.map((n,j) => j===i ? v : n)) }
+  function addEditCharacterSection() { setEditCharacterSections(p => [...p, '']) }
+  function removeEditCharacterSection(i: number) { setEditCharacterSections(p => p.filter((_,j) => j!==i)) }
+  function updateEditCharacterSection(i: number, v: string) { setEditCharacterSections(p => p.map((n,j) => j===i ? v : n)) }
+
   function addNewAcField() { setNewAcFields(p => [...p, { name: '', key: '', defaultValue: '0', editableByPlayer: false, description: '' }]) }
   function removeNewAcField(i: number) { setNewAcFields(p => p.filter((_,j) => j!==i)) }
   function updateNewAcField(i: number, f: 'name'|'key'|'defaultValue'|'description', v: string) { setNewAcFields(p => p.map((a,j) => j===i ? {...a, [f]: v} : a)) }
@@ -176,6 +187,7 @@ export default function AdventureDetailPage() {
         skillModifierProfiles: newTemplateProfiles.filter(p=>p.name.trim()).map(p=>({name:p.name.trim(),targetMode:p.targetMode??'ALL_SKILLS',targetSkillIds:p.targetSkillIds??[],options:p.options.filter(o=>o.label.trim()).map(o=>({label:o.label.trim(),value:o.value}))})),
         coreResources: newCoreResources.filter(r=>r.slug.trim()).map(r=>({displayName:r.displayName.trim()||r.slug.trim(), slug:r.slug.trim(), enabled:r.enabled, editableByPlayer:r.editableByPlayer, showNotes:r.showNotes})),
         armorClass: newAcEnabled ? { enabled: true, attributeModifierIds: newAcAttributeIds, fields: newAcFields.filter(f=>f.name.trim()&&f.key.trim()).map(f=>({name:f.name.trim(),key:f.key.trim(),defaultValue:f.defaultValue.trim()||'0',editableByPlayer:f.editableByPlayer,description:f.description.trim()||undefined})) } : undefined,
+        characterSections: newCharacterSections.filter(n => n.trim()).map(n => ({ name: n.trim() })),
       })
       resetNewTemplate(); fetchTemplates()
     } catch(err) { setTemplateError(err instanceof Error ? err.message : 'Failed to create template') } finally { setTemplateCreating(false) }
@@ -202,6 +214,7 @@ export default function AdventureDetailPage() {
       showNotes: cr.showNotes ?? true,
     })));
     const ac = t.armorClass; if (ac) { setEditAcEnabled(ac.enabled); setEditAcAttributeIds(ac.attributeModifierIds ?? []); setEditAcFields(ac.fields.map(f=>({name:f.name,key:f.key,defaultValue:f.defaultValue??'0',editableByPlayer:f.editableByPlayer,description:f.description??''}))) } else { setEditAcEnabled(false); setEditAcAttributeIds([]); setEditAcFields([]) }
+    setEditCharacterSections((t as any).characterSections?.map((s: any) => s.name) ?? [])
     setEditingTemplateError(null) }
   function cancelEditTemplate() { setEditingTemplateId(null); setEditingTemplateError(null) }
 
@@ -221,6 +234,7 @@ export default function AdventureDetailPage() {
         skillModifierProfiles: editTemplateProfiles.filter(p=>p.name.trim()).map(p=>({name:p.name.trim(),targetMode:p.targetMode??'ALL_SKILLS',targetSkillIds:p.targetSkillIds??[],options:p.options.filter(o=>o.label.trim()).map(o=>({label:o.label.trim(),value:o.value}))})),
         coreResources: editCoreResources.filter(r=>r.slug.trim()).map(r=>({displayName:r.displayName.trim()||r.slug.trim(), slug:r.slug.trim(), enabled:r.enabled, editableByPlayer:r.editableByPlayer, showNotes:r.showNotes})),
         armorClass: editAcEnabled ? { enabled: true, attributeModifierIds: editAcAttributeIds, fields: editAcFields.filter(f=>f.name.trim()&&f.key.trim()).map(f=>({name:f.name.trim(),key:f.key.trim(),defaultValue:f.defaultValue.trim()||'0',editableByPlayer:f.editableByPlayer,description:f.description.trim()||undefined})) } : { enabled: false },
+        characterSections: editCharacterSections.filter(n => n.trim()).map(n => ({ name: n.trim() })),
       })
       cancelEditTemplate(); fetchTemplates()
     } catch(err) { setEditingTemplateError(err instanceof Error ? err.message : 'Failed to update template') } finally { setTemplateSaving(false) }

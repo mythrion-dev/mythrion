@@ -16,6 +16,7 @@ const templateInclude = {
   armorClass: {
     include: { fields: { orderBy: { order: 'asc' as const } } },
   },
+  characterSections: { orderBy: { order: 'asc' as const } },
 }
 
 @Injectable()
@@ -382,6 +383,29 @@ export class TemplateService {
               },
             },
           })
+        }
+      }
+    }
+
+    // Handle character sections
+    if (dto.characterSections) {
+      const existingSections = await this.prisma.templateCharacterSection.findMany({
+        where: { templateId: id },
+      })
+      const newSectionNames = dto.characterSections.map(s => s.name.trim())
+      const existingSectionNames = existingSections.map(s => s.name)
+      const sectionsToDelete = existingSectionNames.filter(n => !newSectionNames.includes(n))
+      if (sectionsToDelete.length) {
+        await this.prisma.templateCharacterSection.deleteMany({ where: { templateId: id, name: { in: sectionsToDelete } } })
+      }
+      for (let idx = 0; idx < dto.characterSections.length; idx++) {
+        const s = dto.characterSections[idx]; const name = s.name.trim()
+        if (!name) continue
+        const existing = existingSections.find(e => e.name === name)
+        if (existing) {
+          await this.prisma.templateCharacterSection.update({ where: { id: existing.id }, data: { name, order: idx } })
+        } else {
+          await this.prisma.templateCharacterSection.create({ data: { templateId: id, name, order: idx } })
         }
       }
     }

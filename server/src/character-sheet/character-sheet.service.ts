@@ -26,6 +26,13 @@ const sheetInclude = {
       armorClass: {
         include: { fields: { orderBy: { order: 'asc' as const } } },
       },
+      characterSections: { orderBy: { order: 'asc' as const } },
+    },
+  },
+  sectionEntries: {
+    orderBy: { order: 'asc' as const },
+    include: {
+      section: { select: { id: true, name: true } },
     },
   },
   values: {
@@ -762,6 +769,51 @@ export class CharacterSheetService {
   async updateStory(sheetId: string, userId: string, dto: { appearance?: string; backstory?: string; personality?: string; goals?: string; notes?: string }) {
     await this.requireOwnership(sheetId, userId)
     return this.prisma.characterStory.upsert({ where: { sheetId }, create: { sheetId, ...dto }, update: { ...dto } })
+  }
+
+  // ── Character Section Entries (CRUD) ──
+
+  async listSectionEntries(sheetId: string, userId: string) {
+    await this.requireOwnership(sheetId, userId)
+    return this.prisma.characterSectionEntry.findMany({
+      where: { sheetId },
+      orderBy: { order: 'asc' },
+      include: { section: { select: { id: true, name: true } } },
+    })
+  }
+
+  async createSectionEntry(sheetId: string, userId: string, dto: { sectionId: string; name: string; description?: string; notes?: string }) {
+    await this.requireOwnership(sheetId, userId)
+    const count = await this.prisma.characterSectionEntry.count({ where: { sheetId, sectionId: dto.sectionId } })
+    return this.prisma.characterSectionEntry.create({
+      data: {
+        sheetId,
+        sectionId: dto.sectionId,
+        name: dto.name,
+        description: dto.description ?? '',
+        notes: dto.notes ?? null,
+        order: count,
+      },
+      include: { section: { select: { id: true, name: true } } },
+    })
+  }
+
+  async updateSectionEntry(entryId: string, userId: string, dto: { name?: string; description?: string; notes?: string }) {
+    const entry = await this.prisma.characterSectionEntry.findUnique({ where: { id: entryId } })
+    if (!entry) throw new NotFoundException('Section entry not found')
+    await this.requireOwnership(entry.sheetId, userId)
+    return this.prisma.characterSectionEntry.update({
+      where: { id: entryId },
+      data: { ...dto },
+      include: { section: { select: { id: true, name: true } } },
+    })
+  }
+
+  async removeSectionEntry(entryId: string, userId: string) {
+    const entry = await this.prisma.characterSectionEntry.findUnique({ where: { id: entryId } })
+    if (!entry) throw new NotFoundException('Section entry not found')
+    await this.requireOwnership(entry.sheetId, userId)
+    return this.prisma.characterSectionEntry.delete({ where: { id: entryId } })
   }
 
   private async requireOwnership(sheetId: string, userId: string) {

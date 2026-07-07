@@ -81,7 +81,9 @@ export const ModelName = {
   SummonArmorClassValue: 'SummonArmorClassValue',
   SummonHealth: 'SummonHealth',
   CharacterInventoryItem: 'CharacterInventoryItem',
-  CharacterStory: 'CharacterStory'
+  CharacterStory: 'CharacterStory',
+  TemplateCharacterSection: 'TemplateCharacterSection',
+  CharacterSectionEntry: 'CharacterSectionEntry'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -526,6 +528,33 @@ export const CharacterStoryScalarFieldEnum = {
 } as const
 
 export type CharacterStoryScalarFieldEnum = (typeof CharacterStoryScalarFieldEnum)[keyof typeof CharacterStoryScalarFieldEnum]
+
+
+export const TemplateCharacterSectionScalarFieldEnum = {
+  id: 'id',
+  templateId: 'templateId',
+  name: 'name',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TemplateCharacterSectionScalarFieldEnum = (typeof TemplateCharacterSectionScalarFieldEnum)[keyof typeof TemplateCharacterSectionScalarFieldEnum]
+
+
+export const CharacterSectionEntryScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  sectionId: 'sectionId',
+  name: 'name',
+  description: 'description',
+  notes: 'notes',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterSectionEntryScalarFieldEnum = (typeof CharacterSectionEntryScalarFieldEnum)[keyof typeof CharacterSectionEntryScalarFieldEnum]
 
 
 export const SortOrder = {
