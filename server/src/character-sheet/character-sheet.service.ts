@@ -70,6 +70,7 @@ const sheetInclude = {
     },
   },
   abilities: {
+    where: { summonId: null },
     orderBy: { order: 'asc' as const },
     include: {
       levels: { orderBy: { level: 'asc' as const } },
