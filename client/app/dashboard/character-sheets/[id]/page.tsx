@@ -38,7 +38,7 @@ interface ArmorClassValue {
 }
 
 interface TemplateCharacterSection { id: string; name: string; order: number }
-interface SectionEntry { id: string; sheetId: string; sectionId: string; name: string; description: string; notes: string | null; order: number; section: { id: string; name: string } }
+interface SectionEntry { id: string; sheetId: string; sectionId: string; name: string; description: string; order: number; section: { id: string; name: string } }
 
 interface AbilityLevel { id: string; abilityId: string; level: number; manaCost: number | null; range: string | null; description: string | null; notes: string | null; damage: string | null }
 interface SummonAttribute { id: string; abilityId: string; attributeId: string; value: string }
@@ -183,7 +183,7 @@ export default function CharacterSheetDetailPage() {
   const [sectionEntries, setSectionEntries] = useState<SectionEntry[]>([])
   const [expandedSectionEntries, setExpandedSectionEntries] = useState<Record<string, boolean>>({})
   const [showNewSectionEntry, setShowNewSectionEntry] = useState<string | null>(null)
-  const [newSectionEntryForm, setNewSectionEntryForm] = useState({ name: '', description: '', notes: '' })
+  const [newSectionEntryForm, setNewSectionEntryForm] = useState({ name: '', description: '' })
   const [sectionEntrySaving, setSectionEntrySaving] = useState(false)
 
   // Summon internal tab state
@@ -806,13 +806,13 @@ export default function CharacterSheetDetailPage() {
   // ── Section entry handlers ──
   function toSingular(name: string) { if (name.endsWith('ies')) return name.slice(0, -3) + 'y'; if (name.endsWith('s') && !name.endsWith('ss') && !name.endsWith('us')) return name.slice(0, -1); return name }
 
-  function resetSectionEntryForm() { setNewSectionEntryForm({ name: '', description: '', notes: '' }); setShowNewSectionEntry(null); setSectionEntrySaving(false) }
+  function resetSectionEntryForm() { setNewSectionEntryForm({ name: '', description: '' }); setShowNewSectionEntry(null); setSectionEntrySaving(false) }
   async function handleCreateSectionEntry(sectionId: string, e: FormEvent) {
     e.preventDefault()
     if (!sheet || !newSectionEntryForm.name.trim()) return
     setSectionEntrySaving(true)
     try {
-      const entry = await api.post<SectionEntry>(`/character-sheets/${sheet.id}/section-entries`, { sectionId, name: newSectionEntryForm.name.trim(), description: newSectionEntryForm.description.trim(), notes: newSectionEntryForm.notes.trim() || undefined })
+      const entry = await api.post<SectionEntry>(`/character-sheets/${sheet.id}/section-entries`, { sectionId, name: newSectionEntryForm.name.trim(), description: newSectionEntryForm.description.trim() })
       setSectionEntries(p => [...p, entry])
       resetSectionEntryForm()
     } catch {} finally { setSectionEntrySaving(false) }
@@ -823,7 +823,6 @@ export default function CharacterSheetDetailPage() {
       const body: Record<string, unknown> = {}
       if (field === 'name') body.name = value.trim()
       else if (field === 'description') body.description = value.trim()
-      else if (field === 'notes') body.notes = value.trim() || null
       const updated = await api.patch<SectionEntry>(`/character-sheets/${sheet.id}/section-entries/${entryId}`, body)
       setSectionEntries(p => p.map(e => e.id === entryId ? updated : e))
     } catch {}
@@ -876,11 +875,7 @@ export default function CharacterSheetDetailPage() {
         <button onClick={()=>setActiveTab('abilities')} className={tabClass('abilities')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>Abilities</button>
         <button onClick={()=>setActiveTab('inventory')} className={tabClass('inventory')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>Inventory</button>
         <button onClick={()=>setActiveTab('story')} className={tabClass('story')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>Story</button>
-        {(sheet.template.characterSections || []).map(section => (
-          <button key={section.id} onClick={() => setActiveTab(section.id)} className={tabClass(section.id)}>
-            {section.name}
-          </button>
-        ))}
+        <button onClick={()=>setActiveTab('personal-abilities')} className={tabClass('personal-abilities')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>Personal Abilities</button>
       </nav>
 
       {activeTab === 'character' && <div className="space-y-6">
@@ -937,91 +932,95 @@ export default function CharacterSheetDetailPage() {
       {activeTab === 'inventory' && <div className="space-y-4">{inventoryItems.length > 0 && <div className="text-sm text-muted text-right">Total Weight: <span className="font-semibold text-foreground">{totalWeight.toFixed(1)} kg</span></div>}{inventoryItems.length === 0 && !showNewItem && <div className="text-center py-6 text-muted-foreground text-sm italic">No items in inventory. {isOwner && 'Add one below.'}</div>}<div className="space-y-3">{inventoryItems.map(item => <div key={item.id} className="card !p-4 space-y-2"><div className="flex items-start justify-between">{isOwner ? <InlineClickEdit value={item.name} onSave={async (v) => saveItemField(item.id, 'name', v)} className="font-semibold text-foreground" /> : <h4 className="font-semibold text-foreground">{item.name}</h4>}{isOwner && <button onClick={() => handleDeleteItem(item.id)} className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors shrink-0 ml-2">Delete</button>}</div><div className="flex flex-wrap gap-3 text-xs text-muted">{isOwner ? <><span className="inline-flex items-center gap-1">Weight: <InlineClickEdit value={item.weight?.toString() ?? ''} onSave={async (v) => saveItemField(item.id, 'weight', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-16" emptyDisplay="—" /> kg</span><span className="inline-flex items-center gap-1">Cost: <InlineClickEdit value={item.cost ?? ''} onSave={async (v) => saveItemField(item.id, 'cost', v)} className="!text-xs !text-muted" inputClassName="!text-xs w-20" emptyDisplay="—" /></span></> : <>{item.weight != null && <span>Weight: {item.weight} kg</span>}{item.cost && <span>Cost: {item.cost}</span>}</>}</div>{isOwner ? <div><button type="button" onClick={() => setExpandedItems(p => ({ ...p, [item.id]: !p[item.id] }))} className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors"><svg className={`w-3 h-3 transition-transform ${expandedItems[item.id] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>Description</button>{expandedItems[item.id] && <div className="mt-1 pl-4"><InlineClickEdit value={item.description ?? ''} onSave={async (v) => saveItemField(item.id, 'description', v)} as="textarea" className="text-sm text-muted-foreground whitespace-pre-wrap" emptyDisplay="Add description..." /></div>}</div> : item.description && <div><button type="button" onClick={() => setExpandedItems(p => ({ ...p, [item.id]: !p[item.id] }))} className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors"><svg className={`w-3 h-3 transition-transform ${expandedItems[item.id] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>Description</button>{expandedItems[item.id] && <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1 pl-4">{item.description}</p>}</div>}</div>)}</div>{isOwner && !showNewItem && <button onClick={() => setShowNewItem(true)} className="btn-primary text-sm">+ Add Item</button>}{isOwner && showNewItem && <form onSubmit={handleCreateItem} className="card !p-4 space-y-3 border-primary/20"><h4 className="text-sm font-semibold text-primary">New Item</h4><div><label className="text-xs text-muted">Name</label><input className="input-field" value={newItem.name} onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Long Sword"/></div><div className="grid grid-cols-2 gap-2"><div><label className="text-xs text-muted">Weight (kg)</label><input type="number" step="any" className="input-field" value={newItem.weight} onChange={e => setNewItem(p => ({ ...p, weight: e.target.value }))} placeholder="3"/></div><div><label className="text-xs text-muted">Cost</label><input className="input-field" value={newItem.cost} onChange={e => setNewItem(p => ({ ...p, cost: e.target.value }))} placeholder="150 gp"/></div></div><div><label className="text-xs text-muted">Description</label><textarea className="input-field resize-none" rows={2} value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))} placeholder="Steel longsword forged by..."/></div>{itemError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{itemError}</div>}<div className="flex gap-2 justify-end"><button type="button" onClick={resetNewItem} disabled={itemSaving} className="btn-ghost text-sm">Cancel</button><button type="submit" disabled={itemSaving || !newItem.name.trim()} className="btn-primary text-sm">{itemSaving ? 'Creating...' : 'Create'}</button></div></form>}</div>}
       {activeTab === 'story' && <div className="space-y-4"><div className="card !p-6 space-y-4">{isOwner ? <><InlineTextarea value={story?.appearance ?? ''} label="Appearance" onSave={(v) => saveStoryField('appearance', v)} rows={3} emptyDisplay="Add appearance description..." /><InlineTextarea value={story?.backstory ?? ''} label="Backstory" onSave={(v) => saveStoryField('backstory', v)} rows={5} emptyDisplay="Add backstory..." /><InlineTextarea value={story?.personality ?? ''} label="Personality" onSave={(v) => saveStoryField('personality', v)} rows={3} emptyDisplay="Add personality description..." /><InlineTextarea value={story?.goals ?? ''} label="Goals" onSave={(v) => saveStoryField('goals', v)} rows={3} emptyDisplay="Add character goals..." /><InlineTextarea value={story?.notes ?? ''} label="Notes" onSave={(v) => saveStoryField('notes', v)} rows={3} emptyDisplay="Add notes..." /></> : <><StoryField label="Appearance" value={story?.appearance} /><StoryField label="Backstory" value={story?.backstory} /><StoryField label="Personality" value={story?.personality} /><StoryField label="Goals" value={story?.goals} /><StoryField label="Notes" value={story?.notes} /></>}</div></div>}
 
-      {/* Dynamic character section tabs */}
-      {(sheet.template.characterSections || []).map(section => {
-        if (activeTab !== section.id) return null
-        const entries = sectionEntries.filter(e => e.sectionId === section.id)
-        const singular = toSingular(section.name)
-        return (
-          <div key={section.id} className="space-y-4">
-            {entries.length === 0 && !showNewSectionEntry && (
-              <div className="text-center py-6 text-muted-foreground text-sm italic">
-                No entries yet. {isOwner && 'Add one below.'}
-              </div>
-            )}
-            <div className="space-y-1.5">
-              {entries.map(entry => {
-                const isExpanded = expandedSectionEntries[entry.id] ?? false
-                return (
-                  <div key={entry.id} className="rounded-lg border border-border bg-background/30 overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => setExpandedSectionEntries(p => ({ ...p, [entry.id]: !p[entry.id] }))}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-foreground/5 transition-colors"
-                    >
-                      <svg className={`w-3.5 h-3.5 text-muted transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-                      </svg>
-                      <span className={`text-sm font-medium flex-1 truncate ${isExpanded ? 'text-foreground' : 'text-foreground'}`}>
-                        {isExpanded ? '▼' : '▶'} {isOwner ? (
-                          <InlineClickEdit value={entry.name} onSave={(v) => handleUpdateSectionEntry(entry.id, 'name', v)} className="!text-sm !font-medium" inputClassName="!text-sm" />
-                        ) : entry.name}
-                      </span>
-                      {isOwner && (
+      {/* Personal Abilities tab */}
+      {activeTab === 'personal-abilities' && (
+        <div className="space-y-6">
+          {(sheet.template.characterSections || []).length === 0 && (
+            <div className="text-center py-6 text-muted-foreground text-sm italic">
+              No character sections configured. Ask your GM to define sections in the Sheet Template.
+            </div>
+          )}
+          {(sheet.template.characterSections || []).map(section => {
+            const entries = sectionEntries.filter(e => e.sectionId === section.id)
+            const singular = toSingular(section.name)
+            return (
+              <div key={section.id} className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-px bg-border/50" />
+                  <h3 className="text-sm font-semibold text-primary uppercase tracking-wider shrink-0">{section.name}</h3>
+                  <div className="flex-1 h-px bg-border/50" />
+                </div>
+
+                {entries.length === 0 && !showNewSectionEntry && (
+                  <div className="text-center py-4 text-muted-foreground text-sm italic">
+                    No entries yet.
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  {entries.map(entry => {
+                    const isExpanded = expandedSectionEntries[entry.id] ?? false
+                    return (
+                      <div key={entry.id} className="rounded-lg border border-border bg-background/30 overflow-hidden">
                         <button
                           type="button"
-                          onClick={e => { e.stopPropagation(); handleDeleteSectionEntry(entry.id) }}
-                          className="text-xs text-danger hover:text-danger/80 px-1 py-0.5 transition-colors shrink-0"
+                          onClick={() => setExpandedSectionEntries(p => ({ ...p, [entry.id]: !p[entry.id] }))}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-foreground/5 transition-colors"
                         >
-                          Delete
-                        </button>
-                      )}
-                    </button>
-                    {isExpanded && (
-                      <div className="px-4 pb-3 space-y-2 border-t border-border animate-fade-in">
-                        <div>
-                          <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
-                          {isOwner ? (
-                            <InlineClickEdit value={entry.description ?? ''} onSave={(v) => handleUpdateSectionEntry(entry.id, 'description', v)} as="textarea" className="text-sm text-muted-foreground whitespace-pre-wrap" emptyDisplay="Add description..." rows={2} />
-                          ) : (
-                            entry.description && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{entry.description}</p>
+                          <svg className={`w-3.5 h-3.5 text-muted transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
+                          </svg>
+                          <span className="text-sm font-medium flex-1 truncate">
+                            {isExpanded ? '▼' : '▶'} {isOwner ? (
+                              <InlineClickEdit value={entry.name} onSave={(v) => handleUpdateSectionEntry(entry.id, 'name', v)} className="!text-sm !font-medium" inputClassName="!text-sm" />
+                            ) : entry.name}
+                          </span>
+                          {isOwner && (
+                            <button
+                              type="button"
+                              onClick={e => { e.stopPropagation(); handleDeleteSectionEntry(entry.id) }}
+                              className="text-xs text-danger hover:text-danger/80 px-1 py-0.5 transition-colors shrink-0"
+                            >
+                              Delete
+                            </button>
                           )}
-                        </div>
-                        {isOwner ? (
-                          <div>
-                            <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
-                            <InlineClickEdit value={entry.notes ?? ''} onSave={(v) => handleUpdateSectionEntry(entry.id, 'notes', v)} as="textarea" className="text-xs text-muted italic whitespace-pre-wrap" emptyDisplay="Add notes..." rows={2} />
+                        </button>
+                        {isExpanded && (
+                          <div className="px-4 pb-3 pt-2 border-t border-border animate-fade-in">
+                            <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
+                            {isOwner ? (
+                              <InlineClickEdit value={entry.description ?? ''} onSave={(v) => handleUpdateSectionEntry(entry.id, 'description', v)} as="textarea" className="text-sm text-muted-foreground whitespace-pre-wrap" emptyDisplay="Add description..." rows={2} />
+                            ) : (
+                              entry.description ? <p className="text-sm text-muted-foreground whitespace-pre-wrap">{entry.description}</p> : <p className="text-sm text-muted italic">No description.</p>
+                            )}
                           </div>
-                        ) : (
-                          entry.notes && <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><p className="text-xs text-muted italic whitespace-pre-wrap">{entry.notes}</p></div>
                         )}
                       </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-
-            {isOwner && !showNewSectionEntry && (
-              <button onClick={() => setShowNewSectionEntry(section.id)} className="btn-primary text-sm">
-                + New {singular}
-              </button>
-            )}
-            {isOwner && showNewSectionEntry === section.id && (
-              <form onSubmit={(e) => handleCreateSectionEntry(section.id, e)} className="card !p-4 space-y-3 border-primary/20">
-                <h4 className="text-sm font-semibold text-primary">New {singular}</h4>
-                <div><label className="text-xs text-muted">Name</label><input className="input-field" value={newSectionEntryForm.name} onChange={e => setNewSectionEntryForm(p => ({ ...p, name: e.target.value }))} required placeholder={`e.g. ${singular} name`} /></div>
-                <div><label className="text-xs text-muted">Description</label><textarea className="input-field resize-none" rows={2} value={newSectionEntryForm.description} onChange={e => setNewSectionEntryForm(p => ({ ...p, description: e.target.value }))} placeholder="Describe the entry..." /></div>
-                <div><label className="text-xs text-muted">Notes</label><textarea className="input-field resize-none" rows={1} value={newSectionEntryForm.notes} onChange={e => setNewSectionEntryForm(p => ({ ...p, notes: e.target.value }))} /></div>
-                <div className="flex gap-2 justify-end">
-                  <button type="button" onClick={resetSectionEntryForm} disabled={sectionEntrySaving} className="btn-ghost text-sm">Cancel</button>
-                  <button type="submit" disabled={sectionEntrySaving || !newSectionEntryForm.name.trim()} className="btn-primary text-sm">{sectionEntrySaving ? 'Creating...' : 'Create'}</button>
+                    )
+                  })}
                 </div>
-              </form>
-            )}
-          </div>
-        )
-      })}
+
+                {isOwner && showNewSectionEntry !== section.id && (
+                  <button onClick={() => setShowNewSectionEntry(section.id)} className="btn-primary text-sm">
+                    + New {singular}
+                  </button>
+                )}
+                {isOwner && showNewSectionEntry === section.id && (
+                  <form onSubmit={(e) => handleCreateSectionEntry(section.id, e)} className="card !p-4 space-y-3 border-primary/20">
+                    <h4 className="text-sm font-semibold text-primary">New {singular}</h4>
+                    <div><label className="text-xs text-muted">Name</label><input className="input-field" value={newSectionEntryForm.name} onChange={e => setNewSectionEntryForm(p => ({ ...p, name: e.target.value }))} required placeholder={`e.g. ${singular} name`} /></div>
+                    <div><label className="text-xs text-muted">Description</label><textarea className="input-field resize-none" rows={3} value={newSectionEntryForm.description} onChange={e => setNewSectionEntryForm(p => ({ ...p, description: e.target.value }))} placeholder="Describe the entry..." /></div>
+                    <div className="flex gap-2 justify-end">
+                      <button type="button" onClick={resetSectionEntryForm} disabled={sectionEntrySaving} className="btn-ghost text-sm">Cancel</button>
+                      <button type="submit" disabled={sectionEntrySaving || !newSectionEntryForm.name.trim()} className="btn-primary text-sm">{sectionEntrySaving ? 'Creating...' : 'Create'}</button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {confirmDelete && <DeleteModal name={sheet.characterName} error={deleteError} loading={deleting} onCancel={() => setConfirmDelete(false)} onConfirm={handleDelete} />}
     </div>
