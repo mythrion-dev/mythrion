@@ -13,6 +13,9 @@ interface SkillCalculationConfigProps {
   onChange: (configJson: string) => void
   customFields: { key: string; label: string }[]
   placeholder?: string
+  /** When true, the "Linked Attribute Modifier" section is disabled because
+   *  the global "Enable Attribute Modifiers" feature toggle is off. */
+  disabled?: boolean
 }
 
 const DEFAULT_CONFIG: SkillCalculationConfig = {
@@ -54,6 +57,7 @@ export default function SkillCalculationConfig({
   onChange,
   customFields,
   placeholder,
+  disabled = false,
 }: SkillCalculationConfigProps) {
   const [config, setConfig] = useState<SkillCalculationConfig>(DEFAULT_CONFIG)
   const [showPreview, setShowPreview] = useState(false)
@@ -97,6 +101,7 @@ export default function SkillCalculationConfig({
   }, [generatedJson, isLegacyFormula, initialized, onChange])
 
   const toggleAttributeModifier = () => {
+    if (disabled) return
     setConfig(prev => ({
       ...prev,
       useAttributeModifier: !prev.useAttributeModifier,
@@ -177,6 +182,7 @@ export default function SkillCalculationConfig({
             onChange={(e) => handleLegacyFormulaChange(e.target.value)}
             placeholder={placeholder ?? 'Legacy formula...'}
             spellCheck={false}
+            disabled={disabled}
           />
           <button
             type="button"
@@ -186,6 +192,7 @@ export default function SkillCalculationConfig({
               onChange(configToJson(DEFAULT_CONFIG))
             }}
             className="btn-ghost text-xs mt-2"
+            disabled={disabled}
           >
             Switch to Simple Configuration
           </button>
@@ -195,7 +202,7 @@ export default function SkillCalculationConfig({
   }
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <div className="rounded-lg border border-border bg-background/30 p-4 space-y-4">
         <div className="flex items-center gap-2">
           <h4 className="text-sm font-semibold text-foreground">Skill Calculation</h4>
@@ -234,12 +241,13 @@ export default function SkillCalculationConfig({
         <div className="space-y-3">
           {/* Linked Attribute Modifier toggle */}
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer select-none">
+            <label className={`flex items-center gap-2 text-sm text-foreground select-none ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
               <input
                 type="checkbox"
                 className="w-4 h-4 rounded accent-primary"
                 checked={config.useAttributeModifier}
                 onChange={toggleAttributeModifier}
+                disabled={disabled}
               />
               <span>Linked Attribute Modifier</span>
             </label>
@@ -263,6 +271,7 @@ export default function SkillCalculationConfig({
                     type="button"
                     onClick={() => removeCustomField(field.key)}
                     className="text-xs text-danger hover:text-danger/80 transition-colors shrink-0"
+                    disabled={disabled}
                   >
                     ✕
                   </button>
@@ -282,6 +291,7 @@ export default function SkillCalculationConfig({
                     if (e.target.value) addCustomField(e.target.value)
                     e.target.value = ''
                   }}
+                  disabled={disabled}
                 >
                   <option value="">+ Add Custom Field</option>
                   {availableFields.map(f => (
@@ -307,6 +317,7 @@ export default function SkillCalculationConfig({
         type="button"
         onClick={() => setShowPreview(!showPreview)}
         className="btn-ghost text-sm w-full"
+        disabled={disabled}
       >
         {showPreview ? 'Hide Preview' : 'Preview Calculation'}
       </button>
