@@ -97,6 +97,12 @@ export class TemplateService {
               },
             }
           : {}),
+        characterSections: {
+          create: (dto.characterSections || []).map((s, idx) => ({
+            name: s.name.trim(),
+            order: idx,
+          })),
+        },
       },
       include: templateInclude,
     })

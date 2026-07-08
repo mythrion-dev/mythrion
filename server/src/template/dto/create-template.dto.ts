@@ -9,6 +9,11 @@ import {
 } from 'class-validator'
 import { Type } from 'class-transformer'
 
+export class CharacterSectionDefDto {
+  @IsString()
+  name!: string
+}
+
 export class AttributeDefDto {
   @IsString()
   key!: string
@@ -182,4 +187,10 @@ export class CreateTemplateDto {
   @IsString()
   @IsOptional()
   skillFormula?: string
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @IsOptional()
+  @Type(() => CharacterSectionDefDto)
+  characterSections?: CharacterSectionDefDto[]
 }
