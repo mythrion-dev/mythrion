@@ -70,11 +70,16 @@ export class ResistanceCalculationService {
     const attributeModifiers = new Map<string, number>()
     if (formula && modifiersEnabled) {
       for (const v of sheet.values) {
-        const attrKey = v.attribute.key
         const attrValue = attrValues.get(v.attributeId) ?? 0
-        const modKey = `${attrKey}_mod`
         try {
-          const mod = this.formulaService.evaluate(formula, { [attrKey]: attrValue })
+          // Build variable map with all attribute keys plus 'value'
+          const variables: Record<string, number> = {}
+          for (const sv of sheet.values) {
+            const val = attrValues.get(sv.attributeId) ?? 0
+            variables[sv.attribute.key] = val
+          }
+          variables['value'] = attrValue
+          const mod = this.formulaService.evaluate(formula, variables)
           attributeModifiers.set(v.attributeId, mod)
         } catch {
           attributeModifiers.set(v.attributeId, 0)
