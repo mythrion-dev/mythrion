@@ -12,13 +12,17 @@ import {
 import { CharacterSheetService } from './character-sheet.service.js'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
 import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
+import { ResistanceCalculationService } from './resistance-calculation.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import type { AuthenticatedRequest } from '../auth/jwt-auth.guard.js'
 
 @Controller('character-sheets')
 @UseGuards(JwtAuthGuard)
 export class CharacterSheetController {
-  constructor(private readonly sheetService: CharacterSheetService) {}
+  constructor(
+    private readonly sheetService: CharacterSheetService,
+    private readonly resistanceService: ResistanceCalculationService,
+  ) {}
 
   @Post()
   create(@Req() req: AuthenticatedRequest, @Body() dto: CreateCharacterSheetDto) {
@@ -271,5 +275,21 @@ export class CharacterSheetController {
   @Delete(':id/section-entries/:entryId')
   removeSectionEntry(@Req() req: AuthenticatedRequest, @Param('entryId') entryId: string) {
     return this.sheetService.removeSectionEntry(entryId, req.user.sub)
+  }
+
+  // ── Resistance Calculations ──
+
+  @Get(':id/resistances')
+  getCalculatedResistances(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.resistanceService.calculateResistances(id)
+  }
+
+  @Get(':id/resistances/:resistanceId')
+  getCalculatedResistance(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('resistanceId') resistanceId: string,
+  ) {
+    return this.resistanceService.calculateSingleResistance(id, resistanceId)
   }
 }

@@ -60,6 +60,23 @@ export class CoreResourceValueDto {
   notes?: string | null
 }
 
+export class ResistanceValueDto {
+  @IsString()
+  resistanceId!: string
+
+  @IsString()
+  @IsOptional()
+  manualValue?: string
+}
+
+export class ResistanceComponentValueDto {
+  @IsString()
+  componentId!: string
+
+  @IsString()
+  value!: string
+}
+
 export class ArmorClassValueDto {
   @IsString()
   fieldId!: string
@@ -132,4 +149,16 @@ export class UpdateCharacterSheetDto {
   @ValidateNested({ each: true })
   @Type(() => ArmorClassValueDto)
   acValues?: ArmorClassValueDto[]
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ResistanceValueDto)
+  resistanceValues?: ResistanceValueDto[]
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ResistanceComponentValueDto)
+  resistanceComponentValues?: ResistanceComponentValueDto[]
 }

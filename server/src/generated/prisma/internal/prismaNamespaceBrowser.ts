@@ -73,6 +73,11 @@ export const ModelName = {
   TemplateArmorClass: 'TemplateArmorClass',
   ArmorClassField: 'ArmorClassField',
   CharacterSheetArmorClassValue: 'CharacterSheetArmorClassValue',
+  TemplateResistance: 'TemplateResistance',
+  ResistanceComponent: 'ResistanceComponent',
+  ResistanceAttributeModifier: 'ResistanceAttributeModifier',
+  CharacterSheetResistanceValue: 'CharacterSheetResistanceValue',
+  CharacterSheetResistanceComponentValue: 'CharacterSheetResistanceComponentValue',
   CharacterAbility: 'CharacterAbility',
   CharacterAbilityLevel: 'CharacterAbilityLevel',
   SummonSkill: 'SummonSkill',
@@ -192,6 +197,7 @@ export const TemplateScalarFieldEnum = {
   name: 'name',
   description: 'description',
   attributeModifierFormula: 'attributeModifierFormula',
+  attributeModifiersEnabled: 'attributeModifiersEnabled',
   skillFormula: 'skillFormula',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -405,6 +411,69 @@ export const CharacterSheetArmorClassValueScalarFieldEnum = {
 } as const
 
 export type CharacterSheetArmorClassValueScalarFieldEnum = (typeof CharacterSheetArmorClassValueScalarFieldEnum)[keyof typeof CharacterSheetArmorClassValueScalarFieldEnum]
+
+
+export const TemplateResistanceScalarFieldEnum = {
+  id: 'id',
+  templateId: 'templateId',
+  name: 'name',
+  calculationType: 'calculationType',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TemplateResistanceScalarFieldEnum = (typeof TemplateResistanceScalarFieldEnum)[keyof typeof TemplateResistanceScalarFieldEnum]
+
+
+export const ResistanceComponentScalarFieldEnum = {
+  id: 'id',
+  resistanceId: 'resistanceId',
+  name: 'name',
+  editableByPlayer: 'editableByPlayer',
+  defaultValue: 'defaultValue',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ResistanceComponentScalarFieldEnum = (typeof ResistanceComponentScalarFieldEnum)[keyof typeof ResistanceComponentScalarFieldEnum]
+
+
+export const ResistanceAttributeModifierScalarFieldEnum = {
+  id: 'id',
+  resistanceId: 'resistanceId',
+  attributeId: 'attributeId',
+  enabled: 'enabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ResistanceAttributeModifierScalarFieldEnum = (typeof ResistanceAttributeModifierScalarFieldEnum)[keyof typeof ResistanceAttributeModifierScalarFieldEnum]
+
+
+export const CharacterSheetResistanceValueScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  resistanceId: 'resistanceId',
+  manualValue: 'manualValue',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterSheetResistanceValueScalarFieldEnum = (typeof CharacterSheetResistanceValueScalarFieldEnum)[keyof typeof CharacterSheetResistanceValueScalarFieldEnum]
+
+
+export const CharacterSheetResistanceComponentValueScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  componentId: 'componentId',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterSheetResistanceComponentValueScalarFieldEnum = (typeof CharacterSheetResistanceComponentValueScalarFieldEnum)[keyof typeof CharacterSheetResistanceComponentValueScalarFieldEnum]
 
 
 export const CharacterAbilityScalarFieldEnum = {

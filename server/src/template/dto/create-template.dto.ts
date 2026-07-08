@@ -9,6 +9,49 @@ import {
 } from 'class-validator'
 import { Type } from 'class-transformer'
 
+export class ResistanceComponentDefDto {
+  @IsString()
+  name!: string
+
+  @IsBoolean()
+  @IsOptional()
+  editableByPlayer?: boolean
+
+  @IsString()
+  @IsOptional()
+  defaultValue?: string
+}
+
+export class ResistanceAttributeModifierDefDto {
+  @IsString()
+  attributeId!: string
+
+  @IsBoolean()
+  @IsOptional()
+  enabled?: boolean
+}
+
+export class ResistanceDefDto {
+  @IsString()
+  name!: string
+
+  @IsString()
+  @IsOptional()
+  calculationType?: string
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @IsOptional()
+  @Type(() => ResistanceComponentDefDto)
+  components?: ResistanceComponentDefDto[]
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @IsOptional()
+  @Type(() => ResistanceAttributeModifierDefDto)
+  attributeModifiers?: ResistanceAttributeModifierDefDto[]
+}
+
 export class CharacterSectionDefDto {
   @IsString()
   name!: string
@@ -197,4 +240,10 @@ export class CreateTemplateDto {
   @IsOptional()
   @Type(() => CharacterSectionDefDto)
   characterSections?: CharacterSectionDefDto[]
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @IsOptional()
+  @Type(() => ResistanceDefDto)
+  resistances?: ResistanceDefDto[]
 }

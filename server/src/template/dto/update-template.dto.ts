@@ -128,6 +128,68 @@ export class UpdateArmorClassDefDto {
   fields?: UpdateArmorClassFieldDefDto[]
 }
 
+export class UpdateResistanceComponentDefDto {
+  @IsString()
+  @IsOptional()
+  id?: string
+
+  @IsString()
+  @IsOptional()
+  name?: string
+
+  @IsBoolean()
+  @IsOptional()
+  editableByPlayer?: boolean
+
+  @IsString()
+  @IsOptional()
+  defaultValue?: string
+}
+
+export class UpdateResistanceAttributeModifierDefDto {
+  @IsString()
+  attributeId!: string
+
+  @IsBoolean()
+  @IsOptional()
+  enabled?: boolean
+}
+
+export class UpdateResistanceDefDto {
+  @IsString()
+  @IsOptional()
+  id?: string
+
+  @IsString()
+  @IsOptional()
+  name?: string
+
+  @IsString()
+  @IsOptional()
+  calculationType?: string
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @IsOptional()
+  @Type(() => UpdateResistanceComponentDefDto)
+  components?: UpdateResistanceComponentDefDto[]
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @IsOptional()
+  @Type(() => UpdateResistanceAttributeModifierDefDto)
+  attributeModifiers?: UpdateResistanceAttributeModifierDefDto[]
+}
+
+export class UpdateCharacterSectionDefDto {
+  @IsString()
+  @IsOptional()
+  id?: string
+
+  @IsString()
+  name!: string
+}
+
 export class UpdateTemplateDto {
   @IsString()
   @IsOptional()
@@ -189,13 +251,10 @@ export class UpdateTemplateDto {
   @ValidateNested({ each: true })
   @Type(() => UpdateCharacterSectionDefDto)
   characterSections?: UpdateCharacterSectionDefDto[]
-}
 
-export class UpdateCharacterSectionDefDto {
-  @IsString()
+  @IsArray()
   @IsOptional()
-  id?: string
-
-  @IsString()
-  name!: string
+  @ValidateNested({ each: true })
+  @Type(() => UpdateResistanceDefDto)
+  resistances?: UpdateResistanceDefDto[]
 }

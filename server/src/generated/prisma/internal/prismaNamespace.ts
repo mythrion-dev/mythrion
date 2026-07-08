@@ -406,6 +406,11 @@ export const ModelName = {
   TemplateArmorClass: 'TemplateArmorClass',
   ArmorClassField: 'ArmorClassField',
   CharacterSheetArmorClassValue: 'CharacterSheetArmorClassValue',
+  TemplateResistance: 'TemplateResistance',
+  ResistanceComponent: 'ResistanceComponent',
+  ResistanceAttributeModifier: 'ResistanceAttributeModifier',
+  CharacterSheetResistanceValue: 'CharacterSheetResistanceValue',
+  CharacterSheetResistanceComponentValue: 'CharacterSheetResistanceComponentValue',
   CharacterAbility: 'CharacterAbility',
   CharacterAbilityLevel: 'CharacterAbilityLevel',
   SummonSkill: 'SummonSkill',
@@ -432,7 +437,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateCoreResource" | "characterSheetCoreResourceValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "characterAbility" | "characterAbilityLevel" | "summonSkill" | "summonSkillProfileValue" | "summonAttribute" | "summonArmorClassValue" | "summonHealth" | "characterInventoryItem" | "characterStory" | "templateCharacterSection" | "characterSectionEntry"
+    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateCoreResource" | "characterSheetCoreResourceValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "templateResistance" | "resistanceComponent" | "resistanceAttributeModifier" | "characterSheetResistanceValue" | "characterSheetResistanceComponentValue" | "characterAbility" | "characterAbilityLevel" | "summonSkill" | "summonSkillProfileValue" | "summonAttribute" | "summonArmorClassValue" | "summonHealth" | "characterInventoryItem" | "characterStory" | "templateCharacterSection" | "characterSectionEntry"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2064,6 +2069,376 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    TemplateResistance: {
+      payload: Prisma.$TemplateResistancePayload<ExtArgs>
+      fields: Prisma.TemplateResistanceFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TemplateResistanceFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateResistancePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TemplateResistanceFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateResistancePayload>
+        }
+        findFirst: {
+          args: Prisma.TemplateResistanceFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateResistancePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TemplateResistanceFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateResistancePayload>
+        }
+        findMany: {
+          args: Prisma.TemplateResistanceFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateResistancePayload>[]
+        }
+        create: {
+          args: Prisma.TemplateResistanceCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateResistancePayload>
+        }
+        createMany: {
+          args: Prisma.TemplateResistanceCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TemplateResistanceCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateResistancePayload>[]
+        }
+        delete: {
+          args: Prisma.TemplateResistanceDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateResistancePayload>
+        }
+        update: {
+          args: Prisma.TemplateResistanceUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateResistancePayload>
+        }
+        deleteMany: {
+          args: Prisma.TemplateResistanceDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TemplateResistanceUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TemplateResistanceUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateResistancePayload>[]
+        }
+        upsert: {
+          args: Prisma.TemplateResistanceUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TemplateResistancePayload>
+        }
+        aggregate: {
+          args: Prisma.TemplateResistanceAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTemplateResistance>
+        }
+        groupBy: {
+          args: Prisma.TemplateResistanceGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TemplateResistanceGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TemplateResistanceCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TemplateResistanceCountAggregateOutputType> | number
+        }
+      }
+    }
+    ResistanceComponent: {
+      payload: Prisma.$ResistanceComponentPayload<ExtArgs>
+      fields: Prisma.ResistanceComponentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ResistanceComponentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceComponentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ResistanceComponentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceComponentPayload>
+        }
+        findFirst: {
+          args: Prisma.ResistanceComponentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceComponentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ResistanceComponentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceComponentPayload>
+        }
+        findMany: {
+          args: Prisma.ResistanceComponentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceComponentPayload>[]
+        }
+        create: {
+          args: Prisma.ResistanceComponentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceComponentPayload>
+        }
+        createMany: {
+          args: Prisma.ResistanceComponentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ResistanceComponentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceComponentPayload>[]
+        }
+        delete: {
+          args: Prisma.ResistanceComponentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceComponentPayload>
+        }
+        update: {
+          args: Prisma.ResistanceComponentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceComponentPayload>
+        }
+        deleteMany: {
+          args: Prisma.ResistanceComponentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ResistanceComponentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ResistanceComponentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceComponentPayload>[]
+        }
+        upsert: {
+          args: Prisma.ResistanceComponentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceComponentPayload>
+        }
+        aggregate: {
+          args: Prisma.ResistanceComponentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateResistanceComponent>
+        }
+        groupBy: {
+          args: Prisma.ResistanceComponentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ResistanceComponentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ResistanceComponentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ResistanceComponentCountAggregateOutputType> | number
+        }
+      }
+    }
+    ResistanceAttributeModifier: {
+      payload: Prisma.$ResistanceAttributeModifierPayload<ExtArgs>
+      fields: Prisma.ResistanceAttributeModifierFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ResistanceAttributeModifierFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceAttributeModifierPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ResistanceAttributeModifierFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceAttributeModifierPayload>
+        }
+        findFirst: {
+          args: Prisma.ResistanceAttributeModifierFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceAttributeModifierPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ResistanceAttributeModifierFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceAttributeModifierPayload>
+        }
+        findMany: {
+          args: Prisma.ResistanceAttributeModifierFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceAttributeModifierPayload>[]
+        }
+        create: {
+          args: Prisma.ResistanceAttributeModifierCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceAttributeModifierPayload>
+        }
+        createMany: {
+          args: Prisma.ResistanceAttributeModifierCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ResistanceAttributeModifierCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceAttributeModifierPayload>[]
+        }
+        delete: {
+          args: Prisma.ResistanceAttributeModifierDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceAttributeModifierPayload>
+        }
+        update: {
+          args: Prisma.ResistanceAttributeModifierUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceAttributeModifierPayload>
+        }
+        deleteMany: {
+          args: Prisma.ResistanceAttributeModifierDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ResistanceAttributeModifierUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ResistanceAttributeModifierUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceAttributeModifierPayload>[]
+        }
+        upsert: {
+          args: Prisma.ResistanceAttributeModifierUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResistanceAttributeModifierPayload>
+        }
+        aggregate: {
+          args: Prisma.ResistanceAttributeModifierAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateResistanceAttributeModifier>
+        }
+        groupBy: {
+          args: Prisma.ResistanceAttributeModifierGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ResistanceAttributeModifierGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ResistanceAttributeModifierCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ResistanceAttributeModifierCountAggregateOutputType> | number
+        }
+      }
+    }
+    CharacterSheetResistanceValue: {
+      payload: Prisma.$CharacterSheetResistanceValuePayload<ExtArgs>
+      fields: Prisma.CharacterSheetResistanceValueFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CharacterSheetResistanceValueFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceValuePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CharacterSheetResistanceValueFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceValuePayload>
+        }
+        findFirst: {
+          args: Prisma.CharacterSheetResistanceValueFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceValuePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CharacterSheetResistanceValueFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceValuePayload>
+        }
+        findMany: {
+          args: Prisma.CharacterSheetResistanceValueFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceValuePayload>[]
+        }
+        create: {
+          args: Prisma.CharacterSheetResistanceValueCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceValuePayload>
+        }
+        createMany: {
+          args: Prisma.CharacterSheetResistanceValueCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CharacterSheetResistanceValueCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceValuePayload>[]
+        }
+        delete: {
+          args: Prisma.CharacterSheetResistanceValueDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceValuePayload>
+        }
+        update: {
+          args: Prisma.CharacterSheetResistanceValueUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceValuePayload>
+        }
+        deleteMany: {
+          args: Prisma.CharacterSheetResistanceValueDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CharacterSheetResistanceValueUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CharacterSheetResistanceValueUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceValuePayload>[]
+        }
+        upsert: {
+          args: Prisma.CharacterSheetResistanceValueUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceValuePayload>
+        }
+        aggregate: {
+          args: Prisma.CharacterSheetResistanceValueAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCharacterSheetResistanceValue>
+        }
+        groupBy: {
+          args: Prisma.CharacterSheetResistanceValueGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterSheetResistanceValueGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CharacterSheetResistanceValueCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterSheetResistanceValueCountAggregateOutputType> | number
+        }
+      }
+    }
+    CharacterSheetResistanceComponentValue: {
+      payload: Prisma.$CharacterSheetResistanceComponentValuePayload<ExtArgs>
+      fields: Prisma.CharacterSheetResistanceComponentValueFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CharacterSheetResistanceComponentValueFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceComponentValuePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CharacterSheetResistanceComponentValueFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceComponentValuePayload>
+        }
+        findFirst: {
+          args: Prisma.CharacterSheetResistanceComponentValueFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceComponentValuePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CharacterSheetResistanceComponentValueFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceComponentValuePayload>
+        }
+        findMany: {
+          args: Prisma.CharacterSheetResistanceComponentValueFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceComponentValuePayload>[]
+        }
+        create: {
+          args: Prisma.CharacterSheetResistanceComponentValueCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceComponentValuePayload>
+        }
+        createMany: {
+          args: Prisma.CharacterSheetResistanceComponentValueCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CharacterSheetResistanceComponentValueCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceComponentValuePayload>[]
+        }
+        delete: {
+          args: Prisma.CharacterSheetResistanceComponentValueDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceComponentValuePayload>
+        }
+        update: {
+          args: Prisma.CharacterSheetResistanceComponentValueUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceComponentValuePayload>
+        }
+        deleteMany: {
+          args: Prisma.CharacterSheetResistanceComponentValueDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CharacterSheetResistanceComponentValueUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CharacterSheetResistanceComponentValueUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceComponentValuePayload>[]
+        }
+        upsert: {
+          args: Prisma.CharacterSheetResistanceComponentValueUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetResistanceComponentValuePayload>
+        }
+        aggregate: {
+          args: Prisma.CharacterSheetResistanceComponentValueAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCharacterSheetResistanceComponentValue>
+        }
+        groupBy: {
+          args: Prisma.CharacterSheetResistanceComponentValueGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterSheetResistanceComponentValueGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CharacterSheetResistanceComponentValueCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterSheetResistanceComponentValueCountAggregateOutputType> | number
+        }
+      }
+    }
     CharacterAbility: {
       payload: Prisma.$CharacterAbilityPayload<ExtArgs>
       fields: Prisma.CharacterAbilityFieldRefs
@@ -3007,6 +3382,7 @@ export const TemplateScalarFieldEnum = {
   name: 'name',
   description: 'description',
   attributeModifierFormula: 'attributeModifierFormula',
+  attributeModifiersEnabled: 'attributeModifiersEnabled',
   skillFormula: 'skillFormula',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -3220,6 +3596,69 @@ export const CharacterSheetArmorClassValueScalarFieldEnum = {
 } as const
 
 export type CharacterSheetArmorClassValueScalarFieldEnum = (typeof CharacterSheetArmorClassValueScalarFieldEnum)[keyof typeof CharacterSheetArmorClassValueScalarFieldEnum]
+
+
+export const TemplateResistanceScalarFieldEnum = {
+  id: 'id',
+  templateId: 'templateId',
+  name: 'name',
+  calculationType: 'calculationType',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TemplateResistanceScalarFieldEnum = (typeof TemplateResistanceScalarFieldEnum)[keyof typeof TemplateResistanceScalarFieldEnum]
+
+
+export const ResistanceComponentScalarFieldEnum = {
+  id: 'id',
+  resistanceId: 'resistanceId',
+  name: 'name',
+  editableByPlayer: 'editableByPlayer',
+  defaultValue: 'defaultValue',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ResistanceComponentScalarFieldEnum = (typeof ResistanceComponentScalarFieldEnum)[keyof typeof ResistanceComponentScalarFieldEnum]
+
+
+export const ResistanceAttributeModifierScalarFieldEnum = {
+  id: 'id',
+  resistanceId: 'resistanceId',
+  attributeId: 'attributeId',
+  enabled: 'enabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ResistanceAttributeModifierScalarFieldEnum = (typeof ResistanceAttributeModifierScalarFieldEnum)[keyof typeof ResistanceAttributeModifierScalarFieldEnum]
+
+
+export const CharacterSheetResistanceValueScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  resistanceId: 'resistanceId',
+  manualValue: 'manualValue',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterSheetResistanceValueScalarFieldEnum = (typeof CharacterSheetResistanceValueScalarFieldEnum)[keyof typeof CharacterSheetResistanceValueScalarFieldEnum]
+
+
+export const CharacterSheetResistanceComponentValueScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  componentId: 'componentId',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterSheetResistanceComponentValueScalarFieldEnum = (typeof CharacterSheetResistanceComponentValueScalarFieldEnum)[keyof typeof CharacterSheetResistanceComponentValueScalarFieldEnum]
 
 
 export const CharacterAbilityScalarFieldEnum = {
@@ -3624,6 +4063,11 @@ export type GlobalOmitConfig = {
   templateArmorClass?: Prisma.TemplateArmorClassOmit
   armorClassField?: Prisma.ArmorClassFieldOmit
   characterSheetArmorClassValue?: Prisma.CharacterSheetArmorClassValueOmit
+  templateResistance?: Prisma.TemplateResistanceOmit
+  resistanceComponent?: Prisma.ResistanceComponentOmit
+  resistanceAttributeModifier?: Prisma.ResistanceAttributeModifierOmit
+  characterSheetResistanceValue?: Prisma.CharacterSheetResistanceValueOmit
+  characterSheetResistanceComponentValue?: Prisma.CharacterSheetResistanceComponentValueOmit
   characterAbility?: Prisma.CharacterAbilityOmit
   characterAbilityLevel?: Prisma.CharacterAbilityLevelOmit
   summonSkill?: Prisma.SummonSkillOmit

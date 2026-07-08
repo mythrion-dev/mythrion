@@ -17,6 +17,13 @@ const templateInclude = {
     include: { fields: { orderBy: { order: 'asc' as const } } },
   },
   characterSections: { orderBy: { order: 'asc' as const } },
+  resistances: {
+    orderBy: { order: 'asc' as const },
+    include: {
+      components: { orderBy: { order: 'asc' as const } },
+      attributeModifiers: { include: { attribute: { select: { id: true, key: true, name: true } } } },
+    },
+  },
 }
 
 @Injectable()
@@ -102,6 +109,21 @@ export class TemplateService {
           create: (dto.characterSections || []).map((s, idx) => ({
             name: s.name.trim(),
             order: idx,
+          })),
+        },
+        resistances: {
+          create: (dto.resistances || []).map((r, rIdx) => ({
+            name: r.name.trim(),
+            calculationType: r.calculationType ?? 'MANUAL',
+            order: rIdx,
+            components: {
+              create: (r.components || []).map((c, cIdx) => ({
+                name: c.name.trim(),
+                editableByPlayer: c.editableByPlayer ?? false,
+                defaultValue: c.defaultValue ?? '0',
+                order: cIdx,
+              })),
+            },
           })),
         },
       },
@@ -484,6 +506,170 @@ export class TemplateService {
             })
           }
         }
+      }
+    }
+
+    // Handle resistances
+    if (dto.resistances) {
+      const existingResistances = await this.prisma.templateResistance.findMany({
+        where: { templateId: id },
+        include: { components: true, attributeModifiers: true },
+      })
+      const existingResistanceIds = existingResistances.map(r => r.id)
+      const keptResistanceIds = new Set<string>()
+
+      for (let rIdx = 0; rIdx < dto.resistances.length; rIdx++) {
+        const r = dto.resistances[rIdx]
+        const name = r.name?.trim()
+        if (!name) continue
+
+        // Match by explicit id first, fall back to index
+        let existing: typeof existingResistances[number] | undefined
+        if (r.id) {
+          existing = existingResistances.find(e => e.id === r.id)
+        }
+        if (!existing) {
+          // Try matching by position (for resistances created in this batch)
+          existing = existingResistances.find(e => !keptResistanceIds.has(e.id))
+        }
+
+        if (existing) {
+          keptResistanceIds.add(existing.id)
+          await this.prisma.templateResistance.update({
+            where: { id: existing.id },
+            data: {
+              ...(r.name !== undefined && { name }),
+              ...(r.calculationType !== undefined && { calculationType: r.calculationType }),
+              order: rIdx,
+            },
+          })
+
+          // Handle components
+          if (r.components) {
+            const existingComps = existing.components
+            const keptCompIds = new Set<string>()
+            for (let cIdx = 0; cIdx < r.components.length; cIdx++) {
+              const c = r.components[cIdx]
+              const compName = c.name?.trim()
+              if (!compName) continue
+              let existingComp: typeof existingComps[number] | undefined
+              if (c.id) {
+                existingComp = existingComps.find(ec => ec.id === c.id)
+              }
+              if (!existingComp) {
+                existingComp = existingComps.find(ec => !keptCompIds.has(ec.id))
+              }
+              if (existingComp) {
+                keptCompIds.add(existingComp.id)
+                await this.prisma.resistanceComponent.update({
+                  where: { id: existingComp.id },
+                  data: {
+                    ...(c.name !== undefined && { name: compName }),
+                    ...(c.editableByPlayer !== undefined && { editableByPlayer: c.editableByPlayer }),
+                    ...(c.defaultValue !== undefined && { defaultValue: c.defaultValue }),
+                    order: cIdx,
+                  },
+                })
+              } else {
+                const newComp = await this.prisma.resistanceComponent.create({
+                  data: {
+                    resistanceId: existing.id,
+                    name: compName,
+                    editableByPlayer: c.editableByPlayer ?? false,
+                    defaultValue: c.defaultValue ?? '0',
+                    order: cIdx,
+                  },
+                })
+                keptCompIds.add(newComp.id)
+                // Auto-create values for new component on existing sheets
+                const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
+                for (const sheet of sheets) {
+                  await this.prisma.characterSheetResistanceComponentValue.upsert({
+                    where: { sheetId_componentId: { sheetId: sheet.id, componentId: newComp.id } },
+                    create: { sheetId: sheet.id, componentId: newComp.id, value: newComp.defaultValue },
+                    update: {},
+                  })
+                }
+              }
+            }
+            // Delete removed components
+            const compIdsToDelete = existingComps.filter(ec => !keptCompIds.has(ec.id)).map(ec => ec.id)
+            if (compIdsToDelete.length) {
+              await this.prisma.resistanceComponent.deleteMany({ where: { id: { in: compIdsToDelete } } })
+            }
+          }
+
+          // Handle attribute modifiers
+          if (r.attributeModifiers) {
+            // Delete all existing modifiers and recreate
+            await this.prisma.resistanceAttributeModifier.deleteMany({ where: { resistanceId: existing.id } })
+            for (const am of r.attributeModifiers) {
+              await this.prisma.resistanceAttributeModifier.create({
+                data: {
+                  resistanceId: existing.id,
+                  attributeId: am.attributeId,
+                  enabled: am.enabled ?? true,
+                },
+              })
+            }
+          }
+        } else {
+          // Create new resistance
+          const newResistance = await this.prisma.templateResistance.create({
+            data: {
+              templateId: id,
+              name,
+              calculationType: r.calculationType ?? 'MANUAL',
+              order: rIdx,
+              components: {
+                create: (r.components || []).map((c, cIdx) => ({
+                  name: c.name?.trim() ?? '',
+                  editableByPlayer: c.editableByPlayer ?? false,
+                  defaultValue: c.defaultValue ?? '0',
+                  order: cIdx,
+                })),
+              },
+            },
+          })
+          keptResistanceIds.add(newResistance.id)
+
+          // Create attribute modifiers for new resistance
+          if (r.attributeModifiers) {
+            for (const am of r.attributeModifiers) {
+              await this.prisma.resistanceAttributeModifier.create({
+                data: {
+                  resistanceId: newResistance.id,
+                  attributeId: am.attributeId,
+                  enabled: am.enabled ?? true,
+                },
+              })
+            }
+          }
+
+          // Auto-create sheet values for new resistance and its components
+          const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
+          for (const sheet of sheets) {
+            await this.prisma.characterSheetResistanceValue.upsert({
+              where: { sheetId_resistanceId: { sheetId: sheet.id, resistanceId: newResistance.id } },
+              create: { sheetId: sheet.id, resistanceId: newResistance.id },
+              update: {},
+            })
+            const newComps = await this.prisma.resistanceComponent.findMany({ where: { resistanceId: newResistance.id } })
+            for (const comp of newComps) {
+              await this.prisma.characterSheetResistanceComponentValue.upsert({
+                where: { sheetId_componentId: { sheetId: sheet.id, componentId: comp.id } },
+                create: { sheetId: sheet.id, componentId: comp.id, value: comp.defaultValue },
+                update: {},
+              })
+            }
+          }
+        }
+      }
+
+      // Delete resistances that are no longer referenced
+      const resistanceIdsToDelete = existingResistanceIds.filter(id => !keptResistanceIds.has(id))
+      if (resistanceIdsToDelete.length) {
+        await this.prisma.templateResistance.deleteMany({ where: { id: { in: resistanceIdsToDelete } } })
       }
     }
 

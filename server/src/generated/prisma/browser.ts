@@ -128,6 +128,31 @@ export type ArmorClassField = Prisma.ArmorClassFieldModel
  */
 export type CharacterSheetArmorClassValue = Prisma.CharacterSheetArmorClassValueModel
 /**
+ * Model TemplateResistance
+ * 
+ */
+export type TemplateResistance = Prisma.TemplateResistanceModel
+/**
+ * Model ResistanceComponent
+ * 
+ */
+export type ResistanceComponent = Prisma.ResistanceComponentModel
+/**
+ * Model ResistanceAttributeModifier
+ * 
+ */
+export type ResistanceAttributeModifier = Prisma.ResistanceAttributeModifierModel
+/**
+ * Model CharacterSheetResistanceValue
+ * 
+ */
+export type CharacterSheetResistanceValue = Prisma.CharacterSheetResistanceValueModel
+/**
+ * Model CharacterSheetResistanceComponentValue
+ * 
+ */
+export type CharacterSheetResistanceComponentValue = Prisma.CharacterSheetResistanceComponentValueModel
+/**
  * Model CharacterAbility
  * 
  */

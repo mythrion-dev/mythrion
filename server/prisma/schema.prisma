@@ -134,6 +134,7 @@ model Template {
   coreResources            TemplateCoreResource[]
   armorClass               TemplateArmorClass?
   characterSections        TemplateCharacterSection[]
+  resistances              TemplateResistance[]
   characterSheets          CharacterSheet[]
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
@@ -209,6 +210,7 @@ model TemplateAttribute {
   skillsAllowed     TemplateSkill[]                   @relation("SkillAllowedAttributes")
   skillSelections   CharacterSheetSkillValue[]
   summonSkillSelections SummonSkill[]
+  resistanceModifiers ResistanceAttributeModifier[]
   createdAt         DateTime                          @default(now())
   updatedAt         DateTime                          @updatedAt
 
@@ -282,6 +284,8 @@ model CharacterSheet {
   skillProfileValues CharacterSheetSkillProfileValue[]
   coreResourceValues CharacterSheetCoreResourceValue[]
   acValues           CharacterSheetArmorClassValue[]
+  resistanceValues   CharacterSheetResistanceValue[]
+  resistanceComponentValues CharacterSheetResistanceComponentValue[]
   abilities          CharacterAbility[]
   inventoryItems     CharacterInventoryItem[]
   sectionEntries     CharacterSectionEntry[]
@@ -427,6 +431,84 @@ model CharacterSheetArmorClassValue {
   @@unique([sheetId, fieldId])
   @@index([sheetId])
   @@index([fieldId])
+}
+
+// ── Resistance System ──
+
+model TemplateResistance {
+  id               String                          @id @default(cuid())
+  templateId       String
+  template         Template                        @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  name             String
+  calculationType  String                          @default("MANUAL")
+  order            Int                             @default(0)
+  components       ResistanceComponent[]
+  attributeModifiers ResistanceAttributeModifier[]
+  sheetValues      CharacterSheetResistanceValue[]
+  createdAt        DateTime                        @default(now())
+  updatedAt        DateTime                        @updatedAt
+
+  @@index([templateId])
+}
+
+model ResistanceComponent {
+  id               String                                        @id @default(cuid())
+  resistanceId     String
+  resistance       TemplateResistance                            @relation(fields: [resistanceId], references: [id], onDelete: Cascade)
+  name             String
+  editableByPlayer Boolean                                       @default(false)
+  defaultValue     String                                        @default("0")
+  order            Int                                           @default(0)
+  sheetValues      CharacterSheetResistanceComponentValue[]
+  createdAt        DateTime                                      @default(now())
+  updatedAt        DateTime                                      @updatedAt
+
+  @@index([resistanceId])
+}
+
+model ResistanceAttributeModifier {
+  id          String            @id @default(cuid())
+  resistanceId String
+  resistance TemplateResistance @relation(fields: [resistanceId], references: [id], onDelete: Cascade)
+  attributeId String
+  attribute   TemplateAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  enabled     Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([resistanceId, attributeId])
+  @@index([resistanceId])
+  @@index([attributeId])
+}
+
+model CharacterSheetResistanceValue {
+  id           String              @id @default(cuid())
+  sheetId      String
+  sheet        CharacterSheet      @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  resistanceId String
+  resistance   TemplateResistance  @relation(fields: [resistanceId], references: [id], onDelete: Cascade)
+  manualValue  String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@unique([sheetId, resistanceId])
+  @@index([sheetId])
+  @@index([resistanceId])
+}
+
+model CharacterSheetResistanceComponentValue {
+  id          String              @id @default(cuid())
+  sheetId     String
+  sheet       CharacterSheet      @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  componentId String
+  component   ResistanceComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  value       String              @default("0")
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@unique([sheetId, componentId])
+  @@index([sheetId])
+  @@index([componentId])
 }
 
 // ── Character Abilities & Summons (Player-only) ──

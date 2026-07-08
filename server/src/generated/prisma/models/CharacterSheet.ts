@@ -289,6 +289,8 @@ export type CharacterSheetWhereInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueListRelationFilter
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueListRelationFilter
   acValues?: Prisma.CharacterSheetArmorClassValueListRelationFilter
+  resistanceValues?: Prisma.CharacterSheetResistanceValueListRelationFilter
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueListRelationFilter
   abilities?: Prisma.CharacterAbilityListRelationFilter
   inventoryItems?: Prisma.CharacterInventoryItemListRelationFilter
   sectionEntries?: Prisma.CharacterSectionEntryListRelationFilter
@@ -317,6 +319,8 @@ export type CharacterSheetOrderByWithRelationInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueOrderByRelationAggregateInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueOrderByRelationAggregateInput
   acValues?: Prisma.CharacterSheetArmorClassValueOrderByRelationAggregateInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueOrderByRelationAggregateInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueOrderByRelationAggregateInput
   abilities?: Prisma.CharacterAbilityOrderByRelationAggregateInput
   inventoryItems?: Prisma.CharacterInventoryItemOrderByRelationAggregateInput
   sectionEntries?: Prisma.CharacterSectionEntryOrderByRelationAggregateInput
@@ -348,6 +352,8 @@ export type CharacterSheetWhereUniqueInput = Prisma.AtLeast<{
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueListRelationFilter
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueListRelationFilter
   acValues?: Prisma.CharacterSheetArmorClassValueListRelationFilter
+  resistanceValues?: Prisma.CharacterSheetResistanceValueListRelationFilter
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueListRelationFilter
   abilities?: Prisma.CharacterAbilityListRelationFilter
   inventoryItems?: Prisma.CharacterInventoryItemListRelationFilter
   sectionEntries?: Prisma.CharacterSectionEntryListRelationFilter
@@ -411,6 +417,8 @@ export type CharacterSheetCreateInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryCreateNestedManyWithoutSheetInput
@@ -436,6 +444,8 @@ export type CharacterSheetUncheckedCreateInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedCreateNestedManyWithoutSheetInput
@@ -461,6 +471,8 @@ export type CharacterSheetUpdateInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUpdateManyWithoutSheetNestedInput
@@ -486,6 +498,8 @@ export type CharacterSheetUncheckedUpdateInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedUpdateManyWithoutSheetNestedInput
@@ -824,6 +838,34 @@ export type CharacterSheetUpdateOneRequiredWithoutAcValuesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterSheetUpdateToOneWithWhereWithoutAcValuesInput, Prisma.CharacterSheetUpdateWithoutAcValuesInput>, Prisma.CharacterSheetUncheckedUpdateWithoutAcValuesInput>
 }
 
+export type CharacterSheetCreateNestedOneWithoutResistanceValuesInput = {
+  create?: Prisma.XOR<Prisma.CharacterSheetCreateWithoutResistanceValuesInput, Prisma.CharacterSheetUncheckedCreateWithoutResistanceValuesInput>
+  connectOrCreate?: Prisma.CharacterSheetCreateOrConnectWithoutResistanceValuesInput
+  connect?: Prisma.CharacterSheetWhereUniqueInput
+}
+
+export type CharacterSheetUpdateOneRequiredWithoutResistanceValuesNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterSheetCreateWithoutResistanceValuesInput, Prisma.CharacterSheetUncheckedCreateWithoutResistanceValuesInput>
+  connectOrCreate?: Prisma.CharacterSheetCreateOrConnectWithoutResistanceValuesInput
+  upsert?: Prisma.CharacterSheetUpsertWithoutResistanceValuesInput
+  connect?: Prisma.CharacterSheetWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterSheetUpdateToOneWithWhereWithoutResistanceValuesInput, Prisma.CharacterSheetUpdateWithoutResistanceValuesInput>, Prisma.CharacterSheetUncheckedUpdateWithoutResistanceValuesInput>
+}
+
+export type CharacterSheetCreateNestedOneWithoutResistanceComponentValuesInput = {
+  create?: Prisma.XOR<Prisma.CharacterSheetCreateWithoutResistanceComponentValuesInput, Prisma.CharacterSheetUncheckedCreateWithoutResistanceComponentValuesInput>
+  connectOrCreate?: Prisma.CharacterSheetCreateOrConnectWithoutResistanceComponentValuesInput
+  connect?: Prisma.CharacterSheetWhereUniqueInput
+}
+
+export type CharacterSheetUpdateOneRequiredWithoutResistanceComponentValuesNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterSheetCreateWithoutResistanceComponentValuesInput, Prisma.CharacterSheetUncheckedCreateWithoutResistanceComponentValuesInput>
+  connectOrCreate?: Prisma.CharacterSheetCreateOrConnectWithoutResistanceComponentValuesInput
+  upsert?: Prisma.CharacterSheetUpsertWithoutResistanceComponentValuesInput
+  connect?: Prisma.CharacterSheetWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterSheetUpdateToOneWithWhereWithoutResistanceComponentValuesInput, Prisma.CharacterSheetUpdateWithoutResistanceComponentValuesInput>, Prisma.CharacterSheetUncheckedUpdateWithoutResistanceComponentValuesInput>
+}
+
 export type CharacterSheetCreateNestedOneWithoutAbilitiesInput = {
   create?: Prisma.XOR<Prisma.CharacterSheetCreateWithoutAbilitiesInput, Prisma.CharacterSheetUncheckedCreateWithoutAbilitiesInput>
   connectOrCreate?: Prisma.CharacterSheetCreateOrConnectWithoutAbilitiesInput
@@ -898,6 +940,8 @@ export type CharacterSheetCreateWithoutOwnerInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryCreateNestedManyWithoutSheetInput
@@ -922,6 +966,8 @@ export type CharacterSheetUncheckedCreateWithoutOwnerInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedCreateNestedManyWithoutSheetInput
@@ -990,6 +1036,8 @@ export type CharacterSheetCreateWithoutAdventureInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryCreateNestedManyWithoutSheetInput
@@ -1014,6 +1062,8 @@ export type CharacterSheetUncheckedCreateWithoutAdventureInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedCreateNestedManyWithoutSheetInput
@@ -1064,6 +1114,8 @@ export type CharacterSheetCreateWithoutTemplateInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryCreateNestedManyWithoutSheetInput
@@ -1088,6 +1140,8 @@ export type CharacterSheetUncheckedCreateWithoutTemplateInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedCreateNestedManyWithoutSheetInput
@@ -1138,6 +1192,8 @@ export type CharacterSheetCreateWithoutSkillProfileValuesInput = {
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryCreateNestedManyWithoutSheetInput
@@ -1162,6 +1218,8 @@ export type CharacterSheetUncheckedCreateWithoutSkillProfileValuesInput = {
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedCreateNestedManyWithoutSheetInput
@@ -1202,6 +1260,8 @@ export type CharacterSheetUpdateWithoutSkillProfileValuesInput = {
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUpdateManyWithoutSheetNestedInput
@@ -1226,6 +1286,8 @@ export type CharacterSheetUncheckedUpdateWithoutSkillProfileValuesInput = {
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedUpdateManyWithoutSheetNestedInput
@@ -1250,6 +1312,8 @@ export type CharacterSheetCreateWithoutSkillValuesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryCreateNestedManyWithoutSheetInput
@@ -1274,6 +1338,8 @@ export type CharacterSheetUncheckedCreateWithoutSkillValuesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedCreateNestedManyWithoutSheetInput
@@ -1314,6 +1380,8 @@ export type CharacterSheetUpdateWithoutSkillValuesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUpdateManyWithoutSheetNestedInput
@@ -1338,6 +1406,8 @@ export type CharacterSheetUncheckedUpdateWithoutSkillValuesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedUpdateManyWithoutSheetNestedInput
@@ -1362,6 +1432,8 @@ export type CharacterSheetCreateWithoutValuesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryCreateNestedManyWithoutSheetInput
@@ -1386,6 +1458,8 @@ export type CharacterSheetUncheckedCreateWithoutValuesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedCreateNestedManyWithoutSheetInput
@@ -1426,6 +1500,8 @@ export type CharacterSheetUpdateWithoutValuesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUpdateManyWithoutSheetNestedInput
@@ -1450,6 +1526,8 @@ export type CharacterSheetUncheckedUpdateWithoutValuesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedUpdateManyWithoutSheetNestedInput
@@ -1474,6 +1552,8 @@ export type CharacterSheetCreateWithoutFieldValuesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryCreateNestedManyWithoutSheetInput
@@ -1498,6 +1578,8 @@ export type CharacterSheetUncheckedCreateWithoutFieldValuesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedCreateNestedManyWithoutSheetInput
@@ -1538,6 +1620,8 @@ export type CharacterSheetUpdateWithoutFieldValuesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUpdateManyWithoutSheetNestedInput
@@ -1562,6 +1646,8 @@ export type CharacterSheetUncheckedUpdateWithoutFieldValuesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedUpdateManyWithoutSheetNestedInput
@@ -1586,6 +1672,8 @@ export type CharacterSheetCreateWithoutCoreResourceValuesInput = {
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryCreateNestedManyWithoutSheetInput
@@ -1610,6 +1698,8 @@ export type CharacterSheetUncheckedCreateWithoutCoreResourceValuesInput = {
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedCreateNestedManyWithoutSheetInput
@@ -1650,6 +1740,8 @@ export type CharacterSheetUpdateWithoutCoreResourceValuesInput = {
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUpdateManyWithoutSheetNestedInput
@@ -1674,6 +1766,8 @@ export type CharacterSheetUncheckedUpdateWithoutCoreResourceValuesInput = {
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedUpdateManyWithoutSheetNestedInput
@@ -1698,6 +1792,8 @@ export type CharacterSheetCreateWithoutAcValuesInput = {
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryCreateNestedManyWithoutSheetInput
@@ -1722,6 +1818,8 @@ export type CharacterSheetUncheckedCreateWithoutAcValuesInput = {
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedCreateNestedManyWithoutSheetInput
@@ -1762,6 +1860,8 @@ export type CharacterSheetUpdateWithoutAcValuesInput = {
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUpdateManyWithoutSheetNestedInput
@@ -1786,6 +1886,248 @@ export type CharacterSheetUncheckedUpdateWithoutAcValuesInput = {
   skillValues?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutSheetNestedInput
+  abilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput
+  inventoryItems?: Prisma.CharacterInventoryItemUncheckedUpdateManyWithoutSheetNestedInput
+  sectionEntries?: Prisma.CharacterSectionEntryUncheckedUpdateManyWithoutSheetNestedInput
+  story?: Prisma.CharacterStoryUncheckedUpdateOneWithoutSheetNestedInput
+}
+
+export type CharacterSheetCreateWithoutResistanceValuesInput = {
+  id?: string
+  characterName: string
+  playerName?: string | null
+  level?: number | null
+  hpActual?: number | null
+  hpMax?: number | null
+  hpNotes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
+  template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
+  owner: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
+  fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
+  skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
+  skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
+  coreResourceValues?: Prisma.CharacterSheetCoreResourceValueCreateNestedManyWithoutSheetInput
+  acValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutSheetInput
+  abilities?: Prisma.CharacterAbilityCreateNestedManyWithoutSheetInput
+  inventoryItems?: Prisma.CharacterInventoryItemCreateNestedManyWithoutSheetInput
+  sectionEntries?: Prisma.CharacterSectionEntryCreateNestedManyWithoutSheetInput
+  story?: Prisma.CharacterStoryCreateNestedOneWithoutSheetInput
+}
+
+export type CharacterSheetUncheckedCreateWithoutResistanceValuesInput = {
+  id?: string
+  characterName: string
+  playerName?: string | null
+  level?: number | null
+  hpActual?: number | null
+  hpMax?: number | null
+  hpNotes?: string | null
+  adventureId?: string | null
+  templateId: string
+  ownerId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
+  fieldValues?: Prisma.CharacterSheetFieldValueUncheckedCreateNestedManyWithoutSheetInput
+  skillValues?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSheetInput
+  skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
+  coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedCreateNestedManyWithoutSheetInput
+  acValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutSheetInput
+  abilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutSheetInput
+  inventoryItems?: Prisma.CharacterInventoryItemUncheckedCreateNestedManyWithoutSheetInput
+  sectionEntries?: Prisma.CharacterSectionEntryUncheckedCreateNestedManyWithoutSheetInput
+  story?: Prisma.CharacterStoryUncheckedCreateNestedOneWithoutSheetInput
+}
+
+export type CharacterSheetCreateOrConnectWithoutResistanceValuesInput = {
+  where: Prisma.CharacterSheetWhereUniqueInput
+  create: Prisma.XOR<Prisma.CharacterSheetCreateWithoutResistanceValuesInput, Prisma.CharacterSheetUncheckedCreateWithoutResistanceValuesInput>
+}
+
+export type CharacterSheetUpsertWithoutResistanceValuesInput = {
+  update: Prisma.XOR<Prisma.CharacterSheetUpdateWithoutResistanceValuesInput, Prisma.CharacterSheetUncheckedUpdateWithoutResistanceValuesInput>
+  create: Prisma.XOR<Prisma.CharacterSheetCreateWithoutResistanceValuesInput, Prisma.CharacterSheetUncheckedCreateWithoutResistanceValuesInput>
+  where?: Prisma.CharacterSheetWhereInput
+}
+
+export type CharacterSheetUpdateToOneWithWhereWithoutResistanceValuesInput = {
+  where?: Prisma.CharacterSheetWhereInput
+  data: Prisma.XOR<Prisma.CharacterSheetUpdateWithoutResistanceValuesInput, Prisma.CharacterSheetUncheckedUpdateWithoutResistanceValuesInput>
+}
+
+export type CharacterSheetUpdateWithoutResistanceValuesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  characterName?: Prisma.StringFieldUpdateOperationsInput | string
+  playerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  level?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpActual?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpMax?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
+  template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
+  owner?: Prisma.UserUpdateOneRequiredWithoutCharacterSheetsNestedInput
+  values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
+  fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
+  skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
+  skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
+  coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUpdateManyWithoutSheetNestedInput
+  acValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutSheetNestedInput
+  abilities?: Prisma.CharacterAbilityUpdateManyWithoutSheetNestedInput
+  inventoryItems?: Prisma.CharacterInventoryItemUpdateManyWithoutSheetNestedInput
+  sectionEntries?: Prisma.CharacterSectionEntryUpdateManyWithoutSheetNestedInput
+  story?: Prisma.CharacterStoryUpdateOneWithoutSheetNestedInput
+}
+
+export type CharacterSheetUncheckedUpdateWithoutResistanceValuesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  characterName?: Prisma.StringFieldUpdateOperationsInput | string
+  playerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  level?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpActual?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpMax?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateId?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
+  fieldValues?: Prisma.CharacterSheetFieldValueUncheckedUpdateManyWithoutSheetNestedInput
+  skillValues?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSheetNestedInput
+  skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
+  coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedUpdateManyWithoutSheetNestedInput
+  acValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutSheetNestedInput
+  abilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput
+  inventoryItems?: Prisma.CharacterInventoryItemUncheckedUpdateManyWithoutSheetNestedInput
+  sectionEntries?: Prisma.CharacterSectionEntryUncheckedUpdateManyWithoutSheetNestedInput
+  story?: Prisma.CharacterStoryUncheckedUpdateOneWithoutSheetNestedInput
+}
+
+export type CharacterSheetCreateWithoutResistanceComponentValuesInput = {
+  id?: string
+  characterName: string
+  playerName?: string | null
+  level?: number | null
+  hpActual?: number | null
+  hpMax?: number | null
+  hpNotes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
+  template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
+  owner: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
+  fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
+  skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
+  skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
+  coreResourceValues?: Prisma.CharacterSheetCoreResourceValueCreateNestedManyWithoutSheetInput
+  acValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueCreateNestedManyWithoutSheetInput
+  abilities?: Prisma.CharacterAbilityCreateNestedManyWithoutSheetInput
+  inventoryItems?: Prisma.CharacterInventoryItemCreateNestedManyWithoutSheetInput
+  sectionEntries?: Prisma.CharacterSectionEntryCreateNestedManyWithoutSheetInput
+  story?: Prisma.CharacterStoryCreateNestedOneWithoutSheetInput
+}
+
+export type CharacterSheetUncheckedCreateWithoutResistanceComponentValuesInput = {
+  id?: string
+  characterName: string
+  playerName?: string | null
+  level?: number | null
+  hpActual?: number | null
+  hpMax?: number | null
+  hpNotes?: string | null
+  adventureId?: string | null
+  templateId: string
+  ownerId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
+  fieldValues?: Prisma.CharacterSheetFieldValueUncheckedCreateNestedManyWithoutSheetInput
+  skillValues?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSheetInput
+  skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
+  coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedCreateNestedManyWithoutSheetInput
+  acValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedCreateNestedManyWithoutSheetInput
+  abilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutSheetInput
+  inventoryItems?: Prisma.CharacterInventoryItemUncheckedCreateNestedManyWithoutSheetInput
+  sectionEntries?: Prisma.CharacterSectionEntryUncheckedCreateNestedManyWithoutSheetInput
+  story?: Prisma.CharacterStoryUncheckedCreateNestedOneWithoutSheetInput
+}
+
+export type CharacterSheetCreateOrConnectWithoutResistanceComponentValuesInput = {
+  where: Prisma.CharacterSheetWhereUniqueInput
+  create: Prisma.XOR<Prisma.CharacterSheetCreateWithoutResistanceComponentValuesInput, Prisma.CharacterSheetUncheckedCreateWithoutResistanceComponentValuesInput>
+}
+
+export type CharacterSheetUpsertWithoutResistanceComponentValuesInput = {
+  update: Prisma.XOR<Prisma.CharacterSheetUpdateWithoutResistanceComponentValuesInput, Prisma.CharacterSheetUncheckedUpdateWithoutResistanceComponentValuesInput>
+  create: Prisma.XOR<Prisma.CharacterSheetCreateWithoutResistanceComponentValuesInput, Prisma.CharacterSheetUncheckedCreateWithoutResistanceComponentValuesInput>
+  where?: Prisma.CharacterSheetWhereInput
+}
+
+export type CharacterSheetUpdateToOneWithWhereWithoutResistanceComponentValuesInput = {
+  where?: Prisma.CharacterSheetWhereInput
+  data: Prisma.XOR<Prisma.CharacterSheetUpdateWithoutResistanceComponentValuesInput, Prisma.CharacterSheetUncheckedUpdateWithoutResistanceComponentValuesInput>
+}
+
+export type CharacterSheetUpdateWithoutResistanceComponentValuesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  characterName?: Prisma.StringFieldUpdateOperationsInput | string
+  playerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  level?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpActual?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpMax?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
+  template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
+  owner?: Prisma.UserUpdateOneRequiredWithoutCharacterSheetsNestedInput
+  values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
+  fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
+  skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
+  skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
+  coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUpdateManyWithoutSheetNestedInput
+  acValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUpdateManyWithoutSheetNestedInput
+  abilities?: Prisma.CharacterAbilityUpdateManyWithoutSheetNestedInput
+  inventoryItems?: Prisma.CharacterInventoryItemUpdateManyWithoutSheetNestedInput
+  sectionEntries?: Prisma.CharacterSectionEntryUpdateManyWithoutSheetNestedInput
+  story?: Prisma.CharacterStoryUpdateOneWithoutSheetNestedInput
+}
+
+export type CharacterSheetUncheckedUpdateWithoutResistanceComponentValuesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  characterName?: Prisma.StringFieldUpdateOperationsInput | string
+  playerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  level?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpActual?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpMax?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateId?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
+  fieldValues?: Prisma.CharacterSheetFieldValueUncheckedUpdateManyWithoutSheetNestedInput
+  skillValues?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSheetNestedInput
+  skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
+  coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedUpdateManyWithoutSheetNestedInput
+  acValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedUpdateManyWithoutSheetNestedInput
@@ -1811,6 +2153,8 @@ export type CharacterSheetCreateWithoutAbilitiesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryCreateNestedManyWithoutSheetInput
   story?: Prisma.CharacterStoryCreateNestedOneWithoutSheetInput
@@ -1835,6 +2179,8 @@ export type CharacterSheetUncheckedCreateWithoutAbilitiesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedCreateNestedManyWithoutSheetInput
   story?: Prisma.CharacterStoryUncheckedCreateNestedOneWithoutSheetInput
@@ -1875,6 +2221,8 @@ export type CharacterSheetUpdateWithoutAbilitiesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUpdateManyWithoutSheetNestedInput
   story?: Prisma.CharacterStoryUpdateOneWithoutSheetNestedInput
@@ -1899,6 +2247,8 @@ export type CharacterSheetUncheckedUpdateWithoutAbilitiesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedUpdateManyWithoutSheetNestedInput
   story?: Prisma.CharacterStoryUncheckedUpdateOneWithoutSheetNestedInput
@@ -1923,6 +2273,8 @@ export type CharacterSheetCreateWithoutInventoryItemsInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryCreateNestedManyWithoutSheetInput
   story?: Prisma.CharacterStoryCreateNestedOneWithoutSheetInput
@@ -1947,6 +2299,8 @@ export type CharacterSheetUncheckedCreateWithoutInventoryItemsInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedCreateNestedManyWithoutSheetInput
   story?: Prisma.CharacterStoryUncheckedCreateNestedOneWithoutSheetInput
@@ -1987,6 +2341,8 @@ export type CharacterSheetUpdateWithoutInventoryItemsInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUpdateManyWithoutSheetNestedInput
   story?: Prisma.CharacterStoryUpdateOneWithoutSheetNestedInput
@@ -2011,6 +2367,8 @@ export type CharacterSheetUncheckedUpdateWithoutInventoryItemsInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedUpdateManyWithoutSheetNestedInput
   story?: Prisma.CharacterStoryUncheckedUpdateOneWithoutSheetNestedInput
@@ -2035,6 +2393,8 @@ export type CharacterSheetCreateWithoutStoryInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryCreateNestedManyWithoutSheetInput
@@ -2059,6 +2419,8 @@ export type CharacterSheetUncheckedCreateWithoutStoryInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedCreateNestedManyWithoutSheetInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedCreateNestedManyWithoutSheetInput
@@ -2099,6 +2461,8 @@ export type CharacterSheetUpdateWithoutStoryInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUpdateManyWithoutSheetNestedInput
@@ -2123,6 +2487,8 @@ export type CharacterSheetUncheckedUpdateWithoutStoryInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedUpdateManyWithoutSheetNestedInput
@@ -2147,6 +2513,8 @@ export type CharacterSheetCreateWithoutSectionEntriesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemCreateNestedManyWithoutSheetInput
   story?: Prisma.CharacterStoryCreateNestedOneWithoutSheetInput
@@ -2171,6 +2539,8 @@ export type CharacterSheetUncheckedCreateWithoutSectionEntriesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedCreateNestedManyWithoutSheetInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutSheetInput
   abilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutSheetInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedCreateNestedManyWithoutSheetInput
   story?: Prisma.CharacterStoryUncheckedCreateNestedOneWithoutSheetInput
@@ -2211,6 +2581,8 @@ export type CharacterSheetUpdateWithoutSectionEntriesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUpdateManyWithoutSheetNestedInput
   story?: Prisma.CharacterStoryUpdateOneWithoutSheetNestedInput
@@ -2235,6 +2607,8 @@ export type CharacterSheetUncheckedUpdateWithoutSectionEntriesInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedUpdateManyWithoutSheetNestedInput
   story?: Prisma.CharacterStoryUncheckedUpdateOneWithoutSheetNestedInput
@@ -2272,6 +2646,8 @@ export type CharacterSheetUpdateWithoutOwnerInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUpdateManyWithoutSheetNestedInput
@@ -2296,6 +2672,8 @@ export type CharacterSheetUncheckedUpdateWithoutOwnerInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedUpdateManyWithoutSheetNestedInput
@@ -2348,6 +2726,8 @@ export type CharacterSheetUpdateWithoutAdventureInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUpdateManyWithoutSheetNestedInput
@@ -2372,6 +2752,8 @@ export type CharacterSheetUncheckedUpdateWithoutAdventureInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedUpdateManyWithoutSheetNestedInput
@@ -2424,6 +2806,8 @@ export type CharacterSheetUpdateWithoutTemplateInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUpdateManyWithoutSheetNestedInput
@@ -2448,6 +2832,8 @@ export type CharacterSheetUncheckedUpdateWithoutTemplateInput = {
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
   coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedUpdateManyWithoutSheetNestedInput
   acValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutSheetNestedInput
   abilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput
   inventoryItems?: Prisma.CharacterInventoryItemUncheckedUpdateManyWithoutSheetNestedInput
   sectionEntries?: Prisma.CharacterSectionEntryUncheckedUpdateManyWithoutSheetNestedInput
@@ -2480,6 +2866,8 @@ export type CharacterSheetCountOutputType = {
   skillProfileValues: number
   coreResourceValues: number
   acValues: number
+  resistanceValues: number
+  resistanceComponentValues: number
   abilities: number
   inventoryItems: number
   sectionEntries: number
@@ -2492,6 +2880,8 @@ export type CharacterSheetCountOutputTypeSelect<ExtArgs extends runtime.Types.Ex
   skillProfileValues?: boolean | CharacterSheetCountOutputTypeCountSkillProfileValuesArgs
   coreResourceValues?: boolean | CharacterSheetCountOutputTypeCountCoreResourceValuesArgs
   acValues?: boolean | CharacterSheetCountOutputTypeCountAcValuesArgs
+  resistanceValues?: boolean | CharacterSheetCountOutputTypeCountResistanceValuesArgs
+  resistanceComponentValues?: boolean | CharacterSheetCountOutputTypeCountResistanceComponentValuesArgs
   abilities?: boolean | CharacterSheetCountOutputTypeCountAbilitiesArgs
   inventoryItems?: boolean | CharacterSheetCountOutputTypeCountInventoryItemsArgs
   sectionEntries?: boolean | CharacterSheetCountOutputTypeCountSectionEntriesArgs
@@ -2552,6 +2942,20 @@ export type CharacterSheetCountOutputTypeCountAcValuesArgs<ExtArgs extends runti
 /**
  * CharacterSheetCountOutputType without action
  */
+export type CharacterSheetCountOutputTypeCountResistanceValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CharacterSheetResistanceValueWhereInput
+}
+
+/**
+ * CharacterSheetCountOutputType without action
+ */
+export type CharacterSheetCountOutputTypeCountResistanceComponentValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CharacterSheetResistanceComponentValueWhereInput
+}
+
+/**
+ * CharacterSheetCountOutputType without action
+ */
 export type CharacterSheetCountOutputTypeCountAbilitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.CharacterAbilityWhereInput
 }
@@ -2593,6 +2997,8 @@ export type CharacterSheetSelect<ExtArgs extends runtime.Types.Extensions.Intern
   skillProfileValues?: boolean | Prisma.CharacterSheet$skillProfileValuesArgs<ExtArgs>
   coreResourceValues?: boolean | Prisma.CharacterSheet$coreResourceValuesArgs<ExtArgs>
   acValues?: boolean | Prisma.CharacterSheet$acValuesArgs<ExtArgs>
+  resistanceValues?: boolean | Prisma.CharacterSheet$resistanceValuesArgs<ExtArgs>
+  resistanceComponentValues?: boolean | Prisma.CharacterSheet$resistanceComponentValuesArgs<ExtArgs>
   abilities?: boolean | Prisma.CharacterSheet$abilitiesArgs<ExtArgs>
   inventoryItems?: boolean | Prisma.CharacterSheet$inventoryItemsArgs<ExtArgs>
   sectionEntries?: boolean | Prisma.CharacterSheet$sectionEntriesArgs<ExtArgs>
@@ -2662,6 +3068,8 @@ export type CharacterSheetInclude<ExtArgs extends runtime.Types.Extensions.Inter
   skillProfileValues?: boolean | Prisma.CharacterSheet$skillProfileValuesArgs<ExtArgs>
   coreResourceValues?: boolean | Prisma.CharacterSheet$coreResourceValuesArgs<ExtArgs>
   acValues?: boolean | Prisma.CharacterSheet$acValuesArgs<ExtArgs>
+  resistanceValues?: boolean | Prisma.CharacterSheet$resistanceValuesArgs<ExtArgs>
+  resistanceComponentValues?: boolean | Prisma.CharacterSheet$resistanceComponentValuesArgs<ExtArgs>
   abilities?: boolean | Prisma.CharacterSheet$abilitiesArgs<ExtArgs>
   inventoryItems?: boolean | Prisma.CharacterSheet$inventoryItemsArgs<ExtArgs>
   sectionEntries?: boolean | Prisma.CharacterSheet$sectionEntriesArgs<ExtArgs>
@@ -2691,6 +3099,8 @@ export type $CharacterSheetPayload<ExtArgs extends runtime.Types.Extensions.Inte
     skillProfileValues: Prisma.$CharacterSheetSkillProfileValuePayload<ExtArgs>[]
     coreResourceValues: Prisma.$CharacterSheetCoreResourceValuePayload<ExtArgs>[]
     acValues: Prisma.$CharacterSheetArmorClassValuePayload<ExtArgs>[]
+    resistanceValues: Prisma.$CharacterSheetResistanceValuePayload<ExtArgs>[]
+    resistanceComponentValues: Prisma.$CharacterSheetResistanceComponentValuePayload<ExtArgs>[]
     abilities: Prisma.$CharacterAbilityPayload<ExtArgs>[]
     inventoryItems: Prisma.$CharacterInventoryItemPayload<ExtArgs>[]
     sectionEntries: Prisma.$CharacterSectionEntryPayload<ExtArgs>[]
@@ -3112,6 +3522,8 @@ export interface Prisma__CharacterSheetClient<T, Null = never, ExtArgs extends r
   skillProfileValues<T extends Prisma.CharacterSheet$skillProfileValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$skillProfileValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetSkillProfileValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   coreResourceValues<T extends Prisma.CharacterSheet$coreResourceValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$coreResourceValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetCoreResourceValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   acValues<T extends Prisma.CharacterSheet$acValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$acValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetArmorClassValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  resistanceValues<T extends Prisma.CharacterSheet$resistanceValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$resistanceValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetResistanceValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  resistanceComponentValues<T extends Prisma.CharacterSheet$resistanceComponentValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$resistanceComponentValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetResistanceComponentValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   abilities<T extends Prisma.CharacterSheet$abilitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$abilitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterAbilityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   inventoryItems<T extends Prisma.CharacterSheet$inventoryItemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$inventoryItemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterInventoryItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sectionEntries<T extends Prisma.CharacterSheet$sectionEntriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$sectionEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSectionEntryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -3718,6 +4130,54 @@ export type CharacterSheet$acValuesArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   distinct?: Prisma.CharacterSheetArmorClassValueScalarFieldEnum | Prisma.CharacterSheetArmorClassValueScalarFieldEnum[]
+}
+
+/**
+ * CharacterSheet.resistanceValues
+ */
+export type CharacterSheet$resistanceValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CharacterSheetResistanceValue
+   */
+  select?: Prisma.CharacterSheetResistanceValueSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CharacterSheetResistanceValue
+   */
+  omit?: Prisma.CharacterSheetResistanceValueOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CharacterSheetResistanceValueInclude<ExtArgs> | null
+  where?: Prisma.CharacterSheetResistanceValueWhereInput
+  orderBy?: Prisma.CharacterSheetResistanceValueOrderByWithRelationInput | Prisma.CharacterSheetResistanceValueOrderByWithRelationInput[]
+  cursor?: Prisma.CharacterSheetResistanceValueWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CharacterSheetResistanceValueScalarFieldEnum | Prisma.CharacterSheetResistanceValueScalarFieldEnum[]
+}
+
+/**
+ * CharacterSheet.resistanceComponentValues
+ */
+export type CharacterSheet$resistanceComponentValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CharacterSheetResistanceComponentValue
+   */
+  select?: Prisma.CharacterSheetResistanceComponentValueSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CharacterSheetResistanceComponentValue
+   */
+  omit?: Prisma.CharacterSheetResistanceComponentValueOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CharacterSheetResistanceComponentValueInclude<ExtArgs> | null
+  where?: Prisma.CharacterSheetResistanceComponentValueWhereInput
+  orderBy?: Prisma.CharacterSheetResistanceComponentValueOrderByWithRelationInput | Prisma.CharacterSheetResistanceComponentValueOrderByWithRelationInput[]
+  cursor?: Prisma.CharacterSheetResistanceComponentValueWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CharacterSheetResistanceComponentValueScalarFieldEnum | Prisma.CharacterSheetResistanceComponentValueScalarFieldEnum[]
 }
 
 /**

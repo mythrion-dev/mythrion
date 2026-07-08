@@ -106,6 +106,16 @@ const sheetInclude = {
       },
     },
   },
+  resistanceValues: {
+    include: {
+      resistance: { select: { id: true, name: true, calculationType: true, order: true } },
+    },
+  },
+  resistanceComponentValues: {
+    include: {
+      component: { select: { id: true, name: true, editableByPlayer: true, defaultValue: true, resistance: { select: { id: true, name: true, calculationType: true } } } },
+    },
+  },
   inventoryItems: { orderBy: { order: 'asc' as const } },
   story: true,
 }
@@ -168,6 +178,12 @@ export class CharacterSheetService {
       include: { fields: true },
     })
 
+    // Fetch resistance config for this template
+    const resistances = await this.prisma.templateResistance.findMany({
+      where: { templateId: template.id },
+      include: { components: true },
+    })
+
     return this.prisma.characterSheet.create({
       data: {
         characterName: dto.characterName,
@@ -203,6 +219,19 @@ export class CharacterSheetService {
               },
             }
           : {}),
+        resistanceValues: {
+          create: resistances.map(r => ({
+            resistanceId: r.id,
+          })),
+        },
+        resistanceComponentValues: {
+          create: resistances.flatMap(r =>
+            r.components.map(c => ({
+              componentId: c.id,
+              value: c.defaultValue,
+            })),
+          ),
+        },
       },
       include: sheetInclude,
     })
@@ -306,6 +335,22 @@ export class CharacterSheetService {
           where: { sheetId_fieldId: { sheetId: id, fieldId: acv.fieldId } },
           create: { sheetId: id, fieldId: acv.fieldId, value: acv.value },
           update: { value: acv.value },
+        })
+    }
+    if (dto.resistanceValues) {
+      for (const rv of dto.resistanceValues)
+        await this.prisma.characterSheetResistanceValue.upsert({
+          where: { sheetId_resistanceId: { sheetId: id, resistanceId: rv.resistanceId } },
+          create: { sheetId: id, resistanceId: rv.resistanceId, manualValue: rv.manualValue ?? null },
+          update: { manualValue: rv.manualValue ?? null },
+        })
+    }
+    if (dto.resistanceComponentValues) {
+      for (const rcv of dto.resistanceComponentValues)
+        await this.prisma.characterSheetResistanceComponentValue.upsert({
+          where: { sheetId_componentId: { sheetId: id, componentId: rcv.componentId } },
+          create: { sheetId: id, componentId: rcv.componentId, value: rcv.value },
+          update: { value: rcv.value },
         })
     }
 

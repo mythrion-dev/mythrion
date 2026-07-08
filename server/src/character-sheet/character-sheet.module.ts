@@ -5,6 +5,8 @@ import { PrismaService } from '../prisma.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { JwtModule } from '@nestjs/jwt'
 import { CollaborationModule } from '../collaboration/collaboration.module.js'
+import { FormulaModule } from '../formula/formula.module.js'
+import { ResistanceCalculationService } from './resistance-calculation.service.js'
 
 @Module({
   imports: [
@@ -13,9 +15,10 @@ import { CollaborationModule } from '../collaboration/collaboration.module.js'
       signOptions: { expiresIn: '7d' },
     }),
     CollaborationModule,
+    FormulaModule,
   ],
   controllers: [CharacterSheetController],
-  providers: [CharacterSheetService, PrismaService, JwtAuthGuard],
-  exports: [CharacterSheetService],
+  providers: [CharacterSheetService, PrismaService, JwtAuthGuard, ResistanceCalculationService],
+  exports: [CharacterSheetService, ResistanceCalculationService],
 })
 export class CharacterSheetModule {}

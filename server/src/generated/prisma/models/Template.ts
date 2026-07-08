@@ -30,6 +30,7 @@ export type TemplateMinAggregateOutputType = {
   name: string | null
   description: string | null
   attributeModifierFormula: string | null
+  attributeModifiersEnabled: boolean | null
   skillFormula: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -41,6 +42,7 @@ export type TemplateMaxAggregateOutputType = {
   name: string | null
   description: string | null
   attributeModifierFormula: string | null
+  attributeModifiersEnabled: boolean | null
   skillFormula: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -52,6 +54,7 @@ export type TemplateCountAggregateOutputType = {
   name: number
   description: number
   attributeModifierFormula: number
+  attributeModifiersEnabled: number
   skillFormula: number
   createdAt: number
   updatedAt: number
@@ -65,6 +68,7 @@ export type TemplateMinAggregateInputType = {
   name?: true
   description?: true
   attributeModifierFormula?: true
+  attributeModifiersEnabled?: true
   skillFormula?: true
   createdAt?: true
   updatedAt?: true
@@ -76,6 +80,7 @@ export type TemplateMaxAggregateInputType = {
   name?: true
   description?: true
   attributeModifierFormula?: true
+  attributeModifiersEnabled?: true
   skillFormula?: true
   createdAt?: true
   updatedAt?: true
@@ -87,6 +92,7 @@ export type TemplateCountAggregateInputType = {
   name?: true
   description?: true
   attributeModifierFormula?: true
+  attributeModifiersEnabled?: true
   skillFormula?: true
   createdAt?: true
   updatedAt?: true
@@ -171,6 +177,7 @@ export type TemplateGroupByOutputType = {
   name: string
   description: string | null
   attributeModifierFormula: string | null
+  attributeModifiersEnabled: boolean
   skillFormula: string | null
   createdAt: Date
   updatedAt: Date
@@ -203,6 +210,7 @@ export type TemplateWhereInput = {
   name?: Prisma.StringFilter<"Template"> | string
   description?: Prisma.StringNullableFilter<"Template"> | string | null
   attributeModifierFormula?: Prisma.StringNullableFilter<"Template"> | string | null
+  attributeModifiersEnabled?: Prisma.BoolFilter<"Template"> | boolean
   skillFormula?: Prisma.StringNullableFilter<"Template"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Template"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Template"> | Date | string
@@ -214,6 +222,7 @@ export type TemplateWhereInput = {
   coreResources?: Prisma.TemplateCoreResourceListRelationFilter
   armorClass?: Prisma.XOR<Prisma.TemplateArmorClassNullableScalarRelationFilter, Prisma.TemplateArmorClassWhereInput> | null
   characterSections?: Prisma.TemplateCharacterSectionListRelationFilter
+  resistances?: Prisma.TemplateResistanceListRelationFilter
   characterSheets?: Prisma.CharacterSheetListRelationFilter
 }
 
@@ -223,6 +232,7 @@ export type TemplateOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   attributeModifierFormula?: Prisma.SortOrderInput | Prisma.SortOrder
+  attributeModifiersEnabled?: Prisma.SortOrder
   skillFormula?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -234,6 +244,7 @@ export type TemplateOrderByWithRelationInput = {
   coreResources?: Prisma.TemplateCoreResourceOrderByRelationAggregateInput
   armorClass?: Prisma.TemplateArmorClassOrderByWithRelationInput
   characterSections?: Prisma.TemplateCharacterSectionOrderByRelationAggregateInput
+  resistances?: Prisma.TemplateResistanceOrderByRelationAggregateInput
   characterSheets?: Prisma.CharacterSheetOrderByRelationAggregateInput
 }
 
@@ -246,6 +257,7 @@ export type TemplateWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"Template"> | string
   description?: Prisma.StringNullableFilter<"Template"> | string | null
   attributeModifierFormula?: Prisma.StringNullableFilter<"Template"> | string | null
+  attributeModifiersEnabled?: Prisma.BoolFilter<"Template"> | boolean
   skillFormula?: Prisma.StringNullableFilter<"Template"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Template"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Template"> | Date | string
@@ -257,6 +269,7 @@ export type TemplateWhereUniqueInput = Prisma.AtLeast<{
   coreResources?: Prisma.TemplateCoreResourceListRelationFilter
   armorClass?: Prisma.XOR<Prisma.TemplateArmorClassNullableScalarRelationFilter, Prisma.TemplateArmorClassWhereInput> | null
   characterSections?: Prisma.TemplateCharacterSectionListRelationFilter
+  resistances?: Prisma.TemplateResistanceListRelationFilter
   characterSheets?: Prisma.CharacterSheetListRelationFilter
 }, "id">
 
@@ -266,6 +279,7 @@ export type TemplateOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   attributeModifierFormula?: Prisma.SortOrderInput | Prisma.SortOrder
+  attributeModifiersEnabled?: Prisma.SortOrder
   skillFormula?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -283,6 +297,7 @@ export type TemplateScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"Template"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"Template"> | string | null
   attributeModifierFormula?: Prisma.StringNullableWithAggregatesFilter<"Template"> | string | null
+  attributeModifiersEnabled?: Prisma.BoolWithAggregatesFilter<"Template"> | boolean
   skillFormula?: Prisma.StringNullableWithAggregatesFilter<"Template"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Template"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Template"> | Date | string
@@ -293,6 +308,7 @@ export type TemplateCreateInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -304,6 +320,7 @@ export type TemplateCreateInput = {
   coreResources?: Prisma.TemplateCoreResourceCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
 
@@ -313,6 +330,7 @@ export type TemplateUncheckedCreateInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -323,6 +341,7 @@ export type TemplateUncheckedCreateInput = {
   coreResources?: Prisma.TemplateCoreResourceUncheckedCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceUncheckedCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
 
@@ -331,6 +350,7 @@ export type TemplateUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -342,6 +362,7 @@ export type TemplateUpdateInput = {
   coreResources?: Prisma.TemplateCoreResourceUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
 
@@ -351,6 +372,7 @@ export type TemplateUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -361,6 +383,7 @@ export type TemplateUncheckedUpdateInput = {
   coreResources?: Prisma.TemplateCoreResourceUncheckedUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUncheckedUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
 }
 
@@ -370,6 +393,7 @@ export type TemplateCreateManyInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -380,6 +404,7 @@ export type TemplateUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -391,6 +416,7 @@ export type TemplateUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -412,6 +438,7 @@ export type TemplateCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   description?: Prisma.SortOrder
   attributeModifierFormula?: Prisma.SortOrder
+  attributeModifiersEnabled?: Prisma.SortOrder
   skillFormula?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -423,6 +450,7 @@ export type TemplateMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   description?: Prisma.SortOrder
   attributeModifierFormula?: Prisma.SortOrder
+  attributeModifiersEnabled?: Prisma.SortOrder
   skillFormula?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -434,6 +462,7 @@ export type TemplateMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   description?: Prisma.SortOrder
   attributeModifierFormula?: Prisma.SortOrder
+  attributeModifiersEnabled?: Prisma.SortOrder
   skillFormula?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -584,6 +613,20 @@ export type TemplateUpdateOneRequiredWithoutArmorClassNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.TemplateUpdateToOneWithWhereWithoutArmorClassInput, Prisma.TemplateUpdateWithoutArmorClassInput>, Prisma.TemplateUncheckedUpdateWithoutArmorClassInput>
 }
 
+export type TemplateCreateNestedOneWithoutResistancesInput = {
+  create?: Prisma.XOR<Prisma.TemplateCreateWithoutResistancesInput, Prisma.TemplateUncheckedCreateWithoutResistancesInput>
+  connectOrCreate?: Prisma.TemplateCreateOrConnectWithoutResistancesInput
+  connect?: Prisma.TemplateWhereUniqueInput
+}
+
+export type TemplateUpdateOneRequiredWithoutResistancesNestedInput = {
+  create?: Prisma.XOR<Prisma.TemplateCreateWithoutResistancesInput, Prisma.TemplateUncheckedCreateWithoutResistancesInput>
+  connectOrCreate?: Prisma.TemplateCreateOrConnectWithoutResistancesInput
+  upsert?: Prisma.TemplateUpsertWithoutResistancesInput
+  connect?: Prisma.TemplateWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TemplateUpdateToOneWithWhereWithoutResistancesInput, Prisma.TemplateUpdateWithoutResistancesInput>, Prisma.TemplateUncheckedUpdateWithoutResistancesInput>
+}
+
 export type TemplateCreateNestedOneWithoutCharacterSectionsInput = {
   create?: Prisma.XOR<Prisma.TemplateCreateWithoutCharacterSectionsInput, Prisma.TemplateUncheckedCreateWithoutCharacterSectionsInput>
   connectOrCreate?: Prisma.TemplateCreateOrConnectWithoutCharacterSectionsInput
@@ -603,6 +646,7 @@ export type TemplateCreateWithoutAdventureInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -613,6 +657,7 @@ export type TemplateCreateWithoutAdventureInput = {
   coreResources?: Prisma.TemplateCoreResourceCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
 
@@ -621,6 +666,7 @@ export type TemplateUncheckedCreateWithoutAdventureInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -631,6 +677,7 @@ export type TemplateUncheckedCreateWithoutAdventureInput = {
   coreResources?: Prisma.TemplateCoreResourceUncheckedCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceUncheckedCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
 
@@ -669,6 +716,7 @@ export type TemplateScalarWhereInput = {
   name?: Prisma.StringFilter<"Template"> | string
   description?: Prisma.StringNullableFilter<"Template"> | string | null
   attributeModifierFormula?: Prisma.StringNullableFilter<"Template"> | string | null
+  attributeModifiersEnabled?: Prisma.BoolFilter<"Template"> | boolean
   skillFormula?: Prisma.StringNullableFilter<"Template"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Template"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Template"> | Date | string
@@ -679,6 +727,7 @@ export type TemplateCreateWithoutSkillModifierProfilesInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -689,6 +738,7 @@ export type TemplateCreateWithoutSkillModifierProfilesInput = {
   coreResources?: Prisma.TemplateCoreResourceCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
 
@@ -698,6 +748,7 @@ export type TemplateUncheckedCreateWithoutSkillModifierProfilesInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -707,6 +758,7 @@ export type TemplateUncheckedCreateWithoutSkillModifierProfilesInput = {
   coreResources?: Prisma.TemplateCoreResourceUncheckedCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceUncheckedCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
 
@@ -731,6 +783,7 @@ export type TemplateUpdateWithoutSkillModifierProfilesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -741,6 +794,7 @@ export type TemplateUpdateWithoutSkillModifierProfilesInput = {
   coreResources?: Prisma.TemplateCoreResourceUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
 
@@ -750,6 +804,7 @@ export type TemplateUncheckedUpdateWithoutSkillModifierProfilesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -759,6 +814,7 @@ export type TemplateUncheckedUpdateWithoutSkillModifierProfilesInput = {
   coreResources?: Prisma.TemplateCoreResourceUncheckedUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUncheckedUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
 }
 
@@ -767,6 +823,7 @@ export type TemplateCreateWithoutAttributesInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -777,6 +834,7 @@ export type TemplateCreateWithoutAttributesInput = {
   coreResources?: Prisma.TemplateCoreResourceCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
 
@@ -786,6 +844,7 @@ export type TemplateUncheckedCreateWithoutAttributesInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -795,6 +854,7 @@ export type TemplateUncheckedCreateWithoutAttributesInput = {
   coreResources?: Prisma.TemplateCoreResourceUncheckedCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceUncheckedCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
 
@@ -819,6 +879,7 @@ export type TemplateUpdateWithoutAttributesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -829,6 +890,7 @@ export type TemplateUpdateWithoutAttributesInput = {
   coreResources?: Prisma.TemplateCoreResourceUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
 
@@ -838,6 +900,7 @@ export type TemplateUncheckedUpdateWithoutAttributesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -847,6 +910,7 @@ export type TemplateUncheckedUpdateWithoutAttributesInput = {
   coreResources?: Prisma.TemplateCoreResourceUncheckedUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUncheckedUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
 }
 
@@ -855,6 +919,7 @@ export type TemplateCreateWithoutTemplateSkillsInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -865,6 +930,7 @@ export type TemplateCreateWithoutTemplateSkillsInput = {
   coreResources?: Prisma.TemplateCoreResourceCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
 
@@ -874,6 +940,7 @@ export type TemplateUncheckedCreateWithoutTemplateSkillsInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -883,6 +950,7 @@ export type TemplateUncheckedCreateWithoutTemplateSkillsInput = {
   coreResources?: Prisma.TemplateCoreResourceUncheckedCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceUncheckedCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
 
@@ -907,6 +975,7 @@ export type TemplateUpdateWithoutTemplateSkillsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -917,6 +986,7 @@ export type TemplateUpdateWithoutTemplateSkillsInput = {
   coreResources?: Prisma.TemplateCoreResourceUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
 
@@ -926,6 +996,7 @@ export type TemplateUncheckedUpdateWithoutTemplateSkillsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -935,6 +1006,7 @@ export type TemplateUncheckedUpdateWithoutTemplateSkillsInput = {
   coreResources?: Prisma.TemplateCoreResourceUncheckedUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUncheckedUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
 }
 
@@ -943,6 +1015,7 @@ export type TemplateCreateWithoutCharacterSheetsInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -954,6 +1027,7 @@ export type TemplateCreateWithoutCharacterSheetsInput = {
   coreResources?: Prisma.TemplateCoreResourceCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceCreateNestedManyWithoutTemplateInput
 }
 
 export type TemplateUncheckedCreateWithoutCharacterSheetsInput = {
@@ -962,6 +1036,7 @@ export type TemplateUncheckedCreateWithoutCharacterSheetsInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -972,6 +1047,7 @@ export type TemplateUncheckedCreateWithoutCharacterSheetsInput = {
   coreResources?: Prisma.TemplateCoreResourceUncheckedCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceUncheckedCreateNestedManyWithoutTemplateInput
 }
 
 export type TemplateCreateOrConnectWithoutCharacterSheetsInput = {
@@ -995,6 +1071,7 @@ export type TemplateUpdateWithoutCharacterSheetsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1006,6 +1083,7 @@ export type TemplateUpdateWithoutCharacterSheetsInput = {
   coreResources?: Prisma.TemplateCoreResourceUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUpdateManyWithoutTemplateNestedInput
 }
 
 export type TemplateUncheckedUpdateWithoutCharacterSheetsInput = {
@@ -1014,6 +1092,7 @@ export type TemplateUncheckedUpdateWithoutCharacterSheetsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1024,6 +1103,7 @@ export type TemplateUncheckedUpdateWithoutCharacterSheetsInput = {
   coreResources?: Prisma.TemplateCoreResourceUncheckedUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUncheckedUpdateManyWithoutTemplateNestedInput
 }
 
 export type TemplateCreateWithoutTemplateFieldsInput = {
@@ -1031,6 +1111,7 @@ export type TemplateCreateWithoutTemplateFieldsInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1041,6 +1122,7 @@ export type TemplateCreateWithoutTemplateFieldsInput = {
   coreResources?: Prisma.TemplateCoreResourceCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
 
@@ -1050,6 +1132,7 @@ export type TemplateUncheckedCreateWithoutTemplateFieldsInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1059,6 +1142,7 @@ export type TemplateUncheckedCreateWithoutTemplateFieldsInput = {
   coreResources?: Prisma.TemplateCoreResourceUncheckedCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceUncheckedCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
 
@@ -1083,6 +1167,7 @@ export type TemplateUpdateWithoutTemplateFieldsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1093,6 +1178,7 @@ export type TemplateUpdateWithoutTemplateFieldsInput = {
   coreResources?: Prisma.TemplateCoreResourceUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
 
@@ -1102,6 +1188,7 @@ export type TemplateUncheckedUpdateWithoutTemplateFieldsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1111,6 +1198,7 @@ export type TemplateUncheckedUpdateWithoutTemplateFieldsInput = {
   coreResources?: Prisma.TemplateCoreResourceUncheckedUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUncheckedUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
 }
 
@@ -1119,6 +1207,7 @@ export type TemplateCreateWithoutCoreResourcesInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1129,6 +1218,7 @@ export type TemplateCreateWithoutCoreResourcesInput = {
   skillModifierProfiles?: Prisma.SkillModifierProfileCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
 
@@ -1138,6 +1228,7 @@ export type TemplateUncheckedCreateWithoutCoreResourcesInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1147,6 +1238,7 @@ export type TemplateUncheckedCreateWithoutCoreResourcesInput = {
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceUncheckedCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
 
@@ -1171,6 +1263,7 @@ export type TemplateUpdateWithoutCoreResourcesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1181,6 +1274,7 @@ export type TemplateUpdateWithoutCoreResourcesInput = {
   skillModifierProfiles?: Prisma.SkillModifierProfileUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
 
@@ -1190,6 +1284,7 @@ export type TemplateUncheckedUpdateWithoutCoreResourcesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1199,6 +1294,7 @@ export type TemplateUncheckedUpdateWithoutCoreResourcesInput = {
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUncheckedUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
 }
 
@@ -1207,6 +1303,7 @@ export type TemplateCreateWithoutArmorClassInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1217,6 +1314,7 @@ export type TemplateCreateWithoutArmorClassInput = {
   skillModifierProfiles?: Prisma.SkillModifierProfileCreateNestedManyWithoutTemplateInput
   coreResources?: Prisma.TemplateCoreResourceCreateNestedManyWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
 
@@ -1226,6 +1324,7 @@ export type TemplateUncheckedCreateWithoutArmorClassInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1235,6 +1334,7 @@ export type TemplateUncheckedCreateWithoutArmorClassInput = {
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedCreateNestedManyWithoutTemplateInput
   coreResources?: Prisma.TemplateCoreResourceUncheckedCreateNestedManyWithoutTemplateInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedCreateNestedManyWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceUncheckedCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
 
@@ -1259,6 +1359,7 @@ export type TemplateUpdateWithoutArmorClassInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1269,6 +1370,7 @@ export type TemplateUpdateWithoutArmorClassInput = {
   skillModifierProfiles?: Prisma.SkillModifierProfileUpdateManyWithoutTemplateNestedInput
   coreResources?: Prisma.TemplateCoreResourceUpdateManyWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
 
@@ -1278,6 +1380,7 @@ export type TemplateUncheckedUpdateWithoutArmorClassInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1287,14 +1390,16 @@ export type TemplateUncheckedUpdateWithoutArmorClassInput = {
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedUpdateManyWithoutTemplateNestedInput
   coreResources?: Prisma.TemplateCoreResourceUncheckedUpdateManyWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUncheckedUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
 }
 
-export type TemplateCreateWithoutCharacterSectionsInput = {
+export type TemplateCreateWithoutResistancesInput = {
   id?: string
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1305,15 +1410,17 @@ export type TemplateCreateWithoutCharacterSectionsInput = {
   skillModifierProfiles?: Prisma.SkillModifierProfileCreateNestedManyWithoutTemplateInput
   coreResources?: Prisma.TemplateCoreResourceCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
+  characterSections?: Prisma.TemplateCharacterSectionCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
 }
 
-export type TemplateUncheckedCreateWithoutCharacterSectionsInput = {
+export type TemplateUncheckedCreateWithoutResistancesInput = {
   id?: string
   adventureId: string
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1323,6 +1430,103 @@ export type TemplateUncheckedCreateWithoutCharacterSectionsInput = {
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedCreateNestedManyWithoutTemplateInput
   coreResources?: Prisma.TemplateCoreResourceUncheckedCreateNestedManyWithoutTemplateInput
   armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
+  characterSections?: Prisma.TemplateCharacterSectionUncheckedCreateNestedManyWithoutTemplateInput
+  characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
+}
+
+export type TemplateCreateOrConnectWithoutResistancesInput = {
+  where: Prisma.TemplateWhereUniqueInput
+  create: Prisma.XOR<Prisma.TemplateCreateWithoutResistancesInput, Prisma.TemplateUncheckedCreateWithoutResistancesInput>
+}
+
+export type TemplateUpsertWithoutResistancesInput = {
+  update: Prisma.XOR<Prisma.TemplateUpdateWithoutResistancesInput, Prisma.TemplateUncheckedUpdateWithoutResistancesInput>
+  create: Prisma.XOR<Prisma.TemplateCreateWithoutResistancesInput, Prisma.TemplateUncheckedCreateWithoutResistancesInput>
+  where?: Prisma.TemplateWhereInput
+}
+
+export type TemplateUpdateToOneWithWhereWithoutResistancesInput = {
+  where?: Prisma.TemplateWhereInput
+  data: Prisma.XOR<Prisma.TemplateUpdateWithoutResistancesInput, Prisma.TemplateUncheckedUpdateWithoutResistancesInput>
+}
+
+export type TemplateUpdateWithoutResistancesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  adventure?: Prisma.AdventureUpdateOneRequiredWithoutTemplatesNestedInput
+  attributes?: Prisma.TemplateAttributeUpdateManyWithoutTemplateNestedInput
+  templateFields?: Prisma.TemplateFieldUpdateManyWithoutTemplateNestedInput
+  templateSkills?: Prisma.TemplateSkillUpdateManyWithoutTemplateNestedInput
+  skillModifierProfiles?: Prisma.SkillModifierProfileUpdateManyWithoutTemplateNestedInput
+  coreResources?: Prisma.TemplateCoreResourceUpdateManyWithoutTemplateNestedInput
+  armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
+  characterSections?: Prisma.TemplateCharacterSectionUpdateManyWithoutTemplateNestedInput
+  characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
+}
+
+export type TemplateUncheckedUpdateWithoutResistancesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  adventureId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  attributes?: Prisma.TemplateAttributeUncheckedUpdateManyWithoutTemplateNestedInput
+  templateFields?: Prisma.TemplateFieldUncheckedUpdateManyWithoutTemplateNestedInput
+  templateSkills?: Prisma.TemplateSkillUncheckedUpdateManyWithoutTemplateNestedInput
+  skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedUpdateManyWithoutTemplateNestedInput
+  coreResources?: Prisma.TemplateCoreResourceUncheckedUpdateManyWithoutTemplateNestedInput
+  armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
+  characterSections?: Prisma.TemplateCharacterSectionUncheckedUpdateManyWithoutTemplateNestedInput
+  characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
+}
+
+export type TemplateCreateWithoutCharacterSectionsInput = {
+  id?: string
+  name: string
+  description?: string | null
+  attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
+  skillFormula?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  adventure: Prisma.AdventureCreateNestedOneWithoutTemplatesInput
+  attributes?: Prisma.TemplateAttributeCreateNestedManyWithoutTemplateInput
+  templateFields?: Prisma.TemplateFieldCreateNestedManyWithoutTemplateInput
+  templateSkills?: Prisma.TemplateSkillCreateNestedManyWithoutTemplateInput
+  skillModifierProfiles?: Prisma.SkillModifierProfileCreateNestedManyWithoutTemplateInput
+  coreResources?: Prisma.TemplateCoreResourceCreateNestedManyWithoutTemplateInput
+  armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceCreateNestedManyWithoutTemplateInput
+  characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutTemplateInput
+}
+
+export type TemplateUncheckedCreateWithoutCharacterSectionsInput = {
+  id?: string
+  adventureId: string
+  name: string
+  description?: string | null
+  attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
+  skillFormula?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  attributes?: Prisma.TemplateAttributeUncheckedCreateNestedManyWithoutTemplateInput
+  templateFields?: Prisma.TemplateFieldUncheckedCreateNestedManyWithoutTemplateInput
+  templateSkills?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutTemplateInput
+  skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedCreateNestedManyWithoutTemplateInput
+  coreResources?: Prisma.TemplateCoreResourceUncheckedCreateNestedManyWithoutTemplateInput
+  armorClass?: Prisma.TemplateArmorClassUncheckedCreateNestedOneWithoutTemplateInput
+  resistances?: Prisma.TemplateResistanceUncheckedCreateNestedManyWithoutTemplateInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutTemplateInput
 }
 
@@ -1347,6 +1551,7 @@ export type TemplateUpdateWithoutCharacterSectionsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1357,6 +1562,7 @@ export type TemplateUpdateWithoutCharacterSectionsInput = {
   skillModifierProfiles?: Prisma.SkillModifierProfileUpdateManyWithoutTemplateNestedInput
   coreResources?: Prisma.TemplateCoreResourceUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
 
@@ -1366,6 +1572,7 @@ export type TemplateUncheckedUpdateWithoutCharacterSectionsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1375,6 +1582,7 @@ export type TemplateUncheckedUpdateWithoutCharacterSectionsInput = {
   skillModifierProfiles?: Prisma.SkillModifierProfileUncheckedUpdateManyWithoutTemplateNestedInput
   coreResources?: Prisma.TemplateCoreResourceUncheckedUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUncheckedUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
 }
 
@@ -1383,6 +1591,7 @@ export type TemplateCreateManyAdventureInput = {
   name: string
   description?: string | null
   attributeModifierFormula?: string | null
+  attributeModifiersEnabled?: boolean
   skillFormula?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1393,6 +1602,7 @@ export type TemplateUpdateWithoutAdventureInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1403,6 +1613,7 @@ export type TemplateUpdateWithoutAdventureInput = {
   coreResources?: Prisma.TemplateCoreResourceUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutTemplateNestedInput
 }
 
@@ -1411,6 +1622,7 @@ export type TemplateUncheckedUpdateWithoutAdventureInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1421,6 +1633,7 @@ export type TemplateUncheckedUpdateWithoutAdventureInput = {
   coreResources?: Prisma.TemplateCoreResourceUncheckedUpdateManyWithoutTemplateNestedInput
   armorClass?: Prisma.TemplateArmorClassUncheckedUpdateOneWithoutTemplateNestedInput
   characterSections?: Prisma.TemplateCharacterSectionUncheckedUpdateManyWithoutTemplateNestedInput
+  resistances?: Prisma.TemplateResistanceUncheckedUpdateManyWithoutTemplateNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutTemplateNestedInput
 }
 
@@ -1429,6 +1642,7 @@ export type TemplateUncheckedUpdateManyWithoutAdventureInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attributeModifierFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attributeModifiersEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   skillFormula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1446,6 +1660,7 @@ export type TemplateCountOutputType = {
   skillModifierProfiles: number
   coreResources: number
   characterSections: number
+  resistances: number
   characterSheets: number
 }
 
@@ -1456,6 +1671,7 @@ export type TemplateCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensio
   skillModifierProfiles?: boolean | TemplateCountOutputTypeCountSkillModifierProfilesArgs
   coreResources?: boolean | TemplateCountOutputTypeCountCoreResourcesArgs
   characterSections?: boolean | TemplateCountOutputTypeCountCharacterSectionsArgs
+  resistances?: boolean | TemplateCountOutputTypeCountResistancesArgs
   characterSheets?: boolean | TemplateCountOutputTypeCountCharacterSheetsArgs
 }
 
@@ -1514,6 +1730,13 @@ export type TemplateCountOutputTypeCountCharacterSectionsArgs<ExtArgs extends ru
 /**
  * TemplateCountOutputType without action
  */
+export type TemplateCountOutputTypeCountResistancesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TemplateResistanceWhereInput
+}
+
+/**
+ * TemplateCountOutputType without action
+ */
 export type TemplateCountOutputTypeCountCharacterSheetsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.CharacterSheetWhereInput
 }
@@ -1525,6 +1748,7 @@ export type TemplateSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   name?: boolean
   description?: boolean
   attributeModifierFormula?: boolean
+  attributeModifiersEnabled?: boolean
   skillFormula?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1536,6 +1760,7 @@ export type TemplateSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   coreResources?: boolean | Prisma.Template$coreResourcesArgs<ExtArgs>
   armorClass?: boolean | Prisma.Template$armorClassArgs<ExtArgs>
   characterSections?: boolean | Prisma.Template$characterSectionsArgs<ExtArgs>
+  resistances?: boolean | Prisma.Template$resistancesArgs<ExtArgs>
   characterSheets?: boolean | Prisma.Template$characterSheetsArgs<ExtArgs>
   _count?: boolean | Prisma.TemplateCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["template"]>
@@ -1546,6 +1771,7 @@ export type TemplateSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   name?: boolean
   description?: boolean
   attributeModifierFormula?: boolean
+  attributeModifiersEnabled?: boolean
   skillFormula?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1558,6 +1784,7 @@ export type TemplateSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   name?: boolean
   description?: boolean
   attributeModifierFormula?: boolean
+  attributeModifiersEnabled?: boolean
   skillFormula?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1570,12 +1797,13 @@ export type TemplateSelectScalar = {
   name?: boolean
   description?: boolean
   attributeModifierFormula?: boolean
+  attributeModifiersEnabled?: boolean
   skillFormula?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TemplateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "adventureId" | "name" | "description" | "attributeModifierFormula" | "skillFormula" | "createdAt" | "updatedAt", ExtArgs["result"]["template"]>
+export type TemplateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "adventureId" | "name" | "description" | "attributeModifierFormula" | "attributeModifiersEnabled" | "skillFormula" | "createdAt" | "updatedAt", ExtArgs["result"]["template"]>
 export type TemplateInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   adventure?: boolean | Prisma.AdventureDefaultArgs<ExtArgs>
   attributes?: boolean | Prisma.Template$attributesArgs<ExtArgs>
@@ -1585,6 +1813,7 @@ export type TemplateInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   coreResources?: boolean | Prisma.Template$coreResourcesArgs<ExtArgs>
   armorClass?: boolean | Prisma.Template$armorClassArgs<ExtArgs>
   characterSections?: boolean | Prisma.Template$characterSectionsArgs<ExtArgs>
+  resistances?: boolean | Prisma.Template$resistancesArgs<ExtArgs>
   characterSheets?: boolean | Prisma.Template$characterSheetsArgs<ExtArgs>
   _count?: boolean | Prisma.TemplateCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -1606,6 +1835,7 @@ export type $TemplatePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     coreResources: Prisma.$TemplateCoreResourcePayload<ExtArgs>[]
     armorClass: Prisma.$TemplateArmorClassPayload<ExtArgs> | null
     characterSections: Prisma.$TemplateCharacterSectionPayload<ExtArgs>[]
+    resistances: Prisma.$TemplateResistancePayload<ExtArgs>[]
     characterSheets: Prisma.$CharacterSheetPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -1614,6 +1844,7 @@ export type $TemplatePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     name: string
     description: string | null
     attributeModifierFormula: string | null
+    attributeModifiersEnabled: boolean
     skillFormula: string | null
     createdAt: Date
     updatedAt: Date
@@ -2019,6 +2250,7 @@ export interface Prisma__TemplateClient<T, Null = never, ExtArgs extends runtime
   coreResources<T extends Prisma.Template$coreResourcesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Template$coreResourcesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TemplateCoreResourcePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   armorClass<T extends Prisma.Template$armorClassArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Template$armorClassArgs<ExtArgs>>): Prisma.Prisma__TemplateArmorClassClient<runtime.Types.Result.GetResult<Prisma.$TemplateArmorClassPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   characterSections<T extends Prisma.Template$characterSectionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Template$characterSectionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TemplateCharacterSectionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  resistances<T extends Prisma.Template$resistancesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Template$resistancesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TemplateResistancePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   characterSheets<T extends Prisma.Template$characterSheetsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Template$characterSheetsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -2054,6 +2286,7 @@ export interface TemplateFieldRefs {
   readonly name: Prisma.FieldRef<"Template", 'String'>
   readonly description: Prisma.FieldRef<"Template", 'String'>
   readonly attributeModifierFormula: Prisma.FieldRef<"Template", 'String'>
+  readonly attributeModifiersEnabled: Prisma.FieldRef<"Template", 'Boolean'>
   readonly skillFormula: Prisma.FieldRef<"Template", 'String'>
   readonly createdAt: Prisma.FieldRef<"Template", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Template", 'DateTime'>
@@ -2618,6 +2851,30 @@ export type Template$characterSectionsArgs<ExtArgs extends runtime.Types.Extensi
   take?: number
   skip?: number
   distinct?: Prisma.TemplateCharacterSectionScalarFieldEnum | Prisma.TemplateCharacterSectionScalarFieldEnum[]
+}
+
+/**
+ * Template.resistances
+ */
+export type Template$resistancesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TemplateResistance
+   */
+  select?: Prisma.TemplateResistanceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TemplateResistance
+   */
+  omit?: Prisma.TemplateResistanceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TemplateResistanceInclude<ExtArgs> | null
+  where?: Prisma.TemplateResistanceWhereInput
+  orderBy?: Prisma.TemplateResistanceOrderByWithRelationInput | Prisma.TemplateResistanceOrderByWithRelationInput[]
+  cursor?: Prisma.TemplateResistanceWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TemplateResistanceScalarFieldEnum | Prisma.TemplateResistanceScalarFieldEnum[]
 }
 
 /**
