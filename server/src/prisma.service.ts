@@ -15,7 +15,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     const pgUrl = rawUrl.replace(/^prisma\+/, '');
     // Use a pg.Pool instead of a raw connection string to enable concurrent
     // queries without hitting pg's "client already executing" deprecation warning.
-    const pool = new pg.Pool({ connectionString: pgUrl });
+    const pool = new pg.Pool({
+      connectionString: pgUrl,
+      max: 20, // Allow up to 20 concurrent connections
+      idleTimeoutMillis: 30_000, // Close idle connections after 30s
+      connectionTimeoutMillis: 10_000, // Fail fast if a connection cannot be acquired
+    });
     const adapter = new PrismaPg(pool);
     super({ adapter });
   }

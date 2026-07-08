@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common'
+import {
+  Injectable,
+  UnauthorizedException,
+  InternalServerErrorException,
+} from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { PrismaService } from '../prisma.service.js'
 import { v4 as uuid } from 'uuid'
@@ -35,7 +39,9 @@ export class TokenService {
     })
 
     const rawToken = uuid()
-    const tokenHash = await bcrypt.hash(rawToken, 12)
+    // UUIDs already have ~122 bits of entropy; bcrypt cost factor 10 is
+    // sufficient and avoids ~300ms delays with cost 12 under CPU contention.
+    const tokenHash = await bcrypt.hash(rawToken, 10)
 
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRY_DAYS)
@@ -76,7 +82,14 @@ export class TokenService {
     // Check if any stored token matches the provided raw token
     let matched = false
     for (const stored of storedTokens) {
-      const isValid = await bcrypt.compare(rawToken, stored.token)
+      // Wrap bcrypt.compare in try/catch to surface database/connection
+      // errors cleanly instead of silently proceeding to the "no match" path.
+      let isValid = false
+      try {
+        isValid = await bcrypt.compare(rawToken, stored.token)
+      } catch (err) {
+        throw new InternalServerErrorException('Token verification failed, please try again')
+      }
       if (isValid) {
         matched = true
         // Revoke the used token
@@ -94,7 +107,7 @@ export class TokenService {
         where: { userId, revoked: false },
         data: { revoked: true },
       })
-      throw new Error('Invalid refresh token')
+      throw new UnauthorizedException('Invalid refresh token')
     }
 
     // Get user email for new token generation
@@ -104,7 +117,7 @@ export class TokenService {
     })
 
     if (!user) {
-      throw new Error('User not found')
+      throw new UnauthorizedException('User not found')
     }
 
     // Issue new token pair
