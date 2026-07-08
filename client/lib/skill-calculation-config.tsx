@@ -210,8 +210,26 @@ export default function SkillCalculationConfig({
     )
   }
 
+  if (disabled) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <svg className="w-4 h-4 text-amber-300/70 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <h4 className="text-sm font-semibold text-amber-300/90">Skill Calculation</h4>
+          </div>
+          <p className="text-xs text-amber-300/80 leading-relaxed">
+            Attribute Modifiers are disabled. Enable the global Attribute Modifier System to configure skill calculations that depend on modifiers.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className={`space-y-4 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+    <div className="space-y-4">
       <div className="rounded-lg border border-border bg-background/30 p-4 space-y-4">
         <div className="flex items-center gap-2">
           <h4 className="text-sm font-semibold text-foreground">Skill Calculation</h4>

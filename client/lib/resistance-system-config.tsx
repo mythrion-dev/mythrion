@@ -21,13 +21,16 @@ interface Props {
   resistances: ResistanceDefinition[]
   attributes: { id: string; key: string; name: string }[]
   onChange: (resistances: ResistanceDefinition[]) => void
+  /** When true, the global Attribute Modifier System is disabled.
+   *  Attribute modifier controls are hidden and replaced with an info panel. */
+  disableAttributeModifiers?: boolean
 }
 
 function newResistance(): ResistanceDefinition {
   return { name: '', calculationType: 'MANUAL', components: [], attributeModifiers: [] }
 }
 
-export default function ResistanceSystemConfig({ resistances, attributes, onChange }: Props) {
+export default function ResistanceSystemConfig({ resistances, attributes, onChange, disableAttributeModifiers = false }: Props) {
   const [expandedResistances, setExpandedResistances] = useState<Record<number, boolean>>({})
   const prevCount = useRef(0)
 
@@ -221,60 +224,80 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
                     </div>
 
                     {/* Attribute Modifiers */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium text-foreground">Attribute Modifiers</label>
-                      </div>
-                      <div className="space-y-2">
-                        {/* Selected attribute modifiers as chips */}
+                    {disableAttributeModifiers ? (
+                      <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
+                        <p className="text-xs text-amber-300/80 leading-relaxed">
+                          Attribute Modifiers are disabled. Enable the global Attribute Modifier System to use this feature.
+                        </p>
                         {r.attributeModifiers.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
+                          <div className="flex flex-wrap gap-1.5 mt-2 opacity-50 pointer-events-none">
                             {r.attributeModifiers.map(am => (
                               <span
                                 key={am.attributeId}
                                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary border border-primary/20"
                               >
                                 {am.attributeName}
-                                <button
-                                  type="button"
-                                  onClick={() => removeAttributeModifier(rIdx, am.attributeId)}
-                                  className="ml-0.5 text-primary/60 hover:text-primary transition-colors"
-                                >
-                                  ×
-                                </button>
                               </span>
                             ))}
                           </div>
                         )}
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-sm font-medium text-foreground">Attribute Modifiers</label>
+                        </div>
+                        <div className="space-y-2">
+                          {/* Selected attribute modifiers as chips */}
+                          {r.attributeModifiers.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {r.attributeModifiers.map(am => (
+                                <span
+                                  key={am.attributeId}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary border border-primary/20"
+                                >
+                                  {am.attributeName}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeAttributeModifier(rIdx, am.attributeId)}
+                                    className="ml-0.5 text-primary/60 hover:text-primary transition-colors"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
 
-                        {/* Add modifier dropdown */}
-                        <div className="relative">
-                          <select
-                            className="input-field text-sm"
-                            value=""
-                            onChange={e => {
-                              const val = e.target.value
-                              if (!val) return
-                              const parts = val.split('::')
-                              if (parts.length === 3) {
-                                addAttributeModifier(rIdx, parts[0], parts[1], parts[2])
+                          {/* Add modifier dropdown */}
+                          <div className="relative">
+                            <select
+                              className="input-field text-sm"
+                              value=""
+                              onChange={e => {
+                                const val = e.target.value
+                                if (!val) return
+                                const parts = val.split('::')
+                                if (parts.length === 3) {
+                                  addAttributeModifier(rIdx, parts[0], parts[1], parts[2])
+                                }
+                                e.target.value = ''
+                              }}
+                            >
+                              <option value="">+ Add Attribute Modifier</option>
+                              {attributes
+                                .filter(a => !r.attributeModifiers.some(am => am.attributeId === a.id))
+                                .map(a => (
+                                  <option key={a.id} value={`${a.id}::${a.key}::${a.name}`}>
+                                    {a.name}
+                                  </option>
+                                ))
                               }
-                              e.target.value = ''
-                            }}
-                          >
-                            <option value="">+ Add Attribute Modifier</option>
-                            {attributes
-                              .filter(a => !r.attributeModifiers.some(am => am.attributeId === a.id))
-                              .map(a => (
-                                <option key={a.id} value={`${a.id}::${a.key}::${a.name}`}>
-                                  {a.name}
-                                </option>
-                              ))
-                            }
-                          </select>
+                            </select>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </>
                 )}
 

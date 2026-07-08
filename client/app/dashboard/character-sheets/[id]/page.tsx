@@ -1401,7 +1401,7 @@ function AbilitiesTab({
                                       ) : (
                                         <span className="text-sm font-semibold text-foreground">{sa.value || '—'}</span>
                                       )}
-                                      {modResult !== undefined && modResult !== null && (
+                                      {template.attributeModifiersEnabled !== false && modResult !== undefined && modResult !== null && (
                                         <span className="text-sm font-semibold text-primary">({modResult >= 0 ? '+' : ''}{modResult})</span>
                                       )}
                                     </div>
@@ -1438,7 +1438,7 @@ function AbilitiesTab({
                                 </div>
                               )
                             })}
-                            {armorClass.attributeModifierIds.length > 0 && (
+                            {template.attributeModifiersEnabled !== false && armorClass.attributeModifierIds.length > 0 && (
                               <div className="mt-2">
                                 <h5 className="text-[0.6rem] font-semibold text-muted uppercase tracking-wider mb-1">Attribute Modifiers</h5>
                                 <div className="grid gap-1 sm:grid-cols-2">
