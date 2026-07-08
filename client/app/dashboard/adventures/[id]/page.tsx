@@ -464,10 +464,10 @@ function NewTemplateForm(props: {
 
     {activeTab==='attrs'&&<div>
       <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer mb-3">
-        <input type="checkbox" className="w-4 h-4 rounded accent-primary" checked={props.newAttrModifiersEnabled} onChange={e=>props.onNewAttrModifiersEnabledChange?.(e.target.checked)}/>
+        <input type="checkbox" className="w-4 h-4 rounded accent-primary" checked={props.newAttrModifiersEnabled ?? false} onChange={e=>props.onNewAttrModifiersEnabledChange?.(e.target.checked)}/>
         Enable Attribute Modifiers
       </label>
-      {props.newAttrModifiersEnabled&&<div className="mb-3"><AttributeModifierConfig value={props.newAttrModifierFormula} onChange={v=>props.onNewAttrModifierFormulaChange?.(v)} placeholder="floor((value - 10) / 2)"/></div>}
+      {(props.newAttrModifiersEnabled ?? false) && <div className="mb-3"><AttributeModifierConfig value={props.newAttrModifierFormula} onChange={v=>props.onNewAttrModifierFormulaChange?.(v)} placeholder="floor((value - 10) / 2)"/></div>}
       <div className="space-y-2 mt-1">{props.newTemplateAttrs.map((attr,idx)=><CollapsibleAttrCard key={idx} index={idx} attr={attr} isExpanded={!!expandedAttrs[idx]} onToggle={()=>setExpandedAttrs(p=>({...p,[idx]:!p[idx]}))} onUpdateAttr={props.onUpdateAttr} onRemove={()=>props.onRemoveAttr(idx)}/>)}</div><button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button></div>}
     {activeTab==='skills'&&<div>
       <div className="mb-3"><SkillCalculationConfig value={props.newSkillFormula} onChange={v=>props.onNewSkillFormulaChange?.(v)} customFields={(props.newTemplateFields||[]).filter(f=>f.key.trim()&&f.label.trim()).map(f=>({key:f.key.trim(),label:f.label.trim()}))} placeholder="e.g. value + mod(value)"/></div>
@@ -580,10 +580,10 @@ function TemplateRow(props: {
 
     {editTab==='attrs'&&<div>
       <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer mb-3">
-        <input type="checkbox" className="w-4 h-4 rounded accent-primary" checked={props.editAttrModifiersEnabled} onChange={e=>props.onEditAttrModifiersEnabledChange?.(e.target.checked)}/>
+        <input type="checkbox" className="w-4 h-4 rounded accent-primary" checked={props.editAttrModifiersEnabled ?? false} onChange={e=>props.onEditAttrModifiersEnabledChange?.(e.target.checked)}/>
         Enable Attribute Modifiers
       </label>
-      {props.editAttrModifiersEnabled&&<div className="mb-3"><AttributeModifierConfig value={props.editAttrModifierFormula} onChange={v=>props.onEditAttrModifierFormulaChange?.(v)} placeholder="floor((value - 10) / 2)"/></div>}
+      {(props.editAttrModifiersEnabled ?? false) && <div className="mb-3"><AttributeModifierConfig value={props.editAttrModifierFormula} onChange={v=>props.onEditAttrModifierFormulaChange?.(v)} placeholder="floor((value - 10) / 2)"/></div>}
       <div className="space-y-2 mt-1">{props.editAttrs.map((attr,idx)=><CollapsibleAttrCard key={idx} index={idx} attr={attr} isExpanded={!!expandedEditAttrs[idx]} onToggle={()=>setExpandedEditAttrs(p=>({...p,[idx]:!p[idx]}))} onUpdateAttr={props.onUpdateAttr} onRemove={()=>props.onRemoveAttr(idx)}/>)}</div><button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button></div>}
     {editTab==='skills'&&<div>
       <div className="mb-3"><SkillCalculationConfig value={props.editSkillFormula} onChange={v=>props.onEditSkillFormulaChange?.(v)} customFields={(props.editFields||[]).filter(f=>f.key.trim()&&f.label.trim()).map(f=>({key:f.key.trim(),label:f.label.trim()}))} placeholder="e.g. value + mod(value)"/></div>
