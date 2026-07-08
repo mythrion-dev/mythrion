@@ -141,21 +141,23 @@ export class ResistanceCalculationService {
         }
       }
 
-      // Sum attribute modifiers (ignore negative)
+      // Sum attribute modifiers (ignore negative), only when modifiers are enabled
       const attributeModifierValues: Array<{ attributeId: string; attributeKey: string; attributeName: string; enabled: boolean; rawModifier: number; effectiveModifier: number }> = []
-      for (const am of resistance.attributeModifiers) {
-        if (!am.enabled) continue
-        const rawMod = attributeModifiers.get(am.attributeId) ?? 0
-        const effectiveMod = Math.max(rawMod, 0) // Ignore negative
-        total += effectiveMod
-        attributeModifierValues.push({
-          attributeId: am.attributeId,
-          attributeKey: am.attribute.key,
-          attributeName: am.attribute.name,
-          enabled: am.enabled,
-          rawModifier: rawMod,
-          effectiveModifier: effectiveMod,
-        })
+      if (modifiersEnabled) {
+        for (const am of resistance.attributeModifiers) {
+          if (!am.enabled) continue
+          const rawMod = attributeModifiers.get(am.attributeId) ?? 0
+          const effectiveMod = Math.max(rawMod, 0) // Ignore negative
+          total += effectiveMod
+          attributeModifierValues.push({
+            attributeId: am.attributeId,
+            attributeKey: am.attribute.key,
+            attributeName: am.attribute.name,
+            enabled: am.enabled,
+            rawModifier: rawMod,
+            effectiveModifier: effectiveMod,
+          })
+        }
       }
 
       results.push({
