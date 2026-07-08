@@ -100,6 +100,15 @@ export default function SkillCalculationConfig({
     }
   }, [generatedJson, isLegacyFormula, initialized, onChange])
 
+  // When disabled is activated, force-uncheck the attribute modifier toggle.
+  // When re-enabled, the user must manually re-enable — we do NOT restore.
+  useEffect(() => {
+    if (!initialized) return
+    if (disabled && config.useAttributeModifier) {
+      setConfig(prev => ({ ...prev, useAttributeModifier: false }))
+    }
+  }, [disabled, config.useAttributeModifier, initialized])
+
   const toggleAttributeModifier = () => {
     if (disabled) return
     setConfig(prev => ({

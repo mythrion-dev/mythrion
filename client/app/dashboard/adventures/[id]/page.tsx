@@ -113,6 +113,20 @@ export default function AdventureDetailPage() {
   function updateEditAcFieldEditable(i: number, v: boolean) { setEditAcFields(p => p.map((a,j) => j===i ? {...a, editableByPlayer: v} : a)) }
   function toggleEditAcAttributeId(attrId: string) { setEditAcAttributeIds(p => p.includes(attrId) ? p.filter(x => x !== attrId) : [...p, attrId]) }
 
+  // When the master "Enable Attribute Modifiers" switch is turned OFF, clear all
+  // AC attribute modifier selections. When re-enabled, the GM must re-select.
+  useEffect(() => {
+    if (!newAttrModifiersEnabled && newAcAttributeIds.length > 0) {
+      setNewAcAttributeIds([])
+    }
+  }, [newAttrModifiersEnabled, newAcAttributeIds])
+
+  useEffect(() => {
+    if (!editAttrModifiersEnabled && editAcAttributeIds.length > 0) {
+      setEditAcAttributeIds([])
+    }
+  }, [editAttrModifiersEnabled, editAcAttributeIds])
+
   // Core Resource helpers
   function addNewCoreResource() { setNewCoreResources(p => [...p, { slug: '', displayName: '', enabled: true, editableByPlayer: true, showNotes: true }]) }
   function removeNewCoreResource(i: number) { setNewCoreResources(p => p.filter((_,j) => j!==i)) }
