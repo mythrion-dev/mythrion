@@ -189,5 +189,9 @@ export class UpdateTemplateDto {
 
 export class UpdateCharacterSectionDefDto {
   @IsString()
+  @IsOptional()
+  id?: string
+
+  @IsString()
   name!: string
 }

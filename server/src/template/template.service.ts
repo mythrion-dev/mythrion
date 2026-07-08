@@ -398,21 +398,37 @@ export class TemplateService {
       const existingSections = await this.prisma.templateCharacterSection.findMany({
         where: { templateId: id },
       })
-      const newSectionNames = dto.characterSections.map(s => s.name.trim())
-      const existingSectionNames = existingSections.map(s => s.name)
-      const sectionsToDelete = existingSectionNames.filter(n => !newSectionNames.includes(n))
-      if (sectionsToDelete.length) {
-        await this.prisma.templateCharacterSection.deleteMany({ where: { templateId: id, name: { in: sectionsToDelete } } })
-      }
+      const existingIds = existingSections.map(e => e.id)
+      // Build a Set of IDs that are being kept (matched by id or name)
+      const keptIds = new Set<string>()
       for (let idx = 0; idx < dto.characterSections.length; idx++) {
         const s = dto.characterSections[idx]; const name = s.name.trim()
         if (!name) continue
-        const existing = existingSections.find(e => e.name === name)
-        if (existing) {
-          await this.prisma.templateCharacterSection.update({ where: { id: existing.id }, data: { name, order: idx } })
-        } else {
-          await this.prisma.templateCharacterSection.create({ data: { templateId: id, name, order: idx } })
+        // Match by explicit id first (supports renames), fall back to name
+        let existing: typeof existingSections[number] | undefined
+        if (s.id) {
+          existing = existingSections.find(e => e.id === s.id)
         }
+        if (!existing) {
+          existing = existingSections.find(e => e.name === name)
+        }
+        if (existing) {
+          keptIds.add(existing.id)
+          await this.prisma.templateCharacterSection.update({
+            where: { id: existing.id },
+            data: { name, order: idx },
+          })
+        } else {
+          const created = await this.prisma.templateCharacterSection.create({
+            data: { templateId: id, name, order: idx },
+          })
+          keptIds.add(created.id)
+        }
+      }
+      // Delete sections that are no longer referenced
+      const idsToDelete = existingIds.filter(eid => !keptIds.has(eid))
+      if (idsToDelete.length) {
+        await this.prisma.templateCharacterSection.deleteMany({ where: { id: { in: idsToDelete } } })
       }
     }
 
