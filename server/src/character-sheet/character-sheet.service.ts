@@ -15,6 +15,7 @@ const sheetInclude = {
       id: true,
       name: true,
       attributeModifierFormula: true,
+      attributeModifiersEnabled: true,
       skillFormula: true,
       attributes: { orderBy: { order: 'asc' as const } },
       templateSkills: { select: { id: true, name: true, description: true, attributeId: true, allowedAttributeIds: true, defaultAttributeId: true, attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } }, orderBy: { order: 'asc' as const } },
