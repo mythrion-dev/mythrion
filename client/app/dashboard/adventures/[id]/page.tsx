@@ -91,7 +91,7 @@ export default function AdventureDetailPage() {
   const [newTemplateFields, setNewTemplateFields] = useState<{ key: string; label: string }[]>([])
   const [templateCreating, setTemplateCreating] = useState(false); const [templateError, setTemplateError] = useState<string | null>(null)
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null); const [editTemplateName, setEditTemplateName] = useState(''); const [editTemplateDescription, setEditTemplateDescription] = useState('')
-  const [editTemplateAttrs, setEditTemplateAttrs] = useState<{ key: string; name: string }[]>([])
+  const [editTemplateAttrs, setEditTemplateAttrs] = useState<{ id?: string; key: string; name: string }[]>([])
   const [editAttrModifierFormula, setEditAttrModifierFormula] = useState('')
   const [editSkillFormula, setEditSkillFormula] = useState('')
   const [editTemplateFields, setEditTemplateFields] = useState<{ key: string; label: string }[]>([])
@@ -204,10 +204,12 @@ export default function AdventureDetailPage() {
         editableByPlayer: c.editableByPlayer,
         defaultValue: c.defaultValue || '0',
       })),
-      attributeModifiers: (r.attributeModifiers || []).map(am => ({
-        attributeId: am.attributeId,
-        enabled: am.enabled,
-      })),
+      attributeModifiers: (r.attributeModifiers || [])
+        .filter(am => am.attributeId && am.attributeId.trim())
+        .map(am => ({
+          attributeId: am.attributeId,
+          enabled: am.enabled,
+        })),
     }))
   }
 
@@ -237,7 +239,7 @@ export default function AdventureDetailPage() {
   }
 
   function startEditTemplate(t: Template) { setEditingTemplateId(t.id); setEditTemplateName(t.name); setEditTemplateDescription(t.description??'');
-    setEditTemplateAttrs(t.attributes.map(a=>({key:a.key,name:a.name})));
+    setEditTemplateAttrs(t.attributes.map(a=>({id:a.id,key:a.key,name:a.name})));
     setEditAttrModifiersEnabled((t as any).attributeModifiersEnabled ?? true);
     setEditAttrModifierFormula(t.attributeModifierFormula ?? '');
     setEditSkillFormula(t.skillFormula ?? '');
