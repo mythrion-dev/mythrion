@@ -8,6 +8,7 @@ import Link from 'next/link'
 import FormulaBuilder from '@/lib/formula-builder'
 import AttributeModifierConfig from '@/lib/attribute-modifier-config'
 import SkillCalculationConfig from '@/lib/skill-calculation-config'
+import ResistanceSystemConfig from '@/lib/resistance-system-config'
 import { PageNav } from '@/lib/breadcrumb'
 
 interface Adventure {
@@ -94,6 +95,10 @@ export default function AdventureDetailPage() {
   // Character Sections state (stores id+name pairs so renames preserve the section entity)
   const [newCharacterSections, setNewCharacterSections] = useState<{ id?: string; name: string }[]>([])
   const [editCharacterSections, setEditCharacterSections] = useState<{ id?: string; name: string }[]>([])
+
+  // Resistance System state
+  const [newResistances, setNewResistances] = useState<{ id?: string; name: string; calculationType: string; components: { id?: string; name: string; editableByPlayer: boolean; defaultValue: string }[]; attributeModifiers: { attributeId: string; attributeKey: string; attributeName: string; enabled: boolean }[] }[]>([])
+  const [editResistances, setEditResistances] = useState<{ id?: string; name: string; calculationType: string; components: { id?: string; name: string; editableByPlayer: boolean; defaultValue: string }[]; attributeModifiers: { attributeId: string; attributeKey: string; attributeName: string; enabled: boolean }[] }[]>([])
 
   function addNewCharacterSection() { setNewCharacterSections(p => [...p, { name: '' }]) }
   function removeNewCharacterSection(i: number) { setNewCharacterSections(p => p.filter((_,j) => j!==i)) }
