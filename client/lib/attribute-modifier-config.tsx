@@ -80,7 +80,9 @@ function parseFormula(formula: string): ConfigValues | null {
     const prefix = cleaned.substring(0, floorExprStart)
     // The prefix should be like "5+" or "-5+" or "5" which is incomplete but handle common cases
     // Match pattern: optional number, optional sign
-    const prefixMatch = prefix.match(/^(-?\d+)\s*[+-]?$/)
+    // The prefix may have a multiplier before floor, e.g. "5+3*" or "-2+1*".
+    // Only match the base modifier (the leading number and its sign operator).
+    const prefixMatch = prefix.match(/^(-?\d+)\s*[+-]/)
     if (prefixMatch) {
       modifier = parseInt(prefixMatch[1], 10)
     }
@@ -295,6 +297,7 @@ export default function AttributeModifierConfig({
               className="input-field w-20 text-sm text-center"
               value={config.modifierIncrease}
               onChange={(e) => handleConfigChange('modifierIncrease', e.target.value)}
+              min={1}
               step={1}
             />
             <span className="text-sm text-foreground">point(s).</span>
