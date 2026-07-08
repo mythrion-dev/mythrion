@@ -172,6 +172,10 @@ export class UpdateTemplateDto {
   @Type(() => UpdateArmorClassDefDto)
   armorClass?: UpdateArmorClassDefDto
 
+  @IsBoolean()
+  @IsOptional()
+  attributeModifiersEnabled?: boolean
+
   @IsString()
   @IsOptional()
   attributeModifierFormula?: string

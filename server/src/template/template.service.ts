@@ -33,6 +33,7 @@ export class TemplateService {
     const created = await this.prisma.template.create({
       data: {
         adventureId, name: dto.name, description: dto.description ?? null,
+        attributeModifiersEnabled: dto.attributeModifiersEnabled ?? true,
         attributeModifierFormula: dto.attributeModifierFormula ?? null,
         skillFormula: dto.skillFormula ?? null,
         attributes: {
@@ -491,6 +492,7 @@ export class TemplateService {
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.attributeModifiersEnabled !== undefined && { attributeModifiersEnabled: dto.attributeModifiersEnabled }),
         ...(dto.attributeModifierFormula !== undefined && { attributeModifierFormula: dto.attributeModifierFormula || null }),
         ...(dto.skillFormula !== undefined && { skillFormula: dto.skillFormula || null }),
       },

@@ -81,9 +81,15 @@ export default function AdventureDetailPage() {
   const [newTemplateProfiles, setNewTemplateProfiles] = useState<{ name: string; targetMode?: string; targetSkillIds?: string[]; options: { label: string; value: number }[] }[]>([]); const [editTemplateProfiles, setEditTemplateProfiles] = useState<{ name: string; targetMode?: string; targetSkillIds?: string[]; options: { label: string; value: number }[] }[]>([])
   const [newCoreResources, setNewCoreResources] = useState<CoreResource[]>([]); const [editCoreResources, setEditCoreResources] = useState<CoreResource[]>([])
 
+  // Attribute Modifiers state
+  const [newAttrModifiersEnabled, setNewAttrModifiersEnabled] = useState(true)
+
   // Armor Class state
   const [newAcEnabled, setNewAcEnabled] = useState(false); const [newAcAttributeIds, setNewAcAttributeIds] = useState<string[]>([]); const [newAcFields, setNewAcFields] = useState<{ name: string; key: string; defaultValue: string; editableByPlayer: boolean; description: string }[]>([])
   const [editAcEnabled, setEditAcEnabled] = useState(false); const [editAcAttributeIds, setEditAcAttributeIds] = useState<string[]>([]); const [editAcFields, setEditAcFields] = useState<{ name: string; key: string; defaultValue: string; editableByPlayer: boolean; description: string }[]>([])
+
+  // Attribute Modifiers edit state
+  const [editAttrModifiersEnabled, setEditAttrModifiersEnabled] = useState(true)
 
   // Character Sections state (stores id+name pairs so renames preserve the section entity)
   const [newCharacterSections, setNewCharacterSections] = useState<{ id?: string; name: string }[]>([])
@@ -180,6 +186,7 @@ export default function AdventureDetailPage() {
     try {
       await api.post(`/adventures/${id}/templates`, {
         name: newTemplateName.trim(), description: newTemplateDescription.trim()||undefined,
+        attributeModifiersEnabled: newAttrModifiersEnabled,
         attributeModifierFormula: newAttrModifierFormula.trim() || undefined,
         skillFormula: newSkillFormula.trim() || undefined,
         attributes: ta,
@@ -196,6 +203,7 @@ export default function AdventureDetailPage() {
 
   function startEditTemplate(t: Template) { setEditingTemplateId(t.id); setEditTemplateName(t.name); setEditTemplateDescription(t.description??'');
     setEditTemplateAttrs(t.attributes.map(a=>({key:a.key,name:a.name})));
+    setEditAttrModifiersEnabled((t as any).attributeModifiersEnabled ?? true);
     setEditAttrModifierFormula(t.attributeModifierFormula ?? '');
     setEditSkillFormula(t.skillFormula ?? '');
     setEditTemplateFields((t.templateFields||[]).map(f=>({key:f.key,label:f.label})));
@@ -228,6 +236,7 @@ export default function AdventureDetailPage() {
     try {
       await api.patch(`/adventures/${id}/templates/${editingTemplateId}`, {
         name: editTemplateName.trim(), description: editTemplateDescription.trim()||undefined,
+        attributeModifiersEnabled: editAttrModifiersEnabled,
         attributeModifierFormula: editAttrModifierFormula.trim() || undefined,
         skillFormula: editSkillFormula.trim() || undefined,
         attributes: ta,
@@ -300,8 +309,12 @@ export default function AdventureDetailPage() {
             onNewAcEnabledChange={setNewAcEnabled} onAddNewAcField={addNewAcField} onRemoveNewAcField={removeNewAcField} onUpdateNewAcField={updateNewAcField} onUpdateNewAcFieldEditable={updateNewAcFieldEditable} onToggleNewAcAttributeId={toggleNewAcAttributeId}
             editAcEnabled={editAcEnabled} editAcFields={editAcFields} editAcAttributeIds={editAcAttributeIds} editTemplateAttrs2={editTemplateAttrs}
             onEditAcEnabledChange={setEditAcEnabled} onAddEditAcField={addEditAcField} onRemoveEditAcField={removeEditAcField} onUpdateEditAcField={updateEditAcField} onUpdateEditAcFieldEditable={updateEditAcFieldEditable} onToggleEditAcAttributeId={toggleEditAcAttributeId}
+            newAttrModifiersEnabled={newAttrModifiersEnabled}
+            onNewAttrModifiersEnabledChange={setNewAttrModifiersEnabled}
             onNewAttrModifierFormulaChange={setNewAttrModifierFormula}
             onNewSkillFormulaChange={setNewSkillFormula}
+            editAttrModifiersEnabled={editAttrModifiersEnabled}
+            onEditAttrModifiersEnabledChange={setEditAttrModifiersEnabled}
             onEditAttrModifierFormulaChange={setEditAttrModifierFormula}
             onEditSkillFormulaChange={setEditSkillFormula}
             newCharacterSections={newCharacterSections}
@@ -366,8 +379,12 @@ function TemplatesSection(props: {
   onEditAcEnabledChange?: (v: boolean) => void
   onAddEditAcField?: () => void; onRemoveEditAcField?: (i: number) => void; onUpdateEditAcField?: (i: number, f: 'name'|'key'|'defaultValue'|'description', v: string) => void; onUpdateEditAcFieldEditable?: (i: number, v: boolean) => void
   onToggleEditAcAttributeId?: (attrId: string) => void
+  newAttrModifiersEnabled?: boolean
+  onNewAttrModifiersEnabledChange?: (v: boolean) => void
   onNewAttrModifierFormulaChange?: (v: string) => void
   onNewSkillFormulaChange?: (v: string) => void
+  editAttrModifiersEnabled?: boolean
+  onEditAttrModifiersEnabledChange?: (v: boolean) => void
   onEditAttrModifierFormulaChange?: (v: string) => void
   onEditSkillFormulaChange?: (v: string) => void
   newCharacterSections?: { id?: string; name: string }[]
@@ -419,6 +436,8 @@ function NewTemplateForm(props: {
   onToggleNewAcAttributeId?: (attrId: string) => void
   onNewAttrModifierFormulaChange?: (v: string) => void
   onNewSkillFormulaChange?: (v: string) => void
+  newAttrModifiersEnabled?: boolean
+  onNewAttrModifiersEnabledChange?: (v: boolean) => void
   newCharacterSections?: { id?: string; name: string }[]
   onAddNewCharacterSection?: () => void; onRemoveNewCharacterSection?: (i: number) => void; onUpdateNewCharacterSection?: (i: number, v: string) => void
 }) {
@@ -444,7 +463,11 @@ function NewTemplateForm(props: {
     </div>
 
     {activeTab==='attrs'&&<div>
-      <div className="mb-3"><AttributeModifierConfig value={props.newAttrModifierFormula} onChange={v=>props.onNewAttrModifierFormulaChange?.(v)} placeholder="floor((value - 10) / 2)"/></div>
+      <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer mb-3">
+        <input type="checkbox" className="w-4 h-4 rounded accent-primary" checked={props.newAttrModifiersEnabled} onChange={e=>props.onNewAttrModifiersEnabledChange?.(e.target.checked)}/>
+        Enable Attribute Modifiers
+      </label>
+      {props.newAttrModifiersEnabled&&<div className="mb-3"><AttributeModifierConfig value={props.newAttrModifierFormula} onChange={v=>props.onNewAttrModifierFormulaChange?.(v)} placeholder="floor((value - 10) / 2)"/></div>}
       <div className="space-y-2 mt-1">{props.newTemplateAttrs.map((attr,idx)=><CollapsibleAttrCard key={idx} index={idx} attr={attr} isExpanded={!!expandedAttrs[idx]} onToggle={()=>setExpandedAttrs(p=>({...p,[idx]:!p[idx]}))} onUpdateAttr={props.onUpdateAttr} onRemove={()=>props.onRemoveAttr(idx)}/>)}</div><button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button></div>}
     {activeTab==='skills'&&<div>
       <div className="mb-3"><SkillCalculationConfig value={props.newSkillFormula} onChange={v=>props.onNewSkillFormulaChange?.(v)} customFields={(props.newTemplateFields||[]).filter(f=>f.key.trim()&&f.label.trim()).map(f=>({key:f.key.trim(),label:f.label.trim()}))} placeholder="e.g. value + mod(value)"/></div>
@@ -527,6 +550,8 @@ function TemplateRow(props: {
   onEditAcEnabledChange?: (v: boolean) => void
   onAddEditAcField?: () => void; onRemoveEditAcField?: (i: number) => void; onUpdateEditAcField?: (i: number, f: 'name'|'key'|'defaultValue'|'description', v: string) => void; onUpdateEditAcFieldEditable?: (i: number, v: boolean) => void
   onToggleEditAcAttributeId?: (attrId: string) => void
+  editAttrModifiersEnabled?: boolean
+  onEditAttrModifiersEnabledChange?: (v: boolean) => void
   onEditAttrModifierFormulaChange?: (v: string) => void
   onEditSkillFormulaChange?: (v: string) => void
   editCharacterSections?: { id?: string; name: string }[]

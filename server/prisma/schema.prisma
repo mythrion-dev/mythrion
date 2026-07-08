@@ -125,6 +125,7 @@ model Template {
   name                     String
   description              String?
   attributeModifierFormula String?
+  attributeModifiersEnabled Boolean                  @default(true)
   skillFormula             String?
   attributes               TemplateAttribute[]
   templateFields           TemplateField[]

@@ -400,8 +400,9 @@ export default function CharacterSheetDetailPage() {
 
   const computeModifiers = useCallback(async (sd: CharacterSheet) => {
     const results: Record<string, number | null> = {}
+    const modifiersEnabled = (sd.template as any).attributeModifiersEnabled !== false
     const globalFormula = sd.template.attributeModifierFormula
-    if (!globalFormula?.trim()) { setModifierResults(results); return results }
+    if (!modifiersEnabled || !globalFormula?.trim()) { setModifierResults(results); return results }
     for (const attr of sd.template.attributes) {
       try {
         const vars: Record<string, number> = {}

@@ -180,6 +180,10 @@ export class CreateTemplateDto {
   @Type(() => ArmorClassDefDto)
   armorClass?: ArmorClassDefDto
 
+  @IsBoolean()
+  @IsOptional()
+  attributeModifiersEnabled?: boolean
+
   @IsString()
   @IsOptional()
   attributeModifierFormula?: string
