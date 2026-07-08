@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { api } from '@/lib/api'
 import { InlineText, InlineNumber, InlineTextarea } from '@/lib/inline-editable'
+import ResistanceTab from './resistance-tab'
 import Link from 'next/link'
 import { PageNav } from '@/lib/breadcrumb'
 
@@ -204,6 +205,38 @@ export default function CharacterSheetDetailPage() {
   const [summonSkillResults, setSummonSkillResults] = useState<Record<string, Record<string, number | null>>>({})
   // Summon skill profile selections per summon -> summonSkillId -> profile selection
   const [summonSkillProfileSelections, setSummonSkillProfileSelections] = useState<Record<string, Record<string, string | null>>>({})
+
+  // Resistance state
+  const [resistanceData, setResistanceData] = useState<Array<{ resistanceId: string; name: string; calculationType: string; total: number; componentValues: Array<{ componentId: string; componentName: string; value: number; editableByPlayer: boolean }>; attributeModifierValues: Array<{ attributeId: string; attributeKey: string; attributeName: string; enabled: boolean; rawModifier: number; effectiveModifier: number }> }>>([])
+  const [sheetResistanceValues, setSheetResistanceValues] = useState<Record<string, string | null>>({})
+
+  async function fetchResistances(sheetId: string) {
+    try {
+      const data = await api.get<Array<any>>(`/character-sheets/${sheetId}/resistances`)
+      setResistanceData(data)
+    } catch {}
+  }
+
+  async function handleSaveResistanceComponent(componentId: string, value: number) {
+    if (!sheet) return
+    try {
+      await api.patch(`/character-sheets/${sheet.id}`, { resistanceComponentValues: [{ componentId, value: String(value) }] })
+      const updated = await api.get<Array<any>>(`/character-sheets/${sheet.id}/resistances`)
+      setResistanceData(updated)
+    } catch {}
+  }
+
+  async function handleSaveResistanceManual(resistanceId: string, value: number) {
+    if (!sheet) return
+    setSheetResistanceValues(prev => ({ ...prev, [resistanceId]: String(value) }))
+    try {
+      await api.patch(`/character-sheets/${sheet.id}`, { resistanceValues: [{ resistanceId, manualValue: String(value) }] })
+      const updated = await api.get<Array<any>>(`/character-sheets/${sheet.id}/resistances`)
+      setResistanceData(updated)
+    } catch {
+      setSheetResistanceValues(prev => ({ ...prev, [resistanceId]: null }))
+    }
+  }
 
   const updateSheet = useCallback(async (data: Record<string, unknown>): Promise<CharacterSheet> => {
     const current = sheet!
@@ -884,6 +917,7 @@ export default function CharacterSheetDetailPage() {
         <button onClick={()=>setActiveTab('inventory')} className={tabClass('inventory')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>Inventory</button>
         <button onClick={()=>setActiveTab('story')} className={tabClass('story')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>Story</button>
         <button onClick={()=>setActiveTab('personal-abilities')} className={tabClass('personal-abilities')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>Personal Abilities</button>
+        <button onClick={()=>{setActiveTab('resistances');if(sheet) fetchResistances(sheet.id)}} className={tabClass('resistances')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>Resistances</button>
       </nav>
 
       {activeTab === 'character' && <div className="space-y-6">
@@ -1043,6 +1077,16 @@ export default function CharacterSheetDetailPage() {
             )
           })}
         </div>
+      )}
+
+      {activeTab === 'resistances' && (
+        <ResistanceTab
+          resistances={resistanceData}
+          isOwner={!!isOwner}
+          onSaveComponent={handleSaveResistanceComponent}
+          onSaveManual={handleSaveResistanceManual}
+          sheetResistanceValues={sheetResistanceValues}
+        />
       )}
 
       {confirmDelete && <DeleteModal name={sheet.characterName} error={deleteError} loading={deleting} onCancel={() => setConfirmDelete(false)} onConfirm={handleDelete} />}

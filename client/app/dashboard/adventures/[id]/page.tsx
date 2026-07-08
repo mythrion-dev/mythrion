@@ -35,6 +35,17 @@ interface TemplateArmorClassField {
 interface TemplateArmorClass {
   id: string; enabled: boolean; attributeModifierIds: string[]; fields: TemplateArmorClassField[]
 }
+interface TemplateResistanceComponent {
+  id: string; name: string; editableByPlayer: boolean; defaultValue: string
+}
+interface TemplateResistanceAttributeModifier {
+  id: string; attributeId: string; enabled?: boolean; attribute: { id: string; key: string; name: string }
+}
+interface TemplateResistance {
+  id: string; name: string; calculationType: string; order: number
+  components: TemplateResistanceComponent[]
+  attributeModifiers: TemplateResistanceAttributeModifier[]
+}
 interface Template {
   id: string; name: string; description: string | null
   attributeModifierFormula?: string | null
@@ -45,6 +56,7 @@ interface Template {
   skillModifierProfiles?: SkillModifierProfile[]
   coreResources?: CoreResource[]
   armorClass?: TemplateArmorClass | null
+  resistances?: TemplateResistance[]
   createdAt: string
 }
 interface CampaignCharacter {
@@ -55,6 +67,11 @@ interface UserSheet {
   id: string; characterName: string; adventure: { id: string; name: string; campaign: string }
   template: { id: string; name: string }; createdAt: string
 }
+
+type ResistanceDef = {
+  id?: string; name: string; calculationType: 'MANUAL' | 'CALCULATED'; components: { id?: string; name: string; editableByPlayer: boolean; defaultValue: string }[]; attributeModifiers: { attributeId: string; attributeKey: string; attributeName: string; enabled: boolean }[]
+}
+function emptyResistance(): ResistanceDef { return { name: '', calculationType: 'MANUAL', components: [], attributeModifiers: [] } }
 
 export default function AdventureDetailPage() {
   const router = useRouter(); const params = useParams(); const id = params.id as string
@@ -81,24 +98,14 @@ export default function AdventureDetailPage() {
   const [newTemplateSkills, setNewTemplateSkills] = useState<{ name: string; description: string; attributeId: string; allowedAttributeIds: string[]; defaultAttributeId: string }[]>([]); const [editTemplateSkills, setEditTemplateSkills] = useState<{ name: string; description: string; attributeId: string; allowedAttributeIds: string[]; defaultAttributeId: string }[]>([]); const [templateSaving, setTemplateSaving] = useState(false)
   const [newTemplateProfiles, setNewTemplateProfiles] = useState<{ name: string; targetMode?: string; targetSkillIds?: string[]; options: { label: string; value: number }[] }[]>([]); const [editTemplateProfiles, setEditTemplateProfiles] = useState<{ name: string; targetMode?: string; targetSkillIds?: string[]; options: { label: string; value: number }[] }[]>([])
   const [newCoreResources, setNewCoreResources] = useState<CoreResource[]>([]); const [editCoreResources, setEditCoreResources] = useState<CoreResource[]>([])
-
-  // Attribute Modifiers state
   const [newAttrModifiersEnabled, setNewAttrModifiersEnabled] = useState(true)
-
-  // Armor Class state
   const [newAcEnabled, setNewAcEnabled] = useState(false); const [newAcAttributeIds, setNewAcAttributeIds] = useState<string[]>([]); const [newAcFields, setNewAcFields] = useState<{ name: string; key: string; defaultValue: string; editableByPlayer: boolean; description: string }[]>([])
   const [editAcEnabled, setEditAcEnabled] = useState(false); const [editAcAttributeIds, setEditAcAttributeIds] = useState<string[]>([]); const [editAcFields, setEditAcFields] = useState<{ name: string; key: string; defaultValue: string; editableByPlayer: boolean; description: string }[]>([])
-
-  // Attribute Modifiers edit state
   const [editAttrModifiersEnabled, setEditAttrModifiersEnabled] = useState(true)
-
-  // Character Sections state (stores id+name pairs so renames preserve the section entity)
   const [newCharacterSections, setNewCharacterSections] = useState<{ id?: string; name: string }[]>([])
   const [editCharacterSections, setEditCharacterSections] = useState<{ id?: string; name: string }[]>([])
-
-  // Resistance System state
-  const [newResistances, setNewResistances] = useState<{ id?: string; name: string; calculationType: string; components: { id?: string; name: string; editableByPlayer: boolean; defaultValue: string }[]; attributeModifiers: { attributeId: string; attributeKey: string; attributeName: string; enabled: boolean }[] }[]>([])
-  const [editResistances, setEditResistances] = useState<{ id?: string; name: string; calculationType: string; components: { id?: string; name: string; editableByPlayer: boolean; defaultValue: string }[]; attributeModifiers: { attributeId: string; attributeKey: string; attributeName: string; enabled: boolean }[] }[]>([])
+  const [newResistances, setNewResistances] = useState<ResistanceDef[]>([])
+  const [editResistances, setEditResistances] = useState<ResistanceDef[]>([])
 
   function addNewCharacterSection() { setNewCharacterSections(p => [...p, { name: '' }]) }
   function removeNewCharacterSection(i: number) { setNewCharacterSections(p => p.filter((_,j) => j!==i)) }
@@ -106,7 +113,6 @@ export default function AdventureDetailPage() {
   function addEditCharacterSection() { setEditCharacterSections(p => [...p, { name: '' }]) }
   function removeEditCharacterSection(i: number) { setEditCharacterSections(p => p.filter((_,j) => j!==i)) }
   function updateEditCharacterSection(i: number, v: string) { setEditCharacterSections(p => p.map((n,j) => j===i ? { ...n, name: v } : n)) }
-
   function addNewAcField() { setNewAcFields(p => [...p, { name: '', key: '', defaultValue: '0', editableByPlayer: false, description: '' }]) }
   function removeNewAcField(i: number) { setNewAcFields(p => p.filter((_,j) => j!==i)) }
   function updateNewAcField(i: number, f: 'name'|'key'|'defaultValue'|'description', v: string) { setNewAcFields(p => p.map((a,j) => j===i ? {...a, [f]: v} : a)) }
@@ -118,21 +124,13 @@ export default function AdventureDetailPage() {
   function updateEditAcFieldEditable(i: number, v: boolean) { setEditAcFields(p => p.map((a,j) => j===i ? {...a, editableByPlayer: v} : a)) }
   function toggleEditAcAttributeId(attrId: string) { setEditAcAttributeIds(p => p.includes(attrId) ? p.filter(x => x !== attrId) : [...p, attrId]) }
 
-  // When the master "Enable Attribute Modifiers" switch is turned OFF, clear all
-  // AC attribute modifier selections. When re-enabled, the GM must re-select.
   useEffect(() => {
-    if (!newAttrModifiersEnabled && newAcAttributeIds.length > 0) {
-      setNewAcAttributeIds([])
-    }
+    if (!newAttrModifiersEnabled && newAcAttributeIds.length > 0) setNewAcAttributeIds([])
   }, [newAttrModifiersEnabled, newAcAttributeIds])
-
   useEffect(() => {
-    if (!editAttrModifiersEnabled && editAcAttributeIds.length > 0) {
-      setEditAcAttributeIds([])
-    }
+    if (!editAttrModifiersEnabled && editAcAttributeIds.length > 0) setEditAcAttributeIds([])
   }, [editAttrModifiersEnabled, editAcAttributeIds])
 
-  // Core Resource helpers
   function addNewCoreResource() { setNewCoreResources(p => [...p, { slug: '', displayName: '', enabled: true, editableByPlayer: true, showNotes: true }]) }
   function removeNewCoreResource(i: number) { setNewCoreResources(p => p.filter((_,j) => j!==i)) }
   function updateNewCoreResource(i: number, f: 'displayName'|'slug', v: string) { setNewCoreResources(p => p.map((m,j) => j===i ? {...m,[f]:v} : m)) }
@@ -145,7 +143,6 @@ export default function AdventureDetailPage() {
   function updateEditCoreResourceEnabled(i: number, v: boolean) { setEditCoreResources(p => p.map((m,j) => j===i ? {...m, enabled: v} : m)) }
   function updateEditCoreResourceEditable(i: number, v: boolean) { setEditCoreResources(p => p.map((m,j) => j===i ? {...m, editableByPlayer: v} : m)) }
   function updateEditCoreResourceShowNotes(i: number, v: boolean) { setEditCoreResources(p => p.map((m,j) => j===i ? {...m, showNotes: v} : m)) }
-
   function addNewProfile() { setNewTemplateProfiles(p => [...p, { name: '', options: [{ label: '', value: 0 }] }]) }
   function removeNewProfile(i: number) { setNewTemplateProfiles(p => p.filter((_,j) => j!==i)) }
   function updateNewProfile(i: number, n: string) { setNewTemplateProfiles(p => p.map((a,j) => j===i ? {...a,name:n} : a)) }
@@ -184,7 +181,7 @@ export default function AdventureDetailPage() {
   const fetchCampaignCharacters = useCallback(async () => { try { setCampaignCharacters(await api.get<CampaignCharacter[]>(`/character-sheets/adventure/${id}`)) } catch {} }, [id])
   const fetchUserSheets = useCallback(async () => { try { const d=await api.get<UserSheet[]>('/character-sheets'); setUserSheets(d.filter(s=>s.adventure.id!==id)) } catch {} }, [id])
 
-  function resetNewTemplate() { setShowNewTemplate(false); setNewTemplateName(''); setNewTemplateDescription(''); setNewTemplateAttrs([]); setNewAttrModifierFormula(''); setNewSkillFormula(''); setNewTemplateFields([]); setNewTemplateSkills([]); setNewTemplateProfiles([]); setNewCoreResources([]); setTemplateError(null) }
+  function resetNewTemplate() { setShowNewTemplate(false); setNewTemplateName(''); setNewTemplateDescription(''); setNewTemplateAttrs([]); setNewAttrModifierFormula(''); setNewSkillFormula(''); setNewTemplateFields([]); setNewTemplateSkills([]); setNewTemplateProfiles([]); setNewCoreResources([]); setNewResistances([]); setTemplateError(null) }
   function addNewAttrRow() { setNewTemplateAttrs(p => [...p, { key: '', name: '' }]) }; function removeNewAttrRow(i: number) { setNewTemplateAttrs(p => p.filter((_,j)=>j!==i)) }; function updateNewAttr(i: number, f: 'key'|'name', v: string) { setNewTemplateAttrs(p => p.map((a,j)=>j===i?{...a,[f]:v}:a)) }
   function addNewFieldRow() { setNewTemplateFields(p => [...p, { key: '', label: '' }]) }; function removeNewFieldRow(i: number) { setNewTemplateFields(p => p.filter((_,j)=>j!==i)) }; function updateNewField(i: number, f: 'key'|'label', v: string) { setNewTemplateFields(p => p.map((a,j)=>j===i?{...a,[f]:v}:a)) }
   function addEditAttrRow() { setEditTemplateAttrs(p => [...p, { key: '', name: '' }]) }; function removeEditAttrRow(i: number) { setEditTemplateAttrs(p => p.filter((_,j)=>j!==i)) }; function updateEditAttr(i: number, f: 'key'|'name', v: string) { setEditTemplateAttrs(p => p.map((a,j)=>j===i?{...a,[f]:v}:a)) }
@@ -194,6 +191,24 @@ export default function AdventureDetailPage() {
     const valid = resources.filter(r => r.slug.trim()); const slugs = new Set<string>()
     for (const r of valid) { const s = r.slug.trim().toLowerCase(); if (slugs.has(s)) return `Duplicate slug: "${s}"`; slugs.add(s) }
     return null
+  }
+
+  function buildResistancesPayload(resistances: ResistanceDef[]) {
+    return resistances.filter(r => r.name.trim()).map((r, idx) => ({
+      id: r.id,
+      name: r.name.trim(),
+      calculationType: r.calculationType,
+      components: (r.components || []).filter(c => c.name.trim()).map(c => ({
+        id: c.id,
+        name: c.name.trim(),
+        editableByPlayer: c.editableByPlayer,
+        defaultValue: c.defaultValue || '0',
+      })),
+      attributeModifiers: (r.attributeModifiers || []).map(am => ({
+        attributeId: am.attributeId,
+        enabled: am.enabled,
+      })),
+    }))
   }
 
   async function handleCreateTemplate(e: FormEvent) { e.preventDefault(); setTemplateError(null)
@@ -215,6 +230,7 @@ export default function AdventureDetailPage() {
         coreResources: newCoreResources.filter(r=>r.slug.trim()).map(r=>({displayName:r.displayName.trim()||r.slug.trim(), slug:r.slug.trim(), enabled:r.enabled, editableByPlayer:r.editableByPlayer, showNotes:r.showNotes})),
         armorClass: newAcEnabled ? { enabled: true, attributeModifierIds: newAcAttributeIds, fields: newAcFields.filter(f=>f.name.trim()&&f.key.trim()).map(f=>({name:f.name.trim(),key:f.key.trim(),defaultValue:f.defaultValue.trim()||'0',editableByPlayer:f.editableByPlayer,description:f.description.trim()||undefined})) } : undefined,
         characterSections: newCharacterSections.filter(s => s.name.trim()).map(s => ({ name: s.name.trim() })),
+        resistances: buildResistancesPayload(newResistances),
       })
       resetNewTemplate(); fetchTemplates()
     } catch(err) { setTemplateError(err instanceof Error ? err.message : 'Failed to create template') } finally { setTemplateCreating(false) }
@@ -243,6 +259,14 @@ export default function AdventureDetailPage() {
     })));
     const ac = t.armorClass; if (ac) { setEditAcEnabled(ac.enabled); setEditAcAttributeIds(ac.attributeModifierIds ?? []); setEditAcFields(ac.fields.map(f=>({name:f.name,key:f.key,defaultValue:f.defaultValue??'0',editableByPlayer:f.editableByPlayer,description:f.description??''}))) } else { setEditAcEnabled(false); setEditAcAttributeIds([]); setEditAcFields([]) }
     setEditCharacterSections((t as any).characterSections?.map((s: any) => ({ id: s.id, name: s.name })) ?? [])
+    const tResistances = t.resistances || []
+    setEditResistances(tResistances.map(r => ({
+      id: r.id,
+      name: r.name,
+      calculationType: (r.calculationType as 'MANUAL' | 'CALCULATED'),
+      components: (r.components || []).map(c => ({ id: c.id, name: c.name, editableByPlayer: c.editableByPlayer, defaultValue: c.defaultValue })),
+      attributeModifiers: (r.attributeModifiers || []).map(am => ({ attributeId: am.attributeId, attributeKey: am.attribute?.key || '', attributeName: am.attribute?.name || '', enabled: (am as any).enabled ?? true })),
+    })))
     setEditingTemplateError(null) }
   function cancelEditTemplate() { setEditingTemplateId(null); setEditingTemplateError(null) }
 
@@ -265,13 +289,13 @@ export default function AdventureDetailPage() {
         coreResources: editCoreResources.filter(r=>r.slug.trim()).map(r=>({displayName:r.displayName.trim()||r.slug.trim(), slug:r.slug.trim(), enabled:r.enabled, editableByPlayer:r.editableByPlayer, showNotes:r.showNotes})),
         armorClass: editAcEnabled ? { enabled: true, attributeModifierIds: editAcAttributeIds, fields: editAcFields.filter(f=>f.name.trim()&&f.key.trim()).map(f=>({name:f.name.trim(),key:f.key.trim(),defaultValue:f.defaultValue.trim()||'0',editableByPlayer:f.editableByPlayer,description:f.description.trim()||undefined})) } : { enabled: false },
         characterSections: editCharacterSections.filter(s => s.name.trim()).map(s => ({ id: s.id, name: s.name.trim() })),
+        resistances: buildResistancesPayload(editResistances),
       })
       cancelEditTemplate(); fetchTemplates()
     } catch(err) { setEditingTemplateError(err instanceof Error ? err.message : 'Failed to update template') } finally { setTemplateSaving(false) }
   }
 
   async function handleDeleteTemplate(tid: string) { try { await api.delete(`/adventures/${id}/templates/${tid}`); fetchTemplates() } catch {} }
-
   async function handleCreateCharacter(e: FormEvent) { e.preventDefault(); setNewCharError(null); if(!newCharName.trim()||!newCharTemplateId)return; setNewCharCreating(true)
     try { const s = await api.post<{id:string}>('/character-sheets',{characterName:newCharName.trim(),templateId:newCharTemplateId}); router.push(`/dashboard/character-sheets/${s.id}`) } catch(err) { setNewCharError(err instanceof Error ? err.message : 'Failed to create character') } finally { setNewCharCreating(false) } }
   async function handleLinkCharacter(e: FormEvent) { e.preventDefault(); setLinkCharError(null); if(!linkSheetId)return; setLinkCharLinking(true)
@@ -344,6 +368,11 @@ export default function AdventureDetailPage() {
             onAddEditCharacterSection={addEditCharacterSection}
             onRemoveEditCharacterSection={removeEditCharacterSection}
             onUpdateEditCharacterSection={updateEditCharacterSection}
+            newResistances={newResistances} editResistances={editResistances}
+            onNewResistancesChange={setNewResistances}
+            onEditResistancesChange={setEditResistances}
+            newTemplateAttrsForResistance={newTemplateAttrs}
+            editTemplateAttrsForResistance={editTemplateAttrs}
           />
         )}
         {confirmDelete && <DeleteModal name={adventure.name} error={deleteError} loading={deleting} onCancel={()=>setConfirmDelete(false)} onConfirm={handleDelete} />}
@@ -352,7 +381,10 @@ export default function AdventureDetailPage() {
   )
 }
 
-function AdventureHeader({adventure,isGM,userRole,onEdit,onDelete}:{adventure:Adventure;isGM:boolean;userRole:string|null;onEdit:()=>void;onDelete:()=>void}){return <div className="card !p-6 space-y-4"><div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4"><div className="flex-1 min-w-0"><h1 className="text-2xl font-bold text-gradient truncate">{adventure.name}</h1><div className="flex flex-wrap items-center gap-2 mt-2"><span className="badge badge-gold">{adventure.campaign}</span><span className="badge badge-gold">👥 {adventure.maxPlayers} {adventure.maxPlayers===1?'player':'players'}</span>{userRole&&<span className={`badge text-[0.6rem] ${isGM?'badge-gold':''}`} style={!isGM?{background:'rgba(124,92,231,0.15)',color:'#9070f0',border:'1px solid rgba(124,92,231,0.2)'}:undefined}>{userRole}</span>}<span className="text-xs text-muted">Created {new Date(adventure.createdAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</span></div></div>{isGM&&<div className="flex gap-2 shrink-0"><button onClick={onEdit} className="btn-ghost"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>Edit</button><button onClick={onDelete} className="btn-danger"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>Delete</button></div>}</div><hr className="divider" />{adventure.synopsis?<div><h3 className="text-sm font-medium text-muted mb-2">Synopsis</h3><p className="text-foreground/80 leading-relaxed whitespace-pre-wrap text-sm">{adventure.synopsis}</p></div>:<div className="text-center py-8 text-muted-foreground text-sm italic">No synopsis yet.{isGM&&' Click edit to add one.'}</div>}</div>}
+function AdventureHeader(props: { adventure: Adventure; isGM: boolean; userRole: string | null; onEdit: () => void; onDelete: () => void }) {
+  const { adventure, isGM, userRole, onEdit, onDelete } = props
+  return <div className="card !p-6 space-y-4"><div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4"><div className="flex-1 min-w-0"><h1 className="text-2xl font-bold text-gradient truncate">{adventure.name}</h1><div className="flex flex-wrap items-center gap-2 mt-2"><span className="badge badge-gold">{adventure.campaign}</span><span className="badge badge-gold">👥 {adventure.maxPlayers} {adventure.maxPlayers===1?'player':'players'}</span>{userRole&&<span className={`badge text-[0.6rem] ${isGM?'badge-gold':''}`} style={!isGM?{background:'rgba(124,92,231,0.15)',color:'#9070f0',border:'1px solid rgba(124,92,231,0.2)'}:undefined}>{userRole}</span>}<span className="text-xs text-muted">Created {new Date(adventure.createdAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</span></div></div>{isGM&&<div className="flex gap-2 shrink-0"><button onClick={onEdit} className="btn-ghost"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>Edit</button><button onClick={onDelete} className="btn-danger"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>Delete</button></div>}</div><hr className="divider" />{adventure.synopsis?<div><h3 className="text-sm font-medium text-muted mb-2">Synopsis</h3><p className="text-foreground/80 leading-relaxed whitespace-pre-wrap text-sm">{adventure.synopsis}</p></div>:<div className="text-center py-8 text-muted-foreground text-sm italic">No synopsis yet.{isGM&&' Click edit to add one.'}</div>}</div>
+}
 function CollapsibleSection({title,expanded,onToggle,children}:{title:string;expanded:boolean;onToggle:()=>void;children:React.ReactNode}){return <div className="card !p-6"><button onClick={onToggle} className="flex items-center justify-between w-full text-left"><h3 className="font-semibold">{title}</h3><svg className={`w-5 h-5 text-muted transition-transform ${expanded?'rotate-180':''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg></button>{expanded&&<div className="mt-4">{children}</div>}</div>}
 function MemberRow({member,isGM,isSelf,onRemove}:{member:Member;isGM:boolean;isSelf:boolean;onRemove:()=>void}){return <div className="flex items-center justify-between py-2 border-b border-border last:border-0"><div className="flex items-center gap-2"><span className="text-sm text-foreground">{member.user.displayName??member.user.email}</span><span className={`badge text-[0.6rem] ${member.role==='GM'?'badge-gold':''}`} style={member.role!=='GM'?{background:'rgba(124,92,231,0.15)',color:'#9070f0',border:'1px solid rgba(124,92,231,0.2)'}:undefined}>{member.role}</span></div>{isGM&&!isSelf&&<button onClick={onRemove} className="text-xs text-danger hover:text-danger/80 transition-colors">Remove</button>}</div>}
 function InvitePanel(props:{inviteRole:string;inviteEmail:string;inviteLink:string|null;inviteError:string|null;inviteSending:boolean;invitations:Invitation[];onRoleChange:(r:'PLAYER'|'GM')=>void;onEmailChange:(e:string)=>void;onInviteByEmail:(e:FormEvent)=>void;onInviteByLink:()=>void;onRevoke:(id:string)=>void}){return <div className="space-y-4"><div><label className="label">Role</label><div className="flex gap-2">{(['PLAYER','GM']as const).map(r=><button key={r} onClick={()=>props.onRoleChange(r)} className={`btn-ghost text-sm ${props.inviteRole===r?'!border-primary/40 !text-primary':''}`}>{r}</button>)}</div></div><form onSubmit={props.onInviteByEmail} className="space-y-3"><div><label className="label">Invite by Email</label><div className="flex gap-2"><input type="email" value={props.inviteEmail} onChange={e=>props.onEmailChange(e.target.value)} className="input-field flex-1" placeholder="player@example.com"/><button type="submit" disabled={props.inviteSending||props.inviteEmail.trim().length===0} className="btn-primary">Send</button></div></div></form><div><label className="label">Invite by Link</label><button onClick={props.onInviteByLink} disabled={props.inviteSending} className="btn-ghost">Generate invite link</button>{props.inviteLink&&<div className="mt-2 flex items-center gap-2"><input readOnly value={props.inviteLink} className="input-field flex-1 text-xs" onFocus={e=>e.target.select()}/><button onClick={()=>navigator.clipboard.writeText(props.inviteLink!)} className="btn-ghost text-xs">Copy</button></div>}</div>{props.inviteError&&<div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">{props.inviteError}</div>}{props.invitations.length>0&&<div className="space-y-2"><h4 className="text-sm font-medium text-muted">Pending Invitations</h4>{props.invitations.map(inv=><div key={inv.id} className="flex items-center justify-between text-sm py-1"><span className="text-muted-foreground">{inv.invitedEmail??'Link invitation'}</span><button onClick={()=>props.onRevoke(inv.id)} className="text-xs text-danger hover:text-danger/80 transition-colors">Revoke</button></div>)}</div>}</div>}
@@ -410,19 +442,25 @@ function TemplatesSection(props: {
   editCharacterSections?: { id?: string; name: string }[]
   onAddNewCharacterSection?: () => void; onRemoveNewCharacterSection?: (i: number) => void; onUpdateNewCharacterSection?: (i: number, v: string) => void
   onAddEditCharacterSection?: () => void; onRemoveEditCharacterSection?: (i: number) => void; onUpdateEditCharacterSection?: (i: number, v: string) => void
+  newResistances?: ResistanceDef[]; editResistances?: ResistanceDef[]
+  onNewResistancesChange?: (v: ResistanceDef[]) => void
+  onEditResistancesChange?: (v: ResistanceDef[]) => void
+  newTemplateAttrsForResistance?: { key: string; name: string; id?: string }[]
+  editTemplateAttrsForResistance?: { key: string; name: string; id?: string }[]
 }) {
+  const attrsForNewResistance = props.newTemplateAttrsForResistance || props.newTemplateAttrs || []
+  const attrsForEditResistance = props.editTemplateAttrsForResistance || props.editTemplateAttrs || []
   return <div className="space-y-4">
     {props.templates.length===0&&!props.showNewTemplate ? <div className="text-center py-6 text-muted-foreground text-sm italic">No templates defined yet.{props.isGM&&' Create one below to allow players to build character sheets.'}</div>
-    : <div className="space-y-3">{props.templates.map(t=><TemplateRow key={t.id} template={t} isGM={props.isGM} isEditing={props.editingTemplateId===t.id} editName={props.editTemplateName} editDescription={props.editTemplateDescription} editAttrs={props.editTemplateAttrs} editAttrModifierFormula={props.editAttrModifierFormula} editSkillFormula={props.editSkillFormula} editFields={props.editTemplateFields} editSkills={props.editTemplateSkills} editError={props.editingTemplateError} saving={props.templateSaving} onStartEdit={()=>props.onStartEdit(t)} onCancelEdit={props.onCancelEdit} onUpdate={props.onUpdateTemplate} onDelete={()=>props.onDeleteTemplate(t.id)} onEditNameChange={props.onEditNameChange} onEditDescriptionChange={props.onEditDescriptionChange} onAddAttr={props.onAddEditAttr} onRemoveAttr={props.onRemoveEditAttr} onUpdateAttr={props.onUpdateEditAttr} onAddField={props.onAddEditField} onRemoveField={props.onRemoveEditField} onUpdateField={props.onUpdateEditField} onAddSkill={props.onAddEditSkill} onRemoveSkill={props.onRemoveEditSkill} onUpdateSkill={props.onUpdateEditSkill} onToggleSkillAllowedAttr={props.onToggleEditSkillAllowedAttr} editProfiles={props.editTemplateProfiles} onAddProfile={props.onAddEditProfile} onRemoveProfile={props.onRemoveEditProfile} onUpdateProfile={props.onUpdateEditProfile} onAddProfileOption={props.onAddEditProfileOption} onRemoveProfileOption={props.onRemoveEditProfileOption} onUpdateProfileOption={props.onUpdateEditProfileOption} onUpdateProfileTargetMode={props.onUpdateEditProfileTargetMode} onToggleProfileSkill={props.onToggleEditProfileSkill} editCoreResources={props.editCoreResources} onAddCoreResource={props.onAddEditCoreResource} onRemoveCoreResource={props.onRemoveEditCoreResource} onUpdateCoreResource={props.onUpdateEditCoreResource} onUpdateCoreResourceEnabled={props.onUpdateEditCoreResourceEnabled} onUpdateCoreResourceEditable={props.onUpdateEditCoreResourceEditable} onUpdateCoreResourceShowNotes={props.onUpdateEditCoreResourceShowNotes} editAcEnabled={props.editAcEnabled} editAcFields={props.editAcFields} editAcAttributeIds={props.editAcAttributeIds} editTemplateAttrs2={props.editTemplateAttrs2} onEditAcEnabledChange={props.onEditAcEnabledChange} onAddEditAcField={props.onAddEditAcField} onRemoveEditAcField={props.onRemoveEditAcField} onUpdateEditAcField={props.onUpdateEditAcField} onUpdateEditAcFieldEditable={props.onUpdateEditAcFieldEditable} onToggleEditAcAttributeId={props.onToggleEditAcAttributeId} editAttrModifiersEnabled={props.editAttrModifiersEnabled} onEditAttrModifiersEnabledChange={props.onEditAttrModifiersEnabledChange} onEditAttrModifierFormulaChange={props.onEditAttrModifierFormulaChange} onEditSkillFormulaChange={props.onEditSkillFormulaChange} editCharacterSections={props.editCharacterSections} onAddEditCharacterSection={props.onAddEditCharacterSection} onRemoveEditCharacterSection={props.onRemoveEditCharacterSection} onUpdateEditCharacterSection={props.onUpdateEditCharacterSection} />)}</div>}
+    : <div className="space-y-3">{props.templates.map(t=><TemplateRow key={t.id} template={t} isGM={props.isGM} isEditing={props.editingTemplateId===t.id} editName={props.editTemplateName} editDescription={props.editTemplateDescription} editAttrs={props.editTemplateAttrs} editAttrModifierFormula={props.editAttrModifierFormula} editSkillFormula={props.editSkillFormula} editFields={props.editTemplateFields} editSkills={props.editTemplateSkills} editError={props.editingTemplateError} saving={props.templateSaving} onStartEdit={()=>props.onStartEdit(t)} onCancelEdit={props.onCancelEdit} onUpdate={props.onUpdateTemplate} onDelete={()=>props.onDeleteTemplate(t.id)} onEditNameChange={props.onEditNameChange} onEditDescriptionChange={props.onEditDescriptionChange} onAddAttr={props.onAddEditAttr} onRemoveAttr={props.onRemoveEditAttr} onUpdateAttr={props.onUpdateEditAttr} onAddField={props.onAddEditField} onRemoveField={props.onRemoveEditField} onUpdateField={props.onUpdateEditField} onAddSkill={props.onAddEditSkill} onRemoveSkill={props.onRemoveEditSkill} onUpdateSkill={props.onUpdateEditSkill} onToggleSkillAllowedAttr={props.onToggleEditSkillAllowedAttr} editProfiles={props.editTemplateProfiles} onAddProfile={props.onAddEditProfile} onRemoveProfile={props.onRemoveEditProfile} onUpdateProfile={props.onUpdateEditProfile} onAddProfileOption={props.onAddEditProfileOption} onRemoveProfileOption={props.onRemoveEditProfileOption} onUpdateProfileOption={props.onUpdateEditProfileOption} onUpdateProfileTargetMode={props.onUpdateEditProfileTargetMode} onToggleProfileSkill={props.onToggleEditProfileSkill} editCoreResources={props.editCoreResources} onAddCoreResource={props.onAddEditCoreResource} onRemoveCoreResource={props.onRemoveEditCoreResource} onUpdateCoreResource={props.onUpdateEditCoreResource} onUpdateCoreResourceEnabled={props.onUpdateEditCoreResourceEnabled} onUpdateCoreResourceEditable={props.onUpdateEditCoreResourceEditable} onUpdateCoreResourceShowNotes={props.onUpdateEditCoreResourceShowNotes} editAcEnabled={props.editAcEnabled} editAcFields={props.editAcFields} editAcAttributeIds={props.editAcAttributeIds} editTemplateAttrs2={props.editTemplateAttrs2} onEditAcEnabledChange={props.onEditAcEnabledChange} onAddEditAcField={props.onAddEditAcField} onRemoveEditAcField={props.onRemoveEditAcField} onUpdateEditAcField={props.onUpdateEditAcField} onUpdateEditAcFieldEditable={props.onUpdateEditAcFieldEditable} onToggleEditAcAttributeId={props.onToggleEditAcAttributeId} editAttrModifiersEnabled={props.editAttrModifiersEnabled} onEditAttrModifiersEnabledChange={props.onEditAttrModifiersEnabledChange} onEditAttrModifierFormulaChange={props.onEditAttrModifierFormulaChange} onEditSkillFormulaChange={props.onEditSkillFormulaChange} editCharacterSections={props.editCharacterSections} onAddEditCharacterSection={props.onAddEditCharacterSection} onRemoveEditCharacterSection={props.onRemoveEditCharacterSection} onUpdateEditCharacterSection={props.onUpdateEditCharacterSection} onEditResistancesChange={props.onEditResistancesChange} editResistances={props.editResistances} attrsForEditResistance={attrsForEditResistance} />)}</div>}
     {props.isGM&&!props.showNewTemplate&&<button onClick={props.onNewClick} className="btn-primary text-sm">+ New Template</button>}
-    {props.isGM&&props.showNewTemplate&&<NewTemplateForm newTemplateName={props.newTemplateName} newTemplateDescription={props.newTemplateDescription} newTemplateAttrs={props.newTemplateAttrs} newAttrModifierFormula={props.newAttrModifierFormula} newSkillFormula={props.newSkillFormula} newTemplateSkills={props.newTemplateSkills} newTemplateProfiles={props.newTemplateProfiles} newTemplateFields={props.newTemplateFields} templateError={props.templateError} templateCreating={props.templateCreating} onNameChange={props.onNameChange} onDescriptionChange={props.onDescriptionChange} onAddAttr={props.onAddAttr} onRemoveAttr={props.onRemoveAttr} onUpdateAttr={props.onUpdateAttr} onAddSkill={props.onAddSkill} onRemoveSkill={props.onRemoveSkill} onUpdateSkill={props.onUpdateSkill} onToggleSkillAllowedAttr={props.onToggleSkillAllowedAttr} onAddProfile={props.onAddProfile} onRemoveProfile={props.onRemoveProfile} onUpdateProfile={props.onUpdateProfile} onAddProfileOption={props.onAddProfileOption} onRemoveProfileOption={props.onRemoveProfileOption} onUpdateProfileOption={props.onUpdateProfileOption} onAddField={props.onAddField} onRemoveField={props.onRemoveField} onUpdateField={props.onUpdateField} onUpdateProfileTargetMode={props.onUpdateProfileTargetMode} onToggleProfileSkill={props.onToggleProfileSkill} onCancelNew={props.onCancelNew} onCreateTemplate={props.onCreateTemplate} newCoreResources={props.newCoreResources} onAddCoreResource={props.onAddCoreResource} onRemoveCoreResource={props.onRemoveCoreResource} onUpdateCoreResource={props.onUpdateCoreResource} onUpdateCoreResourceEnabled={props.onUpdateCoreResourceEnabled} onUpdateCoreResourceEditable={props.onUpdateCoreResourceEditable} onUpdateCoreResourceShowNotes={props.onUpdateCoreResourceShowNotes} newAcEnabled={props.newAcEnabled} newAcFields={props.newAcFields} newAcAttributeIds={props.newAcAttributeIds} newTemplateAttrs2={props.newTemplateAttrs2} onNewAcEnabledChange={props.onNewAcEnabledChange} onAddNewAcField={props.onAddNewAcField} onRemoveNewAcField={props.onRemoveNewAcField} onUpdateNewAcField={props.onUpdateNewAcField} onUpdateNewAcFieldEditable={props.onUpdateNewAcFieldEditable} onToggleNewAcAttributeId={props.onToggleNewAcAttributeId} newAttrModifiersEnabled={props.newAttrModifiersEnabled} onNewAttrModifiersEnabledChange={props.onNewAttrModifiersEnabledChange} onNewAttrModifierFormulaChange={props.onNewAttrModifierFormulaChange} onNewSkillFormulaChange={props.onNewSkillFormulaChange} newCharacterSections={props.newCharacterSections} onAddNewCharacterSection={props.onAddNewCharacterSection} onRemoveNewCharacterSection={props.onRemoveNewCharacterSection} onUpdateNewCharacterSection={props.onUpdateNewCharacterSection} />}
+    {props.isGM&&props.showNewTemplate&&<NewTemplateForm newTemplateName={props.newTemplateName} newTemplateDescription={props.newTemplateDescription} newTemplateAttrs={props.newTemplateAttrs} newAttrModifierFormula={props.newAttrModifierFormula} newSkillFormula={props.newSkillFormula} newTemplateSkills={props.newTemplateSkills} newTemplateProfiles={props.newTemplateProfiles} newTemplateFields={props.newTemplateFields} templateError={props.templateError} templateCreating={props.templateCreating} onNameChange={props.onNameChange} onDescriptionChange={props.onDescriptionChange} onAddAttr={props.onAddAttr} onRemoveAttr={props.onRemoveAttr} onUpdateAttr={props.onUpdateAttr} onAddSkill={props.onAddSkill} onRemoveSkill={props.onRemoveSkill} onUpdateSkill={props.onUpdateSkill} onToggleSkillAllowedAttr={props.onToggleSkillAllowedAttr} onAddProfile={props.onAddProfile} onRemoveProfile={props.onRemoveProfile} onUpdateProfile={props.onUpdateProfile} onAddProfileOption={props.onAddProfileOption} onRemoveProfileOption={props.onRemoveProfileOption} onUpdateProfileOption={props.onUpdateProfileOption} onAddField={props.onAddField} onRemoveField={props.onRemoveField} onUpdateField={props.onUpdateField} onUpdateProfileTargetMode={props.onUpdateProfileTargetMode} onToggleProfileSkill={props.onToggleProfileSkill} onCancelNew={props.onCancelNew} onCreateTemplate={props.onCreateTemplate} newCoreResources={props.newCoreResources} onAddCoreResource={props.onAddCoreResource} onRemoveCoreResource={props.onRemoveCoreResource} onUpdateCoreResource={props.onUpdateCoreResource} onUpdateCoreResourceEnabled={props.onUpdateCoreResourceEnabled} onUpdateCoreResourceEditable={props.onUpdateCoreResourceEditable} onUpdateCoreResourceShowNotes={props.onUpdateCoreResourceShowNotes} newAcEnabled={props.newAcEnabled} newAcFields={props.newAcFields} newAcAttributeIds={props.newAcAttributeIds} newTemplateAttrs2={props.newTemplateAttrs2} onNewAcEnabledChange={props.onNewAcEnabledChange} onAddNewAcField={props.onAddNewAcField} onRemoveNewAcField={props.onRemoveNewAcField} onUpdateNewAcField={props.onUpdateNewAcField} onUpdateNewAcFieldEditable={props.onUpdateNewAcFieldEditable} onToggleNewAcAttributeId={props.onToggleNewAcAttributeId} newAttrModifiersEnabled={props.newAttrModifiersEnabled} onNewAttrModifiersEnabledChange={props.onNewAttrModifiersEnabledChange} onNewAttrModifierFormulaChange={props.onNewAttrModifierFormulaChange} onNewSkillFormulaChange={props.onNewSkillFormulaChange} newCharacterSections={props.newCharacterSections} onAddNewCharacterSection={props.onAddNewCharacterSection} onRemoveNewCharacterSection={props.onRemoveNewCharacterSection} onUpdateNewCharacterSection={props.onUpdateNewCharacterSection} onNewResistancesChange={props.onNewResistancesChange} newResistances={props.newResistances} attrsForNewResistance={attrsForNewResistance} />}
   </div>
 }
 
 function CollapsibleAttrCard({ index, attr, isExpanded, onToggle, onUpdateAttr, onRemove }: { index: number; attr: { key: string; name: string }; isExpanded: boolean; onToggle: () => void; onUpdateAttr: (i: number, f: 'key'|'name', v: string) => void; onRemove: () => void }) {
   return <div className="rounded-lg border border-border bg-background/30 overflow-hidden"><button type="button" onClick={onToggle} className="flex items-center justify-between w-full px-3 py-2 text-left hover:bg-background/50 transition-colors"><div className="flex items-center gap-2 min-w-0"><span className="text-sm font-medium text-foreground truncate">{attr.name||'New Attribute'}</span>{attr.key&&<span className="text-[0.6rem] text-muted font-mono shrink-0">({attr.key})</span>}</div><svg className={`w-4 h-4 text-muted transition-transform shrink-0 ${isExpanded?'rotate-180':''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg></button>{isExpanded&&<div className="px-3 py-3 space-y-2 border-t border-border"><div className="flex items-center gap-1.5"><input className="input-field flex-1" value={attr.key} onChange={e=>onUpdateAttr(index,'key',e.target.value)} placeholder="Key (e.g. strength)"/><input className="input-field flex-1" value={attr.name} onChange={e=>onUpdateAttr(index,'name',e.target.value)} placeholder="Name (e.g. Strength)"/></div><div className="flex justify-end"><button type="button" onClick={onRemove} className="text-xs text-danger hover:text-danger/80 transition-colors">Remove Attribute</button></div></div>}</div>
 }
-
 function CollapsibleSkillCard({ index, skill, onUpdateSkill, onRemove, attributes, onToggleAllowedAttr, onUpdateDefaultAttr }: { index: number; skill: { name: string; description: string; attributeId: string; allowedAttributeIds?: string[]; defaultAttributeId?: string }; onUpdateSkill?: (i: number, f: string, v: string) => void; onRemove?: () => void; attributes: { key: string; name: string }[]; onToggleAllowedAttr?: (i: number, attrKey: string) => void; onUpdateDefaultAttr?: (i: number, v: string) => void }) {
   const [expanded, setExpanded] = useState(false)
   const allowed = (skill as any).allowedAttributeIds ?? []
@@ -459,6 +497,9 @@ function NewTemplateForm(props: {
   onNewAttrModifiersEnabledChange?: (v: boolean) => void
   newCharacterSections?: { id?: string; name: string }[]
   onAddNewCharacterSection?: () => void; onRemoveNewCharacterSection?: (i: number) => void; onUpdateNewCharacterSection?: (i: number, v: string) => void
+  onNewResistancesChange?: (v: ResistanceDef[]) => void
+  newResistances?: ResistanceDef[]
+  attrsForNewResistance: { key: string; name: string; id?: string }[]
 }) {
   const [activeTab, setActiveTab] = useState<string>('attrs')
   const [expandedAttrs, setExpandedAttrs] = useState<Record<number,boolean>>({}); const prevCount = useRef(0)
@@ -479,6 +520,7 @@ function NewTemplateForm(props: {
       {props.onAddField&&<button type="button" onClick={()=>setActiveTab('fields')} className={tabClass('fields')}>Custom Fields</button>}
       {props.onNewAcEnabledChange&&<button type="button" onClick={()=>setActiveTab('ac')} className={tabClass('ac')}>Armor Class</button>}
       <button type="button" onClick={()=>setActiveTab('characterSections' as any)} className={tabClass('characterSections' as any)}>Character Sections</button>
+      {props.onNewResistancesChange&&<button type="button" onClick={()=>setActiveTab('resistances')} className={tabClass('resistances')}>Resistance System</button>}
     </div>
 
     {activeTab==='attrs'&&<div>
@@ -495,56 +537,33 @@ function NewTemplateForm(props: {
     {activeTab==='profiles'&&<div><div className="space-y-2 mt-1">{(props.newTemplateProfiles||[]).map((p,pIdx)=><div key={pIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2"><div className="flex items-center gap-1.5"><input className="input-field flex-1" value={p.name} onChange={e=>props.onUpdateProfile?.(pIdx,e.target.value)} placeholder="Profile name (e.g. mastery)"/><button type="button" onClick={()=>props.onRemoveProfile?.(pIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div><div className="rounded border border-border/50 bg-background/20 p-2 space-y-2"><label className="text-xs font-semibold text-muted uppercase tracking-wider">Applies To</label><div className="flex gap-2">{(['ALL_SKILLS','SELECTED_SKILLS'] as const).map(mode=><button key={mode} type="button" onClick={()=>{props.onUpdateProfileTargetMode?.(pIdx, mode)}} className={`px-3 py-1 rounded text-xs font-medium transition-colors ${((p as any).targetMode??'ALL_SKILLS')===mode?'bg-primary/15 text-primary border border-primary/20':'text-muted hover:text-foreground border border-transparent'}`}>{mode==='ALL_SKILLS'?'All Skills':'Selected Skills'}</button>)}</div>{(p as any).targetMode==='SELECTED_SKILLS'&&<div className="space-y-1 max-h-40 overflow-y-auto">{props.newTemplateSkills?.filter((s: any)=>s.name.trim()).map((s: any)=>{const sid=s.name.trim();const selected=((p as any).targetSkillIds??[]).includes(sid);return(<label key={sid} className="flex items-center gap-2 text-xs text-foreground cursor-pointer py-0.5"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={selected} onChange={()=>{props.onToggleProfileSkill?.(pIdx, sid)}}/><span>{s.name.trim()}</span></label>)})}{(props.newTemplateSkills||[]).filter((s: any)=>s.name.trim()).length===0&&<p className="text-xs text-muted italic">Add skills to the template first.</p>}</div>}</div><div className="space-y-1 pl-2">{p.options.map((o,oIdx)=><div key={oIdx} className="flex items-center gap-1.5"><input className="input-field flex-1 text-xs" value={o.label} onChange={e=>props.onUpdateProfileOption?.(pIdx,oIdx,'label',e.target.value)} placeholder="Option label (e.g. Expert)"/><input className="input-field w-20 text-xs" type="number" value={o.value} onChange={e=>props.onUpdateProfileOption?.(pIdx,oIdx,'value',e.target.value)} placeholder="Value"/><button type="button" onClick={()=>props.onRemoveProfileOption?.(pIdx,oIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div>)}</div><button type="button" onClick={()=>props.onAddProfileOption?.(pIdx)} className="btn-ghost text-xs">+ Add Option</button></div>)}</div><button type="button" onClick={props.onAddProfile} className="btn-ghost text-xs mt-2">+ Add Skill Modifier Profile</button></div>}
 
     {activeTab==='coreResources'&&<div><div className="space-y-2 mt-1">{(props.newCoreResources||[]).map((cr, crIdx)=><div key={crIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
-      <div className="flex items-center gap-1.5">
-        <input className="input-field flex-1" value={cr.displayName} onChange={e=>props.onUpdateCoreResource?.(crIdx,'displayName',e.target.value)} placeholder="Display Name (e.g. Health Points)"/>
-        <input className="input-field flex-1" value={cr.slug} onChange={e=>props.onUpdateCoreResource?.(crIdx,'slug',e.target.value)} placeholder="Slug (e.g. health_points)"/>
-        <button type="button" onClick={()=>props.onRemoveCoreResource?.(crIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
-      </div>
-      <div className="flex items-center gap-4 flex-wrap">
-        <label className="flex items-center gap-1 text-xs text-muted"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.enabled} onChange={e=>props.onUpdateCoreResourceEnabled?.(crIdx,e.target.checked)}/>Enabled</label>
-        <label className="flex items-center gap-1 text-xs text-muted"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.editableByPlayer} onChange={e=>props.onUpdateCoreResourceEditable?.(crIdx,e.target.checked)}/>Editable by Player</label>
-        <label className="flex items-center gap-1 text-xs text-muted"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.showNotes} onChange={e=>props.onUpdateCoreResourceShowNotes?.(crIdx,e.target.checked)}/>Show Notes</label>
-      </div>
+      <div className="flex items-center gap-1.5"><input className="input-field flex-1" value={cr.displayName} onChange={e=>props.onUpdateCoreResource?.(crIdx,'displayName',e.target.value)} placeholder="Display Name (e.g. Health Points)"/><input className="input-field flex-1" value={cr.slug} onChange={e=>props.onUpdateCoreResource?.(crIdx,'slug',e.target.value)} placeholder="Slug (e.g. health_points)"/><button type="button" onClick={()=>props.onRemoveCoreResource?.(crIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div>
+      <div className="flex items-center gap-4 flex-wrap"><label className="flex items-center gap-1 text-xs text-muted"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.enabled} onChange={e=>props.onUpdateCoreResourceEnabled?.(crIdx,e.target.checked)}/>Enabled</label><label className="flex items-center gap-1 text-xs text-muted"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.editableByPlayer} onChange={e=>props.onUpdateCoreResourceEditable?.(crIdx,e.target.checked)}/>Editable by Player</label><label className="flex items-center gap-1 text-xs text-muted"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.showNotes} onChange={e=>props.onUpdateCoreResourceShowNotes?.(crIdx,e.target.checked)}/>Show Notes</label></div>
     </div>)}</div><button type="button" onClick={props.onAddCoreResource} className="btn-ghost text-xs mt-2">+ Add Core Resource</button></div>}
 
     {activeTab==='fields'&&<div><div className="space-y-2 mt-1">{(props.newTemplateFields||[]).map((f,idx)=><div key={idx} className="flex items-center gap-1.5"><input className="input-field flex-1" value={f.key} onChange={e=>props.onUpdateField?.(idx,'key',e.target.value)} placeholder="Key (e.g. class)"/><input className="input-field flex-1" value={f.label} onChange={e=>props.onUpdateField?.(idx,'label',e.target.value)} placeholder="Label (e.g. Class)"/><button type="button" onClick={()=>props.onRemoveField?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div>)}</div><button type="button" onClick={props.onAddField} className="btn-ghost text-xs mt-2">+ Add Custom Field</button></div>}
 
     {activeTab==='characterSections'&&<div>
-      <div className="space-y-2 mt-1">
-        {(props.newCharacterSections||[]).map((s, idx) => (
-          <div key={idx} className="flex items-center gap-1.5">
-            <input className="input-field flex-1" value={s.name} onChange={e => props.onUpdateNewCharacterSection?.(idx, e.target.value)} placeholder="Section name (e.g. Talents)" />
-            <button type="button" onClick={() => props.onRemoveNewCharacterSection?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
-          </div>
-        ))}
-      </div>
+      <div className="space-y-2 mt-1">{(props.newCharacterSections||[]).map((s, idx) => (<div key={idx} className="flex items-center gap-1.5"><input className="input-field flex-1" value={s.name} onChange={e => props.onUpdateNewCharacterSection?.(idx, e.target.value)} placeholder="Section name (e.g. Talents)" /><button type="button" onClick={() => props.onRemoveNewCharacterSection?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div>))}</div>
       <button type="button" onClick={props.onAddNewCharacterSection} className="btn-ghost text-xs mt-2">+ Add Section</button>
     </div>}
 
     {activeTab==='ac'&&props.onNewAcEnabledChange&&<div><div className="space-y-2 mt-1">
       <div className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
-        <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer">
-          <input type="checkbox" className="w-4 h-4 rounded accent-primary" checked={props.newAcEnabled??false} onChange={e=>props.onNewAcEnabledChange?.(e.target.checked)}/>
-          Enable Armor Class System
-        </label>
+        <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer"><input type="checkbox" className="w-4 h-4 rounded accent-primary" checked={props.newAcEnabled??false} onChange={e=>props.onNewAcEnabledChange?.(e.target.checked)}/>Enable Armor Class System</label>
         {(props.newAcEnabled??false)&&<div className="space-y-2 pl-2">
           <div><label className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 block">AC Components</label>
-            <div className="space-y-1">
-              {(props.newAcFields||[]).map((f,idx)=><div key={idx} className="rounded border border-border/50 bg-background/20 p-2 space-y-1">
-                <div className="flex items-center gap-1"><input className="input-field flex-1 text-xs" value={f.name} onChange={e=>props.onUpdateNewAcField?.(idx,'name',e.target.value)} placeholder="Field name (e.g. Shield)"/><input className="input-field flex-1 text-xs" value={f.key} onChange={e=>props.onUpdateNewAcField?.(idx,'key',e.target.value)} placeholder="Key (e.g. shield)"/><button type="button" onClick={()=>props.onRemoveNewAcField?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div>
-                <div className="flex items-center gap-1"><input className="input-field flex-1 text-xs" value={f.defaultValue} onChange={e=>props.onUpdateNewAcField?.(idx,'defaultValue',e.target.value)} placeholder="Default value"/><input className="input-field flex-1 text-xs" value={f.description} onChange={e=>props.onUpdateNewAcField?.(idx,'description',e.target.value)} placeholder="Description (optional)"/><label className="flex items-center gap-1 text-xs text-muted shrink-0"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={f.editableByPlayer} onChange={e=>props.onUpdateNewAcFieldEditable?.(idx,e.target.checked)}/>Editable</label></div>
-              </div>)}
-            </div>
-            <button type="button" onClick={props.onAddNewAcField} className="btn-ghost text-xs mt-1">+ Add AC Component</button>
-          </div>
+            <div className="space-y-1">{(props.newAcFields||[]).map((f,idx)=><div key={idx} className="rounded border border-border/50 bg-background/20 p-2 space-y-1"><div className="flex items-center gap-1"><input className="input-field flex-1 text-xs" value={f.name} onChange={e=>props.onUpdateNewAcField?.(idx,'name',e.target.value)} placeholder="Field name (e.g. Shield)"/><input className="input-field flex-1 text-xs" value={f.key} onChange={e=>props.onUpdateNewAcField?.(idx,'key',e.target.value)} placeholder="Key (e.g. shield)"/><button type="button" onClick={()=>props.onRemoveNewAcField?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div><div className="flex items-center gap-1"><input className="input-field flex-1 text-xs" value={f.defaultValue} onChange={e=>props.onUpdateNewAcField?.(idx,'defaultValue',e.target.value)} placeholder="Default value"/><input className="input-field flex-1 text-xs" value={f.description} onChange={e=>props.onUpdateNewAcField?.(idx,'description',e.target.value)} placeholder="Description (optional)"/><label className="flex items-center gap-1 text-xs text-muted shrink-0"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={f.editableByPlayer} onChange={e=>props.onUpdateNewAcFieldEditable?.(idx,e.target.checked)}/>Editable</label></div></div>)}</div>
+            <button type="button" onClick={props.onAddNewAcField} className="btn-ghost text-xs mt-1">+ Add AC Component</button></div>
           <div className={!(props.newAttrModifiersEnabled ?? false) ? "opacity-50 pointer-events-none" : ""}><label className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 block">Attribute Modifiers</label>
-            <div className="space-y-1">
-              {(props.newTemplateAttrs2||props.newTemplateAttrs||[]).filter(a=>a.key.trim()&&a.name.trim()).map(attr=>( <label key={attr.key} className={`flex items-center gap-2 text-xs text-foreground py-1 ${(props.newAttrModifiersEnabled ?? false) ? 'cursor-pointer' : 'cursor-not-allowed'}`}><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={acAttributeIds.includes(attr.key.trim())} onChange={()=>props.onToggleNewAcAttributeId?.(attr.key.trim())} disabled={!(props.newAttrModifiersEnabled ?? false)}/><span>{attr.name.trim()} Modifier</span></label> ))}
-            </div>
-          </div>
+            <div className="space-y-1">{(props.newTemplateAttrs2||props.newTemplateAttrs||[]).filter(a=>a.key.trim()&&a.name.trim()).map(attr=>( <label key={attr.key} className={`flex items-center gap-2 text-xs text-foreground py-1 ${(props.newAttrModifiersEnabled ?? false) ? 'cursor-pointer' : 'cursor-not-allowed'}`}><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={acAttributeIds.includes(attr.key.trim())} onChange={()=>props.onToggleNewAcAttributeId?.(attr.key.trim())} disabled={!(props.newAttrModifiersEnabled ?? false)}/><span>{attr.name.trim()} Modifier</span></label> ))}</div></div>
         </div>}
       </div>
     </div></div>}
+
+    {activeTab==='resistances'&&props.onNewResistancesChange&&<div>
+      <ResistanceSystemConfig resistances={props.newResistances||[]} attributes={props.attrsForNewResistance.map(a => ({ id: a.id || '', key: a.key, name: a.name }))} onChange={props.onNewResistancesChange} />
+    </div>}
 
     {props.templateError&&<div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{props.templateError}</div>}
     <div className="flex gap-2 justify-end"><button type="button" onClick={props.onCancelNew} disabled={props.templateCreating} className="btn-ghost text-sm">Cancel</button><button type="submit" disabled={props.templateCreating||!props.newTemplateName.trim()||props.newTemplateAttrs.length===0} className="btn-primary text-sm">{props.templateCreating?'Creating...':'Create'}</button></div>
@@ -575,6 +594,9 @@ function TemplateRow(props: {
   onEditSkillFormulaChange?: (v: string) => void
   editCharacterSections?: { id?: string; name: string }[]
   onAddEditCharacterSection?: () => void; onRemoveEditCharacterSection?: (i: number) => void; onUpdateEditCharacterSection?: (i: number, v: string) => void
+  onEditResistancesChange?: (v: ResistanceDef[]) => void
+  editResistances?: ResistanceDef[]
+  attrsForEditResistance: { key: string; name: string; id?: string }[]
 }) {
   const [expandedEditAttrs, setExpandedEditAttrs] = useState<Record<number,boolean>>({}); const prevEditCount = useRef(0)
   useEffect(()=>{if(props.editAttrs.length>prevEditCount.current){setExpandedEditAttrs(p=>({...p,[props.editAttrs.length-1]:true}))};prevEditCount.current=props.editAttrs.length},[props.editAttrs.length])
@@ -595,61 +617,24 @@ function TemplateRow(props: {
       {props.onAddField&&<button type="button" onClick={()=>setEditTab('fields')} className={etabClass('fields')}>Custom Fields</button>}
       {props.onAddEditAcField&&<button type="button" onClick={()=>setEditTab('ac')} className={etabClass('ac')}>Armor Class</button>}
       <button type="button" onClick={()=>setEditTab('characterSections')} className={etabClass('characterSections')}>Character Sections</button>
+      {props.onEditResistancesChange&&<button type="button" onClick={()=>setEditTab('resistances')} className={etabClass('resistances')}>Resistance System</button>}
     </div>
 
-    {editTab==='attrs'&&<div>
-      <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer mb-3">
-        <input type="checkbox" className="w-4 h-4 rounded accent-primary" checked={props.editAttrModifiersEnabled ?? false} onChange={e=>props.onEditAttrModifiersEnabledChange?.(e.target.checked)}/>
-        Enable Attribute Modifiers
-      </label>
-      {(props.editAttrModifiersEnabled ?? false) && <div className="mb-3"><AttributeModifierConfig value={props.editAttrModifierFormula} onChange={v=>props.onEditAttrModifierFormulaChange?.(v)} placeholder="floor((value - 10) / 2)"/></div>}
-      <div className="space-y-2 mt-1">{props.editAttrs.map((attr,idx)=><CollapsibleAttrCard key={idx} index={idx} attr={attr} isExpanded={!!expandedEditAttrs[idx]} onToggle={()=>setExpandedEditAttrs(p=>({...p,[idx]:!p[idx]}))} onUpdateAttr={props.onUpdateAttr} onRemove={()=>props.onRemoveAttr(idx)}/>)}</div><button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button></div>}
-    {editTab==='skills'&&<div>
-      <div className="mb-3"><SkillCalculationConfig value={props.editSkillFormula} onChange={v=>props.onEditSkillFormulaChange?.(v)} customFields={(props.editFields||[]).filter(f=>f.key.trim()&&f.label.trim()).map(f=>({key:f.key.trim(),label:f.label.trim()}))} placeholder="e.g. value + mod(value)" disabled={!(props.editAttrModifiersEnabled ?? false)}/></div>
-      <div className="space-y-2 mt-1">{(props.editSkills||[]).map((s: any,idx)=><CollapsibleSkillCard key={idx} index={idx} skill={s} onUpdateSkill={props.onUpdateSkill} onRemove={()=>props.onRemoveSkill?.(idx)} attributes={allAttrs} onToggleAllowedAttr={props.onToggleSkillAllowedAttr} onUpdateDefaultAttr={(i,v)=>{props.onUpdateSkill?.(i,'defaultAttributeId',v)}}/>)}</div><button type="button" onClick={props.onAddSkill} className="btn-ghost text-xs mt-2">+ Add Skill</button></div>}
+    {editTab==='attrs'&&<div><label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer mb-3"><input type="checkbox" className="w-4 h-4 rounded accent-primary" checked={props.editAttrModifiersEnabled ?? false} onChange={e=>props.onEditAttrModifiersEnabledChange?.(e.target.checked)}/>Enable Attribute Modifiers</label>{(props.editAttrModifiersEnabled ?? false) && <div className="mb-3"><AttributeModifierConfig value={props.editAttrModifierFormula} onChange={v=>props.onEditAttrModifierFormulaChange?.(v)} placeholder="floor((value - 10) / 2)"/></div>}<div className="space-y-2 mt-1">{props.editAttrs.map((attr,idx)=><CollapsibleAttrCard key={idx} index={idx} attr={attr} isExpanded={!!expandedEditAttrs[idx]} onToggle={()=>setExpandedEditAttrs(p=>({...p,[idx]:!p[idx]}))} onUpdateAttr={props.onUpdateAttr} onRemove={()=>props.onRemoveAttr(idx)}/>)}</div><button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-2">+ Add Attribute</button></div>}
+    {editTab==='skills'&&<div><div className="mb-3"><SkillCalculationConfig value={props.editSkillFormula} onChange={v=>props.onEditSkillFormulaChange?.(v)} customFields={(props.editFields||[]).filter(f=>f.key.trim()&&f.label.trim()).map(f=>({key:f.key.trim(),label:f.label.trim()}))} placeholder="e.g. value + mod(value)" disabled={!(props.editAttrModifiersEnabled ?? false)}/></div><div className="space-y-2 mt-1">{(props.editSkills||[]).map((s: any,idx)=><CollapsibleSkillCard key={idx} index={idx} skill={s} onUpdateSkill={props.onUpdateSkill} onRemove={()=>props.onRemoveSkill?.(idx)} attributes={allAttrs} onToggleAllowedAttr={props.onToggleSkillAllowedAttr} onUpdateDefaultAttr={(i,v)=>{props.onUpdateSkill?.(i,'defaultAttributeId',v)}}/>)}</div><button type="button" onClick={props.onAddSkill} className="btn-ghost text-xs mt-2">+ Add Skill</button></div>}
     {editTab==='profiles'&&<div><div className="space-y-2 mt-1">{(props.editProfiles||[]).map((p: any,pIdx)=><div key={pIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2"><div className="flex items-center gap-1.5"><input className="input-field flex-1" value={p.name} onChange={e=>props.onUpdateProfile?.(pIdx,e.target.value)} placeholder="Profile name (e.g. mastery)"/><button type="button" onClick={()=>props.onRemoveProfile?.(pIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div><div className="rounded border border-border/50 bg-background/20 p-2 space-y-2"><label className="text-xs font-semibold text-muted uppercase tracking-wider">Applies To</label><div className="flex gap-2">{(['ALL_SKILLS','SELECTED_SKILLS'] as const).map(mode=><button key={mode} type="button" onClick={()=>{props.onUpdateProfileTargetMode?.(pIdx, mode)}} className={`px-3 py-1 rounded text-xs font-medium transition-colors ${((p as any).targetMode??'ALL_SKILLS')===mode?'bg-primary/15 text-primary border border-primary/20':'text-muted hover:text-foreground border border-transparent'}`}>{mode==='ALL_SKILLS'?'All Skills':'Selected Skills'}</button>)}</div>{(p as any).targetMode==='SELECTED_SKILLS'&&<div className="space-y-1 max-h-40 overflow-y-auto">{props.editSkills?.filter((s: any)=>s.name.trim()).map((s: any)=>{const sid=s.name.trim();const selected=((p as any).targetSkillIds??[]).includes(sid);return(<label key={sid} className="flex items-center gap-2 text-xs text-foreground cursor-pointer py-0.5"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={selected} onChange={()=>{props.onToggleProfileSkill?.(pIdx, sid)}}/><span>{s.name.trim()}</span></label>)})}{(props.editSkills||[]).filter((s: any)=>s.name.trim()).length===0&&<p className="text-xs text-muted italic">Add skills to the template first.</p>}</div>}</div><div className="space-y-1 pl-2">{p.options.map((o: any,oIdx: number)=><div key={oIdx} className="flex items-center gap-1.5"><input className="input-field flex-1 text-xs" value={o.label} onChange={e=>props.onUpdateProfileOption?.(pIdx,oIdx,'label',e.target.value)} placeholder="Option label (e.g. Expert)"/><input className="input-field w-20 text-xs" type="number" value={o.value} onChange={e=>props.onUpdateProfileOption?.(pIdx,oIdx,'value',e.target.value)} placeholder="Value"/><button type="button" onClick={()=>props.onRemoveProfileOption?.(pIdx,oIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div>)}</div><button type="button" onClick={()=>props.onAddProfileOption?.(pIdx)} className="btn-ghost text-xs">+ Add Option</button></div>)}</div><button type="button" onClick={props.onAddProfile} className="btn-ghost text-xs mt-2">+ Add Skill Modifier Profile</button></div>}
 
-    {editTab==='coreResources'&&<div><div className="space-y-2 mt-1">{(props.editCoreResources||[]).map((cr: CoreResource, crIdx: number)=><div key={crIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
-      <div className="flex items-center gap-1.5">
-        <input className="input-field flex-1" value={cr.displayName} onChange={e=>props.onUpdateCoreResource?.(crIdx,'displayName',e.target.value)} placeholder="Display Name (e.g. Health Points)"/>
-        <input className="input-field flex-1" value={cr.slug} onChange={e=>props.onUpdateCoreResource?.(crIdx,'slug',e.target.value)} placeholder="Slug (e.g. health_points)"/>
-        <button type="button" onClick={()=>props.onRemoveCoreResource?.(crIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
-      </div>
-      <div className="flex items-center gap-4 flex-wrap">
-        <label className="flex items-center gap-1 text-xs text-muted"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.enabled} onChange={e=>props.onUpdateCoreResourceEnabled?.(crIdx,e.target.checked)}/>Enabled</label>
-        <label className="flex items-center gap-1 text-xs text-muted"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.editableByPlayer} onChange={e=>props.onUpdateCoreResourceEditable?.(crIdx,e.target.checked)}/>Editable by Player</label>
-        <label className="flex items-center gap-1 text-xs text-muted"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.showNotes} onChange={e=>props.onUpdateCoreResourceShowNotes?.(crIdx,e.target.checked)}/>Show Notes</label>
-      </div>
-    </div>)}</div><button type="button" onClick={props.onAddCoreResource} className="btn-ghost text-xs mt-2">+ Add Core Resource</button></div>}
+    {editTab==='coreResources'&&<div><div className="space-y-2 mt-1">{(props.editCoreResources||[]).map((cr: CoreResource, crIdx: number)=><div key={crIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2"><div className="flex items-center gap-1.5"><input className="input-field flex-1" value={cr.displayName} onChange={e=>props.onUpdateCoreResource?.(crIdx,'displayName',e.target.value)} placeholder="Display Name (e.g. Health Points)"/><input className="input-field flex-1" value={cr.slug} onChange={e=>props.onUpdateCoreResource?.(crIdx,'slug',e.target.value)} placeholder="Slug (e.g. health_points)"/><button type="button" onClick={()=>props.onRemoveCoreResource?.(crIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div><div className="flex items-center gap-4 flex-wrap"><label className="flex items-center gap-1 text-xs text-muted"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.enabled} onChange={e=>props.onUpdateCoreResourceEnabled?.(crIdx,e.target.checked)}/>Enabled</label><label className="flex items-center gap-1 text-xs text-muted"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.editableByPlayer} onChange={e=>props.onUpdateCoreResourceEditable?.(crIdx,e.target.checked)}/>Editable by Player</label><label className="flex items-center gap-1 text-xs text-muted"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.showNotes} onChange={e=>props.onUpdateCoreResourceShowNotes?.(crIdx,e.target.checked)}/>Show Notes</label></div></div>)}</div><button type="button" onClick={props.onAddCoreResource} className="btn-ghost text-xs mt-2">+ Add Core Resource</button></div>}
 
     {editTab==='fields'&&<div><div className="space-y-2 mt-1">{(props.editFields||[]).map((f: any,idx)=><div key={idx} className="flex items-center gap-1.5"><input className="input-field flex-1" value={f.key} onChange={e=>props.onUpdateField?.(idx,'key',e.target.value)} placeholder="Key (e.g. class)"/><input className="input-field flex-1" value={f.label} onChange={e=>props.onUpdateField?.(idx,'label',e.target.value)} placeholder="Label (e.g. Class)"/><button type="button" onClick={()=>props.onRemoveField?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div>)}</div><button type="button" onClick={props.onAddField} className="btn-ghost text-xs mt-2">+ Add Custom Field</button></div>}
 
-    {editTab==='characterSections'&&<div>
-      <div className="space-y-2 mt-1">
-        {(props.editCharacterSections||[]).map((s, idx) => (
-          <div key={idx} className="flex items-center gap-1.5">
-            <input className="input-field flex-1" value={s.name} onChange={e => props.onUpdateEditCharacterSection?.(idx, e.target.value)} placeholder="Section name (e.g. Talents)" />
-            <button type="button" onClick={() => props.onRemoveEditCharacterSection?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
-          </div>
-        ))}
-      </div>
-      <button type="button" onClick={props.onAddEditCharacterSection} className="btn-ghost text-xs mt-2">+ Add Section</button>
-    </div>}
+    {editTab==='characterSections'&&<div><div className="space-y-2 mt-1">{(props.editCharacterSections||[]).map((s, idx) => (<div key={idx} className="flex items-center gap-1.5"><input className="input-field flex-1" value={s.name} onChange={e => props.onUpdateEditCharacterSection?.(idx, e.target.value)} placeholder="Section name (e.g. Talents)" /><button type="button" onClick={() => props.onRemoveEditCharacterSection?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div>))}</div><button type="button" onClick={props.onAddEditCharacterSection} className="btn-ghost text-xs mt-2">+ Add Section</button></div>}
 
-    {editTab==='ac'&&props.onAddEditAcField&&<div><div className="space-y-2 mt-1">
-      <div className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
-        <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer"><input type="checkbox" className="w-4 h-4 rounded accent-primary" checked={props.editAcEnabled??false} onChange={e=>props.onEditAcEnabledChange?.(e.target.checked)}/>Enable Armor Class System</label>
-        {(props.editAcEnabled??false)&&<div className="space-y-2 pl-2">
-          <div><label className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 block">AC Components</label>
-            <div className="space-y-1">{(props.editAcFields||[]).map((f: any,idx)=><div key={idx} className="rounded border border-border/50 bg-background/20 p-2 space-y-1"><div className="flex items-center gap-1"><input className="input-field flex-1 text-xs" value={f.name} onChange={e=>props.onUpdateEditAcField?.(idx,'name',e.target.value)} placeholder="Field name (e.g. Shield)"/><input className="input-field flex-1 text-xs" value={f.key} onChange={e=>props.onUpdateEditAcField?.(idx,'key',e.target.value)} placeholder="Key (e.g. shield)"/><button type="button" onClick={()=>props.onRemoveEditAcField?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div><div className="flex items-center gap-1"><input className="input-field flex-1 text-xs" value={f.defaultValue} onChange={e=>props.onUpdateEditAcField?.(idx,'defaultValue',e.target.value)} placeholder="Default value"/><input className="input-field flex-1 text-xs" value={f.description} onChange={e=>props.onUpdateEditAcField?.(idx,'description',e.target.value)} placeholder="Description (optional)"/><label className="flex items-center gap-1 text-xs text-muted shrink-0"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={f.editableByPlayer} onChange={e=>props.onUpdateEditAcFieldEditable?.(idx,e.target.checked)}/>Editable</label></div></div>)}</div>
-            <button type="button" onClick={props.onAddEditAcField} className="btn-ghost text-xs mt-1">+ Add AC Component</button>
-          </div>
-          <div className={!(props.editAttrModifiersEnabled ?? false) ? "opacity-50 pointer-events-none" : ""}><label className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 block">Attribute Modifiers</label>
-            <div className="space-y-1">{allEditAttrsForAc.filter(a=>a.key.trim()&&a.name.trim()).map(attr=>(<label key={attr.key} className={`flex items-center gap-2 text-xs text-foreground py-1 ${(props.editAttrModifiersEnabled ?? false) ? 'cursor-pointer' : 'cursor-not-allowed'}`}><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={editAcAttributeIdsValues.includes(attr.key.trim())} onChange={()=>props.onToggleEditAcAttributeId?.(attr.key.trim())} disabled={!(props.editAttrModifiersEnabled ?? false)}/><span>{attr.name.trim()} Modifier</span></label>))}</div>
-          </div>
-        </div>}
-      </div>
-    </div></div>}
+    {editTab==='ac'&&props.onAddEditAcField&&<div><div className="space-y-2 mt-1"><div className="rounded-lg border border-border bg-background/30 p-3 space-y-2"><label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer"><input type="checkbox" className="w-4 h-4 rounded accent-primary" checked={props.editAcEnabled??false} onChange={e=>props.onEditAcEnabledChange?.(e.target.checked)}/>Enable Armor Class System</label>{(props.editAcEnabled??false)&&<div className="space-y-2 pl-2"><div><label className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 block">AC Components</label><div className="space-y-1">{(props.editAcFields||[]).map((f: any,idx)=><div key={idx} className="rounded border border-border/50 bg-background/20 p-2 space-y-1"><div className="flex items-center gap-1"><input className="input-field flex-1 text-xs" value={f.name} onChange={e=>props.onUpdateEditAcField?.(idx,'name',e.target.value)} placeholder="Field name (e.g. Shield)"/><input className="input-field flex-1 text-xs" value={f.key} onChange={e=>props.onUpdateEditAcField?.(idx,'key',e.target.value)} placeholder="Key (e.g. shield)"/><button type="button" onClick={()=>props.onRemoveEditAcField?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div><div className="flex items-center gap-1"><input className="input-field flex-1 text-xs" value={f.defaultValue} onChange={e=>props.onUpdateEditAcField?.(idx,'defaultValue',e.target.value)} placeholder="Default value"/><input className="input-field flex-1 text-xs" value={f.description} onChange={e=>props.onUpdateEditAcField?.(idx,'description',e.target.value)} placeholder="Description (optional)"/><label className="flex items-center gap-1 text-xs text-muted shrink-0"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={f.editableByPlayer} onChange={e=>props.onUpdateEditAcFieldEditable?.(idx,e.target.checked)}/>Editable</label></div></div>)}</div><button type="button" onClick={props.onAddEditAcField} className="btn-ghost text-xs mt-1">+ Add AC Component</button></div><div className={!(props.editAttrModifiersEnabled ?? false) ? "opacity-50 pointer-events-none" : ""}><label className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 block">Attribute Modifiers</label><div className="space-y-1">{allEditAttrsForAc.filter(a=>a.key.trim()&&a.name.trim()).map(attr=>(<label key={attr.key} className={`flex items-center gap-2 text-xs text-foreground py-1 ${(props.editAttrModifiersEnabled ?? false) ? 'cursor-pointer' : 'cursor-not-allowed'}`}><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={editAcAttributeIdsValues.includes(attr.key.trim())} onChange={()=>props.onToggleEditAcAttributeId?.(attr.key.trim())} disabled={!(props.editAttrModifiersEnabled ?? false)}/><span>{attr.name.trim()} Modifier</span></label>))}</div></div></div>}</div></div></div>}
+
+    {editTab==='resistances'&&props.onEditResistancesChange&&<div>
+      <ResistanceSystemConfig resistances={props.editResistances||[]} attributes={props.attrsForEditResistance.map(a => ({ id: a.id || '', key: a.key, name: a.name }))} onChange={props.onEditResistancesChange} />
+    </div>}
 
     {props.editError&&<div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{props.editError}</div>}
     <div className="flex gap-2 justify-end"><button type="button" onClick={props.onCancelEdit} disabled={props.saving} className="btn-ghost text-sm">Cancel</button><button type="submit" disabled={props.saving||!props.editName.trim()} className="btn-primary text-sm">{props.saving?'Saving...':'Save'}</button></div>
