@@ -99,13 +99,6 @@ export class TemplateService {
               armorClass: {
                 create: {
                   enabled: true,
-                  attributeModifiers: {
-                    create: (dto.armorClass.attributeModifiers || []).map(am => ({
-                      attributeId: am.attributeId,
-                      allowPlayerSelection: am.allowPlayerSelection ?? false,
-                      defaultAttributeId: am.defaultAttributeId ?? null,
-                    })),
-                  },
                   fields: {
                     create: (dto.armorClass.fields || []).map((f, fIdx) => ({
                       name: f.name,
@@ -145,10 +138,41 @@ export class TemplateService {
       include: templateInclude,
     })
 
+    // Fetch created attributes for key->id resolution
+    const createdAttrs = await this.prisma.templateAttribute.findMany({ where: { templateId: created.id } })
+    const attrKeyToId = new Map(createdAttrs.map(a => [a.key, a.id]))
+
+    // Post-create: resolve and create AC attribute modifiers
+    if (dto.armorClass?.enabled && dto.armorClass.attributeModifiers?.length) {
+      const ac = await this.prisma.templateArmorClass.findUnique({ where: { templateId: created.id } })
+      if (ac) {
+        const resolvedModifiers = dto.armorClass.attributeModifiers
+          .map(am => {
+            const resolvedAttrId = attrKeyToId.get(am.attributeId) ?? am.attributeId // treat as key first, fallback to raw ID
+            const resolvedDefaultId = am.defaultAttributeId ? (attrKeyToId.get(am.defaultAttributeId) ?? am.defaultAttributeId) : null
+            return { attributeId: resolvedAttrId, allowPlayerSelection: am.allowPlayerSelection ?? false, defaultAttributeId: resolvedDefaultId }
+          })
+          .filter(am => am.attributeId) // skip if we couldn't resolve
+
+        if (resolvedModifiers.length > 0) {
+          await this.prisma.templateArmorClass.update({
+            where: { id: ac.id },
+            data: {
+              attributeModifiers: {
+                create: resolvedModifiers.map(am => ({
+                  attributeId: am.attributeId,
+                  allowPlayerSelection: am.allowPlayerSelection,
+                  defaultAttributeId: am.defaultAttributeId,
+                })),
+              },
+            },
+          })
+        }
+      }
+    }
+
     // Post-create: link skills to their attributes by resolving keys to IDs
     if (dto.skills?.length) {
-      const createdAttrs = await this.prisma.templateAttribute.findMany({ where: { templateId: created.id } })
-      const attrKeyToId = new Map(createdAttrs.map(a => [a.key, a.id]))
       for (const s of dto.skills) {
         const skill = (created.templateSkills || []).find(sk => sk.name === s.name)
         if (!skill) continue
@@ -244,6 +268,12 @@ export class TemplateService {
       }
     }
 
+    // Pre-fetch all attributes for key->id resolution (used by both skills and AC)
+    const allAttrs = dto.skills || (dto.armorClass?.attributeModifiers)
+      ? await this.prisma.templateAttribute.findMany({ where: { templateId: id } })
+      : []
+    const attrKeyToId = new Map(allAttrs.map(a => [a.key, a.id]))
+
     // Handle skills
     if (dto.skills) {
       const existingSkills = await this.prisma.templateSkill.findMany({ where: { templateId: id } })
@@ -251,10 +281,6 @@ export class TemplateService {
       const existingSkillNames = existingSkills.map(s => s.name)
       const skillNamesToDelete = existingSkillNames.filter(n => !newSkillNames.includes(n))
       if (skillNamesToDelete.length) await this.prisma.templateSkill.deleteMany({ where: { templateId: id, name: { in: skillNamesToDelete } } })
-
-      // Pre-fetch all attributes for key->id resolution
-      const allAttrs = await this.prisma.templateAttribute.findMany({ where: { templateId: id } })
-      const attrKeyToId = new Map(allAttrs.map(a => [a.key, a.id]))
 
       for (let idx = 0; idx < dto.skills.length; idx++) {
         const s = dto.skills[idx]; const name = s.name.trim()
@@ -363,12 +389,15 @@ export class TemplateService {
           if (dto.armorClass.attributeModifiers) {
             await this.prisma.armorClassAttributeModifier.deleteMany({ where: { armorClassId: existingAC.id } })
             for (const am of dto.armorClass.attributeModifiers) {
+              const resolvedAttrId = attrKeyToId.get(am.attributeId) ?? am.attributeId
+              const resolvedDefaultId = am.defaultAttributeId ? (attrKeyToId.get(am.defaultAttributeId) ?? am.defaultAttributeId) : null
+              if (!resolvedAttrId) continue
               await this.prisma.armorClassAttributeModifier.create({
                 data: {
                   armorClassId: existingAC.id,
-                  attributeId: am.attributeId,
+                  attributeId: resolvedAttrId,
                   allowPlayerSelection: am.allowPlayerSelection ?? false,
-                  defaultAttributeId: am.defaultAttributeId ?? null,
+                  defaultAttributeId: resolvedDefaultId,
                 },
               })
             }
@@ -424,17 +453,27 @@ export class TemplateService {
           }
         } else {
           // Create new AC for existing template
+          const resolvedModifiers = (dto.armorClass.attributeModifiers || [])
+            .map(am => {
+              const resolvedAttrId = attrKeyToId.get(am.attributeId) ?? am.attributeId
+              const resolvedDefaultId = am.defaultAttributeId ? (attrKeyToId.get(am.defaultAttributeId) ?? am.defaultAttributeId) : null
+              return { attributeId: resolvedAttrId, allowPlayerSelection: am.allowPlayerSelection ?? false, defaultAttributeId: resolvedDefaultId }
+            })
+            .filter(am => am.attributeId)
+
           await this.prisma.templateArmorClass.create({
             data: {
               templateId: id,
               enabled: dto.armorClass.enabled ?? true,
-              attributeModifiers: {
-                create: (dto.armorClass.attributeModifiers || []).map(am => ({
-                  attributeId: am.attributeId,
-                  allowPlayerSelection: am.allowPlayerSelection ?? false,
-                  defaultAttributeId: am.defaultAttributeId ?? null,
-                })),
-              },
+              attributeModifiers: resolvedModifiers.length > 0
+                ? {
+                    create: resolvedModifiers.map(am => ({
+                      attributeId: am.attributeId,
+                      allowPlayerSelection: am.allowPlayerSelection,
+                      defaultAttributeId: am.defaultAttributeId,
+                    })),
+                  }
+                : undefined,
               fields: {
                 create: (dto.armorClass.fields || []).map((f, fIdx) => ({
                   name: f.name ?? f.key?.trim() ?? '',
