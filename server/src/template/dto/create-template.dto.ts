@@ -182,6 +182,11 @@ export class ArmorClassDefDto {
   enabled!: boolean
 
   @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  attributeModifierIds?: string[]
+
+  @IsArray()
   @ValidateNested({ each: true })
   @IsOptional()
   @Type(() => ArmorClassAttributeModifierDefDto)
