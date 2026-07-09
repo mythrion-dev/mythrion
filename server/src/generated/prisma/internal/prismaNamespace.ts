@@ -406,6 +406,8 @@ export const ModelName = {
   TemplateArmorClass: 'TemplateArmorClass',
   ArmorClassField: 'ArmorClassField',
   CharacterSheetArmorClassValue: 'CharacterSheetArmorClassValue',
+  ArmorClassAttributeModifier: 'ArmorClassAttributeModifier',
+  CharacterSheetArmorClassAttributeValue: 'CharacterSheetArmorClassAttributeValue',
   TemplateResistance: 'TemplateResistance',
   ResistanceComponent: 'ResistanceComponent',
   ResistanceAttributeModifier: 'ResistanceAttributeModifier',
@@ -437,7 +439,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateCoreResource" | "characterSheetCoreResourceValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "templateResistance" | "resistanceComponent" | "resistanceAttributeModifier" | "characterSheetResistanceValue" | "characterSheetResistanceComponentValue" | "characterAbility" | "characterAbilityLevel" | "summonSkill" | "summonSkillProfileValue" | "summonAttribute" | "summonArmorClassValue" | "summonHealth" | "characterInventoryItem" | "characterStory" | "templateCharacterSection" | "characterSectionEntry"
+    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateCoreResource" | "characterSheetCoreResourceValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "armorClassAttributeModifier" | "characterSheetArmorClassAttributeValue" | "templateResistance" | "resistanceComponent" | "resistanceAttributeModifier" | "characterSheetResistanceValue" | "characterSheetResistanceComponentValue" | "characterAbility" | "characterAbilityLevel" | "summonSkill" | "summonSkillProfileValue" | "summonAttribute" | "summonArmorClassValue" | "summonHealth" | "characterInventoryItem" | "characterStory" | "templateCharacterSection" | "characterSectionEntry"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2069,6 +2071,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ArmorClassAttributeModifier: {
+      payload: Prisma.$ArmorClassAttributeModifierPayload<ExtArgs>
+      fields: Prisma.ArmorClassAttributeModifierFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ArmorClassAttributeModifierFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArmorClassAttributeModifierPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ArmorClassAttributeModifierFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArmorClassAttributeModifierPayload>
+        }
+        findFirst: {
+          args: Prisma.ArmorClassAttributeModifierFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArmorClassAttributeModifierPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ArmorClassAttributeModifierFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArmorClassAttributeModifierPayload>
+        }
+        findMany: {
+          args: Prisma.ArmorClassAttributeModifierFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArmorClassAttributeModifierPayload>[]
+        }
+        create: {
+          args: Prisma.ArmorClassAttributeModifierCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArmorClassAttributeModifierPayload>
+        }
+        createMany: {
+          args: Prisma.ArmorClassAttributeModifierCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ArmorClassAttributeModifierCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArmorClassAttributeModifierPayload>[]
+        }
+        delete: {
+          args: Prisma.ArmorClassAttributeModifierDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArmorClassAttributeModifierPayload>
+        }
+        update: {
+          args: Prisma.ArmorClassAttributeModifierUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArmorClassAttributeModifierPayload>
+        }
+        deleteMany: {
+          args: Prisma.ArmorClassAttributeModifierDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ArmorClassAttributeModifierUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ArmorClassAttributeModifierUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArmorClassAttributeModifierPayload>[]
+        }
+        upsert: {
+          args: Prisma.ArmorClassAttributeModifierUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArmorClassAttributeModifierPayload>
+        }
+        aggregate: {
+          args: Prisma.ArmorClassAttributeModifierAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateArmorClassAttributeModifier>
+        }
+        groupBy: {
+          args: Prisma.ArmorClassAttributeModifierGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ArmorClassAttributeModifierGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ArmorClassAttributeModifierCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ArmorClassAttributeModifierCountAggregateOutputType> | number
+        }
+      }
+    }
+    CharacterSheetArmorClassAttributeValue: {
+      payload: Prisma.$CharacterSheetArmorClassAttributeValuePayload<ExtArgs>
+      fields: Prisma.CharacterSheetArmorClassAttributeValueFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetArmorClassAttributeValuePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetArmorClassAttributeValuePayload>
+        }
+        findFirst: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetArmorClassAttributeValuePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetArmorClassAttributeValuePayload>
+        }
+        findMany: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetArmorClassAttributeValuePayload>[]
+        }
+        create: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetArmorClassAttributeValuePayload>
+        }
+        createMany: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetArmorClassAttributeValuePayload>[]
+        }
+        delete: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetArmorClassAttributeValuePayload>
+        }
+        update: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetArmorClassAttributeValuePayload>
+        }
+        deleteMany: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetArmorClassAttributeValuePayload>[]
+        }
+        upsert: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterSheetArmorClassAttributeValuePayload>
+        }
+        aggregate: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCharacterSheetArmorClassAttributeValue>
+        }
+        groupBy: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterSheetArmorClassAttributeValueGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CharacterSheetArmorClassAttributeValueCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterSheetArmorClassAttributeValueCountAggregateOutputType> | number
+        }
+      }
+    }
     TemplateResistance: {
       payload: Prisma.$TemplateResistancePayload<ExtArgs>
       fields: Prisma.TemplateResistanceFieldRefs
@@ -3562,7 +3712,6 @@ export const TemplateArmorClassScalarFieldEnum = {
   id: 'id',
   templateId: 'templateId',
   enabled: 'enabled',
-  attributeModifierIds: 'attributeModifierIds',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -3596,6 +3745,31 @@ export const CharacterSheetArmorClassValueScalarFieldEnum = {
 } as const
 
 export type CharacterSheetArmorClassValueScalarFieldEnum = (typeof CharacterSheetArmorClassValueScalarFieldEnum)[keyof typeof CharacterSheetArmorClassValueScalarFieldEnum]
+
+
+export const ArmorClassAttributeModifierScalarFieldEnum = {
+  id: 'id',
+  armorClassId: 'armorClassId',
+  attributeId: 'attributeId',
+  allowPlayerSelection: 'allowPlayerSelection',
+  defaultAttributeId: 'defaultAttributeId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ArmorClassAttributeModifierScalarFieldEnum = (typeof ArmorClassAttributeModifierScalarFieldEnum)[keyof typeof ArmorClassAttributeModifierScalarFieldEnum]
+
+
+export const CharacterSheetArmorClassAttributeValueScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  acAttributeModifierId: 'acAttributeModifierId',
+  selectedAttributeId: 'selectedAttributeId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterSheetArmorClassAttributeValueScalarFieldEnum = (typeof CharacterSheetArmorClassAttributeValueScalarFieldEnum)[keyof typeof CharacterSheetArmorClassAttributeValueScalarFieldEnum]
 
 
 export const TemplateResistanceScalarFieldEnum = {
@@ -4063,6 +4237,8 @@ export type GlobalOmitConfig = {
   templateArmorClass?: Prisma.TemplateArmorClassOmit
   armorClassField?: Prisma.ArmorClassFieldOmit
   characterSheetArmorClassValue?: Prisma.CharacterSheetArmorClassValueOmit
+  armorClassAttributeModifier?: Prisma.ArmorClassAttributeModifierOmit
+  characterSheetArmorClassAttributeValue?: Prisma.CharacterSheetArmorClassAttributeValueOmit
   templateResistance?: Prisma.TemplateResistanceOmit
   resistanceComponent?: Prisma.ResistanceComponentOmit
   resistanceAttributeModifier?: Prisma.ResistanceAttributeModifierOmit

@@ -164,14 +164,28 @@ export class ArmorClassFieldDefDto {
   description?: string
 }
 
+export class ArmorClassAttributeModifierDefDto {
+  @IsString()
+  attributeId!: string
+
+  @IsBoolean()
+  @IsOptional()
+  allowPlayerSelection?: boolean
+
+  @IsString()
+  @IsOptional()
+  defaultAttributeId?: string
+}
+
 export class ArmorClassDefDto {
   @IsBoolean()
   enabled!: boolean
 
   @IsArray()
-  @IsString({ each: true })
+  @ValidateNested({ each: true })
   @IsOptional()
-  attributeModifierIds?: string[]
+  @Type(() => ArmorClassAttributeModifierDefDto)
+  attributeModifiers?: ArmorClassAttributeModifierDefDto[]
 
   @IsArray()
   @ValidateNested({ each: true })

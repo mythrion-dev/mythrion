@@ -13,6 +13,7 @@ import { CharacterSheetService } from './character-sheet.service.js'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
 import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
 import { ResistanceCalculationService } from './resistance-calculation.service.js'
+import { AcCalculationService } from './ac-calculation.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import type { AuthenticatedRequest } from '../auth/jwt-auth.guard.js'
 
@@ -22,6 +23,7 @@ export class CharacterSheetController {
   constructor(
     private readonly sheetService: CharacterSheetService,
     private readonly resistanceService: ResistanceCalculationService,
+    private readonly acService: AcCalculationService,
   ) {}
 
   @Post()
@@ -291,5 +293,12 @@ export class CharacterSheetController {
     @Param('resistanceId') resistanceId: string,
   ) {
     return this.resistanceService.calculateSingleResistance(id, resistanceId)
+  }
+
+  // ── Armor Class Calculation ──
+
+  @Get(':id/armor-class')
+  getCalculatedArmorClass(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.acService.calculateArmorClass(id)
   }
 }

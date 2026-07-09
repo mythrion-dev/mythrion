@@ -14,7 +14,16 @@ const templateInclude = {
   },
   coreResources: { orderBy: { order: 'asc' as const } },
   armorClass: {
-    include: { fields: { orderBy: { order: 'asc' as const } } },
+    include: {
+      attributeModifiers: {
+        orderBy: { createdAt: 'asc' as const },
+        include: {
+          attribute: { select: { id: true, key: true, name: true } },
+          defaultAttribute: { select: { id: true, key: true, name: true } },
+        },
+      },
+      fields: { orderBy: { order: 'asc' as const } },
+    },
   },
   characterSections: { orderBy: { order: 'asc' as const } },
   resistances: {
@@ -90,7 +99,13 @@ export class TemplateService {
               armorClass: {
                 create: {
                   enabled: true,
-                  attributeModifierIds: dto.armorClass.attributeModifierIds ?? [],
+                  attributeModifiers: {
+                    create: (dto.armorClass.attributeModifiers || []).map(am => ({
+                      attributeId: am.attributeId,
+                      allowPlayerSelection: am.allowPlayerSelection ?? false,
+                      defaultAttributeId: am.defaultAttributeId ?? null,
+                    })),
+                  },
                   fields: {
                     create: (dto.armorClass.fields || []).map((f, fIdx) => ({
                       name: f.name,
@@ -334,16 +349,30 @@ export class TemplateService {
         if (existingAC) {
           await this.prisma.templateArmorClass.delete({ where: { templateId: id } })
         }
-      } else if (dto.armorClass.enabled === true || dto.armorClass.attributeModifierIds !== undefined || dto.armorClass.fields) {
+      } else if (dto.armorClass.enabled === true || dto.armorClass.attributeModifiers !== undefined || dto.armorClass.fields) {
         if (existingAC) {
           // Update existing
           await this.prisma.templateArmorClass.update({
             where: { templateId: id },
             data: {
               ...(dto.armorClass.enabled !== undefined && { enabled: dto.armorClass.enabled }),
-              ...(dto.armorClass.attributeModifierIds !== undefined && { attributeModifierIds: dto.armorClass.attributeModifierIds }),
             },
           })
+
+          // Handle attribute modifiers
+          if (dto.armorClass.attributeModifiers) {
+            await this.prisma.armorClassAttributeModifier.deleteMany({ where: { armorClassId: existingAC.id } })
+            for (const am of dto.armorClass.attributeModifiers) {
+              await this.prisma.armorClassAttributeModifier.create({
+                data: {
+                  armorClassId: existingAC.id,
+                  attributeId: am.attributeId,
+                  allowPlayerSelection: am.allowPlayerSelection ?? false,
+                  defaultAttributeId: am.defaultAttributeId ?? null,
+                },
+              })
+            }
+          }
 
           if (dto.armorClass.fields) {
             const existingFields = existingAC.fields
@@ -399,7 +428,13 @@ export class TemplateService {
             data: {
               templateId: id,
               enabled: dto.armorClass.enabled ?? true,
-              attributeModifierIds: dto.armorClass.attributeModifierIds ?? [],
+              attributeModifiers: {
+                create: (dto.armorClass.attributeModifiers || []).map(am => ({
+                  attributeId: am.attributeId,
+                  allowPlayerSelection: am.allowPlayerSelection ?? false,
+                  defaultAttributeId: am.defaultAttributeId ?? null,
+                })),
+              },
               fields: {
                 create: (dto.armorClass.fields || []).map((f, fIdx) => ({
                   name: f.name ?? f.key?.trim() ?? '',

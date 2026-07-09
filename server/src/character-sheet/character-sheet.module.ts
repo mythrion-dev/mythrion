@@ -7,6 +7,7 @@ import { JwtModule } from '@nestjs/jwt'
 import { CollaborationModule } from '../collaboration/collaboration.module.js'
 import { FormulaModule } from '../formula/formula.module.js'
 import { ResistanceCalculationService } from './resistance-calculation.service.js'
+import { AcCalculationService } from './ac-calculation.service.js'
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { ResistanceCalculationService } from './resistance-calculation.service.j
     FormulaModule,
   ],
   controllers: [CharacterSheetController],
-  providers: [CharacterSheetService, PrismaService, JwtAuthGuard, ResistanceCalculationService],
-  exports: [CharacterSheetService, ResistanceCalculationService],
+  providers: [CharacterSheetService, PrismaService, JwtAuthGuard, ResistanceCalculationService, AcCalculationService],
+  exports: [CharacterSheetService, ResistanceCalculationService, AcCalculationService],
 })
 export class CharacterSheetModule {}

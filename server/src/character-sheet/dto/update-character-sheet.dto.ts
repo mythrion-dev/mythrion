@@ -85,6 +85,15 @@ export class ArmorClassValueDto {
   value!: string
 }
 
+export class ArmorClassAttributeValueDto {
+  @IsString()
+  acAttributeModifierId!: string
+
+  @IsString()
+  @IsOptional()
+  selectedAttributeId?: string | null
+}
+
 export class UpdateCharacterSheetDto {
   @IsString()
   @IsOptional()
@@ -149,6 +158,12 @@ export class UpdateCharacterSheetDto {
   @ValidateNested({ each: true })
   @Type(() => ArmorClassValueDto)
   acValues?: ArmorClassValueDto[]
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ArmorClassAttributeValueDto)
+  acAttributeValues?: ArmorClassAttributeValueDto[]
 
   @IsArray()
   @IsOptional()

@@ -25,7 +25,16 @@ const sheetInclude = {
       },
       coreResources: { orderBy: { order: 'asc' as const } },
       armorClass: {
-        include: { fields: { orderBy: { order: 'asc' as const } } },
+        include: {
+          attributeModifiers: {
+            orderBy: { createdAt: 'asc' as const },
+            include: {
+              attribute: { select: { id: true, key: true, name: true } },
+              defaultAttribute: { select: { id: true, key: true, name: true } },
+            },
+          },
+          fields: { orderBy: { order: 'asc' as const } },
+        },
       },
       characterSections: { orderBy: { order: 'asc' as const } },
     },
@@ -60,7 +69,18 @@ const sheetInclude = {
   },
   acValues: {
     include: {
-      field: { select: { id: true, name: true, key: true, defaultValue: true, editableByPlayer: true, description: true, armorClass: { select: { id: true, attributeModifierIds: true } } } },
+      field: { select: { id: true, name: true, key: true, defaultValue: true, editableByPlayer: true, description: true } },
+    },
+  },
+  acAttributeValues: {
+    include: {
+      acAttributeModifier: {
+        include: {
+          attribute: { select: { id: true, key: true, name: true } },
+          defaultAttribute: { select: { id: true, key: true, name: true } },
+        },
+      },
+      selectedAttribute: { select: { id: true, key: true, name: true } },
     },
   },
   coreResourceValues: {
@@ -175,7 +195,7 @@ export class CharacterSheetService {
     // Fetch AC config for this template
     const armorClass = await this.prisma.templateArmorClass.findUnique({
       where: { templateId: template.id },
-      include: { fields: true },
+      include: { fields: true, attributeModifiers: true },
     })
 
     // Fetch resistance config for this template
@@ -209,14 +229,24 @@ export class CharacterSheetService {
             coreResourceId: cr.id,
           })),
         },
-        ...(armorClass?.enabled && armorClass.fields.length > 0
+        ...(armorClass?.enabled
           ? {
-              acValues: {
-                create: armorClass.fields.map(f => ({
-                  fieldId: f.id,
-                  value: f.defaultValue,
-                })),
-              },
+              acValues: armorClass.fields.length > 0
+                ? {
+                    create: armorClass.fields.map(f => ({
+                      fieldId: f.id,
+                      value: f.defaultValue,
+                    })),
+                  }
+                : undefined,
+              acAttributeValues: armorClass.attributeModifiers.length > 0
+                ? {
+                    create: armorClass.attributeModifiers.map(am => ({
+                      acAttributeModifierId: am.id,
+                      selectedAttributeId: am.allowPlayerSelection ? (am.defaultAttributeId ?? null) : null,
+                    })),
+                  }
+                : undefined,
             }
           : {}),
         resistanceValues: {
@@ -335,6 +365,14 @@ export class CharacterSheetService {
           where: { sheetId_fieldId: { sheetId: id, fieldId: acv.fieldId } },
           create: { sheetId: id, fieldId: acv.fieldId, value: acv.value },
           update: { value: acv.value },
+        })
+    }
+    if (dto.acAttributeValues) {
+      for (const acav of dto.acAttributeValues)
+        await this.prisma.characterSheetArmorClassAttributeValue.upsert({
+          where: { sheetId_acAttributeModifierId: { sheetId: id, acAttributeModifierId: acav.acAttributeModifierId } },
+          create: { sheetId: id, acAttributeModifierId: acav.acAttributeModifierId, selectedAttributeId: acav.selectedAttributeId ?? null },
+          update: { selectedAttributeId: acav.selectedAttributeId ?? null },
         })
     }
     if (dto.resistanceValues) {

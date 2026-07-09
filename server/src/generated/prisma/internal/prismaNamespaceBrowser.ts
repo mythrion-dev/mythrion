@@ -73,6 +73,8 @@ export const ModelName = {
   TemplateArmorClass: 'TemplateArmorClass',
   ArmorClassField: 'ArmorClassField',
   CharacterSheetArmorClassValue: 'CharacterSheetArmorClassValue',
+  ArmorClassAttributeModifier: 'ArmorClassAttributeModifier',
+  CharacterSheetArmorClassAttributeValue: 'CharacterSheetArmorClassAttributeValue',
   TemplateResistance: 'TemplateResistance',
   ResistanceComponent: 'ResistanceComponent',
   ResistanceAttributeModifier: 'ResistanceAttributeModifier',
@@ -377,7 +379,6 @@ export const TemplateArmorClassScalarFieldEnum = {
   id: 'id',
   templateId: 'templateId',
   enabled: 'enabled',
-  attributeModifierIds: 'attributeModifierIds',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -411,6 +412,31 @@ export const CharacterSheetArmorClassValueScalarFieldEnum = {
 } as const
 
 export type CharacterSheetArmorClassValueScalarFieldEnum = (typeof CharacterSheetArmorClassValueScalarFieldEnum)[keyof typeof CharacterSheetArmorClassValueScalarFieldEnum]
+
+
+export const ArmorClassAttributeModifierScalarFieldEnum = {
+  id: 'id',
+  armorClassId: 'armorClassId',
+  attributeId: 'attributeId',
+  allowPlayerSelection: 'allowPlayerSelection',
+  defaultAttributeId: 'defaultAttributeId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ArmorClassAttributeModifierScalarFieldEnum = (typeof ArmorClassAttributeModifierScalarFieldEnum)[keyof typeof ArmorClassAttributeModifierScalarFieldEnum]
+
+
+export const CharacterSheetArmorClassAttributeValueScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  acAttributeModifierId: 'acAttributeModifierId',
+  selectedAttributeId: 'selectedAttributeId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CharacterSheetArmorClassAttributeValueScalarFieldEnum = (typeof CharacterSheetArmorClassAttributeValueScalarFieldEnum)[keyof typeof CharacterSheetArmorClassAttributeValueScalarFieldEnum]
 
 
 export const TemplateResistanceScalarFieldEnum = {
