@@ -423,6 +423,7 @@ export default function CharacterSheetDetailPage() {
   const computeAC = useCallback((sd: CharacterSheet, mods: Record<string, number | null>) => {
     const ac = sd.template.armorClass
     if (!ac?.enabled) { setAcResult(null); return }
+    const selectedByModifierId = new Map(sd.acAttributeValues.map(v => [v.acAttributeModifierId, v.selectedAttributeId]))
     let total = 0
     sd.acValues.forEach(acv => {
       const v = parseFloat(acv.value)
@@ -430,7 +431,10 @@ export default function CharacterSheetDetailPage() {
     })
     const acMods = ac.attributeModifiers ?? []
     for (const am of acMods) {
-      const modResult = mods[am.attributeId]
+      const effectiveAttributeId = am.allowPlayerSelection
+        ? (selectedByModifierId.get(am.id) ?? am.defaultAttributeId ?? am.attributeId)
+        : am.attributeId
+      const modResult = mods[effectiveAttributeId]
       if (modResult !== null && modResult !== undefined && !isNaN(modResult)) {
         total += Math.max(0, modResult)
       }
@@ -624,6 +628,35 @@ export default function CharacterSheetDetailPage() {
     const optimisticSheet = { ...sheet, acValues: sheet.acValues.map(acv => acv.fieldId === fieldId ? { ...acv, value } : acv) }
     setSheet(optimisticSheet)
     try { const updated = await updateSheet({ acValues: [{ fieldId, value }] }); computeAC(updated, modifierResults) } catch { setSheet(sheet) }
+  }
+  async function handleAcAttributeModifierChange(acAttributeModifierId: string, selectedAttributeId: string | null) {
+    if (!sheet) return
+    const selectedAttribute = selectedAttributeId
+      ? (sheet.template.attributes.find(a => a.id === selectedAttributeId) ?? null)
+      : null
+    const existing = sheet.acAttributeValues.find(v => v.acAttributeModifierId === acAttributeModifierId)
+    const optimisticSheet: CharacterSheet = {
+      ...sheet,
+      acAttributeValues: existing
+        ? sheet.acAttributeValues.map(v => v.acAttributeModifierId === acAttributeModifierId ? { ...v, selectedAttributeId, selectedAttribute } : v)
+        : [...sheet.acAttributeValues, {
+          id: `temp-${acAttributeModifierId}`,
+          sheetId: sheet.id,
+          acAttributeModifierId,
+          selectedAttributeId,
+          acAttributeModifier: sheet.template.armorClass?.attributeModifiers.find(am => am.id === acAttributeModifierId) as ArmorClassAttributeModifierDef,
+          selectedAttribute,
+        }],
+    }
+    setSheet(optimisticSheet)
+    computeAC(optimisticSheet, modifierResults)
+    try {
+      const updated = await updateSheet({ acAttributeValues: [{ acAttributeModifierId, selectedAttributeId }] })
+      computeAC(updated, modifierResults)
+    } catch {
+      setSheet(sheet)
+      computeAC(sheet, modifierResults)
+    }
   }
   async function handleProfileChange(skillId: string, profileId: string, optionId: string | null) {
     if (!sheet) return
@@ -946,7 +979,74 @@ export default function CharacterSheetDetailPage() {
 
         <div className="card !p-6"><h3 className="font-semibold mb-4">Attributes</h3><div className="grid gap-3 sm:grid-cols-2">{sheet.template.attributes.map(attr => { const val = sheet.values.find(v => v.attributeId === attr.id); const modResult = modifierResults[attr.id]; return <div key={attr.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border"><span className="text-sm text-foreground">{attr.name}{modifiersEnabled && sheet.template.attributeModifierFormula && <span className="text-[0.6rem] text-primary ml-1">mod</span>}</span><div className="flex items-center gap-3">{isOwner ? <InlineText value={val?.value ?? ''} onSave={(v) => saveAttributeValue(attr.id, v)} className="text-sm font-semibold text-foreground" /> : <span className="text-sm font-semibold text-foreground">{val?.value || '—'}</span>}{modifiersEnabled && modResult !== undefined && modResult !== null && <span className="text-sm font-semibold text-primary">({modResult >= 0 ? '+' : ''}{modResult})</span>}</div></div> })}</div></div>
 
-        {armorClass?.enabled && armorClass.fields.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-4">Armor Class</h3><div className="flex items-center justify-center mb-4"><div className="w-24 h-24 rounded-full border-4 border-primary/30 flex items-center justify-center bg-background/50"><span className="text-4xl font-bold text-primary">{acResult !== null ? acResult : '—'}</span></div></div><div className="space-y-3"><div><h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Components</h4><div className="grid gap-2 sm:grid-cols-2">{armorClass.fields.map(field => { const acv = sheet.acValues.find(v => v.fieldId === field.id); const val = acv?.value ?? field.defaultValue; const canEdit = isOwner && field.editableByPlayer; return <div key={field.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border"><div className="flex items-center gap-1 min-w-0"><span className="text-sm text-foreground truncate">{field.name}</span>{field.description && <span className="text-[0.6rem] text-muted hidden sm:inline">— {field.description}</span>}</div>{canEdit ? <input type="number" className="input-field py-1 text-xs w-16 text-right" value={val} onChange={e => handleAcFieldChange(field.id, e.target.value)} /> : <span className="text-sm font-semibold text-foreground">{val}</span>}</div> })}</div></div>{(armorClass.attributeModifiers ?? []).length > 0 && <div><h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Attribute Modifiers</h4>{modifiersEnabled ? <div className="grid gap-2 sm:grid-cols-2">{(armorClass.attributeModifiers ?? []).map(am => { const modResult = modifierResults[am.attributeId]; return <div key={am.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border opacity-80"><span className="text-sm text-foreground truncate">{am.attribute.name} Modifier</span><span className="text-sm font-semibold text-muted" style={{opacity: 0.6}}>{modResult !== null && modResult !== undefined ? `${modResult >= 0 ? '+' : ''}${modResult}` : '—'}</span></div> })}</div> : <div className="grid gap-2 sm:grid-cols-2 opacity-40 pointer-events-none">{(armorClass.attributeModifiers ?? []).map(am => { const modResult = modifierResults[am.attributeId]; return <div key={am.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border"><span className="text-sm text-foreground truncate">{am.attribute.name} Modifier</span><span className="text-sm font-semibold text-muted">{modResult !== null && modResult !== undefined ? `${modResult >= 0 ? '+' : ''}${modResult}` : '—'}</span></div> })}</div>}</div>}</div></div>}
+        {armorClass?.enabled && armorClass.fields.length > 0 && (
+          <div className="card !p-6">
+            <h3 className="font-semibold mb-4">Armor Class</h3>
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-24 h-24 rounded-full border-4 border-primary/30 flex items-center justify-center bg-background/50">
+                <span className="text-4xl font-bold text-primary">{acResult !== null ? acResult : '—'}</span>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Components</h4>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {armorClass.fields.map(field => {
+                    const acv = sheet.acValues.find(v => v.fieldId === field.id)
+                    const val = acv?.value ?? field.defaultValue
+                    const canEdit = isOwner && field.editableByPlayer
+                    return (
+                      <div key={field.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
+                        <div className="flex items-center gap-1 min-w-0">
+                          <span className="text-sm text-foreground truncate">{field.name}</span>
+                          {field.description && <span className="text-[0.6rem] text-muted hidden sm:inline">— {field.description}</span>}
+                        </div>
+                        {canEdit
+                          ? <input type="number" className="input-field py-1 text-xs w-16 text-right" value={val} onChange={e => handleAcFieldChange(field.id, e.target.value)} />
+                          : <span className="text-sm font-semibold text-foreground">{val}</span>
+                        }
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+              {modifiersEnabled && (armorClass.attributeModifiers ?? []).length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Attribute Modifiers</h4>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {(armorClass.attributeModifiers ?? []).map(am => {
+                      const acAttrValue = sheet.acAttributeValues.find(v => v.acAttributeModifierId === am.id)
+                      const selectedAttributeId = acAttrValue?.selectedAttributeId ?? am.defaultAttributeId ?? am.attributeId
+                      const selectedAttribute = sheet.template.attributes.find(a => a.id === selectedAttributeId) ?? am.defaultAttribute ?? am.attribute
+                      const modResult = selectedAttribute ? modifierResults[selectedAttribute.id] : null
+                      const canChangeAttribute = isOwner && am.allowPlayerSelection
+                      return (
+                        <div key={am.id} className="flex items-center justify-between gap-2 py-2 px-3 rounded-lg bg-background/50 border border-border opacity-80">
+                          {canChangeAttribute ? (
+                            <select
+                              className="input-field py-0.5 text-xs w-auto min-w-[120px]"
+                              value={selectedAttribute?.id ?? ''}
+                              onChange={e => handleAcAttributeModifierChange(am.id, e.target.value || null)}
+                            >
+                              {sheet.template.attributes.map(attr => (
+                                <option key={attr.id} value={attr.id}>{attr.name}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="text-sm text-foreground truncate">{(selectedAttribute?.name ?? am.attribute.name)} Modifier</span>
+                          )}
+                          <span className="text-sm font-semibold text-muted" style={{ opacity: 0.6 }}>
+                            {modResult !== null && modResult !== undefined ? `${modResult >= 0 ? '+' : ''}${modResult}` : '—'}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {sheet.skillValues.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-4">Skills</h3><div className="grid gap-3 sm:grid-cols-2 items-start">
           {sheet.skillValues.map(sv => <CollapsibleSkillRow key={sv.id} skill={sv} result={skillResults[sv.skillId]} profiles={allProfiles.filter(p => { const tm = (p as any).targetMode ?? 'ALL_SKILLS'; const tids: string[] = (p as any).targetSkillIds ?? []; return tm === 'ALL_SKILLS' || tids.length === 0 || tids.includes(sv.skill.name) })} selections={profileSelections[sv.skillId] || {}} active={activeSkills[sv.skillId] ?? false} others={othersValues[sv.skillId] ?? 0} onToggleActive={() => handleSkillToggle(sv.skillId)} onOthersChange={(no) => handleOthersChange(sv.skillId, no)} onProfileChange={(pid, oid) => handleProfileChange(sv.skillId, pid, oid)} onAttributeChange={(attrId) => handleSkillAttributeChange(sv.skillId, attrId)} templateAttributes={sheet.template.attributes} expandedSkillId={expandedSkillId} onExpandToggle={(id) => setExpandedSkillId(prev => prev === id ? null : id)} modifiersEnabled={modifiersEnabled} />)}
