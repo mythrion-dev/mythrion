@@ -10,14 +10,24 @@ import { LoginDto } from './dto/login.dto.js'
 import { RegisterDto } from './dto/register.dto.js'
 import { OnboardingDto } from './dto/onboarding.dto.js'
 import { Request } from 'express'
-import geoip from 'geoip-lite'
-
 @Injectable()
 export class AuthService {
+  private _geoip: typeof import('geoip-lite') | null = null
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokenService: TokenService,
   ) {}
+
+  /** Lazily load geoip-lite only when first requested to avoid loading
+   *  the ~150MB MaxMind database into memory at startup. */
+  private async loadGeoip(): Promise<typeof import('geoip-lite')> {
+    if (!this._geoip) {
+      // Dynamic import ensures the database file is only read when actually needed
+      this._geoip = await import('geoip-lite')
+    }
+    return this._geoip
+  }
 
   async register(dto: RegisterDto) {
     const existing = await this.prisma.user.findUnique({
@@ -101,13 +111,19 @@ export class AuthService {
   }
 
   async getLocationFromIp(ip: string) {
-    const geo = geoip.lookup(ip)
-    if (!geo) return { country: null, region: null, city: null }
+    try {
+      const geoip = await this.loadGeoip()
+      const geo = geoip.lookup(ip)
+      if (!geo) return { country: null, region: null, city: null }
 
-    return {
-      country: geo.country,
-      region: geo.region,
-      city: geo.city,
+      return {
+        country: geo.country,
+        region: geo.region,
+        city: geo.city,
+      }
+    } catch {
+      // If geoip fails to load for any reason, gracefully degrade
+      return { country: null, region: null, city: null }
     }
   }
 }

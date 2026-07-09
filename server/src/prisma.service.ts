@@ -17,7 +17,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     // queries without hitting pg's "client already executing" deprecation warning.
     const pool = new pg.Pool({
       connectionString: pgUrl,
-      max: 20, // Allow up to 20 concurrent connections
+      max: 5, // Limit connections to avoid exhausting RAM on constrained deployments
       idleTimeoutMillis: 30_000, // Close idle connections after 30s
       connectionTimeoutMillis: 10_000, // Fail fast if a connection cannot be acquired
     });
