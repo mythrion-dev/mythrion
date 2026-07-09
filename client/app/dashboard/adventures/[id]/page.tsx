@@ -32,8 +32,13 @@ interface CoreResource {
 interface TemplateArmorClassField {
   id: string; name: string; key: string; defaultValue: string; editableByPlayer: boolean; description: string | null
 }
+interface TemplateArmorClassAttributeModifier {
+  id: string; attributeId: string; allowPlayerSelection: boolean; defaultAttributeId: string | null
+  attribute: { id: string; key: string; name: string }
+  defaultAttribute: { id: string; key: string; name: string } | null
+}
 interface TemplateArmorClass {
-  id: string; enabled: boolean; attributeModifierIds: string[]; fields: TemplateArmorClassField[]
+  id: string; enabled: boolean; attributeModifiers: TemplateArmorClassAttributeModifier[]; fields: TemplateArmorClassField[]
 }
 interface TemplateResistanceComponent {
   id: string; name: string; editableByPlayer: boolean; defaultValue: string
@@ -259,7 +264,7 @@ export default function AdventureDetailPage() {
       editableByPlayer: cr.editableByPlayer ?? true,
       showNotes: cr.showNotes ?? true,
     })));
-    const ac = t.armorClass; if (ac) { setEditAcEnabled(ac.enabled); setEditAcAttributeIds(ac.attributeModifierIds ?? []); setEditAcFields(ac.fields.map(f=>({name:f.name,key:f.key,defaultValue:f.defaultValue??'0',editableByPlayer:f.editableByPlayer,description:f.description??''}))) } else { setEditAcEnabled(false); setEditAcAttributeIds([]); setEditAcFields([]) }
+    const ac = t.armorClass; if (ac) { setEditAcEnabled(ac.enabled); setEditAcAttributeIds((ac.attributeModifiers ?? []).map(am => am.attribute.key)); setEditAcFields(ac.fields.map(f=>({name:f.name,key:f.key,defaultValue:f.defaultValue??'0',editableByPlayer:f.editableByPlayer,description:f.description??''}))) } else { setEditAcEnabled(false); setEditAcAttributeIds([]); setEditAcFields([]) }
     setEditCharacterSections((t as any).characterSections?.map((s: any) => ({ id: s.id, name: s.name })) ?? [])
     const tResistances = t.resistances || []
     setEditResistances(tResistances.map(r => ({
