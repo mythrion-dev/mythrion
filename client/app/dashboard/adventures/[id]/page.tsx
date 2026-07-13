@@ -93,6 +93,15 @@ function emptyAcConfig(): AcConfigDraft {
   return { name: '', enabled: true, fields: [], attributeModifiers: [] }
 }
 
+function slugify(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+}
+
 export default function AdventureDetailPage() {
   const router = useRouter(); const params = useParams(); const id = params.id as string
   const { user, loading: authLoading } = useAuth()
@@ -140,7 +149,17 @@ export default function AdventureDetailPage() {
   function updateNewAcConfig(i: number, patch: Partial<AcConfigDraft>) { setNewAcConfigs(p => p.map((ac,j) => j===i ? { ...ac, ...patch } : ac)) }
   function addNewAcFieldForConfig(configIdx: number) { setNewAcConfigs(p => p.map((ac,i) => i===configIdx ? { ...ac, fields: [...ac.fields, { name: '', key: '', defaultValue: '0', editableByPlayer: false, description: '' }] } : ac)) }
   function removeNewAcFieldForConfig(configIdx: number, fieldIdx: number) { setNewAcConfigs(p => p.map((ac,i) => i===configIdx ? { ...ac, fields: ac.fields.filter((_,j) => j!==fieldIdx) } : ac)) }
-  function updateNewAcFieldForConfig(configIdx: number, fieldIdx: number, f: 'name'|'key'|'defaultValue'|'description', v: string) { setNewAcConfigs(p => p.map((ac,i) => i===configIdx ? { ...ac, fields: ac.fields.map((field,j) => j===fieldIdx ? { ...field, [f]: v } : field) } : ac)) }
+  function updateNewAcFieldForConfig(configIdx: number, fieldIdx: number, f: 'name'|'key'|'defaultValue'|'description', v: string) {
+    setNewAcConfigs(p => p.map((ac,i) => {
+      if (i !== configIdx) return ac
+      return { ...ac, fields: ac.fields.map((field,j) => {
+        if (j !== fieldIdx) return field
+        const updated = { ...field, [f]: v }
+        if (f === 'name' && v.trim() && !field.key.trim()) updated.key = slugify(v.trim())
+        return updated
+      })}
+    }))
+  }
   function updateNewAcFieldEditableForConfig(configIdx: number, fieldIdx: number, v: boolean) { setNewAcConfigs(p => p.map((ac,i) => i===configIdx ? { ...ac, fields: ac.fields.map((field,j) => j===fieldIdx ? { ...field, editableByPlayer: v } : field) } : ac)) }
   function toggleNewAcAttributeIdForConfig(configIdx: number, attrId: string) {
     setNewAcConfigs(p => p.map((ac,i) => {
@@ -162,7 +181,17 @@ export default function AdventureDetailPage() {
   function updateEditAcConfig(i: number, patch: Partial<AcConfigDraft>) { setEditAcConfigs(p => p.map((ac,j) => j===i ? { ...ac, ...patch } : ac)) }
   function addEditAcFieldForConfig(configIdx: number) { setEditAcConfigs(p => p.map((ac,i) => i===configIdx ? { ...ac, fields: [...ac.fields, { name: '', key: '', defaultValue: '0', editableByPlayer: false, description: '' }] } : ac)) }
   function removeEditAcFieldForConfig(configIdx: number, fieldIdx: number) { setEditAcConfigs(p => p.map((ac,i) => i===configIdx ? { ...ac, fields: ac.fields.filter((_,j) => j!==fieldIdx) } : ac)) }
-  function updateEditAcFieldForConfig(configIdx: number, fieldIdx: number, f: 'name'|'key'|'defaultValue'|'description', v: string) { setEditAcConfigs(p => p.map((ac,i) => i===configIdx ? { ...ac, fields: ac.fields.map((field,j) => j===fieldIdx ? { ...field, [f]: v } : field) } : ac)) }
+  function updateEditAcFieldForConfig(configIdx: number, fieldIdx: number, f: 'name'|'key'|'defaultValue'|'description', v: string) {
+    setEditAcConfigs(p => p.map((ac,i) => {
+      if (i !== configIdx) return ac
+      return { ...ac, fields: ac.fields.map((field,j) => {
+        if (j !== fieldIdx) return field
+        const updated = { ...field, [f]: v }
+        if (f === 'name' && v.trim() && !field.key.trim()) updated.key = slugify(v.trim())
+        return updated
+      })}
+    }))
+  }
   function updateEditAcFieldEditableForConfig(configIdx: number, fieldIdx: number, v: boolean) { setEditAcConfigs(p => p.map((ac,i) => i===configIdx ? { ...ac, fields: ac.fields.map((field,j) => j===fieldIdx ? { ...field, editableByPlayer: v } : field) } : ac)) }
   function toggleEditAcAttributeIdForConfig(configIdx: number, attrId: string) {
     setEditAcConfigs(p => p.map((ac,i) => {
@@ -303,6 +332,13 @@ export default function AdventureDetailPage() {
     // Validate AC configs have unique names
     const acNames = newAcConfigs.filter(ac => ac.enabled && ac.name.trim()).map(ac => ac.name.trim().toLowerCase())
     if (new Set(acNames).size !== acNames.length) { setTemplateError('Armor Class names must be unique'); return }
+    // Validate AC fields have keys
+    for (const ac of newAcConfigs) {
+      if (!ac.enabled || !ac.name.trim()) continue
+      for (const f of ac.fields) {
+        if (f.name.trim() && !f.key.trim()) { setTemplateError(`Armor Class "${ac.name.trim()}" has a component with an empty key. Please fill in the Key field or remove the component.`); return }
+      }
+    }
     setTemplateCreating(true)
     try {
       await api.post(`/adventures/${id}/templates`, {
@@ -371,6 +407,13 @@ export default function AdventureDetailPage() {
     for (const p of editTemplateProfiles) { if ((p as any).targetMode === 'SELECTED_SKILLS' && ((p as any).targetSkillIds?.length ?? 0) === 0) { setEditingTemplateError(`Profile "${p.name || 'Unnamed'}" uses "Selected Skills" mode but no skills are selected.`); return } }
     const acNames = editAcConfigs.filter(ac => ac.enabled && ac.name.trim()).map(ac => ac.name.trim().toLowerCase())
     if (new Set(acNames).size !== acNames.length) { setEditingTemplateError('Armor Class names must be unique'); return }
+    // Validate AC fields have keys
+    for (const ac of editAcConfigs) {
+      if (!ac.enabled || !ac.name.trim()) continue
+      for (const f of ac.fields) {
+        if (f.name.trim() && !f.key.trim()) { setEditingTemplateError(`Armor Class "${ac.name.trim()}" has a component with an empty key. Please fill in the Key field or remove the component.`); return }
+      }
+    }
     setTemplateSaving(true)
     try {
       await api.patch(`/adventures/${id}/templates/${editingTemplateId}`, {

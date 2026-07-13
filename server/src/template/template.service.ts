@@ -102,7 +102,9 @@ export class TemplateService {
                 name: ac.name ?? 'Armor Class',
                 enabled: true,
                 fields: {
-                  create: (ac.fields || []).map((f, fIdx) => ({
+                  create: (ac.fields || [])
+                    .filter(f => (f.key?.trim() ?? '') !== '')
+                    .map((f, fIdx) => ({
                     name: f.name,
                     key: f.key,
                     defaultValue: f.defaultValue ?? '0',
@@ -509,14 +511,16 @@ export class TemplateService {
                   }
                 : undefined,
               fields: {
-                create: (acDef.fields || []).map((f, fIdx) => ({
-                  name: f.name ?? f.key?.trim() ?? '',
-                  key: f.key?.trim() ?? '',
-                  defaultValue: f.defaultValue ?? '0',
-                  editableByPlayer: f.editableByPlayer ?? false,
-                  description: f.description ?? null,
-                  order: fIdx,
-                })),
+                create: (acDef.fields || [])
+                  .filter(f => (f.key?.trim() ?? '') !== '')
+                  .map((f, fIdx) => ({
+                    name: f.name ?? f.key?.trim() ?? '',
+                    key: f.key?.trim() ?? '',
+                    defaultValue: f.defaultValue ?? '0',
+                    editableByPlayer: f.editableByPlayer ?? false,
+                    description: f.description ?? null,
+                    order: fIdx,
+                  })),
               },
             },
           })

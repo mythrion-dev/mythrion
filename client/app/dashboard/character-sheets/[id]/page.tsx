@@ -987,7 +987,7 @@ export default function CharacterSheetDetailPage() {
 
         <div className="card !p-6"><h3 className="font-semibold mb-4">Attributes</h3><div className="grid gap-3 sm:grid-cols-2">{sheet.template.attributes.map(attr => { const val = sheet.values.find(v => v.attributeId === attr.id); const modResult = modifierResults[attr.id]; return <div key={attr.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border"><span className="text-sm text-foreground">{attr.name}{modifiersEnabled && sheet.template.attributeModifierFormula && <span className="text-[0.6rem] text-primary ml-1">mod</span>}</span><div className="flex items-center gap-3">{isOwner ? <InlineText value={val?.value ?? ''} onSave={(v) => saveAttributeValue(attr.id, v)} className="text-sm font-semibold text-foreground" /> : <span className="text-sm font-semibold text-foreground">{val?.value || '—'}</span>}{modifiersEnabled && modResult !== undefined && modResult !== null && <span className="text-sm font-semibold text-primary">({modResult >= 0 ? '+' : ''}{modResult})</span>}</div></div> })}</div></div>
 
-        {armorClasses.map(ac => (ac.fields.length > 0) ? (
+        {armorClasses.map(ac => (
           <div key={ac.id} className="card !p-6">
             <h3 className="font-semibold mb-4">{(ac as any).name ?? 'Armor Class'}</h3>
             <div className="flex items-center justify-center mb-4">
@@ -1054,7 +1054,7 @@ export default function CharacterSheetDetailPage() {
               )}
             </div>
           </div>
-        ) : null)}
+        ))}
 
         {sheet.skillValues.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-4">Skills</h3><div className="grid gap-3 sm:grid-cols-2 items-start">
           {sheet.skillValues.map(sv => <CollapsibleSkillRow key={sv.id} skill={sv} result={skillResults[sv.skillId]} profiles={allProfiles.filter(p => { const tm = (p as any).targetMode ?? 'ALL_SKILLS'; const tids: string[] = (p as any).targetSkillIds ?? []; return tm === 'ALL_SKILLS' || tids.length === 0 || tids.includes(sv.skill.name) })} selections={profileSelections[sv.skillId] || {}} active={activeSkills[sv.skillId] ?? false} others={othersValues[sv.skillId] ?? 0} onToggleActive={() => handleSkillToggle(sv.skillId)} onOthersChange={(no) => handleOthersChange(sv.skillId, no)} onProfileChange={(pid, oid) => handleProfileChange(sv.skillId, pid, oid)} onAttributeChange={(attrId) => handleSkillAttributeChange(sv.skillId, attrId)} templateAttributes={sheet.template.attributes} expandedSkillId={expandedSkillId} onExpandToggle={(id) => setExpandedSkillId(prev => prev === id ? null : id)} modifiersEnabled={modifiersEnabled} />)}
@@ -1526,7 +1526,7 @@ function AbilitiesTab({
                           </div>
                         )}
 
-                        {armorClasses.map(ac => (ac.fields.length > 0 && (a.summonAcValues ?? []).length > 0) ? (
+                        {armorClasses.map(ac => ((a.summonAcValues ?? []).length > 0) ? (
                           <div key={ac.id} className="card !p-3 !bg-background/30">
                             <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Armor Class: {(ac as any).name ?? 'AC'}</h4>
                             <div className="flex items-center justify-center mb-3">
