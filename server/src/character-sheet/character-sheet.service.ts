@@ -652,7 +652,7 @@ export class CharacterSheetService {
     await this.requireOwnership(ability.sheetId, userId)
 
     let data = {
-      level: dto.level,
+      level: String(dto.level),
       description: dto.description ?? null,
       manaCost: dto.manaCost ?? null,
       range: dto.range ?? null,
@@ -663,7 +663,7 @@ export class CharacterSheetService {
     if (dto.copyFromPrevious && ability.levels.length > 0) {
       const prev = ability.levels[0]
       data = {
-        level: dto.level,
+        level: String(dto.level),
         description: dto.description ?? prev.description,
         manaCost: dto.manaCost ?? prev.manaCost,
         range: dto.range ?? prev.range,
@@ -683,7 +683,13 @@ export class CharacterSheetService {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityLevel.abilityId } })
     if (!ability) throw new NotFoundException('Ability not found')
     await this.requireOwnership(ability.sheetId, userId)
-    return this.prisma.characterAbilityLevel.update({ where: { id: levelId }, data: { ...dto } })
+    return this.prisma.characterAbilityLevel.update({
+      where: { id: levelId },
+      data: {
+        ...dto,
+        ...(dto.level !== undefined ? { level: String(dto.level) } : {}),
+      },
+    })
   }
 
   async deleteAbilityLevel(levelId: string, userId: string) {
