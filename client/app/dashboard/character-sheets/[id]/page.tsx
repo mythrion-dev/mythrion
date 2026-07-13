@@ -36,7 +36,7 @@ interface ArmorClassFieldDef {
   id: string; name: string; key: string; defaultValue: string; editableByPlayer: boolean; description: string | null
 }
 interface ArmorClassDef {
-  id: string; enabled: boolean; attributeModifiers: ArmorClassAttributeModifierDef[]; fields: ArmorClassFieldDef[]
+  id: string; name?: string; enabled: boolean; attributeModifiers: ArmorClassAttributeModifierDef[]; fields: ArmorClassFieldDef[]
 }
 interface ArmorClassValue {
   id: string; fieldId: string; value: string; field: ArmorClassFieldDef
@@ -91,7 +91,7 @@ interface CharacterSheet {
     templateSkills?: TemplateSkill[]
     skillModifierProfiles: SkillModifierProfile[]
     coreResources: CoreResourceDef[]
-    armorClass: ArmorClassDef | null
+    armorClasses: ArmorClassDef[]
     characterSections: TemplateCharacterSection[]
   }
   values: SheetAttribute[]; fieldValues: FieldValue[]; skillValues: SkillValue[]
@@ -106,6 +106,7 @@ interface CharacterSheet {
 
 type Tab = string
 type SummonTab = 'stats' | 'skills' | 'abilities'
+type AcResultMap = Record<string, { total: number; name: string }>
 
 function CoreResourceCard({ resource, value, isOwner, onSave, onModify }: {
   resource: CoreResourceDef
@@ -165,7 +166,7 @@ export default function CharacterSheetDetailPage() {
   const [sheet, setSheet] = useState<CharacterSheet | null>(null); const [fetching, setFetching] = useState(true)
   const [modifierResults, setModifierResults] = useState<Record<string, number | null>>({})
   const [skillResults, setSkillResults] = useState<Record<string, number | null>>({})
-  const [acResult, setAcResult] = useState<number | null>(null)
+  const [acResults, setAcResults] = useState<AcResultMap>({})
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false); const [deleting, setDeleting] = useState(false); const [deleteError, setDeleteError] = useState<string | null>(null)
   const [profileSelections, setProfileSelections] = useState<Record<string, Record<string, string | null>>>({})
@@ -277,18 +278,20 @@ export default function CharacterSheetDetailPage() {
   }, [])
 
   const computeSummonAC = useCallback((ability: Ability, sd: CharacterSheet, mods: Record<string, number | null>) => {
-    const ac = sd.template.armorClass
-    if (!ac?.enabled) return null
+    const acs = sd.template.armorClasses?.filter(ac => ac.enabled) ?? []
+    if (acs.length === 0) return null
     let total = 0
     ;(ability.summonAcValues ?? []).forEach(acv => {
       const v = parseFloat(acv.value)
       if (!isNaN(v)) total += v
     })
-    const acMods = ac.attributeModifiers ?? []
-    for (const am of acMods) {
-      const modResult = mods[am.attributeId]
-      if (modResult !== null && modResult !== undefined && !isNaN(modResult)) {
-        total += Math.max(0, modResult)
+    for (const ac of acs) {
+      const acMods = ac.attributeModifiers ?? []
+      for (const am of acMods) {
+        const modResult = mods[am.attributeId]
+        if (modResult !== null && modResult !== undefined && !isNaN(modResult)) {
+          total += Math.max(0, modResult)
+        }
       }
     }
     return total
@@ -421,25 +424,30 @@ export default function CharacterSheetDetailPage() {
   }, [])
 
   const computeAC = useCallback((sd: CharacterSheet, mods: Record<string, number | null>) => {
-    const ac = sd.template.armorClass
-    if (!ac?.enabled) { setAcResult(null); return }
+    const acs = sd.template.armorClasses?.filter(ac => ac.enabled) ?? []
+    if (acs.length === 0) { setAcResults({}); return }
     const selectedByModifierId = new Map(sd.acAttributeValues.map(v => [v.acAttributeModifierId, v.selectedAttributeId]))
-    let total = 0
-    sd.acValues.forEach(acv => {
-      const v = parseFloat(acv.value)
-      if (!isNaN(v)) total += v
-    })
-    const acMods = ac.attributeModifiers ?? []
-    for (const am of acMods) {
-      const effectiveAttributeId = am.allowPlayerSelection
-        ? (selectedByModifierId.get(am.id) ?? am.defaultAttributeId ?? am.attributeId)
-        : am.attributeId
-      const modResult = mods[effectiveAttributeId]
-      if (modResult !== null && modResult !== undefined && !isNaN(modResult)) {
-        total += Math.max(0, modResult)
+    const results: AcResultMap = {}
+    for (const ac of acs) {
+      let total = 0
+      const acFields = sd.acValues.filter(acv => ac.fields.some(f => f.id === acv.fieldId))
+      acFields.forEach(acv => {
+        const v = parseFloat(acv.value)
+        if (!isNaN(v)) total += v
+      })
+      const acMods = ac.attributeModifiers ?? []
+      for (const am of acMods) {
+        const effectiveAttributeId = am.allowPlayerSelection
+          ? (selectedByModifierId.get(am.id) ?? am.defaultAttributeId ?? am.attributeId)
+          : am.attributeId
+        const modResult = mods[effectiveAttributeId]
+        if (modResult !== null && modResult !== undefined && !isNaN(modResult)) {
+          total += Math.max(0, modResult)
+        }
       }
+      results[ac.id] = { total, name: (ac as any).name ?? 'Armor Class' }
     }
-    setAcResult(total)
+    setAcResults(results)
   }, [])
 
   const computeModifiers = useCallback(async (sd: CharacterSheet) => {
@@ -644,7 +652,7 @@ export default function CharacterSheetDetailPage() {
           sheetId: sheet.id,
           acAttributeModifierId,
           selectedAttributeId,
-          acAttributeModifier: sheet.template.armorClass?.attributeModifiers.find(am => am.id === acAttributeModifierId) as ArmorClassAttributeModifierDef,
+          acAttributeModifier: (sheet.template.armorClasses?.flatMap(ac => ac.attributeModifiers ?? []) ?? []).find(am => am.id === acAttributeModifierId) as ArmorClassAttributeModifierDef,
           selectedAttribute,
         }],
     }
@@ -917,7 +925,7 @@ export default function CharacterSheetDetailPage() {
   if (!sheet) return <main className="flex-1 flex items-center justify-center p-4"><div className="text-sm text-muted-foreground">Character sheet not found.</div></main>
 
   const allProfiles: SkillModifierProfile[] = sheet?.template.skillModifierProfiles ?? []
-  const armorClass = sheet?.template.armorClass
+  const armorClasses = sheet?.template.armorClasses?.filter(ac => ac.enabled) ?? []
   const modifiersEnabled = sheet.template.attributeModifiersEnabled !== false
   const totalWeight = inventoryItems.reduce((s, i) => s + (i.weight ?? 0), 0)
   const tabClass = (t: Tab) => `flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === t ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`
@@ -979,19 +987,19 @@ export default function CharacterSheetDetailPage() {
 
         <div className="card !p-6"><h3 className="font-semibold mb-4">Attributes</h3><div className="grid gap-3 sm:grid-cols-2">{sheet.template.attributes.map(attr => { const val = sheet.values.find(v => v.attributeId === attr.id); const modResult = modifierResults[attr.id]; return <div key={attr.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border"><span className="text-sm text-foreground">{attr.name}{modifiersEnabled && sheet.template.attributeModifierFormula && <span className="text-[0.6rem] text-primary ml-1">mod</span>}</span><div className="flex items-center gap-3">{isOwner ? <InlineText value={val?.value ?? ''} onSave={(v) => saveAttributeValue(attr.id, v)} className="text-sm font-semibold text-foreground" /> : <span className="text-sm font-semibold text-foreground">{val?.value || '—'}</span>}{modifiersEnabled && modResult !== undefined && modResult !== null && <span className="text-sm font-semibold text-primary">({modResult >= 0 ? '+' : ''}{modResult})</span>}</div></div> })}</div></div>
 
-        {armorClass?.enabled && armorClass.fields.length > 0 && (
-          <div className="card !p-6">
-            <h3 className="font-semibold mb-4">Armor Class</h3>
+        {armorClasses.map(ac => (ac.fields.length > 0) ? (
+          <div key={ac.id} className="card !p-6">
+            <h3 className="font-semibold mb-4">{(ac as any).name ?? 'Armor Class'}</h3>
             <div className="flex items-center justify-center mb-4">
               <div className="w-24 h-24 rounded-full border-4 border-primary/30 flex items-center justify-center bg-background/50">
-                <span className="text-4xl font-bold text-primary">{acResult !== null ? acResult : '—'}</span>
+                <span className="text-4xl font-bold text-primary">{acResults[ac.id]?.total !== undefined ? acResults[ac.id].total : '—'}</span>
               </div>
             </div>
             <div className="space-y-3">
               <div>
                 <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Components</h4>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {armorClass.fields.map(field => {
+                  {ac.fields.map(field => {
                     const acv = sheet.acValues.find(v => v.fieldId === field.id)
                     const val = acv?.value ?? field.defaultValue
                     const canEdit = isOwner && field.editableByPlayer
@@ -1010,11 +1018,11 @@ export default function CharacterSheetDetailPage() {
                   })}
                 </div>
               </div>
-              {modifiersEnabled && (armorClass.attributeModifiers ?? []).length > 0 && (
+              {modifiersEnabled && (ac.attributeModifiers ?? []).length > 0 && (
                 <div>
                   <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Attribute Modifiers</h4>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {(armorClass.attributeModifiers ?? []).map(am => {
+                    {(ac.attributeModifiers ?? []).map(am => {
                       const acAttrValue = sheet.acAttributeValues.find(v => v.acAttributeModifierId === am.id)
                       const selectedAttributeId = acAttrValue?.selectedAttributeId ?? am.defaultAttributeId ?? am.attributeId
                       const selectedAttribute = sheet.template.attributes.find(a => a.id === selectedAttributeId) ?? am.defaultAttribute ?? am.attribute
@@ -1046,7 +1054,7 @@ export default function CharacterSheetDetailPage() {
               )}
             </div>
           </div>
-        )}
+        ) : null)}
 
         {sheet.skillValues.length > 0 && <div className="card !p-6"><h3 className="font-semibold mb-4">Skills</h3><div className="grid gap-3 sm:grid-cols-2 items-start">
           {sheet.skillValues.map(sv => <CollapsibleSkillRow key={sv.id} skill={sv} result={skillResults[sv.skillId]} profiles={allProfiles.filter(p => { const tm = (p as any).targetMode ?? 'ALL_SKILLS'; const tids: string[] = (p as any).targetSkillIds ?? []; return tm === 'ALL_SKILLS' || tids.length === 0 || tids.includes(sv.skill.name) })} selections={profileSelections[sv.skillId] || {}} active={activeSkills[sv.skillId] ?? false} others={othersValues[sv.skillId] ?? 0} onToggleActive={() => handleSkillToggle(sv.skillId)} onOthersChange={(no) => handleOthersChange(sv.skillId, no)} onProfileChange={(pid, oid) => handleProfileChange(sv.skillId, pid, oid)} onAttributeChange={(attrId) => handleSkillAttributeChange(sv.skillId, attrId)} templateAttributes={sheet.template.attributes} expandedSkillId={expandedSkillId} onExpandToggle={(id) => setExpandedSkillId(prev => prev === id ? null : id)} modifiersEnabled={modifiersEnabled} />)}
@@ -1315,7 +1323,7 @@ function AbilitiesTab({
     finally { setLevelModalSaving(false) }
   }
 
-  const armorClass = template.armorClass
+  const armorClasses = template.armorClasses?.filter(ac => ac.enabled) ?? []
   const allTemplateSkills = template.templateSkills ?? []
 
   const summonSkillTabClass = (aid: string, t: SummonTab) => {
@@ -1518,15 +1526,15 @@ function AbilitiesTab({
                           </div>
                         )}
 
-                        {armorClass?.enabled && armorClass.fields.length > 0 && (a.summonAcValues ?? []).length > 0 && (
-                          <div className="card !p-3 !bg-background/30">
-                            <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Armor Class</h4>
+                        {armorClasses.map(ac => (ac.fields.length > 0 && (a.summonAcValues ?? []).length > 0) ? (
+                          <div key={ac.id} className="card !p-3 !bg-background/30">
+                            <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Armor Class: {(ac as any).name ?? 'AC'}</h4>
                             <div className="flex items-center justify-center mb-3">
                               <div className="w-20 h-20 rounded-full border-3 border-primary/30 flex items-center justify-center bg-background/50">
                                 <span className="text-3xl font-bold text-primary">{summonAcResults[a.id] !== null && summonAcResults[a.id] !== undefined ? summonAcResults[a.id] : '—'}</span>
                               </div>
                             </div>
-                            {armorClass.fields.map(field => {
+                            {ac.fields.map(field => {
                               const acv = a.summonAcValues.find(v => v.fieldId === field.id)
                               const val = acv?.value ?? field.defaultValue
                               const canEdit = isOwner && field.editableByPlayer
@@ -1544,11 +1552,11 @@ function AbilitiesTab({
                                 </div>
                               )
                             })}
-                            {template.attributeModifiersEnabled !== false && (armorClass.attributeModifiers ?? []).length > 0 && (
+                            {template.attributeModifiersEnabled !== false && (ac.attributeModifiers ?? []).length > 0 && (
                               <div className="mt-2">
                                 <h5 className="text-[0.6rem] font-semibold text-muted uppercase tracking-wider mb-1">Attribute Modifiers</h5>
                                 <div className="grid gap-1 sm:grid-cols-2">
-                                  {(armorClass.attributeModifiers ?? []).map(am => {
+                                  {(ac.attributeModifiers ?? []).map(am => {
                                     const attr = template.attributes.find(at => at.id === am.attributeId)
                                     if (!attr) return null
                                     const modResult = (summonModifierResults[a.id] ?? {})[attr.id]
@@ -1565,7 +1573,7 @@ function AbilitiesTab({
                               </div>
                             )}
                           </div>
-                        )}
+                        ) : null)}
                       </div>}
 
                       {currentSummonTab === 'skills' && <div className="space-y-3">

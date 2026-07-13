@@ -405,11 +405,12 @@ export class TemplateService {
           // Handle attribute modifiers
           if (acDef.attributeModifiers) {
             await this.prisma.armorClassAttributeModifier.deleteMany({ where: { armorClassId: existingAC.id } })
+            const createdModifiers: string[] = []
             for (const am of acDef.attributeModifiers) {
               const resolvedAttrId = attrKeyToId.get(am.attributeId) ?? am.attributeId
               const resolvedDefaultId = am.defaultAttributeId ? (attrKeyToId.get(am.defaultAttributeId) ?? am.defaultAttributeId) : null
               if (!resolvedAttrId) continue
-              await this.prisma.armorClassAttributeModifier.create({
+              const created = await this.prisma.armorClassAttributeModifier.create({
                 data: {
                   armorClassId: existingAC.id,
                   attributeId: resolvedAttrId,
@@ -417,6 +418,20 @@ export class TemplateService {
                   defaultAttributeId: resolvedDefaultId,
                 },
               })
+              createdModifiers.push(created.id)
+            }
+            // Auto-create acAttributeValues for existing sheets
+            if (createdModifiers.length > 0) {
+              const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
+              for (const sheet of sheets) {
+                for (const modId of createdModifiers) {
+                  await this.prisma.characterSheetArmorClassAttributeValue.upsert({
+                    where: { sheetId_acAttributeModifierId: { sheetId: sheet.id, acAttributeModifierId: modId } },
+                    create: { sheetId: sheet.id, acAttributeModifierId: modId, selectedAttributeId: null },
+                    update: {},
+                  })
+                }
+              }
             }
           }
 
@@ -507,14 +522,27 @@ export class TemplateService {
           })
 
           // Auto-create values for new AC on existing sheets
+          const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
           if (acDef.fields && acDef.fields.length > 0) {
-            const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
             const newFields = await this.prisma.armorClassField.findMany({ where: { armorClassId: newAC.id } })
             for (const sheet of sheets) {
               for (const field of newFields) {
                 await this.prisma.characterSheetArmorClassValue.upsert({
                   where: { sheetId_fieldId: { sheetId: sheet.id, fieldId: field.id } },
                   create: { sheetId: sheet.id, fieldId: field.id, value: field.defaultValue },
+                  update: {},
+                })
+              }
+            }
+          }
+          // Auto-create acAttributeValues for existing sheets
+          if (resolvedModifiers.length > 0) {
+            const newModifiers = await this.prisma.armorClassAttributeModifier.findMany({ where: { armorClassId: newAC.id } })
+            for (const sheet of sheets) {
+              for (const mod of newModifiers) {
+                await this.prisma.characterSheetArmorClassAttributeValue.upsert({
+                  where: { sheetId_acAttributeModifierId: { sheetId: sheet.id, acAttributeModifierId: mod.id } },
+                  create: { sheetId: sheet.id, acAttributeModifierId: mod.id, selectedAttributeId: null },
                   update: {},
                 })
               }
