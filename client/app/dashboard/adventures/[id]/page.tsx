@@ -796,10 +796,10 @@ function NewTemplateForm(props: {
       <button type="button" onClick={() => setActiveTab('attrs')} className={tabClass('attrs')}>Attributes</button>
       <button type="button" onClick={() => setActiveTab('skills')} className={tabClass('skills')}>Skills</button>
       {props.onAddField && <button type="button" onClick={() => setActiveTab('fields')} className={tabClass('fields')}>Character Info</button>}
-      {props.onAddCoreResource && <button type="button" onClick={() => setActiveTab('coreResources')} className={tabClass('coreResources')}>CharacterResources</button>}
+      {props.onAddCoreResource && <button type="button" onClick={() => setActiveTab('coreResources')} className={tabClass('coreResources')}>Character Resources</button>}
       {props.onAddNewAcConfig && <button type="button" onClick={() => setActiveTab('ac')} className={tabClass('ac')}>Armor Class</button>}
-      {props.onAddProfile && <button type="button" onClick={() => setActiveTab('profiles')} className={tabClass('profiles')}>Skill Modifier Profiles</button>}
       <button type="button" onClick={() => setActiveTab('characterSections' as any)} className={tabClass('characterSections' as any)}>Personal Abilities</button>
+      {props.onAddProfile && <button type="button" onClick={() => setActiveTab('profiles')} className={tabClass('profiles')}>Skill Profiles</button>}
       {props.onNewResistancesChange && <button type="button" onClick={() => setActiveTab('resistances')} className={tabClass('resistances')}>Resistance System</button>}
     </div>
 
@@ -898,11 +898,11 @@ function TemplateRow(props: {
     <div className="flex gap-1 flex-wrap">
       <button type="button" onClick={() => setEditTab('attrs')} className={etabClass('attrs')}>Attributes</button>
       <button type="button" onClick={() => setEditTab('skills')} className={etabClass('skills')}>Skills</button>
-      {props.onAddProfile && <button type="button" onClick={() => setEditTab('profiles')} className={etabClass('profiles')}>Skill Profiles</button>}
-      {props.onAddCoreResource && <button type="button" onClick={() => setEditTab('coreResources')} className={etabClass('coreResources')}>Core Resources</button>}
-      {props.onAddField && <button type="button" onClick={() => setEditTab('fields')} className={etabClass('fields')}>Custom Fields</button>}
+      {props.onAddField && <button type="button" onClick={() => setEditTab('fields')} className={etabClass('fields')}>Character Info</button>}
+      {props.onAddCoreResource && <button type="button" onClick={() => setEditTab('coreResources')} className={etabClass('coreResources')}>Character Resources</button>}
       {props.onAddEditAcConfig && <button type="button" onClick={() => setEditTab('ac')} className={etabClass('ac')}>Armor Class</button>}
-      <button type="button" onClick={() => setEditTab('characterSections')} className={etabClass('characterSections')}>Character Sections</button>
+      <button type="button" onClick={() => setEditTab('characterSections')} className={etabClass('characterSections')}>Personal Abilities</button>
+      {props.onAddProfile && <button type="button" onClick={() => setEditTab('profiles')} className={etabClass('profiles')}>Skill Profiles</button>}
       {props.onEditResistancesChange && <button type="button" onClick={() => setEditTab('resistances')} className={etabClass('resistances')}>Resistance System</button>}
     </div>
 
