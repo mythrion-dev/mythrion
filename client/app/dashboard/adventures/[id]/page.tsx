@@ -65,7 +65,7 @@ interface Template {
   templateSkills?: { id: string; name: string; description: string | null; attributeId: string | null; allowedAttributeIds: string[]; defaultAttributeId: string | null; attribute?: { id: string; key: string; name: string } | null; defaultAttribute?: { id: string; key: string; name: string } | null }[]
   skillModifierProfiles?: SkillModifierProfile[]
   coreResources?: CoreResource[]
-  armorClass?: TemplateArmorClass | null
+  armorClasses?: TemplateArmorClass[]
   resistances?: TemplateResistance[]
   createdAt: string
 }
@@ -254,7 +254,7 @@ export default function AdventureDetailPage() {
         skills: newTemplateSkills.filter(s=>s.name.trim()).map(s=>({name:s.name.trim(),description:s.description.trim()||undefined,attributeId:s.attributeId.trim()||undefined,allowedAttributeIds:s.allowedAttributeIds.filter(k=>k.trim()),defaultAttributeId:s.defaultAttributeId.trim()||undefined})),
         skillModifierProfiles: newTemplateProfiles.filter(p=>p.name.trim()).map(p=>({name:p.name.trim(),targetMode:p.targetMode??'ALL_SKILLS',targetSkillIds:p.targetSkillIds??[],options:p.options.filter(o=>o.label.trim()).map(o=>({label:o.label.trim(),value:o.value}))})),
         coreResources: newCoreResources.filter(r=>r.slug.trim()).map(r=>({displayName:r.displayName.trim()||r.slug.trim(), slug:r.slug.trim(), enabled:r.enabled, editableByPlayer:r.editableByPlayer, showNotes:r.showNotes})),
-        armorClass: newAcEnabled ? { enabled: true, attributeModifiers: newAcAttributeModifiers.map(am => ({ attributeId: am.attributeId, allowPlayerSelection: am.allowPlayerSelection, defaultAttributeId: am.allowPlayerSelection ? (am.defaultAttributeId || am.attributeId) : undefined })), fields: newAcFields.filter(f=>f.name.trim()&&f.key.trim()).map(f=>({name:f.name.trim(),key:f.key.trim(),defaultValue:f.defaultValue.trim()||'0',editableByPlayer:f.editableByPlayer,description:f.description.trim()||undefined})) } : undefined,
+        armorClasses: newAcEnabled ? [{ enabled: true, name: 'Armor Class', attributeModifiers: newAcAttributeModifiers.map(am => ({ attributeId: am.attributeId, allowPlayerSelection: am.allowPlayerSelection, defaultAttributeId: am.allowPlayerSelection ? (am.defaultAttributeId || am.attributeId) : undefined })), fields: newAcFields.filter(f=>f.name.trim()&&f.key.trim()).map(f=>({name:f.name.trim(),key:f.key.trim(),defaultValue:f.defaultValue.trim()||'0',editableByPlayer:f.editableByPlayer,description:f.description.trim()||undefined})) }] : [],
         characterSections: newCharacterSections.filter(s => s.name.trim()).map(s => ({ name: s.name.trim() })),
         resistances: buildResistancesPayload(newResistances),
       })
@@ -283,7 +283,7 @@ export default function AdventureDetailPage() {
       editableByPlayer: cr.editableByPlayer ?? true,
       showNotes: cr.showNotes ?? true,
     })));
-    const ac = t.armorClass; if (ac) { setEditAcEnabled(ac.enabled); setEditAcAttributeModifiers((ac.attributeModifiers ?? []).map(am => ({ attributeId: am.attribute.key, allowPlayerSelection: !!am.allowPlayerSelection, defaultAttributeId: am.defaultAttribute?.key ?? am.attribute.key }))); setEditAcFields(ac.fields.map(f=>({name:f.name,key:f.key,defaultValue:f.defaultValue??'0',editableByPlayer:f.editableByPlayer,description:f.description??''}))) } else { setEditAcEnabled(false); setEditAcAttributeModifiers([]); setEditAcFields([]) }
+    const ac = t.armorClasses?.[0]; if (ac) { setEditAcEnabled(ac.enabled); setEditAcAttributeModifiers((ac.attributeModifiers ?? []).map(am => ({ attributeId: am.attribute.key, allowPlayerSelection: !!am.allowPlayerSelection, defaultAttributeId: am.defaultAttribute?.key ?? am.attribute.key }))); setEditAcFields(ac.fields.map(f=>({name:f.name,key:f.key,defaultValue:f.defaultValue??'0',editableByPlayer:f.editableByPlayer,description:f.description??''}))) } else { setEditAcEnabled(false); setEditAcAttributeModifiers([]); setEditAcFields([]) }
     setEditCharacterSections((t as any).characterSections?.map((s: any) => ({ id: s.id, name: s.name })) ?? [])
     const tResistances = t.resistances || []
     setEditResistances(tResistances.map(r => ({
@@ -313,7 +313,7 @@ export default function AdventureDetailPage() {
         skills: editTemplateSkills.filter(s=>s.name.trim()).map(s=>({name:s.name.trim(),description:s.description.trim()||undefined,attributeId:s.attributeId.trim()||undefined,allowedAttributeIds:s.allowedAttributeIds.filter(k=>k.trim()),defaultAttributeId:s.defaultAttributeId.trim()||undefined})),
         skillModifierProfiles: editTemplateProfiles.filter(p=>p.name.trim()).map(p=>({name:p.name.trim(),targetMode:p.targetMode??'ALL_SKILLS',targetSkillIds:p.targetSkillIds??[],options:p.options.filter(o=>o.label.trim()).map(o=>({label:o.label.trim(),value:o.value}))})),
         coreResources: editCoreResources.filter(r=>r.slug.trim()).map(r=>({displayName:r.displayName.trim()||r.slug.trim(), slug:r.slug.trim(), enabled:r.enabled, editableByPlayer:r.editableByPlayer, showNotes:r.showNotes})),
-        armorClass: editAcEnabled ? { enabled: true, attributeModifiers: editAcAttributeModifiers.map(am => ({ attributeId: am.attributeId, allowPlayerSelection: am.allowPlayerSelection, defaultAttributeId: am.allowPlayerSelection ? (am.defaultAttributeId || am.attributeId) : undefined })), fields: editAcFields.filter(f=>f.name.trim()&&f.key.trim()).map(f=>({name:f.name.trim(),key:f.key.trim(),defaultValue:f.defaultValue.trim()||'0',editableByPlayer:f.editableByPlayer,description:f.description.trim()||undefined})) } : { enabled: false },
+        armorClasses: editAcEnabled ? [{ enabled: true, name: 'Armor Class', attributeModifiers: editAcAttributeModifiers.map(am => ({ attributeId: am.attributeId, allowPlayerSelection: am.allowPlayerSelection, defaultAttributeId: am.allowPlayerSelection ? (am.defaultAttributeId || am.attributeId) : undefined })), fields: editAcFields.filter(f=>f.name.trim()&&f.key.trim()).map(f=>({name:f.name.trim(),key:f.key.trim(),defaultValue:f.defaultValue.trim()||'0',editableByPlayer:f.editableByPlayer,description:f.description.trim()||undefined})) }] : [],
         characterSections: editCharacterSections.filter(s => s.name.trim()).map(s => ({ id: s.id, name: s.name.trim() })),
         resistances: buildResistancesPayload(editResistances),
       })
