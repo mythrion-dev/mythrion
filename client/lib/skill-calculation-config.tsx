@@ -307,7 +307,7 @@ export default function SkillCalculationConfig({
             </div>
           )}
 
-          {/* Add custom field */}
+          {/* Add Character Info */}
           {availableFields.length > 0 && (
             <div className="pl-6">
               <div className="flex items-center gap-2">
@@ -320,7 +320,7 @@ export default function SkillCalculationConfig({
                   }}
                   disabled={disabled}
                 >
-                  <option value="">+ Add Custom Field</option>
+                  <option value="">+ Add Character Info</option>
                   {availableFields.map(f => (
                     <option key={f.key} value={f.key}>
                       {f.label}
@@ -333,7 +333,7 @@ export default function SkillCalculationConfig({
 
           {customFields.length === 0 && (
             <p className="text-xs text-muted italic pl-6">
-              Add custom fields to the template first, then come back to include them in the skill calculation.
+              Add Character Infos to the template first, then come back to include them in the skill calculation.
             </p>
           )}
         </div>
