@@ -158,13 +158,15 @@ export default function AttributeModifierConfig({
   const handleConfigChange = (field: keyof ConfigValues, rawValue: string) => {
     const numValue = parseInt(rawValue, 10)
     if (rawValue === '' || rawValue === '-') {
-      // Allow clearing/typing intermediate state
-      setConfig(prev => ({ ...prev, [field]: 0 }))
+      // Allow clearing/typing intermediate state; enforce min of 1 for 'every'
+      setConfig(prev => ({ ...prev, [field]: field === 'every' ? 1 : 0 }))
       return
     }
     if (isNaN(numValue)) return
 
-    setConfig(prev => ({ ...prev, [field]: numValue }))
+    // Enforce min of 1 for 'every'
+    const clamped = field === 'every' ? Math.max(1, numValue) : numValue
+    setConfig(prev => ({ ...prev, [field]: clamped }))
   }
 
   const handleSwitchToCustom = () => {
