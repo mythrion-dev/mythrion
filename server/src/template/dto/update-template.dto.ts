@@ -129,6 +129,10 @@ export class UpdateArmorClassDefDto {
   @IsOptional()
   enabled?: boolean
 
+  @IsString()
+  @IsOptional()
+  name?: string
+
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
@@ -248,10 +252,11 @@ export class UpdateTemplateDto {
   @Type(() => UpdateCoreResourceDefDto)
   coreResources?: UpdateCoreResourceDefDto[]
 
-  @ValidateNested()
+  @IsArray()
+  @ValidateNested({ each: true })
   @IsOptional()
   @Type(() => UpdateArmorClassDefDto)
-  armorClass?: UpdateArmorClassDefDto
+  armorClasses?: UpdateArmorClassDefDto[]
 
   @IsBoolean()
   @IsOptional()

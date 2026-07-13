@@ -10,10 +10,10 @@ export class AcCalculationService {
   ) {}
 
   /**
-   * Calculate the Armor Class for a given character sheet.
+   * Calculate the Armor Class for a specific armor class config on a character sheet.
    * Returns total AC with breakdown of components and attribute modifiers.
    */
-  async calculateArmorClass(sheetId: string) {
+  async calculateArmorClass(sheetId: string, armorClassId?: string) {
     const sheet = await this.prisma.characterSheet.findUnique({
       where: { id: sheetId },
       select: {
@@ -24,9 +24,9 @@ export class AcCalculationService {
     })
     if (!sheet) return null
 
-    // Fetch AC config
-    const armorClass = await this.prisma.templateArmorClass.findUnique({
-      where: { templateId: sheet.templateId },
+    // Fetch all enabled AC configs
+    const allArmorClasses = await this.prisma.templateArmorClass.findMany({
+      where: { templateId: sheet.templateId, enabled: true },
       include: {
         fields: { orderBy: { order: 'asc' } },
         attributeModifiers: {
@@ -38,9 +38,9 @@ export class AcCalculationService {
       },
     })
 
-    if (!armorClass?.enabled) return null
+    if (allArmorClasses.length === 0) return null
 
-    // Fetch sheet AC field values
+    // Fetch sheet AC field values (all, they carry fieldId which links to AC via ArmorClassField)
     const sheetFieldValues = await this.prisma.characterSheetArmorClassValue.findMany({
       where: { sheetId },
     })
@@ -92,6 +92,49 @@ export class AcCalculationService {
       }
     }
 
+    // Filter to requested AC or calculate all
+    const armorClasses = armorClassId
+      ? allArmorClasses.filter(ac => ac.id === armorClassId)
+      : allArmorClasses
+
+    // If requesting specific AC and not found, return null
+    if (armorClassId && armorClasses.length === 0) return null
+
+    // If requesting all, return a map
+    if (!armorClassId) {
+      const results: Record<string, AcResult> = {}
+      for (const ac of armorClasses) {
+        results[ac.id] = this.calculateSingleAc(
+          ac,
+          sheetFieldValues,
+          sheetAttributeValues,
+          attributeModifiers,
+          modifiersEnabled,
+        )
+      }
+      return results
+    }
+
+    // Single AC result
+    return this.calculateSingleAc(
+      armorClasses[0],
+      sheetFieldValues,
+      sheetAttributeValues,
+      attributeModifiers,
+      modifiersEnabled,
+    )
+  }
+
+  private calculateSingleAc(
+    armorClass: AcConfigForCalc,
+    sheetFieldValues: Array<{ fieldId: string; value: string }>,
+    sheetAttributeValues: Array<{
+      acAttributeModifierId: string
+      selectedAttribute: { id: string; key: string; name: string } | null
+    }>,
+    attributeModifiers: Map<string, number>,
+    modifiersEnabled: boolean,
+  ): AcResult {
     let total = 0
 
     // Sum AC field values
@@ -140,23 +183,20 @@ export class AcCalculationService {
 
     if (modifiersEnabled) {
       for (const am of armorClass.attributeModifiers) {
-        // Determine which attribute to use
-        let effectiveAttrId = am.attributeId // Default to the configured attribute
+        let effectiveAttrId = am.attributeId
 
         if (am.allowPlayerSelection) {
           const sheetAv = sheetAttributeValues.find(sav => sav.acAttributeModifierId === am.id)
-          if (sheetAv?.selectedAttributeId) {
-            effectiveAttrId = sheetAv.selectedAttributeId
-          } else if (am.defaultAttributeId) {
-            effectiveAttrId = am.defaultAttributeId
+          if (sheetAv?.selectedAttribute?.id) {
+            effectiveAttrId = sheetAv.selectedAttribute.id
+          } else if (am.defaultAttribute?.id) {
+            effectiveAttrId = am.defaultAttribute.id
           }
         }
 
         const rawMod = attributeModifiers.get(effectiveAttrId) ?? 0
         total += rawMod
 
-        // Get attribute info
-        const attr = sheet.values.find(v => v.attributeId === effectiveAttrId)
         const selectedAttr = am.allowPlayerSelection
           ? sheetAttributeValues.find(sav => sav.acAttributeModifierId === am.id)?.selectedAttribute
           : null
@@ -164,8 +204,8 @@ export class AcCalculationService {
         attributeModifierBreakdown.push({
           acModifierId: am.id,
           attributeId: effectiveAttrId,
-          attributeKey: attr?.attribute?.key ?? '',
-          attributeName: attr?.attribute?.name ?? '',
+          attributeKey: am.attribute.key,
+          attributeName: am.attribute.name,
           allowPlayerSelection: am.allowPlayerSelection,
           selectedAttributeKey: selectedAttr?.key ?? null,
           selectedAttributeName: selectedAttr?.name ?? null,
@@ -177,8 +217,49 @@ export class AcCalculationService {
 
     return {
       total,
+      armorClassName: armorClass.name,
       fieldBreakdown,
       attributeModifierBreakdown,
     }
   }
+}
+
+type AcConfigForCalc = {
+  id: string
+  name: string
+  fields: Array<{
+    id: string
+    name: string
+    defaultValue: string
+    editableByPlayer: boolean
+  }>
+  attributeModifiers: Array<{
+    id: string
+    attributeId: string
+    attribute: { id: string; key: string; name: string }
+    defaultAttribute: { id: string; key: string; name: string } | null
+    allowPlayerSelection: boolean
+  }>
+}
+
+type AcResult = {
+  total: number
+  armorClassName: string
+  fieldBreakdown: Array<{
+    fieldId: string
+    fieldName: string
+    value: number
+    editableByPlayer: boolean
+  }>
+  attributeModifierBreakdown: Array<{
+    acModifierId: string
+    attributeId: string
+    attributeKey: string
+    attributeName: string
+    allowPlayerSelection: boolean
+    selectedAttributeKey: string | null
+    selectedAttributeName: string | null
+    rawModifier: number
+    effectiveModifier: number
+  }>
 }

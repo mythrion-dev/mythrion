@@ -24,7 +24,8 @@ const sheetInclude = {
         include: { options: { orderBy: { order: 'asc' as const } } },
       },
       coreResources: { orderBy: { order: 'asc' as const } },
-      armorClass: {
+      armorClasses: {
+        orderBy: { createdAt: 'asc' as const },
         include: {
           attributeModifiers: {
             orderBy: { createdAt: 'asc' as const },
@@ -192,10 +193,10 @@ export class CharacterSheetService {
       }
     }
 
-    // Fetch AC config for this template
-    const armorClass = await this.prisma.templateArmorClass.findUnique({
-      where: { templateId: template.id },
-      include: { fields: true, attributeModifiers: true },
+    // Fetch AC configs for this template (all enabled)
+    const armorClasses = await this.prisma.templateArmorClass.findMany({
+      where: { templateId: template.id, enabled: true },
+      include: { fields: { orderBy: { order: 'asc' } }, attributeModifiers: true },
     })
 
     // Fetch resistance config for this template
@@ -229,26 +230,26 @@ export class CharacterSheetService {
             coreResourceId: cr.id,
           })),
         },
-        ...(armorClass?.enabled
+        acValues: armorClasses.some(ac => ac.fields.length > 0)
           ? {
-              acValues: armorClass.fields.length > 0
-                ? {
-                    create: armorClass.fields.map(f => ({
-                      fieldId: f.id,
-                      value: f.defaultValue,
-                    })),
-                  }
-                : undefined,
-              acAttributeValues: armorClass.attributeModifiers.length > 0
-                ? {
-                    create: armorClass.attributeModifiers.map(am => ({
-                      acAttributeModifierId: am.id,
-                      selectedAttributeId: am.allowPlayerSelection ? (am.defaultAttributeId ?? null) : null,
-                    })),
-                  }
-                : undefined,
+              create: armorClasses.flatMap(ac =>
+                ac.fields.map(f => ({
+                  fieldId: f.id,
+                  value: f.defaultValue,
+                }))
+              ),
             }
-          : {}),
+          : undefined,
+        acAttributeValues: armorClasses.some(ac => ac.attributeModifiers.length > 0)
+          ? {
+              create: armorClasses.flatMap(ac =>
+                ac.attributeModifiers.map(am => ({
+                  acAttributeModifierId: am.id,
+                  selectedAttributeId: am.allowPlayerSelection ? (am.defaultAttributeId ?? null) : null,
+                }))
+              ),
+            }
+          : undefined,
         resistanceValues: {
           create: resistances.map(r => ({
             resistanceId: r.id,
@@ -513,13 +514,13 @@ export class CharacterSheetService {
           template: {
             select: {
               attributes: true,
-              armorClass: { include: { fields: true } },
+              armorClasses: { include: { fields: true } },
             },
           },
         },
       })
       const templateAttrs = sheet?.template?.attributes ?? []
-      const acFields = sheet?.template?.armorClass?.fields ?? []
+      const acFields = sheet?.template?.armorClasses?.flatMap(ac => ac.fields) ?? []
 
       const summonAttrData = dto.summonAttributeValues ?? templateAttrs.map(a => ({ attributeId: a.id, value: '' }))
 

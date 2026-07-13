@@ -378,6 +378,7 @@ export type CharacterSheetCoreResourceValueScalarFieldEnum = (typeof CharacterSh
 export const TemplateArmorClassScalarFieldEnum = {
   id: 'id',
   templateId: 'templateId',
+  name: 'name',
   enabled: 'enabled',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -573,6 +574,7 @@ export type SummonAttributeScalarFieldEnum = (typeof SummonAttributeScalarFieldE
 export const SummonArmorClassValueScalarFieldEnum = {
   id: 'id',
   abilityId: 'abilityId',
+  armorClassId: 'armorClassId',
   fieldId: 'fieldId',
   value: 'value',
   createdAt: 'createdAt',

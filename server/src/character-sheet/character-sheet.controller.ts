@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   Req,
 } from '@nestjs/common'
@@ -298,7 +299,7 @@ export class CharacterSheetController {
   // ── Armor Class Calculation ──
 
   @Get(':id/armor-class')
-  getCalculatedArmorClass(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
-    return this.acService.calculateArmorClass(id)
+  getCalculatedArmorClass(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Query('armorClassId') armorClassId?: string) {
+    return this.acService.calculateArmorClass(id, armorClassId)
   }
 }

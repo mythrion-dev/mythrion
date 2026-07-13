@@ -13,7 +13,8 @@ const templateInclude = {
     include: { options: { orderBy: { order: 'asc' as const } } },
   },
   coreResources: { orderBy: { order: 'asc' as const } },
-  armorClass: {
+  armorClasses: {
+    orderBy: { createdAt: 'asc' as const },
     include: {
       attributeModifiers: {
         orderBy: { createdAt: 'asc' as const },
@@ -46,6 +47,7 @@ export class TemplateService {
     await this.membership.requireRole(adventureId, userId, 'GM')
 
     // Create the template with attributes and skills (initially without attribute links)
+    const armorClasses = dto.armorClasses ?? []
     const created = await this.prisma.template.create({
       data: {
         adventureId, name: dto.name, description: dto.description ?? null,
@@ -94,25 +96,24 @@ export class TemplateService {
             order: crIdx,
           })),
         },
-        ...(dto.armorClass?.enabled
+        armorClasses: armorClasses.length > 0
           ? {
-              armorClass: {
-                create: {
-                  enabled: true,
-                  fields: {
-                    create: (dto.armorClass.fields || []).map((f, fIdx) => ({
-                      name: f.name,
-                      key: f.key,
-                      defaultValue: f.defaultValue ?? '0',
-                      editableByPlayer: f.editableByPlayer ?? false,
-                      description: f.description ?? null,
-                      order: fIdx,
-                    })),
-                  },
+              create: armorClasses.filter(ac => ac.enabled).map(ac => ({
+                name: ac.name ?? 'Armor Class',
+                enabled: true,
+                fields: {
+                  create: (ac.fields || []).map((f, fIdx) => ({
+                    name: f.name,
+                    key: f.key,
+                    defaultValue: f.defaultValue ?? '0',
+                    editableByPlayer: f.editableByPlayer ?? false,
+                    description: f.description ?? null,
+                    order: fIdx,
+                  })),
                 },
-              },
+              })),
             }
-          : {}),
+          : undefined,
         characterSections: {
           create: (dto.characterSections || []).map((s, idx) => ({
             name: s.name.trim(),
@@ -142,32 +143,34 @@ export class TemplateService {
     const createdAttrs = await this.prisma.templateAttribute.findMany({ where: { templateId: created.id } })
     const attrKeyToId = new Map(createdAttrs.map(a => [a.key, a.id]))
 
-    // Post-create: resolve and create AC attribute modifiers
-    if (dto.armorClass?.enabled && dto.armorClass.attributeModifiers?.length) {
-      const ac = await this.prisma.templateArmorClass.findUnique({ where: { templateId: created.id } })
-      if (ac) {
-        const resolvedModifiers = dto.armorClass.attributeModifiers
-          .map(am => {
-            const resolvedAttrId = attrKeyToId.get(am.attributeId) ?? am.attributeId // treat as key first, fallback to raw ID
-            const resolvedDefaultId = am.defaultAttributeId ? (attrKeyToId.get(am.defaultAttributeId) ?? am.defaultAttributeId) : null
-            return { attributeId: resolvedAttrId, allowPlayerSelection: am.allowPlayerSelection ?? false, defaultAttributeId: resolvedDefaultId }
-          })
-          .filter(am => am.attributeId) // skip if we couldn't resolve
+    // Post-create: resolve and create AC attribute modifiers for each armor class
+    const createdAcs = await this.prisma.templateArmorClass.findMany({ where: { templateId: created.id }, orderBy: { createdAt: 'asc' } })
+    for (let i = 0; i < armorClasses.length; i++) {
+      const ac = armorClasses[i]
+      if (!ac.enabled || !ac.attributeModifiers?.length) continue
+      const createdAc = createdAcs.find(c => c.name === (ac.name ?? 'Armor Class'))
+      if (!createdAc) continue
+      const resolvedModifiers = ac.attributeModifiers
+        .map(am => {
+          const resolvedAttrId = attrKeyToId.get(am.attributeId) ?? am.attributeId
+          const resolvedDefaultId = am.defaultAttributeId ? (attrKeyToId.get(am.defaultAttributeId) ?? am.defaultAttributeId) : null
+          return { attributeId: resolvedAttrId, allowPlayerSelection: am.allowPlayerSelection ?? false, defaultAttributeId: resolvedDefaultId }
+        })
+        .filter(am => am.attributeId)
 
-        if (resolvedModifiers.length > 0) {
-          await this.prisma.templateArmorClass.update({
-            where: { id: ac.id },
-            data: {
-              attributeModifiers: {
-                create: resolvedModifiers.map(am => ({
-                  attributeId: am.attributeId,
-                  allowPlayerSelection: am.allowPlayerSelection,
-                  defaultAttributeId: am.defaultAttributeId,
-                })),
-              },
+      if (resolvedModifiers.length > 0) {
+        await this.prisma.templateArmorClass.update({
+          where: { id: createdAc.id },
+          data: {
+            attributeModifiers: {
+              create: resolvedModifiers.map(am => ({
+                attributeId: am.attributeId,
+                allowPlayerSelection: am.allowPlayerSelection,
+                defaultAttributeId: am.defaultAttributeId,
+              })),
             },
-          })
-        }
+          },
+        })
       }
     }
 
@@ -177,15 +180,11 @@ export class TemplateService {
         const skill = (created.templateSkills || []).find(sk => sk.name === s.name)
         if (!skill) continue
 
-        // Legacy: single attributeId
         const legacyAttrId = s.attributeId ? attrKeyToId.get(s.attributeId) ?? null : null
 
-        // Resolve allowedAttributeIds from keys to real IDs
         const allowedIds = (s.allowedAttributeIds || []).map(k => attrKeyToId.get(k)).filter(Boolean) as string[]
-        // If allowedAttributeIds not provided but legacy attributeId is, auto-populate
         const effectiveAllowed = allowedIds.length > 0 ? allowedIds : (legacyAttrId ? [legacyAttrId] : [])
 
-        // Resolve defaultAttributeId from key to real ID
         const defaultAttrId = s.defaultAttributeId
           ? (attrKeyToId.get(s.defaultAttributeId) ?? null)
           : (effectiveAllowed.length > 0 ? effectiveAllowed[0] : null)
@@ -201,7 +200,6 @@ export class TemplateService {
       }
     }
 
-    // Re-fetch to include updated attribute links
     return this.prisma.template.findUnique({ where: { id: created.id }, include: templateInclude })
   }
 
@@ -269,7 +267,8 @@ export class TemplateService {
     }
 
     // Pre-fetch all attributes for key->id resolution (used by both skills and AC)
-    const allAttrs = dto.skills || (dto.armorClass?.attributeModifiers)
+    const hasAcUpdates = dto.armorClasses && dto.armorClasses.some(ac => ac.attributeModifiers?.length)
+    const allAttrs = dto.skills || hasAcUpdates
       ? await this.prisma.templateAttribute.findMany({ where: { templateId: id } })
       : []
     const attrKeyToId = new Map(allAttrs.map(a => [a.key, a.id]))
@@ -366,29 +365,47 @@ export class TemplateService {
       }
     }
 
-    // Handle Armor Class
-    if (dto.armorClass) {
-      const existingAC = await this.prisma.templateArmorClass.findUnique({ where: { templateId: id }, include: { fields: true } })
+    // Handle Armor Classes (multi-AC)
+    if (dto.armorClasses) {
+      const existingAcs = await this.prisma.templateArmorClass.findMany({
+        where: { templateId: id },
+        include: { fields: true },
+      })
 
-      if (dto.armorClass.enabled === false) {
-        // Disable: remove the AC config entirely
-        if (existingAC) {
-          await this.prisma.templateArmorClass.delete({ where: { templateId: id } })
+      // Delete ACs that are no longer in the list (match by name)
+      const newAcNames = dto.armorClasses.map(ac => ac.name?.trim() ?? 'Armor Class')
+      const acsToDelete = existingAcs.filter(ac => !newAcNames.includes(ac.name))
+      if (acsToDelete.length > 0) {
+        await this.prisma.templateArmorClass.deleteMany({
+          where: { id: { in: acsToDelete.map(ac => ac.id) } },
+        })
+      }
+
+      for (const acDef of dto.armorClasses) {
+        const acName = acDef.name?.trim() ?? 'Armor Class'
+        const existingAC = existingAcs.find(ac => ac.name === acName)
+
+        if (acDef.enabled === false) {
+          if (existingAC) {
+            await this.prisma.templateArmorClass.delete({ where: { id: existingAC.id } })
+          }
+          continue
         }
-      } else if (dto.armorClass.enabled === true || dto.armorClass.attributeModifiers !== undefined || dto.armorClass.fields) {
+
         if (existingAC) {
-          // Update existing
+          // Update existing AC
           await this.prisma.templateArmorClass.update({
-            where: { templateId: id },
+            where: { id: existingAC.id },
             data: {
-              ...(dto.armorClass.enabled !== undefined && { enabled: dto.armorClass.enabled }),
+              name: acName,
+              ...(acDef.enabled !== undefined && { enabled: acDef.enabled }),
             },
           })
 
           // Handle attribute modifiers
-          if (dto.armorClass.attributeModifiers) {
+          if (acDef.attributeModifiers) {
             await this.prisma.armorClassAttributeModifier.deleteMany({ where: { armorClassId: existingAC.id } })
-            for (const am of dto.armorClass.attributeModifiers) {
+            for (const am of acDef.attributeModifiers) {
               const resolvedAttrId = attrKeyToId.get(am.attributeId) ?? am.attributeId
               const resolvedDefaultId = am.defaultAttributeId ? (attrKeyToId.get(am.defaultAttributeId) ?? am.defaultAttributeId) : null
               if (!resolvedAttrId) continue
@@ -403,16 +420,17 @@ export class TemplateService {
             }
           }
 
-          if (dto.armorClass.fields) {
+          // Handle fields
+          if (acDef.fields) {
             const existingFields = existingAC.fields
-            const newFieldKeys = dto.armorClass.fields.map(f => f.key?.trim() ?? '')
+            const newFieldKeys = acDef.fields.map(f => f.key?.trim() ?? '')
             const existingFieldKeys = existingFields.map(f => f.key)
             const fieldKeysToDelete = existingFieldKeys.filter(k => !newFieldKeys.includes(k))
             if (fieldKeysToDelete.length) {
               await this.prisma.armorClassField.deleteMany({ where: { armorClassId: existingAC.id, key: { in: fieldKeysToDelete } } })
             }
-            for (let fIdx = 0; fIdx < dto.armorClass.fields.length; fIdx++) {
-              const f = dto.armorClass.fields[fIdx]; const key = f.key?.trim() ?? ''
+            for (let fIdx = 0; fIdx < acDef.fields.length; fIdx++) {
+              const f = acDef.fields[fIdx]; const key = f.key?.trim() ?? ''
               if (!key) continue
               const existingF = existingFields.find(ef => ef.key === key)
               if (existingF) {
@@ -453,7 +471,7 @@ export class TemplateService {
           }
         } else {
           // Create new AC for existing template
-          const resolvedModifiers = (dto.armorClass.attributeModifiers || [])
+          const resolvedModifiers = (acDef.attributeModifiers || [])
             .map(am => {
               const resolvedAttrId = attrKeyToId.get(am.attributeId) ?? am.attributeId
               const resolvedDefaultId = am.defaultAttributeId ? (attrKeyToId.get(am.defaultAttributeId) ?? am.defaultAttributeId) : null
@@ -461,10 +479,11 @@ export class TemplateService {
             })
             .filter(am => am.attributeId)
 
-          await this.prisma.templateArmorClass.create({
+          const newAC = await this.prisma.templateArmorClass.create({
             data: {
               templateId: id,
-              enabled: dto.armorClass.enabled ?? true,
+              name: acName,
+              enabled: acDef.enabled ?? true,
               attributeModifiers: resolvedModifiers.length > 0
                 ? {
                     create: resolvedModifiers.map(am => ({
@@ -475,7 +494,7 @@ export class TemplateService {
                   }
                 : undefined,
               fields: {
-                create: (dto.armorClass.fields || []).map((f, fIdx) => ({
+                create: (acDef.fields || []).map((f, fIdx) => ({
                   name: f.name ?? f.key?.trim() ?? '',
                   key: f.key?.trim() ?? '',
                   defaultValue: f.defaultValue ?? '0',
@@ -486,6 +505,21 @@ export class TemplateService {
               },
             },
           })
+
+          // Auto-create values for new AC on existing sheets
+          if (acDef.fields && acDef.fields.length > 0) {
+            const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
+            const newFields = await this.prisma.armorClassField.findMany({ where: { armorClassId: newAC.id } })
+            for (const sheet of sheets) {
+              for (const field of newFields) {
+                await this.prisma.characterSheetArmorClassValue.upsert({
+                  where: { sheetId_fieldId: { sheetId: sheet.id, fieldId: field.id } },
+                  create: { sheetId: sheet.id, fieldId: field.id, value: field.defaultValue },
+                  update: {},
+                })
+              }
+            }
+          }
         }
       }
     }
@@ -496,12 +530,10 @@ export class TemplateService {
         where: { templateId: id },
       })
       const existingIds = existingSections.map(e => e.id)
-      // Build a Set of IDs that are being kept (matched by id or name)
       const keptIds = new Set<string>()
       for (let idx = 0; idx < dto.characterSections.length; idx++) {
         const s = dto.characterSections[idx]; const name = s.name.trim()
         if (!name) continue
-        // Match by explicit id first (supports renames), fall back to name
         let existing: typeof existingSections[number] | undefined
         if (s.id) {
           existing = existingSections.find(e => e.id === s.id)
@@ -522,7 +554,6 @@ export class TemplateService {
           keptIds.add(created.id)
         }
       }
-      // Delete sections that are no longer referenced
       const idsToDelete = existingIds.filter(eid => !keptIds.has(eid))
       if (idsToDelete.length) {
         await this.prisma.templateCharacterSection.deleteMany({ where: { id: { in: idsToDelete } } })
@@ -570,7 +601,6 @@ export class TemplateService {
               order: crIdx,
             },
           })
-          // Auto-create values (empty) on existing sheets for the new resource
           const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
           for (const sheet of sheets) {
             await this.prisma.characterSheetCoreResourceValue.upsert({
@@ -597,13 +627,11 @@ export class TemplateService {
         const name = r.name?.trim()
         if (!name) continue
 
-        // Match by explicit id first, fall back to index
         let existing: typeof existingResistances[number] | undefined
         if (r.id) {
           existing = existingResistances.find(e => e.id === r.id)
         }
         if (!existing) {
-          // Try matching by position (for resistances created in this batch)
           existing = existingResistances.find(e => !keptResistanceIds.has(e.id))
         }
 
@@ -618,7 +646,6 @@ export class TemplateService {
             },
           })
 
-          // Handle components
           if (r.components) {
             const existingComps = existing.components
             const keptCompIds = new Set<string>()
@@ -655,7 +682,6 @@ export class TemplateService {
                   },
                 })
                 keptCompIds.add(newComp.id)
-                // Auto-create values for new component on existing sheets
                 const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
                 for (const sheet of sheets) {
                   await this.prisma.characterSheetResistanceComponentValue.upsert({
@@ -666,16 +692,13 @@ export class TemplateService {
                 }
               }
             }
-            // Delete removed components
             const compIdsToDelete = existingComps.filter(ec => !keptCompIds.has(ec.id)).map(ec => ec.id)
             if (compIdsToDelete.length) {
               await this.prisma.resistanceComponent.deleteMany({ where: { id: { in: compIdsToDelete } } })
             }
           }
 
-          // Handle attribute modifiers
           if (r.attributeModifiers) {
-            // Delete all existing modifiers and recreate
             await this.prisma.resistanceAttributeModifier.deleteMany({ where: { resistanceId: existing.id } })
             for (const am of r.attributeModifiers) {
               await this.prisma.resistanceAttributeModifier.create({
@@ -688,7 +711,6 @@ export class TemplateService {
             }
           }
         } else {
-          // Create new resistance
           const newResistance = await this.prisma.templateResistance.create({
             data: {
               templateId: id,
@@ -707,7 +729,6 @@ export class TemplateService {
           })
           keptResistanceIds.add(newResistance.id)
 
-          // Create attribute modifiers for new resistance
           if (r.attributeModifiers) {
             for (const am of r.attributeModifiers) {
               await this.prisma.resistanceAttributeModifier.create({
@@ -720,7 +741,6 @@ export class TemplateService {
             }
           }
 
-          // Auto-create sheet values for new resistance and its components
           const sheets = await this.prisma.characterSheet.findMany({ where: { templateId: id }, select: { id: true } })
           for (const sheet of sheets) {
             await this.prisma.characterSheetResistanceValue.upsert({
@@ -740,7 +760,6 @@ export class TemplateService {
         }
       }
 
-      // Delete resistances that are no longer referenced
       const resistanceIdsToDelete = existingResistanceIds.filter(id => !keptResistanceIds.has(id))
       if (resistanceIdsToDelete.length) {
         await this.prisma.templateResistance.deleteMany({ where: { id: { in: resistanceIdsToDelete } } })

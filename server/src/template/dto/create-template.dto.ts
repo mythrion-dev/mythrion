@@ -181,6 +181,10 @@ export class ArmorClassDefDto {
   @IsBoolean()
   enabled!: boolean
 
+  @IsString()
+  @IsOptional()
+  name?: string
+
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
@@ -237,10 +241,11 @@ export class CreateTemplateDto {
   @Type(() => CoreResourceDefDto)
   coreResources?: CoreResourceDefDto[]
 
-  @ValidateNested()
+  @IsArray()
+  @ValidateNested({ each: true })
   @IsOptional()
   @Type(() => ArmorClassDefDto)
-  armorClass?: ArmorClassDefDto
+  armorClasses?: ArmorClassDefDto[]
 
   @IsBoolean()
   @IsOptional()

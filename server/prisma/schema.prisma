@@ -132,7 +132,7 @@ model Template {
   templateSkills           TemplateSkill[]
   skillModifierProfiles    SkillModifierProfile[]
   coreResources            TemplateCoreResource[]
-  armorClass               TemplateArmorClass?
+  armorClasses             TemplateArmorClass[]
   characterSections        TemplateCharacterSection[]
   resistances              TemplateResistance[]
   characterSheets          CharacterSheet[]
@@ -394,13 +394,17 @@ model CharacterSheetCoreResourceValue {
 
 model TemplateArmorClass {
   id                  String                          @id @default(cuid())
-  templateId          String                          @unique
+  templateId          String
   template            Template                        @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  name                String                          @default("Armor Class")
   enabled             Boolean                         @default(false)
   attributeModifiers  ArmorClassAttributeModifier[]
   fields              ArmorClassField[]
+  summonAcValues      SummonArmorClassValue[]
   createdAt           DateTime                        @default(now())
   updatedAt           DateTime                        @updatedAt
+
+  @@index([templateId])
 }
 
 model ArmorClassField {
@@ -649,17 +653,20 @@ model SummonAttribute {
 // ── Summon Armor Class Values (reuses template AC fields) ──
 
 model SummonArmorClassValue {
-  id        String           @id @default(cuid())
-  abilityId String
-  ability   CharacterAbility @relation(fields: [abilityId], references: [id], onDelete: Cascade)
-  fieldId   String
-  field     ArmorClassField  @relation(fields: [fieldId], references: [id], onDelete: Cascade)
-  value     String           @default("0")
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  id           String              @id @default(cuid())
+  abilityId    String
+  ability      CharacterAbility    @relation(fields: [abilityId], references: [id], onDelete: Cascade)
+  armorClassId String?
+  armorClass   TemplateArmorClass? @relation(fields: [armorClassId], references: [id], onDelete: SetNull)
+  fieldId      String
+  field        ArmorClassField     @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  value        String              @default("0")
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
   @@unique([abilityId, fieldId])
   @@index([abilityId])
+  @@index([armorClassId])
 }
 
 // ── Summon Health ──
