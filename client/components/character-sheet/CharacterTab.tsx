@@ -115,7 +115,84 @@ export function CharacterTab(props: CharacterTabProps) {
   return (
     <div className="space-y-8">
       {/* ─────────────────────────────── */}
-      {/* Row 1: Point Pools + Armor Class */}
+      {/* Row 1: Character Information     */}
+      {/* ─────────────────────────────── */}
+      {hasFields && (
+        <div className="card !p-6">
+          <div className="flex items-center gap-2 mb-5">
+            <h3 className="font-semibold text-foreground">Character Information</h3>
+            <svg className="w-4 h-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+            </svg>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+            {sheet.fieldValues.map(fv => (
+              <div
+                key={fv.id}
+                className="flex items-center justify-between py-2.5 px-4 rounded-lg bg-background/40 border border-border/60"
+              >
+                <span className="text-sm text-muted font-medium">{fv.templateField.label}</span>
+                {isOwner ? (
+                  <InlineText
+                    value={fv.value}
+                    onSave={(v) => saveFieldValue(fv.templateFieldId, v)}
+                    className="text-sm font-semibold text-foreground text-right"
+                  />
+                ) : (
+                  <span className="text-sm font-semibold text-foreground text-right">{fv.value || '—'}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────── */}
+      {/* Row 2: Attributes                */}
+      {/* ─────────────────────────────── */}
+      {hasAttributes && (
+        <div className="card !p-6">
+          <div className="flex items-center gap-2 mb-5">
+            <h3 className="font-semibold text-foreground">Attributes</h3>
+            {modifiersEnabled && sheet.template.attributeModifierFormula && (
+              <span className="badge-gold text-[0.6rem] px-1.5 py-0.5 rounded">mod</span>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
+            {sheet.template.attributes.map(attr => {
+              const val = sheet.values.find(v => v.attributeId === attr.id)
+              const modResult = modifierResults[attr.id]
+              return (
+                <div
+                  key={attr.id}
+                  className="flex items-center justify-between py-2.5 px-4 rounded-lg bg-background/40 border border-border/60"
+                >
+                  <span className="text-sm font-medium text-foreground">{attr.name}</span>
+                  <div className="flex items-center gap-3">
+                    {isOwner ? (
+                      <InlineText
+                        value={val?.value ?? ''}
+                        onSave={(v) => saveAttributeValue(attr.id, v)}
+                        className="text-sm font-semibold text-foreground tabular-nums text-right"
+                      />
+                    ) : (
+                      <span className="text-sm font-semibold text-foreground tabular-nums">{val?.value || '—'}</span>
+                    )}
+                    {modifiersEnabled && modResult !== undefined && modResult !== null && (
+                      <span className="text-sm font-semibold tabular-nums text-primary min-w-[2.5rem] text-right">
+                        ({modResult >= 0 ? '+' : ''}{modResult})
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────── */}
+      {/* Row 3: Point Pools + Armor Class */}
       {/* ─────────────────────────────── */}
       {(hasResources || hasArmor) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
@@ -313,83 +390,6 @@ export function CharacterTab(props: CharacterTabProps) {
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* ─────────────────────────────── */}
-      {/* Row 2: Character Information     */}
-      {/* ─────────────────────────────── */}
-      {hasFields && (
-        <div className="card !p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <h3 className="font-semibold text-foreground">Character Information</h3>
-            <svg className="w-4 h-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-            </svg>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-            {sheet.fieldValues.map(fv => (
-              <div
-                key={fv.id}
-                className="flex items-center justify-between py-2.5 px-4 rounded-lg bg-background/40 border border-border/60"
-              >
-                <span className="text-sm text-muted font-medium">{fv.templateField.label}</span>
-                {isOwner ? (
-                  <InlineText
-                    value={fv.value}
-                    onSave={(v) => saveFieldValue(fv.templateFieldId, v)}
-                    className="text-sm font-semibold text-foreground text-right"
-                  />
-                ) : (
-                  <span className="text-sm font-semibold text-foreground text-right">{fv.value || '—'}</span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ─────────────────────────────── */}
-      {/* Row 3: Attributes                */}
-      {/* ─────────────────────────────── */}
-      {hasAttributes && (
-        <div className="card !p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <h3 className="font-semibold text-foreground">Attributes</h3>
-            {modifiersEnabled && sheet.template.attributeModifierFormula && (
-              <span className="badge-gold text-[0.6rem] px-1.5 py-0.5 rounded">mod</span>
-            )}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
-            {sheet.template.attributes.map(attr => {
-              const val = sheet.values.find(v => v.attributeId === attr.id)
-              const modResult = modifierResults[attr.id]
-              return (
-                <div
-                  key={attr.id}
-                  className="flex items-center justify-between py-2.5 px-4 rounded-lg bg-background/40 border border-border/60"
-                >
-                  <span className="text-sm font-medium text-foreground">{attr.name}</span>
-                  <div className="flex items-center gap-3">
-                    {isOwner ? (
-                      <InlineText
-                        value={val?.value ?? ''}
-                        onSave={(v) => saveAttributeValue(attr.id, v)}
-                        className="text-sm font-semibold text-foreground tabular-nums text-right"
-                      />
-                    ) : (
-                      <span className="text-sm font-semibold text-foreground tabular-nums">{val?.value || '—'}</span>
-                    )}
-                    {modifiersEnabled && modResult !== undefined && modResult !== null && (
-                      <span className="text-sm font-semibold tabular-nums text-primary min-w-[2.5rem] text-right">
-                        ({modResult >= 0 ? '+' : ''}{modResult})
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
         </div>
       )}
 
