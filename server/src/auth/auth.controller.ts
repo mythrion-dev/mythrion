@@ -6,12 +6,14 @@ import { OnboardingDto } from './dto/onboarding.dto.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
 import { AuthGuard } from '@nestjs/passport'
 import { RateLimit } from './rate-limit.decorator.js'
+import { RateLimitGuard } from './rate-limit.guard.js'
 import type { AuthenticatedRequest } from './AuthenticatedRequest.js'
 import type { Response } from 'express'
 
 const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:3001'
 
 @Controller('auth')
+@UseGuards(RateLimitGuard)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
