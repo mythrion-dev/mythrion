@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
@@ -19,8 +19,23 @@ export function Sidebar() {
   const router = useRouter()
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
   const searchParams = useSearchParams()
   const currentTab = searchParams.get('tab')
+
+  // Persist collapse state
+  useEffect(() => {
+    const saved = localStorage.getItem('sidebar_collapsed')
+    if (saved === 'true') setCollapsed(true)
+  }, [])
+
+  function toggleCollapsed() {
+    setCollapsed(prev => {
+      const next = !prev
+      localStorage.setItem('sidebar_collapsed', String(next))
+      return next
+    })
+  }
 
   const isActive = (href: string) => {
     const tab = href.split('tab=')[1] ?? null
@@ -64,53 +79,70 @@ export function Sidebar() {
   ]
 
   const sidebarContent = (
-    <div className="flex flex-col h-full p-4">
+    <div className={`flex flex-col h-full p-3 transition-all duration-300 ${collapsed ? 'items-center' : 'p-4'}`}>
       {/* Logo */}
       <Link
         href="/dashboard"
-        className="text-xl font-semibold text-gradient tracking-tight"
+        className={`text-xl font-semibold text-gradient tracking-tight transition-all duration-300 ${collapsed ? 'text-sm w-8 h-8 flex items-center justify-center' : ''}`}
         onClick={() => setMobileOpen(false)}
+        title="Dashboard"
       >
-        Mythrion
+        {collapsed ? 'M' : 'Mythrion'}
       </Link>
-      <hr className="divider my-4" />
+      <hr className={`divider my-4 transition-all duration-300 ${collapsed ? 'my-3 w-8 mx-auto' : ''}`} />
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1">
+      <nav className="flex-1 space-y-1 w-full">
         {navLinks.map((link) => (
           <Link
             key={link.href}
             href={link.href}
-            className={`sidebar-link ${isActive(link.href) ? 'sidebar-link-active' : ''}`}
+            className={`sidebar-link ${isActive(link.href) ? 'sidebar-link-active' : ''} ${collapsed ? 'justify-center px-0' : ''}`}
             onClick={() => setMobileOpen(false)}
+            title={collapsed ? link.label : undefined}
           >
             {link.icon}
-            <span>{link.label}</span>
+            {!collapsed && <span>{link.label}</span>}
           </Link>
         ))}
       </nav>
 
+      {/* Collapse toggle (desktop only) */}
+      <button
+        onClick={toggleCollapsed}
+        className={`hidden md:flex items-center justify-center w-full rounded-lg text-muted hover:text-foreground hover:bg-background/40 transition-colors mb-2 ${collapsed ? 'h-8 w-8 mx-auto' : 'h-8 gap-2'}`}
+        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        <svg className={`w-3.5 h-3.5 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+        </svg>
+        {!collapsed && <span className="text-xs">Collapse</span>}
+      </button>
+
       {/* User section */}
-      <div className="pt-4 border-t border-border space-y-3">
-        <div className="flex items-center gap-3">
+      <div className={`pt-4 border-t border-border space-y-3 w-full transition-all duration-300 ${collapsed ? 'pt-3 flex flex-col items-center' : ''}`}>
+        <div className={`flex items-center gap-3 ${collapsed ? 'flex-col' : ''}`}>
           <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-xs font-bold text-primary shrink-0">
             {getInitials(user?.displayName ?? null)}
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-foreground truncate">
-              {user?.displayName ?? 'User'}
-            </p>
-            <p className="text-xs text-muted truncate">{user?.email}</p>
-          </div>
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-foreground truncate">
+                {user?.displayName ?? 'User'}
+              </p>
+              <p className="text-xs text-muted truncate">{user?.email}</p>
+            </div>
+          )}
         </div>
         <button
           onClick={handleLogout}
-          className="btn-ghost text-xs w-full justify-start"
+          className={`btn-ghost text-xs ${collapsed ? 'w-8 h-8 flex items-center justify-center p-0' : 'w-full justify-start'}`}
+          title="Sign out"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
-          Sign out
+          {!collapsed && 'Sign out'}
         </button>
       </div>
     </div>
@@ -147,11 +179,12 @@ export function Sidebar() {
       {/* Sidebar — persistent on desktop, overlay on mobile */}
       <aside
         className={`
-          fixed md:sticky top-0 left-0 z-40 h-full w-60
+          fixed md:sticky top-0 left-0 z-40 h-full overflow-hidden
           bg-background border-r border-border flex flex-col
-          transition-transform duration-300 ease-in-out
+          transition-all duration-300 ease-in-out
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0
+          ${collapsed ? 'w-16' : 'w-60'}
         `}
       >
         {sidebarContent}
