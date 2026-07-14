@@ -14,8 +14,9 @@ export function DeleteModal({
   onConfirm: () => void
 }) {
   return (
-    <div className="glass-panel animate-fade-in">
-      <div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20">
+    <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
+      <div className="absolute inset-0 bg-black/50" />
+      <div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20 relative z-10">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center">
             <svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
