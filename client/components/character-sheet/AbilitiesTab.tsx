@@ -36,8 +36,8 @@ export function AbilitiesTab({
   setSelectedLevels: React.Dispatch<React.SetStateAction<Record<string, string>>>
   showNewAbility: boolean; setShowNewAbility: React.Dispatch<React.SetStateAction<boolean>>
   newAbilityType: 'ABILITY' | 'SUMMON' | null; setNewAbilityType: React.Dispatch<React.SetStateAction<'ABILITY' | 'SUMMON' | null>>
-  newAbility: { name: string; description: string; manaCost: string; range: string; notes: string; damage: string }
-  setNewAbility: React.Dispatch<React.SetStateAction<{ name: string; description: string; manaCost: string; range: string; notes: string; damage: string }>>
+  newAbility: { name: string; description: string; manaCost: string; range: string; notes: string; damage: string; level: string }
+  setNewAbility: React.Dispatch<React.SetStateAction<{ name: string; description: string; manaCost: string; range: string; notes: string; damage: string; level: string }>>
   abilitySaving: boolean; abilityError: string | null
   handleCreateAbility: (e: FormEvent) => Promise<void>; resetNewAbility: () => void
   handleDeleteAbility: (aid: string) => Promise<void>
@@ -788,7 +788,7 @@ export function AbilitiesTab({
                                 ) : (
                                   <button
                                     type="button"
-                                    onClick={() => { setShowNewSummonAbility(a.id); setNewAbility({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '' }) }}
+                                    onClick={() => { setShowNewSummonAbility(a.id); setNewAbility({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '', level: '' }) }}
                                     className="btn-ghost text-xs"
                                   >
                                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -871,7 +871,11 @@ export function AbilitiesTab({
                 <label htmlFor="new-ability-desc" className="label">Description</label>
                 <textarea id="new-ability-desc" className="input-field resize-none" rows={2} value={newAbility.description} onChange={e => setNewAbility(p => ({ ...p, description: e.target.value }))} placeholder="Throws a fireball causing area damage." />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="new-ability-level" className="label">Level</label>
+                  <input id="new-ability-level" type="number" min={1} className="input-field" value={newAbility.level} onChange={e => setNewAbility(p => ({ ...p, level: e.target.value }))} placeholder="1" />
+                </div>
                 <div>
                   <label htmlFor="new-ability-mana" className="label">Mana Cost</label>
                   <input id="new-ability-mana" type="number" className="input-field" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder="20" />

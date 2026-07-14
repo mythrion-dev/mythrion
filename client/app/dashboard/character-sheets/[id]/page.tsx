@@ -33,7 +33,7 @@ export default function CharacterSheetDetailPage() {
   const [abilities, setAbilities] = useState<Ability[]>([]); const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]); const [story, setStory] = useState<Story | null>(null)
   const [selectedLevels, setSelectedLevels] = useState<Record<string, string>>({})
   const [showNewAbility, setShowNewAbility] = useState(false); const [newAbilityType, setNewAbilityType] = useState<'ABILITY' | 'SUMMON' | null>(null)
-  const [newAbility, setNewAbility] = useState({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '' })
+  const [newAbility, setNewAbility] = useState({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '', level: '' })
   const [abilitySaving, setAbilitySaving] = useState(false); const [abilityError, setAbilityError] = useState<string | null>(null)
   const [showAddLevelModal, setShowAddLevelModal] = useState<string | null>(null)
   const [newLevelForm, setNewLevelForm] = useState<{ level: number | string; copyFromPrevious: boolean }>({ level: 2, copyFromPrevious: true })
@@ -396,10 +396,7 @@ export default function CharacterSheetDetailPage() {
       const selMap: Record<string, Record<string, string | null>> = {}; d.skillProfileValues.forEach(spv => { if (!selMap[spv.skillId]) selMap[spv.skillId] = {}; selMap[spv.skillId][spv.profileId] = spv.optionId }); setProfileSelections(selMap)
       setAbilities(d.abilities || []); setInventoryItems(d.inventoryItems || []); setStory(d.story || null)
       setSectionEntries(d.sectionEntries || [])
-      // Expand first ability by default
-      if (d.abilities && d.abilities.length > 0) {
-        setExpandedAbilities({ [d.abilities[0].id]: true })
-      }
+      // All abilities start collapsed
       // Initialize summon tabs
       const st: Record<string, SummonTab> = {}
       d.abilities.forEach(a => { if (a.type === 'SUMMON') { st[a.id] = 'stats' } })
@@ -714,7 +711,7 @@ export default function CharacterSheetDetailPage() {
 
   async function handleDeleteAbility(abilityId: string) { if (!sheet) return; try { await api.delete(`/character-sheets/${sheet.id}/abilities/${abilityId}`); setAbilities(p => p.filter(a => a.id !== abilityId).map(a => ({ ...a, childAbilities: (a.childAbilities ?? []).filter(c => c.id !== abilityId) }))) } catch {} }
 
-  function resetNewAbility() { setShowNewAbility(false); setNewAbility({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '' }); setNewAbilityType(null); setAbilityError(null) }
+  function resetNewAbility() { setShowNewAbility(false); setNewAbility({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '', level: '' }); setNewAbilityType(null); setAbilityError(null) }
   async function handleCreateAbility(e: FormEvent) { e.preventDefault(); if (!newAbility.name.trim() || !sheet) return; setAbilitySaving(true)
     try {
       const body: Record<string, unknown> = { name: newAbility.name.trim(), type: newAbilityType ?? 'ABILITY', description: newAbility.description.trim() || undefined, notes: newAbility.notes.trim() || undefined }
@@ -722,6 +719,7 @@ export default function CharacterSheetDetailPage() {
         body.manaCost = newAbility.manaCost.trim() ? parseInt(newAbility.manaCost, 10) : undefined
         body.range = newAbility.range.trim() || undefined
         body.damage = newAbility.damage.trim() || undefined
+        body.level = newAbility.level.trim() ? parseInt(newAbility.level, 10) : undefined
       }
       const a = await api.post<Ability>(`/character-sheets/${sheet.id}/abilities`, body)
       setAbilities(p => [...p, a])
