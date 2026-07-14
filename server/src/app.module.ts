@@ -8,8 +8,9 @@ import { AdventureModule } from './adventure/adventure.module.js';
 import { TemplateModule } from './template/template.module.js';
 import { CharacterSheetModule } from './character-sheet/character-sheet.module.js';
 import { FormulaModule } from './formula/formula.module.js';
+import { ImageModule } from './image/image.module.js';
 @Module({
-  imports: [AuthModule, AdventureModule, TemplateModule, CharacterSheetModule, FormulaModule],
+  imports: [AuthModule, AdventureModule, TemplateModule, CharacterSheetModule, FormulaModule, ImageModule],
   controllers: [AppController, HealthController],
   providers: [AppService, PrismaService],
   exports: [PrismaService],

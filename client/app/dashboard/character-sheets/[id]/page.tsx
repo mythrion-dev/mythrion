@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { api } from '@/lib/api'
+import { api, API_URL, getAccessToken } from '@/lib/api'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import ResistanceTab from './resistance-tab'
 import { StoryTab, CharacterTab, InventoryTab, PersonalAbilitiesTab, AbilitiesTab } from '@/components/character-sheet'
@@ -19,6 +19,8 @@ export default function CharacterSheetDetailPage() {
   const [skillResults, setSkillResults] = useState<Record<string, number | null>>({})
   const [acResults, setAcResults] = useState<AcResultMap>({})
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const avatarServerUrl = API_URL + `/images/character-sheets/${id}/avatar`
   const [confirmDelete, setConfirmDelete] = useState(false); const [deleting, setDeleting] = useState(false); const [deleteError, setDeleteError] = useState<string | null>(null)
   const [profileSelections, setProfileSelections] = useState<Record<string, Record<string, string | null>>>({})
   const profileSelectionsRef = useRef(profileSelections)
@@ -435,6 +437,11 @@ export default function CharacterSheetDetailPage() {
       }
       setSummonModifierResults(summonMods); setSummonAcResults(summonAc)
       setSummonSkillResults(summonSkills)
+      // Check if an avatar exists on the server
+      try {
+        const avatarRes = await fetch(avatarServerUrl, { method: 'HEAD' })
+        if (avatarRes.ok && avatarRes.status !== 204) setAvatarUrl(avatarServerUrl + '?t=' + Date.now())
+      } catch { /* no avatar */ }
     } catch (e: unknown) { if ((e as { statusCode?: number }).statusCode === 401 || (e as { statusCode?: number }).statusCode === 403) router.replace('/login') }
     finally { setFetching(false) }
   }, [id, router, computeModifiers, computeSkills, computeAC, computeSummonModifiers, computeSummonAC, computeSummonSkills])
@@ -795,6 +802,38 @@ export default function CharacterSheetDetailPage() {
 
   async function handleDelete() { setDeleting(true); try { await api.delete(`/character-sheets/${id}`); router.push('/dashboard?tab=character-sheets') } catch (err) { setDeleteError(err instanceof Error ? err.message : 'Failed to delete'); setDeleting(false); setConfirmDelete(false) } }
 
+  async function handleAvatarUpload(file: File) {
+    if (!file || !sheet) return
+    setAvatarUploading(true)
+    try {
+      const token = getAccessToken()
+      const formData = new FormData()
+      formData.append('avatar', file)
+      const res = await fetch(avatarServerUrl, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      })
+      if (res.ok) {
+        // Bust cache by appending a timestamp
+        setAvatarUrl(avatarServerUrl + '?t=' + Date.now())
+      }
+    } catch { /* upload failed */ }
+    finally { setAvatarUploading(false) }
+  }
+
+  async function handleAvatarDelete() {
+    if (!sheet) return
+    try {
+      const token = getAccessToken()
+      await fetch(avatarServerUrl, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : {},
+      })
+      setAvatarUrl(null)
+    } catch { /* delete failed */ }
+  }
+
   if (fetching) return <div className="flex items-center justify-center py-20"><div className="flex flex-col items-center gap-3 text-muted-foreground"><div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"/><span className="text-sm">Loading...</span></div></div>
   if (!sheet) return <div className="flex items-center justify-center py-20"><div className="text-sm text-muted-foreground">Character sheet not found.</div></div>
 
@@ -816,7 +855,30 @@ export default function CharacterSheetDetailPage() {
       <div className="card !p-6 space-y-4">
         <div className="flex gap-4">
           <div className="shrink-0">
-            {avatarUrl ? <img src={avatarUrl} alt="Avatar" className="w-20 h-20 rounded-lg object-cover border border-border"/> : isOwner ? <label className="w-20 h-20 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/30 transition-colors"><span className="text-2xl text-muted">+</span><input type="file" accept="image/*" className="hidden" onChange={e=>{const f=e.target.files?.[0];if(f)setAvatarUrl(URL.createObjectURL(f))}}/></label> : null}
+            {avatarUrl ? (
+              <div className="relative group">
+                <img src={avatarUrl} alt="Avatar" className="w-20 h-20 rounded-lg object-cover border border-border" />
+                {isOwner && (
+                  <button
+                    type="button"
+                    onClick={handleAvatarDelete}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-danger text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remove avatar"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                )}
+              </div>
+            ) : isOwner ? (
+              <label className={`w-20 h-20 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/30 transition-colors ${avatarUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                {avatarUploading ? (
+                  <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                ) : (
+                  <span className="text-2xl text-muted">+</span>
+                )}
+                <input type="file" accept="image/*" className="hidden" disabled={avatarUploading} onChange={e=>{const f=e.target.files?.[0];if(f)handleAvatarUpload(f)}}/>
+              </label>
+            ) : null}
           </div>
           <div className="flex-1 min-w-0">
             {isOwner ? <InlineText value={sheet.characterName} onSave={saveCharacterName} maxLength={100} className="text-2xl font-bold text-gradient truncate block" /> : <h1 className="text-2xl font-bold text-gradient truncate">{sheet.characterName}</h1>}
