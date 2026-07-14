@@ -296,6 +296,24 @@ export class CharacterSheetController {
     return this.resistanceService.calculateSingleResistance(id, resistanceId)
   }
 
+  @Post(':id/resistances')
+  createResistance(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: { name: string; calculationType: 'MANUAL' | 'CALCULATED'; components?: { name: string; editableByPlayer?: boolean; defaultValue?: string }[]; attributeModifiers?: { attributeId: string; enabled?: boolean }[] },
+  ) {
+    return this.sheetService.createResistance(id, req.user.sub, dto)
+  }
+
+  @Delete(':id/resistances/:resistanceId')
+  removeResistance(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('resistanceId') resistanceId: string,
+  ) {
+    return this.sheetService.removeResistance(id, resistanceId, req.user.sub)
+  }
+
   // ── Armor Class Calculation ──
 
   @Get(':id/armor-class')

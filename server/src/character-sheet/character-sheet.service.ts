@@ -907,6 +907,73 @@ export class CharacterSheetService {
     return this.prisma.characterSectionEntry.delete({ where: { id: entryId } })
   }
 
+  async createResistance(
+    sheetId: string,
+    userId: string,
+    dto: { name: string; calculationType: 'MANUAL' | 'CALCULATED'; components?: { name: string; editableByPlayer?: boolean; defaultValue?: string }[]; attributeModifiers?: { attributeId: string; enabled?: boolean }[] },
+  ) {
+    const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
+    if (!sheet) throw new NotFoundException('Character sheet not found')
+    if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can manage this character sheet')
+
+    // Get current max order to append
+    const maxOrder = await this.prisma.templateResistance.aggregate({
+      where: { templateId: sheet.templateId },
+      _max: { order: true },
+    })
+    const nextOrder = (maxOrder._max.order ?? -1) + 1
+
+    const resistance = await this.prisma.templateResistance.create({
+      data: {
+        templateId: sheet.templateId,
+        name: dto.name.trim(),
+        calculationType: dto.calculationType ?? 'MANUAL',
+        order: nextOrder,
+        components: {
+          create: (dto.components || []).map((c, idx) => ({
+            name: c.name.trim(),
+            editableByPlayer: c.editableByPlayer ?? false,
+            defaultValue: c.defaultValue ?? '0',
+            order: idx,
+          })),
+        },
+      },
+    })
+
+    if (dto.attributeModifiers) {
+      for (const am of dto.attributeModifiers) {
+        await this.prisma.resistanceAttributeModifier.create({
+          data: {
+            resistanceId: resistance.id,
+            attributeId: am.attributeId,
+            enabled: am.enabled ?? true,
+          },
+        })
+      }
+    }
+
+    // Create sheet-level value records for the new resistance
+    await this.prisma.characterSheetResistanceValue.create({
+      data: { sheetId, resistanceId: resistance.id },
+    })
+    const comps = await this.prisma.resistanceComponent.findMany({ where: { resistanceId: resistance.id } })
+    for (const comp of comps) {
+      await this.prisma.characterSheetResistanceComponentValue.create({
+        data: { sheetId, componentId: comp.id, value: comp.defaultValue },
+      })
+    }
+
+    return resistance
+  }
+
+  async removeResistance(sheetId: string, resistanceId: string, userId: string) {
+    const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
+    if (!sheet) throw new NotFoundException('Character sheet not found')
+    if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can manage this character sheet')
+
+    return this.prisma.templateResistance.delete({ where: { id: resistanceId } })
+  }
+
   private async requireOwnership(sheetId: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException('Character sheet not found')

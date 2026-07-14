@@ -100,6 +100,22 @@ export default function CharacterSheetDetailPage() {
     }
   }
 
+  async function handleCreateResistance(draft: { name: string; calculationType: 'MANUAL' | 'CALCULATED'; components?: { name: string; editableByPlayer?: boolean; defaultValue?: string }[]; attributeModifiers?: { attributeId: string; enabled?: boolean }[] }) {
+    if (!sheet) return
+    try {
+      await api.post(`/character-sheets/${sheet.id}/resistances`, draft)
+      await fetchResistances(sheet.id)
+    } catch {}
+  }
+
+  async function handleDeleteResistance(resistanceId: string) {
+    if (!sheet) return
+    try {
+      await api.delete(`/character-sheets/${sheet.id}/resistances/${resistanceId}`)
+      setResistanceData(prev => prev.filter(r => r.resistanceId !== resistanceId))
+    } catch {}
+  }
+
   const updateSheet = useCallback(async (data: Record<string, unknown>): Promise<CharacterSheet> => {
     const current = sheet!
     const updated = await api.patch<CharacterSheet>(`/character-sheets/${current.id}`, data)
@@ -924,6 +940,10 @@ export default function CharacterSheetDetailPage() {
           onSaveComponent={handleSaveResistanceComponent}
           onSaveManual={handleSaveResistanceManual}
           sheetResistanceValues={sheetResistanceValues}
+          templateAttributes={sheet.template.attributes}
+          disableAttributeModifiers={!modifiersEnabled}
+          onCreateResistance={handleCreateResistance}
+          onDeleteResistance={handleDeleteResistance}
         />
       )}
 
