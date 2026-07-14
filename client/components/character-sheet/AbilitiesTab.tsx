@@ -874,7 +874,7 @@ export function AbilitiesTab({
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label htmlFor="new-ability-level" className="label">Level</label>
-                  <input id="new-ability-level" type="number" min={1} className="input-field" value={newAbility.level} onChange={e => setNewAbility(p => ({ ...p, level: e.target.value }))} placeholder="1" />
+                  <input id="new-ability-level" type="text" className="input-field" value={newAbility.level} onChange={e => setNewAbility(p => ({ ...p, level: e.target.value }))} placeholder="e.g. 1" />
                 </div>
                 <div>
                   <label htmlFor="new-ability-mana" className="label">Mana Cost</label>

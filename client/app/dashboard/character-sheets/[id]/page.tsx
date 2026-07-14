@@ -8,7 +8,7 @@ import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import ResistanceTab from './resistance-tab'
 import { StoryTab, CharacterTab, InventoryTab, PersonalAbilitiesTab, AbilitiesTab } from '@/components/character-sheet'
 import { PageNav } from '@/lib/breadcrumb'
-import type { SkillModifierProfile, ArmorClassAttributeModifierDef, SectionEntry, SummonSkillData, Ability, InventoryItem, Story, CharacterSheet, Tab, SummonTab, AcResultMap } from '@/components/character-sheet/types'
+import type { SkillModifierProfile, ArmorClassAttributeModifierDef, SectionEntry, SummonSkillData, Ability, AbilityLevel, InventoryItem, Story, CharacterSheet, Tab, SummonTab, AcResultMap } from '@/components/character-sheet/types'
 
 
 export default function CharacterSheetDetailPage() {
@@ -719,9 +719,18 @@ export default function CharacterSheetDetailPage() {
         body.manaCost = newAbility.manaCost.trim() ? parseInt(newAbility.manaCost, 10) : undefined
         body.range = newAbility.range.trim() || undefined
         body.damage = newAbility.damage.trim() || undefined
-        body.level = newAbility.level.trim() ? parseInt(newAbility.level, 10) : undefined
       }
       const a = await api.post<Ability>(`/character-sheets/${sheet.id}/abilities`, body)
+      // Create/update initial level if user specified one
+      if (newAbility.level.trim()) {
+        if (a.levels?.length) {
+          await api.patch(`/character-sheets/${sheet.id}/abilities/${a.id}/levels/${a.levels[0].id}`, { level: newAbility.level.trim() })
+          a.levels[0].level = newAbility.level.trim()
+        } else {
+          const nl = await api.post<AbilityLevel>(`/character-sheets/${sheet.id}/abilities/${a.id}/levels`, { level: newAbility.level.trim(), copyFromPrevious: false })
+          a.levels = [nl]
+        }
+      }
       setAbilities(p => [...p, a])
       // Compute summon data if summon
       if (a.type === 'SUMMON') {
