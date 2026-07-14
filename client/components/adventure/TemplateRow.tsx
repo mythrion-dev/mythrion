@@ -62,6 +62,18 @@ export function TemplateRow(props: {
   const allAttrs = props.editAttrs.filter(a => a.key.trim() && a.name.trim()).map(a => ({ key: a.key.trim(), name: a.name.trim() }))
 
   if (props.isEditing) return <form onSubmit={props.onUpdate} className="rounded-lg border border-primary/30 bg-background/50 p-4 space-y-3">
+    <div className="flex items-center gap-3 mb-1">
+      <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 border border-primary/20">
+        <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      </div>
+      <div>
+        <h4 className="text-sm font-semibold text-foreground">Edit Template</h4>
+        <p className="text-xs text-muted">Modify template configuration</p>
+      </div>
+    </div>
+    <hr className="divider" />
     <div><label className="label">Name</label><input className="input-field" value={props.editName} onChange={e => props.onEditNameChange(e.target.value)} maxLength={100} required /></div>
     <div><label className="label">Description <span className="text-muted font-normal">(optional)</span></label><input className="input-field" value={props.editDescription} onChange={e => props.onEditDescriptionChange(e.target.value)} maxLength={200} /></div>
 
@@ -113,5 +125,5 @@ export function TemplateRow(props: {
     <div className="flex gap-2 justify-end"><button type="button" onClick={props.onCancelEdit} disabled={props.saving} className="btn-ghost text-sm">Cancel</button><button type="submit" disabled={props.saving || !props.editName.trim()} className="btn-primary text-sm">{props.saving ? 'Saving...' : 'Save'}</button></div>
   </form>
 
-  return <div className="flex items-start justify-between py-2.5 px-3 rounded-lg bg-background/50 border border-border"><div className="flex-1 min-w-0"><div className="flex items-center gap-2"><span className="text-sm font-medium text-foreground truncate">{props.template.name}</span><span className="badge badge-gold text-[0.6rem]">{props.template.attributes.length} Attributes</span></div>{props.template.description && <p className="text-xs text-muted mt-0.5 truncate">{props.template.description}</p>}</div>{props.isGM && <div className="flex gap-1 shrink-0 ml-2"><button onClick={props.onStartEdit} className="btn-ghost text-xs px-2 py-1">Edit</button><button onClick={props.onDelete} className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors">Delete</button></div>}</div>
+  return <div className="group relative flex items-start justify-between py-2.5 px-3 rounded-lg bg-background/50 border border-border hover:border-primary/20 transition-colors"><div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" /><div className="flex-1 min-w-0 relative"><div className="flex items-center gap-2"><span className="text-sm font-medium text-foreground truncate">{props.template.name}</span><span className="badge badge-gold text-[0.6rem]">{props.template.attributes.length} Attribute{props.template.attributes.length !== 1 ? 's' : ''}</span></div>{props.template.description && <p className="text-xs text-muted mt-0.5 truncate">{props.template.description}</p>}</div>{props.isGM && <div className="flex gap-1 shrink-0 ml-2 relative"><button onClick={props.onStartEdit} className="btn-ghost text-xs px-2 py-1">Edit</button><button onClick={props.onDelete} className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors">Delete</button></div>}</div>
 }

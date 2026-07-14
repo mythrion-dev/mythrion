@@ -59,11 +59,21 @@ export function TemplateForm(props: {
 
   return <>
     {!wizardDone ? <div className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-4">
-      <h4 className="text-sm font-semibold text-primary">Create Template</h4>
+      <div className="flex items-center gap-3 mb-1">
+        <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 border border-primary/20">
+          <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          </svg>
+        </div>
+        <div>
+          <h4 className="text-sm font-semibold text-foreground">Create Template</h4>
+          <p className="text-xs text-muted">Step 1: Configure basic info and select features</p>
+        </div>
+      </div>
       <div><label className="label">Name</label><input className="input-field" value={props.newTemplateName} onChange={e => props.onNameChange(e.target.value)} placeholder="e.g. D&D 5e Character Sheet" maxLength={100} required /></div>
       <div><label className="label">Description <span className="text-muted font-normal">(optional)</span></label><input className="input-field" value={props.newTemplateDescription} onChange={e => props.onDescriptionChange(e.target.value)} placeholder="Brief description of this template" maxLength={200} /></div>
-      <div className="rounded-lg border border-border/40 bg-background/20 p-3 space-y-3">
-        <span className="text-xs font-semibold text-muted uppercase tracking-wider">Choose Features</span>
+      <div className="rounded-lg border border-border/40 bg-background/30 p-3 space-y-3">
+        <span className="text-xs font-semibold text-foreground uppercase tracking-wider">Features</span>
         <div className="flex flex-wrap gap-x-4 gap-y-2">
           <label className="flex items-center gap-1.5 text-sm text-foreground cursor-pointer"><input type="checkbox" className="w-3.5 h-3.5 rounded accent-primary" checked={props.newFeatureSkills} onChange={e => props.onNewFeatureSkillsChange(e.target.checked)} /><span>Skills</span><MythrionPopover side="top" align="center" sideOffset={4} content={<div className="space-y-1.5"><p className="text-xs font-semibold text-foreground">Skills</p><p className="text-xs text-foreground/80 leading-relaxed">Add skills like Stealth, Perception, or Athletics. Players can assign values to each skill and roll checks against them.</p></div>}><span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[0.6rem] font-bold text-muted-foreground border border-border/60 cursor-help hover:text-foreground hover:border-foreground/40 transition-colors">?</span></MythrionPopover></label>
           <label className="flex items-center gap-1.5 text-sm text-foreground cursor-pointer"><input type="checkbox" className="w-3.5 h-3.5 rounded accent-primary" checked={props.newFeatureCustomFields} onChange={e => props.onNewFeatureCustomFieldsChange(e.target.checked)} /><span>Character Info</span><MythrionPopover side="top" align="center" sideOffset={4} content={<div className="space-y-1.5"><p className="text-xs font-semibold text-foreground">Character Info</p><p className="text-xs text-foreground/80 leading-relaxed">Add custom text fields for player details like Class, Race, or Background.</p></div>}><span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[0.6rem] font-bold text-muted-foreground border border-border/60 cursor-help hover:text-foreground hover:border-foreground/40 transition-colors">?</span></MythrionPopover></label>
@@ -74,9 +84,30 @@ export function TemplateForm(props: {
           <label className="flex items-center gap-1.5 text-sm text-foreground cursor-pointer"><input type="checkbox" className="w-3.5 h-3.5 rounded accent-primary" checked={props.newFeatureResistance} onChange={e => props.onNewFeatureResistanceChange(e.target.checked)} /><span>Resistance System</span><MythrionPopover side="top" align="center" sideOffset={4} content={<div className="space-y-1.5"><p className="text-xs font-semibold text-foreground">Resistance System</p><p className="text-xs text-foreground/80 leading-relaxed">Define damage types and configure resistance or weakness calculations for your characters.</p></div>}><span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[0.6rem] font-bold text-muted-foreground border border-border/60 cursor-help hover:text-foreground hover:border-foreground/40 transition-colors">?</span></MythrionPopover></label>
         </div>
       </div>
-      <div className="flex gap-2 justify-end"><button type="button" onClick={() => setWizardDone(true)} className="btn-primary text-sm">Continue</button></div>
+      <hr className="divider" />
+      <div className="flex items-center gap-2">
+        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-xs font-semibold">1</span>
+        <span className="text-sm font-medium text-foreground">Basic Info</span>
+      </div>
+      <hr className="divider" />
+      <div className="flex items-center gap-2">
+        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-xs font-semibold">2</span>
+        <span className="text-sm font-medium text-foreground">Choose Features</span>
+      </div>
+      <div className="flex gap-2 justify-end pt-1"><button type="button" onClick={() => setWizardDone(true)} className="btn-primary text-sm"><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>Continue</button></div>
     </div> : <form onSubmit={props.onCreateTemplate} className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3">
-    <h4 className="text-sm font-semibold text-primary">Create Template</h4>
+    <div className="flex items-center gap-3 mb-1">
+      <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 border border-primary/20">
+        <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+        </svg>
+      </div>
+      <div>
+        <h4 className="text-sm font-semibold text-foreground">Create Template</h4>
+        <p className="text-xs text-muted">Step 2: Configure template details</p>
+      </div>
+    </div>
+    <hr className="divider" />
     <div><label className="label">Name</label><input className="input-field" value={props.newTemplateName} onChange={e => props.onNameChange(e.target.value)} placeholder="e.g. D&D 5e Character Sheet" maxLength={100} required /></div>
     <div><label className="label">Description <span className="text-muted font-normal">(optional)</span></label><input className="input-field" value={props.newTemplateDescription} onChange={e => props.onDescriptionChange(e.target.value)} placeholder="Brief description of this template" maxLength={200} /></div>
     <div className="flex gap-1 flex-wrap">

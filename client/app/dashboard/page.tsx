@@ -2,7 +2,7 @@
 
 import { api } from '@/lib/api'
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState, useCallback, Suspense } from 'react'
+import { useEffect, useState, useCallback, Suspense, useRef } from 'react'
 import Link from 'next/link'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -66,6 +66,19 @@ function DashboardContent() {
       setFetchingSheets(false)
     }
   }, [])
+
+  // Sync tab state with URL search params (handles sidebar navigation)
+  const initialTabSynced = useRef(false)
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab === 'character-sheets' || tab === 'adventures') {
+      if (!initialTabSynced.current) {
+        initialTabSynced.current = true
+        return // initial render — useState already has the right value
+      }
+      setActiveTab(tab)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     fetchAdventures()

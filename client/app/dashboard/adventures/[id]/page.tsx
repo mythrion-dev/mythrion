@@ -7,6 +7,7 @@ import { api } from '@/lib/api'
 import Link from 'next/link'
 import { PageNav } from '@/lib/breadcrumb'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
+import { EmptyState } from '@/components/shared/EmptyState'
 import { AdventureHeader } from '@/components/adventure/AdventureHeader'
 import { CollapsibleSection } from '@/components/adventure/CollapsibleSection'
 import { MemberRow } from '@/components/adventure/MemberRow'
@@ -456,11 +457,13 @@ export default function AdventureDetailPage() {
   async function handleRevokeInvitation(invId: string) { try { await api.post(`/invitations/${invId}/revoke`); fetchInvitations() } catch { } }
   async function handleRemoveMember(uid: string) { try { await api.delete(`/adventures/${id}/members/${uid}`); fetchMembers() } catch { } }
 
-  if (fetching) return <div className="flex items-center justify-center py-20"><div className="flex flex-col items-center gap-3 text-muted-foreground"><div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" /><span className="text-sm">Loading...</span></div></div>
-  if (!adventure) return <div className="flex items-center justify-center py-20"><div className="text-sm text-muted-foreground">Adventure not found.</div></div>
+  if (fetching) return <div className="max-w-3xl mx-auto w-full py-10"><LoadingSkeleton variant="card" count={2} /></div>
+  if (!adventure) return <div className="max-w-3xl mx-auto w-full py-10"><EmptyState icon="🗺️" title="Adventure Not Found" description="This adventure doesn't exist or you don't have access to it." actionLabel="Back to Dashboard" actionHref="/dashboard" /></div>
 
   return (
-    <div className="max-w-3xl mx-auto w-full">
+    <div className="max-w-3xl mx-auto w-full relative">
+      {/* Ambient glow */}
+      <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-gradient-to-b from-accent/5 via-primary/3 to-transparent blur-3xl pointer-events-none" />
       <PageNav crumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: adventure.name }]} />
       <AdventureHeader adventure={adventure} isGM={isGM} userRole={userRole} onEdit={() => setEditing(true)} onDelete={() => setConfirmDelete(true)} />
       {!editing ? (<div className="space-y-6 mt-6">
