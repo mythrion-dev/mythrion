@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma.service.js'
 import { GoogleService } from './google.service.js'
 import { GoogleStrategy } from './google.strategy.js'
 import { TokenService } from './token.service.js'
+import { RateLimitGuard } from './rate-limit.guard.js'
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { TokenService } from './token.service.js'
     GoogleService,
     GoogleStrategy,
     TokenService,
+    RateLimitGuard,
   ],
-  exports: [JwtAuthGuard, JwtModule, AuthService, GoogleService, TokenService],
+  exports: [JwtAuthGuard, JwtModule, AuthService, GoogleService, TokenService, RateLimitGuard],
 })
 export class AuthModule {}

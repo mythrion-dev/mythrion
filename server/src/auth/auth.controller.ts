@@ -5,6 +5,7 @@ import { RegisterDto } from './dto/register.dto.js'
 import { OnboardingDto } from './dto/onboarding.dto.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
 import { AuthGuard } from '@nestjs/passport'
+import { RateLimit } from './rate-limit.decorator.js'
 import type { AuthenticatedRequest } from './AuthenticatedRequest.js'
 import type { Response } from 'express'
 
@@ -15,11 +16,13 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @RateLimit({ windowSeconds: 900, maxRequests: 5 })
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto)
   }
 
   @Post('login')
+  @RateLimit({ windowSeconds: 300, maxRequests: 10 })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto)
   }

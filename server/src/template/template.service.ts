@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common'
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common'
 import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { CreateTemplateDto } from './dto/create-template.dto.js'
 import { UpdateTemplateDto } from './dto/update-template.dto.js'
+import { RedisService } from '../redis/redis.service.js'
 
 const templateInclude = {
   attributes: { orderBy: { order: 'asc' as const } },
@@ -38,10 +39,35 @@ const templateInclude = {
 
 @Injectable()
 export class TemplateService {
+  private readonly logger = new Logger(TemplateService.name)
+  private readonly CACHE_TTL = 30 // seconds
+  private readonly LIST_CACHE_TTL = 15 // seconds
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly membership: MembershipService,
+    private readonly redis: RedisService,
   ) {}
+
+  private cacheKey(id: string): string {
+    return `template:${id}`
+  }
+
+  private listCacheKey(adventureId: string): string {
+    return `templates:adventure:${adventureId}`
+  }
+
+  /** Invalidate cached templates for an adventure (and optionally a specific template) */
+  private async invalidateCache(adventureId: string, templateId?: string): Promise<void> {
+    try {
+      if (templateId) {
+        await this.redis.del(this.cacheKey(templateId))
+      }
+      await this.redis.del(this.listCacheKey(adventureId))
+    } catch (err) {
+      this.logger.warn('Failed to invalidate template cache', err)
+    }
+  }
 
   async create(adventureId: string, userId: string, dto: CreateTemplateDto) {
     await this.membership.requireRole(adventureId, userId, 'GM')
@@ -202,22 +228,52 @@ export class TemplateService {
       }
     }
 
+    // Invalidate list cache for this adventure
+    await this.invalidateCache(adventureId, created.id)
+
     return this.prisma.template.findUnique({ where: { id: created.id }, include: templateInclude })
   }
 
   async findAllByAdventure(adventureId: string, userId: string) {
-    const isMember = await this.membership.isMember(adventureId, userId)
-    if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
-    return this.prisma.template.findMany({
+    // Try cache first
+    const cached = await this.redis.cacheGet<any[]>(this.listCacheKey(adventureId))
+    if (cached) {
+      const isMember = await this.membership.isMember(adventureId, userId)
+      if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
+      return cached
+    }
+
+    const templates = await this.prisma.template.findMany({
       where: { adventureId }, include: templateInclude, orderBy: { createdAt: 'desc' },
     })
+
+    const isMember = await this.membership.isMember(adventureId, userId)
+    if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
+
+    // Cache the list
+    await this.redis.cacheSet(this.listCacheKey(adventureId), templates, this.LIST_CACHE_TTL).catch(() => {})
+
+    return templates
   }
 
   async findOne(id: string, userId: string) {
+    // Try cache first
+    const cached = await this.redis.cacheGet<any>(this.cacheKey(id))
+    if (cached) {
+      // Verify membership still valid (fast check — user is cached, but verify fresh)
+      const isMember = await this.membership.isMember(cached.adventureId, userId)
+      if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
+      return cached
+    }
+
     const template = await this.prisma.template.findUnique({ where: { id }, include: templateInclude })
     if (!template) throw new NotFoundException('Template not found')
     const isMember = await this.membership.isMember(template.adventureId, userId)
     if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
+
+    // Cache the result (skip if Redis unavailable — cacheGet returns null gracefully)
+    await this.redis.cacheSet(this.cacheKey(id), template, this.CACHE_TTL).catch(() => {})
+
     return template
   }
 
@@ -798,7 +854,7 @@ export class TemplateService {
       }
     }
 
-    return this.prisma.template.update({
+    const result = await this.prisma.template.update({
       where: { id },
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
@@ -809,13 +865,23 @@ export class TemplateService {
       },
       include: templateInclude,
     })
+
+    // Invalidate caches
+    await this.invalidateCache(template.adventureId, id)
+
+    return result
   }
 
   async remove(id: string, userId: string) {
     const template = await this.prisma.template.findUnique({ where: { id } })
     if (!template) throw new NotFoundException('Template not found')
     await this.membership.requireRole(template.adventureId, userId, 'GM')
-    return this.prisma.template.delete({ where: { id } })
+    const result = await this.prisma.template.delete({ where: { id } })
+
+    // Invalidate caches
+    await this.invalidateCache(template.adventureId, id)
+
+    return result
   }
 
   private extractVariableNames(formula: string): string[] {

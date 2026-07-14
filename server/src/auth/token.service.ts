@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { PrismaService } from '../prisma.service.js'
+import { RedisService } from '../redis/redis.service.js'
 import { v4 as uuid } from 'uuid'
 import * as bcrypt from 'bcrypt'
 
@@ -16,6 +17,7 @@ export class TokenService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly redis: RedisService,
   ) {}
 
   /** Generate access token (short-lived) and refresh token (long-lived, stored in DB) */
@@ -69,6 +71,13 @@ export class TokenService {
     }
 
     const { userId, token: rawToken } = payload
+
+    // Check Redis blacklist first — fast-fail if user has logged out
+    const blacklistedSince = await this.redis.get(`token_blacklist:${userId}`)
+    if (blacklistedSince) {
+      // User logged out; all their refresh tokens are revoked
+      throw new UnauthorizedException('Refresh token has been revoked')
+    }
 
     // Find all non-revoked, non-expired refresh tokens for this user
     const storedTokens = await this.prisma.refreshToken.findMany({
@@ -124,11 +133,19 @@ export class TokenService {
     return this.generateTokens(user.id, user.email)
   }
 
-  /** Revoke all refresh tokens for a user */
+  /** Revoke all refresh tokens for a user (DB + Redis blacklist) */
   async revokeAllTokens(userId: string) {
     await this.prisma.refreshToken.updateMany({
       where: { userId, revoked: false },
       data: { revoked: true },
     })
+
+    // Store blacklist marker in Redis with TTL matching token expiry
+    // This allows instant rejection of any refresh attempt after logout
+    await this.redis.set(
+      `token_blacklist:${userId}`,
+      String(Math.floor(Date.now() / 1000)),
+      REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
+    )
   }
 }
