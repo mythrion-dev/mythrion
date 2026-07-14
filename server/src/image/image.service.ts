@@ -20,9 +20,9 @@ export class ImageService implements OnModuleInit {
   private bucket: GridFSBucket | null = null
 
   async onModuleInit() {
-    const uri = process.env.MONGODB_URI
+    const uri = process.env.MONGO_URL
     if (!uri) {
-      this.logger.warn('MONGODB_URI not set — image uploads will be unavailable')
+      this.logger.warn('MONGO_URL not set — image uploads will be unavailable')
       return
     }
 
