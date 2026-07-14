@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/auth-context'
 import { api } from '@/lib/api'
 import Link from 'next/link'
 import { PageNav } from '@/lib/breadcrumb'
@@ -22,7 +21,6 @@ interface Template {
 
 export default function NewCharacterSheetPage() {
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
 
   const [adventures, setAdventures] = useState<Adventure[]>([])
   const [templates, setTemplates] = useState<Template[]>([])
@@ -46,14 +44,8 @@ export default function NewCharacterSheetPage() {
   }, [])
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace('/login')
-      return
-    }
-    if (user) {
-      fetchAdventures()
-    }
-  }, [authLoading, user, router, fetchAdventures])
+    fetchAdventures()
+  }, [fetchAdventures])
 
   const fetchTemplates = useCallback(async (adventureId: string) => {
     setFetchingTemplates(true)
@@ -95,16 +87,8 @@ export default function NewCharacterSheetPage() {
     }
   }
 
-  if (authLoading) {
-    return (
-      <main className="flex-1 flex items-center justify-center p-4">
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      </main>
-    )
-  }
-
   return (
-    <main className="flex-1 max-w-xl mx-auto w-full px-4 py-6 animate-fade-in">
+    <div className="max-w-xl mx-auto w-full">
       <PageNav crumbs={[
         { label: 'Dashboard', href: '/dashboard' },
         { label: 'New Character Sheet' },
@@ -220,7 +204,7 @@ export default function NewCharacterSheetPage() {
           </button>
         </div>
       </form>
-    </main>
+    </div>
   )
 }
 

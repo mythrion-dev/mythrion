@@ -11,6 +11,16 @@ import SkillCalculationConfig from '@/lib/skill-calculation-config'
 import ResistanceSystemConfig from '@/lib/resistance-system-config'
 import { PageNav } from '@/lib/breadcrumb'
 import MythrionPopover from '@/lib/mythrion-popover'
+import { AdventureHeader } from '@/components/adventure/AdventureHeader'
+import { CollapsibleSection } from '@/components/adventure/CollapsibleSection'
+import { MemberRow } from '@/components/adventure/MemberRow'
+import { InvitePanel } from '@/components/adventure/InvitePanel'
+import { DeleteModal } from '@/components/adventure/DeleteModal'
+import { EditForm } from '@/components/adventure/EditForm'
+import { CharactersSection } from '@/components/adventure/CharactersSection'
+import { AcConfigList } from '@/components/adventure/AcConfigList'
+import { CollapsibleAttrCard } from '@/components/adventure/CollapsibleAttrCard'
+import { CollapsibleSkillCard } from '@/components/adventure/CollapsibleSkillCard'
 
 interface Adventure {
   id: string; name: string; campaign: string; synopsis: string | null; maxPlayers: number; ownerId: string; createdAt: string; updatedAt: string
@@ -41,12 +51,12 @@ interface TemplateArmorClassAttributeModifier {
 interface TemplateArmorClass {
   id: string; name?: string; enabled: boolean; attributeModifiers: TemplateArmorClassAttributeModifier[]; fields: TemplateArmorClassField[]
 }
-interface ArmorClassAttributeModifierDraft {
+export interface ArmorClassAttributeModifierDraft {
   attributeId: string
   allowPlayerSelection: boolean
   defaultAttributeId?: string
 }
-interface AcConfigDraft {
+export interface AcConfigDraft {
   name: string
   enabled: boolean
   fields: { name: string; key: string; defaultValue: string; editableByPlayer: boolean; description: string }[]
@@ -105,7 +115,7 @@ function slugify(str: string): string {
 
 export default function AdventureDetailPage() {
   const router = useRouter(); const params = useParams(); const id = params.id as string
-  const { user, loading: authLoading } = useAuth()
+  const { user } = useAuth()
   const [adventure, setAdventure] = useState<Adventure | null>(null); const [fetching, setFetching] = useState(true)
   const [userRole, setUserRole] = useState<string | null>(null)
   const [editing, setEditing] = useState(false); const [editName, setEditName] = useState(''); const [editCampaign, setEditCampaign] = useState(''); const [editSynopsis, setEditSynopsis] = useState(''); const [editMaxPlayers, setEditMaxPlayers] = useState(4); const [editError, setEditError] = useState<string | null>(null); const [saving, setSaving] = useState(false)
@@ -282,7 +292,7 @@ export default function AdventureDetailPage() {
 
   const fetchAdventure = useCallback(async () => { try { const d = await api.get<Adventure>(`/adventures/${id}`); setAdventure(d); setEditName(d.name); setEditCampaign(d.campaign); setEditSynopsis(d.synopsis ?? ''); setEditMaxPlayers(d.maxPlayers) } catch (e: unknown) { if ((e as { statusCode?: number }).statusCode === 401 || (e as { statusCode?: number }).statusCode === 403) router.replace('/login') } finally { setFetching(false) } }, [id, router])
   const resolveRole = useCallback(async () => { try { const all = await api.get<Array<{ id: string; role: string }>>('/me/adventures'); const e = all.find(a => a.id === id); if (e) setUserRole(e.role) } catch { } }, [id])
-  useEffect(() => { if (!authLoading && !user) { router.replace('/login'); return }; if (user) { fetchAdventure(); resolveRole() } }, [authLoading, user, fetchAdventure, resolveRole])
+  useEffect(() => { fetchAdventure(); resolveRole() }, [fetchAdventure, resolveRole])
   const fetchMembers = useCallback(async () => { try { setMembers(await api.get<Member[]>(`/adventures/${id}/members`)) } catch { } }, [id])
   const fetchInvitations = useCallback(async () => { try { setInvitations(await api.get<Invitation[]>(`/adventures/${id}/invitations`)) } catch { } }, [id])
   const fetchTemplates = useCallback(async () => { try { setTemplates(await api.get<Template[]>(`/adventures/${id}/templates`)) } catch { } }, [id])
@@ -485,11 +495,11 @@ export default function AdventureDetailPage() {
   async function handleRevokeInvitation(invId: string) { try { await api.post(`/invitations/${invId}/revoke`); fetchInvitations() } catch { } }
   async function handleRemoveMember(uid: string) { try { await api.delete(`/adventures/${id}/members/${uid}`); fetchMembers() } catch { } }
 
-  if (authLoading || fetching) return <main className="flex-1 flex items-center justify-center p-4"><div className="flex flex-col items-center gap-3 text-muted-foreground"><div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" /><span className="text-sm">Loading...</span></div></main>
-  if (!adventure) return <main className="flex-1 flex items-center justify-center p-4"><div className="text-sm text-muted-foreground">Adventure not found.</div></main>
+  if (fetching) return <div className="flex items-center justify-center py-20"><div className="flex flex-col items-center gap-3 text-muted-foreground"><div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" /><span className="text-sm">Loading...</span></div></div>
+  if (!adventure) return <div className="flex items-center justify-center py-20"><div className="text-sm text-muted-foreground">Adventure not found.</div></div>
 
   return (
-    <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 animate-fade-in">
+    <div className="max-w-3xl mx-auto w-full">
       <PageNav crumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: adventure.name }]} />
       <AdventureHeader adventure={adventure} isGM={isGM} userRole={userRole} onEdit={() => setEditing(true)} onDelete={() => setConfirmDelete(true)} />
       {!editing ? (<div className="space-y-6 mt-6">
@@ -573,138 +583,11 @@ export default function AdventureDetailPage() {
         )}
         {confirmDelete && <DeleteModal name={adventure.name} error={deleteError} loading={deleting} onCancel={() => setConfirmDelete(false)} onConfirm={handleDelete} />}
       </div>) : (<EditForm name={editName} campaign={editCampaign} synopsis={editSynopsis} maxPlayers={editMaxPlayers} error={editError} saving={saving} onNameChange={setEditName} onCampaignChange={setEditCampaign} onSynopsisChange={setEditSynopsis} onMaxPlayersChange={setEditMaxPlayers} onCancel={() => { setEditing(false); setEditError(null) }} onSubmit={handleUpdate} />)}
-    </main>
-  )
-}
-
-function AdventureHeader(props: { adventure: Adventure; isGM: boolean; userRole: string | null; onEdit: () => void; onDelete: () => void }) {
-  const { adventure, isGM, userRole, onEdit, onDelete } = props
-  return <div className="card !p-6 space-y-4"><div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4"><div className="flex-1 min-w-0"><h1 className="text-2xl font-bold text-gradient truncate">{adventure.name}</h1><div className="flex flex-wrap items-center gap-2 mt-2"><span className="badge badge-gold">{adventure.campaign}</span><span className="badge badge-gold">👥 {adventure.maxPlayers} {adventure.maxPlayers === 1 ? 'player' : 'players'}</span>{userRole && <span className={`badge text-[0.6rem] ${isGM ? 'badge-gold' : ''}`} style={!isGM ? { background: 'rgba(124,92,231,0.15)', color: '#9070f0', border: '1px solid rgba(124,92,231,0.2)' } : undefined}>{userRole}</span>}<span className="text-xs text-muted">Created {new Date(adventure.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span></div></div>{isGM && <div className="flex gap-2 shrink-0"><button onClick={onEdit} className="btn-ghost"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>Edit</button><button onClick={onDelete} className="btn-danger"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>Delete</button></div>}</div><hr className="divider" />{adventure.synopsis ? <div><h3 className="text-sm font-medium text-muted mb-2">Synopsis</h3><p className="text-foreground/80 leading-relaxed whitespace-pre-wrap text-sm">{adventure.synopsis}</p></div> : <div className="text-center py-8 text-muted-foreground text-sm italic">No synopsis yet.{isGM && ' Click edit to add one.'}</div>}</div>
-}
-function CollapsibleSection({ title, expanded, onToggle, children }: { title: string; expanded: boolean; onToggle: () => void; children: React.ReactNode }) { return <div className="card !p-6"><button onClick={onToggle} className="flex items-center justify-between w-full text-left"><h3 className="font-semibold">{title}</h3><svg className={`w-5 h-5 text-muted transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg></button>{expanded && <div className="mt-4">{children}</div>}</div> }
-function MemberRow({ member, isGM, isSelf, onRemove }: { member: Member; isGM: boolean; isSelf: boolean; onRemove: () => void }) { return <div className="flex items-center justify-between py-2 border-b border-border last:border-0"><div className="flex items-center gap-2"><span className="text-sm text-foreground">{member.user.displayName ?? member.user.email}</span><span className={`badge text-[0.6rem] ${member.role === 'GM' ? 'badge-gold' : ''}`} style={member.role !== 'GM' ? { background: 'rgba(124,92,231,0.15)', color: '#9070f0', border: '1px solid rgba(124,92,231,0.2)' } : undefined}>{member.role}</span></div>{isGM && !isSelf && <button onClick={onRemove} className="text-xs text-danger hover:text-danger/80 transition-colors">Remove</button>}</div> }
-function InvitePanel(props: { inviteRole: string; inviteEmail: string; inviteLink: string | null; inviteError: string | null; inviteSending: boolean; invitations: Invitation[]; onRoleChange: (r: 'PLAYER' | 'GM') => void; onEmailChange: (e: string) => void; onInviteByEmail: (e: FormEvent) => void; onInviteByLink: () => void; onRevoke: (id: string) => void }) { return <div className="space-y-4"><div><label className="label">Role</label><div className="flex gap-2">{(['PLAYER', 'GM'] as const).map(r => <button key={r} onClick={() => props.onRoleChange(r)} className={`btn-ghost text-sm ${props.inviteRole === r ? '!border-primary/40 !text-primary' : ''}`}>{r}</button>)}</div></div><form onSubmit={props.onInviteByEmail} className="space-y-3"><div><label className="label">Invite by Email</label><div className="flex gap-2"><input type="email" value={props.inviteEmail} onChange={e => props.onEmailChange(e.target.value)} className="input-field flex-1" placeholder="player@example.com" /><button type="submit" disabled={props.inviteSending || props.inviteEmail.trim().length === 0} className="btn-primary">Send</button></div></div></form><div><label className="label">Invite by Link</label><button onClick={props.onInviteByLink} disabled={props.inviteSending} className="btn-ghost">Generate invite link</button>{props.inviteLink && <div className="mt-2 flex items-center gap-2"><input readOnly value={props.inviteLink} className="input-field flex-1 text-xs" onFocus={e => e.target.select()} /><button onClick={() => navigator.clipboard.writeText(props.inviteLink!)} className="btn-ghost text-xs">Copy</button></div>}</div>{props.inviteError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">{props.inviteError}</div>}{props.invitations.length > 0 && <div className="space-y-2"><h4 className="text-sm font-medium text-muted">Pending Invitations</h4>{props.invitations.map(inv => <div key={inv.id} className="flex items-center justify-between text-sm py-1"><span className="text-muted-foreground">{inv.invitedEmail ?? 'Link invitation'}</span><button onClick={() => props.onRevoke(inv.id)} className="text-xs text-danger hover:text-danger/80 transition-colors">Revoke</button></div>)}</div>}</div> }
-function DeleteModal({ name, error, loading, onCancel, onConfirm }: { name: string; error: string | null; loading: boolean; onCancel: () => void; onConfirm: () => void }) { return <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in"><div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center"><svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg></div><div><h2 className="font-semibold">Delete Adventure</h2><p className="text-sm text-muted-foreground">This action cannot be undone.</p></div></div><p className="text-sm text-muted-foreground">Are you sure you want to delete "{name}"?</p>{error && <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">{error}</div>}<div className="flex gap-3 justify-end"><button onClick={onCancel} disabled={loading} className="btn-ghost">Cancel</button><button onClick={onConfirm} disabled={loading} className="btn-danger-solid">{loading ? 'Deleting...' : 'Delete forever'}</button></div></div></div> }
-function EditForm(props: { name: string; campaign: string; synopsis: string; maxPlayers: number; error: string | null; saving: boolean; onNameChange: (v: string) => void; onCampaignChange: (v: string) => void; onSynopsisChange: (v: string) => void; onMaxPlayersChange: (v: number) => void; onCancel: () => void; onSubmit: (e: FormEvent) => void }) { return <form onSubmit={props.onSubmit} className="card !p-6 space-y-4 animate-slide-up"><div className="flex items-center gap-3 mb-2"><svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg><h2 className="text-xl font-semibold text-gradient">Edit Adventure</h2></div><div><label className="label">Adventure Name</label><input className="input-field" value={props.name} onChange={e => props.onNameChange(e.target.value)} maxLength={100} /></div><div><label className="label">Campaign</label><input className="input-field" value={props.campaign} onChange={e => props.onCampaignChange(e.target.value)} maxLength={50} /></div><div><label className="label">Synopsis <span className="text-muted font-normal">(optional)</span></label><textarea className="input-field resize-none" rows={5} value={props.synopsis} onChange={e => props.onSynopsisChange(e.target.value)} maxLength={2000} /><p className="text-xs text-muted mt-1.5 text-right">{props.synopsis.length}/2000</p></div><div><label className="label">Max Players</label><div className="flex items-center gap-3"><input type="range" min={1} max={5} value={props.maxPlayers} onChange={e => props.onMaxPlayersChange(Number(e.target.value))} className="flex-1 h-2 rounded-lg appearance-none cursor-pointer" style={{ background: `linear-gradient(to right, #c9a44b 0%, #c9a44b ${((props.maxPlayers - 1) / 4) * 100}%, #2a2240 ${((props.maxPlayers - 1) / 4) * 100}%, #2a2240 100%)` }} /><span className="badge badge-gold min-w-[2rem] text-center">{props.maxPlayers}</span></div></div>{props.error && <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">{props.error}</div>}<div className="flex gap-3 justify-end pt-2"><button type="button" onClick={props.onCancel} disabled={props.saving} className="btn-ghost">Cancel</button><button type="submit" disabled={props.saving || props.name.trim().length === 0} className="btn-primary">{props.saving ? <><div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />Saving...</> : 'Save Changes'}</button></div></form> }
-function CharactersSection(props: { characters: CampaignCharacter[]; isGM: boolean; userId: string; templates: Template[]; userSheets: UserSheet[]; showNewCharForm: boolean; showLinkCharForm: boolean; newCharName: string; newCharTemplateId: string; newCharError: string | null; newCharCreating: boolean; linkSheetId: string; linkCharError: string | null; linkCharLinking: boolean; onNewCharClick: () => void; onLinkCharClick: () => void; onCancelNewChar: () => void; onCancelLinkChar: () => void; onCreateCharacter: (e: FormEvent) => void; onLinkCharacter: (e: FormEvent) => void; onNewCharNameChange: (v: string) => void; onNewCharTemplateChange: (v: string) => void; onLinkSheetChange: (v: string) => void; onRemoveCharacter: (id: string) => void; onViewCharacter: (id: string) => void }) { return <div className="space-y-4">{props.characters.length === 0 && !props.showNewCharForm && !props.showLinkCharForm ? <div className="text-center py-6 text-muted-foreground text-sm italic">No characters in this campaign yet.</div> : <div className="space-y-2">{props.characters.map(c => <div key={c.id} className="flex items-center justify-between py-2 border-b border-border last:border-0"><div className="flex-1 min-w-0"><div className="flex items-center gap-2"><span className="text-sm font-medium text-foreground truncate">{c.characterName}</span><span className="badge badge-gold text-[0.6rem]">{c.template.name}</span></div><p className="text-xs text-muted mt-0.5">{c.owner.displayName ?? c.owner.email}</p></div><div className="flex gap-1 shrink-0 ml-2"><button onClick={() => props.onViewCharacter(c.id)} className="btn-ghost text-xs px-2 py-1">View</button>{props.isGM && c.owner.id !== props.userId && <button onClick={() => props.onRemoveCharacter(c.id)} className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors">Remove</button>}</div></div>)}</div>}{!props.showNewCharForm && !props.showLinkCharForm && <div className="flex gap-2"><button onClick={props.onNewCharClick} className="btn-primary text-sm">+ New Character</button><button onClick={props.onLinkCharClick} className="btn-ghost text-sm">Link Existing Character</button></div>}{props.showNewCharForm && <form onSubmit={props.onCreateCharacter} className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3"><h4 className="text-sm font-semibold text-primary">Create New Character</h4><div><label className="label">Character Name</label><input className="input-field" value={props.newCharName} onChange={e => props.onNewCharNameChange(e.target.value)} placeholder="e.g. Aragorn" maxLength={100} required /></div><div><label className="label">Template</label>{props.templates.length === 0 ? <p className="text-sm text-muted italic">No templates available. Ask your GM to create one.</p> : <select className="input-field" value={props.newCharTemplateId} onChange={e => props.onNewCharTemplateChange(e.target.value)} required><option value="">Select a template...</option>{props.templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select>}</div>{props.newCharError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{props.newCharError}</div>}<div className="flex gap-2 justify-end"><button type="button" onClick={props.onCancelNewChar} disabled={props.newCharCreating} className="btn-ghost text-sm">Cancel</button><button type="submit" disabled={props.newCharCreating || !props.newCharName.trim() || !props.newCharTemplateId} className="btn-primary text-sm">{props.newCharCreating ? 'Creating...' : 'Create'}</button></div></form>}{props.showLinkCharForm && <form onSubmit={props.onLinkCharacter} className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3"><h4 className="text-sm font-semibold text-primary">Link Existing Character</h4><div><label className="label">Select Character</label>{props.userSheets.length === 0 ? <p className="text-sm text-muted italic">No unlinked characters available.</p> : <select className="input-field" value={props.linkSheetId} onChange={e => props.onLinkSheetChange(e.target.value)} required><option value="">Select a character...</option>{props.userSheets.map(s => <option key={s.id} value={s.id}>{s.characterName} ({s.template.name})</option>)}</select>}</div>{props.linkCharError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{props.linkCharError}</div>}<div className="flex gap-2 justify-end"><button type="button" onClick={props.onCancelLinkChar} disabled={props.linkCharLinking} className="btn-ghost text-sm">Cancel</button><button type="submit" disabled={props.linkCharLinking || !props.linkSheetId} className="btn-primary text-sm">{props.linkCharLinking ? 'Linking...' : 'Link'}</button></div></form>}</div> }
-
-// ── Shared AC Config UI (used by both New and Edit forms) ──
-function AcConfigList(props: {
-  configs?: AcConfigDraft[]
-  attrs?: { key: string; name: string }[]
-  attrModifiersEnabled?: boolean
-  onAdd?: () => void
-  onRemove?: (i: number) => void
-  onUpdateConfig?: (i: number, patch: Partial<AcConfigDraft>) => void
-  onAddField?: (configIdx: number) => void
-  onRemoveField?: (configIdx: number, fieldIdx: number) => void
-  onUpdateField?: (configIdx: number, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string) => void
-  onUpdateFieldEditable?: (configIdx: number, fieldIdx: number, v: boolean) => void
-  onToggleAttributeId?: (configIdx: number, attrId: string) => void
-  onUpdateAttributeModifier?: (configIdx: number, attrId: string, patch: Partial<ArmorClassAttributeModifierDraft>) => void
-}) {
-  const configs = props.configs ?? []
-  const attrs = props.attrs ?? []
-  const attrModifiersEnabled = props.attrModifiersEnabled ?? false
-  const onAdd = props.onAdd ?? (() => { })
-  const onRemove = props.onRemove ?? (() => { })
-  const onUpdateConfig = props.onUpdateConfig ?? (() => { })
-  const onAddField = props.onAddField ?? (() => { })
-  const onRemoveField = props.onRemoveField ?? (() => { })
-  const onUpdateField = props.onUpdateField ?? (() => { })
-  const onUpdateFieldEditable = props.onUpdateFieldEditable ?? (() => { })
-  const onToggleAttributeId = props.onToggleAttributeId ?? (() => { })
-  const onUpdateAttributeModifier = props.onUpdateAttributeModifier ?? (() => { })
-  return (
-    <div className="space-y-4">
-      {configs.map((ac, ci) => (
-        <div key={ci} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
-          <div className="flex items-center gap-1.5">
-            <input className="input-field flex-1 text-sm" value={ac.name} onChange={e => onUpdateConfig(ci, { name: e.target.value })} placeholder="AC Name (e.g. Standard Armor)" />
-            <label className="flex items-center gap-1 text-xs text-muted shrink-0">
-              <input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={ac.enabled} onChange={e => onUpdateConfig(ci, { enabled: e.target.checked })} />Enabled
-            </label>
-            <button type="button" onClick={() => onRemove(ci)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
-          </div>
-
-          {ac.enabled && (
-            <div className="space-y-2 pl-2">
-              <div>
-                <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 block">AC Components</label>
-                <div className="space-y-1">
-                  {ac.fields.map((f, fi) => (
-                    <div key={fi} className="rounded border border-border/50 bg-background/20 p-2 space-y-1">
-                      <div className="flex items-center gap-1">
-                        <input className="input-field flex-1 text-xs" value={f.name} onChange={e => onUpdateField(ci, fi, 'name', e.target.value)} placeholder="Field name (e.g. Shield)" />
-                        <input className="input-field flex-1 text-xs" value={f.key} onChange={e => onUpdateField(ci, fi, 'key', e.target.value)} placeholder="Key (e.g. shield)" />
-                        <button type="button" onClick={() => onRemoveField(ci, fi)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <input className="input-field flex-1 text-xs" value={f.defaultValue} onChange={e => onUpdateField(ci, fi, 'defaultValue', e.target.value)} placeholder="Default value" />
-                        <input className="input-field flex-1 text-xs" value={f.description} onChange={e => onUpdateField(ci, fi, 'description', e.target.value)} placeholder="Description (optional)" />
-                        <label className="flex items-center gap-1 text-xs text-muted shrink-0">
-                          <input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={f.editableByPlayer} onChange={e => onUpdateFieldEditable(ci, fi, e.target.checked)} />Editable
-                        </label>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <button type="button" onClick={() => onAddField(ci)} className="btn-ghost text-xs mt-1">+ Add AC Component</button>
-              </div>
-
-              {attrModifiersEnabled ? (
-                <div>
-                  <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 block">Attribute Modifiers</label>
-                  <div className="space-y-1 mb-2">
-                    {attrs.filter(a => a.key.trim() && a.name.trim()).map(attr => (
-                      <label key={attr.key} className="flex items-center gap-2 text-xs text-foreground py-1 cursor-pointer">
-                        <input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={ac.attributeModifiers.some(am => am.attributeId === attr.key.trim())} onChange={() => onToggleAttributeId(ci, attr.key.trim())} />
-                        <span>{attr.name.trim()} Modifier</span>
-                      </label>
-                    ))}
-                  </div>
-                  <div className="space-y-2">
-                    {ac.attributeModifiers.map(am => {
-                      const defaultAttributeId = am.defaultAttributeId || am.attributeId
-                      return (
-                        <div key={am.attributeId} className="rounded border border-border/50 bg-background/20 p-2 space-y-2">
-                          <div>
-                            <label className="text-[0.65rem] font-semibold text-muted uppercase tracking-wider mb-1 block">Attribute</label>
-                            <select className="input-field text-xs" value={am.attributeId} onChange={e => onUpdateAttributeModifier(ci, am.attributeId, { attributeId: e.target.value, defaultAttributeId: e.target.value })}>
-                              {attrs.filter(a => a.key.trim() && a.name.trim()).map(attr => <option key={attr.key} value={attr.key.trim()}>{attr.name.trim()}</option>)}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-[0.65rem] font-semibold text-muted uppercase tracking-wider mb-1 block">Player Selection</label>
-                            <div className="space-y-1">
-                              <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer"><input type="radio" className="w-3 h-3 accent-primary" checked={!am.allowPlayerSelection} onChange={() => onUpdateAttributeModifier(ci, am.attributeId, { allowPlayerSelection: false })} />Fixed</label>
-                              <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer"><input type="radio" className="w-3 h-3 accent-primary" checked={am.allowPlayerSelection} onChange={() => onUpdateAttributeModifier(ci, am.attributeId, { allowPlayerSelection: true, defaultAttributeId })} />Player Can Change</label>
-                            </div>
-                          </div>
-                          {am.allowPlayerSelection && (
-                            <div>
-                              <label className="text-[0.65rem] font-semibold text-muted uppercase tracking-wider mb-1 block">Default Attribute</label>
-                              <select className="input-field text-xs" value={defaultAttributeId} onChange={e => onUpdateAttributeModifier(ci, am.attributeId, { defaultAttributeId: e.target.value })}>
-                                {attrs.filter(a => a.key.trim() && a.name.trim()).map(attr => <option key={attr.key} value={attr.key.trim()}>{attr.name.trim()}</option>)}
-                              </select>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-xs text-muted italic">Attribute Modifiers are disabled globally.</p>
-              )}
-            </div>
-          )}
-        </div>
-      ))}
-      <button type="button" onClick={onAdd} className="btn-ghost text-xs">+ Add Armor Class Configuration</button>
     </div>
   )
 }
+
+
 
 function TemplatesSection(props: {
   templates: Template[]; isGM: boolean; showNewTemplate: boolean; editingTemplateId: string | null
@@ -789,18 +672,6 @@ function TemplatesSection(props: {
   </div>
 }
 
-function CollapsibleAttrCard({ index, attr, isExpanded, onToggle, onUpdateAttr, onRemove }: { index: number; attr: { key: string; name: string }; isExpanded: boolean; onToggle: () => void; onUpdateAttr: (i: number, f: 'key' | 'name', v: string) => void; onRemove: () => void }) {
-  return <div className="rounded-lg border border-border bg-background/30 overflow-hidden"><button type="button" onClick={onToggle} className="flex items-center justify-between w-full px-3 py-2 text-left hover:bg-background/50 transition-colors"><div className="flex items-center gap-2 min-w-0"><span className="text-sm font-medium text-foreground truncate">{attr.name || 'New Attribute'}</span>{attr.key && <span className="text-[0.6rem] text-muted font-mono shrink-0">({attr.key})</span>}</div><svg className={`w-4 h-4 text-muted transition-transform shrink-0 ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg></button>{isExpanded && <div className="px-3 py-3 space-y-2 border-t border-border"><div className="flex items-center gap-1.5"><input className="input-field flex-1" value={attr.key} onChange={e => onUpdateAttr(index, 'key', e.target.value)} placeholder="Key (e.g. strength)" /><input className="input-field flex-1" value={attr.name} onChange={e => onUpdateAttr(index, 'name', e.target.value)} placeholder="Name (e.g. Strength)" /></div><div className="flex justify-end"><button type="button" onClick={onRemove} className="text-xs text-danger hover:text-danger/80 transition-colors">Remove Attribute</button></div></div>}</div>
-}
-function CollapsibleSkillCard({ index, skill, onUpdateSkill, onRemove, attributes, onToggleAllowedAttr, onUpdateDefaultAttr }: { index: number; skill: { name: string; description: string; attributeId: string; allowedAttributeIds?: string[]; defaultAttributeId?: string }; onUpdateSkill?: (i: number, f: string, v: string) => void; onRemove?: () => void; attributes: { key: string; name: string }[]; onToggleAllowedAttr?: (i: number, attrKey: string) => void; onUpdateDefaultAttr?: (i: number, v: string) => void }) {
-  const [expanded, setExpanded] = useState(false)
-  const allowed = (skill as any).allowedAttributeIds ?? []
-  const defaultAttr = (skill as any).defaultAttributeId ?? ''
-  return <div className="rounded-lg border border-border bg-background/30 overflow-hidden"><button type="button" onClick={() => setExpanded(!expanded)} className="flex items-center justify-between w-full px-3 py-2 text-left hover:bg-background/50 transition-colors"><span className="text-sm font-medium text-foreground truncate">{skill.name || 'New Skill'}</span><svg className={`w-4 h-4 text-muted transition-transform shrink-0 ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg></button>{expanded && <div className="px-3 py-3 space-y-2 border-t border-border"><div><label className="text-xs text-muted mb-1 block">Name</label><input className="input-field" value={skill.name} onChange={e => onUpdateSkill?.(index, 'name', e.target.value)} placeholder="Skill Name (e.g. Stealth)" /></div><div><label className="text-xs text-muted mb-1 block">Description <span className="text-muted font-normal">(optional)</span></label><input className="input-field" value={skill.description} onChange={e => onUpdateSkill?.(index, 'description', e.target.value)} placeholder="Brief description" /></div>
-    <div><label className="text-xs text-muted mb-1 block">Allowed Attributes</label><div className="flex flex-wrap gap-1">{(attributes || []).map(a => <label key={a.key} className="flex items-center gap-1 text-xs text-foreground cursor-pointer py-0.5"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={allowed.includes(a.key)} onChange={() => onToggleAllowedAttr?.(index, a.key)} /><span>{a.name}</span></label>)}</div></div>
-    <div><label className="text-xs text-muted mb-1 block">Default Attribute</label><select className="input-field" value={defaultAttr} onChange={e => { if (onUpdateDefaultAttr) onUpdateDefaultAttr(index, e.target.value); else onUpdateSkill?.(index, 'defaultAttributeId', e.target.value) }}><option value="">— Select Default —</option>{allowed.map((k: string) => { const a = attributes.find((x: any) => x.key === k); return a ? <option key={k} value={k}>{a.name}</option> : null })}</select></div>
-    <div className="flex justify-end"><button type="button" onClick={onRemove} className="text-xs text-danger hover:text-danger/80 transition-colors">Remove Skill</button></div></div>}</div>
-}
 
 function NewTemplateForm(props: {
   newTemplateName: string; newTemplateDescription: string; newTemplateAttrs: { key: string; name: string }[]

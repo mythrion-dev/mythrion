@@ -2,25 +2,18 @@
 
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/auth-context'
 import { api } from '@/lib/api'
 import Link from 'next/link'
 import { PageNav } from '@/lib/breadcrumb'
 
 export default function NewAdventurePage() {
   const router = useRouter()
-  const { user, loading } = useAuth()
   const [name, setName] = useState('')
   const [campaign, setCampaign] = useState('')
   const [synopsis, setSynopsis] = useState('')
   const [maxPlayers, setMaxPlayers] = useState(4)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-
-  if (!loading && !user) {
-    router.replace('/login')
-    return null
-  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -42,16 +35,8 @@ export default function NewAdventurePage() {
     }
   }
 
-  if (loading) {
-    return (
-      <main className="flex-1 flex items-center justify-center p-4">
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      </main>
-    )
-  }
-
   return (
-    <main className="flex-1 flex items-center justify-center p-4 relative">
+    <div className="flex items-center justify-center relative">
       {/* Ambient glow */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-gradient-to-b from-accent/5 via-primary/3 to-transparent blur-3xl pointer-events-none" />
 
@@ -208,6 +193,6 @@ export default function NewAdventurePage() {
           </button>
         </form>
       </div>
-    </main>
+    </div>
   )
 }
