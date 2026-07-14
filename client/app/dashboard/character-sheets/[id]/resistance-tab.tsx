@@ -40,9 +40,12 @@ export default function ResistanceTab({ resistances, isOwner, onSaveComponent, o
 
   if (!resistances || resistances.length === 0) {
     return (
-      <div className="card !p-6">
-        <div className="text-center py-6 text-muted-foreground text-sm italic">
-          No resistances configured.
+      <div className="card !p-6 animate-slide-up">
+        <div className="text-center py-8 text-muted-foreground">
+          <svg className="w-10 h-10 mx-auto text-muted mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          <p className="text-sm italic">No resistances configured.</p>
         </div>
       </div>
     )
@@ -54,39 +57,51 @@ export default function ResistanceTab({ resistances, isOwner, onSaveComponent, o
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-slide-up">
       {resistances.map(r => {
         const isExp = !!expanded[r.resistanceId]
         const isManual = r.calculationType === 'MANUAL'
         const manualVal = sheetResistanceValues[r.resistanceId] ?? '0'
 
         return (
-          <div key={r.resistanceId} className="card !p-4 overflow-hidden">
-            {/* Header */}
+          <div
+            key={r.resistanceId}
+            className={`card !p-5 transition-all duration-200 ${isExp ? 'border-primary/20' : ''}`}
+          >
+            {/* Header row with total */}
             <button
               type="button"
               onClick={() => setExpanded(p => ({ ...p, [r.resistanceId]: !p[r.resistanceId] }))}
-              className="flex items-center justify-between w-full text-left"
+              className="flex items-center justify-between w-full text-left gap-4"
             >
               <span className="text-sm font-semibold text-foreground">{r.name}</span>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-bold text-primary">{r.total}</span>
-                <svg className={`w-4 h-4 text-muted transition-transform shrink-0 ${isExp ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="w-10 h-10 rounded-full border-2 border-primary/30 flex items-center justify-center bg-background/50">
+                  <span className="text-base font-bold text-primary">{r.total}</span>
+                </div>
+                <svg
+                  className={`w-4 h-4 text-muted transition-transform duration-200 shrink-0 ${isExp ? 'rotate-180' : ''}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/>
                 </svg>
               </div>
             </button>
 
+            {/* Expanded details */}
             {isExp && (
-              <div className="mt-4 pt-4 border-t border-border space-y-3">
-                {/* Total */}
-                <div className="flex items-center justify-between py-1">
+              <div className="mt-4 pt-4 border-t border-border space-y-4 animate-fade-in">
+                {/* Total display */}
+                <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/30 border border-border">
                   <span className="text-sm font-semibold text-foreground">Total</span>
                   <span className="text-lg font-bold text-primary">{r.total}</span>
                 </div>
 
                 {isManual ? (
-                  /* Manual Mode */
+                  /* Manual mode input */
                   <div>
                     <label className="label">{r.name}</label>
                     {isOwner ? (
@@ -106,11 +121,11 @@ export default function ResistanceTab({ resistances, isOwner, onSaveComponent, o
                     {r.componentValues.length > 0 && (
                       <div>
                         <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Components</h4>
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           {r.componentValues.map(cv => {
                             const canEdit = isOwner && cv.editableByPlayer
                             return (
-                              <div key={cv.componentId} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-background/50 border border-border">
+                              <div key={cv.componentId} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
                                 <span className="text-sm text-foreground">{cv.componentName}</span>
                                 {canEdit ? (
                                   <input
@@ -133,12 +148,12 @@ export default function ResistanceTab({ resistances, isOwner, onSaveComponent, o
                     {r.attributeModifierValues.length > 0 && (
                       <div>
                         <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Attribute Modifiers</h4>
-                        <div className="space-y-1 opacity-80">
+                        <div className="space-y-1.5 opacity-75">
                           {r.attributeModifierValues.map(am => (
-                            <div key={am.attributeId} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-background/50 border border-border">
+                            <div key={am.attributeId} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
                               <span className="text-sm text-foreground truncate">{am.attributeName} Mod</span>
                               <span className="text-sm font-semibold text-muted">
-                                {am.effectiveModifier > 0 ? `+${am.effectiveModifier}` : `+0`}
+                                {formatMod(am.effectiveModifier)}
                                 {am.rawModifier !== am.effectiveModifier && (
                                   <span className="text-[0.65rem] text-muted ml-1">(raw: {formatMod(am.rawModifier)})</span>
                                 )}

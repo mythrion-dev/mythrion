@@ -28,93 +28,189 @@ export function PersonalAbilitiesTab({
 }) {
   if (sections.length === 0) {
     return (
-      <div className="text-center py-6 text-muted-foreground text-sm italic">
-        No character sections configured. Ask your GM to define sections in the Sheet Template.
+      <div className="card !p-6 animate-slide-up">
+        <div className="text-center py-8 text-muted-foreground">
+          <svg className="w-10 h-10 mx-auto text-muted mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          <p className="text-sm italic mb-1">No character sections configured.</p>
+          <p className="text-xs text-muted">Ask your GM to define sections in the Sheet Template.</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-slide-up">
       {sections.map(section => {
         const sectionEntries = entries.filter(e => e.sectionId === section.id)
         const singular = toSingular(section.name)
         return (
-          <div key={section.id} className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-px bg-border/50" />
-              <h3 className="text-sm font-semibold text-primary uppercase tracking-wider shrink-0">{section.name}</h3>
-              <div className="flex-1 h-px bg-border/50" />
+          <div key={section.id} className="card !p-6 space-y-4">
+            {/* Section header with gold accent */}
+            <div className="header-accent">
+              <h3 className="text-lg font-semibold text-gradient">{section.name}</h3>
             </div>
 
+            {/* Empty state */}
             {sectionEntries.length === 0 && showNewEntry !== section.id && (
-              <div className="text-center py-4 text-muted-foreground text-sm italic">
-                No entries yet.
+              <div className="text-center py-6 text-muted-foreground">
+                <svg className="w-8 h-8 mx-auto text-muted mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                </svg>
+                <p className="text-sm italic">No entries yet.</p>
+                {isOwner && (
+                  <button
+                    onClick={() => setShowNewEntry(section.id)}
+                    className="btn-primary text-xs mt-3"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Add {singular}
+                  </button>
+                )}
               </div>
             )}
 
-            <div className="space-y-1.5">
-              {sectionEntries.map(entry => {
-                const isExpanded = expandedEntries[entry.id] ?? false
-                return (
-                  <div key={entry.id} className="rounded-lg border border-border bg-background/30 overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => setExpandedEntries(p => ({ ...p, [entry.id]: !p[entry.id] }))}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-foreground/5 transition-colors"
+            {/* Entries list */}
+            {sectionEntries.length > 0 && (
+              <div className="space-y-2">
+                {sectionEntries.map((entry, idx) => {
+                  const isExpanded = expandedEntries[entry.id] ?? false
+                  return (
+                    <div
+                      key={entry.id}
+                      className={`rounded-lg border transition-all duration-200 ${
+                        isExpanded
+                          ? 'border-primary/20 bg-background/40'
+                          : 'border-border bg-background/20 hover:bg-foreground/5'
+                      }`}
+                      style={{ animationDelay: `${idx * 60}ms` }}
                     >
-                      <svg className={`w-3.5 h-3.5 text-muted transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-                      </svg>
-                      <span className="text-sm font-medium flex-1 truncate">
-                        {isOwner ? (
-                          <InlineClickEdit value={entry.name} onSave={(v) => handleUpdateEntry(entry.id, 'name', v)} className="!text-sm !font-medium" inputClassName="!text-sm" />
-                        ) : entry.name}
-                      </span>
-                      {isOwner && (
-                        <button
-                          type="button"
-                          onClick={e => { e.stopPropagation(); handleDeleteEntry(entry.id) }}
-                          className="text-xs text-danger hover:text-danger/80 px-1 py-0.5 transition-colors shrink-0"
+                      {/* Entry header */}
+                      <button
+                        type="button"
+                        onClick={() => setExpandedEntries(p => ({ ...p, [entry.id]: !p[entry.id] }))}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                      >
+                        <svg
+                          className={`w-3.5 h-3.5 text-muted transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
                         >
-                          Delete
-                        </button>
-                      )}
-                    </button>
-                    {isExpanded && (
-                      <div className="px-4 pb-3 pt-2 border-t border-border animate-fade-in">
-                        <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
-                        {isOwner ? (
-                          <InlineClickEdit value={entry.description ?? ''} onSave={(v) => handleUpdateEntry(entry.id, 'description', v)} as="textarea" className="text-sm text-muted-foreground whitespace-pre-wrap" emptyDisplay="Add description..." rows={2} />
-                        ) : (
-                          entry.description ? <p className="text-sm text-muted-foreground whitespace-pre-wrap">{entry.description}</p> : <p className="text-sm text-muted italic">No description.</p>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
+                        </svg>
+                        <span className="text-sm font-medium flex-1 truncate">
+                          {isOwner ? (
+                            <InlineClickEdit
+                              value={entry.name}
+                              onSave={(v) => handleUpdateEntry(entry.id, 'name', v)}
+                              className="!text-sm !font-medium"
+                              inputClassName="!text-sm"
+                            />
+                          ) : entry.name}
+                        </span>
+                        {isOwner && (
+                          <button
+                            type="button"
+                            onClick={e => { e.stopPropagation(); handleDeleteEntry(entry.id) }}
+                            className="text-muted hover:text-danger p-1 transition-colors shrink-0"
+                            title="Delete entry"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                          </button>
                         )}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+                      </button>
 
-            {isOwner && showNewEntry !== section.id && (
-              <button onClick={() => setShowNewEntry(section.id)} className="btn-primary text-sm">
-                + New {singular}
+                      {/* Expanded description */}
+                      {isExpanded && (
+                        <div className="px-4 pb-4 pt-3 border-t border-border animate-fade-in">
+                          <h5 className="text-xs font-medium text-muted mb-1.5">Description</h5>
+                          {isOwner ? (
+                            <InlineClickEdit
+                              value={entry.description ?? ''}
+                              onSave={(v) => handleUpdateEntry(entry.id, 'description', v)}
+                              as="textarea"
+                              className="text-sm text-muted-foreground whitespace-pre-wrap"
+                              emptyDisplay="Add a description..."
+                              rows={2}
+                            />
+                          ) : entry.description ? (
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{entry.description}</p>
+                          ) : (
+                            <p className="text-sm text-muted italic">No description.</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* New entry button or form */}
+            {isOwner && showNewEntry !== section.id && sectionEntries.length > 0 && (
+              <button
+                onClick={() => setShowNewEntry(section.id)}
+                className="btn-primary text-sm"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
+                </svg>
+                New {singular}
               </button>
             )}
+
             {isOwner && showNewEntry === section.id && (
-              <form onSubmit={(e) => handleCreateEntry(section.id, e)} className="card !p-4 space-y-3 border-primary/20">
-                <h4 className="text-sm font-semibold text-primary">New {singular}</h4>
-                <div>
-                  <label className="text-xs text-muted">Name</label>
-                  <input className="input-field" value={newEntryForm.name} onChange={e => setNewEntryForm(p => ({ ...p, name: e.target.value }))} required placeholder={`e.g. ${singular} name`} />
+              <form onSubmit={(e) => handleCreateEntry(section.id, e)} className="card !p-5 space-y-4 border-primary/20 mt-4">
+                <div className="header-accent">
+                  <h4 className="text-sm font-semibold text-gradient">New {singular}</h4>
                 </div>
                 <div>
-                  <label className="text-xs text-muted">Description</label>
-                  <textarea className="input-field resize-none" rows={3} value={newEntryForm.description} onChange={e => setNewEntryForm(p => ({ ...p, description: e.target.value }))} placeholder="Describe the entry..." />
+                  <label htmlFor={`new-${section.id}-name`} className="label">Name</label>
+                  <input
+                    id={`new-${section.id}-name`}
+                    className="input-field"
+                    value={newEntryForm.name}
+                    onChange={e => setNewEntryForm(p => ({ ...p, name: e.target.value }))}
+                    required
+                    placeholder={`e.g. ${singular} name`}
+                    autoFocus
+                  />
                 </div>
-                <div className="flex gap-2 justify-end">
+                <div>
+                  <label htmlFor={`new-${section.id}-desc`} className="label">Description</label>
+                  <textarea
+                    id={`new-${section.id}-desc`}
+                    className="input-field resize-none"
+                    rows={3}
+                    value={newEntryForm.description}
+                    onChange={e => setNewEntryForm(p => ({ ...p, description: e.target.value }))}
+                    placeholder={`Describe this ${singular.toLowerCase()}...`}
+                  />
+                </div>
+                <div className="flex gap-3 justify-end pt-2 border-t border-border/40">
                   <button type="button" onClick={resetForm} disabled={saving} className="btn-ghost text-sm">Cancel</button>
-                  <button type="submit" disabled={saving || !newEntryForm.name.trim()} className="btn-primary text-sm">{saving ? 'Creating...' : 'Create'}</button>
+                  <button type="submit" disabled={saving || !newEntryForm.name.trim()} className="btn-primary text-sm">
+                    {saving ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Create {singular}
+                      </>
+                    )}
+                  </button>
                 </div>
               </form>
             )}

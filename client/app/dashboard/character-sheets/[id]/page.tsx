@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { api } from '@/lib/api'
-import { InlineText, InlineNumber, InlineTextarea } from '@/lib/inline-editable'
+import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import ResistanceTab from './resistance-tab'
-import { StoryField, CharacterTab, InventoryTab, PersonalAbilitiesTab, AbilitiesTab } from '@/components/character-sheet'
+import { StoryTab, CharacterTab, InventoryTab, PersonalAbilitiesTab, AbilitiesTab } from '@/components/character-sheet'
 import { PageNav } from '@/lib/breadcrumb'
 import type { SkillModifierProfile, ArmorClassAttributeModifierDef, SectionEntry, SummonSkillData, Ability, InventoryItem, Story, CharacterSheet, Tab, SummonTab, AcResultMap } from '@/components/character-sheet/types'
 
@@ -890,7 +890,7 @@ export default function CharacterSheetDetailPage() {
         expandedItems={expandedItems}
         setExpandedItems={setExpandedItems}
       />}
-      {activeTab === 'story' && <div className="space-y-4"><div className="card !p-6 space-y-4">{isOwner ? <><InlineTextarea value={story?.appearance ?? ''} label="Appearance" onSave={(v) => saveStoryField('appearance', v)} rows={3} emptyDisplay="Add appearance description..." /><InlineTextarea value={story?.backstory ?? ''} label="Backstory" onSave={(v) => saveStoryField('backstory', v)} rows={5} emptyDisplay="Add backstory..." /><InlineTextarea value={story?.personality ?? ''} label="Personality" onSave={(v) => saveStoryField('personality', v)} rows={3} emptyDisplay="Add personality description..." /><InlineTextarea value={story?.goals ?? ''} label="Goals" onSave={(v) => saveStoryField('goals', v)} rows={3} emptyDisplay="Add character goals..." /><InlineTextarea value={story?.notes ?? ''} label="Notes" onSave={(v) => saveStoryField('notes', v)} rows={3} emptyDisplay="Add notes..." /></> : <><StoryField label="Appearance" value={story?.appearance} /><StoryField label="Backstory" value={story?.backstory} /><StoryField label="Personality" value={story?.personality} /><StoryField label="Goals" value={story?.goals} /><StoryField label="Notes" value={story?.notes} /></>}</div></div>}
+      {activeTab === 'story' && <StoryTab story={story} isOwner={isOwner} onSaveField={saveStoryField} />}
 
       {activeTab === 'personal-abilities' && <PersonalAbilitiesTab
         sections={sheet.template.characterSections || []}
