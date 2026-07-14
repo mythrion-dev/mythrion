@@ -782,7 +782,7 @@ export default function CharacterSheetDetailPage() {
   const tabClass = (t: Tab) => `flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === t ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`
   const enabledCoreResources = (sheet.template.coreResources || []).filter(cr => cr.enabled)
 
-  return (<div className="max-w-3xl mx-auto w-full">
+  return (<div className="max-w-6xl mx-auto w-full">
     <PageNav crumbs={[
       { label: 'Dashboard', href: '/dashboard' },
       ...(sheet.adventure ? [{ label: sheet.adventure.name, href: `/dashboard/adventures/${sheet.adventure.id}` }] : []),
