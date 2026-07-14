@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 
 function getInitials(name: string | null): string {
@@ -19,8 +19,14 @@ export function Sidebar() {
   const router = useRouter()
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const searchParams = useSearchParams()
+  const currentTab = searchParams.get('tab')
 
-  const isActive = (prefix: string) => pathname.startsWith(prefix)
+  const isActive = (href: string) => {
+    const tab = href.split('tab=')[1] ?? null
+    if (!tab) return pathname === href
+    return pathname === '/dashboard' && currentTab === tab
+  }
 
   async function handleLogout() {
     await logout()
@@ -38,7 +44,7 @@ export function Sidebar() {
       ),
     },
     {
-      href: '/dashboard/adventures',
+      href: '/dashboard?tab=adventures',
       label: 'Adventures',
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -47,7 +53,7 @@ export function Sidebar() {
       ),
     },
     {
-      href: '/dashboard/character-sheets',
+      href: '/dashboard?tab=character-sheets',
       label: 'Character Sheets',
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -75,7 +81,7 @@ export function Sidebar() {
           <Link
             key={link.href}
             href={link.href}
-            className={`sidebar-link ${isActive(link.href) && link.href !== '/dashboard' || pathname === '/dashboard' && link.href === '/dashboard' ? 'sidebar-link-active' : ''}`}
+            className={`sidebar-link ${isActive(link.href) ? 'sidebar-link-active' : ''}`}
             onClick={() => setMobileOpen(false)}
           >
             {link.icon}

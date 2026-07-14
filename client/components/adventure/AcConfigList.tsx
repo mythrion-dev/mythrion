@@ -1,6 +1,6 @@
 'use client'
 
-import type { AcConfigDraft, ArmorClassAttributeModifierDraft } from '@/app/dashboard/adventures/[id]/page'
+import type { AcConfigDraft, ArmorClassAttributeModifierDraft } from '@/components/adventure/types'
 
 export function AcConfigList(props: {
   configs?: AcConfigDraft[]
