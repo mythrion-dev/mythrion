@@ -457,18 +457,21 @@ export default function AdventureDetailPage() {
   async function handleRevokeInvitation(invId: string) { try { await api.post(`/invitations/${invId}/revoke`); fetchInvitations() } catch { } }
   async function handleRemoveMember(uid: string) { try { await api.delete(`/adventures/${id}/members/${uid}`); fetchMembers() } catch { } }
 
-  if (fetching) return <div className="max-w-3xl mx-auto w-full py-10"><LoadingSkeleton variant="card" count={2} /></div>
-  if (!adventure) return <div className="max-w-3xl mx-auto w-full py-10"><EmptyState icon="🗺️" title="Adventure Not Found" description="This adventure doesn't exist or you don't have access to it." actionLabel="Back to Dashboard" actionHref="/dashboard" /></div>
+  if (fetching) return <div className="max-w-5xl mx-auto w-full py-10"><LoadingSkeleton variant="page" /></div>
+  if (!adventure) return <div className="max-w-5xl mx-auto w-full py-10"><EmptyState icon="🗺️" title="Adventure Not Found" description="This adventure doesn't exist or you don't have access to it." actionLabel="Back to Dashboard" actionHref="/dashboard" /></div>
 
   return (
-    <div className="max-w-3xl mx-auto w-full relative">
+    <div className="max-w-5xl mx-auto w-full relative">
       {/* Ambient glow */}
-      <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-gradient-to-b from-accent/5 via-primary/3 to-transparent blur-3xl pointer-events-none" />
+      <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-gradient-to-b from-accent/5 via-primary/3 to-transparent blur-3xl pointer-events-none" />
       <PageNav crumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: adventure.name }]} />
       <AdventureHeader adventure={adventure} isGM={isGM} userRole={userRole} onEdit={() => setEditing(true)} onDelete={() => setConfirmDelete(true)} />
-      {!editing ? (<div className="space-y-6 mt-6">
-        <nav className="flex gap-1"><button onClick={() => setActiveTab('campaign')} className={`tab-pill ${activeTab === 'campaign' ? 'tab-pill-active' : ''}`}>Campaign</button><button onClick={() => setActiveTab('templates')} className={`tab-pill ${activeTab === 'templates' ? 'tab-pill-active' : ''}`}>Character Sheet Templates</button></nav>
-        {activeTab === 'campaign' ? (<>
+      {!editing ? (<div className="space-y-6 mt-8">
+        <div className="flex items-center justify-between gap-4">
+          <nav className="flex gap-1"><button onClick={() => setActiveTab('campaign')} className={`tab-pill ${activeTab === 'campaign' ? 'tab-pill-active' : ''}`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>Campaign</button><button onClick={() => setActiveTab('templates')} className={`tab-pill ${activeTab === 'templates' ? 'tab-pill-active' : ''}`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>Templates</button></nav>
+        </div>
+        <hr className="divider" />
+        {activeTab === 'campaign' ? (<div className="space-y-6">
           <CollapsibleSection title="Party Members" accent expanded={showMembers} onToggle={() => { setShowMembers(!showMembers); if (!showMembers) { fetchMembers(); if (isGM) fetchInvitations() } }}>
             {members.length === 0 ? <LoadingSkeleton variant="list" /> : <div className="space-y-2">{members.map(m => <MemberRow key={m.id} member={m} isGM={isGM} isSelf={m.user.id === user?.id} onRemove={() => handleRemoveMember(m.user.id)} />)}</div>}
           </CollapsibleSection>
@@ -478,7 +481,7 @@ export default function AdventureDetailPage() {
           <CollapsibleSection title="Characters" accent expanded={showCharacters} onToggle={() => { setShowCharacters(!showCharacters); if (!showCharacters) { fetchCampaignCharacters(); fetchUserSheets() } }}>
             <CharactersSection characters={campaignCharacters} isGM={isGM} userId={user?.id ?? ''} templates={templates} userSheets={userSheets} showNewCharForm={showNewCharForm} showLinkCharForm={showLinkCharForm} newCharName={newCharName} newCharTemplateId={newCharTemplateId} newCharError={newCharError} newCharCreating={newCharCreating} linkSheetId={linkSheetId} linkCharError={linkCharError} linkCharLinking={linkCharLinking} onNewCharClick={() => { setShowNewCharForm(true); setShowLinkCharForm(false); fetchTemplates() }} onLinkCharClick={() => { setShowLinkCharForm(true); setShowNewCharForm(false); fetchUserSheets() }} onCancelNewChar={() => { setShowNewCharForm(false); setNewCharName(''); setNewCharTemplateId(''); setNewCharError(null) }} onCancelLinkChar={() => { setShowLinkCharForm(false); setLinkSheetId(''); setLinkCharError(null) }} onCreateCharacter={handleCreateCharacter} onLinkCharacter={handleLinkCharacter} onNewCharNameChange={setNewCharName} onNewCharTemplateChange={setNewCharTemplateId} onLinkSheetChange={setLinkSheetId} onRemoveCharacter={handleRemoveCharacter} onViewCharacter={sid => router.push(`/dashboard/character-sheets/${sid}`)} />
           </CollapsibleSection>
-        </>) : (
+        </div>) : (
           <TemplatesSection templates={templates} isGM={isGM} showNewTemplate={showNewTemplate} editingTemplateId={editingTemplateId}
             newTemplateName={newTemplateName} newTemplateDescription={newTemplateDescription} newTemplateAttrs={newTemplateAttrs} newAttrModifierFormula={newAttrModifierFormula} newSkillFormula={newSkillFormula} newTemplateFields={newTemplateFields} templateError={templateError} templateCreating={templateCreating}
             editTemplateName={editTemplateName} editTemplateDescription={editTemplateDescription} editTemplateAttrs={editTemplateAttrs} editAttrModifierFormula={editAttrModifierFormula} editSkillFormula={editSkillFormula} editingTemplateError={editingTemplateError} templateSaving={templateSaving}

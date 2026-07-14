@@ -40,7 +40,7 @@ export default function NewAdventurePage() {
       {/* Ambient glow */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-gradient-to-b from-accent/5 via-primary/3 to-transparent blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md space-y-6 animate-slide-up relative z-10">
+      <div className="w-full max-w-xl space-y-6 animate-slide-up relative z-10">
         <PageNav crumbs={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'New Adventure' },
@@ -73,41 +73,39 @@ export default function NewAdventurePage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="card !p-6 space-y-4">
-          <div>
-            <label htmlFor="name" className="label">
-              Adventure Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              required
-              maxLength={100}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="input-field"
-              placeholder="e.g. The Dragon's Lair"
-              autoFocus
-            />
-          </div>
-
-          <div>
-            <label htmlFor="campaign" className="label">
-              Campaign
-            </label>
-            <input
-              id="campaign"
-              type="text"
-              required
-              maxLength={50}
-              value={campaign}
-              onChange={(e) => setCampaign(e.target.value)}
-              className="input-field"
-              placeholder="e.g. D&D, Tormenta, Call of Cthulhu"
-            />
-            <p className="text-xs text-muted mt-1.5">
-              Type the RPG system for this adventure.
-            </p>
+        <form onSubmit={handleSubmit} className="card !p-6 space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="name" className="label">
+                Adventure Name
+              </label>
+              <input
+                id="name"
+                type="text"
+                required
+                maxLength={100}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="input-field"
+                placeholder="e.g. The Dragon's Lair"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label htmlFor="campaign" className="label">
+                Campaign <span className="text-muted font-normal">(RPG system)</span>
+              </label>
+              <input
+                id="campaign"
+                type="text"
+                required
+                maxLength={50}
+                value={campaign}
+                onChange={(e) => setCampaign(e.target.value)}
+                className="input-field"
+                placeholder="e.g. D&D, Tormenta, Call of Cthulhu"
+              />
+            </div>
           </div>
 
           <div>
@@ -122,11 +120,12 @@ export default function NewAdventurePage() {
               value={synopsis}
               onChange={(e) => setSynopsis(e.target.value)}
               className="input-field resize-none"
-              placeholder="Briefly describe the adventure..."
+              placeholder="Give your adventure a brief description — set the scene for your players..."
             />
-            <p className="text-xs text-muted mt-1.5 text-right">
-              {synopsis.length}/2000
-            </p>
+            <div className="flex justify-between items-center mt-1.5">
+              <p className="text-xs text-muted">Describe the tone, setting, and premise of your adventure.</p>
+              <span className="text-xs text-muted">{synopsis.length}/2000</span>
+            </div>
           </div>
 
           <div>
@@ -162,35 +161,43 @@ export default function NewAdventurePage() {
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={submitting || name.trim().length === 0 || campaign.trim().length === 0}
-            className="btn-primary w-full"
-          >
-            {submitting ? (
-              <>
-                <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                Create Adventure
-              </>
-            )}
-          </button>
+          <div className="flex gap-3 justify-end pt-2 border-t border-border/40">
+            <Link
+              href="/dashboard"
+              className="btn-ghost text-sm"
+            >
+              Cancel
+            </Link>
+            <button
+              type="submit"
+              disabled={submitting || name.trim().length === 0 || campaign.trim().length === 0}
+              className="btn-primary text-sm"
+            >
+              {submitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Create Adventure
+                </>
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>
