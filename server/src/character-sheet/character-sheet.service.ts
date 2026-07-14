@@ -2,9 +2,11 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common'
 import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
+import { RedisService } from '../redis/redis.service.js'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
 import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
 
@@ -143,10 +145,38 @@ const sheetInclude = {
 
 @Injectable()
 export class CharacterSheetService {
+  private readonly logger = new Logger(CharacterSheetService.name)
+  private readonly CACHE_TTL = 30 // seconds
+  private readonly LIST_CACHE_TTL = 15 // seconds
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly membership: MembershipService,
+    private readonly redis: RedisService,
   ) {}
+
+  private cacheKey(id: string): string {
+    return `character-sheet:${id}`
+  }
+
+  private userListCacheKey(userId: string): string {
+    return `character-sheets:user:${userId}`
+  }
+
+  private adventureListCacheKey(adventureId: string): string {
+    return `character-sheets:adventure:${adventureId}`
+  }
+
+  /** Invalidate cached sheet(s). sheetId always invalidated; userId/adventureId also invalidate list caches. */
+  private async invalidateCache(sheetId: string, userId?: string, adventureId?: string): Promise<void> {
+    try {
+      await this.redis.del(this.cacheKey(sheetId))
+      if (userId) await this.redis.del(this.userListCacheKey(userId))
+      if (adventureId) await this.redis.del(this.adventureListCacheKey(adventureId))
+    } catch (err) {
+      this.logger.warn('Failed to invalidate character sheet cache', err)
+    }
+  }
 
   /** Create a character sheet from a template. */
   async create(userId: string, dto: CreateCharacterSheetDto) {
@@ -205,7 +235,7 @@ export class CharacterSheetService {
       include: { components: true },
     })
 
-    return this.prisma.characterSheet.create({
+    const sheet = await this.prisma.characterSheet.create({
       data: {
         characterName: dto.characterName,
         playerName: dto.playerName ?? null,
@@ -266,10 +296,19 @@ export class CharacterSheetService {
       },
       include: sheetInclude,
     })
+
+    // Invalidate user's list cache for the new sheet
+    await this.invalidateCache(sheet.id, userId, adventureId ?? undefined).catch(() => {})
+
+    return sheet
   }
 
   async findAllByUser(userId: string) {
-    return this.prisma.characterSheet.findMany({
+    // Try cache first
+    const cached = await this.redis.cacheGet<any[]>(this.userListCacheKey(userId))
+    if (cached) return cached
+
+    const sheets = await this.prisma.characterSheet.findMany({
       where: { ownerId: userId },
       include: {
         adventure: { select: { id: true, name: true, campaign: true } },
@@ -277,9 +316,24 @@ export class CharacterSheetService {
       },
       orderBy: { createdAt: 'desc' },
     })
+
+    // Cache the list
+    await this.redis.cacheSet(this.userListCacheKey(userId), sheets, this.LIST_CACHE_TTL).catch(() => {})
+
+    return sheets
   }
 
   async findAllByAdventure(adventureId: string, userId: string) {
+    // Try cache first
+    const cached = await this.redis.cacheGet<any[]>(this.adventureListCacheKey(adventureId))
+    if (cached) {
+      const member = await this.prisma.campaignMember.findUnique({
+        where: { adventureId_userId: { adventureId, userId } },
+      })
+      if (!member) throw new ForbiddenException('You are not a member of this adventure')
+      return cached
+    }
+
     const member = await this.prisma.campaignMember.findUnique({
       where: { adventureId_userId: { adventureId, userId } },
     })
@@ -289,7 +343,7 @@ export class CharacterSheetService {
       ? { adventureId }
       : { adventureId, ownerId: userId }
 
-    return this.prisma.characterSheet.findMany({
+    const sheets = await this.prisma.characterSheet.findMany({
       where,
       include: {
         adventure: { select: { id: true, name: true, campaign: true } },
@@ -298,9 +352,28 @@ export class CharacterSheetService {
       },
       orderBy: { createdAt: 'desc' },
     })
+
+    // Cache the list
+    await this.redis.cacheSet(this.adventureListCacheKey(adventureId), sheets, this.LIST_CACHE_TTL).catch(() => {})
+
+    return sheets
   }
 
   async findOne(id: string, userId: string) {
+    // Try cache first
+    const cached = await this.redis.cacheGet<any>(this.cacheKey(id))
+    if (cached) {
+      if (cached.ownerId !== userId) {
+        if (!cached.adventureId) throw new ForbiddenException('You do not have access to this character sheet')
+        try {
+          await this.membership.requireRole(cached.adventureId, userId, 'GM')
+        } catch {
+          throw new ForbiddenException('You do not have access to this character sheet')
+        }
+      }
+      return cached
+    }
+
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id }, include: sheetInclude })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) {
@@ -311,6 +384,10 @@ export class CharacterSheetService {
         throw new ForbiddenException('You do not have access to this character sheet')
       }
     }
+
+    // Cache the result
+    await this.redis.cacheSet(this.cacheKey(id), sheet, this.CACHE_TTL).catch(() => {})
+
     return sheet
   }
 
@@ -393,7 +470,7 @@ export class CharacterSheetService {
         })
     }
 
-    return this.prisma.characterSheet.update({
+    const updated = await this.prisma.characterSheet.update({
       where: { id },
       data: {
         ...(dto.characterName !== undefined && { characterName: dto.characterName }),
@@ -405,13 +482,23 @@ export class CharacterSheetService {
       },
       include: sheetInclude,
     })
+
+    // Invalidate cache for this sheet and the owner's list
+    await this.invalidateCache(sheet.id, sheet.ownerId, sheet.adventureId ?? undefined).catch(() => {})
+
+    return updated
   }
 
   async remove(id: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can delete this character sheet')
-    return this.prisma.characterSheet.delete({ where: { id } })
+    const deleted = await this.prisma.characterSheet.delete({ where: { id } })
+
+    // Invalidate cache for this sheet and the owner's list
+    await this.invalidateCache(id, sheet.ownerId, sheet.adventureId ?? undefined).catch(() => {})
+
+    return deleted
   }
 
   async linkToAdventure(sheetId: string, adventureId: string, userId: string) {
@@ -420,7 +507,12 @@ export class CharacterSheetService {
     if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can link this character sheet')
     const isMember = await this.membership.isMember(adventureId, userId)
     if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
-    return this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId }, include: sheetInclude })
+    const linked = await this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId }, include: sheetInclude })
+
+    // Invalidate cache — both old adventure (none) and new adventure lists, plus sheet + user
+    await this.invalidateCache(sheetId, sheet.ownerId, adventureId).catch(() => {})
+
+    return linked
   }
 
   async unlinkFromAdventure(sheetId: string, userId: string) {
@@ -431,29 +523,38 @@ export class CharacterSheetService {
       try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
       catch { throw new ForbiddenException('Only the owner or a GM can unlink this character sheet') }
     }
-    return this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId: null }, include: sheetInclude })
+    const unlinked = await this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId: null }, include: sheetInclude })
+
+    // Invalidate cache for old adventure list, sheet + user
+    await this.invalidateCache(sheetId, sheet.ownerId, sheet.adventureId ?? undefined).catch(() => {})
+
+    return unlinked
   }
 
   async updateSkillProfileValue(sheetId: string, skillId: string, profileId: string, optionId: string | null, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can edit this character sheet')
-    return this.prisma.characterSheetSkillProfileValue.upsert({
+    const result = await this.prisma.characterSheetSkillProfileValue.upsert({
       where: { sheetId_skillId_profileId: { sheetId, skillId, profileId } },
       create: { sheetId, skillId, profileId, optionId },
       update: { optionId },
     })
+    await this.invalidateCache(sheetId).catch(() => {})
+    return result
   }
 
   async updateSkillAttribute(sheetId: string, skillId: string, attributeId: string | null, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can edit this character sheet')
-    return this.prisma.characterSheetSkillValue.upsert({
+    const result = await this.prisma.characterSheetSkillValue.upsert({
       where: { sheetId_skillId: { sheetId, skillId } },
       create: { sheetId, skillId, value: '', selectedAttributeId: attributeId },
       update: { selectedAttributeId: attributeId },
     })
+    await this.invalidateCache(sheetId).catch(() => {})
+    return result
   }
 
   // ── Abilities & Summons (CRUD) ──
@@ -524,7 +625,7 @@ export class CharacterSheetService {
 
       const summonAttrData = dto.summonAttributeValues ?? templateAttrs.map(a => ({ attributeId: a.id, value: '' }))
 
-      return this.prisma.characterAbility.create({
+      const result = await this.prisma.characterAbility.create({
         data: {
           sheetId,
           name: dto.name,
@@ -544,10 +645,12 @@ export class CharacterSheetService {
         },
         include: this.abilityInclude,
       })
+      await this.invalidateCache(sheetId).catch(() => {})
+      return result
     }
 
     // Regular ABILITY (possibly summon-scoped if summonId provided)
-    return this.prisma.characterAbility.create({
+    const result = await this.prisma.characterAbility.create({
       data: {
         sheetId,
         summonId: dto.summonId ?? null,
@@ -569,20 +672,26 @@ export class CharacterSheetService {
       },
       include: this.abilityInclude,
     })
+    await this.invalidateCache(sheetId).catch(() => {})
+    return result
   }
 
   async updateAbility(abilityId: string, userId: string, dto: { name?: string; description?: string; notes?: string }) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
     if (!ability) throw new NotFoundException('Ability not found')
     await this.requireOwnership(ability.sheetId, userId)
-    return this.prisma.characterAbility.update({ where: { id: abilityId }, data: { ...dto }, include: this.abilityInclude })
+    const result = await this.prisma.characterAbility.update({ where: { id: abilityId }, data: { ...dto }, include: this.abilityInclude })
+    await this.invalidateCache(ability.sheetId).catch(() => {})
+    return result
   }
 
   async removeAbility(abilityId: string, userId: string) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
     if (!ability) throw new NotFoundException('Ability not found')
     await this.requireOwnership(ability.sheetId, userId)
-    return this.prisma.characterAbility.delete({ where: { id: abilityId } })
+    const result = await this.prisma.characterAbility.delete({ where: { id: abilityId } })
+    await this.invalidateCache(ability.sheetId).catch(() => {})
+    return result
   }
 
   // ── Summon-scoped ability CRUD ──
@@ -607,7 +716,7 @@ export class CharacterSheetService {
     if (summon.type !== 'SUMMON') throw new ForbiddenException('Only summons can have child abilities')
 
     const count = await this.prisma.characterAbility.count({ where: { summonId } })
-    return this.prisma.characterAbility.create({
+    const result = await this.prisma.characterAbility.create({
       data: {
         sheetId: summon.sheetId,
         summonId,
@@ -629,6 +738,8 @@ export class CharacterSheetService {
       },
       include: this.abilityInclude,
     })
+    await this.invalidateCache(summon.sheetId).catch(() => {})
+    return result
   }
 
   // ── Ability Levels (CRUD — for ABILITY type only) ──
@@ -684,13 +795,15 @@ export class CharacterSheetService {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityLevel.abilityId } })
     if (!ability) throw new NotFoundException('Ability not found')
     await this.requireOwnership(ability.sheetId, userId)
-    return this.prisma.characterAbilityLevel.update({
+    const result = await this.prisma.characterAbilityLevel.update({
       where: { id: levelId },
       data: {
         ...dto,
         ...(dto.level !== undefined ? { level: String(dto.level) } : {}),
       },
     })
+    await this.invalidateCache(ability.sheetId).catch(() => {})
+    return result
   }
 
   async deleteAbilityLevel(levelId: string, userId: string) {
@@ -699,7 +812,9 @@ export class CharacterSheetService {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityLevel.abilityId } })
     if (!ability) throw new NotFoundException('Ability not found')
     await this.requireOwnership(ability.sheetId, userId)
-    return this.prisma.characterAbilityLevel.delete({ where: { id: levelId } })
+    const result = await this.prisma.characterAbilityLevel.delete({ where: { id: levelId } })
+    await this.invalidateCache(ability.sheetId).catch(() => {})
+    return result
   }
 
   // ── Summon Skills ──
@@ -714,7 +829,7 @@ export class CharacterSheetService {
     const skill = await this.prisma.templateSkill.findUnique({ where: { id: skillId } })
     const defaultAttrId = skill?.defaultAttributeId ?? skill?.attributeId ?? null
 
-    return this.prisma.summonSkill.create({
+    const result = await this.prisma.summonSkill.create({
       data: {
         abilityId,
         skillId,
@@ -731,6 +846,8 @@ export class CharacterSheetService {
         },
       },
     })
+    await this.invalidateCache(ability.sheetId).catch(() => {})
+    return result
   }
 
   async removeSummonSkill(summonSkillId: string, userId: string) {
@@ -740,7 +857,9 @@ export class CharacterSheetService {
     })
     if (!ss) throw new NotFoundException('Summon skill not found')
     await this.requireOwnership(ss.ability.sheetId, userId)
-    return this.prisma.summonSkill.delete({ where: { id: summonSkillId } })
+    const result = await this.prisma.summonSkill.delete({ where: { id: summonSkillId } })
+    await this.invalidateCache(ss.ability.sheetId).catch(() => {})
+    return result
   }
 
   async updateSummonSkillAttribute(summonSkillId: string, attributeId: string | null, userId: string) {
@@ -750,7 +869,7 @@ export class CharacterSheetService {
     })
     if (!ss) throw new NotFoundException('Summon skill not found')
     await this.requireOwnership(ss.ability.sheetId, userId)
-    return this.prisma.summonSkill.update({
+    const result = await this.prisma.summonSkill.update({
       where: { id: summonSkillId },
       data: { selectedAttributeId: attributeId },
       include: {
@@ -764,6 +883,8 @@ export class CharacterSheetService {
         },
       },
     })
+    await this.invalidateCache(ss.ability.sheetId).catch(() => {})
+    return result
   }
 
   async updateSummonSkillProfile(summonSkillId: string, profileId: string, optionId: string | null, userId: string) {
@@ -773,11 +894,13 @@ export class CharacterSheetService {
     })
     if (!ss) throw new NotFoundException('Summon skill not found')
     await this.requireOwnership(ss.ability.sheetId, userId)
-    return this.prisma.summonSkillProfileValue.upsert({
+    const result = await this.prisma.summonSkillProfileValue.upsert({
       where: { summonSkillId_profileId: { summonSkillId, profileId } },
       create: { summonSkillId, profileId, optionId },
       update: { optionId },
     })
+    await this.invalidateCache(ss.ability.sheetId).catch(() => {})
+    return result
   }
 
   // ── Summon Attribute Values ──
@@ -786,11 +909,13 @@ export class CharacterSheetService {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
     if (!ability) throw new NotFoundException('Ability not found')
     await this.requireOwnership(ability.sheetId, userId)
-    return this.prisma.summonAttribute.upsert({
+    const result = await this.prisma.summonAttribute.upsert({
       where: { abilityId_attributeId: { abilityId, attributeId } },
       create: { abilityId, attributeId, value },
       update: { value },
     })
+    await this.invalidateCache(ability.sheetId).catch(() => {})
+    return result
   }
 
   // ── Summon AC Values ──
@@ -799,11 +924,13 @@ export class CharacterSheetService {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
     if (!ability) throw new NotFoundException('Ability not found')
     await this.requireOwnership(ability.sheetId, userId)
-    return this.prisma.summonArmorClassValue.upsert({
+    const result = await this.prisma.summonArmorClassValue.upsert({
       where: { abilityId_fieldId: { abilityId, fieldId } },
       create: { abilityId, fieldId, value },
       update: { value },
     })
+    await this.invalidateCache(ability.sheetId).catch(() => {})
+    return result
   }
 
   // ── Summon Health ──
@@ -812,11 +939,13 @@ export class CharacterSheetService {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
     if (!ability) throw new NotFoundException('Ability not found')
     await this.requireOwnership(ability.sheetId, userId)
-    return this.prisma.summonHealth.upsert({
+    const result = await this.prisma.summonHealth.upsert({
       where: { abilityId },
       create: { abilityId, current: dto.current ?? null, maximum: dto.maximum ?? null, notes: dto.notes ?? null },
       update: { current: dto.current, maximum: dto.maximum, notes: dto.notes },
     })
+    await this.invalidateCache(ability.sheetId).catch(() => {})
+    return result
   }
 
   // ── Inventory (CRUD) ──
@@ -829,21 +958,27 @@ export class CharacterSheetService {
   async createInventoryItem(sheetId: string, userId: string, dto: { name: string; weight?: number; cost?: string; description?: string }) {
     await this.requireOwnership(sheetId, userId)
     const count = await this.prisma.characterInventoryItem.count({ where: { sheetId } })
-    return this.prisma.characterInventoryItem.create({ data: { sheetId, name: dto.name, weight: dto.weight ?? null, cost: dto.cost ?? null, description: dto.description ?? null, order: count } })
+    const result = await this.prisma.characterInventoryItem.create({ data: { sheetId, name: dto.name, weight: dto.weight ?? null, cost: dto.cost ?? null, description: dto.description ?? null, order: count } })
+    await this.invalidateCache(sheetId).catch(() => {})
+    return result
   }
 
   async updateInventoryItem(itemId: string, userId: string, dto: { name?: string; weight?: number; cost?: string; description?: string }) {
     const item = await this.prisma.characterInventoryItem.findUnique({ where: { id: itemId } })
     if (!item) throw new NotFoundException('Inventory item not found')
     await this.requireOwnership(item.sheetId, userId)
-    return this.prisma.characterInventoryItem.update({ where: { id: itemId }, data: { ...dto } })
+    const result = await this.prisma.characterInventoryItem.update({ where: { id: itemId }, data: { ...dto } })
+    await this.invalidateCache(item.sheetId).catch(() => {})
+    return result
   }
 
   async removeInventoryItem(itemId: string, userId: string) {
     const item = await this.prisma.characterInventoryItem.findUnique({ where: { id: itemId } })
     if (!item) throw new NotFoundException('Inventory item not found')
     await this.requireOwnership(item.sheetId, userId)
-    return this.prisma.characterInventoryItem.delete({ where: { id: itemId } })
+    const result = await this.prisma.characterInventoryItem.delete({ where: { id: itemId } })
+    await this.invalidateCache(item.sheetId).catch(() => {})
+    return result
   }
 
   // ── Story (CRUD — one-to-one) ──
@@ -859,7 +994,9 @@ export class CharacterSheetService {
 
   async updateStory(sheetId: string, userId: string, dto: { appearance?: string; backstory?: string; personality?: string; goals?: string; notes?: string }) {
     await this.requireOwnership(sheetId, userId)
-    return this.prisma.characterStory.upsert({ where: { sheetId }, create: { sheetId, ...dto }, update: { ...dto } })
+    const result = await this.prisma.characterStory.upsert({ where: { sheetId }, create: { sheetId, ...dto }, update: { ...dto } })
+    await this.invalidateCache(sheetId).catch(() => {})
+    return result
   }
 
   // ── Character Section Entries (CRUD) ──
@@ -876,7 +1013,7 @@ export class CharacterSheetService {
   async createSectionEntry(sheetId: string, userId: string, dto: { sectionId: string; name: string; description?: string; notes?: string }) {
     await this.requireOwnership(sheetId, userId)
     const count = await this.prisma.characterSectionEntry.count({ where: { sheetId, sectionId: dto.sectionId } })
-    return this.prisma.characterSectionEntry.create({
+    const result = await this.prisma.characterSectionEntry.create({
       data: {
         sheetId,
         sectionId: dto.sectionId,
@@ -887,24 +1024,30 @@ export class CharacterSheetService {
       },
       include: { section: { select: { id: true, name: true } } },
     })
+    await this.invalidateCache(sheetId).catch(() => {})
+    return result
   }
 
   async updateSectionEntry(entryId: string, userId: string, dto: { name?: string; description?: string; notes?: string }) {
     const entry = await this.prisma.characterSectionEntry.findUnique({ where: { id: entryId } })
     if (!entry) throw new NotFoundException('Section entry not found')
     await this.requireOwnership(entry.sheetId, userId)
-    return this.prisma.characterSectionEntry.update({
+    const result = await this.prisma.characterSectionEntry.update({
       where: { id: entryId },
       data: { ...dto },
       include: { section: { select: { id: true, name: true } } },
     })
+    await this.invalidateCache(entry.sheetId).catch(() => {})
+    return result
   }
 
   async removeSectionEntry(entryId: string, userId: string) {
     const entry = await this.prisma.characterSectionEntry.findUnique({ where: { id: entryId } })
     if (!entry) throw new NotFoundException('Section entry not found')
     await this.requireOwnership(entry.sheetId, userId)
-    return this.prisma.characterSectionEntry.delete({ where: { id: entryId } })
+    const result = await this.prisma.characterSectionEntry.delete({ where: { id: entryId } })
+    await this.invalidateCache(entry.sheetId).catch(() => {})
+    return result
   }
 
   async createResistance(
@@ -963,6 +1106,7 @@ export class CharacterSheetService {
       })
     }
 
+    await this.invalidateCache(sheetId).catch(() => {})
     return resistance
   }
 
@@ -971,7 +1115,9 @@ export class CharacterSheetService {
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can manage this character sheet')
 
-    return this.prisma.templateResistance.delete({ where: { id: resistanceId } })
+    const result = await this.prisma.templateResistance.delete({ where: { id: resistanceId } })
+    await this.invalidateCache(sheetId).catch(() => {})
+    return result
   }
 
   private async requireOwnership(sheetId: string, userId: string) {
