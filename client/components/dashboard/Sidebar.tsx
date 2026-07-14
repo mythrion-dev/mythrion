@@ -80,15 +80,26 @@ export function Sidebar() {
 
   const sidebarContent = (
     <div className={`flex flex-col h-full p-3 transition-all duration-300 ${collapsed ? 'items-center' : 'p-4'}`}>
-      {/* Logo */}
-      <Link
-        href="/dashboard"
-        className={`text-xl font-semibold text-gradient tracking-tight transition-all duration-300 ${collapsed ? 'text-sm w-8 h-8 flex items-center justify-center' : ''}`}
-        onClick={() => setMobileOpen(false)}
-        title="Dashboard"
-      >
-        {collapsed ? 'M' : 'Mythrion'}
-      </Link>
+      {/* Logo + collapse toggle */}
+      <div className={`flex items-center transition-all duration-300 ${collapsed ? 'justify-center' : 'justify-between'}`}>
+        <Link
+          href="/dashboard"
+          className={`text-xl font-semibold text-gradient tracking-tight transition-all duration-300 ${collapsed ? 'text-sm w-8 h-8 flex items-center justify-center' : ''}`}
+          onClick={() => setMobileOpen(false)}
+          title="Dashboard"
+        >
+          {collapsed ? 'M' : 'Mythrion'}
+        </Link>
+        <button
+          onClick={toggleCollapsed}
+          className="flex items-center justify-center w-7 h-7 rounded-lg text-muted hover:text-foreground hover:bg-background/40 transition-colors"
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <svg className={`w-3.5 h-3.5 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+          </svg>
+        </button>
+      </div>
       <hr className={`divider my-4 transition-all duration-300 ${collapsed ? 'my-3 w-8 mx-auto' : ''}`} />
 
       {/* Navigation */}
@@ -106,18 +117,6 @@ export function Sidebar() {
           </Link>
         ))}
       </nav>
-
-      {/* Collapse toggle (desktop only) */}
-      <button
-        onClick={toggleCollapsed}
-        className={`hidden md:flex items-center justify-center w-full rounded-lg text-muted hover:text-foreground hover:bg-background/40 transition-colors mb-2 ${collapsed ? 'h-8 w-8 mx-auto' : 'h-8 gap-2'}`}
-        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      >
-        <svg className={`w-3.5 h-3.5 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-        </svg>
-        {!collapsed && <span className="text-xs">Collapse</span>}
-      </button>
 
       {/* User section */}
       <div className={`pt-4 border-t border-border space-y-3 w-full transition-all duration-300 ${collapsed ? 'pt-3 flex flex-col items-center' : ''}`}>
