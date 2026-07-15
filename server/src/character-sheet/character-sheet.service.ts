@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  ConflictException,
   Logger,
 } from '@nestjs/common'
 import { PrismaService } from '../prisma.service.js'
@@ -795,9 +796,21 @@ export class CharacterSheetService {
       }
     }
 
-    return this.prisma.characterAbilityLevel.create({
+    // Check that the (abilityId, level) pair doesn't already exist
+    const existing = await this.prisma.characterAbilityLevel.findFirst({
+      where: { abilityId, level: String(dto.level) },
+    })
+    if (existing) {
+      throw new ConflictException(
+        `Level "${dto.level}" already exists for this ability`,
+      )
+    }
+
+    const result = await this.prisma.characterAbilityLevel.create({
       data: { abilityId, ...data },
     })
+    await this.invalidateCache(ability.sheetId).catch(() => {})
+    return result
   }
 
   async updateAbilityLevel(levelId: string, userId: string, dto: { level?: string; description?: string; manaCost?: number; range?: string; notes?: string; damage?: string }) {

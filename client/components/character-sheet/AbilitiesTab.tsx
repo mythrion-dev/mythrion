@@ -503,7 +503,7 @@ export function AbilitiesTab({
                         {/* Add level button */}
                         {isOwner && (
                           <button
-                            onClick={() => { setShowAddLevelModal(a.id); setNewLevelForm({ level: a.levels.length + 1, copyFromPrevious: a.levels.length > 0 }); setLevelModalError(null) }}
+                            onClick={() => { setShowAddLevelModal(a.id); setNewLevelForm({ level: Math.max(...a.levels.map(l => parseInt(l.level)).filter(n => !isNaN(n)), 0) + 1, copyFromPrevious: a.levels.length > 0 }); setLevelModalError(null) }}
                             className="btn-ghost text-xs"
                           >
                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -587,31 +587,29 @@ export function AbilitiesTab({
                               )}
                             </div>
 
-                            {/* Health */}
-                            {a.summonHealth && (
-                              <div className="card !p-4 !bg-background/30">
-                                <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Health</h4>
-                                <div className="flex items-center justify-center gap-4">
-                                  <div className="text-center">
-                                    <span className="text-xs text-muted block mb-0.5">Current</span>
-                                    {isOwner ? (
-                                      <InlineNumber value={a.summonHealth.current ?? 0} onSave={(v) => saveSummonHealth(a.id, 'current', v)} min={0} className="text-xl font-bold text-foreground" />
-                                    ) : (
-                                      <span className="text-xl font-bold text-foreground">{a.summonHealth.current ?? '—'}</span>
-                                    )}
-                                  </div>
-                                  <span className="text-muted text-xl">/</span>
-                                  <div className="text-center">
-                                    <span className="text-xs text-muted block mb-0.5">Max</span>
-                                    {isOwner ? (
-                                      <InlineNumber value={a.summonHealth.maximum ?? 0} onSave={(v) => saveSummonHealth(a.id, 'maximum', v)} min={0} className="text-xl font-bold text-foreground" />
-                                    ) : (
-                                      <span className="text-xl font-bold text-foreground">{a.summonHealth.maximum ?? '—'}</span>
-                                    )}
-                                  </div>
+                            {/* Health (always shown for summons) */}
+                            <div className="card !p-4 !bg-background/30">
+                              <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Health</h4>
+                              <div className="flex items-center justify-center gap-4">
+                                <div className="text-center">
+                                  <span className="text-xs text-muted block mb-0.5">Current</span>
+                                  {isOwner ? (
+                                    <InlineNumber value={a.summonHealth?.current ?? 0} onSave={(v) => saveSummonHealth(a.id, 'current', v)} min={0} className="text-xl font-bold text-foreground" />
+                                  ) : (
+                                    <span className="text-xl font-bold text-foreground">{a.summonHealth?.current ?? '—'}</span>
+                                  )}
+                                </div>
+                                <span className="text-muted text-xl">/</span>
+                                <div className="text-center">
+                                  <span className="text-xs text-muted block mb-0.5">Max</span>
+                                  {isOwner ? (
+                                    <InlineNumber value={a.summonHealth?.maximum ?? 0} onSave={(v) => saveSummonHealth(a.id, 'maximum', v)} min={0} className="text-xl font-bold text-foreground" />
+                                  ) : (
+                                    <span className="text-xl font-bold text-foreground">{a.summonHealth?.maximum ?? '—'}</span>
+                                  )}
                                 </div>
                               </div>
-                            )}
+                            </div>
 
                             {/* Attributes */}
                             {(a.summonAttributes ?? []).length > 0 && (
@@ -951,7 +949,7 @@ export function AbilitiesTab({
                                               <div className="flex items-center justify-between pt-1">
                                                 {isOwner && (
                                                   <button
-                                                    onClick={() => { setShowAddLevelModal(ca.id); setNewLevelForm({ level: ca.levels.length + 1, copyFromPrevious: ca.levels.length > 0 }); setLevelModalError(null) }}
+                                                    onClick={() => { setShowAddLevelModal(ca.id); setNewLevelForm({ level: Math.max(...ca.levels.map(l => parseInt(l.level)).filter(n => !isNaN(n)), 0) + 1, copyFromPrevious: ca.levels.length > 0 }); setLevelModalError(null) }}
                                                     className="btn-ghost text-[0.6rem]"
                                                   >
                                                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
