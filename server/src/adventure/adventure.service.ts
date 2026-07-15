@@ -136,6 +136,25 @@ export class AdventureService {
     const abilities = await this.prisma.characterAbility.findMany({
       where: { sheetId: sheet.id, summonId: null, type: 'SUMMON' },
       orderBy: { order: 'asc' },
+      include: {
+        summonAttributes: true,
+        summonAcValues: true,
+        summonAcAttributeValues: { include: { selectedAttribute: true } },
+        summonHealth: true,
+        summonResistanceValues: true,
+        summonResistanceComponentValues: true,
+        summonSkills: {
+          include: {
+            skill: { include: { attribute: true, defaultAttribute: true } },
+            selectedAttribute: true,
+            profileValues: { include: { profile: true, option: true } },
+          },
+        },
+        childAbilities: {
+          include: { levels: true },
+        },
+        levels: true,
+      },
     })
 
     return { sheetId: sheet.id, npcs: abilities }
@@ -174,11 +193,11 @@ export class AdventureService {
       },
     )
 
-    // If type is MOB, append it to notes so we can distinguish
-    if (dto.type === 'MOB' && ability.notes) {
+    // If type is MOB, prepend [MOB] tag so we can distinguish from NPCs
+    if (dto.type === 'MOB') {
       const updated = await this.prisma.characterAbility.update({
         where: { id: ability.id },
-        data: { notes: `[MOB] ${ability.notes}` },
+        data: { notes: `[MOB] ${ability.notes ?? ''}`.trimEnd() },
       })
       return updated
     }
