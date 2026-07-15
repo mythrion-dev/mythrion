@@ -94,7 +94,15 @@ interface CreatureAbility {
   levels: { id: string; level: string; description: string | null; manaCost: number | null; range: string | null; notes: string | null; damage: string | null }[]
 }
 
-/* ── Props ── */
+interface AbilityLevel {
+  id: string; abilityId: string; level: string; manaCost: number | null; range: string | null; description: string | null; notes: string | null; damage: string | null
+}
+interface ChildAbility {
+  id: string; name: string; description: string | null; notes: string | null
+  levels: AbilityLevel[]
+}
+
+/* ── Prop ── */
 
 interface CreatureDrawerProps {
   ability: CreatureAbility | null
@@ -123,7 +131,27 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
   const [resistValues, setResistValues] = useState<Record<string, string | null>>({})
   const [resistComponentValues, setResistComponentValues] = useState<Record<string, string>>({})
 
-  /* Copy ability data into local state when it changes */
+  /* ── Computed / derived state ── */
+  const [modifierResults, setModifierResults] = useState<Record<string, number | null>>({})
+  const [acTotals, setAcTotals] = useState<Record<string, number | null>>({})
+  const [skillResults, setSkillResults] = useState<Record<string, number | null>>({})
+  const [resistanceData, setResistanceData] = useState<
+    Array<{ resistanceId: string; name: string; calculationType: string; total: number }>
+  >([])
+
+  /* ── Child ability management ── */
+  const [childAbilities, setChildAbilities] = useState<ChildAbility[]>([])
+  const [expandedChildren, setExpandedChildren] = useState<Record<string, boolean>>({})
+  const [showNewChildAbility, setShowNewChildAbility] = useState(false)
+  const [newChildAbilityForm, setNewChildAbilityForm] = useState({
+    name: '', description: '', manaCost: '', range: '', damage: '', level: '',
+  })
+  const [childAbilitySaving, setChildAbilitySaving] = useState(false)
+  const [childAbilityError, setChildAbilityError] = useState<string | null>(null)
+  const [savingChildField, setSavingChildField] = useState<Record<string, boolean>>({})
+  const [addingLevel, setAddingLevel] = useState<string | null>(null)
+
+  /* ── Copy ability data into local state when it changes ── */
   useEffect(() => {
     if (!ability) return
     setName(ability.name)
@@ -144,28 +172,174 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
     const rcv: Record<string, string> = {}
     for (const sc of ability.summonResistanceComponentValues) rcv[sc.componentId] = sc.value
     setResistComponentValues(rcv)
+    /* Copy child abilities */
+    setChildAbilities(ability.childAbilities?.map(c => ({
+      id: c.id,
+      name: c.name,
+      description: c.description,
+      notes: c.notes,
+      levels: (c.levels ?? []).map(l => ({ ...l, abilityId: c.id })),
+    })) ?? [])
+    /* Reset computed state */
+    setModifierResults({})
+    setAcTotals({})
+    setSkillResults({})
+    setResistanceData([])
+    setShowNewChildAbility(false)
   }, [ability])
 
-  /* Fetch template */
+  /* ── Fetch template & run initial computations ── */
   useEffect(() => {
     if (!ability || !sheetId) return
     setTemplateLoading(true)
-    api.get<Template>(`/character-sheets/${sheetId}`)
+    api.get<any>(`/character-sheets/${sheetId}`)
       .then(sheet => {
-        const tplId = (sheet as any).templateId
+        const tplId = sheet.templateId
         if (tplId) {
-          return api.get<Template>(`/adventures/${(sheet as any).adventureId}/templates/${tplId}`)
+          return api.get<Template>(`/adventures/${sheet.adventureId}/templates/${tplId}`)
         }
         return null
       })
       .then(tpl => {
-        if (tpl) setTemplate(tpl)
+        if (tpl) {
+          setTemplate(tpl)
+          // Kick off initial computations
+          computeModifiers(tpl, ability!.summonAttributes)
+          fetchResistances(sheetId!)
+        }
       })
       .catch(() => {
         /* If we can't fetch the template, attributes etc. still show raw IDs */
       })
       .finally(() => setTemplateLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ability, sheetId])
+
+  /* ── Formula / computation helpers ── */
+
+  const computeModifiers = useCallback(async (tpl: Template, attrs: SummonAttribute[]) => {
+    const formula = tpl.attributeModifierFormula
+    if (!formula?.trim()) { setModifierResults({}); return }
+    const results: Record<string, number | null> = {}
+    for (const attr of tpl.attributes) {
+      try {
+        const vars: Record<string, number> = {}
+        tpl.attributes.forEach(a => {
+          const v = parseFloat(attrs.find(s => s.attributeId === a.id)?.value ?? '0')
+          vars[a.key] = isNaN(v) ? 0 : v
+        })
+        vars['value'] = parseFloat(attrs.find(s => s.attributeId === attr.id)?.value ?? '0') || 0
+        const res = await api.post<{ result: number }>('/formula/evaluate', { formula, variables: vars })
+        results[attr.id] = res.result
+      } catch { results[attr.id] = null }
+    }
+    setModifierResults(results)
+    return results
+  }, [])
+
+  const computeAC = useCallback((attrs: Record<string, string>, mods: Record<string, number | null>, abilityData: CreatureAbility) => {
+    if (!template) { setAcTotals({}); return }
+    const acs = template.armorClasses?.filter(ac => ac.enabled) ?? []
+    const totals: Record<string, number | null> = {}
+    for (const ac of acs) {
+      let total = 0
+      ac.fields.forEach(f => {
+        const v = parseFloat(attrs[f.id] ?? f.defaultValue)
+        if (!isNaN(v)) total += v
+      })
+      const selectedByModifierId = new Map(
+        (abilityData.summonAcAttributeValues ?? []).map(v => [v.acAttributeModifierId, v.selectedAttributeId])
+      )
+      for (const am of ac.attributeModifiers) {
+        const effectiveAttributeId = am.allowPlayerSelection
+          ? (selectedByModifierId.get(am.id) ?? am.defaultAttributeId ?? am.attributeId)
+          : am.attributeId
+        const modResult = mods[effectiveAttributeId]
+        if (modResult !== null && modResult !== undefined && !isNaN(modResult)) {
+          total += Math.max(0, modResult)
+        }
+      }
+      totals[ac.id] = total
+    }
+    setAcTotals(totals)
+  }, [template])
+
+  const computeSkills = useCallback(async (tpl: Template, attributes: SummonAttribute[]) => {
+    const formula = tpl.skillFormula
+    if (!formula?.trim() || !ability) { setSkillResults({}); return }
+    const results: Record<string, number | null> = {}
+    // Compute modifier vars
+    const modifierVars: Record<string, number> = {}
+    const globalFormula = tpl.attributeModifierFormula
+    if (globalFormula?.trim()) {
+      for (const attr of tpl.attributes) {
+        try {
+          const modVars: Record<string, number> = {}
+          tpl.attributes.forEach(a => {
+            const v = parseFloat(attributes.find(s => s.attributeId === a.id)?.value ?? '0')
+            modVars[a.key] = isNaN(v) ? 0 : v
+          })
+          modVars['value'] = parseFloat(attributes.find(s => s.attributeId === attr.id)?.value ?? '0') || 0
+          const mr = await api.post<{ result: number }>('/formula/evaluate', { formula: globalFormula, variables: modVars })
+          modifierVars[`${attr.key}_mod`] = mr.result
+        } catch { modifierVars[`${attr.key}_mod`] = 0 }
+      }
+    }
+    for (const ss of ability!.summonSkills) {
+      try {
+        let finalResult = 0
+        const selectedAttr = ss.selectedAttribute || ss.skill.defaultAttribute || ss.skill.attribute
+        const skillAttrValue = selectedAttr
+          ? parseFloat(attributes.find(sa => sa.attributeId === selectedAttr.id)?.value ?? '0')
+          : 0
+        const variables: Record<string, number> = { ...modifierVars }
+        variables['value'] = isNaN(skillAttrValue) ? 0 : skillAttrValue
+        if (selectedAttr) variables['value_mod'] = modifierVars[`${selectedAttr.key}_mod`] ?? 0
+        tpl.attributes.forEach(a => {
+          const v = parseFloat(attributes.find(s => s.attributeId === a.id)?.value ?? '0')
+          variables[a.key] = isNaN(v) ? 0 : v
+        })
+        variables['level'] = 1
+        const res = await api.post<{ result: number }>('/formula/evaluate', { formula, variables })
+        finalResult = res.result
+        // Add profile values
+        for (const spv of ss.profileValues ?? []) {
+          if (spv.option) finalResult += spv.option.value
+        }
+        results[ss.id] = finalResult
+      } catch { results[ss.id] = null }
+    }
+    setSkillResults(results)
+  }, [ability])
+
+  const fetchResistances = useCallback(async (sid: string) => {
+    try {
+      const data = await api.get<Array<{ resistanceId: string; name: string; calculationType: string; total: number }>>(
+        `/character-sheets/${sid}/resistances`
+      )
+      setResistanceData(data)
+    } catch {
+      /* probably no NPC sheet yet */
+    }
+  }, [])
+
+  /* Re-compute when attrValues or ability changes */
+  useEffect(() => {
+    if (!template || !ability) return
+    computeModifiers(template, ability!.summonAttributes.map(sa => ({
+      ...sa,
+      value: attrValues[sa.attributeId] ?? sa.value,
+    }))).then(mods => {
+      if (mods) {
+        computeAC(attrValues, mods, ability!)
+        computeSkills(template, ability!.summonAttributes.map(sa => ({
+          ...sa,
+          value: attrValues[sa.attributeId] ?? sa.value,
+        })))
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attrValues, template])
 
   /* ── Save handlers ── */
 
@@ -193,27 +367,18 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
     try {
       await saveAbilityMetadata()
       await saveHealth()
-
-      /* Save attribute values */
       for (const [attributeId, value] of Object.entries(attrValues)) {
         await api.patch(`/character-sheets/${sheetId}/abilities/${ability.id}/summon-attributes/${attributeId}`, { value })
       }
-
-      /* Save AC values */
       for (const [fieldId, value] of Object.entries(acValues)) {
         await api.patch(`/character-sheets/${sheetId}/abilities/${ability.id}/summon-ac/${fieldId}`, { value })
       }
-
-      /* Save resistance component values */
       for (const [componentId, value] of Object.entries(resistComponentValues)) {
         await api.patch(`/character-sheets/${sheetId}/abilities/${ability.id}/summon-resistance-components/${componentId}`, { value })
       }
-
-      /* Save resistance manual values */
       for (const [resistanceId, value] of Object.entries(resistValues)) {
         await api.patch(`/character-sheets/${sheetId}/abilities/${ability.id}/summon-resistances/${resistanceId}`, { value })
       }
-
       onUpdate()
     } catch {
       /* silently fail */
@@ -236,7 +401,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       })
-      // Force re-render by toggling a key on the img
       setAvatarKey(k => k + 1)
     } catch {
       /* silently fail */
@@ -246,18 +410,138 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
   }
   const [avatarKey, setAvatarKey] = useState(0)
 
+  /* ── Child ability CRUD ── */
+
+  async function handleCreateChildAbility(e: FormEvent) {
+    e.preventDefault()
+    if (!ability || !sheetId || !newChildAbilityForm.name.trim()) return
+    setChildAbilitySaving(true)
+    setChildAbilityError(null)
+    try {
+      const body: Record<string, unknown> = {
+        name: newChildAbilityForm.name.trim(),
+        description: newChildAbilityForm.description.trim() || undefined,
+        manaCost: newChildAbilityForm.manaCost.trim() ? parseInt(newChildAbilityForm.manaCost, 10) : undefined,
+        range: newChildAbilityForm.range.trim() || undefined,
+        damage: newChildAbilityForm.damage.trim() || undefined,
+      }
+      const a = await api.post<ChildAbility>(
+        `/character-sheets/${sheetId}/abilities/${ability.id}/summon-abilities`,
+        body
+      )
+      // Create initial level if user specified one
+      if (newChildAbilityForm.level.trim()) {
+        const nl = await api.post<AbilityLevel>(
+          `/character-sheets/${sheetId}/abilities/${a.id}/levels`,
+          { level: newChildAbilityForm.level.trim(), copyFromPrevious: false }
+        )
+        a.levels = [nl]
+      }
+      setChildAbilities(prev => [...prev, a])
+      setExpandedChildren(prev => ({ ...prev, [a.id]: true }))
+      setNewChildAbilityForm({ name: '', description: '', manaCost: '', range: '', damage: '', level: '' })
+      setShowNewChildAbility(false)
+      onUpdate()
+    } catch (err) {
+      setChildAbilityError(err instanceof Error ? err.message : 'Failed to create ability')
+    } finally {
+      setChildAbilitySaving(false)
+    }
+  }
+
+  async function saveChildAbilityField(childId: string, field: string, value: string) {
+    if (!ability || !sheetId) return
+    setSavingChildField(prev => ({ ...prev, [`${childId}-${field}`]: true }))
+    try {
+      const body: Record<string, unknown> = {}
+      if (field === 'name') body.name = value.trim()
+      else if (field === 'description') body.description = value.trim() || null
+      else if (field === 'notes') body.notes = value.trim() || null
+      await api.patch(`/character-sheets/${sheetId}/abilities/${childId}`, body)
+      setChildAbilities(prev => prev.map(c => c.id === childId ? { ...c, [field]: value } : c))
+      onUpdate()
+    } catch {
+      /* silently fail */
+    } finally {
+      setSavingChildField(prev => ({ ...prev, [`${childId}-${field}`]: false }))
+    }
+  }
+
+  async function handleDeleteChildAbility(childId: string) {
+    if (!ability || !sheetId) return
+    try {
+      await api.delete(`/character-sheets/${sheetId}/abilities/${childId}`)
+      setChildAbilities(prev => prev.filter(c => c.id !== childId))
+      onUpdate()
+    } catch {
+      /* silently fail */
+    }
+  }
+
+  async function handleSaveLevelField(abilityId: string, levelId: string, field: string, value: string) {
+    if (!ability || !sheetId) return
+    setSavingChildField(prev => ({ ...prev, [`${levelId}-${field}`]: true }))
+    try {
+      const body: Record<string, unknown> = {}
+      if (field === 'level') body.level = value.trim()
+      else if (field === 'description') body.description = value.trim() || null
+      else if (field === 'manaCost') body.manaCost = value.trim() ? parseInt(value, 10) : null
+      else if (field === 'range') body.range = value.trim() || null
+      else if (field === 'notes') body.notes = value.trim() || null
+      else if (field === 'damage') body.damage = value.trim() || null
+      await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${levelId}`, body)
+      setChildAbilities(prev => prev.map(c =>
+        c.id === abilityId
+          ? { ...c, levels: c.levels.map(l => l.id === levelId ? { ...l, ...body } : l) }
+          : c
+      ))
+    } catch {
+      /* silently fail */
+    } finally {
+      setSavingChildField(prev => ({ ...prev, [`${levelId}-${field}`]: false }))
+    }
+  }
+
+  async function handleAddLevel(childId: string) {
+    if (!ability || !sheetId) return
+    setAddingLevel(childId)
+    try {
+      const existingLevels = childAbilities.find(c => c.id === childId)?.levels ?? []
+      const nextLevel = existingLevels.length > 0
+        ? String(Math.max(...existingLevels.map(l => parseInt(l.level || '0', 10))) + 1)
+        : '1'
+      const lvl = await api.post<AbilityLevel>(`/character-sheets/${sheetId}/abilities/${childId}/levels`, {
+        level: nextLevel,
+        copyFromPrevious: existingLevels.length > 0,
+      })
+      setChildAbilities(prev => prev.map(c =>
+        c.id === childId ? { ...c, levels: [...c.levels, lvl] } : c
+      ))
+      onUpdate()
+    } catch {
+      /* silently fail */
+    } finally {
+      setAddingLevel(null)
+    }
+  }
+
+  async function handleDeleteLevel(childId: string, levelId: string) {
+    if (!ability || !sheetId) return
+    try {
+      await api.delete(`/character-sheets/${sheetId}/abilities/x/levels/${levelId}`)
+      setChildAbilities(prev => prev.map(c =>
+        c.id === childId ? { ...c, levels: c.levels.filter(l => l.id !== levelId) } : c
+      ))
+      onUpdate()
+    } catch {
+      /* silently fail */
+    }
+  }
+
   /* ── Helpers ── */
 
   function findAttr(id: string): TemplateAttribute | undefined {
     return template?.attributes.find(a => a.id === id)
-  }
-
-  function findAcField(fieldId: string): ArmorClassField | undefined {
-    return template?.armorClasses.flatMap(ac => ac.fields).find(f => f.id === fieldId)
-  }
-
-  function findResistance(id: string): TemplateResistance | undefined {
-    return template?.resistances.find(r => r.id === id)
   }
 
   function findResistanceComponent(id: string) {
@@ -277,26 +561,20 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
   return (
     <>
       {/* Overlay */}
-      <div
-        className="fixed inset-0 z-50 bg-black/40"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose} />
 
       {/* Drawer panel */}
       <div className="fixed top-0 right-0 z-50 h-full w-[70vw] max-w-[900px] min-w-[400px] bg-surface border-l border-border shadow-2xl flex flex-col">
-        {/* Header */}
+        {/* ─── Header ─── */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
-            {/* Avatar */}
             <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-surface border border-border shrink-0">
               <img
                 key={avatarKey}
                 src={`${API_URL}/images/abilities/${ability.id}/avatar`}
                 alt=""
                 className="w-full h-full object-cover"
-                onError={e => {
-                  (e.target as HTMLImageElement).style.display = 'none'
-                }}
+                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
               />
               <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 cursor-pointer transition-opacity">
                 {uploading ? (
@@ -310,15 +588,9 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleAvatarUpload}
-                />
+                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
               </label>
             </div>
-
             <div>
               <input
                 type="text"
@@ -336,13 +608,8 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
               </span>
             </div>
           </div>
-
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleSaveAll}
-              disabled={saving}
-              className="btn-primary !py-2 !px-4"
-            >
+            <button onClick={handleSaveAll} disabled={saving} className="btn-primary !py-2 !px-4">
               {saving ? (
                 <span className="flex items-center gap-2">
                   <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -360,10 +627,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
                 </span>
               )}
             </button>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
-            >
+            <button onClick={onClose} className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -371,183 +635,189 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
           </div>
         </div>
 
-        {/* Scrollable content */}
+        {/* ─── Scrollable content ─── */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
-          {/* Description & Notes */}
+
+          {/* ── Details ── */}
           <section>
             <h3 className="header-accent mb-3">Details</h3>
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Description</label>
-                <textarea
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  rows={3}
+                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3}
                   className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
-                  placeholder="Brief description or appearance..."
-                />
+                  placeholder="Brief description or appearance..." />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Notes</label>
-                <textarea
-                  value={displayNotes}
-                  onChange={e => setNotes(isMob ? `[MOB] ${e.target.value}` : e.target.value)}
-                  rows={2}
+                <textarea value={displayNotes} onChange={e => setNotes(isMob ? `[MOB] ${e.target.value}` : e.target.value)} rows={2}
                   className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
-                  placeholder="GM notes..."
-                />
+                  placeholder="GM notes..." />
               </div>
             </div>
           </section>
 
-          {/* Health */}
+          {/* ── Health ── */}
           <section>
             <h3 className="header-accent mb-3">Health</h3>
             <div className="flex items-start gap-4 flex-wrap">
               <div className="flex-1 min-w-[120px]">
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Current HP</label>
-                <input
-                  type="number"
-                  value={hpCurrent ?? ''}
+                <input type="number" value={hpCurrent ?? ''}
                   onChange={e => setHpCurrent(e.target.value ? Number(e.target.value) : null)}
-                  className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                />
+                  className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50" />
               </div>
               <div className="flex-1 min-w-[120px]">
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Max HP</label>
-                <input
-                  type="number"
-                  value={hpMax ?? ''}
+                <input type="number" value={hpMax ?? ''}
                   onChange={e => setHpMax(e.target.value ? Number(e.target.value) : null)}
-                  className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                />
+                  className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50" />
               </div>
               <div className="flex-[2] min-w-[200px]">
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">HP Notes</label>
-                <input
-                  type="text"
-                  value={hpNotes}
-                  onChange={e => setHpNotes(e.target.value)}
+                <input type="text" value={hpNotes} onChange={e => setHpNotes(e.target.value)}
                   className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                  placeholder="e.g. temp HP, damage resistance..."
-                />
+                  placeholder="e.g. temp HP, damage resistance..." />
               </div>
             </div>
           </section>
 
-          {/* Attributes */}
+          {/* ── Attributes (with computed modifiers) ── */}
           {template && (
             <section>
               <h3 className="header-accent mb-3">Attributes</h3>
               {templateLoading ? (
                 <div className="flex gap-2 flex-wrap">
                   {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="skeleton h-20 w-20 rounded-lg" />
+                    <div key={i} className="skeleton h-24 w-20 rounded-lg" />
                   ))}
                 </div>
               ) : (
                 <div className="flex gap-3 flex-wrap">
-                  {template.attributes.map(attr => (
-                    <div key={attr.id} className="flex flex-col items-center gap-1 min-w-[80px]">
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{attr.name}</span>
-                      <input
-                        type="text"
-                        value={attrValues[attr.id] ?? ''}
-                        onChange={e => setAttrValues(p => ({ ...p, [attr.id]: e.target.value }))}
-                        className="w-16 text-center rounded-lg bg-input border border-border px-2 py-2 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                      />
-                    </div>
-                  ))}
+                  {template.attributes.map(attr => {
+                    const mod = modifierResults[attr.id]
+                    const modDisplay = mod !== null && mod !== undefined
+                      ? (mod >= 0 ? `+${mod}` : String(mod))
+                      : null
+                    return (
+                      <div key={attr.id} className="flex flex-col items-center gap-1 min-w-[80px]">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{attr.name}</span>
+                        <input type="text" value={attrValues[attr.id] ?? ''}
+                          onChange={e => setAttrValues(p => ({ ...p, [attr.id]: e.target.value }))}
+                          className="w-16 text-center rounded-lg bg-input border border-border px-2 py-2 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50" />
+                        {mod !== null && mod !== undefined && (
+                          <span className={`text-xs font-mono font-bold ${mod >= 0 ? 'text-green-500' : 'text-red-400'}`}>
+                            {modDisplay}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </section>
           )}
 
-          {/* Armor Class */}
+          {/* ── Armor Class (with computed total) ── */}
           {template && template.armorClasses.filter(ac => ac.enabled).length > 0 && (
             <section>
               <h3 className="header-accent mb-3">Armor Class</h3>
-              {template.armorClasses.filter(ac => ac.enabled).map(ac => (
-                <div key={ac.id} className="card !p-4 mb-3">
-                  <h4 className="text-sm font-semibold text-foreground mb-2">{ac.name}</h4>
-                  <div className="flex gap-3 flex-wrap">
-                    {/* Attribute modifiers (read-only display) */}
-                    {ac.attributeModifiers.map(mod => {
-                      const selected = ability.summonAcAttributeValues.find(
-                        v => v.acAttributeModifierId === mod.id
-                      )
-                      const attrName = selected?.selectedAttribute?.name ?? mod.attribute.name
-                      return (
-                        <div key={mod.id} className="flex flex-col items-center gap-1 min-w-[70px]">
-                          <span className="text-xs text-muted-foreground">{attrName}</span>
-                          <span className="w-12 text-center rounded bg-surface border border-border px-2 py-1.5 text-xs font-mono text-foreground">
-                            {attrValues[mod.attributeId] || '—'}
-                          </span>
+              {template.armorClasses.filter(ac => ac.enabled).map(ac => {
+                const acTotal = acTotals[ac.id]
+                return (
+                  <div key={ac.id} className="card !p-4 mb-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-semibold text-foreground">{ac.name}</h4>
+                      {acTotal !== null && acTotal !== undefined && (
+                        <span className="text-lg font-bold text-gradient">{acTotal}</span>
+                      )}
+                    </div>
+                    <div className="flex gap-3 flex-wrap">
+                      {ac.attributeModifiers.map(mod => {
+                        const selected = ability.summonAcAttributeValues.find(v => v.acAttributeModifierId === mod.id)
+                        const attrName = selected?.selectedAttribute?.name ?? mod.attribute.name
+                        const modResult = modifierResults[
+                          selected?.selectedAttributeId ?? mod.defaultAttributeId ?? mod.attributeId
+                        ]
+                        const modDisplay = modResult !== null && modResult !== undefined && modResult >= 0
+                          ? `+${modResult}`
+                          : '—'
+                        return (
+                          <div key={mod.id} className="flex flex-col items-center gap-1 min-w-[70px]">
+                            <span className="text-xs text-muted-foreground">{attrName}</span>
+                            <span className={`w-12 text-center rounded bg-surface border border-border px-2 py-1.5 text-xs font-mono ${modResult !== null && modResult !== undefined ? 'text-green-500' : 'text-foreground'}`}>
+                              {modDisplay}
+                            </span>
+                          </div>
+                        )
+                      })}
+                      {ac.fields.map(field => (
+                        <div key={field.id} className="flex flex-col items-center gap-1 min-w-[80px]">
+                          <span className="text-xs text-muted-foreground">{field.name}</span>
+                          <input type="text" value={acValues[field.id] ?? field.defaultValue}
+                            onChange={e => setAcValues(p => ({ ...p, [field.id]: e.target.value }))}
+                            className="w-16 text-center rounded-lg bg-input border border-border px-2 py-1.5 text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50" />
                         </div>
-                      )
-                    })}
-                    {/* Editable fields */}
-                    {ac.fields.map(field => (
-                      <div key={field.id} className="flex flex-col items-center gap-1 min-w-[80px]">
-                        <span className="text-xs text-muted-foreground">{field.name}</span>
-                        <input
-                          type="text"
-                          value={acValues[field.id] ?? field.defaultValue}
-                          onChange={e => setAcValues(p => ({ ...p, [field.id]: e.target.value }))}
-                          className="w-16 text-center rounded-lg bg-input border border-border px-2 py-1.5 text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                        />
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </section>
           )}
 
-          {/* Resistances */}
+          {/* ── Resistances (with computed totals) ── */}
           {template && template.resistances.length > 0 && (
             <section>
               <h3 className="header-accent mb-3">Resistances</h3>
               <div className="space-y-2">
-                {template.resistances.map(r => (
-                  <div key={r.id} className="card !p-3 flex items-center gap-4">
-                    <span className="text-sm font-medium text-foreground min-w-[100px]">{r.name}</span>
-                    {r.components.map(c => (
-                      <div key={c.id} className="flex items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">{c.name}:</span>
-                        <input
-                          type="text"
-                          value={resistComponentValues[c.id] ?? c.defaultValue}
-                          onChange={e => setResistComponentValues(p => ({ ...p, [c.id]: e.target.value }))}
-                          className="w-16 text-center rounded bg-input border border-border px-1.5 py-1 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-accent/50"
-                        />
+                {template.resistances.map(r => {
+                  const computed = resistanceData.find(rd => rd.resistanceId === r.id)
+                  const total = computed?.total
+                  return (
+                    <div key={r.id} className="card !p-3">
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm font-medium text-foreground min-w-[100px]">{r.name}</span>
+                        {total !== null && total !== undefined && (
+                          <span className="text-lg font-bold text-gradient">{total}</span>
+                        )}
+                        <div className="flex items-center gap-2 ml-auto flex-wrap">
+                          {r.components.map(c => (
+                            <div key={c.id} className="flex items-center gap-1.5">
+                              <span className="text-xs text-muted-foreground">{c.name}:</span>
+                              <input type="text" value={resistComponentValues[c.id] ?? c.defaultValue}
+                                onChange={e => setResistComponentValues(p => ({ ...p, [c.id]: e.target.value }))}
+                                className="w-14 text-center rounded bg-input border border-border px-1.5 py-1 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-accent/50" />
+                            </div>
+                          ))}
+                          {r.calculationType === 'MANUAL' && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-muted-foreground">Manual:</span>
+                              <input type="text" value={resistValues[r.id] ?? ''}
+                                onChange={e => setResistValues(p => ({ ...p, [r.id]: e.target.value || null }))}
+                                className="w-14 text-center rounded bg-input border border-border px-1.5 py-1 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-accent/50" />
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    ))}
-                    {r.calculationType === 'MANUAL' && (
-                      <div className="flex items-center gap-1.5 ml-auto">
-                        <span className="text-xs text-muted-foreground">Manual:</span>
-                        <input
-                          type="text"
-                          value={resistValues[r.id] ?? ''}
-                          onChange={e => setResistValues(p => ({ ...p, [r.id]: e.target.value || null }))}
-                          className="w-16 text-center rounded bg-input border border-border px-1.5 py-1 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-accent/50"
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
+                    </div>
+                  )
+                })}
               </div>
             </section>
           )}
 
-          {/* Skills */}
+          {/* ── Skills (with computed totals) ── */}
           {template && template.templateSkills.length > 0 && (
             <section>
               <h3 className="header-accent mb-3">Skills</h3>
               {template.templateSkills.map(skill => {
                 const summonSkill = ability.summonSkills.find(s => s.skillId === skill.id)
                 const selectedAttr = summonSkill?.selectedAttribute
-                const profileValue = summonSkill?.profileValues?.[0]
+                const skillTotal = summonSkill ? skillResults[summonSkill.id] : null
+                const skillTotalDisplay = skillTotal !== null && skillTotal !== undefined
+                  ? (skillTotal >= 0 ? `+${skillTotal}` : String(skillTotal))
+                  : '—'
                 return (
                   <div key={skill.id} className="data-row">
                     <div className="flex items-center gap-2 min-w-0">
@@ -556,8 +826,8 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
                         <span className="text-xs text-muted-foreground">({selectedAttr.name})</span>
                       )}
                     </div>
-                    <span className="text-sm text-muted-foreground text-right">
-                      {profileValue?.option ? profileValue.option.label : '—'}
+                    <span className={`text-sm font-mono font-bold text-right ${skillTotal !== null && skillTotal !== undefined ? 'text-green-500' : 'text-muted-foreground'}`}>
+                      {skillTotalDisplay}
                     </span>
                   </div>
                 )
@@ -565,35 +835,178 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
             </section>
           )}
 
-          {/* Abilities (child abilities on the summon) */}
-          {ability.childAbilities.length > 0 && (
-            <section>
-              <h3 className="header-accent mb-3">Abilities</h3>
-              <div className="space-y-2">
-                {ability.childAbilities.map(child => (
+          {/* ── Abilities (child abilities with CRUD) ── */}
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="header-accent mb-0">Abilities</h3>
+              <button onClick={() => setShowNewChildAbility(!showNewChildAbility)} className="btn-primary !py-1.5 !px-3 !text-xs">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                {showNewChildAbility ? ' Cancel' : ' Add Ability'}
+              </button>
+            </div>
+
+            {/* New ability form */}
+            {showNewChildAbility && (
+              <form onSubmit={handleCreateChildAbility} className="card !p-4 mb-3 space-y-3 border-accent/30">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Name *</label>
+                    <input type="text" value={newChildAbilityForm.name}
+                      onChange={e => setNewChildAbilityForm(p => ({ ...p, name: e.target.value }))}
+                      className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+                      placeholder="Ability name" required />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Description</label>
+                    <textarea value={newChildAbilityForm.description}
+                      onChange={e => setNewChildAbilityForm(p => ({ ...p, description: e.target.value }))} rows={2}
+                      className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
+                      placeholder="What does this ability do?" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Mana Cost</label>
+                    <input type="number" value={newChildAbilityForm.manaCost}
+                      onChange={e => setNewChildAbilityForm(p => ({ ...p, manaCost: e.target.value }))}
+                      className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+                      placeholder="MP" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Range</label>
+                    <input type="text" value={newChildAbilityForm.range}
+                      onChange={e => setNewChildAbilityForm(p => ({ ...p, range: e.target.value }))}
+                      className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+                      placeholder="e.g. 30ft" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Damage</label>
+                    <input type="text" value={newChildAbilityForm.damage}
+                      onChange={e => setNewChildAbilityForm(p => ({ ...p, damage: e.target.value }))}
+                      className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+                      placeholder="e.g. 2d6" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Initial Level</label>
+                    <input type="text" value={newChildAbilityForm.level}
+                      onChange={e => setNewChildAbilityForm(p => ({ ...p, level: e.target.value }))}
+                      className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+                      placeholder="e.g. 1" />
+                  </div>
+                </div>
+                {childAbilityError && (
+                  <div className="rounded bg-danger/10 border border-danger/30 px-3 py-2 text-xs text-danger">{childAbilityError}</div>
+                )}
+                <div className="flex gap-2 justify-end">
+                  <button type="button" onClick={() => setShowNewChildAbility(false)} className="btn-ghost !py-1.5 !text-xs">Cancel</button>
+                  <button type="submit" disabled={childAbilitySaving} className="btn-primary !py-1.5 !text-xs">
+                    {childAbilitySaving ? 'Creating...' : 'Create Ability'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Child ability list */}
+            {childAbilities.length === 0 && !showNewChildAbility && (
+              <p className="text-sm text-muted-foreground italic">No abilities defined yet.</p>
+            )}
+            <div className="space-y-2">
+              {childAbilities.map(child => {
+                const isExpanded = expandedChildren[child.id] ?? false
+                const hasLevels = child.levels && child.levels.length > 0
+                return (
                   <div key={child.id} className="card !p-3">
-                    <h4 className="text-sm font-semibold text-foreground">{child.name}</h4>
-                    {child.description && (
-                      <p className="text-xs text-muted-foreground mt-1">{child.description}</p>
-                    )}
-                    {child.levels.length > 0 && (
-                      <div className="mt-2 space-y-1">
-                        {child.levels.map(l => (
-                          <div key={l.id} className="text-xs text-muted-foreground">
-                            <span className="font-medium">Lv.{l.level}</span>
-                            {l.manaCost != null && <span> · {l.manaCost} MP</span>}
-                            {l.range && <span> · Range: {l.range}</span>}
-                            {l.damage && <span> · Damage: {l.damage}</span>}
-                            {l.description && <p className="mt-0.5">{l.description}</p>}
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setExpandedChildren(p => ({ ...p, [child.id]: !isExpanded }))}
+                        className="p-0.5 rounded text-muted-foreground hover:text-foreground transition-colors">
+                        <svg className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                      <input type="text" value={child.name}
+                        onChange={e => saveChildAbilityField(child.id, 'name', e.target.value)}
+                        className="flex-1 text-sm font-semibold text-foreground bg-transparent border-none focus:outline-none focus:ring-0"
+                        placeholder="Ability name" />
+                      <button onClick={() => handleDeleteChildAbility(child.id)}
+                        className="p-1 rounded text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                        aria-label={`Delete ${child.name}`}>
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="mt-3 space-y-3 pl-5">
+                        <textarea value={child.description ?? ''}
+                          onChange={e => saveChildAbilityField(child.id, 'description', e.target.value)}
+                          rows={2}
+                          className="w-full rounded-lg bg-input border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
+                          placeholder="Ability description..." />
+
+                        {/* Levels */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-medium text-muted-foreground">Levels</span>
+                            <button onClick={() => handleAddLevel(child.id)} disabled={addingLevel === child.id}
+                              className="btn-ghost !py-0.5 !px-2 !text-[10px]">
+                              {addingLevel === child.id ? '...' : '+ Add Level'}
+                            </button>
                           </div>
-                        ))}
+                          {!hasLevels && <p className="text-xs text-muted-foreground italic">No levels yet.</p>}
+                          {hasLevels && (
+                            <div className="space-y-2">
+                              {child.levels.map(level => (
+                                <div key={level.id} className="rounded bg-surface border border-border p-2 space-y-1.5">
+                                  <div className="flex items-center justify-between">
+                                    <input type="text" value={level.level}
+                                      onChange={e => handleSaveLevelField(child.id, level.id, 'level', e.target.value)}
+                                      className="w-12 text-center text-xs font-bold text-foreground bg-input border border-border rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-accent/50"
+                                      placeholder="Lv" />
+                                    <button onClick={() => handleDeleteLevel(child.id, level.id)}
+                                      className="p-0.5 rounded text-muted-foreground hover:text-red-500 transition-colors">
+                                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                  <div className="flex gap-2 flex-wrap">
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[10px] text-muted-foreground">MP:</span>
+                                      <input type="text" value={level.manaCost ?? ''}
+                                        onChange={e => handleSaveLevelField(child.id, level.id, 'manaCost', e.target.value)}
+                                        className="w-12 text-center text-xs font-mono text-foreground bg-input border border-border rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-accent/50" />
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[10px] text-muted-foreground">Range:</span>
+                                      <input type="text" value={level.range ?? ''}
+                                        onChange={e => handleSaveLevelField(child.id, level.id, 'range', e.target.value)}
+                                        className="w-14 text-center text-xs font-mono text-foreground bg-input border border-border rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-accent/50" />
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[10px] text-muted-foreground">Dmg:</span>
+                                      <input type="text" value={level.damage ?? ''}
+                                        onChange={e => handleSaveLevelField(child.id, level.id, 'damage', e.target.value)}
+                                        className="w-14 text-center text-xs font-mono text-foreground bg-input border border-border rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-accent/50" />
+                                    </div>
+                                  </div>
+                                  <textarea value={level.description ?? ''}
+                                    onChange={e => handleSaveLevelField(child.id, level.id, 'description', e.target.value)}
+                                    rows={1}
+                                    className="w-full rounded bg-input border border-border px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent/50 resize-none"
+                                    placeholder="Level description..." />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
-            </section>
-          )}
+                )
+              })}
+            </div>
+          </section>
 
           {/* Bottom spacing */}
           <div className="h-8" />
