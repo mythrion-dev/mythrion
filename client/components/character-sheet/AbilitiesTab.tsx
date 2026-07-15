@@ -37,8 +37,8 @@ export function AbilitiesTab({
   setSelectedLevels: React.Dispatch<React.SetStateAction<Record<string, string>>>
   showNewAbility: boolean; setShowNewAbility: React.Dispatch<React.SetStateAction<boolean>>
   newAbilityType: 'ABILITY' | 'SUMMON' | null; setNewAbilityType: React.Dispatch<React.SetStateAction<'ABILITY' | 'SUMMON' | null>>
-  newAbility: { name: string; description: string; manaCost: string; range: string; notes: string; damage: string; level: string }
-  setNewAbility: React.Dispatch<React.SetStateAction<{ name: string; description: string; manaCost: string; range: string; notes: string; damage: string; level: string }>>
+  newAbility: { name: string; description: string; manaCost: string; range: string; notes: string; damage: string; level: string; hpCurrent: string; hpMax: string }
+  setNewAbility: React.Dispatch<React.SetStateAction<{ name: string; description: string; manaCost: string; range: string; notes: string; damage: string; level: string; hpCurrent: string; hpMax: string }>>
   abilitySaving: boolean; abilityError: string | null
   handleCreateAbility: (e: FormEvent) => Promise<void>; resetNewAbility: () => void
   handleDeleteAbility: (aid: string) => Promise<void>
@@ -1068,7 +1068,7 @@ export function AbilitiesTab({
                                 ) : (
                                   <button
                                     type="button"
-                                    onClick={() => { setShowNewSummonAbility(a.id); setNewAbility({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '', level: '' }) }}
+                                    onClick={() => { setShowNewSummonAbility(a.id); setNewAbility({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '', level: '', hpCurrent: '', hpMax: '' }) }}
                                     className="btn-ghost text-xs"
                                   >
                                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1237,11 +1237,11 @@ export function AbilitiesTab({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="new-summon-hp-current" className="label">Health (Current)</label>
-                  <input id="new-summon-hp-current" type="number" className="input-field" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder="20" />
+                  <input id="new-summon-hp-current" type="number" className="input-field" value={newAbility.hpCurrent} onChange={e => setNewAbility(p => ({ ...p, hpCurrent: e.target.value }))} placeholder="20" />
                 </div>
                 <div>
                   <label htmlFor="new-summon-hp-max" className="label">Health (Max)</label>
-                  <input id="new-summon-hp-max" type="number" className="input-field" value={newAbility.range} onChange={e => setNewAbility(p => ({ ...p, range: e.target.value }))} placeholder="20" />
+                  <input id="new-summon-hp-max" type="number" className="input-field" value={newAbility.hpMax} onChange={e => setNewAbility(p => ({ ...p, hpMax: e.target.value }))} placeholder="20" />
                 </div>
               </div>
               <div>

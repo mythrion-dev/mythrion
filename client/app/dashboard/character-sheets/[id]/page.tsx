@@ -34,7 +34,7 @@ export default function CharacterSheetDetailPage() {
   const [abilities, setAbilities] = useState<Ability[]>([]); const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]); const [story, setStory] = useState<Story | null>(null)
   const [selectedLevels, setSelectedLevels] = useState<Record<string, string>>({})
   const [showNewAbility, setShowNewAbility] = useState(false); const [newAbilityType, setNewAbilityType] = useState<'ABILITY' | 'SUMMON' | null>(null)
-  const [newAbility, setNewAbility] = useState({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '', level: '' })
+  const [newAbility, setNewAbility] = useState({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '', level: '', hpCurrent: '', hpMax: '' })
   const [abilitySaving, setAbilitySaving] = useState(false); const [abilityError, setAbilityError] = useState<string | null>(null)
   const [showAddLevelModal, setShowAddLevelModal] = useState<string | null>(null)
   const [newLevelForm, setNewLevelForm] = useState<{ level: number | string; copyFromPrevious: boolean }>({ level: 2, copyFromPrevious: true })
@@ -733,7 +733,7 @@ export default function CharacterSheetDetailPage() {
 
   async function handleDeleteAbility(abilityId: string) { if (!sheet) return; try { await api.delete(`/character-sheets/${sheet.id}/abilities/${abilityId}`); setAbilities(p => p.filter(a => a.id !== abilityId).map(a => ({ ...a, childAbilities: (a.childAbilities ?? []).filter(c => c.id !== abilityId) }))) } catch {} }
 
-  function resetNewAbility() { setShowNewAbility(false); setNewAbility({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '', level: '' }); setNewAbilityType(null); setAbilityError(null) }
+  function resetNewAbility() { setShowNewAbility(false); setNewAbility({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '', level: '', hpCurrent: '', hpMax: '' }); setNewAbilityType(null); setAbilityError(null) }
   async function handleCreateAbility(e: FormEvent) { e.preventDefault(); if (!newAbility.name.trim() || !sheet) return; setAbilitySaving(true)
     try {
       const body: Record<string, unknown> = { name: newAbility.name.trim(), type: newAbilityType ?? 'ABILITY', description: newAbility.description.trim() || undefined, notes: newAbility.notes.trim() || undefined }
@@ -741,6 +741,10 @@ export default function CharacterSheetDetailPage() {
         body.manaCost = newAbility.manaCost.trim() ? parseInt(newAbility.manaCost, 10) : undefined
         body.range = newAbility.range.trim() || undefined
         body.damage = newAbility.damage.trim() || undefined
+      }
+      if (newAbilityType === 'SUMMON') {
+        body.summonHealthCurrent = newAbility.hpCurrent.trim() ? parseInt(newAbility.hpCurrent, 10) : undefined
+        body.summonHealthMax = newAbility.hpMax.trim() ? parseInt(newAbility.hpMax, 10) : undefined
       }
       const a = await api.post<Ability>(`/character-sheets/${sheet.id}/abilities`, body)
       // Create/update initial level if user specified one
@@ -759,6 +763,7 @@ export default function CharacterSheetDetailPage() {
         const sm = await computeSummonModifiers(a, sheet)
         setSummonModifierResults(prev => ({ ...prev, [a.id]: sm }))
         setSummonAcResults(prev => ({ ...prev, [a.id]: computeSummonAC(a, sheet, sm) }))
+        computeSummonSkills(a, sheet).then(sk => setSummonSkillResults(prev => ({ ...prev, [a.id]: sk })))
         setSummonTabs(prev => ({ ...prev, [a.id]: 'stats' }))
       }
       setExpandedAbilities(prev => ({ ...prev, [a.id]: true }))
