@@ -133,7 +133,8 @@ export const AdventureScalarFieldEnum = {
   maxPlayers: 'maxPlayers',
   ownerId: 'ownerId',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  npcSheetId: 'npcSheetId'
 } as const
 
 export type AdventureScalarFieldEnum = (typeof AdventureScalarFieldEnum)[keyof typeof AdventureScalarFieldEnum]

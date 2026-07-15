@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { JwtModule } from '@nestjs/jwt'
 import { CollaborationModule } from '../collaboration/collaboration.module.js'
+import { CharacterSheetModule } from '../character-sheet/character-sheet.module.js'
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { CollaborationModule } from '../collaboration/collaboration.module.js'
       signOptions: { expiresIn: '7d' },
     }),
     CollaborationModule,
+    CharacterSheetModule,
   ],
   controllers: [AdventureController],
   providers: [AdventureService, PrismaService, JwtAuthGuard],

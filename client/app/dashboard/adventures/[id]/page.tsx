@@ -16,6 +16,8 @@ import { DeleteModal } from '@/components/adventure/DeleteModal'
 import { EditForm } from '@/components/adventure/EditForm'
 import { CharactersSection } from '@/components/adventure/CharactersSection'
 import { TemplatesSection } from '@/components/adventure/TemplatesSection'
+import { CampaignCreatureSidebar } from '@/components/adventure/CampaignCreatureSidebar'
+import { CreatureDrawer } from '@/components/adventure/CreatureDrawer'
 import type { CoreResource, AcConfigDraft, ArmorClassAttributeModifierDraft, ResistanceDef } from '@/components/adventure/types'
 import { emptyAcConfig, slugify } from '@/components/adventure/types'
 
@@ -251,6 +253,9 @@ export default function AdventureDetailPage() {
   const [showLinkCharForm, setShowLinkCharForm] = useState(false); const [userSheets, setUserSheets] = useState<UserSheet[]>([]); const [linkSheetId, setLinkSheetId] = useState(''); const [linkCharError, setLinkCharError] = useState<string | null>(null); const [linkCharLinking, setLinkCharLinking] = useState(false)
 
   const isGM = userRole === 'GM'; const [activeTab, setActiveTab] = useState<'campaign' | 'templates'>('campaign')
+  const [selectedCreature, setSelectedCreature] = useState<any>(null)
+  const [npcSheetId, setNpcSheetId] = useState<string | null>(null)
+  const [npcRefreshKey, setNpcRefreshKey] = useState(0)
 
   const fetchAdventure = useCallback(async () => { try { const d = await api.get<Adventure>(`/adventures/${id}`); setAdventure(d); setEditName(d.name); setEditCampaign(d.campaign); setEditSynopsis(d.synopsis ?? ''); setEditMaxPlayers(d.maxPlayers) } catch (e: unknown) { if ((e as { statusCode?: number }).statusCode === 401 || (e as { statusCode?: number }).statusCode === 403) router.replace('/login') } finally { setFetching(false) } }, [id, router])
   const resolveRole = useCallback(async () => { try { const all = await api.get<Array<{ id: string; role: string }>>('/me/adventures'); const e = all.find(a => a.id === id); if (e) setUserRole(e.role) } catch { } }, [id])
@@ -550,6 +555,27 @@ export default function AdventureDetailPage() {
         )}
         {confirmDelete && <DeleteModal name={adventure.name} error={deleteError} loading={deleting} onCancel={() => setConfirmDelete(false)} onConfirm={handleDelete} />}
       </div>) : (<EditForm name={editName} campaign={editCampaign} synopsis={editSynopsis} maxPlayers={editMaxPlayers} error={editError} saving={saving} onNameChange={setEditName} onCampaignChange={setEditCampaign} onSynopsisChange={setEditSynopsis} onMaxPlayersChange={setEditMaxPlayers} onCancel={() => { setEditing(false); setEditError(null) }} onSubmit={handleUpdate} />)}
+
+      {/* NPC/Mob Sidebar — fixed right edge, GM-only */}
+      {!editing && activeTab === 'campaign' && (
+        <CampaignCreatureSidebar
+          adventureId={id}
+          isGM={isGM}
+          refreshKey={npcRefreshKey}
+          onSelectCreature={(ability) => {
+            setSelectedCreature(ability)
+            setNpcSheetId(ability.sheetId)
+          }}
+        />
+      )}
+
+      {/* Creature Drawer — overlays content when a creature is selected */}
+      <CreatureDrawer
+        ability={selectedCreature}
+        sheetId={npcSheetId}
+        onClose={() => { setSelectedCreature(null); setNpcSheetId(null) }}
+        onUpdate={() => setNpcRefreshKey(k => k + 1)}
+      />
     </div>
   )
 }

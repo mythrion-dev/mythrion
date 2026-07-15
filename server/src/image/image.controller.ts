@@ -88,4 +88,64 @@ export class ImageController {
     await this.imageService.delete(sheetId)
     return { deleted: true }
   }
+
+  // ── Ability-level (NPC/Mob) Avatar Endpoints ──
+
+  /**
+   * POST /api/images/abilities/:abilityId/avatar
+   * Upload an avatar for an NPC/Mob ability.
+   */
+  @Post('abilities/:abilityId/avatar')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('avatar', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  async uploadAbilityAvatar(
+    @Param('abilityId') abilityId: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
+  ) {
+    if (!file) {
+      throw new NotFoundException('No file provided')
+    }
+    this.logger.log(`Uploading avatar for ability ${abilityId}: ${file.originalname} (${file.mimetype})`)
+    const result = await this.imageService.upload(abilityId, {
+      buffer: file.buffer,
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+    }, 'abilityId')
+    return { fileId: result.fileId }
+  }
+
+  /**
+   * GET /api/images/abilities/:abilityId/avatar
+   * Stream the ability avatar. No auth required (used by <img> tags).
+   */
+  @Get('abilities/:abilityId/avatar')
+  async getAbilityAvatar(
+    @Param('abilityId') abilityId: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const { stream, contentType, contentLength } = await this.imageService.getStream(abilityId, 'abilityId')
+      res.setHeader('Content-Type', contentType)
+      res.setHeader('Content-Length', contentLength)
+      res.setHeader('Cache-Control', 'public, max-age=86400')
+      stream.pipe(res)
+    } catch (err) {
+      if (err instanceof NotFoundException) {
+        res.status(204).end()
+        return
+      }
+      throw err
+    }
+  }
+
+  /**
+   * DELETE /api/images/abilities/:abilityId/avatar
+   * Remove the ability avatar.
+   */
+  @Delete('abilities/:abilityId/avatar')
+  @UseGuards(JwtAuthGuard)
+  async deleteAbilityAvatar(@Param('abilityId') abilityId: string) {
+    await this.imageService.delete(abilityId, 'abilityId')
+    return { deleted: true }
+  }
 }

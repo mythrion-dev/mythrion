@@ -1200,7 +1200,15 @@ export class CharacterSheetService {
   private async requireOwnership(sheetId: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
-    if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can manage this character sheet')
+    if (sheet.ownerId !== userId) {
+      // Allow GMs of the adventure to manage NPC sheets and player sheets
+      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can manage this character sheet')
+      try {
+        await this.membership.requireRole(sheet.adventureId, userId, 'GM')
+      } catch {
+        throw new ForbiddenException('Only the owner or a GM can manage this character sheet')
+      }
+    }
   }
 
   private extractVariableNames(formula: string): string[] {

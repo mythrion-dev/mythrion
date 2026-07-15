@@ -48,4 +48,39 @@ export class AdventureController {
   remove(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.adventureService.remove(id, req.user.sub)
   }
+
+  // ── NPC / Mob Endpoints (GM-only) ──
+
+  @Get(':id/npcs')
+  listNpcs(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.adventureService.listNpcs(id, req.user.sub)
+  }
+
+  @Post(':id/npcs')
+  createNpc(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: { name: string; type?: string; description?: string; notes?: string },
+  ) {
+    return this.adventureService.createNpc(id, req.user.sub, dto)
+  }
+
+  @Patch(':id/npcs/:abilityId')
+  updateNpc(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('abilityId') abilityId: string,
+    @Body() dto: { name?: string; description?: string; notes?: string },
+  ) {
+    return this.adventureService.updateNpc(id, abilityId, req.user.sub, dto)
+  }
+
+  @Delete(':id/npcs/:abilityId')
+  removeNpc(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('abilityId') abilityId: string,
+  ) {
+    return this.adventureService.deleteNpc(id, abilityId, req.user.sub)
+  }
 }

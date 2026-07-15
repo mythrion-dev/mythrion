@@ -45,23 +45,25 @@ export class ImageService implements OnModuleInit {
   }
 
   /**
-   * Upload a file to GridFS, keyed by `sheetId`.
-   * Deletes any existing file for the same sheetId first.
+   * Upload a file to GridFS, keyed by `entityId` and a metadata field name.
+   * Defaults to sheetId-keyed storage.
+   * Deletes any existing file for the same key first.
    */
   async upload(
-    sheetId: string,
+    entityId: string,
     file: { buffer: Buffer; originalname: string; mimetype: string },
+    keyField: 'sheetId' | 'abilityId' = 'sheetId',
   ): Promise<{ fileId: string }> {
     this.ensureReady()
 
-    // Remove any previous avatar for this sheet
-    await this.delete(sheetId).catch(() => {
+    // Remove any previous avatar for this key
+    await this.delete(entityId, keyField).catch(() => {
       /* no-op if none existed */
     })
 
     return new Promise((resolve, reject) => {
-      const uploadStream = this.bucket!.openUploadStream(sheetId, {
-        metadata: { sheetId, contentType: file.mimetype },
+      const uploadStream = this.bucket!.openUploadStream(entityId, {
+        metadata: { [keyField]: entityId, contentType: file.mimetype },
       })
 
       const readable = new Readable()
@@ -81,17 +83,18 @@ export class ImageService implements OnModuleInit {
   }
 
   /**
-   * Return metadata + a Readable stream for the avatar belonging to `sheetId`.
+   * Return metadata + a Readable stream for the avatar belonging to `entityId` (keyed by keyField).
    * Throws NotFoundException if no file exists.
    */
   async getStream(
-    sheetId: string,
+    entityId: string,
+    keyField: 'sheetId' | 'abilityId' = 'sheetId',
   ): Promise<{ stream: Readable; contentType: string; contentLength: number }> {
     this.ensureReady()
 
     const files = await this.db!
       .collection(`${BUCKET_NAME}.files`)
-      .find({ 'metadata.sheetId': sheetId })
+      .find({ [`metadata.${keyField}`]: entityId })
       .sort({ uploadDate: -1 })
       .limit(1)
       .toArray()
@@ -110,13 +113,13 @@ export class ImageService implements OnModuleInit {
     }
   }
 
-  /** Delete all avatar files for a given sheetId. */
-  async delete(sheetId: string): Promise<void> {
+  /** Delete all avatar files for a given entityId (keyed by keyField). */
+  async delete(entityId: string, keyField: 'sheetId' | 'abilityId' = 'sheetId'): Promise<void> {
     this.ensureReady()
 
     const files = await this.db!
       .collection(`${BUCKET_NAME}.files`)
-      .find({ 'metadata.sheetId': sheetId })
+      .find({ [`metadata.${keyField}`]: entityId })
       .toArray()
 
     for (const file of files) {

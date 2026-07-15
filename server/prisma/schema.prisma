@@ -40,6 +40,8 @@ model Adventure {
   invitations     CampaignInvitation[]
   templates       Template[]
   characterSheets CharacterSheet[]
+  npcSheetId       String?              @unique
+  npcSheet         CharacterSheet?      @relation("NpcSheet", fields: [npcSheetId], references: [id], onDelete: SetNull)
 
   @@index([ownerId])
 }
@@ -278,6 +280,7 @@ model CharacterSheet {
   hpNotes            String?                          @default("")
   adventureId        String?
   adventure          Adventure?                       @relation(fields: [adventureId], references: [id], onDelete: SetNull)
+  npcSheetOf         Adventure?                       @relation("NpcSheet")
   templateId         String
   template           Template                         @relation(fields: [templateId], references: [id], onDelete: Cascade)
   ownerId            String
