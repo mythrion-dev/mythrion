@@ -45,6 +45,8 @@ export interface AbilityLevel { id: string; abilityId: string; level: string; ma
 export interface SummonAttribute { id: string; abilityId: string; attributeId: string; value: string }
 export interface SummonAcValue { id: string; abilityId: string; fieldId: string; value: string }
 export interface SummonHealth { id: string; abilityId: string; current: number | null; maximum: number | null; notes: string | null }
+export interface SummonResistanceValue { id: string; abilityId: string; resistanceId: string; manualValue: string | null }
+export interface SummonResistanceComponentValue { id: string; abilityId: string; componentId: string; value: string }
 
 export interface SummonSkillData {
   id: string; abilityId: string; skillId: string; selectedAttributeId: string | null
@@ -62,6 +64,8 @@ export interface Ability {
   summonAcValues: SummonAcValue[]
   summonHealth: SummonHealth | null
   summonSkills?: SummonSkillData[]
+  summonResistanceValues?: SummonResistanceValue[]
+  summonResistanceComponentValues?: SummonResistanceComponentValue[]
   childAbilities?: Ability[]
 }
 export interface InventoryItem { id: string; name: string; weight: number | null; cost: string | null; description: string | null; order: number }
@@ -84,6 +88,7 @@ export interface CharacterSheet {
     coreResources: CoreResourceDef[]
     armorClasses: ArmorClassDef[]
     characterSections: TemplateCharacterSection[]
+    resistances?: TemplateResistanceDef[]
   }
   values: SheetAttribute[]; fieldValues: FieldValue[]; skillValues: SkillValue[]
   skillProfileValues: SkillProfileValue[]
@@ -96,5 +101,18 @@ export interface CharacterSheet {
 }
 
 export type Tab = string
-export type SummonTab = 'stats' | 'skills' | 'abilities'
+export type SummonTab = 'stats' | 'skills' | 'abilities' | 'resistances'
 export type AcResultMap = Record<string, { total: number; name: string }>
+
+export interface ResistanceComponentDef {
+  id: string; name: string; editableByPlayer: boolean; defaultValue: string; order: number
+}
+export interface ResistanceAttributeModifierDef {
+  id: string; attributeId: string; attributeKey?: string; attributeName?: string; enabled: boolean
+  attribute?: { id: string; key: string; name: string }
+}
+export interface TemplateResistanceDef {
+  id: string; name: string; calculationType: string; order: number
+  components: ResistanceComponentDef[]
+  attributeModifiers: ResistanceAttributeModifierDef[]
+}

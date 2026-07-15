@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { api } from '@/lib/api'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import { InlineClickEdit } from '@/components/character-sheet'
-import type { Ability, AbilityLevel, SummonTab, CharacterSheet } from './types'
+import { ResistanceTab } from '@/components/character-sheet'
+import type { Ability, AbilityLevel, SummonTab, CharacterSheet, TemplateResistanceDef } from './types'
 import type { FormEvent } from 'react'
 
 export function AbilitiesTab({
@@ -80,6 +81,176 @@ export function AbilitiesTab({
     return ability.levels[ability.levels.length - 1]
   }
 
+  // ── Summon Resistance Helpers ──
+
+  /**
+   * Build the CalculatedResistance[] format expected by ResistanceTab
+   * from a summon's ability data + template resistance definitions.
+   */
+  function buildSummonResistances(ability: Ability): Array<{
+    resistanceId: string
+    name: string
+    calculationType: string
+    total: number
+    componentValues: Array<{ componentId: string; componentName: string; value: number; editableByPlayer: boolean }>
+    attributeModifierValues: Array<{ attributeId: string; attributeKey: string; attributeName: string; enabled: boolean; rawModifier: number; effectiveModifier: number }>
+  }> {
+    const srvs = ability.summonResistanceValues ?? []
+    const scvs = ability.summonResistanceComponentValues ?? []
+    const attrs = ability.summonAttributes ?? []
+
+    // Build attribute value map from summon attributes
+    const attrValues: Record<string, number> = {}
+    const attrKeyById: Record<string, string> = {}
+    const attrNameById: Record<string, string> = {}
+    for (const attr of templateAttributes) {
+      attrKeyById[attr.id] = attr.key
+      attrNameById[attr.id] = attr.name
+    }
+    for (const sa of attrs) {
+      const num = parseFloat(sa.value)
+      attrValues[sa.attributeId] = isNaN(num) ? 0 : num
+    }
+
+    // Compute attribute modifiers
+    const formula = template.attributeModifierFormula
+    const attrMods = new Map<string, number>()
+    if (formula && disableAttributeModifiers === false) {
+      for (const sa of attrs) {
+        const key = attrKeyById[sa.attributeId]
+        if (!key) continue
+        const val = attrValues[sa.attributeId] ?? 0
+        // Build variables for formula evaluation
+        const vars: Record<string, number> = { value: val }
+        for (const [aid, v] of Object.entries(attrValues)) {
+          const k = attrKeyById[aid]
+          if (k) vars[k] = v
+        }
+        const mod = evaluateSummonFormula(formula, vars)
+        attrMods.set(sa.attributeId, mod)
+      }
+    }
+
+    const results: Array<{
+      resistanceId: string
+      name: string
+      calculationType: string
+      total: number
+      componentValues: Array<{ componentId: string; componentName: string; value: number; editableByPlayer: boolean }>
+      attributeModifierValues: Array<{ attributeId: string; attributeKey: string; attributeName: string; enabled: boolean; rawModifier: number; effectiveModifier: number }>
+    }> = []
+
+    for (const resistance of templateResistances) {
+      if (resistance.calculationType === 'MANUAL') {
+        const srv = srvs.find(s => s.resistanceId === resistance.id)
+        const manualVal = parseFloat(srv?.manualValue ?? '0')
+        results.push({
+          resistanceId: resistance.id,
+          name: resistance.name,
+          calculationType: 'MANUAL',
+          total: isNaN(manualVal) ? 0 : manualVal,
+          componentValues: [],
+          attributeModifierValues: [],
+        })
+        continue
+      }
+
+      // CALCULATED resistance
+      let total = 0
+
+      const componentValues: Array<{ componentId: string; componentName: string; value: number; editableByPlayer: boolean }> = []
+      for (const component of resistance.components) {
+        if (component.editableByPlayer) {
+          const scv = scvs.find(c => c.componentId === component.id)
+          const val = parseFloat(scv?.value ?? component.defaultValue)
+          componentValues.push({
+            componentId: component.id,
+            componentName: component.name,
+            value: isNaN(val) ? 0 : val,
+            editableByPlayer: true,
+          })
+          total += isNaN(val) ? 0 : val
+        } else {
+          const defaultVal = parseFloat(component.defaultValue)
+          componentValues.push({
+            componentId: component.id,
+            componentName: component.name,
+            value: isNaN(defaultVal) ? 0 : defaultVal,
+            editableByPlayer: false,
+          })
+          total += isNaN(defaultVal) ? 0 : defaultVal
+        }
+      }
+
+      // Sum attribute modifiers (ignore negative), only when modifiers are enabled
+      const attributeModifierValues: Array<{ attributeId: string; attributeKey: string; attributeName: string; enabled: boolean; rawModifier: number; effectiveModifier: number }> = []
+      if (disableAttributeModifiers === false) {
+        for (const am of resistance.attributeModifiers) {
+          if (!am.enabled) continue
+          const rawMod = attrMods.get(am.attributeId) ?? 0
+          const effectiveMod = Math.max(rawMod, 0)
+          total += effectiveMod
+          attributeModifierValues.push({
+            attributeId: am.attributeId,
+            attributeKey: am.attribute?.key ?? '',
+            attributeName: am.attribute?.name ?? (attrNameById[am.attributeId] ?? ''),
+            enabled: am.enabled,
+            rawModifier: rawMod,
+            effectiveModifier: effectiveMod,
+          })
+        }
+      }
+
+      results.push({
+        resistanceId: resistance.id,
+        name: resistance.name,
+        calculationType: 'CALCULATED',
+        total,
+        componentValues,
+        attributeModifierValues,
+      })
+    }
+
+    return results
+  }
+
+  /**
+   * Build a Record<resistanceId, manualValue | null> for a summon's manual resistances.
+   */
+  function summonResistanceValueMap(ability: Ability): Record<string, string | null> {
+    const map: Record<string, string | null> = {}
+    for (const srv of ability.summonResistanceValues ?? []) {
+      map[srv.resistanceId] = srv.manualValue
+    }
+    return map
+  }
+
+  /**
+   * Evaluate a formula expression with variable values.
+   * Safe for server-defined formulas; supports basic arithmetic and Math.* functions.
+   */
+  function evaluateSummonFormula(formula: string, variables: Record<string, number>): number {
+    if (!formula || !formula.trim()) return 0
+    let expr = formula
+    // Replace variable names with their values
+    for (const [key, val] of Object.entries(variables)) {
+      expr = expr.replace(new RegExp(`\\b${key}\\b`, 'g'), `(${val})`)
+    }
+    // Replace math function names
+    expr = expr.replace(/\bfloor\b/g, 'Math.floor')
+    expr = expr.replace(/\bceil\b/g, 'Math.ceil')
+    expr = expr.replace(/\bround\b/g, 'Math.round')
+    expr = expr.replace(/\bmax\b/g, 'Math.max')
+    expr = expr.replace(/\bmin\b/g, 'Math.min')
+    expr = expr.replace(/\babs\b/g, 'Math.abs')
+    expr = expr.replace(/\^/g, '**')
+    try {
+      return Function(`"use strict"; return (${expr})`)()
+    } catch {
+      return 0
+    }
+  }
+
   async function handleAddLevel(abilityId: string) {
     if (!sheetId) return
     setLevelModalSaving(true)
@@ -94,6 +265,9 @@ export function AbilitiesTab({
 
   const armorClasses = template.armorClasses?.filter(ac => ac.enabled) ?? []
   const allTemplateSkills = template.templateSkills ?? []
+  const templateAttributes = template.attributes ?? []
+  const disableAttributeModifiers = !template.attributeModifiersEnabled
+  const templateResistances = template.resistances ?? []
 
   const summonSkillTabClass = (aid: string, t: SummonTab) => {
     const active = summonTabs[aid] ?? 'stats'
@@ -364,6 +538,7 @@ export function AbilitiesTab({
                           <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'stats' }))} className={summonSkillTabClass(a.id, 'stats')}>Stats</button>
                           <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'skills' }))} className={summonSkillTabClass(a.id, 'skills')}>Skills</button>
                           <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'abilities' }))} className={summonSkillTabClass(a.id, 'abilities')}>Abilities</button>
+                          <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'resistances' }))} className={summonSkillTabClass(a.id, 'resistances')}>Resistances</button>
                         </div>
 
                         {/* Stats tab */}
@@ -635,7 +810,7 @@ export function AbilitiesTab({
                               <div className="space-y-2">
                                 {(a.childAbilities ?? []).map((ca: Ability) => {
                                   const caExpanded = expandedAbilities[ca.id] ?? false
-                                  const caSelLevel = ca.levels[ca.levels.length - 1]
+                                  const caSelLevel = getSelectedLevel(ca)
                                   return (
                                     <div key={ca.id} className={`rounded-lg border transition-all duration-200 ${caExpanded ? 'border-primary/20 bg-background/40' : 'border-border bg-background/20'}`}>
                                       <button
@@ -647,7 +822,17 @@ export function AbilitiesTab({
                                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
                                         </svg>
                                         <span className="text-sm font-medium text-foreground truncate flex-1">{ca.name}</span>
-                                        {caSelLevel && <span className="text-[0.6rem] text-muted">Lv {caSelLevel.level}</span>}
+                                        {isOwner && ca.levels.length > 0 && (
+                                          <div onClick={e => e.stopPropagation()}>
+                                            <select
+                                              className="input-field py-0.5 px-1.5 text-[0.6rem] min-w-[70px]"
+                                              value={caSelLevel?.id ?? ''}
+                                              onChange={e => setSelectedLevels(prev => ({ ...prev, [ca.id]: e.target.value }))}
+                                            >
+                                              {ca.levels.map(l => <option key={l.id} value={l.id}>Level {l.level}</option>)}
+                                            </select>
+                                          </div>
+                                        )}
                                         {isOwner && (
                                           <div onClick={e => e.stopPropagation()}>
                                             <button onClick={() => handleDeleteAbility(ca.id)} className="text-muted hover:text-danger p-0.5 transition-colors shrink-0">
@@ -660,6 +845,17 @@ export function AbilitiesTab({
                                       </button>
                                       {caExpanded && caSelLevel && (
                                         <div className="px-3 pb-3 pt-2 space-y-2 border-t border-border animate-fade-in">
+                                          {/* Delete level */}
+                                          {isOwner && ca.levels.length > 1 && (
+                                            <div className="flex justify-end">
+                                              <button
+                                                onClick={() => setConfirmDeleteLevel(caSelLevel.id)}
+                                                className="text-[0.6rem] text-danger/70 hover:text-danger px-1.5 py-0.5 transition-colors"
+                                              >
+                                                Delete Level {caSelLevel.level}
+                                              </button>
+                                            </div>
+                                          )}
                                           <div className="flex flex-wrap gap-3 text-xs text-muted">
                                             {isOwner ? (
                                               <>
@@ -693,11 +889,29 @@ export function AbilitiesTab({
                                                     emptyDisplay="—"
                                                   />
                                                 </span>
+                                                {caSelLevel.damage != null && (
+                                                  <span className="inline-flex items-center gap-1">
+                                                    Damage:
+                                                    <InlineClickEdit
+                                                      value={caSelLevel.damage ?? ''}
+                                                      onSave={async (v) => {
+                                                        try {
+                                                          await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { damage: v.trim() || null })
+                                                          setAbilities(prev => prev.map(ab => ({ ...ab, childAbilities: (ab.childAbilities ?? []).map(c => c.id === ca.id ? { ...c, levels: c.levels.map(l => l.id === caSelLevel.id ? { ...l, damage: v.trim() || null } : l) } : c) })))
+                                                        } catch {}
+                                                      }}
+                                                      className="!text-xs"
+                                                      inputClassName="!text-xs w-16"
+                                                      emptyDisplay="—"
+                                                    />
+                                                  </span>
+                                                )}
                                               </>
                                             ) : (
                                               <>
                                                 {caSelLevel.manaCost != null && <span>Mana: {caSelLevel.manaCost}</span>}
                                                 {caSelLevel.range && <span>Range: {caSelLevel.range}</span>}
+                                                {caSelLevel.damage && <span>Damage: {caSelLevel.damage}</span>}
                                               </>
                                             )}
                                           </div>
@@ -733,6 +947,20 @@ export function AbilitiesTab({
                                                   emptyDisplay="Add notes..."
                                                 />
                                               </div>
+                                              {/* Add level button */}
+                                              <div className="flex items-center justify-between pt-1">
+                                                {isOwner && (
+                                                  <button
+                                                    onClick={() => { setShowAddLevelModal(ca.id); setNewLevelForm({ level: ca.levels.length + 1, copyFromPrevious: ca.levels.length > 0 }); setLevelModalError(null) }}
+                                                    className="btn-ghost text-[0.6rem]"
+                                                  >
+                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
+                                                    </svg>
+                                                    Add Level
+                                                  </button>
+                                                )}
+                                              </div>
                                             </>
                                           ) : (
                                             <>
@@ -740,6 +968,24 @@ export function AbilitiesTab({
                                               {caSelLevel.notes && <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><p className="text-xs text-muted italic whitespace-pre-wrap">{caSelLevel.notes}</p></div>}
                                             </>
                                           )}
+                                        </div>
+                                      )}
+                                      {caExpanded && !caSelLevel && (
+                                        <div className="px-3 pb-3 pt-2 border-t border-border animate-fade-in">
+                                          <div className="flex items-center justify-between">
+                                            <p className="text-[0.6rem] text-muted italic">No levels added yet.</p>
+                                            {isOwner && (
+                                              <button
+                                                onClick={() => { setShowAddLevelModal(ca.id); setNewLevelForm({ level: 1, copyFromPrevious: false }); setLevelModalError(null) }}
+                                                className="btn-ghost text-[0.6rem]"
+                                              >
+                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
+                                                </svg>
+                                                Add Level
+                                              </button>
+                                            )}
+                                          </div>
                                         </div>
                                       )}
                                     </div>
@@ -799,6 +1045,29 @@ export function AbilitiesTab({
                                 )}
                               </>
                             )}
+                          </div>
+                        )}
+
+                        {/* Resistances tab */}
+                        {currentSummonTab === 'resistances' && (
+                          <div className="space-y-3">
+                            <ResistanceTab
+                              resistances={buildSummonResistances(a)}
+                              isOwner={isOwner}
+                              onSaveComponent={async (componentId, value) => {
+                                try {
+                                  await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}/summon-resistance-components/${componentId}`, { value: value.toString() })
+                                } catch {}
+                              }}
+                              onSaveManual={async (resistanceId, value) => {
+                                try {
+                                  await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}/summon-resistances/${resistanceId}`, { value: value.toString() })
+                                } catch {}
+                              }}
+                              sheetResistanceValues={summonResistanceValueMap(a)}
+                              templateAttributes={templateAttributes}
+                              disableAttributeModifiers={disableAttributeModifiers}
+                            />
                           </div>
                         )}
                       </div>

@@ -58,7 +58,7 @@ interface Props {
 
 export type { NewResistanceDraft }
 
-export default function ResistanceTab({
+export function ResistanceTab({
   resistances, isOwner, onSaveComponent, onSaveManual, sheetResistanceValues,
   templateAttributes = [], disableAttributeModifiers = false,
   onCreateResistance, onDeleteResistance,

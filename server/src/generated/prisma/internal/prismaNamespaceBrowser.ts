@@ -87,6 +87,8 @@ export const ModelName = {
   SummonAttribute: 'SummonAttribute',
   SummonArmorClassValue: 'SummonArmorClassValue',
   SummonHealth: 'SummonHealth',
+  SummonResistanceValue: 'SummonResistanceValue',
+  SummonResistanceComponentValue: 'SummonResistanceComponentValue',
   CharacterInventoryItem: 'CharacterInventoryItem',
   CharacterStory: 'CharacterStory',
   TemplateCharacterSection: 'TemplateCharacterSection',
@@ -595,6 +597,30 @@ export const SummonHealthScalarFieldEnum = {
 } as const
 
 export type SummonHealthScalarFieldEnum = (typeof SummonHealthScalarFieldEnum)[keyof typeof SummonHealthScalarFieldEnum]
+
+
+export const SummonResistanceValueScalarFieldEnum = {
+  id: 'id',
+  abilityId: 'abilityId',
+  resistanceId: 'resistanceId',
+  manualValue: 'manualValue',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SummonResistanceValueScalarFieldEnum = (typeof SummonResistanceValueScalarFieldEnum)[keyof typeof SummonResistanceValueScalarFieldEnum]
+
+
+export const SummonResistanceComponentValueScalarFieldEnum = {
+  id: 'id',
+  abilityId: 'abilityId',
+  componentId: 'componentId',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SummonResistanceComponentValueScalarFieldEnum = (typeof SummonResistanceComponentValueScalarFieldEnum)[keyof typeof SummonResistanceComponentValueScalarFieldEnum]
 
 
 export const CharacterInventoryItemScalarFieldEnum = {

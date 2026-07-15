@@ -40,6 +40,13 @@ const sheetInclude = {
         },
       },
       characterSections: { orderBy: { order: 'asc' as const } },
+      resistances: {
+        orderBy: { order: 'asc' as const },
+        include: {
+          components: { orderBy: { order: 'asc' as const } },
+          attributeModifiers: { include: { attribute: { select: { id: true, key: true, name: true } } } },
+        },
+      },
     },
   },
   sectionEntries: {
@@ -108,6 +115,8 @@ const sheetInclude = {
       summonAttributes: { orderBy: { createdAt: 'asc' as const } },
       summonAcValues: { orderBy: { createdAt: 'asc' as const } },
       summonHealth: true,
+      summonResistanceValues: true,
+      summonResistanceComponentValues: true,
       summonSkills: {
         orderBy: { createdAt: 'asc' as const },
         include: {
@@ -564,6 +573,8 @@ export class CharacterSheetService {
     summonAttributes: { orderBy: { createdAt: 'asc' as const } },
     summonAcValues: { orderBy: { createdAt: 'asc' as const } },
     summonHealth: true,
+    summonResistanceValues: true,
+    summonResistanceComponentValues: true,
     summonSkills: {
       orderBy: { createdAt: 'asc' as const },
       include: {
@@ -943,6 +954,34 @@ export class CharacterSheetService {
       where: { abilityId },
       create: { abilityId, current: dto.current ?? null, maximum: dto.maximum ?? null, notes: dto.notes ?? null },
       update: { current: dto.current, maximum: dto.maximum, notes: dto.notes },
+    })
+    await this.invalidateCache(ability.sheetId).catch(() => {})
+    return result
+  }
+
+  // ── Summon Resistance Values ──
+
+  async updateSummonResistanceValue(abilityId: string, resistanceId: string, value: string | null, userId: string) {
+    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
+    if (!ability) throw new NotFoundException('Ability not found')
+    await this.requireOwnership(ability.sheetId, userId)
+    const result = await this.prisma.summonResistanceValue.upsert({
+      where: { abilityId_resistanceId: { abilityId, resistanceId } },
+      create: { abilityId, resistanceId, manualValue: value },
+      update: { manualValue: value },
+    })
+    await this.invalidateCache(ability.sheetId).catch(() => {})
+    return result
+  }
+
+  async updateSummonResistanceComponentValue(abilityId: string, componentId: string, value: string, userId: string) {
+    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
+    if (!ability) throw new NotFoundException('Ability not found')
+    await this.requireOwnership(ability.sheetId, userId)
+    const result = await this.prisma.summonResistanceComponentValue.upsert({
+      where: { abilityId_componentId: { abilityId, componentId } },
+      create: { abilityId, componentId, value },
+      update: { value },
     })
     await this.invalidateCache(ability.sheetId).catch(() => {})
     return result

@@ -489,9 +489,10 @@ model TemplateResistance {
   order            Int                             @default(0)
   components       ResistanceComponent[]
   attributeModifiers ResistanceAttributeModifier[]
-  sheetValues      CharacterSheetResistanceValue[]
-  createdAt        DateTime                        @default(now())
-  updatedAt        DateTime                        @updatedAt
+  sheetValues       CharacterSheetResistanceValue[]
+  summonValues      SummonResistanceValue[]
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
 
   @@index([templateId])
 }
@@ -505,6 +506,7 @@ model ResistanceComponent {
   defaultValue     String                                        @default("0")
   order            Int                                           @default(0)
   sheetValues      CharacterSheetResistanceComponentValue[]
+  summonValues     SummonResistanceComponentValue[]
   createdAt        DateTime                                      @default(now())
   updatedAt        DateTime                                      @updatedAt
 
@@ -573,9 +575,11 @@ model CharacterAbility {
   summonAttributes SummonAttribute[]
   summonAcValues   SummonArmorClassValue[]
   summonHealth     SummonHealth?
-  summonSkills     SummonSkill[]
-  childAbilities   CharacterAbility[]                @relation("SummonAbilities")
-  createdAt       DateTime                           @default(now())
+  summonSkills            SummonSkill[]
+  summonResistanceValues  SummonResistanceValue[]
+  summonResistanceComponentValues SummonResistanceComponentValue[]
+  childAbilities          CharacterAbility[]          @relation("SummonAbilities")
+  createdAt               DateTime                    @default(now())
   updatedAt       DateTime                           @updatedAt
 
   @@index([sheetId])
@@ -680,6 +684,38 @@ model SummonHealth {
   notes     String?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
+}
+
+// ── Summon Resistance Values (reuses template resistances) ──
+
+model SummonResistanceValue {
+  id           String           @id @default(cuid())
+  abilityId    String
+  ability      CharacterAbility @relation(fields: [abilityId], references: [id], onDelete: Cascade)
+  resistanceId String
+  resistance   TemplateResistance @relation(fields: [resistanceId], references: [id], onDelete: Cascade)
+  manualValue  String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([abilityId, resistanceId])
+  @@index([abilityId])
+  @@index([resistanceId])
+}
+
+model SummonResistanceComponentValue {
+  id          String              @id @default(cuid())
+  abilityId   String
+  ability     CharacterAbility    @relation(fields: [abilityId], references: [id], onDelete: Cascade)
+  componentId String
+  component   ResistanceComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  value       String              @default("0")
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@unique([abilityId, componentId])
+  @@index([abilityId])
+  @@index([componentId])
 }
 
 // ── Character Inventory Items (Player-only) ──

@@ -222,6 +222,16 @@ export type SummonArmorClassValue = Prisma.SummonArmorClassValueModel
  */
 export type SummonHealth = Prisma.SummonHealthModel
 /**
+ * Model SummonResistanceValue
+ * 
+ */
+export type SummonResistanceValue = Prisma.SummonResistanceValueModel
+/**
+ * Model SummonResistanceComponentValue
+ * 
+ */
+export type SummonResistanceComponentValue = Prisma.SummonResistanceComponentValueModel
+/**
  * Model CharacterInventoryItem
  * 
  */

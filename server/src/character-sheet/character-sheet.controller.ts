@@ -224,6 +224,18 @@ export class CharacterSheetController {
     return this.sheetService.updateSummonHealth(abilityId, req.user.sub, dto)
   }
 
+  // ── Summon Resistance Values ──
+
+  @Patch(':id/abilities/:abilityId/summon-resistances/:resistanceId')
+  updateSummonResistanceValue(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Param('resistanceId') resistanceId: string, @Body('value') value: string | null) {
+    return this.sheetService.updateSummonResistanceValue(abilityId, resistanceId, value, req.user.sub)
+  }
+
+  @Patch(':id/abilities/:abilityId/summon-resistance-components/:componentId')
+  updateSummonResistanceComponentValue(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Param('componentId') componentId: string, @Body('value') value: string) {
+    return this.sheetService.updateSummonResistanceComponentValue(abilityId, componentId, value, req.user.sub)
+  }
+
   // ── Inventory ──
 
   @Get(':id/inventory')
