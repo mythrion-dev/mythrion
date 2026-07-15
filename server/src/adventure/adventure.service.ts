@@ -168,8 +168,8 @@ export class AdventureService {
       {
         name: dto.name,
         type: 'SUMMON',
-        description: dto.description ?? null,
-        notes: dto.notes ?? null,
+        description: dto.description ?? undefined,
+        notes: dto.notes ?? undefined,
         // Store the NPC type (NPC/MOB) in the notes field since there's no dedicated field
       },
     )

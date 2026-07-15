@@ -73,7 +73,7 @@ export class ImageService implements OnModuleInit {
       readable
         .pipe(uploadStream)
         .on('error', (err) => {
-          this.logger.error(`Upload error for sheet ${sheetId}`, err)
+          this.logger.error(`Upload error for sheet ${entityId}`, err)
           reject(err)
         })
         .on('finish', () => {
