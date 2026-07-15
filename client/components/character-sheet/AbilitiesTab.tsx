@@ -24,7 +24,7 @@ export function AbilitiesTab({
   levelModalError, setLevelModalError,
   expandedAbilities, setExpandedAbilities,
   summonModifierResults, summonAcResults,
-  saveSummonAttribute, saveSummonAcValue, saveSummonHealth,
+  saveSummonAttribute, saveSummonAcValue, saveSummonAcAttributeValue, saveSummonHealth,
   summonTabs, setSummonTabs,
   summonSkillResults,
   handleAddSummonSkill, handleRemoveSummonSkill,
@@ -52,6 +52,7 @@ export function AbilitiesTab({
   summonAcResults: Record<string, number | null>
   saveSummonAttribute: (abilityId: string, attributeId: string, value: string) => Promise<void>
   saveSummonAcValue: (abilityId: string, fieldId: string, value: string) => Promise<void>
+  saveSummonAcAttributeValue: (abilityId: string, acAttributeModifierId: string, selectedAttributeId: string | null) => Promise<void>
   saveSummonHealth: (abilityId: string, field: 'current' | 'maximum', value: number | null) => Promise<void>
   summonTabs: Record<string, SummonTab>; setSummonTabs: React.Dispatch<React.SetStateAction<Record<string, SummonTab>>>
   summonSkillResults: Record<string, Record<string, number | null>>
@@ -710,12 +711,28 @@ export function AbilitiesTab({
                                     <h5 className="text-[0.6rem] font-semibold text-muted uppercase tracking-wider mb-2">Attribute Modifiers</h5>
                                     <div className="grid gap-1.5 sm:grid-cols-2">
                                       {(ac.attributeModifiers ?? []).map(am => {
-                                        const attr = template.attributes.find(at => at.id === am.attributeId)
-                                        if (!attr) return null
-                                        const modResult = (summonModifierResults[a.id] ?? {})[attr.id]
+                                        const acAttrValue = (a.summonAcAttributeValues ?? []).find(v => v.acAttributeModifierId === am.id)
+                                        const selectedAttributeId = acAttrValue?.selectedAttributeId ?? am.defaultAttributeId ?? am.attributeId
+                                        const selectedAttribute = template.attributes.find(at => at.id === selectedAttributeId) ?? am.defaultAttribute ?? am.attribute
+                                        const modResult = selectedAttribute ? (summonModifierResults[a.id] ?? {})[selectedAttribute.id] : null
+                                        const canChangeAttribute = isOwner && am.allowPlayerSelection
                                         return (
-                                          <div key={am.id} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-background/50 border border-border opacity-75">
-                                            <span className="text-xs text-foreground truncate">{attr.name} Mod</span>
+                                          <div key={am.id} className="flex items-center justify-between gap-2 py-1.5 px-3 rounded-lg bg-background/50 border border-border">
+                                            {canChangeAttribute ? (
+                                              <select
+                                                className="input-field py-0.5 text-xs w-auto min-w-[130px]"
+                                                value={selectedAttribute?.id ?? ''}
+                                                onChange={e => saveSummonAcAttributeValue(a.id, am.id, e.target.value || null)}
+                                              >
+                                                {template.attributes.map(attr => (
+                                                  <option key={attr.id} value={attr.id}>{attr.name}</option>
+                                                ))}
+                                              </select>
+                                            ) : (
+                                              <span className="text-xs text-foreground truncate">
+                                                {selectedAttribute?.name ?? am.attribute?.name} Mod
+                                              </span>
+                                            )}
                                             <span className="text-xs font-semibold text-muted">
                                               {modResult !== null && modResult !== undefined ? `${modResult >= 0 ? '+' : ''}${modResult}` : '—'}
                                             </span>

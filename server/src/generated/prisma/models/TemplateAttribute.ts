@@ -242,6 +242,7 @@ export type TemplateAttributeWhereInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierListRelationFilter
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierListRelationFilter
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueListRelationFilter
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueListRelationFilter
 }
 
 export type TemplateAttributeOrderByWithRelationInput = {
@@ -262,6 +263,7 @@ export type TemplateAttributeOrderByWithRelationInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierOrderByRelationAggregateInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierOrderByRelationAggregateInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueOrderByRelationAggregateInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueOrderByRelationAggregateInput
 }
 
 export type TemplateAttributeWhereUniqueInput = Prisma.AtLeast<{
@@ -285,6 +287,7 @@ export type TemplateAttributeWhereUniqueInput = Prisma.AtLeast<{
   acModifiers?: Prisma.ArmorClassAttributeModifierListRelationFilter
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierListRelationFilter
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueListRelationFilter
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueListRelationFilter
 }, "id">
 
 export type TemplateAttributeOrderByWithAggregationInput = {
@@ -332,6 +335,7 @@ export type TemplateAttributeCreateInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUncheckedCreateInput = {
@@ -351,6 +355,7 @@ export type TemplateAttributeUncheckedCreateInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUpdateInput = {
@@ -370,6 +375,7 @@ export type TemplateAttributeUpdateInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateInput = {
@@ -389,6 +395,7 @@ export type TemplateAttributeUncheckedUpdateInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeCreateManyInput = {
@@ -658,6 +665,22 @@ export type TemplateAttributeUpdateOneWithoutSummonSkillSelectionsNestedInput = 
   update?: Prisma.XOR<Prisma.XOR<Prisma.TemplateAttributeUpdateToOneWithWhereWithoutSummonSkillSelectionsInput, Prisma.TemplateAttributeUpdateWithoutSummonSkillSelectionsInput>, Prisma.TemplateAttributeUncheckedUpdateWithoutSummonSkillSelectionsInput>
 }
 
+export type TemplateAttributeCreateNestedOneWithoutSummonAcSelectionsInput = {
+  create?: Prisma.XOR<Prisma.TemplateAttributeCreateWithoutSummonAcSelectionsInput, Prisma.TemplateAttributeUncheckedCreateWithoutSummonAcSelectionsInput>
+  connectOrCreate?: Prisma.TemplateAttributeCreateOrConnectWithoutSummonAcSelectionsInput
+  connect?: Prisma.TemplateAttributeWhereUniqueInput
+}
+
+export type TemplateAttributeUpdateOneWithoutSummonAcSelectionsNestedInput = {
+  create?: Prisma.XOR<Prisma.TemplateAttributeCreateWithoutSummonAcSelectionsInput, Prisma.TemplateAttributeUncheckedCreateWithoutSummonAcSelectionsInput>
+  connectOrCreate?: Prisma.TemplateAttributeCreateOrConnectWithoutSummonAcSelectionsInput
+  upsert?: Prisma.TemplateAttributeUpsertWithoutSummonAcSelectionsInput
+  disconnect?: Prisma.TemplateAttributeWhereInput | boolean
+  delete?: Prisma.TemplateAttributeWhereInput | boolean
+  connect?: Prisma.TemplateAttributeWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TemplateAttributeUpdateToOneWithWhereWithoutSummonAcSelectionsInput, Prisma.TemplateAttributeUpdateWithoutSummonAcSelectionsInput>, Prisma.TemplateAttributeUncheckedUpdateWithoutSummonAcSelectionsInput>
+}
+
 export type TemplateAttributeCreateWithoutTemplateInput = {
   id?: string
   key: string
@@ -674,6 +697,7 @@ export type TemplateAttributeCreateWithoutTemplateInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUncheckedCreateWithoutTemplateInput = {
@@ -692,6 +716,7 @@ export type TemplateAttributeUncheckedCreateWithoutTemplateInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeCreateOrConnectWithoutTemplateInput = {
@@ -749,6 +774,7 @@ export type TemplateAttributeCreateWithoutSkillsInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUncheckedCreateWithoutSkillsInput = {
@@ -767,6 +793,7 @@ export type TemplateAttributeUncheckedCreateWithoutSkillsInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeCreateOrConnectWithoutSkillsInput = {
@@ -790,6 +817,7 @@ export type TemplateAttributeCreateWithoutSkillsAllowedInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUncheckedCreateWithoutSkillsAllowedInput = {
@@ -808,6 +836,7 @@ export type TemplateAttributeUncheckedCreateWithoutSkillsAllowedInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeCreateOrConnectWithoutSkillsAllowedInput = {
@@ -842,6 +871,7 @@ export type TemplateAttributeUpdateWithoutSkillsInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateWithoutSkillsInput = {
@@ -860,6 +890,7 @@ export type TemplateAttributeUncheckedUpdateWithoutSkillsInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUpsertWithoutSkillsAllowedInput = {
@@ -889,6 +920,7 @@ export type TemplateAttributeUpdateWithoutSkillsAllowedInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateWithoutSkillsAllowedInput = {
@@ -907,6 +939,7 @@ export type TemplateAttributeUncheckedUpdateWithoutSkillsAllowedInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeCreateWithoutSkillSelectionsInput = {
@@ -925,6 +958,7 @@ export type TemplateAttributeCreateWithoutSkillSelectionsInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUncheckedCreateWithoutSkillSelectionsInput = {
@@ -943,6 +977,7 @@ export type TemplateAttributeUncheckedCreateWithoutSkillSelectionsInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeCreateOrConnectWithoutSkillSelectionsInput = {
@@ -977,6 +1012,7 @@ export type TemplateAttributeUpdateWithoutSkillSelectionsInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateWithoutSkillSelectionsInput = {
@@ -995,6 +1031,7 @@ export type TemplateAttributeUncheckedUpdateWithoutSkillSelectionsInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeCreateWithoutSheetValuesInput = {
@@ -1013,6 +1050,7 @@ export type TemplateAttributeCreateWithoutSheetValuesInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUncheckedCreateWithoutSheetValuesInput = {
@@ -1031,6 +1069,7 @@ export type TemplateAttributeUncheckedCreateWithoutSheetValuesInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeCreateOrConnectWithoutSheetValuesInput = {
@@ -1065,6 +1104,7 @@ export type TemplateAttributeUpdateWithoutSheetValuesInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateWithoutSheetValuesInput = {
@@ -1083,6 +1123,7 @@ export type TemplateAttributeUncheckedUpdateWithoutSheetValuesInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeCreateWithoutAcModifiersInput = {
@@ -1101,6 +1142,7 @@ export type TemplateAttributeCreateWithoutAcModifiersInput = {
   resistanceModifiers?: Prisma.ResistanceAttributeModifierCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUncheckedCreateWithoutAcModifiersInput = {
@@ -1119,6 +1161,7 @@ export type TemplateAttributeUncheckedCreateWithoutAcModifiersInput = {
   resistanceModifiers?: Prisma.ResistanceAttributeModifierUncheckedCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeCreateOrConnectWithoutAcModifiersInput = {
@@ -1142,6 +1185,7 @@ export type TemplateAttributeCreateWithoutAcDefaultModifiersInput = {
   resistanceModifiers?: Prisma.ResistanceAttributeModifierCreateNestedManyWithoutAttributeInput
   acModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUncheckedCreateWithoutAcDefaultModifiersInput = {
@@ -1160,6 +1204,7 @@ export type TemplateAttributeUncheckedCreateWithoutAcDefaultModifiersInput = {
   resistanceModifiers?: Prisma.ResistanceAttributeModifierUncheckedCreateNestedManyWithoutAttributeInput
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeCreateOrConnectWithoutAcDefaultModifiersInput = {
@@ -1194,6 +1239,7 @@ export type TemplateAttributeUpdateWithoutAcModifiersInput = {
   resistanceModifiers?: Prisma.ResistanceAttributeModifierUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateWithoutAcModifiersInput = {
@@ -1212,6 +1258,7 @@ export type TemplateAttributeUncheckedUpdateWithoutAcModifiersInput = {
   resistanceModifiers?: Prisma.ResistanceAttributeModifierUncheckedUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUpsertWithoutAcDefaultModifiersInput = {
@@ -1241,6 +1288,7 @@ export type TemplateAttributeUpdateWithoutAcDefaultModifiersInput = {
   resistanceModifiers?: Prisma.ResistanceAttributeModifierUpdateManyWithoutAttributeNestedInput
   acModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateWithoutAcDefaultModifiersInput = {
@@ -1259,6 +1307,7 @@ export type TemplateAttributeUncheckedUpdateWithoutAcDefaultModifiersInput = {
   resistanceModifiers?: Prisma.ResistanceAttributeModifierUncheckedUpdateManyWithoutAttributeNestedInput
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeCreateWithoutAcSelectionsInput = {
@@ -1277,6 +1326,7 @@ export type TemplateAttributeCreateWithoutAcSelectionsInput = {
   resistanceModifiers?: Prisma.ResistanceAttributeModifierCreateNestedManyWithoutAttributeInput
   acModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutDefaultAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUncheckedCreateWithoutAcSelectionsInput = {
@@ -1295,6 +1345,7 @@ export type TemplateAttributeUncheckedCreateWithoutAcSelectionsInput = {
   resistanceModifiers?: Prisma.ResistanceAttributeModifierUncheckedCreateNestedManyWithoutAttributeInput
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutDefaultAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeCreateOrConnectWithoutAcSelectionsInput = {
@@ -1329,6 +1380,7 @@ export type TemplateAttributeUpdateWithoutAcSelectionsInput = {
   resistanceModifiers?: Prisma.ResistanceAttributeModifierUpdateManyWithoutAttributeNestedInput
   acModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutDefaultAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateWithoutAcSelectionsInput = {
@@ -1347,6 +1399,7 @@ export type TemplateAttributeUncheckedUpdateWithoutAcSelectionsInput = {
   resistanceModifiers?: Prisma.ResistanceAttributeModifierUncheckedUpdateManyWithoutAttributeNestedInput
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutDefaultAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeCreateWithoutResistanceModifiersInput = {
@@ -1365,6 +1418,7 @@ export type TemplateAttributeCreateWithoutResistanceModifiersInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUncheckedCreateWithoutResistanceModifiersInput = {
@@ -1383,6 +1437,7 @@ export type TemplateAttributeUncheckedCreateWithoutResistanceModifiersInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeCreateOrConnectWithoutResistanceModifiersInput = {
@@ -1417,6 +1472,7 @@ export type TemplateAttributeUpdateWithoutResistanceModifiersInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateWithoutResistanceModifiersInput = {
@@ -1435,6 +1491,7 @@ export type TemplateAttributeUncheckedUpdateWithoutResistanceModifiersInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeCreateWithoutSummonSkillSelectionsInput = {
@@ -1453,6 +1510,7 @@ export type TemplateAttributeCreateWithoutSummonSkillSelectionsInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeUncheckedCreateWithoutSummonSkillSelectionsInput = {
@@ -1471,6 +1529,7 @@ export type TemplateAttributeUncheckedCreateWithoutSummonSkillSelectionsInput = 
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutAttributeInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutDefaultAttributeInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
 }
 
 export type TemplateAttributeCreateOrConnectWithoutSummonSkillSelectionsInput = {
@@ -1505,6 +1564,7 @@ export type TemplateAttributeUpdateWithoutSummonSkillSelectionsInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateWithoutSummonSkillSelectionsInput = {
@@ -1519,6 +1579,99 @@ export type TemplateAttributeUncheckedUpdateWithoutSummonSkillSelectionsInput = 
   skills?: Prisma.TemplateSkillUncheckedUpdateManyWithoutAttributeNestedInput
   skillsAllowed?: Prisma.TemplateSkillUncheckedUpdateManyWithoutDefaultAttributeNestedInput
   skillSelections?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
+  resistanceModifiers?: Prisma.ResistanceAttributeModifierUncheckedUpdateManyWithoutAttributeNestedInput
+  acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutAttributeNestedInput
+  acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutDefaultAttributeNestedInput
+  acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
+}
+
+export type TemplateAttributeCreateWithoutSummonAcSelectionsInput = {
+  id?: string
+  key: string
+  name: string
+  order?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  template: Prisma.TemplateCreateNestedOneWithoutAttributesInput
+  sheetValues?: Prisma.CharacterSheetValueCreateNestedManyWithoutAttributeInput
+  skills?: Prisma.TemplateSkillCreateNestedManyWithoutAttributeInput
+  skillsAllowed?: Prisma.TemplateSkillCreateNestedManyWithoutDefaultAttributeInput
+  skillSelections?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSelectedAttributeInput
+  summonSkillSelections?: Prisma.SummonSkillCreateNestedManyWithoutSelectedAttributeInput
+  resistanceModifiers?: Prisma.ResistanceAttributeModifierCreateNestedManyWithoutAttributeInput
+  acModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutAttributeInput
+  acDefaultModifiers?: Prisma.ArmorClassAttributeModifierCreateNestedManyWithoutDefaultAttributeInput
+  acSelections?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutSelectedAttributeInput
+}
+
+export type TemplateAttributeUncheckedCreateWithoutSummonAcSelectionsInput = {
+  id?: string
+  templateId: string
+  key: string
+  name: string
+  order?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sheetValues?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutAttributeInput
+  skills?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutAttributeInput
+  skillsAllowed?: Prisma.TemplateSkillUncheckedCreateNestedManyWithoutDefaultAttributeInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
+  summonSkillSelections?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutSelectedAttributeInput
+  resistanceModifiers?: Prisma.ResistanceAttributeModifierUncheckedCreateNestedManyWithoutAttributeInput
+  acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutAttributeInput
+  acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedCreateNestedManyWithoutDefaultAttributeInput
+  acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutSelectedAttributeInput
+}
+
+export type TemplateAttributeCreateOrConnectWithoutSummonAcSelectionsInput = {
+  where: Prisma.TemplateAttributeWhereUniqueInput
+  create: Prisma.XOR<Prisma.TemplateAttributeCreateWithoutSummonAcSelectionsInput, Prisma.TemplateAttributeUncheckedCreateWithoutSummonAcSelectionsInput>
+}
+
+export type TemplateAttributeUpsertWithoutSummonAcSelectionsInput = {
+  update: Prisma.XOR<Prisma.TemplateAttributeUpdateWithoutSummonAcSelectionsInput, Prisma.TemplateAttributeUncheckedUpdateWithoutSummonAcSelectionsInput>
+  create: Prisma.XOR<Prisma.TemplateAttributeCreateWithoutSummonAcSelectionsInput, Prisma.TemplateAttributeUncheckedCreateWithoutSummonAcSelectionsInput>
+  where?: Prisma.TemplateAttributeWhereInput
+}
+
+export type TemplateAttributeUpdateToOneWithWhereWithoutSummonAcSelectionsInput = {
+  where?: Prisma.TemplateAttributeWhereInput
+  data: Prisma.XOR<Prisma.TemplateAttributeUpdateWithoutSummonAcSelectionsInput, Prisma.TemplateAttributeUncheckedUpdateWithoutSummonAcSelectionsInput>
+}
+
+export type TemplateAttributeUpdateWithoutSummonAcSelectionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  template?: Prisma.TemplateUpdateOneRequiredWithoutAttributesNestedInput
+  sheetValues?: Prisma.CharacterSheetValueUpdateManyWithoutAttributeNestedInput
+  skills?: Prisma.TemplateSkillUpdateManyWithoutAttributeNestedInput
+  skillsAllowed?: Prisma.TemplateSkillUpdateManyWithoutDefaultAttributeNestedInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSelectedAttributeNestedInput
+  summonSkillSelections?: Prisma.SummonSkillUpdateManyWithoutSelectedAttributeNestedInput
+  resistanceModifiers?: Prisma.ResistanceAttributeModifierUpdateManyWithoutAttributeNestedInput
+  acModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutAttributeNestedInput
+  acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutDefaultAttributeNestedInput
+  acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
+}
+
+export type TemplateAttributeUncheckedUpdateWithoutSummonAcSelectionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  templateId?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sheetValues?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutAttributeNestedInput
+  skills?: Prisma.TemplateSkillUncheckedUpdateManyWithoutAttributeNestedInput
+  skillsAllowed?: Prisma.TemplateSkillUncheckedUpdateManyWithoutDefaultAttributeNestedInput
+  skillSelections?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
+  summonSkillSelections?: Prisma.SummonSkillUncheckedUpdateManyWithoutSelectedAttributeNestedInput
   resistanceModifiers?: Prisma.ResistanceAttributeModifierUncheckedUpdateManyWithoutAttributeNestedInput
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutDefaultAttributeNestedInput
@@ -1550,6 +1703,7 @@ export type TemplateAttributeUpdateWithoutTemplateInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateWithoutTemplateInput = {
@@ -1568,6 +1722,7 @@ export type TemplateAttributeUncheckedUpdateWithoutTemplateInput = {
   acModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutAttributeNestedInput
   acDefaultModifiers?: Prisma.ArmorClassAttributeModifierUncheckedUpdateManyWithoutDefaultAttributeNestedInput
   acSelections?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedUpdateManyWithoutSelectedAttributeNestedInput
 }
 
 export type TemplateAttributeUncheckedUpdateManyWithoutTemplateInput = {
@@ -1594,6 +1749,7 @@ export type TemplateAttributeCountOutputType = {
   acModifiers: number
   acDefaultModifiers: number
   acSelections: number
+  summonAcSelections: number
 }
 
 export type TemplateAttributeCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1606,6 +1762,7 @@ export type TemplateAttributeCountOutputTypeSelect<ExtArgs extends runtime.Types
   acModifiers?: boolean | TemplateAttributeCountOutputTypeCountAcModifiersArgs
   acDefaultModifiers?: boolean | TemplateAttributeCountOutputTypeCountAcDefaultModifiersArgs
   acSelections?: boolean | TemplateAttributeCountOutputTypeCountAcSelectionsArgs
+  summonAcSelections?: boolean | TemplateAttributeCountOutputTypeCountSummonAcSelectionsArgs
 }
 
 /**
@@ -1681,6 +1838,13 @@ export type TemplateAttributeCountOutputTypeCountAcSelectionsArgs<ExtArgs extend
   where?: Prisma.CharacterSheetArmorClassAttributeValueWhereInput
 }
 
+/**
+ * TemplateAttributeCountOutputType without action
+ */
+export type TemplateAttributeCountOutputTypeCountSummonAcSelectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SummonArmorClassAttributeValueWhereInput
+}
+
 
 export type TemplateAttributeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1700,6 +1864,7 @@ export type TemplateAttributeSelect<ExtArgs extends runtime.Types.Extensions.Int
   acModifiers?: boolean | Prisma.TemplateAttribute$acModifiersArgs<ExtArgs>
   acDefaultModifiers?: boolean | Prisma.TemplateAttribute$acDefaultModifiersArgs<ExtArgs>
   acSelections?: boolean | Prisma.TemplateAttribute$acSelectionsArgs<ExtArgs>
+  summonAcSelections?: boolean | Prisma.TemplateAttribute$summonAcSelectionsArgs<ExtArgs>
   _count?: boolean | Prisma.TemplateAttributeCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["templateAttribute"]>
 
@@ -1747,6 +1912,7 @@ export type TemplateAttributeInclude<ExtArgs extends runtime.Types.Extensions.In
   acModifiers?: boolean | Prisma.TemplateAttribute$acModifiersArgs<ExtArgs>
   acDefaultModifiers?: boolean | Prisma.TemplateAttribute$acDefaultModifiersArgs<ExtArgs>
   acSelections?: boolean | Prisma.TemplateAttribute$acSelectionsArgs<ExtArgs>
+  summonAcSelections?: boolean | Prisma.TemplateAttribute$summonAcSelectionsArgs<ExtArgs>
   _count?: boolean | Prisma.TemplateAttributeCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TemplateAttributeIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1769,6 +1935,7 @@ export type $TemplateAttributePayload<ExtArgs extends runtime.Types.Extensions.I
     acModifiers: Prisma.$ArmorClassAttributeModifierPayload<ExtArgs>[]
     acDefaultModifiers: Prisma.$ArmorClassAttributeModifierPayload<ExtArgs>[]
     acSelections: Prisma.$CharacterSheetArmorClassAttributeValuePayload<ExtArgs>[]
+    summonAcSelections: Prisma.$SummonArmorClassAttributeValuePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2182,6 +2349,7 @@ export interface Prisma__TemplateAttributeClient<T, Null = never, ExtArgs extend
   acModifiers<T extends Prisma.TemplateAttribute$acModifiersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateAttribute$acModifiersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ArmorClassAttributeModifierPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   acDefaultModifiers<T extends Prisma.TemplateAttribute$acDefaultModifiersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateAttribute$acDefaultModifiersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ArmorClassAttributeModifierPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   acSelections<T extends Prisma.TemplateAttribute$acSelectionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateAttribute$acSelectionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetArmorClassAttributeValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  summonAcSelections<T extends Prisma.TemplateAttribute$summonAcSelectionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateAttribute$summonAcSelectionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummonArmorClassAttributeValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2832,6 +3000,30 @@ export type TemplateAttribute$acSelectionsArgs<ExtArgs extends runtime.Types.Ext
   take?: number
   skip?: number
   distinct?: Prisma.CharacterSheetArmorClassAttributeValueScalarFieldEnum | Prisma.CharacterSheetArmorClassAttributeValueScalarFieldEnum[]
+}
+
+/**
+ * TemplateAttribute.summonAcSelections
+ */
+export type TemplateAttribute$summonAcSelectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SummonArmorClassAttributeValue
+   */
+  select?: Prisma.SummonArmorClassAttributeValueSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SummonArmorClassAttributeValue
+   */
+  omit?: Prisma.SummonArmorClassAttributeValueOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SummonArmorClassAttributeValueInclude<ExtArgs> | null
+  where?: Prisma.SummonArmorClassAttributeValueWhereInput
+  orderBy?: Prisma.SummonArmorClassAttributeValueOrderByWithRelationInput | Prisma.SummonArmorClassAttributeValueOrderByWithRelationInput[]
+  cursor?: Prisma.SummonArmorClassAttributeValueWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SummonArmorClassAttributeValueScalarFieldEnum | Prisma.SummonArmorClassAttributeValueScalarFieldEnum[]
 }
 
 /**

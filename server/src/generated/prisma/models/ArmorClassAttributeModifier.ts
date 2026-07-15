@@ -202,6 +202,7 @@ export type ArmorClassAttributeModifierWhereInput = {
   attribute?: Prisma.XOR<Prisma.TemplateAttributeScalarRelationFilter, Prisma.TemplateAttributeWhereInput>
   defaultAttribute?: Prisma.XOR<Prisma.TemplateAttributeNullableScalarRelationFilter, Prisma.TemplateAttributeWhereInput> | null
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueListRelationFilter
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueListRelationFilter
 }
 
 export type ArmorClassAttributeModifierOrderByWithRelationInput = {
@@ -216,6 +217,7 @@ export type ArmorClassAttributeModifierOrderByWithRelationInput = {
   attribute?: Prisma.TemplateAttributeOrderByWithRelationInput
   defaultAttribute?: Prisma.TemplateAttributeOrderByWithRelationInput
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueOrderByRelationAggregateInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueOrderByRelationAggregateInput
 }
 
 export type ArmorClassAttributeModifierWhereUniqueInput = Prisma.AtLeast<{
@@ -234,6 +236,7 @@ export type ArmorClassAttributeModifierWhereUniqueInput = Prisma.AtLeast<{
   attribute?: Prisma.XOR<Prisma.TemplateAttributeScalarRelationFilter, Prisma.TemplateAttributeWhereInput>
   defaultAttribute?: Prisma.XOR<Prisma.TemplateAttributeNullableScalarRelationFilter, Prisma.TemplateAttributeWhereInput> | null
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueListRelationFilter
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueListRelationFilter
 }, "id" | "armorClassId_attributeId">
 
 export type ArmorClassAttributeModifierOrderByWithAggregationInput = {
@@ -271,6 +274,7 @@ export type ArmorClassAttributeModifierCreateInput = {
   attribute: Prisma.TemplateAttributeCreateNestedOneWithoutAcModifiersInput
   defaultAttribute?: Prisma.TemplateAttributeCreateNestedOneWithoutAcDefaultModifiersInput
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutAcAttributeModifierInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueCreateNestedManyWithoutAcAttributeModifierInput
 }
 
 export type ArmorClassAttributeModifierUncheckedCreateInput = {
@@ -282,6 +286,7 @@ export type ArmorClassAttributeModifierUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutAcAttributeModifierInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedCreateNestedManyWithoutAcAttributeModifierInput
 }
 
 export type ArmorClassAttributeModifierUpdateInput = {
@@ -293,6 +298,7 @@ export type ArmorClassAttributeModifierUpdateInput = {
   attribute?: Prisma.TemplateAttributeUpdateOneRequiredWithoutAcModifiersNestedInput
   defaultAttribute?: Prisma.TemplateAttributeUpdateOneWithoutAcDefaultModifiersNestedInput
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutAcAttributeModifierNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUpdateManyWithoutAcAttributeModifierNestedInput
 }
 
 export type ArmorClassAttributeModifierUncheckedUpdateInput = {
@@ -304,6 +310,7 @@ export type ArmorClassAttributeModifierUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedUpdateManyWithoutAcAttributeModifierNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedUpdateManyWithoutAcAttributeModifierNestedInput
 }
 
 export type ArmorClassAttributeModifierCreateManyInput = {
@@ -523,6 +530,20 @@ export type ArmorClassAttributeModifierUpdateOneRequiredWithoutSheetValuesNested
   update?: Prisma.XOR<Prisma.XOR<Prisma.ArmorClassAttributeModifierUpdateToOneWithWhereWithoutSheetValuesInput, Prisma.ArmorClassAttributeModifierUpdateWithoutSheetValuesInput>, Prisma.ArmorClassAttributeModifierUncheckedUpdateWithoutSheetValuesInput>
 }
 
+export type ArmorClassAttributeModifierCreateNestedOneWithoutSummonAcSelectionsInput = {
+  create?: Prisma.XOR<Prisma.ArmorClassAttributeModifierCreateWithoutSummonAcSelectionsInput, Prisma.ArmorClassAttributeModifierUncheckedCreateWithoutSummonAcSelectionsInput>
+  connectOrCreate?: Prisma.ArmorClassAttributeModifierCreateOrConnectWithoutSummonAcSelectionsInput
+  connect?: Prisma.ArmorClassAttributeModifierWhereUniqueInput
+}
+
+export type ArmorClassAttributeModifierUpdateOneRequiredWithoutSummonAcSelectionsNestedInput = {
+  create?: Prisma.XOR<Prisma.ArmorClassAttributeModifierCreateWithoutSummonAcSelectionsInput, Prisma.ArmorClassAttributeModifierUncheckedCreateWithoutSummonAcSelectionsInput>
+  connectOrCreate?: Prisma.ArmorClassAttributeModifierCreateOrConnectWithoutSummonAcSelectionsInput
+  upsert?: Prisma.ArmorClassAttributeModifierUpsertWithoutSummonAcSelectionsInput
+  connect?: Prisma.ArmorClassAttributeModifierWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ArmorClassAttributeModifierUpdateToOneWithWhereWithoutSummonAcSelectionsInput, Prisma.ArmorClassAttributeModifierUpdateWithoutSummonAcSelectionsInput>, Prisma.ArmorClassAttributeModifierUncheckedUpdateWithoutSummonAcSelectionsInput>
+}
+
 export type ArmorClassAttributeModifierCreateWithoutAttributeInput = {
   id?: string
   allowPlayerSelection?: boolean
@@ -531,6 +552,7 @@ export type ArmorClassAttributeModifierCreateWithoutAttributeInput = {
   armorClass: Prisma.TemplateArmorClassCreateNestedOneWithoutAttributeModifiersInput
   defaultAttribute?: Prisma.TemplateAttributeCreateNestedOneWithoutAcDefaultModifiersInput
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutAcAttributeModifierInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueCreateNestedManyWithoutAcAttributeModifierInput
 }
 
 export type ArmorClassAttributeModifierUncheckedCreateWithoutAttributeInput = {
@@ -541,6 +563,7 @@ export type ArmorClassAttributeModifierUncheckedCreateWithoutAttributeInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutAcAttributeModifierInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedCreateNestedManyWithoutAcAttributeModifierInput
 }
 
 export type ArmorClassAttributeModifierCreateOrConnectWithoutAttributeInput = {
@@ -561,6 +584,7 @@ export type ArmorClassAttributeModifierCreateWithoutDefaultAttributeInput = {
   armorClass: Prisma.TemplateArmorClassCreateNestedOneWithoutAttributeModifiersInput
   attribute: Prisma.TemplateAttributeCreateNestedOneWithoutAcModifiersInput
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutAcAttributeModifierInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueCreateNestedManyWithoutAcAttributeModifierInput
 }
 
 export type ArmorClassAttributeModifierUncheckedCreateWithoutDefaultAttributeInput = {
@@ -571,6 +595,7 @@ export type ArmorClassAttributeModifierUncheckedCreateWithoutDefaultAttributeInp
   createdAt?: Date | string
   updatedAt?: Date | string
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutAcAttributeModifierInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedCreateNestedManyWithoutAcAttributeModifierInput
 }
 
 export type ArmorClassAttributeModifierCreateOrConnectWithoutDefaultAttributeInput = {
@@ -636,6 +661,7 @@ export type ArmorClassAttributeModifierCreateWithoutArmorClassInput = {
   attribute: Prisma.TemplateAttributeCreateNestedOneWithoutAcModifiersInput
   defaultAttribute?: Prisma.TemplateAttributeCreateNestedOneWithoutAcDefaultModifiersInput
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutAcAttributeModifierInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueCreateNestedManyWithoutAcAttributeModifierInput
 }
 
 export type ArmorClassAttributeModifierUncheckedCreateWithoutArmorClassInput = {
@@ -646,6 +672,7 @@ export type ArmorClassAttributeModifierUncheckedCreateWithoutArmorClassInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutAcAttributeModifierInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedCreateNestedManyWithoutAcAttributeModifierInput
 }
 
 export type ArmorClassAttributeModifierCreateOrConnectWithoutArmorClassInput = {
@@ -682,6 +709,7 @@ export type ArmorClassAttributeModifierCreateWithoutSheetValuesInput = {
   armorClass: Prisma.TemplateArmorClassCreateNestedOneWithoutAttributeModifiersInput
   attribute: Prisma.TemplateAttributeCreateNestedOneWithoutAcModifiersInput
   defaultAttribute?: Prisma.TemplateAttributeCreateNestedOneWithoutAcDefaultModifiersInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueCreateNestedManyWithoutAcAttributeModifierInput
 }
 
 export type ArmorClassAttributeModifierUncheckedCreateWithoutSheetValuesInput = {
@@ -692,6 +720,7 @@ export type ArmorClassAttributeModifierUncheckedCreateWithoutSheetValuesInput = 
   defaultAttributeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedCreateNestedManyWithoutAcAttributeModifierInput
 }
 
 export type ArmorClassAttributeModifierCreateOrConnectWithoutSheetValuesInput = {
@@ -718,6 +747,7 @@ export type ArmorClassAttributeModifierUpdateWithoutSheetValuesInput = {
   armorClass?: Prisma.TemplateArmorClassUpdateOneRequiredWithoutAttributeModifiersNestedInput
   attribute?: Prisma.TemplateAttributeUpdateOneRequiredWithoutAcModifiersNestedInput
   defaultAttribute?: Prisma.TemplateAttributeUpdateOneWithoutAcDefaultModifiersNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUpdateManyWithoutAcAttributeModifierNestedInput
 }
 
 export type ArmorClassAttributeModifierUncheckedUpdateWithoutSheetValuesInput = {
@@ -728,6 +758,67 @@ export type ArmorClassAttributeModifierUncheckedUpdateWithoutSheetValuesInput = 
   defaultAttributeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedUpdateManyWithoutAcAttributeModifierNestedInput
+}
+
+export type ArmorClassAttributeModifierCreateWithoutSummonAcSelectionsInput = {
+  id?: string
+  allowPlayerSelection?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  armorClass: Prisma.TemplateArmorClassCreateNestedOneWithoutAttributeModifiersInput
+  attribute: Prisma.TemplateAttributeCreateNestedOneWithoutAcModifiersInput
+  defaultAttribute?: Prisma.TemplateAttributeCreateNestedOneWithoutAcDefaultModifiersInput
+  sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutAcAttributeModifierInput
+}
+
+export type ArmorClassAttributeModifierUncheckedCreateWithoutSummonAcSelectionsInput = {
+  id?: string
+  armorClassId: string
+  attributeId: string
+  allowPlayerSelection?: boolean
+  defaultAttributeId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutAcAttributeModifierInput
+}
+
+export type ArmorClassAttributeModifierCreateOrConnectWithoutSummonAcSelectionsInput = {
+  where: Prisma.ArmorClassAttributeModifierWhereUniqueInput
+  create: Prisma.XOR<Prisma.ArmorClassAttributeModifierCreateWithoutSummonAcSelectionsInput, Prisma.ArmorClassAttributeModifierUncheckedCreateWithoutSummonAcSelectionsInput>
+}
+
+export type ArmorClassAttributeModifierUpsertWithoutSummonAcSelectionsInput = {
+  update: Prisma.XOR<Prisma.ArmorClassAttributeModifierUpdateWithoutSummonAcSelectionsInput, Prisma.ArmorClassAttributeModifierUncheckedUpdateWithoutSummonAcSelectionsInput>
+  create: Prisma.XOR<Prisma.ArmorClassAttributeModifierCreateWithoutSummonAcSelectionsInput, Prisma.ArmorClassAttributeModifierUncheckedCreateWithoutSummonAcSelectionsInput>
+  where?: Prisma.ArmorClassAttributeModifierWhereInput
+}
+
+export type ArmorClassAttributeModifierUpdateToOneWithWhereWithoutSummonAcSelectionsInput = {
+  where?: Prisma.ArmorClassAttributeModifierWhereInput
+  data: Prisma.XOR<Prisma.ArmorClassAttributeModifierUpdateWithoutSummonAcSelectionsInput, Prisma.ArmorClassAttributeModifierUncheckedUpdateWithoutSummonAcSelectionsInput>
+}
+
+export type ArmorClassAttributeModifierUpdateWithoutSummonAcSelectionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  allowPlayerSelection?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  armorClass?: Prisma.TemplateArmorClassUpdateOneRequiredWithoutAttributeModifiersNestedInput
+  attribute?: Prisma.TemplateAttributeUpdateOneRequiredWithoutAcModifiersNestedInput
+  defaultAttribute?: Prisma.TemplateAttributeUpdateOneWithoutAcDefaultModifiersNestedInput
+  sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutAcAttributeModifierNestedInput
+}
+
+export type ArmorClassAttributeModifierUncheckedUpdateWithoutSummonAcSelectionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  armorClassId?: Prisma.StringFieldUpdateOperationsInput | string
+  attributeId?: Prisma.StringFieldUpdateOperationsInput | string
+  allowPlayerSelection?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  defaultAttributeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedUpdateManyWithoutAcAttributeModifierNestedInput
 }
 
 export type ArmorClassAttributeModifierCreateManyAttributeInput = {
@@ -756,6 +847,7 @@ export type ArmorClassAttributeModifierUpdateWithoutAttributeInput = {
   armorClass?: Prisma.TemplateArmorClassUpdateOneRequiredWithoutAttributeModifiersNestedInput
   defaultAttribute?: Prisma.TemplateAttributeUpdateOneWithoutAcDefaultModifiersNestedInput
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutAcAttributeModifierNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUpdateManyWithoutAcAttributeModifierNestedInput
 }
 
 export type ArmorClassAttributeModifierUncheckedUpdateWithoutAttributeInput = {
@@ -766,6 +858,7 @@ export type ArmorClassAttributeModifierUncheckedUpdateWithoutAttributeInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedUpdateManyWithoutAcAttributeModifierNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedUpdateManyWithoutAcAttributeModifierNestedInput
 }
 
 export type ArmorClassAttributeModifierUncheckedUpdateManyWithoutAttributeInput = {
@@ -785,6 +878,7 @@ export type ArmorClassAttributeModifierUpdateWithoutDefaultAttributeInput = {
   armorClass?: Prisma.TemplateArmorClassUpdateOneRequiredWithoutAttributeModifiersNestedInput
   attribute?: Prisma.TemplateAttributeUpdateOneRequiredWithoutAcModifiersNestedInput
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutAcAttributeModifierNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUpdateManyWithoutAcAttributeModifierNestedInput
 }
 
 export type ArmorClassAttributeModifierUncheckedUpdateWithoutDefaultAttributeInput = {
@@ -795,6 +889,7 @@ export type ArmorClassAttributeModifierUncheckedUpdateWithoutDefaultAttributeInp
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedUpdateManyWithoutAcAttributeModifierNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedUpdateManyWithoutAcAttributeModifierNestedInput
 }
 
 export type ArmorClassAttributeModifierUncheckedUpdateManyWithoutDefaultAttributeInput = {
@@ -823,6 +918,7 @@ export type ArmorClassAttributeModifierUpdateWithoutArmorClassInput = {
   attribute?: Prisma.TemplateAttributeUpdateOneRequiredWithoutAcModifiersNestedInput
   defaultAttribute?: Prisma.TemplateAttributeUpdateOneWithoutAcDefaultModifiersNestedInput
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutAcAttributeModifierNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUpdateManyWithoutAcAttributeModifierNestedInput
 }
 
 export type ArmorClassAttributeModifierUncheckedUpdateWithoutArmorClassInput = {
@@ -833,6 +929,7 @@ export type ArmorClassAttributeModifierUncheckedUpdateWithoutArmorClassInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheetValues?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedUpdateManyWithoutAcAttributeModifierNestedInput
+  summonAcSelections?: Prisma.SummonArmorClassAttributeValueUncheckedUpdateManyWithoutAcAttributeModifierNestedInput
 }
 
 export type ArmorClassAttributeModifierUncheckedUpdateManyWithoutArmorClassInput = {
@@ -851,10 +948,12 @@ export type ArmorClassAttributeModifierUncheckedUpdateManyWithoutArmorClassInput
 
 export type ArmorClassAttributeModifierCountOutputType = {
   sheetValues: number
+  summonAcSelections: number
 }
 
 export type ArmorClassAttributeModifierCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sheetValues?: boolean | ArmorClassAttributeModifierCountOutputTypeCountSheetValuesArgs
+  summonAcSelections?: boolean | ArmorClassAttributeModifierCountOutputTypeCountSummonAcSelectionsArgs
 }
 
 /**
@@ -874,6 +973,13 @@ export type ArmorClassAttributeModifierCountOutputTypeCountSheetValuesArgs<ExtAr
   where?: Prisma.CharacterSheetArmorClassAttributeValueWhereInput
 }
 
+/**
+ * ArmorClassAttributeModifierCountOutputType without action
+ */
+export type ArmorClassAttributeModifierCountOutputTypeCountSummonAcSelectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SummonArmorClassAttributeValueWhereInput
+}
+
 
 export type ArmorClassAttributeModifierSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -887,6 +993,7 @@ export type ArmorClassAttributeModifierSelect<ExtArgs extends runtime.Types.Exte
   attribute?: boolean | Prisma.TemplateAttributeDefaultArgs<ExtArgs>
   defaultAttribute?: boolean | Prisma.ArmorClassAttributeModifier$defaultAttributeArgs<ExtArgs>
   sheetValues?: boolean | Prisma.ArmorClassAttributeModifier$sheetValuesArgs<ExtArgs>
+  summonAcSelections?: boolean | Prisma.ArmorClassAttributeModifier$summonAcSelectionsArgs<ExtArgs>
   _count?: boolean | Prisma.ArmorClassAttributeModifierCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["armorClassAttributeModifier"]>
 
@@ -932,6 +1039,7 @@ export type ArmorClassAttributeModifierInclude<ExtArgs extends runtime.Types.Ext
   attribute?: boolean | Prisma.TemplateAttributeDefaultArgs<ExtArgs>
   defaultAttribute?: boolean | Prisma.ArmorClassAttributeModifier$defaultAttributeArgs<ExtArgs>
   sheetValues?: boolean | Prisma.ArmorClassAttributeModifier$sheetValuesArgs<ExtArgs>
+  summonAcSelections?: boolean | Prisma.ArmorClassAttributeModifier$summonAcSelectionsArgs<ExtArgs>
   _count?: boolean | Prisma.ArmorClassAttributeModifierCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ArmorClassAttributeModifierIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -952,6 +1060,7 @@ export type $ArmorClassAttributeModifierPayload<ExtArgs extends runtime.Types.Ex
     attribute: Prisma.$TemplateAttributePayload<ExtArgs>
     defaultAttribute: Prisma.$TemplateAttributePayload<ExtArgs> | null
     sheetValues: Prisma.$CharacterSheetArmorClassAttributeValuePayload<ExtArgs>[]
+    summonAcSelections: Prisma.$SummonArmorClassAttributeValuePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1359,6 +1468,7 @@ export interface Prisma__ArmorClassAttributeModifierClient<T, Null = never, ExtA
   attribute<T extends Prisma.TemplateAttributeDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateAttributeDefaultArgs<ExtArgs>>): Prisma.Prisma__TemplateAttributeClient<runtime.Types.Result.GetResult<Prisma.$TemplateAttributePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   defaultAttribute<T extends Prisma.ArmorClassAttributeModifier$defaultAttributeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ArmorClassAttributeModifier$defaultAttributeArgs<ExtArgs>>): Prisma.Prisma__TemplateAttributeClient<runtime.Types.Result.GetResult<Prisma.$TemplateAttributePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   sheetValues<T extends Prisma.ArmorClassAttributeModifier$sheetValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ArmorClassAttributeModifier$sheetValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetArmorClassAttributeValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  summonAcSelections<T extends Prisma.ArmorClassAttributeModifier$summonAcSelectionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ArmorClassAttributeModifier$summonAcSelectionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummonArmorClassAttributeValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1836,6 +1946,30 @@ export type ArmorClassAttributeModifier$sheetValuesArgs<ExtArgs extends runtime.
   take?: number
   skip?: number
   distinct?: Prisma.CharacterSheetArmorClassAttributeValueScalarFieldEnum | Prisma.CharacterSheetArmorClassAttributeValueScalarFieldEnum[]
+}
+
+/**
+ * ArmorClassAttributeModifier.summonAcSelections
+ */
+export type ArmorClassAttributeModifier$summonAcSelectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SummonArmorClassAttributeValue
+   */
+  select?: Prisma.SummonArmorClassAttributeValueSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SummonArmorClassAttributeValue
+   */
+  omit?: Prisma.SummonArmorClassAttributeValueOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SummonArmorClassAttributeValueInclude<ExtArgs> | null
+  where?: Prisma.SummonArmorClassAttributeValueWhereInput
+  orderBy?: Prisma.SummonArmorClassAttributeValueOrderByWithRelationInput | Prisma.SummonArmorClassAttributeValueOrderByWithRelationInput[]
+  cursor?: Prisma.SummonArmorClassAttributeValueWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SummonArmorClassAttributeValueScalarFieldEnum | Prisma.SummonArmorClassAttributeValueScalarFieldEnum[]
 }
 
 /**

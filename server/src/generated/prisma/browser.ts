@@ -193,6 +193,11 @@ export type SummonAttribute = Prisma.SummonAttributeModel
  */
 export type SummonArmorClassValue = Prisma.SummonArmorClassValueModel
 /**
+ * Model SummonArmorClassAttributeValue
+ * 
+ */
+export type SummonArmorClassAttributeValue = Prisma.SummonArmorClassAttributeValueModel
+/**
  * Model SummonHealth
  * 
  */

@@ -115,6 +115,11 @@ const sheetInclude = {
       levels: { orderBy: { level: 'asc' as const } },
       summonAttributes: { orderBy: { createdAt: 'asc' as const } },
       summonAcValues: { orderBy: { createdAt: 'asc' as const } },
+      summonAcAttributeValues: {
+        include: {
+          selectedAttribute: { select: { id: true, key: true, name: true } },
+        },
+      },
       summonHealth: true,
       summonResistanceValues: true,
       summonResistanceComponentValues: true,
@@ -573,6 +578,11 @@ export class CharacterSheetService {
     levels: { orderBy: { level: 'asc' as const } },
     summonAttributes: { orderBy: { createdAt: 'asc' as const } },
     summonAcValues: { orderBy: { createdAt: 'asc' as const } },
+    summonAcAttributeValues: {
+      include: {
+        selectedAttribute: { select: { id: true, key: true, name: true } },
+      },
+    },
     summonHealth: true,
     summonResistanceValues: true,
     summonResistanceComponentValues: true,
@@ -952,6 +962,21 @@ export class CharacterSheetService {
       where: { abilityId_fieldId: { abilityId, fieldId } },
       create: { abilityId, fieldId, value },
       update: { value },
+    })
+    await this.invalidateCache(ability.sheetId).catch(() => {})
+    return result
+  }
+
+  // ── Summon AC Attribute Modifier Selection ──
+
+  async updateSummonAcAttributeValue(abilityId: string, acAttributeModifierId: string, selectedAttributeId: string | null, userId: string) {
+    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
+    if (!ability) throw new NotFoundException('Ability not found')
+    await this.requireOwnership(ability.sheetId, userId)
+    const result = await this.prisma.summonArmorClassAttributeValue.upsert({
+      where: { abilityId_acAttributeModifierId: { abilityId, acAttributeModifierId } },
+      create: { abilityId, acAttributeModifierId, selectedAttributeId },
+      update: { selectedAttributeId },
     })
     await this.invalidateCache(ability.sheetId).catch(() => {})
     return result

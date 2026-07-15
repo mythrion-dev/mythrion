@@ -213,8 +213,9 @@ model TemplateAttribute {
   resistanceModifiers ResistanceAttributeModifier[]
   acModifiers       ArmorClassAttributeModifier[]     @relation("AcAttributeModifierAttribute")
   acDefaultModifiers ArmorClassAttributeModifier[]    @relation("AcAttributeModifierDefault")
-  acSelections      CharacterSheetArmorClassAttributeValue[]
-  createdAt         DateTime                          @default(now())
+  acSelections          CharacterSheetArmorClassAttributeValue[]
+  summonAcSelections    SummonArmorClassAttributeValue[]            @relation("SummonAcAttributeSelected")
+  createdAt             DateTime                          @default(now())
   updatedAt         DateTime                          @updatedAt
 
   @@index([templateId])
@@ -453,6 +454,7 @@ model ArmorClassAttributeModifier {
   defaultAttributeId    String?
   defaultAttribute      TemplateAttribute?                        @relation("AcAttributeModifierDefault", fields: [defaultAttributeId], references: [id], onDelete: SetNull)
   sheetValues           CharacterSheetArmorClassAttributeValue[]
+  summonAcSelections    SummonArmorClassAttributeValue[]
   createdAt             DateTime                                  @default(now())
   updatedAt             DateTime                                  @updatedAt
 
@@ -575,10 +577,11 @@ model CharacterAbility {
   summonAttributes SummonAttribute[]
   summonAcValues   SummonArmorClassValue[]
   summonHealth     SummonHealth?
-  summonSkills            SummonSkill[]
-  summonResistanceValues  SummonResistanceValue[]
+  summonSkills                    SummonSkill[]
+  summonAcAttributeValues         SummonArmorClassAttributeValue[]
+  summonResistanceValues          SummonResistanceValue[]
   summonResistanceComponentValues SummonResistanceComponentValue[]
-  childAbilities          CharacterAbility[]          @relation("SummonAbilities")
+  childAbilities                  CharacterAbility[]          @relation("SummonAbilities")
   createdAt               DateTime                    @default(now())
   updatedAt       DateTime                           @updatedAt
 
@@ -671,6 +674,25 @@ model SummonArmorClassValue {
   @@unique([abilityId, fieldId])
   @@index([abilityId])
   @@index([armorClassId])
+}
+
+// ── Summon Armor Class Attribute Modifier Selection ──
+
+model SummonArmorClassAttributeValue {
+  id                    String                   @id @default(cuid())
+  abilityId             String
+  ability               CharacterAbility         @relation(fields: [abilityId], references: [id], onDelete: Cascade)
+  acAttributeModifierId String
+  acAttributeModifier   ArmorClassAttributeModifier  @relation(fields: [acAttributeModifierId], references: [id], onDelete: Cascade)
+  selectedAttributeId   String?
+  selectedAttribute     TemplateAttribute?            @relation("SummonAcAttributeSelected", fields: [selectedAttributeId], references: [id], onDelete: SetNull)
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  @@unique([abilityId, acAttributeModifierId])
+  @@index([abilityId])
+  @@index([acAttributeModifierId])
+  @@index([selectedAttributeId])
 }
 
 // ── Summon Health ──

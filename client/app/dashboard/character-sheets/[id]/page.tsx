@@ -153,10 +153,14 @@ export default function CharacterSheetDetailPage() {
       const v = parseFloat(acv.value)
       if (!isNaN(v)) total += v
     })
+    const selectedByAcModifierId = new Map((ability.summonAcAttributeValues ?? []).map(v => [v.acAttributeModifierId, v.selectedAttributeId]))
     for (const ac of acs) {
       const acMods = ac.attributeModifiers ?? []
       for (const am of acMods) {
-        const modResult = mods[am.attributeId]
+        const effectiveAttributeId = am.allowPlayerSelection
+          ? (selectedByAcModifierId.get(am.id) ?? am.defaultAttributeId ?? am.attributeId)
+          : am.attributeId
+        const modResult = mods[effectiveAttributeId]
         if (modResult !== null && modResult !== undefined && !isNaN(modResult)) {
           total += Math.max(0, modResult)
         }
@@ -623,6 +627,36 @@ export default function CharacterSheetDetailPage() {
     } catch {}
   }
 
+  async function saveSummonAcAttributeValue(abilityId: string, acAttributeModifierId: string, selectedAttributeId: string | null) {
+    if (!sheet) return
+    try {
+      await api.patch(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-ac-attribute-modifier/${acAttributeModifierId}`, { selectedAttributeId })
+      const selectedAttribute = selectedAttributeId ? sheet.template.attributes.find(a => a.id === selectedAttributeId) ?? null : null
+      setAbilities(prev => prev.map(a =>
+        a.id === abilityId
+          ? {
+              ...a,
+              summonAcAttributeValues: [
+                ...(a.summonAcAttributeValues ?? []).filter(v => v.acAttributeModifierId !== acAttributeModifierId),
+                { id: `temp-${acAttributeModifierId}`, abilityId, acAttributeModifierId, selectedAttributeId, selectedAttribute: selectedAttribute as { id: string; key: string; name: string } | null },
+              ],
+            }
+          : a,
+      ))
+      const ability = abilities.find(a => a.id === abilityId)
+      if (ability) {
+        const mods = summonModifierResults[abilityId] || {}
+        setSummonAcResults(prev => ({ ...prev, [abilityId]: computeSummonAC({
+          ...ability,
+          summonAcAttributeValues: [
+            ...(ability.summonAcAttributeValues ?? []).filter(v => v.acAttributeModifierId !== acAttributeModifierId),
+            { id: `temp-${acAttributeModifierId}`, abilityId, acAttributeModifierId, selectedAttributeId, selectedAttribute: selectedAttribute as { id: string; key: string; name: string } | null },
+          ],
+        }, sheet, mods) }))
+      }
+    } catch {}
+  }
+
   async function saveSummonHealth(abilityId: string, field: 'current' | 'maximum', value: number | null) {
     if (!sheet) return
     const body: Record<string, unknown> = {}
@@ -951,6 +985,7 @@ export default function CharacterSheetDetailPage() {
         expandedAbilities={expandedAbilities} setExpandedAbilities={setExpandedAbilities}
         summonModifierResults={summonModifierResults} summonAcResults={summonAcResults}
         saveSummonAttribute={saveSummonAttribute} saveSummonAcValue={saveSummonAcValue}
+        saveSummonAcAttributeValue={saveSummonAcAttributeValue}
         saveSummonHealth={saveSummonHealth}
         summonTabs={summonTabs} setSummonTabs={setSummonTabs}
         summonSkillResults={summonSkillResults}

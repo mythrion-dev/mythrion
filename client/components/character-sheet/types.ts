@@ -44,6 +44,7 @@ export interface SectionEntry { id: string; sheetId: string; sectionId: string; 
 export interface AbilityLevel { id: string; abilityId: string; level: string; manaCost: number | null; range: string | null; description: string | null; notes: string | null; damage: string | null }
 export interface SummonAttribute { id: string; abilityId: string; attributeId: string; value: string }
 export interface SummonAcValue { id: string; abilityId: string; fieldId: string; value: string }
+export interface SummonAcAttributeValue { id: string; abilityId: string; acAttributeModifierId: string; selectedAttributeId: string | null; selectedAttribute: { id: string; key: string; name: string } | null }
 export interface SummonHealth { id: string; abilityId: string; current: number | null; maximum: number | null; notes: string | null }
 export interface SummonResistanceValue { id: string; abilityId: string; resistanceId: string; manualValue: string | null }
 export interface SummonResistanceComponentValue { id: string; abilityId: string; componentId: string; value: string }
@@ -62,6 +63,7 @@ export interface Ability {
   levels: AbilityLevel[]
   summonAttributes: SummonAttribute[]
   summonAcValues: SummonAcValue[]
+  summonAcAttributeValues?: SummonAcAttributeValue[]
   summonHealth: SummonHealth | null
   summonSkills?: SummonSkillData[]
   summonResistanceValues?: SummonResistanceValue[]

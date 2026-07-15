@@ -217,6 +217,13 @@ export class CharacterSheetController {
     return this.sheetService.updateSummonAcValue(abilityId, fieldId, value, req.user.sub)
   }
 
+  // ── Summon AC Attribute Modifier Selection ──
+
+  @Patch(':id/abilities/:abilityId/summon-ac-attribute-modifier/:acAttributeModifierId')
+  updateSummonAcAttributeValue(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Param('acAttributeModifierId') acAttributeModifierId: string, @Body('selectedAttributeId') selectedAttributeId: string | null) {
+    return this.sheetService.updateSummonAcAttributeValue(abilityId, acAttributeModifierId, selectedAttributeId, req.user.sub)
+  }
+
   // ── Summon Health ──
 
   @Patch(':id/abilities/:abilityId/summon-health')
