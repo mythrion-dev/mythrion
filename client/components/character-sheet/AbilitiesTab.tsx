@@ -69,6 +69,7 @@ export function AbilitiesTab({
   // Summon skill search state per summon
   const [skillSearchOpen, setSkillSearchOpen] = useState<string | null>(null)
   const [skillSearchQuery, setSkillSearchQuery] = useState('')
+  const [summonHpAmount, setSummonHpAmount] = useState<Record<string, string>>({})
 
   // Summon-scoped ability creation state
   const [showNewSummonAbility, setShowNewSummonAbility] = useState<string | null>(null)
@@ -612,26 +613,36 @@ export function AbilitiesTab({
                                 </div>
                               </div>
                               {isOwner && (
-                                <div className="flex items-center justify-center gap-2 flex-wrap">
-                                  <span className="text-xs text-muted font-medium mr-1">DMG</span>
-                                  {[10, 5, 1].map(amt => (
-                                    <button key={`dmg-${amt}`}
-                                      onClick={() => saveSummonHealth(a.id, 'current', Math.max(0, (a.summonHealth?.current ?? 0) - amt))}
-                                      className="px-3 py-1 text-xs font-bold rounded-md bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
-                                    >
-                                      -{amt}
-                                    </button>
-                                  ))}
-                                  <span className="w-px h-6 bg-border mx-1" />
-                                  <span className="text-xs text-muted font-medium mr-1">HEAL</span>
-                                  {[1, 5, 10].map(amt => (
-                                    <button key={`heal-${amt}`}
-                                      onClick={() => saveSummonHealth(a.id, 'current', (a.summonHealth?.current ?? 0) + amt)}
-                                      className="px-3 py-1 text-xs font-bold rounded-md bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 transition-colors"
-                                    >
-                                      +{amt}
-                                    </button>
-                                  ))}
+                                <div className="flex items-center justify-center gap-3">
+                                  <input
+                                    type="number" min={1}
+                                    value={summonHpAmount[a.id] ?? ''}
+                                    onChange={e => setSummonHpAmount(prev => ({ ...prev, [a.id]: e.target.value }))}
+                                    placeholder="Amount"
+                                    className="w-20 text-center text-sm bg-background/50 border border-border rounded-md px-2 py-1.5 text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary"
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const amt = parseInt(summonHpAmount[a.id], 10)
+                                      if (isNaN(amt) || amt <= 0) return
+                                      saveSummonHealth(a.id, 'current', Math.max(0, (a.summonHealth?.current ?? 0) - amt))
+                                      setSummonHpAmount(prev => ({ ...prev, [a.id]: '' }))
+                                    }}
+                                    className="px-4 py-1.5 text-sm font-bold rounded-md bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
+                                  >
+                                    Damage
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      const amt = parseInt(summonHpAmount[a.id], 10)
+                                      if (isNaN(amt) || amt <= 0) return
+                                      saveSummonHealth(a.id, 'current', (a.summonHealth?.current ?? 0) + amt)
+                                      setSummonHpAmount(prev => ({ ...prev, [a.id]: '' }))
+                                    }}
+                                    className="px-4 py-1.5 text-sm font-bold rounded-md bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 transition-colors"
+                                  >
+                                    Heal
+                                  </button>
                                 </div>
                               )}
                             </div>
