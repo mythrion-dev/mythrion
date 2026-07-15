@@ -256,7 +256,13 @@ export function AbilitiesTab({
     setLevelModalSaving(true)
     try {
       const level = await api.post<AbilityLevel>(`/character-sheets/${sheetId}/abilities/${abilityId}/levels`, { level: newLevelForm.level, copyFromPrevious: newLevelForm.copyFromPrevious })
-      setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, levels: [...a.levels, level] } : a))
+      setAbilities(prev => prev.map(a =>
+        a.id === abilityId
+          ? { ...a, levels: [...a.levels, level] }
+          : a.childAbilities
+            ? { ...a, childAbilities: a.childAbilities.map(ca => ca.id === abilityId ? { ...ca, levels: [...ca.levels, level] } : ca) }
+            : a,
+      ))
       setSelectedLevels(prev => ({ ...prev, [abilityId]: level.id }))
       setShowAddLevelModal(null)
     } catch (err) { setLevelModalError(err instanceof Error ? err.message : 'Failed to create level') }
@@ -590,14 +596,10 @@ export function AbilitiesTab({
                             {/* Health (always shown for summons) */}
                             <div className="card !p-4 !bg-background/30">
                               <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Health</h4>
-                              <div className="flex items-center justify-center gap-4">
+                              <div className="flex items-center justify-center gap-4 mb-4">
                                 <div className="text-center">
                                   <span className="text-xs text-muted block mb-0.5">Current</span>
-                                  {isOwner ? (
-                                    <InlineNumber value={a.summonHealth?.current ?? 0} onSave={(v) => saveSummonHealth(a.id, 'current', v)} min={0} className="text-xl font-bold text-foreground" />
-                                  ) : (
-                                    <span className="text-xl font-bold text-foreground">{a.summonHealth?.current ?? '—'}</span>
-                                  )}
+                                  <span className="text-xl font-bold text-foreground">{a.summonHealth?.current ?? 0}</span>
                                 </div>
                                 <span className="text-muted text-xl">/</span>
                                 <div className="text-center">
@@ -609,6 +611,29 @@ export function AbilitiesTab({
                                   )}
                                 </div>
                               </div>
+                              {isOwner && (
+                                <div className="flex items-center justify-center gap-2 flex-wrap">
+                                  <span className="text-xs text-muted font-medium mr-1">DMG</span>
+                                  {[10, 5, 1].map(amt => (
+                                    <button key={`dmg-${amt}`}
+                                      onClick={() => saveSummonHealth(a.id, 'current', Math.max(0, (a.summonHealth?.current ?? 0) - amt))}
+                                      className="px-3 py-1 text-xs font-bold rounded-md bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
+                                    >
+                                      -{amt}
+                                    </button>
+                                  ))}
+                                  <span className="w-px h-6 bg-border mx-1" />
+                                  <span className="text-xs text-muted font-medium mr-1">HEAL</span>
+                                  {[1, 5, 10].map(amt => (
+                                    <button key={`heal-${amt}`}
+                                      onClick={() => saveSummonHealth(a.id, 'current', (a.summonHealth?.current ?? 0) + amt)}
+                                      className="px-3 py-1 text-xs font-bold rounded-md bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 transition-colors"
+                                    >
+                                      +{amt}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
                             </div>
 
                             {/* Attributes */}
