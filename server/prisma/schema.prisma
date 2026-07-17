@@ -213,9 +213,10 @@ model TemplateAttribute {
   sheetResistanceModifiers SheetResistanceAttributeModifier[]
   acModifiers       ArmorClassAttributeModifier[]     @relation("AcAttributeModifierAttribute")
   acDefaultModifiers ArmorClassAttributeModifier[]    @relation("AcAttributeModifierDefault")
-  acSelections          CharacterSheetArmorClassAttributeValue[]
-  summonAcSelections    SummonArmorClassAttributeValue[]            @relation("SummonAcAttributeSelected")
-  createdAt             DateTime                          @default(now())
+  acSelections                CharacterSheetArmorClassAttributeValue[]
+  summonAcSelections          SummonArmorClassAttributeValue[]            @relation("SummonAcAttributeSelected")
+  professionalSkills          SheetProfessionalSkill[]
+  createdAt                   DateTime                          @default(now())
   updatedAt         DateTime                          @updatedAt
 
   @@index([templateId])
@@ -297,8 +298,9 @@ model CharacterSheet {
   inventoryItems     CharacterInventoryItem[]
   sectionEntries     CharacterSectionEntry[]
   story              CharacterStory?
-  sheetResistances   SheetResistance[]
-  createdAt          DateTime                         @default(now())
+  sheetResistances     SheetResistance[]
+  professionalSkills   SheetProfessionalSkill[]
+  createdAt            DateTime                         @default(now())
   updatedAt          DateTime                         @updatedAt
 
   @@index([adventureId])
@@ -607,6 +609,24 @@ model SheetResistanceAttributeModifier {
 
   @@unique([sheetResistanceId, attributeId])
   @@index([sheetResistanceId])
+  @@index([attributeId])
+}
+
+// ── Professional Skills (character-specific, not template-defined) ──
+
+model SheetProfessionalSkill {
+  id          String            @id @default(cuid())
+  sheetId     String
+  sheet       CharacterSheet    @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  name        String
+  attributeId String?
+  attribute   TemplateAttribute? @relation(fields: [attributeId], references: [id], onDelete: SetNull)
+  order       Int               @default(0)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([sheetId, name])
+  @@index([sheetId])
   @@index([attributeId])
 }
 

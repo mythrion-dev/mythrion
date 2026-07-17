@@ -416,6 +416,7 @@ export const ModelName = {
   SheetResistance: 'SheetResistance',
   SheetResistanceComponent: 'SheetResistanceComponent',
   SheetResistanceAttributeModifier: 'SheetResistanceAttributeModifier',
+  SheetProfessionalSkill: 'SheetProfessionalSkill',
   CharacterAbility: 'CharacterAbility',
   CharacterAbilityLevel: 'CharacterAbilityLevel',
   SummonSkill: 'SummonSkill',
@@ -445,7 +446,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateCoreResource" | "characterSheetCoreResourceValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "armorClassAttributeModifier" | "characterSheetArmorClassAttributeValue" | "templateResistance" | "resistanceComponent" | "resistanceAttributeModifier" | "characterSheetResistanceValue" | "characterSheetResistanceComponentValue" | "sheetResistance" | "sheetResistanceComponent" | "sheetResistanceAttributeModifier" | "characterAbility" | "characterAbilityLevel" | "summonSkill" | "summonSkillProfileValue" | "summonAttribute" | "summonArmorClassValue" | "summonArmorClassAttributeValue" | "summonHealth" | "summonResistanceValue" | "summonResistanceComponentValue" | "characterInventoryItem" | "characterStory" | "templateCharacterSection" | "characterSectionEntry"
+    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateCoreResource" | "characterSheetCoreResourceValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "armorClassAttributeModifier" | "characterSheetArmorClassAttributeValue" | "templateResistance" | "resistanceComponent" | "resistanceAttributeModifier" | "characterSheetResistanceValue" | "characterSheetResistanceComponentValue" | "sheetResistance" | "sheetResistanceComponent" | "sheetResistanceAttributeModifier" | "sheetProfessionalSkill" | "characterAbility" | "characterAbilityLevel" | "summonSkill" | "summonSkillProfileValue" | "summonAttribute" | "summonArmorClassValue" | "summonArmorClassAttributeValue" | "summonHealth" | "summonResistanceValue" | "summonResistanceComponentValue" | "characterInventoryItem" | "characterStory" | "templateCharacterSection" | "characterSectionEntry"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2817,6 +2818,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    SheetProfessionalSkill: {
+      payload: Prisma.$SheetProfessionalSkillPayload<ExtArgs>
+      fields: Prisma.SheetProfessionalSkillFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SheetProfessionalSkillFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SheetProfessionalSkillFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillPayload>
+        }
+        findFirst: {
+          args: Prisma.SheetProfessionalSkillFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SheetProfessionalSkillFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillPayload>
+        }
+        findMany: {
+          args: Prisma.SheetProfessionalSkillFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillPayload>[]
+        }
+        create: {
+          args: Prisma.SheetProfessionalSkillCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillPayload>
+        }
+        createMany: {
+          args: Prisma.SheetProfessionalSkillCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SheetProfessionalSkillCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillPayload>[]
+        }
+        delete: {
+          args: Prisma.SheetProfessionalSkillDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillPayload>
+        }
+        update: {
+          args: Prisma.SheetProfessionalSkillUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillPayload>
+        }
+        deleteMany: {
+          args: Prisma.SheetProfessionalSkillDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SheetProfessionalSkillUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SheetProfessionalSkillUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillPayload>[]
+        }
+        upsert: {
+          args: Prisma.SheetProfessionalSkillUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillPayload>
+        }
+        aggregate: {
+          args: Prisma.SheetProfessionalSkillAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSheetProfessionalSkill>
+        }
+        groupBy: {
+          args: Prisma.SheetProfessionalSkillGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SheetProfessionalSkillGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SheetProfessionalSkillCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SheetProfessionalSkillCountAggregateOutputType> | number
+        }
+      }
+    }
     CharacterAbility: {
       payload: Prisma.$CharacterAbilityPayload<ExtArgs>
       fields: Prisma.CharacterAbilityFieldRefs
@@ -4327,6 +4402,19 @@ export const SheetResistanceAttributeModifierScalarFieldEnum = {
 export type SheetResistanceAttributeModifierScalarFieldEnum = (typeof SheetResistanceAttributeModifierScalarFieldEnum)[keyof typeof SheetResistanceAttributeModifierScalarFieldEnum]
 
 
+export const SheetProfessionalSkillScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  name: 'name',
+  attributeId: 'attributeId',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SheetProfessionalSkillScalarFieldEnum = (typeof SheetProfessionalSkillScalarFieldEnum)[keyof typeof SheetProfessionalSkillScalarFieldEnum]
+
+
 export const CharacterAbilityScalarFieldEnum = {
   id: 'id',
   sheetId: 'sheetId',
@@ -4776,6 +4864,7 @@ export type GlobalOmitConfig = {
   sheetResistance?: Prisma.SheetResistanceOmit
   sheetResistanceComponent?: Prisma.SheetResistanceComponentOmit
   sheetResistanceAttributeModifier?: Prisma.SheetResistanceAttributeModifierOmit
+  sheetProfessionalSkill?: Prisma.SheetProfessionalSkillOmit
   characterAbility?: Prisma.CharacterAbilityOmit
   characterAbilityLevel?: Prisma.CharacterAbilityLevelOmit
   summonSkill?: Prisma.SummonSkillOmit

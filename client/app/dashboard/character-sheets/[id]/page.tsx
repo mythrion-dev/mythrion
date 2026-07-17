@@ -424,6 +424,8 @@ export default function CharacterSheetDetailPage() {
       setSummonTabs(st)
 
       const mods = await computeModifiers(d); computeSkills(d, selMap, others); computeAC(d, mods)
+      // Fetch resistances on load
+      fetchResistances(d.id)
       // Compute summon ACs, skills
       const summonAc: Record<string, number | null> = {}
       const summonMods: Record<string, Record<string, number | null>> = {}
@@ -938,7 +940,7 @@ export default function CharacterSheetDetailPage() {
         <button onClick={()=>setActiveTab('inventory')} className={tabClass('inventory')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>Inventory</button>
         <button onClick={()=>setActiveTab('story')} className={tabClass('story')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>Story</button>
         <button onClick={()=>setActiveTab('personal-abilities')} className={tabClass('personal-abilities')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>Personal Abilities</button>
-        <button onClick={()=>{setActiveTab('resistances');if(sheet) fetchResistances(sheet.id)}} className={tabClass('resistances')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3C7 3 4 6 4 9v1c0 2 1.5 3.5 3 4l1 3h8l1-3c1.5-.5 3-2 3-4V9c0-3-3-6-8-6z"/><path strokeLinecap="round" strokeLinejoin="round" d="M8 9h8"/><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6"/><path strokeLinecap="round" strokeLinejoin="round" d="M12 3V1"/></svg>Resistances</button>
+        <button onClick={()=>setActiveTab('resistances')} className={tabClass('resistances')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3C7 3 4 6 4 9v1c0 2 1.5 3.5 3 4l1 3h8l1-3c1.5-.5 3-2 3-4V9c0-3-3-6-8-6z"/><path strokeLinecap="round" strokeLinejoin="round" d="M8 9h8"/><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6"/><path strokeLinecap="round" strokeLinejoin="round" d="M12 3V1"/></svg>Resistances</button>
       </nav>
 
       {activeTab === 'character' && <CharacterTab
@@ -966,6 +968,8 @@ export default function CharacterSheetDetailPage() {
         expandedSkillId={expandedSkillId}
         setExpandedSkillId={setExpandedSkillId}
         skillResults={skillResults}
+        resistanceData={resistanceData}
+        sheetId={sheet.id}
       />}
 
       {activeTab === 'abilities' && <AbilitiesTab

@@ -118,3 +118,11 @@ export interface TemplateResistanceDef {
   components: ResistanceComponentDef[]
   attributeModifiers: ResistanceAttributeModifierDef[]
 }
+
+export interface ProfessionalSkill {
+  id: string
+  name: string
+  attributeId: string | null
+  attribute: { id: string; key: string; name: string } | null
+  order: number
+}

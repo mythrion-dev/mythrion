@@ -333,6 +333,28 @@ export class CharacterSheetController {
     return this.sheetService.removeResistance(id, resistanceId, req.user.sub)
   }
 
+  // ── Professional Skills ──
+
+  @Get(':id/professional-skills')
+  listProfessionalSkills(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.sheetService.listProfessionalSkills(id, req.user.sub)
+  }
+
+  @Post(':id/professional-skills')
+  createProfessionalSkill(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: { name: string; attributeId?: string | null }) {
+    return this.sheetService.createProfessionalSkill(id, req.user.sub, dto)
+  }
+
+  @Patch(':id/professional-skills/:skillId')
+  updateProfessionalSkill(@Req() req: AuthenticatedRequest, @Param('skillId') skillId: string, @Body() dto: { name?: string; attributeId?: string | null }) {
+    return this.sheetService.updateProfessionalSkill(skillId, req.user.sub, dto)
+  }
+
+  @Delete(':id/professional-skills/:skillId')
+  removeProfessionalSkill(@Req() req: AuthenticatedRequest, @Param('skillId') skillId: string) {
+    return this.sheetService.removeProfessionalSkill(skillId, req.user.sub)
+  }
+
   // ── Armor Class Calculation ──
 
   @Get(':id/armor-class')

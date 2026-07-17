@@ -202,6 +202,11 @@ export type SheetResistanceComponent = Prisma.SheetResistanceComponentModel
  */
 export type SheetResistanceAttributeModifier = Prisma.SheetResistanceAttributeModifierModel
 /**
+ * Model SheetProfessionalSkill
+ * 
+ */
+export type SheetProfessionalSkill = Prisma.SheetProfessionalSkillModel
+/**
  * Model CharacterAbility
  * 
  */

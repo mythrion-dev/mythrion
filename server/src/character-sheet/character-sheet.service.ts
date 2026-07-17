@@ -1252,6 +1252,50 @@ export class CharacterSheetService {
     return result
   }
 
+  // ── Professional Skills (CRUD) ──
+
+  async listProfessionalSkills(sheetId: string, userId: string) {
+    await this.requireOwnership(sheetId, userId)
+    return this.prisma.sheetProfessionalSkill.findMany({
+      where: { sheetId },
+      orderBy: { order: 'asc' },
+      include: { attribute: { select: { id: true, key: true, name: true } } },
+    })
+  }
+
+  async createProfessionalSkill(sheetId: string, userId: string, dto: { name: string; attributeId?: string | null }) {
+    await this.requireOwnership(sheetId, userId)
+    const count = await this.prisma.sheetProfessionalSkill.count({ where: { sheetId } })
+    const result = await this.prisma.sheetProfessionalSkill.create({
+      data: { sheetId, name: dto.name, attributeId: dto.attributeId ?? null, order: count },
+      include: { attribute: { select: { id: true, key: true, name: true } } },
+    })
+    await this.invalidateCache(sheetId).catch(() => {})
+    return result
+  }
+
+  async updateProfessionalSkill(skillId: string, userId: string, dto: { name?: string; attributeId?: string | null }) {
+    const skill = await this.prisma.sheetProfessionalSkill.findUnique({ where: { id: skillId } })
+    if (!skill) throw new NotFoundException('Professional skill not found')
+    await this.requireOwnership(skill.sheetId, userId)
+    const result = await this.prisma.sheetProfessionalSkill.update({
+      where: { id: skillId },
+      data: { ...dto },
+      include: { attribute: { select: { id: true, key: true, name: true } } },
+    })
+    await this.invalidateCache(skill.sheetId).catch(() => {})
+    return result
+  }
+
+  async removeProfessionalSkill(skillId: string, userId: string) {
+    const skill = await this.prisma.sheetProfessionalSkill.findUnique({ where: { id: skillId } })
+    if (!skill) throw new NotFoundException('Professional skill not found')
+    await this.requireOwnership(skill.sheetId, userId)
+    const result = await this.prisma.sheetProfessionalSkill.delete({ where: { id: skillId } })
+    await this.invalidateCache(skill.sheetId).catch(() => {})
+    return result
+  }
+
   private async requireOwnership(sheetId: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
