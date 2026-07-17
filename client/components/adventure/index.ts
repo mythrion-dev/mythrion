@@ -12,6 +12,8 @@ export { TemplateForm } from './TemplateForm'
 export { TemplateRow } from './TemplateRow'
 export { TemplatesSection } from './TemplatesSection'
 export { NpcsMobsSection } from './NpcsMobsSection'
+export { CampaignCreatureSidebar } from './CampaignCreatureSidebar'
+export { NpcEditDrawer } from './NpcEditDrawer'
 
 export type { CoreResource, SkillModifierProfile, ArmorClassAttributeModifierDraft, AcConfigDraft, ResistanceDef } from './types'
 export { emptyAcConfig, emptyResistance, slugify } from './types'
