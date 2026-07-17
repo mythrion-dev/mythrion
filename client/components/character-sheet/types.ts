@@ -99,7 +99,7 @@ export interface CharacterSheet {
   acAttributeValues: ArmorClassAttributeValue[]
   sectionEntries: SectionEntry[]
   abilities: Ability[]; inventoryItems: InventoryItem[]; story: Story | null
-  ownerId: string; createdAt: string
+  ownerId: string | null; isNpc: boolean; npcType: string | null; adventureId: string | null; createdAt: string
 }
 
 export type Tab = string

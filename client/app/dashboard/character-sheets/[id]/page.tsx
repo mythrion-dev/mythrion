@@ -29,7 +29,7 @@ export default function CharacterSheetDetailPage() {
   const othersValuesRef = useRef(othersValues)
   othersValuesRef.current = othersValues
   const [activeTab, setActiveTab] = useState<Tab>('character')
-  const isOwner = sheet?.ownerId === user?.id
+  const isOwner = sheet?.ownerId === user?.id || (sheet?.isNpc === true)
 
   const [abilities, setAbilities] = useState<Ability[]>([]); const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]); const [story, setStory] = useState<Story | null>(null)
   const [selectedLevels, setSelectedLevels] = useState<Record<string, string>>({})
@@ -440,9 +440,9 @@ export default function CharacterSheetDetailPage() {
       }
       setSummonModifierResults(summonMods); setSummonAcResults(summonAc)
       setSummonSkillResults(summonSkills)
-      // Check if an avatar exists on the server
+      // Check if an avatar exists on the server (cache-bust to avoid stale 204s)
       try {
-        const avatarRes = await fetch(avatarServerUrl, { method: 'HEAD' })
+        const avatarRes = await fetch(avatarServerUrl + '?t=' + Date.now(), { method: 'HEAD', cache: 'no-store' })
         if (avatarRes.ok && avatarRes.status !== 204) setAvatarUrl(avatarServerUrl + '?t=' + Date.now())
       } catch { /* no avatar */ }
     } catch (e: unknown) { if ((e as { statusCode?: number }).statusCode === 401 || (e as { statusCode?: number }).statusCode === 403) router.replace('/login') }
