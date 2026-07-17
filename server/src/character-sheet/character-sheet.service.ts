@@ -355,7 +355,7 @@ export class CharacterSheetService {
     if (!member) throw new ForbiddenException('You are not a member of this adventure')
 
     const where = member.role === 'GM'
-      ? { adventureId }
+      ? { adventureId, isNpc: false }
       : { adventureId, ownerId: userId, isNpc: false }
 
     const sheets = await this.prisma.characterSheet.findMany({
