@@ -70,7 +70,7 @@ interface Template {
 }
 interface CampaignCharacter {
   id: string; characterName: string; adventure: { id: string; name: string; campaign: string }
-  template: { id: string; name: string }; owner: { id: string; displayName: string | null; email: string }; createdAt: string
+  template: { id: string; name: string }; owner: { id: string; displayName: string | null; email: string } | null; createdAt: string
 }
 interface UserSheet {
   id: string; characterName: string; adventure: { id: string; name: string; campaign: string }

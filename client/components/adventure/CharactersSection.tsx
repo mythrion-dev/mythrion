@@ -7,7 +7,7 @@ interface Template {
 }
 interface CampaignCharacter {
   id: string; characterName: string; adventure: { id: string; name: string; campaign: string }
-  template: { id: string; name: string }; owner: { id: string; displayName: string | null; email: string }; createdAt: string
+  template: { id: string; name: string }; owner: { id: string; displayName: string | null; email: string } | null; createdAt: string
 }
 interface UserSheet {
   id: string; characterName: string; adventure: { id: string; name: string; campaign: string }
@@ -86,7 +86,7 @@ export function CharactersSection({
                   <span className="badge badge-gold text-[0.6rem]">{c.template.name}</span>
                 </div>
                 <p className="text-xs text-muted mt-0.5">
-                  {c.owner.displayName ?? c.owner.email}
+                  {c.owner?.displayName ?? c.owner?.email ?? 'Unknown'}
                 </p>
               </div>
               <div className="flex gap-1 shrink-0 ml-2">
@@ -96,7 +96,7 @@ export function CharactersSection({
                 >
                   View
                 </button>
-                {isGM && c.owner.id !== userId && (
+                {isGM && (c.owner?.id ?? '') !== userId && (
                   <button
                     onClick={() => onRemoveCharacter(c.id)}
                     className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors"
