@@ -11,6 +11,7 @@ export { AcConfigList } from './AcConfigList'
 export { TemplateForm } from './TemplateForm'
 export { TemplateRow } from './TemplateRow'
 export { TemplatesSection } from './TemplatesSection'
+export { NpcsMobsSection } from './NpcsMobsSection'
 
 export type { CoreResource, SkillModifierProfile, ArmorClassAttributeModifierDraft, AcConfigDraft, ResistanceDef } from './types'
 export { emptyAcConfig, emptyResistance, slugify } from './types'

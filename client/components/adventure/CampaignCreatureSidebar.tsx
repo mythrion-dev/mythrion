@@ -24,6 +24,8 @@ interface CampaignCreatureSidebarProps {
   adventureId: string
   isGM: boolean
   refreshKey?: number
+  /** Called after an NPC/MOB is created or deleted so parent components can re-fetch */
+  onCreaturesChange?: () => void
 }
 
 /* ── Component ── */
@@ -32,6 +34,7 @@ export function CampaignCreatureSidebar({
   adventureId,
   isGM,
   refreshKey,
+  onCreaturesChange,
 }: CampaignCreatureSidebarProps) {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
@@ -67,6 +70,7 @@ export function CampaignCreatureSidebar({
       const name = type === 'MOB' ? 'New Mob' : 'New NPC'
       await api.post(`/adventures/${adventureId}/npcs`, { name, type })
       await fetchNpcs()
+      onCreaturesChange?.()
     } catch {
       /* silently fail */
     } finally {
@@ -80,6 +84,7 @@ export function CampaignCreatureSidebar({
     try {
       await api.delete(`/adventures/${adventureId}/npcs/${npcId}`)
       await fetchNpcs()
+      onCreaturesChange?.()
     } catch {
       /* silently fail */
     } finally {
