@@ -25,7 +25,7 @@ interface ResistanceInput {
 }
 
 /** Shape returned for each calculated resistance. */
-interface CalculatedResult {
+export interface CalculatedResult {
   resistanceId: string
   name: string
   calculationType: string
