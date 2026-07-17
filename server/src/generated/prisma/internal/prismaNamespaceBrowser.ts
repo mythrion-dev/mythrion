@@ -133,8 +133,7 @@ export const AdventureScalarFieldEnum = {
   maxPlayers: 'maxPlayers',
   ownerId: 'ownerId',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  npcSheetId: 'npcSheetId'
+  updatedAt: 'updatedAt'
 } as const
 
 export type AdventureScalarFieldEnum = (typeof AdventureScalarFieldEnum)[keyof typeof AdventureScalarFieldEnum]
@@ -302,6 +301,8 @@ export const CharacterSheetScalarFieldEnum = {
   hpActual: 'hpActual',
   hpMax: 'hpMax',
   hpNotes: 'hpNotes',
+  isNpc: 'isNpc',
+  npcType: 'npcType',
   adventureId: 'adventureId',
   templateId: 'templateId',
   ownerId: 'ownerId',

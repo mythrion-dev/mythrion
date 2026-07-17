@@ -65,22 +65,22 @@ export class AdventureController {
     return this.adventureService.createNpc(id, req.user.sub, dto)
   }
 
-  @Patch(':id/npcs/:abilityId')
+  @Patch(':id/npcs/:npcId')
   updateNpc(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Param('abilityId') abilityId: string,
+    @Param('npcId') npcId: string,
     @Body() dto: { name?: string; description?: string; notes?: string },
   ) {
-    return this.adventureService.updateNpc(id, abilityId, req.user.sub, dto)
+    return this.adventureService.updateNpc(id, npcId, req.user.sub, dto)
   }
 
-  @Delete(':id/npcs/:abilityId')
+  @Delete(':id/npcs/:npcId')
   removeNpc(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Param('abilityId') abilityId: string,
+    @Param('npcId') npcId: string,
   ) {
-    return this.adventureService.deleteNpc(id, abilityId, req.user.sub)
+    return this.adventureService.deleteNpc(id, npcId, req.user.sub)
   }
 }

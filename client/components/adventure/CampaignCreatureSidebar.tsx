@@ -1,44 +1,21 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { api, API_URL } from '@/lib/api'
 
 /* ── Types ── */
 
-interface SummonAttribute {
-  id: string; abilityId: string; attributeId: string; value: string
-}
-
-interface SummonArmorClassValue {
-  id: string; abilityId: string; fieldId: string; value: string
-}
-
-interface SummonHealth {
-  id: string; abilityId: string; current: number | null; maximum: number | null; notes: string | null
-}
-
-interface NpcAbility {
-  id: string; name: string; type: string; description: string | null; notes: string | null
-  sheetId: string
-  summonAttributes: SummonAttribute[]
-  summonAcValues: SummonArmorClassValue[]
-  summonAcAttributeValues: { id: string; acAttributeModifierId: string; selectedAttributeId: string | null; selectedAttribute: { id: string; key: string; name: string } | null }[]
-  summonHealth: SummonHealth | null
-  summonResistanceValues: { id: string; resistanceId: string; manualValue: string | null }[]
-  summonResistanceComponentValues: { id: string; componentId: string; value: string }[]
-  summonSkills: {
-    id: string; skillId: string; selectedAttributeId: string | null
-    skill: { id: string; name: string; description: string | null; attributeId: string | null; allowedAttributeIds: string[]; defaultAttributeId: string | null; attribute: { id: string; key: string; name: string } | null; defaultAttribute: { id: string; key: string; name: string } | null }
-    selectedAttribute: { id: string; key: string; name: string } | null
-    profileValues: { profileId: string; optionId: string | null; profile: { id: string; name: string; targetMode: string; targetSkillIds: string[] }; option: { id: string; label: string; value: number } | null }[]
-  }[]
-  childAbilities: NpcAbility[]
-  levels: { id: string; level: string; description: string | null; manaCost: number | null; range: string | null; notes: string | null; damage: string | null }[]
-}
-
-interface NpcsResponse {
-  sheetId: string
-  npcs: NpcAbility[]
+interface NpcSheet {
+  id: string
+  characterName: string
+  isNpc: boolean
+  npcType: string | null
+  level: number
+  hpActual: number
+  hpMax: number
+  createdAt: string
+  template: { id: string; name: string } | null
 }
 
 /* ── Props ── */
@@ -46,7 +23,6 @@ interface NpcsResponse {
 interface CampaignCreatureSidebarProps {
   adventureId: string
   isGM: boolean
-  onSelectCreature: (ability: NpcAbility) => void
   refreshKey?: number
 }
 
@@ -55,12 +31,11 @@ interface CampaignCreatureSidebarProps {
 export function CampaignCreatureSidebar({
   adventureId,
   isGM,
-  onSelectCreature,
   refreshKey,
 }: CampaignCreatureSidebarProps) {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
-  const [npcs, setNpcs] = useState<NpcAbility[]>([])
-  const [sheetId, setSheetId] = useState<string | null>(null)
+  const [npcs, setNpcs] = useState<NpcSheet[]>([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'NPC' | 'MOB'>('all')
@@ -72,11 +47,10 @@ export function CampaignCreatureSidebar({
     if (!adventureId) return
     setLoading(true)
     try {
-      const data = await api.get<NpcsResponse>(`/adventures/${adventureId}/npcs`)
-      setSheetId(data.sheetId)
-      setNpcs(data.npcs)
+      const data = await api.get<NpcSheet[]>(`/adventures/${adventureId}/npcs`)
+      setNpcs(data)
     } catch {
-      /* silently fail — server may not have NPC sheet yet */
+      /* silently fail */
     } finally {
       setLoading(false)
     }
@@ -101,10 +75,10 @@ export function CampaignCreatureSidebar({
   }
 
   /* ── Delete NPC/Mob ── */
-  async function handleDelete(abilityId: string) {
-    setDeleting(abilityId)
+  async function handleDelete(npcId: string) {
+    setDeleting(npcId)
     try {
-      await api.delete(`/adventures/${adventureId}/npcs/${abilityId}`)
+      await api.delete(`/adventures/${adventureId}/npcs/${npcId}`)
       await fetchNpcs()
     } catch {
       /* silently fail */
@@ -114,48 +88,48 @@ export function CampaignCreatureSidebar({
   }
 
   /* ── Upload avatar ── */
-  async function handleAvatarUpload(abilityId: string, file: File) {
+  async function handleAvatarUpload(npcId: string, file: File) {
     const formData = new FormData()
     formData.append('avatar', file)
     try {
       const token = localStorage.getItem('accessToken')
-      await fetch(`${API_URL}/images/abilities/${abilityId}/avatar`, {
+      await fetch(`${API_URL}/images/character-sheets/${npcId}/avatar`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       })
-      // Force re-fetch so card image updates
       await fetchNpcs()
     } catch {
       /* silently fail */
     }
   }
 
+  /* ── Open full character sheet ── */
+  function handleSelect(npcId: string) {
+    router.push(`/dashboard/character-sheets/${npcId}`)
+  }
+
   /* ── Filter & search ── */
   const filtered = npcs.filter(n => {
-    if (filter === 'NPC' && !n.notes?.startsWith('[MOB]')) return true
-    if (filter === 'MOB' && n.notes?.startsWith('[MOB]')) return true
+    if (filter === 'NPC' && n.npcType === 'NPC') return true
+    if (filter === 'MOB' && n.npcType === 'MOB') return true
     if (filter === 'all') return true
     return false
   }).filter(n => {
     if (!search.trim()) return true
     const q = search.toLowerCase()
-    return n.name.toLowerCase().includes(q) ||
-      (n.description?.toLowerCase().includes(q) ?? false) ||
-      (n.notes?.toLowerCase().includes(q) ?? false)
+    return n.characterName.toLowerCase().includes(q)
   })
 
-  const isMobType = (n: NpcAbility) => n.notes?.startsWith('[MOB]')
-
-  /* ── Derive health display ── */
-  function healthLabel(n: NpcAbility): string | null {
-    if (!n.summonHealth?.current && !n.summonHealth?.maximum) return null
-    return `${n.summonHealth.current ?? '?'} / ${n.summonHealth.maximum ?? '?'}`
+  /* ── Health display ── */
+  function healthLabel(n: NpcSheet): string | null {
+    if (!n.hpMax) return null
+    return `${n.hpActual ?? '?'} / ${n.hpMax}`
   }
 
   /* ── Avatar URL ── */
-  function avatarUrl(abilityId: string) {
-    return `${API_URL}/images/abilities/${abilityId}/avatar`
+  function avatarUrl(npcId: string) {
+    return `${API_URL}/images/character-sheets/${npcId}/avatar`
   }
 
   /* ── Render ── */
@@ -235,7 +209,7 @@ export function CampaignCreatureSidebar({
                 {t === 'all' ? 'All' : t === 'NPC' ? 'NPCs' : 'Mobs'}
                 {t !== 'all' && (
                   <span className="ml-1 opacity-70">
-                    ({npcs.filter(n => t === 'NPC' ? !isMobType(n) : isMobType(n)).length})
+                    ({npcs.filter(n => n.npcType === (t === 'NPC' ? 'NPC' : 'MOB')).length})
                   </span>
                 )}
               </button>
@@ -323,13 +297,13 @@ export function CampaignCreatureSidebar({
           {!loading && filtered.length > 0 && (
             <div className="p-3 space-y-2">
               {filtered.map(npc => {
-                const mob = isMobType(npc)
+                const type = npc.npcType === 'MOB' ? 'MOB' : 'NPC'
                 const hp = healthLabel(npc)
 
                 return (
                   <button
                     key={npc.id}
-                    onClick={() => onSelectCreature(npc)}
+                    onClick={() => handleSelect(npc.id)}
                     className="w-full card !p-3 flex items-center gap-3 hover:bg-hover transition-colors text-left group"
                   >
                     {/* Avatar */}
@@ -366,14 +340,14 @@ export function CampaignCreatureSidebar({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-foreground truncate">
-                          {npc.name}
+                          {npc.characterName}
                         </span>
                         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${
-                          mob
+                          type === 'MOB'
                             ? 'bg-red-500/10 text-red-500 border border-red-500/20'
                             : 'bg-accent/10 text-accent border border-accent/20'
                         }`}>
-                          {mob ? 'MOB' : 'NPC'}
+                          {type}
                         </span>
                       </div>
                       {hp && (
@@ -391,7 +365,7 @@ export function CampaignCreatureSidebar({
                       }}
                       disabled={deleting === npc.id}
                       className="p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all shrink-0"
-                      aria-label={`Delete ${npc.name}`}
+                      aria-label={`Delete ${npc.characterName}`}
                     >
                       {deleting === npc.id ? (
                         <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -413,7 +387,7 @@ export function CampaignCreatureSidebar({
 
         {/* Footer */}
         <div className="px-4 py-2.5 border-t border-border shrink-0 text-[11px] text-muted-foreground">
-          {npcs.length} creature{npcs.length !== 1 ? 's' : ''} · click to edit
+          {npcs.length} creature{npcs.length !== 1 ? 's' : ''} · click to open full sheet
         </div>
       </aside>
     </>

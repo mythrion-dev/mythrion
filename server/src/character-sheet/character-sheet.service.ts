@@ -356,7 +356,7 @@ export class CharacterSheetService {
 
     const where = member.role === 'GM'
       ? { adventureId }
-      : { adventureId, ownerId: userId }
+      : { adventureId, ownerId: userId, isNpc: false }
 
     const sheets = await this.prisma.characterSheet.findMany({
       where,
@@ -409,7 +409,11 @@ export class CharacterSheetService {
   async update(id: string, userId: string, dto: UpdateCharacterSheetDto) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
-    if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can edit this character sheet')
+    if (sheet.ownerId !== userId) {
+      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can edit this character sheet')
+      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+      catch { throw new ForbiddenException('Only the owner or a GM can edit this character sheet') }
+    }
 
     if (dto.values) {
       for (const v of dto.values)
@@ -499,7 +503,7 @@ export class CharacterSheetService {
     })
 
     // Invalidate cache for this sheet and the owner's list
-    await this.invalidateCache(sheet.id, sheet.ownerId, sheet.adventureId ?? undefined).catch(() => {})
+    await this.invalidateCache(sheet.id, sheet.ownerId ?? undefined, sheet.adventureId ?? undefined).catch(() => {})
 
     return updated
   }
@@ -507,11 +511,15 @@ export class CharacterSheetService {
   async remove(id: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
-    if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can delete this character sheet')
+    if (sheet.ownerId !== userId) {
+      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can delete this character sheet')
+      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+      catch { throw new ForbiddenException('Only the owner or a GM can delete this character sheet') }
+    }
     const deleted = await this.prisma.characterSheet.delete({ where: { id } })
 
     // Invalidate cache for this sheet and the owner's list
-    await this.invalidateCache(id, sheet.ownerId, sheet.adventureId ?? undefined).catch(() => {})
+    await this.invalidateCache(id, sheet.ownerId ?? undefined, sheet.adventureId ?? undefined).catch(() => {})
 
     return deleted
   }
@@ -541,15 +549,13 @@ export class CharacterSheetService {
     const unlinked = await this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId: null }, include: sheetInclude })
 
     // Invalidate cache for old adventure list, sheet + user
-    await this.invalidateCache(sheetId, sheet.ownerId, sheet.adventureId ?? undefined).catch(() => {})
+    await this.invalidateCache(sheetId, sheet.ownerId ?? undefined, sheet.adventureId ?? undefined).catch(() => {})
 
     return unlinked
   }
 
   async updateSkillProfileValue(sheetId: string, skillId: string, profileId: string, optionId: string | null, userId: string) {
-    const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
-    if (!sheet) throw new NotFoundException('Character sheet not found')
-    if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can edit this character sheet')
+    await this.requireOwnership(sheetId, userId)
     const result = await this.prisma.characterSheetSkillProfileValue.upsert({
       where: { sheetId_skillId_profileId: { sheetId, skillId, profileId } },
       create: { sheetId, skillId, profileId, optionId },
@@ -560,9 +566,7 @@ export class CharacterSheetService {
   }
 
   async updateSkillAttribute(sheetId: string, skillId: string, attributeId: string | null, userId: string) {
-    const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
-    if (!sheet) throw new NotFoundException('Character sheet not found')
-    if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can edit this character sheet')
+    await this.requireOwnership(sheetId, userId)
     const result = await this.prisma.characterSheetSkillValue.upsert({
       where: { sheetId_skillId: { sheetId, skillId } },
       create: { sheetId, skillId, value: '', selectedAttributeId: attributeId },
@@ -1134,7 +1138,11 @@ export class CharacterSheetService {
   ) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
-    if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can manage this character sheet')
+    if (sheet.ownerId !== userId) {
+      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can manage this character sheet')
+      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+      catch { throw new ForbiddenException('Only the owner or a GM can manage this character sheet') }
+    }
 
     // Get current max order to append
     const maxOrder = await this.prisma.templateResistance.aggregate({
@@ -1190,7 +1198,11 @@ export class CharacterSheetService {
   async removeResistance(sheetId: string, resistanceId: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
-    if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can manage this character sheet')
+    if (sheet.ownerId !== userId) {
+      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can manage this character sheet')
+      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+      catch { throw new ForbiddenException('Only the owner or a GM can manage this character sheet') }
+    }
 
     const result = await this.prisma.templateResistance.delete({ where: { id: resistanceId } })
     await this.invalidateCache(sheetId).catch(() => {})

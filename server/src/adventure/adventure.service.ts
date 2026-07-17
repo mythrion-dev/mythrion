@@ -79,91 +79,36 @@ export class AdventureService {
   // ── NPC / Mob Management ──
 
   /**
-   * Get or create the hidden NPC sheet for an adventure.
-   * Uses the adventure's first template, or creates a minimal one.
-   * Only GMs can access NPC management.
-   */
-  private async getOrCreateNpcSheet(adventureId: string, userId: string) {
-    const adventure = await this.prisma.adventure.findUnique({
-      where: { id: adventureId },
-      include: { templates: { take: 1 } },
-    })
-    if (!adventure) throw new NotFoundException('Adventure not found')
-
-    if (adventure.npcSheetId) {
-      const sheet = await this.prisma.characterSheet.findUnique({
-        where: { id: adventure.npcSheetId },
-      })
-      if (sheet) return sheet
-    }
-
-    // No NPC sheet yet — create one
-    const templateId = adventure.templates[0]?.id
-    if (!templateId) {
-      throw new NotFoundException('No template exists for this adventure — create one first')
-    }
-
-    const sheet = await this.prisma.characterSheet.create({
-      data: {
-        characterName: '[NPC Sheet]',
-        playerName: null,
-        level: 1,
-        hpActual: 0,
-        hpMax: 0,
-        templateId,
-        adventureId,
-        ownerId: userId,
-      },
-    })
-
-    await this.prisma.adventure.update({
-      where: { id: adventureId },
-      data: { npcSheetId: sheet.id },
-    })
-
-    return sheet
-  }
-
-  /**
-   * Fetch all NPCs (summon abilities) on the campaign's hidden NPC sheet.
-   * GM-only.
+   * Fetch all NPCs for this adventure — standalone CharacterSheets with isNpc=true.
+   * GM-only. Returns a lightweight list for the sidebar (full sheet loaded on navigate).
    */
   async listNpcs(adventureId: string, userId: string) {
     await this.membership.requireRole(adventureId, userId, 'GM')
 
-    const sheet = await this.getOrCreateNpcSheet(adventureId, userId)
-
-    const abilities = await this.prisma.characterAbility.findMany({
-      where: { sheetId: sheet.id, summonId: null, type: 'SUMMON' },
-      orderBy: { order: 'asc' },
-      include: {
-        summonAttributes: true,
-        summonAcValues: true,
-        summonAcAttributeValues: { include: { selectedAttribute: true } },
-        summonHealth: true,
-        summonResistanceValues: true,
-        summonResistanceComponentValues: true,
-        summonSkills: {
-          include: {
-            skill: { include: { attribute: true, defaultAttribute: true } },
-            selectedAttribute: true,
-            profileValues: { include: { profile: true, option: true } },
-          },
+    const npcs = await this.prisma.characterSheet.findMany({
+      where: { adventureId, isNpc: true },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        characterName: true,
+        isNpc: true,
+        npcType: true,
+        level: true,
+        hpActual: true,
+        hpMax: true,
+        createdAt: true,
+        template: {
+          select: { id: true, name: true },
         },
-        childAbilities: {
-          include: { levels: true },
-        },
-        levels: true,
       },
     })
 
-    return { sheetId: sheet.id, npcs: abilities }
+    return npcs
   }
 
   /**
-   * Create a new NPC (summon ability) on the campaign's hidden NPC sheet.
-   * GM-only. Initialises template attributes, AC fields, health, resistances, and skills
-   * on the summon from the template defaults.
+   * Create a new NPC as a standalone CharacterSheet.
+   * GM-only. Uses the adventure's first template for initialization.
    */
   async createNpc(
     adventureId: string,
@@ -177,80 +122,96 @@ export class AdventureService {
   ) {
     await this.membership.requireRole(adventureId, userId, 'GM')
 
-    const sheet = await this.getOrCreateNpcSheet(adventureId, userId)
+    const adventure = await this.prisma.adventure.findUnique({
+      where: { id: adventureId },
+      include: { templates: { take: 1 } },
+    })
+    if (!adventure) throw new NotFoundException('Adventure not found')
 
-    // Use the existing createAbility method from CharacterSheetService
-    // which handles creating all sub-records (attributes, AC, health, etc.)
-    const ability = await this.sheetService.createAbility(
-      sheet.id,
-      userId,
-      {
-        name: dto.name,
-        type: 'SUMMON',
-        description: dto.description ?? undefined,
-        notes: dto.notes ?? undefined,
-        // Store the NPC type (NPC/MOB) in the notes field since there's no dedicated field
-      },
-    )
-
-    // If type is MOB, prepend [MOB] tag so we can distinguish from NPCs
-    if (dto.type === 'MOB') {
-      const updated = await this.prisma.characterAbility.update({
-        where: { id: ability.id },
-        data: { notes: `[MOB] ${ability.notes ?? ''}`.trimEnd() },
-      })
-      return updated
+    const templateId = adventure.templates[0]?.id
+    if (!templateId) {
+      throw new NotFoundException('No template exists for this adventure — create one first')
     }
 
-    return ability
+    // Create a full CharacterSheet using the shared service (handles attribute init, skills, etc.)
+    // Then flip it to NPC mode
+    const sheet = await this.sheetService.create(userId, {
+      characterName: dto.name,
+      templateId,
+      adventureId,
+    })
+
+    // Convert to NPC — set isNpc, npcType, and clear ownerId so only GMs can edit
+    return this.prisma.characterSheet.update({
+      where: { id: sheet.id },
+      data: {
+        isNpc: true,
+        npcType: dto.type ?? 'NPC',
+        ownerId: null,
+        playerName: dto.description ?? null,
+      },
+      select: {
+        id: true,
+        characterName: true,
+        isNpc: true,
+        npcType: true,
+        level: true,
+        hpActual: true,
+        hpMax: true,
+        template: { select: { id: true, name: true } },
+      },
+    })
   }
 
   /**
-   * Update an NPC's basic metadata (name, description, notes).
+   * Update an NPC's basic metadata (name, description).
    * GM-only.
    */
   async updateNpc(
     adventureId: string,
-    abilityId: string,
+    npcId: string,
     userId: string,
     dto: { name?: string; description?: string; notes?: string },
   ) {
     await this.membership.requireRole(adventureId, userId, 'GM')
 
-    const ability = await this.prisma.characterAbility.findUnique({
-      where: { id: abilityId },
-      include: { sheet: true },
+    const npc = await this.prisma.characterSheet.findUnique({
+      where: { id: npcId },
+      select: { id: true, adventureId: true, isNpc: true },
     })
-    if (!ability) throw new NotFoundException('NPC not found')
-    if (ability.sheet.adventureId !== adventureId) {
+    if (!npc) throw new NotFoundException('NPC not found')
+    if (npc.adventureId !== adventureId) {
       throw new ForbiddenException('NPC does not belong to this adventure')
     }
-    if (ability.type !== 'SUMMON') {
-      throw new ForbiddenException('Not a valid NPC ability')
+    if (!npc.isNpc) {
+      throw new ForbiddenException('Not a valid NPC sheet')
     }
 
-    return this.sheetService.updateAbility(abilityId, userId, dto)
+    return this.sheetService.update(npcId, userId, {
+      characterName: dto.name,
+      playerName: dto.description,
+    })
   }
 
   /**
-   * Delete an NPC (summon ability) from the campaign's hidden NPC sheet.
+   * Delete an NPC (standalone CharacterSheet).
    * GM-only.
    */
-  async deleteNpc(adventureId: string, abilityId: string, userId: string) {
+  async deleteNpc(adventureId: string, npcId: string, userId: string) {
     await this.membership.requireRole(adventureId, userId, 'GM')
 
-    const ability = await this.prisma.characterAbility.findUnique({
-      where: { id: abilityId },
-      include: { sheet: true },
+    const npc = await this.prisma.characterSheet.findUnique({
+      where: { id: npcId },
+      select: { id: true, adventureId: true, isNpc: true },
     })
-    if (!ability) throw new NotFoundException('NPC not found')
-    if (ability.sheet.adventureId !== adventureId) {
+    if (!npc) throw new NotFoundException('NPC not found')
+    if (npc.adventureId !== adventureId) {
       throw new ForbiddenException('NPC does not belong to this adventure')
     }
-    if (ability.type !== 'SUMMON') {
-      throw new ForbiddenException('Not a valid NPC ability')
+    if (!npc.isNpc) {
+      throw new ForbiddenException('Not a valid NPC sheet')
     }
 
-    return this.sheetService.removeAbility(abilityId, userId)
+    return this.sheetService.remove(npcId, userId)
   }
 }
