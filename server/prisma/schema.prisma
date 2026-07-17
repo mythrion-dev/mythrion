@@ -210,6 +210,7 @@ model TemplateAttribute {
   skillSelections   CharacterSheetSkillValue[]
   summonSkillSelections SummonSkill[]
   resistanceModifiers ResistanceAttributeModifier[]
+  sheetResistanceModifiers SheetResistanceAttributeModifier[]
   acModifiers       ArmorClassAttributeModifier[]     @relation("AcAttributeModifierAttribute")
   acDefaultModifiers ArmorClassAttributeModifier[]    @relation("AcAttributeModifierDefault")
   acSelections          CharacterSheetArmorClassAttributeValue[]
@@ -296,6 +297,7 @@ model CharacterSheet {
   inventoryItems     CharacterInventoryItem[]
   sectionEntries     CharacterSectionEntry[]
   story              CharacterStory?
+  sheetResistances   SheetResistance[]
   createdAt          DateTime                         @default(now())
   updatedAt          DateTime                         @updatedAt
 
@@ -560,6 +562,52 @@ model CharacterSheetResistanceComponentValue {
   @@unique([sheetId, componentId])
   @@index([sheetId])
   @@index([componentId])
+}
+
+// ── Sheet-Specific Resistances (owned by a single CharacterSheet) ──
+
+model SheetResistance {
+  id                 String                           @id @default(cuid())
+  sheetId            String
+  sheet              CharacterSheet                   @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  name               String
+  calculationType    String                           @default("MANUAL")
+  order              Int                              @default(0)
+  components         SheetResistanceComponent[]
+  attributeModifiers SheetResistanceAttributeModifier[]
+  createdAt          DateTime                         @default(now())
+  updatedAt          DateTime                         @updatedAt
+
+  @@index([sheetId])
+}
+
+model SheetResistanceComponent {
+  id                String           @id @default(cuid())
+  sheetResistanceId String
+  sheetResistance   SheetResistance  @relation(fields: [sheetResistanceId], references: [id], onDelete: Cascade)
+  name              String
+  editableByPlayer  Boolean          @default(false)
+  value             String           @default("0")
+  order             Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([sheetResistanceId])
+}
+
+model SheetResistanceAttributeModifier {
+  id                String           @id @default(cuid())
+  sheetResistanceId String
+  sheetResistance   SheetResistance  @relation(fields: [sheetResistanceId], references: [id], onDelete: Cascade)
+  attributeId       String
+  attribute         TemplateAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  enabled           Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([sheetResistanceId, attributeId])
+  @@index([sheetResistanceId])
+  @@index([attributeId])
 }
 
 // ── Character Abilities & Summons (Player-only) ──

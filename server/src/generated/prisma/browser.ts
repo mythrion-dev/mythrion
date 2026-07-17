@@ -163,6 +163,21 @@ export type CharacterSheetResistanceValue = Prisma.CharacterSheetResistanceValue
  */
 export type CharacterSheetResistanceComponentValue = Prisma.CharacterSheetResistanceComponentValueModel
 /**
+ * Model SheetResistance
+ * 
+ */
+export type SheetResistance = Prisma.SheetResistanceModel
+/**
+ * Model SheetResistanceComponent
+ * 
+ */
+export type SheetResistanceComponent = Prisma.SheetResistanceComponentModel
+/**
+ * Model SheetResistanceAttributeModifier
+ * 
+ */
+export type SheetResistanceAttributeModifier = Prisma.SheetResistanceAttributeModifierModel
+/**
  * Model CharacterAbility
  * 
  */

@@ -473,20 +473,64 @@ export class CharacterSheetService {
         })
     }
     if (dto.resistanceValues) {
-      for (const rv of dto.resistanceValues)
-        await this.prisma.characterSheetResistanceValue.upsert({
-          where: { sheetId_resistanceId: { sheetId: id, resistanceId: rv.resistanceId } },
-          create: { sheetId: id, resistanceId: rv.resistanceId, manualValue: rv.manualValue ?? null },
-          update: { manualValue: rv.manualValue ?? null },
+      for (const rv of dto.resistanceValues) {
+        // Check if this resistanceId belongs to a sheet-specific resistance
+        const sheetRes = await this.prisma.sheetResistance.findUnique({
+          where: { id: rv.resistanceId },
+          select: { id: true, calculationType: true },
         })
+        if (sheetRes) {
+          // Sheet resistance: upsert a "Value" component with the manual value
+          const existingComp = await this.prisma.sheetResistanceComponent.findFirst({
+            where: { sheetResistanceId: sheetRes.id },
+            orderBy: { order: 'asc' },
+          })
+          if (existingComp) {
+            await this.prisma.sheetResistanceComponent.update({
+              where: { id: existingComp.id },
+              data: { value: rv.manualValue ?? '0' },
+            })
+          } else {
+            await this.prisma.sheetResistanceComponent.create({
+              data: {
+                sheetResistanceId: sheetRes.id,
+                name: 'Value',
+                value: rv.manualValue ?? '0',
+                order: 0,
+              },
+            })
+          }
+        } else {
+          // Template resistance: use existing junction table
+          await this.prisma.characterSheetResistanceValue.upsert({
+            where: { sheetId_resistanceId: { sheetId: id, resistanceId: rv.resistanceId } },
+            create: { sheetId: id, resistanceId: rv.resistanceId, manualValue: rv.manualValue ?? null },
+            update: { manualValue: rv.manualValue ?? null },
+          })
+        }
+      }
     }
     if (dto.resistanceComponentValues) {
-      for (const rcv of dto.resistanceComponentValues)
-        await this.prisma.characterSheetResistanceComponentValue.upsert({
-          where: { sheetId_componentId: { sheetId: id, componentId: rcv.componentId } },
-          create: { sheetId: id, componentId: rcv.componentId, value: rcv.value },
-          update: { value: rcv.value },
+      for (const rcv of dto.resistanceComponentValues) {
+        // Check if this componentId belongs to a sheet resistance component
+        const sheetComp = await this.prisma.sheetResistanceComponent.findUnique({
+          where: { id: rcv.componentId },
+          select: { id: true },
         })
+        if (sheetComp) {
+          await this.prisma.sheetResistanceComponent.update({
+            where: { id: rcv.componentId },
+            data: { value: rcv.value },
+          })
+        } else {
+          // Template resistance component: use existing junction table
+          await this.prisma.characterSheetResistanceComponentValue.upsert({
+            where: { sheetId_componentId: { sheetId: id, componentId: rcv.componentId } },
+            create: { sheetId: id, componentId: rcv.componentId, value: rcv.value },
+            update: { value: rcv.value },
+          })
+        }
+      }
     }
 
     const updated = await this.prisma.characterSheet.update({
@@ -1144,16 +1188,16 @@ export class CharacterSheetService {
       catch { throw new ForbiddenException('Only the owner or a GM can manage this character sheet') }
     }
 
-    // Get current max order to append
-    const maxOrder = await this.prisma.templateResistance.aggregate({
-      where: { templateId: sheet.templateId },
+    // Get current max order to append (scoped to this sheet)
+    const maxOrder = await this.prisma.sheetResistance.aggregate({
+      where: { sheetId },
       _max: { order: true },
     })
     const nextOrder = (maxOrder._max.order ?? -1) + 1
 
-    const resistance = await this.prisma.templateResistance.create({
+    const resistance = await this.prisma.sheetResistance.create({
       data: {
-        templateId: sheet.templateId,
+        sheetId,
         name: dto.name.trim(),
         calculationType: dto.calculationType ?? 'MANUAL',
         order: nextOrder,
@@ -1161,35 +1205,22 @@ export class CharacterSheetService {
           create: (dto.components || []).map((c, idx) => ({
             name: c.name.trim(),
             editableByPlayer: c.editableByPlayer ?? false,
-            defaultValue: c.defaultValue ?? '0',
+            value: c.defaultValue ?? '0',
             order: idx,
           })),
         },
-      },
-    })
-
-    if (dto.attributeModifiers) {
-      for (const am of dto.attributeModifiers) {
-        await this.prisma.resistanceAttributeModifier.create({
-          data: {
-            resistanceId: resistance.id,
+        attributeModifiers: {
+          create: (dto.attributeModifiers || []).map(am => ({
             attributeId: am.attributeId,
             enabled: am.enabled ?? true,
-          },
-        })
-      }
-    }
-
-    // Create sheet-level value records for the new resistance
-    await this.prisma.characterSheetResistanceValue.create({
-      data: { sheetId, resistanceId: resistance.id },
+          })),
+        },
+      },
+      include: {
+        components: { orderBy: { order: 'asc' } },
+        attributeModifiers: { include: { attribute: true } },
+      },
     })
-    const comps = await this.prisma.resistanceComponent.findMany({ where: { resistanceId: resistance.id } })
-    for (const comp of comps) {
-      await this.prisma.characterSheetResistanceComponentValue.create({
-        data: { sheetId, componentId: comp.id, value: comp.defaultValue },
-      })
-    }
 
     await this.invalidateCache(sheetId).catch(() => {})
     return resistance
@@ -1204,6 +1235,18 @@ export class CharacterSheetService {
       catch { throw new ForbiddenException('Only the owner or a GM can manage this character sheet') }
     }
 
+    // Try sheet-specific resistance first, fall back to template resistance
+    const sheetRes = await this.prisma.sheetResistance.findUnique({
+      where: { id: resistanceId },
+      select: { id: true, sheetId: true },
+    })
+    if (sheetRes && sheetRes.sheetId === sheetId) {
+      const result = await this.prisma.sheetResistance.delete({ where: { id: resistanceId } })
+      await this.invalidateCache(sheetId).catch(() => {})
+      return result
+    }
+
+    // Fall back to template resistance (global, defined by GM in the template)
     const result = await this.prisma.templateResistance.delete({ where: { id: resistanceId } })
     await this.invalidateCache(sheetId).catch(() => {})
     return result

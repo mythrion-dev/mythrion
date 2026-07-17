@@ -80,6 +80,9 @@ export const ModelName = {
   ResistanceAttributeModifier: 'ResistanceAttributeModifier',
   CharacterSheetResistanceValue: 'CharacterSheetResistanceValue',
   CharacterSheetResistanceComponentValue: 'CharacterSheetResistanceComponentValue',
+  SheetResistance: 'SheetResistance',
+  SheetResistanceComponent: 'SheetResistanceComponent',
+  SheetResistanceAttributeModifier: 'SheetResistanceAttributeModifier',
   CharacterAbility: 'CharacterAbility',
   CharacterAbilityLevel: 'CharacterAbilityLevel',
   SummonSkill: 'SummonSkill',
@@ -506,6 +509,45 @@ export const CharacterSheetResistanceComponentValueScalarFieldEnum = {
 } as const
 
 export type CharacterSheetResistanceComponentValueScalarFieldEnum = (typeof CharacterSheetResistanceComponentValueScalarFieldEnum)[keyof typeof CharacterSheetResistanceComponentValueScalarFieldEnum]
+
+
+export const SheetResistanceScalarFieldEnum = {
+  id: 'id',
+  sheetId: 'sheetId',
+  name: 'name',
+  calculationType: 'calculationType',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SheetResistanceScalarFieldEnum = (typeof SheetResistanceScalarFieldEnum)[keyof typeof SheetResistanceScalarFieldEnum]
+
+
+export const SheetResistanceComponentScalarFieldEnum = {
+  id: 'id',
+  sheetResistanceId: 'sheetResistanceId',
+  name: 'name',
+  editableByPlayer: 'editableByPlayer',
+  value: 'value',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SheetResistanceComponentScalarFieldEnum = (typeof SheetResistanceComponentScalarFieldEnum)[keyof typeof SheetResistanceComponentScalarFieldEnum]
+
+
+export const SheetResistanceAttributeModifierScalarFieldEnum = {
+  id: 'id',
+  sheetResistanceId: 'sheetResistanceId',
+  attributeId: 'attributeId',
+  enabled: 'enabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SheetResistanceAttributeModifierScalarFieldEnum = (typeof SheetResistanceAttributeModifierScalarFieldEnum)[keyof typeof SheetResistanceAttributeModifierScalarFieldEnum]
 
 
 export const CharacterAbilityScalarFieldEnum = {
