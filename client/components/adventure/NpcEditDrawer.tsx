@@ -46,6 +46,11 @@ interface TemplateResistanceDef {
   attributeModifiers: ResistanceAttributeModifierDef[]
 }
 
+interface CoreResourceDef {
+  id: string; slug: string; displayName: string; enabled: boolean
+  editableByPlayer: boolean; showNotes: boolean
+}
+
 interface SkillValueData {
   id: string; skillId: string; value: string; selectedAttributeId: string | null
   selectedAttribute: { id: string; key: string; name: string } | null
@@ -56,6 +61,10 @@ interface SkillProfileValueData {
   id: string; profileId: string; optionId: string | null
   profile: { id: string; name: string; targetMode?: string; targetSkillIds?: string[] }
   option: { id: string; label: string; value: number } | null
+}
+
+interface CoreResourceValueData {
+  id: string; coreResourceId: string; current: number | null; maximum: number | null; notes: string | null
 }
 
 interface FullSheet {
@@ -72,12 +81,14 @@ interface FullSheet {
     skillModifierProfiles: SkillModifierProfileDef[]
     armorClasses: ArmorClassDef[]
     resistances?: TemplateResistanceDef[]
+    coreResources?: CoreResourceDef[]
   }
   values: { id: string; attributeId: string; value: string }[]
   acValues: { id: string; fieldId: string; value: string }[]
   acAttributeValues: { id: string; acAttributeModifierId: string; selectedAttributeId: string | null }[]
   skillValues: SkillValueData[]
   skillProfileValues: SkillProfileValueData[]
+  coreResourceValues?: CoreResourceValueData[]
 }
 
 /* ── Props ── */
@@ -101,10 +112,12 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [notes, setNotes] = useState('')
-  const [hpActual, setHpActual] = useState<number | null>(null)
-  const [hpMax, setHpMax] = useState<number | null>(null)
-  const [hpNotes, setHpNotes] = useState('')
   const [level, setLevel] = useState<number | null>(null)
+
+  /* Core resource values: coreResourceId → { current, maximum, notes } */
+  const [coreResourceCurrent, setCoreResourceCurrent] = useState<Record<string, number | null>>({})
+  const [coreResourceMax, setCoreResourceMax] = useState<Record<string, number | null>>({})
+  const [coreResourceNotes, setCoreResourceNotes] = useState<Record<string, string>>({})
 
   /* Attribute values: attributeId → string value */
   const [attrValues, setAttrValues] = useState<Record<string, string>>({})
@@ -132,6 +145,9 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
   /* Avatar */
   const [avatarUploading, setAvatarUploading] = useState(false)
 
+  /* ── Derived: enabled core resources ── */
+  const enabledCoreResources = (sheet?.template.coreResources ?? []).filter(cr => cr.enabled)
+
   /* ── Sheet + Template fetching ── */
   const fetchSheet = useCallback(async () => {
     setLoading(true)
@@ -142,10 +158,20 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
       setName(data.characterName)
       setDescription(data.playerName ?? '')
       setNotes(data.notes ?? '')
-      setHpActual(data.hpActual)
-      setHpMax(data.hpMax)
-      setHpNotes(data.hpNotes ?? '')
       setLevel(data.level)
+
+      // Core resource values
+      const crCurrent: Record<string, number | null> = {}
+      const crMax: Record<string, number | null> = {}
+      const crNotes: Record<string, string> = {}
+      for (const crv of data.coreResourceValues ?? []) {
+        crCurrent[crv.coreResourceId] = crv.current
+        crMax[crv.coreResourceId] = crv.maximum
+        crNotes[crv.coreResourceId] = crv.notes ?? ''
+      }
+      setCoreResourceCurrent(crCurrent)
+      setCoreResourceMax(crMax)
+      setCoreResourceNotes(crNotes)
 
       // Attribute values
       const av: Record<string, string> = {}
@@ -359,10 +385,17 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
 
       if (name !== sheet.characterName) payload.characterName = name
       if (level !== sheet.level) payload.level = level
-      if (hpActual !== sheet.hpActual) payload.hpActual = hpActual
-      if (hpMax !== sheet.hpMax) payload.hpMax = hpMax
-      if (hpNotes !== (sheet.hpNotes ?? '')) payload.hpNotes = hpNotes
       if (description !== (sheet.playerName ?? '')) payload.playerName = description
+
+      // Core resource values
+      if (enabledCoreResources.length > 0) {
+        payload.coreResourceValues = enabledCoreResources.map(cr => ({
+          coreResourceId: cr.id,
+          current: coreResourceCurrent[cr.id] ?? null,
+          maximum: coreResourceMax[cr.id] ?? null,
+          notes: coreResourceNotes[cr.id] ?? '',
+        }))
+      }
 
       // Attribute values
       const values = sheet.template.attributes.map(attr => ({
@@ -530,82 +563,95 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="Name"
-                className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+                className="input-field"
               />
             </div>
           </div>
 
           {/* Level */}
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">Level</label>
+            <label className="label">Level</label>
             <input
               type="number"
               min={1}
               value={level ?? ''}
               onChange={e => setLevel(e.target.value ? parseInt(e.target.value) : null)}
-              className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+              className="input-field"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">Description</label>
+            <label className="label">Description</label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={2}
               placeholder="Brief description..."
-              className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
+              className="input-field resize-none"
             />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">Notes</label>
+            <label className="label">Notes</label>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={2}
               placeholder="GM notes..."
-              className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
+              className="input-field resize-none"
             />
           </div>
         </section>
 
-        {/* ── Health ── */}
-        <section className="px-4 py-4 space-y-3">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Health</h4>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">Current HP</label>
-              <input
-                type="number"
-                value={hpActual ?? ''}
-                onChange={e => setHpActual(e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">Max HP</label>
-              <input
-                type="number"
-                value={hpMax ?? ''}
-                onChange={e => setHpMax(e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs text-muted-foreground mb-1">HP Notes</label>
-            <input
-              type="text"
-              value={hpNotes}
-              onChange={e => setHpNotes(e.target.value)}
-              placeholder="HP calculation notes..."
-              className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-            />
-          </div>
-        </section>
+        {/* ── Resources (from template core resources) ── */}
+        {enabledCoreResources.length > 0 && (
+          <section className="px-4 py-4 space-y-3">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Resources</h4>
+            {enabledCoreResources.map(cr => (
+              <div key={cr.id} className="card !p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-foreground">{cr.displayName}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="label">Current</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={coreResourceCurrent[cr.id] ?? ''}
+                      onChange={e => setCoreResourceCurrent(prev => ({ ...prev, [cr.id]: e.target.value ? parseInt(e.target.value) : null }))}
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Maximum</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={coreResourceMax[cr.id] ?? ''}
+                      onChange={e => setCoreResourceMax(prev => ({ ...prev, [cr.id]: e.target.value ? parseInt(e.target.value) : null }))}
+                      className="input-field"
+                    />
+                  </div>
+                </div>
+                {cr.showNotes && (
+                  <div>
+                    <label className="label">Notes</label>
+                    <input
+                      type="text"
+                      value={coreResourceNotes[cr.id] ?? ''}
+                      onChange={e => setCoreResourceNotes(prev => ({ ...prev, [cr.id]: e.target.value }))}
+                      placeholder={`${cr.displayName} notes...`}
+                      className="input-field"
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </section>
+        )}
 
         {/* ── Attributes ── */}
         {tpl.attributes.length > 0 && (
@@ -627,7 +673,7 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
                       value={attrValues[attr.id] ?? ''}
                       onChange={e => setAttrValues(prev => ({ ...prev, [attr.id]: e.target.value }))}
                       placeholder="0"
-                      className="w-full bg-input border border-border rounded-lg px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+                      className="input-field"
                     />
                     {mod !== undefined && (
                       <span className={`text-xs font-medium ${mod !== null ? (mod >= 0 ? 'text-green-500' : 'text-red-400') : 'text-muted-foreground'}`}>
@@ -658,12 +704,12 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
                   <div className="grid grid-cols-2 gap-2">
                     {ac.fields.map(f => (
                       <div key={f.id}>
-                        <label className="block text-[10px] text-muted-foreground mb-0.5">{f.name}</label>
+                        <label className="label">{f.name}</label>
                         <input
                           type="text"
                           value={acFieldValues[f.id] ?? f.defaultValue}
                           onChange={e => setAcFieldValues(prev => ({ ...prev, [f.id]: e.target.value }))}
-                          className="w-full bg-input border border-border rounded-lg px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+                          className="input-field"
                         />
                       </div>
                     ))}
@@ -679,7 +725,7 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
                               <select
                                 value={selectedId ?? ''}
                                 onChange={e => setAcModifierSelections(prev => ({ ...prev, [am.id]: e.target.value || null }))}
-                                className="text-xs bg-input border border-border rounded px-1.5 py-0.5 text-foreground"
+                                className="input-field py-0.5 text-xs w-auto min-w-[90px]"
                               >
                                 {tpl.attributes.map(a => (
                                   <option key={a.id} value={a.id}>{a.name}</option>
@@ -745,11 +791,11 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
                       {/* Attribute selection (if multiple allowed) */}
                       {hasAttributeChoice && (
                         <div className="flex items-center gap-2">
-                          <label className="text-[10px] text-muted-foreground">Attribute:</label>
+                          <label className="text-[10px] text-muted-foreground shrink-0">Attribute:</label>
                           <select
                             value={skillAttributeSelections[sv.skillId] ?? skill.defaultAttributeId ?? skill.attributeId ?? ''}
                             onChange={e => setSkillAttributeSelections(prev => ({ ...prev, [sv.skillId]: e.target.value || null }))}
-                            className="text-xs bg-input border border-border rounded px-1.5 py-0.5 text-foreground flex-1"
+                            className="input-field py-0.5 text-xs w-auto min-w-[90px]"
                           >
                             {skill.allowedAttributeIds.map(aid => {
                               const a = tpl.attributes.find(a => a.id === aid)
@@ -764,14 +810,14 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
                         const currentOpt = skillProfileSelections[sv.skillId]?.[profile.id] ?? null
                         return (
                           <div key={profile.id} className="flex items-center gap-2">
-                            <label className="text-[10px] text-muted-foreground">{profile.name}:</label>
+                            <label className="text-[10px] text-muted-foreground shrink-0">{profile.name}:</label>
                             <select
                               value={currentOpt ?? ''}
                               onChange={e => setSkillProfileSelections(prev => ({
                                 ...prev,
                                 [sv.skillId]: { ...(prev[sv.skillId] ?? {}), [profile.id]: e.target.value || null },
                               }))}
-                              className="text-xs bg-input border border-border rounded px-1.5 py-0.5 text-foreground flex-1"
+                              className="input-field py-0.5 text-xs flex-1"
                             >
                               <option value="">— None —</option>
                               {profile.options.map(o => (
