@@ -7,12 +7,14 @@ export function CollapsibleSection({
   expanded,
   onToggle,
   accent,
+  icon,
   children,
 }: {
   title: string
   expanded: boolean
   onToggle: () => void
   accent?: boolean
+  icon?: ReactNode
   children: ReactNode
 }) {
   return (
@@ -21,6 +23,7 @@ export function CollapsibleSection({
         onClick={onToggle}
         className={`flex items-center justify-between w-full text-left${accent ? ' header-accent' : ''}`}
       >
+        {icon && <span className="mr-2 shrink-0">{icon}</span>}
         <h3 className="font-semibold">{title}</h3>
         <svg
           className={`w-5 h-5 text-muted transition-transform duration-200 ${
