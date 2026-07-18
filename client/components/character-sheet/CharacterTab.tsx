@@ -351,7 +351,7 @@ export function CharacterTab(props: CharacterTabProps) {
         </div>
 
         {/* ─── RIGHT COLUMN — Skills ─── */}
-        <div className="space-y-3 overflow-y-auto pr-2 max-h-[calc(100vh-10rem)] scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+        <div className="space-y-3">
           {hasSkills ? (
             <div className="space-y-5">
               {/* Active Skills Table */}
