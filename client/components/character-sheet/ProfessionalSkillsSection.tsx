@@ -270,7 +270,7 @@ export function ProfessionalSkillsSection({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <form
             onSubmit={handleCreate}
-            className="bg-card border border-border rounded-xl shadow-xl p-6 w-full max-w-md space-y-4"
+            className="bg-surface border border-border rounded-xl shadow-xl p-6 w-full max-w-md space-y-4"
           >
             <h4 className="text-sm font-semibold">Add Professional Skill</h4>
 
