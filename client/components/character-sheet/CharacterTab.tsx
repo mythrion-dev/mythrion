@@ -475,9 +475,8 @@ function SkillTable({
   const hasSearch = skills.length > 0
 
   return (
-    <div className="card !p-0 max-h-[400px] overflow-y-auto overflow-x-hidden">
-      {/* Sticky header with title, badge, and search */}
-      <div className="sticky top-0 z-10 px-4 py-2.5 border-b border-border/60 space-y-2 bg-card">
+    <div className="card !p-0 max-h-[400px] overflow-hidden flex flex-col">
+      <div className="shrink-0 px-4 py-2.5 border-b border-border/60 space-y-2 bg-card">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <h4 className="text-xs font-semibold text-foreground">{title}</h4>
@@ -490,7 +489,10 @@ function SkillTable({
           <div className="relative">
             <svg
               className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted pointer-events-none"
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
@@ -505,151 +507,147 @@ function SkillTable({
         )}
       </div>
 
-      {/* Sticky column headers */}
-      {filteredSkills.length > 0 && (
-        <div className="sticky top-[60px] z-10 hidden sm:flex items-center px-4 py-1.5 bg-background/90 backdrop-blur-sm text-[0.55rem] font-semibold text-muted uppercase tracking-wider border-b border-border/40">
-          <div className="w-8 shrink-0" />
-          <div className="flex-1 shrink-0">Skill</div>
-          <div className="w-16 shrink-0 text-right">Total</div>
-          <div className="w-8 shrink-0" />
-        </div>
-      )}
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+        {filteredSkills.length > 0 && (
+          <div className="sticky top-0 z-10 hidden sm:flex items-center px-4 py-1.5 bg-background/90 backdrop-blur-sm text-[0.55rem] font-semibold text-muted uppercase tracking-wider border-b border-border/40">
+            <div className="w-8 shrink-0" />
+            <div className="flex-1 shrink-0">Skill</div>
+            <div className="w-16 shrink-0 text-right">Total</div>
+            <div className="w-8 shrink-0" />
+          </div>
+        )}
 
-      {/* Table body */}
-      {filteredSkills.length === 0 ? (
-        <div className="px-4 py-6 text-center text-xs text-muted">
-          {search.trim()
-            ? 'No skills match your search.'
-            : isActiveSide
-              ? 'No active skills.'
-              : 'No inactive skills.'}
-        </div>
-      ) : (
-        <div className="divide-y divide-border/40">
-          {filteredSkills.map(sv => {
-            const isExpanded = expandedSkillId === sv.skillId
-            const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
-            const attrMod = isActiveSide
-              ? getAttrModifier(selectedAttr?.id, modifierResults)
-              : null
-            const total = isActiveSide
-              ? (skillResults[sv.skillId] != null ? skillResults[sv.skillId] : '—')
-              : 0
+        {filteredSkills.length === 0 ? (
+          <div className="px-4 py-6 text-center text-xs text-muted">
+            {search.trim()
+              ? 'No skills match your search.'
+              : isActiveSide
+                ? 'No active skills.'
+                : 'No inactive skills.'}
+          </div>
+        ) : (
+          <div className="divide-y divide-border/40">
+            {filteredSkills.map(sv => {
+              const isExpanded = expandedSkillId === sv.skillId
+              const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
+              const attrMod = isActiveSide
+                ? getAttrModifier(selectedAttr?.id, modifierResults)
+                : null
+              const total = isActiveSide
+                ? (skillResults[sv.skillId] != null ? skillResults[sv.skillId] : '—')
+                : 0
 
-            const skillProfiles = allProfiles.filter(p => {
-              const tm = (p as any).targetMode ?? 'ALL_SKILLS'
-              const tids: string[] = (p as any).targetSkillIds ?? []
-              return tm === 'ALL_SKILLS' || tids.length === 0 || tids.includes(sv.skill.name)
-            })
-            const hasAttrDropdown = (sv.skill.allowedAttributeIds?.length ?? 0) > 0
+              const skillProfiles = allProfiles.filter(p => {
+                const tm = (p as any).targetMode ?? 'ALL_SKILLS'
+                const tids: string[] = (p as any).targetSkillIds ?? []
+                return tm === 'ALL_SKILLS' || tids.length === 0 || tids.includes(sv.skill.name)
+              })
 
-            return (
-              <div key={sv.id} className={`${isActiveSide ? '' : 'opacity-50'}`}>
-                {/* Main row */}
-                <div className="flex items-center gap-1.5 px-3 sm:px-4 py-2 hover:bg-background/20 transition-colors">
-                  {/* Checkbox */}
-                  <div className="w-8 shrink-0 flex items-center justify-start">
-                    <input
-                      type="checkbox"
-                      checked={isActiveSide}
-                      onChange={() => onToggle(sv.skillId)}
-                      className="shrink-0 w-3.5 h-3.5 rounded border-border accent-primary cursor-pointer"
-                    />
-                  </div>
-
-                  {/* Skill name (clickable to expand) */}
-                  <button
-                    type="button"
-                    onClick={() => onExpandToggle(isExpanded ? null : sv.skillId)}
-                    disabled={!isActiveSide}
-                    className="flex-1 shrink-0 text-left disabled:cursor-default"
-                  >
-                    <span className="text-xs font-medium text-foreground truncate block leading-tight">
-                      {sv.skill.name}
-                    </span>
-                    {sv.skill.description && (
-                      <span className="text-[0.6rem] text-muted truncate block leading-tight mt-0.5">
-                        {sv.skill.description}
-                      </span>
-                    )}
-                  </button>
-
-                  {/* Total */}
-                  <div className="w-16 shrink-0 text-right">
-                    <span className={`text-sm font-bold tabular-nums ${isActiveSide ? 'text-primary' : 'text-muted'}`}>
-                      {total}
-                    </span>
-                  </div>
-
-                  {/* Expand chevron */}
-                  <button
-                    type="button"
-                    onClick={() => onExpandToggle(isExpanded ? null : sv.skillId)}
-                    disabled={!isActiveSide}
-                    className="w-8 shrink-0 flex items-center justify-center disabled:cursor-default"
-                  >
-                    <svg
-                      className={`w-3 h-3 text-muted transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Expandable content (profiles + others) */}
-                <div
-                  className={`transition-all duration-200 overflow-hidden ${
-                    isExpanded && isActiveSide ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-                  }`}
-                >
-                  <div className="px-3 sm:px-4 py-2 space-y-2 border-t border-border/40 ml-10 bg-background/20">
-                    {skillProfiles.map(profile => {
-                      const sid = profileSelections[sv.skillId]?.[profile.id]
-                      return (
-                        <div key={profile.id} className="flex items-center gap-2">
-                          <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">{profile.name}:</span>
-                          <select
-                            className="input-field py-0.5 text-[0.6rem] flex-1"
-                            value={sid ?? ''}
-                            onChange={e => onProfileChange(sv.skillId, profile.id, e.target.value || null)}
-                          >
-                            <option value="">— Select —</option>
-                            {profile.options.map(opt => (
-                              <option key={opt.id} value={opt.id}>{opt.label} ({opt.value >= 0 ? '+' : ''}{opt.value})</option>
-                            ))}
-                          </select>
-                          {sid && (
-                            <span className="text-[0.6rem] font-mono text-primary shrink-0 tabular-nums">
-                              {profile.options.find(o => o.id === sid)?.value ?? 0 >= 0 ? '+' : ''}
-                              {profile.options.find(o => o.id === sid)?.value ?? 0}
-                            </span>
-                          )}
-                        </div>
-                      )
-                    })}
-                    <div className="flex items-center gap-2">
-                      <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">Others:</span>
+              return (
+                <div key={sv.id} className={`${isActiveSide ? '' : 'opacity-50'}`}>
+                  <div className="flex items-center gap-1.5 px-3 sm:px-4 py-2 hover:bg-background/20 transition-colors">
+                    <div className="w-8 shrink-0 flex items-center justify-start">
                       <input
-                        type="number"
-                        min={0}
-                        step={1}
-                        className="input-field py-0.5 text-[0.6rem] w-16"
-                        value={othersValues[sv.skillId] || ''}
-                        placeholder="0"
-                        onChange={e => onOthersChange(sv.skillId, parseInt(e.target.value, 10) || 0)}
+                        type="checkbox"
+                        checked={isActiveSide}
+                        onChange={() => onToggle(sv.skillId)}
+                        className="shrink-0 w-3.5 h-3.5 rounded border-border accent-primary cursor-pointer"
                       />
-                      <span className="text-[0.6rem] font-mono text-primary tabular-nums">
-                        +{othersValues[sv.skillId] || 0}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => onExpandToggle(isExpanded ? null : sv.skillId)}
+                      disabled={!isActiveSide}
+                      className="flex-1 shrink-0 text-left disabled:cursor-default"
+                    >
+                      <span className="text-xs font-medium text-foreground truncate block leading-tight">
+                        {sv.skill.name}
                       </span>
+                      {sv.skill.description && (
+                        <span className="text-[0.6rem] text-muted truncate block leading-tight mt-0.5">
+                          {sv.skill.description}
+                        </span>
+                      )}
+                    </button>
+
+                    <div className="w-16 shrink-0 text-right">
+                      <span className={`text-sm font-bold tabular-nums ${isActiveSide ? 'text-primary' : 'text-muted'}`}>
+                        {total}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => onExpandToggle(isExpanded ? null : sv.skillId)}
+                      disabled={!isActiveSide}
+                      className="w-8 shrink-0 flex items-center justify-center disabled:cursor-default"
+                    >
+                      <svg
+                        className={`w-3 h-3 text-muted transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div
+                    className={`transition-all duration-200 overflow-hidden ${
+                      isExpanded && isActiveSide ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                    }`}
+                  >
+                    <div className="px-3 sm:px-4 py-2 space-y-2 border-t border-border/40 ml-10 bg-background/20">
+                      {skillProfiles.map(profile => {
+                        const sid = profileSelections[sv.skillId]?.[profile.id]
+                        return (
+                          <div key={profile.id} className="flex items-center gap-2">
+                            <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">{profile.name}:</span>
+                            <select
+                              className="input-field py-0.5 text-[0.6rem] flex-1"
+                              value={sid ?? ''}
+                              onChange={e => onProfileChange(sv.skillId, profile.id, e.target.value || null)}
+                            >
+                              <option value="">— Select —</option>
+                              {profile.options.map(opt => (
+                                <option key={opt.id} value={opt.id}>{opt.label} ({opt.value >= 0 ? '+' : ''}{opt.value})</option>
+                              ))}
+                            </select>
+                            {sid && (
+                              <span className="text-[0.6rem] font-mono text-primary shrink-0 tabular-nums">
+                                {profile.options.find(o => o.id === sid)?.value ?? 0 >= 0 ? '+' : ''}
+                                {profile.options.find(o => o.id === sid)?.value ?? 0}
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">Others:</span>
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          className="input-field py-0.5 text-[0.6rem] w-16"
+                          value={othersValues[sv.skillId] || ''}
+                          placeholder="0"
+                          onChange={e => onOthersChange(sv.skillId, parseInt(e.target.value, 10) || 0)}
+                        />
+                        <span className="text-[0.6rem] font-mono text-primary tabular-nums">
+                          +{othersValues[sv.skillId] || 0}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
+              )
+            })}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
