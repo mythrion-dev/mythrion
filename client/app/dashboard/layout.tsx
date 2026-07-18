@@ -60,7 +60,7 @@ export default function DashboardLayout({
 
         {/* Main content area */}
         <main className="flex-1 min-h-screen bg-pattern overflow-auto">
-          <div className="p-6 max-w-7xl mx-auto w-full animate-fade-in">
+          <div className="px-8 py-6 w-full animate-fade-in">
             {children}
           </div>
         </main>

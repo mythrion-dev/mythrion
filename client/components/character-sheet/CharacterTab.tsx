@@ -107,7 +107,7 @@ export function CharacterTab(props: CharacterTabProps) {
       {/* ─────────────────────────────────────────────── */}
       {/* Three-Column Dashboard Layout                  */}
       {/* ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.3fr_1.3fr_2fr] items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[420px_420px_minmax(700px,1fr)] items-start">
 
         {/* ─── LEFT COLUMN — Character Info + Attributes ─── */}
         <div className="space-y-6">
