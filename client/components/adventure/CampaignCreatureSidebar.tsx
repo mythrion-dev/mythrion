@@ -171,7 +171,23 @@ export function CampaignCreatureSidebar({
         <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        <span className="hidden sm:inline">NPCs</span>
+        <span className="hidden sm:flex items-center gap-1.5">
+          {/* Skull icon */}
+          <svg className="w-3.5 h-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C8 2 4 5 4 9c0 2.5 1.5 4.5 3 6l1 5h8l1-5c1.5-1.5 3-3.5 3-6 0-4-4-7-8-7z" />
+            <circle cx="9" cy="9" r="1.5" fill="currentColor" />
+            <circle cx="15" cy="9" r="1.5" fill="currentColor" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 14c1.5 1 4.5 1 6 0" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 3l-2 2M14 3l2 2" />
+          </svg>
+          {/* Vertical separator */}
+          <span className="text-muted-foreground/40 font-light select-none">|</span>
+          {/* User icon */}
+          <svg className="w-3.5 h-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span>NPCs</span>
+        </span>
         {npcs.length > 0 && (
           <span className="badge">{npcs.length}</span>
         )}
