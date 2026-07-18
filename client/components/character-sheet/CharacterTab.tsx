@@ -298,7 +298,7 @@ export function CharacterTab(props: CharacterTabProps) {
                           {canEdit ? (
                             <input
                               type="number"
-                              className="input-field py-0.5 text-[0.55rem] w-10 text-right"
+                              className="input-field py-0.5 text-[0.7rem] w-20 text-right"
                               value={val}
                               onChange={e => handleAcFieldChange(field.id, e.target.value)}
                             />
