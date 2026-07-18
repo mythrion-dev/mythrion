@@ -298,7 +298,7 @@ export function CharacterTab(props: CharacterTabProps) {
                           {canEdit ? (
                             <input
                               type="number"
-                              className="input-field py-0.5 text-[0.55rem] w-10 text-right"
+                              className="input-field py-0.5 text-[0.55rem] w-16 text-right"
                               value={val}
                               onChange={e => handleAcFieldChange(field.id, e.target.value)}
                             />
@@ -475,7 +475,7 @@ function SkillTable({
   const hasSearch = skills.length > 0
 
   return (
-    <div className="card !p-0 overflow-clip">
+    <div className="card !p-0 max-h-[400px] overflow-y-auto overflow-x-hidden">
       {/* Sticky header with title, badge, and search */}
       <div className="sticky top-0 z-10 px-4 py-2.5 border-b border-border/60 space-y-2 bg-card">
         <div className="flex items-center justify-between gap-2">
