@@ -293,7 +293,7 @@ export function CharacterTab(props: CharacterTabProps) {
                       const val = acv?.value ?? field.defaultValue
                       const canEdit = isOwner && field.editableByPlayer
                       return (
-                        <div key={field.id} className="flex items-center justify-between gap-1 text-[0.55rem]">
+                        <div key={field.id} className="flex items-center justify-between gap-1 text-[0.7rem]">
                           <span className="text-muted truncate">{field.name}</span>
                           {canEdit ? (
                             <input
@@ -317,10 +317,10 @@ export function CharacterTab(props: CharacterTabProps) {
                           const modResult = selectedAttribute ? modifierResults[selectedAttribute.id] : null
                           const canChangeAttribute = isOwner && am.allowPlayerSelection
                           return (
-                            <div key={am.id} className="flex items-center justify-between gap-1 text-[0.55rem]">
+                            <div key={am.id} className="flex items-center justify-between gap-1 text-[0.7rem]">
                               {canChangeAttribute ? (
                                 <select
-                                  className="input-field py-0.5 text-[0.55rem] w-auto min-w-[80px]"
+                                  className="input-field py-0.5 text-[0.7rem] w-auto min-w-[80px]"
                                   value={selectedAttribute?.id ?? ''}
                                   onChange={e => handleAcAttributeModifierChange(am.id, e.target.value || null)}
                                 >
