@@ -248,29 +248,15 @@
     appearance: textfield;
     -moz-appearance: textfield;
     -webkit-appearance: none;
-    padding-right: 2.25rem;
+    padding-right: 1rem;
   }
 
   input[type='number']::-webkit-outer-spin-button,
   input[type='number']::-webkit-inner-spin-button {
     -webkit-appearance: none;
+    appearance: none;
+    display: none;
     margin: 0;
-  }
-
-  input[type='number']::-webkit-inner-spin-button {
-    width: 0.95rem;
-    min-width: 0.95rem;
-    margin-left: 0.25rem;
-    border-radius: 9999px;
-    border: 1px solid rgba(201, 164, 75, 0.22);
-    background: linear-gradient(135deg, #1c1630 0%, #2a2240 100%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    cursor: pointer;
-  }
-
-  input[type='number']::-webkit-inner-spin-button:hover {
-    border-color: rgba(201, 164, 75, 0.4);
-    background: linear-gradient(135deg, #241d35 0%, #2f2644 100%);
   }
 
   .label {
