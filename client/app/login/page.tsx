@@ -3,7 +3,7 @@
 import { Suspense, useState, type FormEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { setInvitationToken } from '@/lib/api'
+import { API_URL, setInvitationToken } from '@/lib/api'
 
 function LoginForm() {
   const router = useRouter()
@@ -141,7 +141,7 @@ function LoginForm() {
       </div>
 
       <a
-        href={`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api'}/auth/google`}
+        href={`${API_URL}/auth/google`}
         className="btn-ghost w-full flex items-center justify-center gap-2"
         onClick={handleOAuthClick}
       >
