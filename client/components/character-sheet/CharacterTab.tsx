@@ -107,7 +107,7 @@ export function CharacterTab(props: CharacterTabProps) {
       {/* ─────────────────────────────────────────────── */}
       {/* Three-Column Dashboard Layout                  */}
       {/* ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.1fr_1.15fr_0.95fr] items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[420px_420px_1fr] items-start">
 
         {/* ─── LEFT COLUMN — Character Info + Attributes ─── */}
         <div className="space-y-6">
@@ -512,11 +512,11 @@ function SkillTable({
       {filteredSkills.length > 0 && (
         <div className="sticky top-[73px] z-10 hidden sm:flex items-center px-5 py-2 bg-background/90 backdrop-blur-sm text-[0.65rem] font-semibold text-muted uppercase tracking-wider border-b border-border/40">
           <div className="w-10 shrink-0" />
-          <div className="flex-1 min-w-0">Skill</div>
-          <div className="w-[110px] shrink-0 text-left">Attribute</div>
-          <div className="w-16 shrink-0 text-right">Total</div>
-          <div className="w-12 shrink-0 text-right">Mod</div>
-          <div className="w-8 shrink-0" />
+          <div className="w-[35%] shrink-0">Skill</div>
+          <div className="w-[30%] shrink-0 text-left">Attribute</div>
+          <div className="w-[15%] shrink-0 text-right">Total</div>
+          <div className="w-[10%] shrink-0 text-right">Mod</div>
+          <div className="w-[10%] shrink-0" />
         </div>
       )}
 
@@ -570,7 +570,7 @@ function SkillTable({
                     type="button"
                     onClick={() => onExpandToggle(isExpanded ? null : sv.skillId)}
                     disabled={!isActiveSide}
-                    className="flex-1 min-w-0 text-left disabled:cursor-default"
+                    className="w-[35%] shrink-0 text-left disabled:cursor-default"
                   >
                     <span className="text-sm font-medium text-foreground truncate block leading-tight">
                       {sv.skill.name}
@@ -583,7 +583,7 @@ function SkillTable({
                   </button>
 
                   {/* Attribute selector */}
-                  <div className="w-[110px] shrink-0">
+                  <div className="w-[30%] shrink-0">
                     {hasAttrDropdown && isActiveSide && modifiersEnabled ? (
                       <select
                         className="input-field py-0.5 text-[0.65rem] w-full"
@@ -604,14 +604,14 @@ function SkillTable({
                   </div>
 
                   {/* Total */}
-                  <div className="w-16 shrink-0 text-right">
+                  <div className="w-[15%] shrink-0 text-right">
                     <span className={`text-sm font-bold tabular-nums ${isActiveSide ? 'text-primary' : 'text-muted'}`}>
                       {total}
                     </span>
                   </div>
 
                   {/* Mod */}
-                  <div className="w-12 shrink-0 text-right">
+                  <div className="w-[10%] shrink-0 text-right">
                     <span className={`text-xs font-semibold tabular-nums ${isActiveSide ? 'text-muted-foreground' : 'text-muted'}`}>
                       {modDisplay !== '—' && modDisplay >= 0 ? '+' : ''}{modDisplay}
                     </span>
@@ -622,7 +622,7 @@ function SkillTable({
                     type="button"
                     onClick={() => onExpandToggle(isExpanded ? null : sv.skillId)}
                     disabled={!isActiveSide}
-                    className="w-8 shrink-0 flex items-center justify-center disabled:cursor-default"
+                    className="w-[10%] shrink-0 flex items-center justify-center disabled:cursor-default"
                   >
                     <svg
                       className={`w-3.5 h-3.5 text-muted transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
