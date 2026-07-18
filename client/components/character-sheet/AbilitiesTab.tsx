@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { api } from '@/lib/api'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
+import { NumericInput } from '@/components/shared/NumericInput'
 import { InlineClickEdit } from '@/components/character-sheet'
 import { ResistanceTab } from '@/components/character-sheet'
 import type { Ability, AbilityLevel, SummonTab, CharacterSheet, TemplateResistanceDef } from './types'
@@ -615,12 +616,14 @@ export function AbilitiesTab({
                               </div>
                               {isOwner && (
                                 <div className="flex items-center justify-center gap-3">
-                                  <input
-                                    type="number" min={1}
+                                  <NumericInput
+                                    min={1}
                                     value={summonHpAmount[a.id] ?? ''}
                                     onChange={e => setSummonHpAmount(prev => ({ ...prev, [a.id]: e.target.value }))}
                                     placeholder="Amount"
                                     className="w-20 text-center text-sm bg-background/50 border border-border rounded-md px-2 py-1.5 text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary"
+                                    wrapperClassName="w-20"
+                                    inputClassName="!text-center !text-sm"
                                   />
                                   <button
                                     onClick={() => {
@@ -698,7 +701,7 @@ export function AbilitiesTab({
                                           {field.description && <span className="text-[0.6rem] text-muted hidden sm:inline">— {field.description}</span>}
                                         </div>
                                         {canEdit ? (
-                                          <input type="number" className="input-field py-0.5 text-xs w-16 text-right" value={val} onChange={e => saveSummonAcValue(a.id, field.id, e.target.value)} />
+                                          <NumericInput className="py-0.5 text-xs w-16 text-right" inputClassName="!text-right" wrapperClassName="w-16" value={val} onChange={e => saveSummonAcValue(a.id, field.id, e.target.value)} />
                                         ) : (
                                           <span className="text-sm font-semibold text-foreground">{val}</span>
                                         )}
@@ -1057,7 +1060,7 @@ export function AbilitiesTab({
                                     <div className="grid grid-cols-2 gap-2">
                                       <div>
                                         <label className="text-[0.65rem] text-muted">Mana Cost</label>
-                                        <input type="number" className="input-field text-xs" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder="0" />
+                                        <NumericInput className="input-field text-xs" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder="0" />
                                       </div>
                                       <div>
                                         <label className="text-[0.65rem] text-muted">Range</label>
@@ -1198,7 +1201,7 @@ export function AbilitiesTab({
                 </div>
                 <div>
                   <label htmlFor="new-ability-mana" className="label">Mana Cost</label>
-                  <input id="new-ability-mana" type="number" className="input-field" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder="20" />
+                  <NumericInput id="new-ability-mana" className="input-field" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder="20" />
                 </div>
                 <div>
                   <label htmlFor="new-ability-range" className="label">Range</label>
@@ -1254,11 +1257,11 @@ export function AbilitiesTab({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="new-summon-hp-current" className="label">Health (Current)</label>
-                  <input id="new-summon-hp-current" type="number" className="input-field" value={newAbility.hpCurrent} onChange={e => setNewAbility(p => ({ ...p, hpCurrent: e.target.value }))} placeholder="20" />
+                  <NumericInput id="new-summon-hp-current" className="input-field" value={newAbility.hpCurrent} onChange={e => setNewAbility(p => ({ ...p, hpCurrent: e.target.value }))} placeholder="20" />
                 </div>
                 <div>
                   <label htmlFor="new-summon-hp-max" className="label">Health (Max)</label>
-                  <input id="new-summon-hp-max" type="number" className="input-field" value={newAbility.hpMax} onChange={e => setNewAbility(p => ({ ...p, hpMax: e.target.value }))} placeholder="20" />
+                  <NumericInput id="new-summon-hp-max" className="input-field" value={newAbility.hpMax} onChange={e => setNewAbility(p => ({ ...p, hpMax: e.target.value }))} placeholder="20" />
                 </div>
               </div>
               <div>

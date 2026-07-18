@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
+import { NumericInput } from '@/components/shared/NumericInput'
 import { ProfessionalSkillsSection } from './ProfessionalSkillsSection'
 import type { CharacterSheet, AcResultMap, SkillModifierProfile } from './types'
 

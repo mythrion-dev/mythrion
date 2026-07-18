@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
+import { NumericInput } from '@/components/shared/NumericInput'
 
 interface CoreResourceDef {
   id: string; slug: string; displayName: string
@@ -54,7 +55,7 @@ export function CoreResourceCard({ resource, value, isOwner, onSave, onModify }:
       {canEdit && onModify && (
         <div className="space-y-2 pt-2 border-t border-border">
           <div className="flex items-center gap-2">
-            <input type="number" min={0} className="input-field py-1 text-xs flex-1" value={modifier || ''} placeholder="Amount" onChange={e => setModifier(parseInt(e.target.value, 10) || 0)} />
+            <NumericInput min={0} className="py-1 text-xs flex-1" inputClassName="!px-2 !py-1" wrapperClassName="flex-1" value={modifier || ''} placeholder="Amount" onChange={e => setModifier(parseInt(e.target.value, 10) || 0)} />
           </div>
           <div className="flex gap-2">
             <button type="button" onClick={() => { onModify(value.coreResourceId, Math.abs(modifier)); setModifier(0) }} disabled={!modifier} className="btn-primary text-xs flex-1 py-1">+ Heal / Recover</button>

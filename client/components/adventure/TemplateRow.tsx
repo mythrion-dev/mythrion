@@ -8,6 +8,7 @@ import ResistanceSystemConfig from '@/lib/resistance-system-config'
 import { AcConfigList } from '@/components/adventure/AcConfigList'
 import { CollapsibleAttrCard } from '@/components/adventure/CollapsibleAttrCard'
 import { CollapsibleSkillCard } from '@/components/adventure/CollapsibleSkillCard'
+import { NumericInput } from '@/components/shared/NumericInput'
 
 interface TemplateSummary {
   id: string
@@ -303,7 +304,7 @@ export function TemplateRow(props: {
                   {p.options.map((o: any, oIdx: number) => (
                     <div key={oIdx} className="flex items-center gap-1.5">
                       <input className="input-field flex-1 text-xs" value={o.label} onChange={e => props.onUpdateProfileOption?.(pIdx, oIdx, 'label', e.target.value)} placeholder="Option label (e.g. Expert)" />
-                      <input className="input-field w-20 text-xs" type="number" value={o.value} onChange={e => props.onUpdateProfileOption?.(pIdx, oIdx, 'value', e.target.value)} placeholder="Value" />
+                      <NumericInput className="input-field w-20 text-xs" value={o.value} onChange={e => props.onUpdateProfileOption?.(pIdx, oIdx, 'value', e.target.value)} placeholder="Value" wrapperClassName="w-20" inputClassName="!text-xs" />
                       <button type="button" onClick={() => props.onRemoveProfileOption?.(pIdx, oIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
                     </div>
                   ))}

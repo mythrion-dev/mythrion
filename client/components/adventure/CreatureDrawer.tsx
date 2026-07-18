@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, type FormEvent } from 'react'
 import { api, API_URL } from '@/lib/api'
+import { NumericInput } from '@/components/shared/NumericInput'
 
 /* ── Types (mirroring the backend for type safety) ── */
 
@@ -663,15 +664,21 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
             <div className="flex items-start gap-4 flex-wrap">
               <div className="flex-1 min-w-[120px]">
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Current HP</label>
-                <input type="number" value={hpCurrent ?? ''}
+                <NumericInput value={hpCurrent ?? ''}
                   onChange={e => setHpCurrent(e.target.value ? Number(e.target.value) : null)}
-                  className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50" />
+                  className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+                  wrapperClassName="w-full rounded-lg bg-input border border-border"
+                  inputClassName="!w-full !bg-transparent !border-0 !px-3 !py-2 !text-sm !text-foreground focus:outline-none focus:ring-0"
+                />
               </div>
               <div className="flex-1 min-w-[120px]">
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Max HP</label>
-                <input type="number" value={hpMax ?? ''}
+                <NumericInput value={hpMax ?? ''}
                   onChange={e => setHpMax(e.target.value ? Number(e.target.value) : null)}
-                  className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50" />
+                  className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+                  wrapperClassName="w-full rounded-lg bg-input border border-border"
+                  inputClassName="!w-full !bg-transparent !border-0 !px-3 !py-2 !text-sm !text-foreground focus:outline-none focus:ring-0"
+                />
               </div>
               <div className="flex-[2] min-w-[200px]">
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">HP Notes</label>
@@ -867,9 +874,11 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
                   </div>
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">Mana Cost</label>
-                    <input type="number" value={newChildAbilityForm.manaCost}
+                    <NumericInput value={newChildAbilityForm.manaCost}
                       onChange={e => setNewChildAbilityForm(p => ({ ...p, manaCost: e.target.value }))}
                       className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+                      wrapperClassName="w-full rounded-lg bg-input border border-border"
+                      inputClassName="!w-full !bg-transparent !border-0 !px-3 !py-2 !text-sm !text-foreground focus:outline-none focus:ring-0"
                       placeholder="MP" />
                   </div>
                   <div>
