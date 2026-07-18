@@ -881,7 +881,7 @@ export default function CharacterSheetDetailPage() {
   const armorClasses = sheet?.template.armorClasses?.filter(ac => ac.enabled) ?? []
   const modifiersEnabled = sheet.template.attributeModifiersEnabled !== false
   const totalWeight = inventoryItems.reduce((s, i) => s + (i.weight ?? 0), 0)
-  const tabClass = (t: Tab) => `flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === t ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground'}`
+  const tabClass = (t: Tab) => `flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === t ? 'border-[#c9a84c] text-white' : 'border-transparent text-gray-400 hover:text-white'}`
   const enabledCoreResources = (sheet.template.coreResources || []).filter(cr => cr.enabled)
 
   return (<div className="max-w-6xl mx-auto w-full">
@@ -892,12 +892,13 @@ export default function CharacterSheetDetailPage() {
     ]} />
 
     <div className="space-y-6">
-      <div className="card !p-6 space-y-4">
-        <div className="flex gap-4">
+      <div className="card !p-6">
+        <div className="flex gap-6 items-start" style={{ minHeight: '170px' }}>
+          {/* Avatar - 160x160 */}
           <div className="shrink-0">
             {avatarUrl ? (
               <div className="relative group">
-                <img src={avatarUrl} alt="Avatar" className="w-40 h-40 rounded-lg object-cover border border-border" />
+                <img src={avatarUrl} alt="Avatar" className="w-40 h-40 rounded-xl object-cover border border-border" />
                 {isOwner && (
                   <button
                     type="button"
@@ -910,7 +911,7 @@ export default function CharacterSheetDetailPage() {
                 )}
               </div>
             ) : isOwner ? (
-              <label className={`w-40 h-40 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/30 transition-colors ${avatarUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+              <label className={`w-40 h-40 rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/30 transition-colors ${avatarUploading ? 'opacity-50 pointer-events-none' : ''}`}>
                 {avatarUploading ? (
                   <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 ) : (
@@ -920,21 +921,57 @@ export default function CharacterSheetDetailPage() {
               </label>
             ) : null}
           </div>
-          <div className="flex-1 min-w-0">
-            {isOwner ? <InlineText value={sheet.characterName} onSave={saveCharacterName} maxLength={100} className="text-2xl font-bold text-gradient truncate block" /> : <h1 className="text-2xl font-bold text-gradient truncate">{sheet.characterName}</h1>}
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              {isOwner ? (<><span className="badge badge-gold inline-flex items-center gap-1">Player: <InlineText value={sheet.playerName ?? ''} onSave={savePlayerName} maxLength={100} emptyDisplay="—" /></span><span className="badge badge-gold inline-flex items-center gap-1">Level: <InlineNumber value={sheet.level} onSave={saveLevel} min={1} /></span></>) : (<>{sheet.playerName && <span className="badge badge-gold">Player: {sheet.playerName}</span>}{sheet.level && <span className="badge badge-gold">Level: {sheet.level}</span>}</>)}
-              {sheet.adventure && <span className="badge badge-gold">{sheet.adventure.campaign}</span>}
-              <span className="badge badge-gold">{sheet.template.name}</span>
-              <span className="text-xs text-muted">Created {new Date(sheet.createdAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</span>
+
+          {/* Info - center column */}
+          <div className="flex-1 min-w-0 flex flex-col justify-between" style={{ minHeight: '170px' }}>
+            <div>
+              {isOwner ? (
+                <InlineText value={sheet.characterName} onSave={saveCharacterName} maxLength={100} className="text-2xl font-bold text-gradient truncate block" />
+              ) : (
+                <h1 className="text-2xl font-bold text-gradient truncate">{sheet.characterName}</h1>
+              )}
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                {isOwner ? (
+                  <>
+                    <span className="badge badge-gold inline-flex items-center gap-1">Player: <InlineText value={sheet.playerName ?? ''} onSave={savePlayerName} maxLength={100} emptyDisplay="—" /></span>
+                    <span className="badge badge-gold inline-flex items-center gap-1">Level: <InlineNumber value={sheet.level} onSave={saveLevel} min={1} /></span>
+                  </>
+                ) : (
+                  <>
+                    {sheet.playerName && <span className="badge badge-gold">Player: {sheet.playerName}</span>}
+                    {sheet.level && <span className="badge badge-gold">Level: {sheet.level}</span>}
+                  </>
+                )}
+                {sheet.adventure && <span className="badge badge-gold">{sheet.adventure.campaign}</span>}
+                <span className="badge badge-gold">{sheet.template.name}</span>
+              </div>
+              <p className="text-xs text-muted mt-1.5">
+                Created {new Date(sheet.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              </p>
             </div>
+            {sheet.adventure && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-xs text-muted uppercase tracking-wider">Adventure:</span>
+                <span className="font-medium">{sheet.adventure.name}</span>
+              </div>
+            )}
           </div>
-          {isOwner && <div className="flex gap-2 shrink-0"><button onClick={() => {}} className="btn-secondary"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>Edit</button><button onClick={() => setConfirmDelete(true)} className="btn-danger"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>Delete</button></div>}
+
+          {/* Actions - two large buttons vertically centered */}
+          {isOwner && (
+            <div className="flex flex-col gap-3 justify-center shrink-0" style={{ minHeight: '170px' }}>
+              <button onClick={() => router.push(`/dashboard/character-sheets/${sheet.id}/edit`)} className="btn-secondary text-sm px-6 py-2.5">
+                <svg className="w-4 h-4 inline mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>Edit
+              </button>
+              <button onClick={() => setConfirmDelete(true)} className="btn-danger text-sm px-6 py-2.5">
+                <svg className="w-4 h-4 inline mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>Delete
+              </button>
+            </div>
+          )}
         </div>
-        {sheet.adventure && <><hr className="divider"/><div><h3 className="text-sm font-medium text-muted mb-1">Adventure</h3><p className="text-foreground/80 text-sm">{sheet.adventure.name}</p></div></>}
       </div>
 
-      <nav className="flex gap-1 flex-wrap">
+      <nav className="flex gap-1 flex-wrap border-b border-border/60">
         <button onClick={()=>setActiveTab('character')} className={tabClass('character')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Character</button>
         <button onClick={()=>setActiveTab('abilities')} className={tabClass('abilities')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/><path strokeLinecap="round" strokeLinejoin="round" d="M8 2l.5 1.5L10 4l-1.5.5L8 6l-.5-1.5L6 4l1.5-.5L8 2z"/><path strokeLinecap="round" strokeLinejoin="round" d="M16 1l.3 1.2L18 3l-1.7.8L16 5l-.3-1.2L14 3l1.7-.8L16 1z"/></svg>Abilities</button>
         <button onClick={()=>setActiveTab('inventory')} className={tabClass('inventory')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>Inventory</button>

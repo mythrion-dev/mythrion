@@ -159,7 +159,7 @@ export function ProfessionalSkillsSection({
           </svg>
           <div>
             <p className="text-sm text-muted font-medium">No Professional Skills added yet.</p>
-            <p className="text-xs text-muted/60 mt-0.5">Add character-specific skills like Blacksmith, Doctor, or Merchant.</p>
+            <p className="text-xs text-muted/60 mt-0.5">Click &apos;+ Add Professional Skill&apos; to create one.</p>
           </div>
         </div>
       ) : (
@@ -325,7 +325,7 @@ export function ProfessionalSkillsSection({
       {/* ── Helper text ── */}
       {skills.length > 0 && (
         <p className="text-xs text-muted mt-3">
-          Modifiers are computed from the selected attribute using the template&apos;s formula engine.
+          Modifiers are computed from the selected attribute using the template&apos;s formula engine. Add your profession skills. Choose which attribute will be used for each one. All calculations follow the rules defined by the GM.
         </p>
       )}
     </div>

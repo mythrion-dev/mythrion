@@ -77,8 +77,6 @@ export function CharacterTab(props: CharacterTabProps) {
   const hasResources = enabledCoreResources.length > 0
   const hasFields = sheet.fieldValues.length > 0
   const hasAttributes = sheet.template.attributes.length > 0
-  const hasCenterContent = hasResources || hasArmor
-  const rightColSpan = hasCenterContent ? 'lg:col-span-3' : 'lg:col-span-6'
 
   // ── Resource modifier input handler ──
 
@@ -109,10 +107,10 @@ export function CharacterTab(props: CharacterTabProps) {
       {/* ─────────────────────────────────────────────── */}
       {/* Three-Column Dashboard Layout                  */}
       {/* ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.1fr_1.15fr_0.95fr] items-start">
 
-        {/* ─── LEFT COLUMN (~50%) — Character Info + Attributes ─── */}
-        <div className="lg:col-span-6 space-y-6">
+        {/* ─── LEFT COLUMN — Character Info + Attributes ─── */}
+        <div className="space-y-6">
           {/* Character Information */}
           {hasFields && (
             <div className="card !p-6">
@@ -187,10 +185,10 @@ export function CharacterTab(props: CharacterTabProps) {
           )}
         </div>
 
-        {/* ─── CENTER COLUMN (~25%) — Resource grid + AC ─── */}
-        {hasCenterContent && (
-          <div className="lg:col-span-3 space-y-6">
-            <div className="grid grid-cols-2 gap-3">
+        {/* ─── CENTER COLUMN — Resources (2×2 grid) + AC (bottom-right) ─── */}
+        <div className="space-y-6">
+          {(hasResources || hasArmor) && (
+            <div className="grid grid-cols-2 gap-3 auto-rows-fr">
               {/* Resource cards */}
               {enabledCoreResources.map(cr => {
                 const crv = sheet.coreResourceValues.find(v => v.coreResourceId === cr.id)
@@ -281,9 +279,9 @@ export function CharacterTab(props: CharacterTabProps) {
                 )
               })}
 
-              {/* Armor Class card (compact) */}
+              {/* Armor Class card — bottom-right, same height as resources */}
               {hasArmor && armorClasses.map(ac => (
-                <div key={ac.id} className="card !p-4 flex flex-col items-center justify-center min-h-[130px] space-y-2">
+                <div key={ac.id} className="card !p-4 flex flex-col items-center justify-center space-y-2">
                   <h4 className="text-sm font-semibold text-foreground text-center">
                     {(ac as any).name ?? 'Armor Class'}
                   </h4>
@@ -352,11 +350,11 @@ export function CharacterTab(props: CharacterTabProps) {
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* ─── RIGHT COLUMN (~25%) — Skills ─── */}
-        <div className={`${rightColSpan} space-y-6`}>
+        {/* ─── RIGHT COLUMN — Skills ─── */}
+        <div className="space-y-6">
           {hasSkills ? (
             <div className="space-y-5">
               {/* Active Skills Table */}
@@ -430,7 +428,7 @@ export function CharacterTab(props: CharacterTabProps) {
   )
 }
 
-// ── Skill Table Sub-component (with internal search) ──
+// ── Skill Table Sub-component (with internal search + sticky header) ──
 
 interface SkillTableProps {
   title: string
@@ -481,8 +479,8 @@ function SkillTable({
 
   return (
     <div className="card !p-0 overflow-hidden">
-      {/* Header with title, badge, and search */}
-      <div className="px-5 py-3.5 border-b border-border/60 space-y-2.5">
+      {/* Sticky header with title, badge, and search */}
+      <div className="sticky top-0 z-10 px-5 py-3.5 border-b border-border/60 space-y-2.5 bg-card">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <h4 className="text-sm font-semibold text-foreground">{title} Skills</h4>
@@ -510,7 +508,19 @@ function SkillTable({
         )}
       </div>
 
-      {/* Table */}
+      {/* Sticky column headers */}
+      {filteredSkills.length > 0 && (
+        <div className="sticky top-[73px] z-10 hidden sm:flex items-center px-5 py-2 bg-background/90 backdrop-blur-sm text-[0.65rem] font-semibold text-muted uppercase tracking-wider border-b border-border/40">
+          <div className="w-10 shrink-0" />
+          <div className="flex-1 min-w-0">Skill</div>
+          <div className="w-[110px] shrink-0 text-left">Attribute</div>
+          <div className="w-16 shrink-0 text-right">Total</div>
+          <div className="w-12 shrink-0 text-right">Mod</div>
+          <div className="w-8 shrink-0" />
+        </div>
+      )}
+
+      {/* Table body */}
       {filteredSkills.length === 0 ? (
         <div className="px-5 py-8 text-center text-sm text-muted">
           {search.trim()
@@ -521,16 +531,6 @@ function SkillTable({
         </div>
       ) : (
         <div className="divide-y divide-border/40">
-          {/* Column headers */}
-          <div className="hidden sm:flex items-center px-5 py-2 bg-background/30 text-[0.65rem] font-semibold text-muted uppercase tracking-wider">
-            <div className="w-10 shrink-0" />
-            <div className="flex-1 min-w-0">Skill</div>
-            <div className="w-[110px] shrink-0 text-left">Attribute</div>
-            <div className="w-16 shrink-0 text-right">Total</div>
-            <div className="w-12 shrink-0 text-right">Mod</div>
-            <div className="w-8 shrink-0" />
-          </div>
-
           {filteredSkills.map(sv => {
             const isExpanded = expandedSkillId === sv.skillId
             const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
