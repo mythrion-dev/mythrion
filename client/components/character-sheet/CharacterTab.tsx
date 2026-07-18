@@ -105,36 +105,33 @@ export function CharacterTab(props: CharacterTabProps) {
   return (
     <div className="space-y-8">
       {/* ─────────────────────────────────────────────── */}
-      {/* Three-Column Dashboard Layout                  */}
+      {/* Three-Column 16:9 Dashboard Layout            */}
       {/* ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[420px_420px_minmax(700px,1fr)] items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(300px,0.85fr)_minmax(300px,0.85fr)_minmax(400px,1.3fr)] items-start">
 
         {/* ─── LEFT COLUMN — Character Info + Attributes ─── */}
-        <div className="space-y-6">
+        <div className="space-y-4 overflow-y-auto pr-2 max-h-[calc(100vh-10rem)] scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           {/* Character Information */}
           {hasFields && (
-            <div className="card !p-6">
-              <div className="flex items-center gap-2 mb-5">
-                <h3 className="font-semibold text-foreground">Character Information</h3>
-                <svg className="w-4 h-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-                </svg>
+            <div className="card !p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="font-semibold text-sm text-foreground">Character Information</h3>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+              <div className="grid grid-cols-1 gap-2">
                 {sheet.fieldValues.map(fv => (
                   <div
                     key={fv.id}
-                    className="flex items-center justify-between py-2.5 px-4 rounded-lg bg-background/40 border border-border/60"
+                    className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-background/40 border border-border/60"
                   >
-                    <span className="text-sm text-muted font-medium">{fv.templateField.label}</span>
+                    <span className="text-xs text-muted font-medium">{fv.templateField.label}</span>
                     {isOwner ? (
                       <InlineText
                         value={fv.value}
                         onSave={(v) => saveFieldValue(fv.templateFieldId, v)}
-                        className="text-sm font-semibold text-foreground text-right"
+                        className="text-xs font-semibold text-foreground text-right"
                       />
                     ) : (
-                      <span className="text-sm font-semibold text-foreground text-right">{fv.value || '—'}</span>
+                      <span className="text-xs font-semibold text-foreground text-right">{fv.value || '—'}</span>
                     )}
                   </div>
                 ))}
@@ -144,35 +141,35 @@ export function CharacterTab(props: CharacterTabProps) {
 
           {/* Attributes */}
           {hasAttributes && (
-            <div className="card !p-6">
-              <div className="flex items-center gap-2 mb-5">
-                <h3 className="font-semibold text-foreground">Attributes</h3>
+            <div className="card !p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="font-semibold text-sm text-foreground">Attributes</h3>
                 {modifiersEnabled && sheet.template.attributeModifierFormula && (
-                  <span className="badge-gold text-[0.6rem] px-1.5 py-0.5 rounded">mod</span>
+                  <span className="badge-gold text-[0.55rem] px-1 py-0.5 rounded">mod</span>
                 )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
+              <div className="grid grid-cols-1 gap-2">
                 {sheet.template.attributes.map(attr => {
                   const val = sheet.values.find(v => v.attributeId === attr.id)
                   const modResult = modifierResults[attr.id]
                   return (
                     <div
                       key={attr.id}
-                      className="flex items-center justify-between py-2.5 px-4 rounded-lg bg-background/40 border border-border/60"
+                      className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-background/40 border border-border/60"
                     >
-                      <span className="text-sm font-medium text-foreground">{attr.name}</span>
-                      <div className="flex items-center gap-3">
+                      <span className="text-xs font-medium text-foreground">{attr.name}</span>
+                      <div className="flex items-center gap-2">
                         {isOwner ? (
                           <InlineText
                             value={val?.value ?? ''}
                             onSave={(v) => saveAttributeValue(attr.id, v)}
-                            className="text-sm font-semibold text-foreground tabular-nums text-right"
+                            className="text-xs font-semibold text-foreground tabular-nums text-right"
                           />
                         ) : (
-                          <span className="text-sm font-semibold text-foreground tabular-nums">{val?.value || '—'}</span>
+                          <span className="text-xs font-semibold text-foreground tabular-nums">{val?.value || '—'}</span>
                         )}
                         {modifiersEnabled && modResult !== undefined && modResult !== null && (
-                          <span className="text-sm font-semibold tabular-nums text-primary min-w-[2.5rem] text-right">
+                          <span className="text-xs font-semibold tabular-nums text-primary min-w-[2rem] text-right">
                             ({modResult >= 0 ? '+' : ''}{modResult})
                           </span>
                         )}
@@ -185,36 +182,36 @@ export function CharacterTab(props: CharacterTabProps) {
           )}
         </div>
 
-        {/* ─── CENTER COLUMN — Resources (2×2 grid) + AC (bottom-right) ─── */}
-        <div className="space-y-6">
+        {/* ─── CENTER COLUMN — Resources (optimized layout) + AC ─── */}
+        <div className="space-y-4 overflow-y-auto pr-2 max-h-[calc(100vh-10rem)] scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           {(hasResources || hasArmor) && (
-            <div className="grid grid-cols-2 gap-3">
-              {/* Resource cards */}
+            <div className="grid grid-cols-1 gap-3">
+              {/* Resource cards — stacked vertically */}
               {enabledCoreResources.map(cr => {
                 const crv = sheet.coreResourceValues.find(v => v.coreResourceId === cr.id)
                 if (!crv) return null
                 const canEdit = isOwner && cr.editableByPlayer
                 const modVal = modifierInputs[cr.id] || 0
                 return (
-                  <div key={cr.id} className="card !p-4 space-y-2.5 flex flex-col">
+                  <div key={cr.id} className="card !p-3 space-y-2 flex flex-col">
                     <div className="flex items-center justify-between gap-2">
-                      <h4 className="text-sm font-semibold text-foreground truncate">{cr.displayName}</h4>
+                      <h4 className="text-xs font-semibold text-foreground truncate">{cr.displayName}</h4>
                       {cr.showNotes && canEdit && (
                         <InlineText
                           value={crv.notes ?? ''}
                           onSave={(v) => handleCoreResourceChange(crv.coreResourceId, 'notes', v)}
                           placeholder="notes"
                           emptyDisplay="notes"
-                          className="!text-[0.65rem] !text-muted !font-normal"
+                          className="!text-[0.6rem] !text-muted !font-normal"
                         />
                       )}
                       {cr.showNotes && crv.notes && !canEdit && (
-                        <span className="text-[0.65rem] text-muted truncate max-w-[80px]">{crv.notes}</span>
+                        <span className="text-[0.6rem] text-muted truncate max-w-[70px]">{crv.notes}</span>
                       )}
                     </div>
-                    <div className="flex-1 flex items-center justify-center gap-2 py-1">
-                      <div className="text-center">
-                        <span className="text-[0.55rem] text-muted font-medium uppercase tracking-wider block mb-0.5">
+                    <div className="flex-1 flex items-center justify-center gap-2 py-2">
+                      <div className="text-center flex-1">
+                        <span className="text-[0.5rem] text-muted font-medium uppercase tracking-wider block mb-1">
                           Current
                         </span>
                         {canEdit ? (
@@ -222,15 +219,15 @@ export function CharacterTab(props: CharacterTabProps) {
                             value={crv.current ?? 0}
                             onSave={(v) => handleCoreResourceChange(crv.coreResourceId, 'current', String(v))}
                             min={0}
-                            className="text-xl font-bold text-foreground tabular-nums"
+                            className="text-lg font-bold text-foreground tabular-nums"
                           />
                         ) : (
-                          <span className="text-xl font-bold text-foreground tabular-nums">{crv.current ?? '—'}</span>
+                          <span className="text-lg font-bold text-foreground tabular-nums">{crv.current ?? '—'}</span>
                         )}
                       </div>
-                      <span className="text-sm text-muted-foreground font-light">/</span>
-                      <div className="text-center">
-                        <span className="text-[0.55rem] text-muted font-medium uppercase tracking-wider block mb-0.5">
+                      <span className="text-xs text-muted-foreground font-light">/</span>
+                      <div className="text-center flex-1">
+                        <span className="text-[0.5rem] text-muted font-medium uppercase tracking-wider block mb-1">
                           Max
                         </span>
                         {canEdit ? (
@@ -238,10 +235,10 @@ export function CharacterTab(props: CharacterTabProps) {
                             value={crv.maximum ?? 0}
                             onSave={(v) => handleCoreResourceChange(crv.coreResourceId, 'maximum', String(v))}
                             min={0}
-                            className="text-xl font-bold text-foreground tabular-nums"
+                            className="text-lg font-bold text-foreground tabular-nums"
                           />
                         ) : (
-                          <span className="text-xl font-bold text-foreground tabular-nums">{crv.maximum ?? '—'}</span>
+                          <span className="text-lg font-bold text-foreground tabular-nums">{crv.maximum ?? '—'}</span>
                         )}
                       </div>
                     </div>
@@ -250,7 +247,7 @@ export function CharacterTab(props: CharacterTabProps) {
                         <input
                           type="number"
                           min={0}
-                          className="input-field py-0.5 text-[0.65rem] w-full text-center"
+                          className="input-field py-1 text-[0.6rem] w-full text-center"
                           value={modVal || ''}
                           placeholder="Amount"
                           onChange={e => setModifierInput(cr.id, parseInt(e.target.value, 10) || 0)}
@@ -260,7 +257,7 @@ export function CharacterTab(props: CharacterTabProps) {
                             type="button"
                             onClick={() => handleResourceHeal(cr.id)}
                             disabled={!modVal}
-                            className="btn-primary text-[0.6rem] py-0.5 disabled:opacity-40"
+                            className="btn-primary text-[0.55rem] py-1 disabled:opacity-40"
                           >
                             + Heal
                           </button>
@@ -268,7 +265,7 @@ export function CharacterTab(props: CharacterTabProps) {
                             type="button"
                             onClick={() => handleResourceDamage(cr.id)}
                             disabled={!modVal}
-                            className="btn-danger text-[0.6rem] py-0.5 disabled:opacity-40"
+                            className="btn-danger text-[0.55rem] py-1 disabled:opacity-40"
                           >
                             − Damage
                           </button>
@@ -279,14 +276,14 @@ export function CharacterTab(props: CharacterTabProps) {
                 )
               })}
 
-              {/* Armor Class card — bottom-right, same height as resources */}
+              {/* Armor Class card */}
               {hasArmor && armorClasses.map(ac => (
-                <div key={ac.id} className="card !p-4 flex flex-col items-center justify-center space-y-2">
-                  <h4 className="text-sm font-semibold text-foreground text-center">
+                <div key={ac.id} className="card !p-3 flex flex-col items-center justify-center space-y-2">
+                  <h4 className="text-xs font-semibold text-foreground text-center">
                     {(ac as any).name ?? 'Armor Class'}
                   </h4>
-                  <div className="w-14 h-14 rounded-full border-[2px] border-primary/25 flex items-center justify-center bg-background/40">
-                    <span className="text-xl font-bold text-primary tracking-tight tabular-nums">
+                  <div className="w-16 h-16 rounded-full border-[2px] border-primary/25 flex items-center justify-center bg-background/40">
+                    <span className="text-2xl font-bold text-primary tracking-tight tabular-nums">
                       {acResults[ac.id]?.total !== undefined ? acResults[ac.id].total : '—'}
                     </span>
                   </div>
@@ -296,12 +293,12 @@ export function CharacterTab(props: CharacterTabProps) {
                       const val = acv?.value ?? field.defaultValue
                       const canEdit = isOwner && field.editableByPlayer
                       return (
-                        <div key={field.id} className="flex items-center justify-between gap-1 text-[0.6rem]">
+                        <div key={field.id} className="flex items-center justify-between gap-1 text-[0.55rem]">
                           <span className="text-muted truncate">{field.name}</span>
                           {canEdit ? (
                             <input
                               type="number"
-                              className="input-field py-0.5 text-[0.6rem] w-12 text-right"
+                              className="input-field py-0.5 text-[0.55rem] w-10 text-right"
                               value={val}
                               onChange={e => handleAcFieldChange(field.id, e.target.value)}
                             />
@@ -320,10 +317,10 @@ export function CharacterTab(props: CharacterTabProps) {
                           const modResult = selectedAttribute ? modifierResults[selectedAttribute.id] : null
                           const canChangeAttribute = isOwner && am.allowPlayerSelection
                           return (
-                            <div key={am.id} className="flex items-center justify-between gap-1 text-[0.6rem]">
+                            <div key={am.id} className="flex items-center justify-between gap-1 text-[0.55rem]">
                               {canChangeAttribute ? (
                                 <select
-                                  className="input-field py-0.5 text-[0.6rem] w-auto min-w-[90px]"
+                                  className="input-field py-0.5 text-[0.55rem] w-auto min-w-[80px]"
                                   value={selectedAttribute?.id ?? ''}
                                   onChange={e => handleAcAttributeModifierChange(am.id, e.target.value || null)}
                                 >
@@ -354,7 +351,7 @@ export function CharacterTab(props: CharacterTabProps) {
         </div>
 
         {/* ─── RIGHT COLUMN — Skills ─── */}
-        <div className="space-y-6">
+        <div className="space-y-3 overflow-y-auto pr-2 max-h-[calc(100vh-10rem)] scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           {hasSkills ? (
             <div className="space-y-5">
               {/* Active Skills Table */}
@@ -480,11 +477,11 @@ function SkillTable({
   return (
     <div className="card !p-0 overflow-clip">
       {/* Sticky header with title, badge, and search */}
-      <div className="sticky top-0 z-10 px-5 py-3.5 border-b border-border/60 space-y-2.5 bg-card">
+      <div className="sticky top-0 z-10 px-4 py-2.5 border-b border-border/60 space-y-2 bg-card">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <h4 className="text-sm font-semibold text-foreground">{title} Skills</h4>
-            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-primary/10 border border-primary/20 text-[0.65rem] font-medium text-primary">
+            <h4 className="text-xs font-semibold text-foreground">{title}</h4>
+            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-4 px-1 rounded-full bg-primary/10 border border-primary/20 text-[0.55rem] font-medium text-primary">
               {skills.length}
             </span>
           </div>
@@ -499,8 +496,8 @@ function SkillTable({
             </svg>
             <input
               type="text"
-              className="input-field py-1.5 pl-7 text-xs w-full"
-              placeholder={`Search ${title.toLowerCase()} skills...`}
+              className="input-field py-1 pl-7 text-xs w-full"
+              placeholder={`Search ${title.toLowerCase()}...`}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -510,19 +507,17 @@ function SkillTable({
 
       {/* Sticky column headers */}
       {filteredSkills.length > 0 && (
-        <div className="sticky top-[73px] z-10 hidden sm:flex items-center px-5 py-2 bg-background/90 backdrop-blur-sm text-[0.65rem] font-semibold text-muted uppercase tracking-wider border-b border-border/40">
-          <div className="w-10 shrink-0" />
-          <div className="w-[35%] shrink-0">Skill</div>
-          <div className="w-[30%] shrink-0 text-left">Attribute</div>
-          <div className="w-[15%] shrink-0 text-right">Total</div>
-          <div className="w-[10%] shrink-0 text-right">Mod</div>
-          <div className="w-[10%] shrink-0" />
+        <div className="sticky top-[60px] z-10 hidden sm:flex items-center px-4 py-1.5 bg-background/90 backdrop-blur-sm text-[0.55rem] font-semibold text-muted uppercase tracking-wider border-b border-border/40">
+          <div className="w-8 shrink-0" />
+          <div className="flex-1 shrink-0">Skill</div>
+          <div className="w-16 shrink-0 text-right">Total</div>
+          <div className="w-8 shrink-0" />
         </div>
       )}
 
       {/* Table body */}
       {filteredSkills.length === 0 ? (
-        <div className="px-5 py-8 text-center text-sm text-muted">
+        <div className="px-4 py-6 text-center text-xs text-muted">
           {search.trim()
             ? 'No skills match your search.'
             : isActiveSide
@@ -540,9 +535,6 @@ function SkillTable({
             const total = isActiveSide
               ? (skillResults[sv.skillId] != null ? skillResults[sv.skillId] : '—')
               : 0
-            const modDisplay = isActiveSide
-              ? (attrMod !== null && attrMod !== undefined ? attrMod : '—')
-              : 0
 
             const skillProfiles = allProfiles.filter(p => {
               const tm = (p as any).targetMode ?? 'ALL_SKILLS'
@@ -552,16 +544,16 @@ function SkillTable({
             const hasAttrDropdown = (sv.skill.allowedAttributeIds?.length ?? 0) > 0
 
             return (
-              <div key={sv.id} className={`${isActiveSide ? '' : 'opacity-45'}`}>
+              <div key={sv.id} className={`${isActiveSide ? '' : 'opacity-50'}`}>
                 {/* Main row */}
-                <div className="flex items-center gap-2 px-4 sm:px-5 py-3 hover:bg-background/20 transition-colors">
+                <div className="flex items-center gap-1.5 px-3 sm:px-4 py-2 hover:bg-background/20 transition-colors">
                   {/* Checkbox */}
-                  <div className="w-10 shrink-0 flex items-center justify-start">
+                  <div className="w-8 shrink-0 flex items-center justify-start">
                     <input
                       type="checkbox"
                       checked={isActiveSide}
                       onChange={() => onToggle(sv.skillId)}
-                      className="shrink-0 w-4 h-4 rounded border-border accent-primary cursor-pointer"
+                      className="shrink-0 w-3.5 h-3.5 rounded border-border accent-primary cursor-pointer"
                     />
                   </div>
 
@@ -570,50 +562,22 @@ function SkillTable({
                     type="button"
                     onClick={() => onExpandToggle(isExpanded ? null : sv.skillId)}
                     disabled={!isActiveSide}
-                    className="w-[35%] shrink-0 text-left disabled:cursor-default"
+                    className="flex-1 shrink-0 text-left disabled:cursor-default"
                   >
-                    <span className="text-sm font-medium text-foreground truncate block leading-tight">
+                    <span className="text-xs font-medium text-foreground truncate block leading-tight">
                       {sv.skill.name}
                     </span>
                     {sv.skill.description && (
-                      <span className="text-[0.65rem] text-muted truncate block leading-tight mt-0.5">
+                      <span className="text-[0.6rem] text-muted truncate block leading-tight mt-0.5">
                         {sv.skill.description}
                       </span>
                     )}
                   </button>
 
-                  {/* Attribute selector */}
-                  <div className="w-[30%] shrink-0">
-                    {hasAttrDropdown && isActiveSide && modifiersEnabled ? (
-                      <select
-                        className="input-field py-0.5 text-[0.65rem] w-full"
-                        value={sv.selectedAttributeId ?? ''}
-                        onChange={e => onAttributeChange(sv.skillId, e.target.value || null)}
-                      >
-                        {sv.skill.allowedAttributeIds.map(attrId => {
-                          const a = templateAttributes.find(x => x.id === attrId)
-                          if (!a) return null
-                          return <option key={attrId} value={attrId}>{a.name}</option>
-                        })}
-                      </select>
-                    ) : (
-                      <span className="text-[0.65rem] text-muted block truncate">
-                        {selectedAttr?.name ?? '—'}
-                      </span>
-                    )}
-                  </div>
-
                   {/* Total */}
-                  <div className="w-[15%] shrink-0 text-right">
+                  <div className="w-16 shrink-0 text-right">
                     <span className={`text-sm font-bold tabular-nums ${isActiveSide ? 'text-primary' : 'text-muted'}`}>
                       {total}
-                    </span>
-                  </div>
-
-                  {/* Mod */}
-                  <div className="w-[10%] shrink-0 text-right">
-                    <span className={`text-xs font-semibold tabular-nums ${isActiveSide ? 'text-muted-foreground' : 'text-muted'}`}>
-                      {modDisplay !== '—' && modDisplay >= 0 ? '+' : ''}{modDisplay}
                     </span>
                   </div>
 
@@ -622,10 +586,10 @@ function SkillTable({
                     type="button"
                     onClick={() => onExpandToggle(isExpanded ? null : sv.skillId)}
                     disabled={!isActiveSide}
-                    className="w-[10%] shrink-0 flex items-center justify-center disabled:cursor-default"
+                    className="w-8 shrink-0 flex items-center justify-center disabled:cursor-default"
                   >
                     <svg
-                      className={`w-3.5 h-3.5 text-muted transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                      className={`w-3 h-3 text-muted transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
                       fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -639,14 +603,14 @@ function SkillTable({
                     isExpanded && isActiveSide ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                   }`}
                 >
-                  <div className="px-4 sm:px-5 py-3 space-y-2.5 border-t border-border/40 ml-12 bg-background/20">
+                  <div className="px-3 sm:px-4 py-2 space-y-2 border-t border-border/40 ml-10 bg-background/20">
                     {skillProfiles.map(profile => {
                       const sid = profileSelections[sv.skillId]?.[profile.id]
                       return (
                         <div key={profile.id} className="flex items-center gap-2">
-                          <span className="text-[0.65rem] text-muted shrink-0 min-w-[80px]">{profile.name}:</span>
+                          <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">{profile.name}:</span>
                           <select
-                            className="input-field py-1 text-[0.65rem] flex-1"
+                            className="input-field py-0.5 text-[0.6rem] flex-1"
                             value={sid ?? ''}
                             onChange={e => onProfileChange(sv.skillId, profile.id, e.target.value || null)}
                           >
@@ -656,7 +620,7 @@ function SkillTable({
                             ))}
                           </select>
                           {sid && (
-                            <span className="text-[0.65rem] font-mono text-primary shrink-0 tabular-nums">
+                            <span className="text-[0.6rem] font-mono text-primary shrink-0 tabular-nums">
                               {profile.options.find(o => o.id === sid)?.value ?? 0 >= 0 ? '+' : ''}
                               {profile.options.find(o => o.id === sid)?.value ?? 0}
                             </span>
@@ -665,17 +629,17 @@ function SkillTable({
                       )
                     })}
                     <div className="flex items-center gap-2">
-                      <span className="text-[0.65rem] text-muted shrink-0 min-w-[80px]">Others:</span>
+                      <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">Others:</span>
                       <input
                         type="number"
                         min={0}
                         step={1}
-                        className="input-field py-1 text-[0.65rem] w-20"
+                        className="input-field py-0.5 text-[0.6rem] w-16"
                         value={othersValues[sv.skillId] || ''}
                         placeholder="0"
                         onChange={e => onOthersChange(sv.skillId, parseInt(e.target.value, 10) || 0)}
                       />
-                      <span className="text-[0.65rem] font-mono text-primary tabular-nums">
+                      <span className="text-[0.6rem] font-mono text-primary tabular-nums">
                         +{othersValues[sv.skillId] || 0}
                       </span>
                     </div>
