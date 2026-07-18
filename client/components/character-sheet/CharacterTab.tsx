@@ -107,7 +107,7 @@ export function CharacterTab(props: CharacterTabProps) {
       {/* ─────────────────────────────────────────────── */}
       {/* Three-Column Dashboard Layout                  */}
       {/* ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[420px_420px_1fr] items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.3fr_1.3fr_2fr] items-start">
 
         {/* ─── LEFT COLUMN — Character Info + Attributes ─── */}
         <div className="space-y-6">
@@ -188,7 +188,7 @@ export function CharacterTab(props: CharacterTabProps) {
         {/* ─── CENTER COLUMN — Resources (2×2 grid) + AC (bottom-right) ─── */}
         <div className="space-y-6">
           {(hasResources || hasArmor) && (
-            <div className="grid grid-cols-2 gap-3 auto-rows-fr">
+            <div className="grid grid-cols-2 gap-3">
               {/* Resource cards */}
               {enabledCoreResources.map(cr => {
                 const crv = sheet.coreResourceValues.find(v => v.coreResourceId === cr.id)
@@ -478,7 +478,7 @@ function SkillTable({
   const hasSearch = skills.length > 0
 
   return (
-    <div className="card !p-0 overflow-hidden">
+    <div className="card !p-0 overflow-clip">
       {/* Sticky header with title, badge, and search */}
       <div className="sticky top-0 z-10 px-5 py-3.5 border-b border-border/60 space-y-2.5 bg-card">
         <div className="flex items-center justify-between gap-2">
