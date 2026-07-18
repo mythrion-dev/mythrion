@@ -1,4 +1,18 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://mythrion-dev.up.railway.app/api'
+function normalizeApiUrl(raw: string | undefined): string {
+  if (!raw) return 'https://mythrion-dev.up.railway.app/api'
+  let url = raw.trim()
+  // Add protocol if missing
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    url = `https://${url}`
+  }
+  // Add /api suffix if missing
+  if (!url.endsWith('/api')) {
+    url = url.replace(/\/+$/, '') + '/api'
+  }
+  return url
+}
+
+export const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL)
 
 async function request<T>(
   path: string,
