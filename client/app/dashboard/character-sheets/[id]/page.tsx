@@ -897,7 +897,7 @@ export default function CharacterSheetDetailPage() {
           <div className="shrink-0">
             {avatarUrl ? (
               <div className="relative group">
-                <img src={avatarUrl} alt="Avatar" className="w-20 h-20 rounded-lg object-cover border border-border" />
+                <img src={avatarUrl} alt="Avatar" className="w-40 h-40 rounded-lg object-cover border border-border" />
                 {isOwner && (
                   <button
                     type="button"
@@ -910,7 +910,7 @@ export default function CharacterSheetDetailPage() {
                 )}
               </div>
             ) : isOwner ? (
-              <label className={`w-20 h-20 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/30 transition-colors ${avatarUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+              <label className={`w-40 h-40 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/30 transition-colors ${avatarUploading ? 'opacity-50 pointer-events-none' : ''}`}>
                 {avatarUploading ? (
                   <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 ) : (
@@ -929,7 +929,7 @@ export default function CharacterSheetDetailPage() {
               <span className="text-xs text-muted">Created {new Date(sheet.createdAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</span>
             </div>
           </div>
-          {isOwner && <div className="flex gap-2 shrink-0"><button onClick={() => setConfirmDelete(true)} className="btn-danger"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>Delete</button></div>}
+          {isOwner && <div className="flex gap-2 shrink-0"><button onClick={() => {}} className="btn-secondary"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>Edit</button><button onClick={() => setConfirmDelete(true)} className="btn-danger"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>Delete</button></div>}
         </div>
         {sheet.adventure && <><hr className="divider"/><div><h3 className="text-sm font-medium text-muted mb-1">Adventure</h3><p className="text-foreground/80 text-sm">{sheet.adventure.name}</p></div></>}
       </div>
@@ -968,7 +968,6 @@ export default function CharacterSheetDetailPage() {
         expandedSkillId={expandedSkillId}
         setExpandedSkillId={setExpandedSkillId}
         skillResults={skillResults}
-        resistanceData={resistanceData}
         sheetId={sheet.id}
       />}
 

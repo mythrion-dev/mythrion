@@ -43,7 +43,6 @@ interface CharacterTabProps {
   setExpandedSkillId: React.Dispatch<React.SetStateAction<string | null>>
   skillResults: Record<string, number | null>
   sheetId: string
-  resistanceData?: Array<{ resistanceId: string; name: string; total: number }>
 }
 
 export function CharacterTab(props: CharacterTabProps) {
@@ -57,12 +56,10 @@ export function CharacterTab(props: CharacterTabProps) {
     handleSkillToggle, handleOthersChange, handleProfileChange,
     handleSkillAttributeChange, expandedSkillId, setExpandedSkillId,
     skillResults,
-    sheetId, resistanceData,
+    sheetId,
   } = props
 
-  const [skillsSearch, setSkillsSearch] = useState('')
   const [modifierInputs, setModifierInputs] = useState<Record<string, number>>({})
-  const [resistancesExpanded, setResistancesExpanded] = useState(true)
 
   // ── Derived data ──
 
@@ -75,23 +72,13 @@ export function CharacterTab(props: CharacterTabProps) {
     [sheet.skillValues, activeSkills],
   )
 
-  const filteredActive = useMemo(() => {
-    if (!skillsSearch.trim()) return activeSkillValues
-    const q = skillsSearch.toLowerCase()
-    return activeSkillValues.filter(sv => sv.skill.name.toLowerCase().includes(q))
-  }, [activeSkillValues, skillsSearch])
-
-  const filteredInactive = useMemo(() => {
-    if (!skillsSearch.trim()) return inactiveSkillValues
-    const q = skillsSearch.toLowerCase()
-    return inactiveSkillValues.filter(sv => sv.skill.name.toLowerCase().includes(q))
-  }, [inactiveSkillValues, skillsSearch])
-
   const hasSkills = sheet.skillValues.length > 0
   const hasArmor = armorClasses.length > 0
   const hasResources = enabledCoreResources.length > 0
   const hasFields = sheet.fieldValues.length > 0
   const hasAttributes = sheet.template.attributes.length > 0
+  const hasCenterContent = hasResources || hasArmor
+  const rightColSpan = hasCenterContent ? 'lg:col-span-3' : 'lg:col-span-6'
 
   // ── Resource modifier input handler ──
 
@@ -122,10 +109,10 @@ export function CharacterTab(props: CharacterTabProps) {
       {/* ─────────────────────────────────────────────── */}
       {/* Three-Column Dashboard Layout                  */}
       {/* ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-        {/* ─── LEFT COLUMN ─── */}
-        <div className="space-y-6">
+        {/* ─── LEFT COLUMN (~50%) — Character Info + Attributes ─── */}
+        <div className="lg:col-span-6 space-y-6">
           {/* Character Information */}
           {hasFields && (
             <div className="card !p-6">
@@ -198,22 +185,22 @@ export function CharacterTab(props: CharacterTabProps) {
               </div>
             </div>
           )}
+        </div>
 
-          {/* Core Resources */}
-          {hasResources && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* ─── CENTER COLUMN (~25%) — Resource grid + AC ─── */}
+        {hasCenterContent && (
+          <div className="lg:col-span-3 space-y-6">
+            <div className="grid grid-cols-2 gap-3">
+              {/* Resource cards */}
               {enabledCoreResources.map(cr => {
                 const crv = sheet.coreResourceValues.find(v => v.coreResourceId === cr.id)
                 if (!crv) return null
                 const canEdit = isOwner && cr.editableByPlayer
                 const modVal = modifierInputs[cr.id] || 0
                 return (
-                  <div key={cr.id} className="card !p-4 space-y-3">
+                  <div key={cr.id} className="card !p-4 space-y-2.5 flex flex-col">
                     <div className="flex items-center justify-between gap-2">
-                      <h4 className="text-sm font-semibold text-foreground">{cr.displayName}</h4>
-                      {cr.showNotes && crv.notes && !canEdit && (
-                        <span className="text-[0.65rem] text-muted truncate max-w-[100px]">{crv.notes}</span>
-                      )}
+                      <h4 className="text-sm font-semibold text-foreground truncate">{cr.displayName}</h4>
                       {cr.showNotes && canEdit && (
                         <InlineText
                           value={crv.notes ?? ''}
@@ -223,10 +210,13 @@ export function CharacterTab(props: CharacterTabProps) {
                           className="!text-[0.65rem] !text-muted !font-normal"
                         />
                       )}
+                      {cr.showNotes && crv.notes && !canEdit && (
+                        <span className="text-[0.65rem] text-muted truncate max-w-[80px]">{crv.notes}</span>
+                      )}
                     </div>
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex-1 flex items-center justify-center gap-2 py-1">
                       <div className="text-center">
-                        <span className="text-[0.6rem] text-muted font-medium uppercase tracking-wider block mb-0.5">
+                        <span className="text-[0.55rem] text-muted font-medium uppercase tracking-wider block mb-0.5">
                           Current
                         </span>
                         {canEdit ? (
@@ -234,15 +224,15 @@ export function CharacterTab(props: CharacterTabProps) {
                             value={crv.current ?? 0}
                             onSave={(v) => handleCoreResourceChange(crv.coreResourceId, 'current', String(v))}
                             min={0}
-                            className="text-2xl font-bold text-foreground"
+                            className="text-xl font-bold text-foreground tabular-nums"
                           />
                         ) : (
-                          <span className="text-2xl font-bold text-foreground">{crv.current ?? '—'}</span>
+                          <span className="text-xl font-bold text-foreground tabular-nums">{crv.current ?? '—'}</span>
                         )}
                       </div>
-                      <span className="text-base text-muted-foreground font-light">/</span>
+                      <span className="text-sm text-muted-foreground font-light">/</span>
                       <div className="text-center">
-                        <span className="text-[0.6rem] text-muted font-medium uppercase tracking-wider block mb-0.5">
+                        <span className="text-[0.55rem] text-muted font-medium uppercase tracking-wider block mb-0.5">
                           Max
                         </span>
                         {canEdit ? (
@@ -250,29 +240,29 @@ export function CharacterTab(props: CharacterTabProps) {
                             value={crv.maximum ?? 0}
                             onSave={(v) => handleCoreResourceChange(crv.coreResourceId, 'maximum', String(v))}
                             min={0}
-                            className="text-2xl font-bold text-foreground"
+                            className="text-xl font-bold text-foreground tabular-nums"
                           />
                         ) : (
-                          <span className="text-2xl font-bold text-foreground">{crv.maximum ?? '—'}</span>
+                          <span className="text-xl font-bold text-foreground tabular-nums">{crv.maximum ?? '—'}</span>
                         )}
                       </div>
                     </div>
                     {canEdit && handleCoreResourceModify && (
-                      <div className="space-y-2 pt-2 border-t border-border/50">
+                      <div className="space-y-1.5 pt-2 border-t border-border/50">
                         <input
                           type="number"
                           min={0}
-                          className="input-field py-1 text-xs w-full text-center"
+                          className="input-field py-0.5 text-[0.65rem] w-full text-center"
                           value={modVal || ''}
                           placeholder="Amount"
                           onChange={e => setModifierInput(cr.id, parseInt(e.target.value, 10) || 0)}
                         />
-                        <div className="grid grid-cols-2 gap-1.5">
+                        <div className="grid grid-cols-2 gap-1">
                           <button
                             type="button"
                             onClick={() => handleResourceHeal(cr.id)}
                             disabled={!modVal}
-                            className="btn-primary text-[0.65rem] py-1 disabled:opacity-40"
+                            className="btn-primary text-[0.6rem] py-0.5 disabled:opacity-40"
                           >
                             + Heal
                           </button>
@@ -280,7 +270,7 @@ export function CharacterTab(props: CharacterTabProps) {
                             type="button"
                             onClick={() => handleResourceDamage(cr.id)}
                             disabled={!modVal}
-                            className="btn-danger text-[0.65rem] py-1 disabled:opacity-40"
+                            className="btn-danger text-[0.6rem] py-0.5 disabled:opacity-40"
                           >
                             − Damage
                           </button>
@@ -290,197 +280,89 @@ export function CharacterTab(props: CharacterTabProps) {
                   </div>
                 )
               })}
-            </div>
-          )}
-        </div>
 
-        {/* ─── CENTER COLUMN ─── */}
-        <div className="space-y-6">
-          {/* Armor Class */}
-          {hasArmor && armorClasses.map(ac => (
-            <div key={ac.id} className="card !p-6 space-y-6">
-              <h3 className="font-semibold text-foreground">
-                {(ac as any).name ?? 'Armor Class'}
-              </h3>
-
-              <div className="flex items-center justify-center">
-                <div className="w-28 h-28 rounded-full border-[3px] border-primary/25 flex items-center justify-center bg-background/40">
-                  <span className="text-5xl font-bold text-primary tracking-tight">
-                    {acResults[ac.id]?.total !== undefined ? acResults[ac.id].total : '—'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-[0.65rem] font-semibold text-muted uppercase tracking-wider mb-2.5">
-                    Components
+              {/* Armor Class card (compact) */}
+              {hasArmor && armorClasses.map(ac => (
+                <div key={ac.id} className="card !p-4 flex flex-col items-center justify-center min-h-[130px] space-y-2">
+                  <h4 className="text-sm font-semibold text-foreground text-center">
+                    {(ac as any).name ?? 'Armor Class'}
                   </h4>
-                  <div className="space-y-1.5">
+                  <div className="w-14 h-14 rounded-full border-[2px] border-primary/25 flex items-center justify-center bg-background/40">
+                    <span className="text-xl font-bold text-primary tracking-tight tabular-nums">
+                      {acResults[ac.id]?.total !== undefined ? acResults[ac.id].total : '—'}
+                    </span>
+                  </div>
+                  <div className="w-full space-y-1 mt-1">
                     {ac.fields.map(field => {
                       const acv = sheet.acValues.find(v => v.fieldId === field.id)
                       const val = acv?.value ?? field.defaultValue
                       const canEdit = isOwner && field.editableByPlayer
                       return (
-                        <div
-                          key={field.id}
-                          className="flex items-center justify-between px-3.5 py-2 rounded-lg bg-background/40 border border-border/60"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <span className="text-sm text-foreground">{field.name}</span>
-                            {field.description && (
-                              <span className="text-[0.65rem] text-muted ml-1.5 hidden sm:inline">
-                                — {field.description}
-                              </span>
-                            )}
-                          </div>
+                        <div key={field.id} className="flex items-center justify-between gap-1 text-[0.6rem]">
+                          <span className="text-muted truncate">{field.name}</span>
                           {canEdit ? (
                             <input
                               type="number"
-                              className="input-field py-1 text-xs w-20 text-right"
+                              className="input-field py-0.5 text-[0.6rem] w-12 text-right"
                               value={val}
                               onChange={e => handleAcFieldChange(field.id, e.target.value)}
                             />
                           ) : (
-                            <span className="text-sm font-semibold text-foreground tabular-nums">{val}</span>
+                            <span className="font-semibold text-foreground tabular-nums">{val}</span>
                           )}
                         </div>
                       )
                     })}
-                  </div>
-                </div>
-
-                {modifiersEnabled && (ac.attributeModifiers ?? []).length > 0 && (
-                  <div>
-                    <h4 className="text-[0.65rem] font-semibold text-muted uppercase tracking-wider mb-2.5">
-                      Attribute Modifiers
-                    </h4>
-                    <div className="space-y-1.5">
-                      {(ac.attributeModifiers ?? []).map(am => {
-                        const acAttrValue = sheet.acAttributeValues.find(v => v.acAttributeModifierId === am.id)
-                        const selectedAttributeId = acAttrValue?.selectedAttributeId ?? am.defaultAttributeId ?? am.attributeId
-                        const selectedAttribute = sheet.template.attributes.find(a => a.id === selectedAttributeId) ?? am.defaultAttribute ?? am.attribute
-                        const modResult = selectedAttribute ? modifierResults[selectedAttribute.id] : null
-                        const canChangeAttribute = isOwner && am.allowPlayerSelection
-                        return (
-                          <div
-                            key={am.id}
-                            className="flex items-center justify-between gap-2 px-3.5 py-2 rounded-lg bg-background/40 border border-border/60"
-                          >
-                            {canChangeAttribute ? (
-                              <select
-                                className="input-field py-0.5 text-xs w-auto min-w-[130px]"
-                                value={selectedAttribute?.id ?? ''}
-                                onChange={e => handleAcAttributeModifierChange(am.id, e.target.value || null)}
-                              >
-                                {sheet.template.attributes.map(attr => (
-                                  <option key={attr.id} value={attr.id}>{attr.name}</option>
-                                ))}
-                              </select>
-                            ) : (
-                              <span className="text-sm text-foreground truncate">
-                                {(selectedAttribute?.name ?? am.attribute.name)} Modifier
+                    {modifiersEnabled && (ac.attributeModifiers ?? []).length > 0 && (
+                      <div className="border-t border-border/30 pt-1 mt-1 space-y-1">
+                        {(ac.attributeModifiers ?? []).map(am => {
+                          const acAttrValue = sheet.acAttributeValues.find(v => v.acAttributeModifierId === am.id)
+                          const selectedAttributeId = acAttrValue?.selectedAttributeId ?? am.defaultAttributeId ?? am.attributeId
+                          const selectedAttribute = sheet.template.attributes.find(a => a.id === selectedAttributeId) ?? am.defaultAttribute ?? am.attribute
+                          const modResult = selectedAttribute ? modifierResults[selectedAttribute.id] : null
+                          const canChangeAttribute = isOwner && am.allowPlayerSelection
+                          return (
+                            <div key={am.id} className="flex items-center justify-between gap-1 text-[0.6rem]">
+                              {canChangeAttribute ? (
+                                <select
+                                  className="input-field py-0.5 text-[0.6rem] w-auto min-w-[90px]"
+                                  value={selectedAttribute?.id ?? ''}
+                                  onChange={e => handleAcAttributeModifierChange(am.id, e.target.value || null)}
+                                >
+                                  {sheet.template.attributes.map(attr => (
+                                    <option key={attr.id} value={attr.id}>{attr.name}</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-muted truncate">
+                                  {(selectedAttribute?.name ?? am.attribute.name)}
+                                </span>
+                              )}
+                              <span className="font-semibold tabular-nums text-muted-foreground">
+                                {modResult !== null && modResult !== undefined
+                                  ? `${modResult >= 0 ? '+' : ''}${modResult}`
+                                  : '—'}
                               </span>
-                            )}
-                            <span className="text-sm font-semibold tabular-nums text-muted-foreground">
-                              {modResult !== null && modResult !== undefined
-                                ? `${modResult >= 0 ? '+' : ''}${modResult}`
-                                : '—'}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {/* Resistances Summary (collapsible) */}
-          {resistanceData && resistanceData.length > 0 && (
-            <div className="card !p-6 space-y-3">
-              <button
-                type="button"
-                onClick={() => setResistancesExpanded(prev => !prev)}
-                className="flex items-center justify-between w-full text-left"
-              >
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-foreground">Resistances</h3>
-                  <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-primary/10 border border-primary/20 text-[0.65rem] font-medium text-primary">
-                    {resistanceData.length}
-                  </span>
                 </div>
-                <svg
-                  className={`w-4 h-4 text-muted transition-transform duration-200 ${resistancesExpanded ? 'rotate-180' : ''}`}
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              <div
-                className={`transition-all duration-200 overflow-hidden ${
-                  resistancesExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-                }`}
-              >
-                <div className="space-y-1.5 pt-1">
-                  {resistanceData.map(r => (
-                    <div
-                      key={r.resistanceId}
-                      className="flex items-center justify-between px-3.5 py-2 rounded-lg bg-background/40 border border-border/60"
-                    >
-                      <span className="text-sm text-foreground">{r.name}</span>
-                      <span className="text-sm font-semibold tabular-nums text-primary">
-                        {r.total !== undefined && r.total !== null ? r.total : '—'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Future systems placeholder */}
-          <div className="card !p-6 border-dashed border-border/40 bg-background/20">
-            <div className="flex flex-col items-center justify-center gap-2 py-4 text-center">
-              <svg className="w-8 h-8 text-muted/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              <p className="text-xs text-muted/60 italic">More systems coming soon</p>
+              ))}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* ─── RIGHT COLUMN ─── */}
-        <div className="space-y-6">
-          {/* Skills */}
+        {/* ─── RIGHT COLUMN (~25%) — Skills ─── */}
+        <div className={`${rightColSpan} space-y-6`}>
           {hasSkills ? (
             <div className="space-y-5">
-              {/* Skills search bar */}
-              <div className="flex items-center gap-3">
-                <h3 className="font-semibold text-foreground">Skills</h3>
-                <div className="relative flex-1 max-w-xs">
-                  <svg
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none"
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <input
-                    type="text"
-                    className="input-field py-1.5 pl-8 text-xs w-full"
-                    placeholder="Search skills..."
-                    value={skillsSearch}
-                    onChange={e => setSkillsSearch(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Active Skills Table (full width, no side-by-side) */}
+              {/* Active Skills Table */}
               <SkillTable
                 title="Active"
-                skills={filteredActive}
+                skills={activeSkillValues}
                 isActiveSide
                 allProfiles={allProfiles}
                 profileSelections={profileSelections}
@@ -497,10 +379,10 @@ export function CharacterTab(props: CharacterTabProps) {
                 templateAttributes={sheet.template.attributes}
               />
 
-              {/* Inactive Skills Table (full width, no side-by-side) */}
+              {/* Inactive Skills Table */}
               <SkillTable
                 title="Inactive"
-                skills={filteredInactive}
+                skills={inactiveSkillValues}
                 isActiveSide={false}
                 allProfiles={allProfiles}
                 profileSelections={profileSelections}
@@ -548,7 +430,7 @@ export function CharacterTab(props: CharacterTabProps) {
   )
 }
 
-// ── Skill Table Sub-component ──
+// ── Skill Table Sub-component (with internal search) ──
 
 interface SkillTableProps {
   title: string
@@ -587,22 +469,55 @@ function SkillTable({
   onAttributeChange,
   templateAttributes,
 }: SkillTableProps) {
+  const [search, setSearch] = useState('')
+
+  const filteredSkills = useMemo(() => {
+    if (!search.trim()) return skills
+    const q = search.toLowerCase()
+    return skills.filter(sv => sv.skill.name.toLowerCase().includes(q))
+  }, [skills, search])
+
+  const hasSearch = skills.length > 0
+
   return (
     <div className="card !p-0 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <h4 className="text-sm font-semibold text-foreground">{title} Skills</h4>
-          <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-primary/10 border border-primary/20 text-[0.65rem] font-medium text-primary">
-            {skills.length}
-          </span>
+      {/* Header with title, badge, and search */}
+      <div className="px-5 py-3.5 border-b border-border/60 space-y-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-foreground">{title} Skills</h4>
+            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-primary/10 border border-primary/20 text-[0.65rem] font-medium text-primary">
+              {skills.length}
+            </span>
+          </div>
         </div>
+        {hasSearch && (
+          <div className="relative">
+            <svg
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted pointer-events-none"
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              className="input-field py-1.5 pl-7 text-xs w-full"
+              placeholder={`Search ${title.toLowerCase()} skills...`}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+        )}
       </div>
 
       {/* Table */}
-      {skills.length === 0 ? (
+      {filteredSkills.length === 0 ? (
         <div className="px-5 py-8 text-center text-sm text-muted">
-          {isActiveSide ? 'No active skills.' : 'No inactive skills.'}
+          {search.trim()
+            ? 'No skills match your search.'
+            : isActiveSide
+              ? 'No active skills.'
+              : 'No inactive skills.'}
         </div>
       ) : (
         <div className="divide-y divide-border/40">
@@ -616,7 +531,7 @@ function SkillTable({
             <div className="w-8 shrink-0" />
           </div>
 
-          {skills.map(sv => {
+          {filteredSkills.map(sv => {
             const isExpanded = expandedSkillId === sv.skillId
             const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
             const attrMod = isActiveSide
@@ -683,10 +598,7 @@ function SkillTable({
                       </select>
                     ) : (
                       <span className="text-[0.65rem] text-muted block truncate">
-                        {isActiveSide
-                          ? (selectedAttr?.name ?? '—')
-                          : (selectedAttr?.name ?? '—')
-                        }
+                        {selectedAttr?.name ?? '—'}
                       </span>
                     )}
                   </div>
