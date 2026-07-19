@@ -73,7 +73,7 @@ export default function HomePage() {
               Custom RPGs, crafted with wonder
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-              Build a world that feels <span className="text-gradient">truly yours</span>.
+              Build a world that feels <span className="text-gradient">truly yours</span>
             </h1>
             <p className="mt-6 text-lg leading-8 text-muted-foreground">
               Mythrion is a powerful engine for creating custom RPGs tailored exactly to the tastes of your players. From immersive visuals to intuitive systems, every detail is designed to make your table feel legendary.
