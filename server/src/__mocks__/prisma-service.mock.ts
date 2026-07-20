@@ -138,7 +138,7 @@ export function createMockPrismaServiceWithData(
       (args: { where?: { id?: string } } & Record<string, any>) => {
         if (!args?.where) return Promise.resolve(null);
         const record = (store[modelName] ?? []).find(
-          (r) => r.id === args.where.id,
+          (r) => r.id === args.where!.id,
         );
         return Promise.resolve(record ?? null);
       },
@@ -148,7 +148,7 @@ export function createMockPrismaServiceWithData(
       (args: { where?: { id?: string } } & Record<string, any>) => {
         if (!args?.where) return Promise.resolve(null);
         const record = (store[modelName] ?? []).find(
-          (r) => r.id === args.where.id,
+          (r) => r.id === args.where!.id,
         );
         return Promise.resolve(record ?? null);
       },
@@ -158,7 +158,7 @@ export function createMockPrismaServiceWithData(
       (args?: { where?: { id?: string } } & Record<string, any>) => {
         let results = store[modelName] ?? [];
         if (args?.where?.id) {
-          results = results.filter((r) => r.id === args.where.id);
+          results = results.filter((r) => r.id === args.where!.id);
         }
         return Promise.resolve(results);
       },
