@@ -87,6 +87,10 @@ export class UpdateCoreResourceDefDto {
   @IsBoolean()
   @IsOptional()
   showNotes?: boolean
+
+  @IsString()
+  @IsOptional()
+  color?: string
 }
 
 export class UpdateArmorClassFieldDefDto {

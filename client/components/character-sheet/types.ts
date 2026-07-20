@@ -12,6 +12,7 @@ export interface CoreResourceDef {
   enabled: boolean
   editableByPlayer: boolean
   showNotes: boolean
+  color?: string
 }
 export interface CoreResourceValue {
   id: string; coreResourceId: string; current: number | null; maximum: number | null; notes: string | null

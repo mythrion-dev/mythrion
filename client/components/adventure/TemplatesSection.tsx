@@ -38,9 +38,9 @@ export function TemplatesSection(props: {
   onAddEditProfileOption?: (pIdx: number) => void; onRemoveEditProfileOption?: (pIdx: number, oIdx: number) => void; onUpdateEditProfileOption?: (pIdx: number, oIdx: number, f: 'label' | 'value', v: string | number) => void
   onUpdateEditProfileTargetMode?: (i: number, mode: string) => void; onToggleEditProfileSkill?: (i: number, skillId: string) => void
   newCoreResources?: CoreResource[]; editCoreResources?: CoreResource[]
-  onAddCoreResource?: () => void; onRemoveCoreResource?: (i: number) => void; onUpdateCoreResource?: (i: number, f: 'displayName' | 'slug', v: string) => void
+  onAddCoreResource?: () => void; onRemoveCoreResource?: (i: number) => void; onUpdateCoreResource?: (i: number, f: 'displayName' | 'slug' | 'color', v: string) => void
   onUpdateCoreResourceEnabled?: (i: number, v: boolean) => void; onUpdateCoreResourceEditable?: (i: number, v: boolean) => void; onUpdateCoreResourceShowNotes?: (i: number, v: boolean) => void
-  onAddEditCoreResource?: () => void; onRemoveEditCoreResource?: (i: number) => void; onUpdateEditCoreResource?: (i: number, f: 'displayName' | 'slug', v: string) => void
+  onAddEditCoreResource?: () => void; onRemoveEditCoreResource?: (i: number) => void; onUpdateEditCoreResource?: (i: number, f: 'displayName' | 'slug' | 'color', v: string) => void
   onUpdateEditCoreResourceEnabled?: (i: number, v: boolean) => void; onUpdateEditCoreResourceEditable?: (i: number, v: boolean) => void; onUpdateEditCoreResourceShowNotes?: (i: number, v: boolean) => void
   newAcConfigs?: AcConfigDraft[]
   onAddNewAcConfig?: () => void; onRemoveNewAcConfig?: (i: number) => void; onUpdateNewAcConfig?: (i: number, patch: Partial<AcConfigDraft>) => void

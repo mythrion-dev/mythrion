@@ -24,12 +24,12 @@ const DEFAULT_CONFIG: SkillCalculationConfig = {
 }
 
 /** Generate a JSON string from the config */
-function configToJson(config: SkillCalculationConfig): string {
+export function configToJson(config: SkillCalculationConfig): string {
   return JSON.stringify(config)
 }
 
 /** Try to parse a stored value as JSON config; returns null if it's a legacy formula */
-function parseConfig(value: string): SkillCalculationConfig | null {
+export function parseConfig(value: string): SkillCalculationConfig | null {
   if (!value?.trim()) return null
   try {
     const parsed = JSON.parse(value)

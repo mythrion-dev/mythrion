@@ -214,15 +214,15 @@ export default function AdventureDetailPage() {
     }
   }, [editAttrModifiersEnabled])
 
-  function addNewCoreResource() { setNewCoreResources(p => [...p, { slug: '', displayName: '', enabled: true, editableByPlayer: true, showNotes: true }]) }
+  function addNewCoreResource() { setNewCoreResources(p => [...p, { slug: '', displayName: '', enabled: true, editableByPlayer: true, showNotes: true, color: '' }]) }
   function removeNewCoreResource(i: number) { setNewCoreResources(p => p.filter((_, j) => j !== i)) }
-  function updateNewCoreResource(i: number, f: 'displayName' | 'slug', v: string) { setNewCoreResources(p => p.map((m, j) => j === i ? { ...m, [f]: v } : m)) }
+  function updateNewCoreResource(i: number, f: 'displayName' | 'slug' | 'color', v: string) { setNewCoreResources(p => p.map((m, j) => j === i ? { ...m, [f]: v } : m)) }
   function updateNewCoreResourceEnabled(i: number, v: boolean) { setNewCoreResources(p => p.map((m, j) => j === i ? { ...m, enabled: v } : m)) }
   function updateNewCoreResourceEditable(i: number, v: boolean) { setNewCoreResources(p => p.map((m, j) => j === i ? { ...m, editableByPlayer: v } : m)) }
   function updateNewCoreResourceShowNotes(i: number, v: boolean) { setNewCoreResources(p => p.map((m, j) => j === i ? { ...m, showNotes: v } : m)) }
-  function addEditCoreResource() { setEditCoreResources(p => [...p, { slug: '', displayName: '', enabled: true, editableByPlayer: true, showNotes: true }]) }
+  function addEditCoreResource() { setEditCoreResources(p => [...p, { slug: '', displayName: '', enabled: true, editableByPlayer: true, showNotes: true, color: '' }]) }
   function removeEditCoreResource(i: number) { setEditCoreResources(p => p.filter((_, j) => j !== i)) }
-  function updateEditCoreResource(i: number, f: 'displayName' | 'slug', v: string) { setEditCoreResources(p => p.map((m, j) => j === i ? { ...m, [f]: v } : m)) }
+  function updateEditCoreResource(i: number, f: 'displayName' | 'slug' | 'color', v: string) { setEditCoreResources(p => p.map((m, j) => j === i ? { ...m, [f]: v } : m)) }
   function updateEditCoreResourceEnabled(i: number, v: boolean) { setEditCoreResources(p => p.map((m, j) => j === i ? { ...m, enabled: v } : m)) }
   function updateEditCoreResourceEditable(i: number, v: boolean) { setEditCoreResources(p => p.map((m, j) => j === i ? { ...m, editableByPlayer: v } : m)) }
   function updateEditCoreResourceShowNotes(i: number, v: boolean) { setEditCoreResources(p => p.map((m, j) => j === i ? { ...m, showNotes: v } : m)) }
@@ -346,7 +346,7 @@ export default function AdventureDetailPage() {
         templateFields: newFeatureCustomFields ? newTemplateFields.filter(f => f.key.trim() && f.label.trim()).map(f => ({ key: f.key.trim(), label: f.label.trim() })) : undefined,
         skills: newFeatureSkills ? newTemplateSkills.filter(s => s.name.trim()).map(s => ({ name: s.name.trim(), description: s.description.trim() || undefined, attributeId: s.attributeId.trim() || undefined, allowedAttributeIds: s.allowedAttributeIds.filter(k => k.trim()), defaultAttributeId: s.defaultAttributeId.trim() || undefined })) : undefined,
         skillModifierProfiles: newFeatureSkillProfiles ? newTemplateProfiles.filter(p => p.name.trim()).map(p => ({ name: p.name.trim(), targetMode: p.targetMode ?? 'ALL_SKILLS', targetSkillIds: p.targetSkillIds ?? [], options: p.options.filter(o => o.label.trim()).map(o => ({ label: o.label.trim(), value: o.value })) })) : undefined,
-        coreResources: newFeatureCoreResources ? newCoreResources.filter(r => r.slug.trim()).map(r => ({ displayName: r.displayName.trim() || r.slug.trim(), slug: r.slug.trim(), enabled: r.enabled, editableByPlayer: r.editableByPlayer, showNotes: r.showNotes })) : undefined,
+        coreResources: newFeatureCoreResources ? newCoreResources.filter(r => r.slug.trim()).map(r => ({ displayName: r.displayName.trim() || r.slug.trim(), slug: r.slug.trim(), enabled: r.enabled, editableByPlayer: r.editableByPlayer, showNotes: r.showNotes, color: r.color || undefined })) : undefined,
         armorClasses: newFeatureArmorClass ? buildAcPayload(newAcConfigs) : undefined,
         characterSections: newFeatureCharacterSections ? newCharacterSections.filter(s => s.name.trim()).map(s => ({ name: s.name.trim() })) : undefined,
         resistances: newFeatureResistance ? buildResistancesPayload(newResistances) : undefined,
@@ -376,6 +376,7 @@ export default function AdventureDetailPage() {
       enabled: cr.enabled ?? true,
       editableByPlayer: cr.editableByPlayer ?? true,
       showNotes: cr.showNotes ?? true,
+      color: cr.color ?? '',
     })));
     // Load ALL armor classes from template
     const acConfigs: AcConfigDraft[] = (t.armorClasses || []).map(ac => ({
@@ -424,7 +425,7 @@ export default function AdventureDetailPage() {
     setTemplateSaving(true)
     try {
       await api.patch(`/adventures/${id}/templates/${editingTemplateId}`, {
-        name: editTemplateName.trim(), description: editTemplateDescription.trim() || undefined,
+        name: editTemplateName.trim(), description: editTemplateDescription.trim(),
         attributeModifiersEnabled: editAttrModifiersEnabled,
         attributeModifierFormula: editAttrModifierFormula.trim() || undefined,
         skillFormula: editSkillFormula.trim() || undefined,
@@ -432,7 +433,7 @@ export default function AdventureDetailPage() {
         templateFields: editFeatureCustomFields ? editTemplateFields.filter(f => f.key.trim() && f.label.trim()).map(f => ({ key: f.key.trim(), label: f.label.trim() })) : undefined,
         skills: editFeatureSkills ? editTemplateSkills.filter(s => s.name.trim()).map(s => ({ name: s.name.trim(), description: s.description.trim() || undefined, attributeId: s.attributeId.trim() || undefined, allowedAttributeIds: s.allowedAttributeIds.filter(k => k.trim()), defaultAttributeId: s.defaultAttributeId.trim() || undefined })) : undefined,
         skillModifierProfiles: editFeatureSkillProfiles ? editTemplateProfiles.filter(p => p.name.trim()).map(p => ({ name: p.name.trim(), targetMode: p.targetMode ?? 'ALL_SKILLS', targetSkillIds: p.targetSkillIds ?? [], options: p.options.filter(o => o.label.trim()).map(o => ({ label: o.label.trim(), value: o.value })) })) : undefined,
-        coreResources: editFeatureCoreResources ? editCoreResources.filter(r => r.slug.trim()).map(r => ({ displayName: r.displayName.trim() || r.slug.trim(), slug: r.slug.trim(), enabled: r.enabled, editableByPlayer: r.editableByPlayer, showNotes: r.showNotes })) : undefined,
+        coreResources: editFeatureCoreResources ? editCoreResources.filter(r => r.slug.trim()).map(r => ({ displayName: r.displayName.trim() || r.slug.trim(), slug: r.slug.trim(), enabled: r.enabled, editableByPlayer: r.editableByPlayer, showNotes: r.showNotes, color: r.color || undefined })) : undefined,
         armorClasses: editFeatureArmorClass ? buildAcPayload(editAcConfigs) : undefined,
         characterSections: editFeatureCharacterSections ? editCharacterSections.filter(s => s.name.trim()).map(s => ({ id: s.id, name: s.name.trim() })) : undefined,
         resistances: editFeatureResistance ? buildResistancesPayload(editResistances) : undefined,

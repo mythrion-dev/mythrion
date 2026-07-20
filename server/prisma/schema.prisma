@@ -369,6 +369,7 @@ model TemplateCoreResource {
   enabled          Boolean                             @default(true)
   editableByPlayer Boolean                             @default(true)
   showNotes        Boolean                             @default(true)
+  color            String?
   order            Int                                 @default(0)
   sheetValues      CharacterSheetCoreResourceValue[]
   createdAt        DateTime                            @default(now())

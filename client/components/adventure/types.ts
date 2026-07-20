@@ -5,6 +5,7 @@ export interface CoreResource {
   enabled: boolean
   editableByPlayer: boolean
   showNotes: boolean
+  color?: string
 }
 
 export interface SkillModifierProfile {
