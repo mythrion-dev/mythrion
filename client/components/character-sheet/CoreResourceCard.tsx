@@ -9,6 +9,7 @@ interface CoreResourceDef {
   enabled: boolean
   editableByPlayer: boolean
   showNotes: boolean
+  color?: string
 }
 interface CoreResourceValue {
   id: string; coreResourceId: string; current: number | null; maximum: number | null; notes: string | null
@@ -52,6 +53,18 @@ export function CoreResourceCard({ resource, value, isOwner, onSave, onModify }:
           }
         </div>
       </div>
+      {value.maximum != null && value.maximum > 0 && (
+        <div className="w-full h-2 rounded-full bg-background/60 overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-300 ease-out"
+            style={{
+              width: `${Math.min(100, Math.max(0, ((value.current ?? 0) / value.maximum) * 100))}%`,
+              backgroundColor: resource.color || 'var(--color-primary)',
+              filter: 'brightness(1.15)',
+            }}
+          />
+        </div>
+      )}
       {canEdit && onModify && (
         <div className="space-y-2 pt-2 border-t border-border">
           <div className="flex items-center gap-2">

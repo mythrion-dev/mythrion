@@ -119,6 +119,7 @@ export class TemplateService {
             enabled: cr.enabled ?? true,
             editableByPlayer: cr.editableByPlayer ?? true,
             showNotes: cr.showNotes ?? true,
+            color: cr.color ?? null,
             order: crIdx,
           })),
         },
@@ -674,6 +675,7 @@ export class TemplateService {
               ...(cr.enabled !== undefined && { enabled: cr.enabled }),
               ...(cr.editableByPlayer !== undefined && { editableByPlayer: cr.editableByPlayer }),
               ...(cr.showNotes !== undefined && { showNotes: cr.showNotes }),
+              ...(cr.color !== undefined && { color: cr.color }),
               order: crIdx,
             },
           })
@@ -686,6 +688,7 @@ export class TemplateService {
               enabled: cr.enabled ?? true,
               editableByPlayer: cr.editableByPlayer ?? true,
               showNotes: cr.showNotes ?? true,
+              color: cr.color ?? null,
               order: crIdx,
             },
           })

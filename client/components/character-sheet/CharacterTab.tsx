@@ -243,6 +243,18 @@ export function CharacterTab(props: CharacterTabProps) {
                         )}
                       </div>
                     </div>
+                    {crv.maximum != null && crv.maximum > 0 && (
+                      <div className="w-full h-2 rounded-full bg-background/60 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-300 ease-out"
+                          style={{
+                            width: `${Math.min(100, Math.max(0, ((crv.current ?? 0) / crv.maximum) * 100))}%`,
+                            backgroundColor: cr.color || 'var(--color-primary)',
+                            filter: 'brightness(1.15)',
+                          }}
+                        />
+                      </div>
+                    )}
                     {canEdit && handleCoreResourceModify && (
                       <div className="space-y-1.5 pt-2 border-t border-border/50">
                         <input
