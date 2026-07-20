@@ -15,6 +15,26 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones disable SonarQube blame/pr decoration
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
+
+      - name: Install server deps
+        run: cd server && npm ci
+
+      - name: Install client deps
+        run: cd client && npm ci
+
+      - name: Run server tests with coverage
+        run: cd server && npm run test:cov
+
+      - name: Run client tests with coverage
+        run: cd client && npm run test:cov
+
       - name: SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@v3
         env:
