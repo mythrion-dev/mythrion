@@ -353,31 +353,12 @@ export function TemplateRow(props: {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
               <h4 className="text-sm font-semibold text-foreground truncate max-w-[250px]">{props.template.name}</h4>
-              <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 badge badge-gold text-[0.55rem] px-2 py-0.5">
-                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {props.template.attributes.length} Attribute{props.template.attributes.length !== 1 ? 's' : ''}
-                </span>
-              </div>
+              {/* attribute count removed */}
             </div>
             {props.template.description && (
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-2">{props.template.description}</p>
             )}
-            {/* Attribute chips */}
-            <div className="flex gap-1.5 mt-2.5 flex-wrap">
-              {props.template.attributes.slice(0, 6).map((attr) => (
-                <span key={attr.key} className="text-[0.55rem] px-2 py-0.5 rounded-full bg-background/60 border border-border/30 text-muted font-medium">
-                  {attr.name}
-                </span>
-              ))}
-              {props.template.attributes.length > 6 && (
-                <span className="text-[0.55rem] px-2 py-0.5 rounded-full bg-background/60 border border-border/30 text-muted">
-                  +{props.template.attributes.length - 6} more
-                </span>
-              )}
-            </div>
+            {/* attribute chips removed */}
             {/* Feature indicators */}
             <div className="flex gap-1.5 mt-2.5 flex-wrap">
               {props.template.skills && props.template.skills.length > 0 && (

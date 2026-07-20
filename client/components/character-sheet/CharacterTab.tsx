@@ -416,12 +416,6 @@ export function CharacterTab(props: CharacterTabProps) {
         templateAttributes={sheet.template.attributes}
       />
 
-      {/* ── Footer ── */}
-      <div className="text-center pt-2">
-        <p className="text-xs text-muted">
-          {isOwner ? 'You own this character sheet.' : 'This character sheet belongs to another player.'}
-        </p>
-      </div>
     </div>
   )
 }
