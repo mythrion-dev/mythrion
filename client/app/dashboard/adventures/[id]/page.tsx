@@ -424,7 +424,7 @@ export default function AdventureDetailPage() {
     setTemplateSaving(true)
     try {
       await api.patch(`/adventures/${id}/templates/${editingTemplateId}`, {
-        name: editTemplateName.trim(), description: editTemplateDescription.trim() || undefined,
+        name: editTemplateName.trim(), description: editTemplateDescription.trim(),
         attributeModifiersEnabled: editAttrModifiersEnabled,
         attributeModifierFormula: editAttrModifierFormula.trim() || undefined,
         skillFormula: editSkillFormula.trim() || undefined,

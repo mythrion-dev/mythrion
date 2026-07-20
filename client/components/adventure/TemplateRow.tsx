@@ -385,9 +385,7 @@ export function TemplateRow(props: {
                   {props.template.profiles.length} Profile{props.template.profiles.length !== 1 ? 's' : ''}
                 </span>
               )}
-              {!hasSkills && !hasSections && !hasProfiles && (
-                <span className="text-[0.5rem] px-2 py-0.5 text-muted italic">Basic template — no special features</span>
-              )}
+              {/* basic-template message removed */}
             </div>
           </div>
 
