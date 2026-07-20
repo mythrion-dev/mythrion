@@ -33,7 +33,7 @@ export function TemplateRow(props: {
   onAddProfileOption?: (pIdx: number) => void; onRemoveProfileOption?: (pIdx: number, oIdx: number) => void; onUpdateProfileOption?: (pIdx: number, oIdx: number, f: 'label' | 'value', v: string | number) => void
   onUpdateProfileTargetMode?: (i: number, mode: string) => void; onToggleProfileSkill?: (i: number, skillId: string) => void
   editCoreResources?: CoreResource[]
-  onAddCoreResource?: () => void; onRemoveCoreResource?: (i: number) => void; onUpdateCoreResource?: (i: number, f: 'displayName' | 'slug', v: string) => void
+  onAddCoreResource?: () => void; onRemoveCoreResource?: (i: number) => void; onUpdateCoreResource?: (i: number, f: 'displayName' | 'slug' | 'color', v: string) => void
   onUpdateCoreResourceEnabled?: (i: number, v: boolean) => void; onUpdateCoreResourceEditable?: (i: number, v: boolean) => void; onUpdateCoreResourceShowNotes?: (i: number, v: boolean) => void
   editAcConfigs?: AcConfigDraft[]
   editAttrsForAc?: { key: string; name: string }[]
@@ -227,7 +227,7 @@ export function TemplateRow(props: {
           <div>
             <p className="text-xs text-muted-foreground mb-3 leading-relaxed">Core resources are trackable values like Hit Points, Mana, or Stamina.</p>
             <div className="space-y-2 mt-1">{(props.editCoreResources || []).map((cr: CoreResource, crIdx: number) => <div key={crIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
-              <div className="flex items-center gap-1.5"><input className="input-field flex-1" value={cr.displayName} onChange={e => props.onUpdateCoreResource?.(crIdx, 'displayName', e.target.value)} placeholder="Display Name (e.g. Health Points)" /><input className="input-field flex-1" value={cr.slug} onChange={e => props.onUpdateCoreResource?.(crIdx, 'slug', e.target.value)} placeholder="Slug (e.g. health_points)" /><button type="button" onClick={() => props.onRemoveCoreResource?.(crIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0 px-1">✕</button></div>
+              <div className="flex items-center gap-1.5"><input className="input-field flex-1" value={cr.displayName} onChange={e => props.onUpdateCoreResource?.(crIdx, 'displayName', e.target.value)} placeholder="Display Name (e.g. Health Points)" /><input className="input-field flex-[0.35]" value={cr.slug} onChange={e => props.onUpdateCoreResource?.(crIdx, 'slug', e.target.value)} placeholder="Slug (e.g. health_points)" /><input type="color" value={cr.color || '#f59e0b'} onChange={e => props.onUpdateCoreResource?.(crIdx, 'color', e.target.value)} className="w-7 h-7 p-0.5 rounded cursor-pointer shrink-0 bg-transparent" /><button type="button" onClick={() => props.onRemoveCoreResource?.(crIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0 px-1">✕</button></div>
               <div className="flex items-center gap-4 flex-wrap"><label className="flex items-center gap-1 text-xs text-muted cursor-pointer"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.enabled} onChange={e => props.onUpdateCoreResourceEnabled?.(crIdx, e.target.checked)} />Enabled</label><label className="flex items-center gap-1 text-xs text-muted cursor-pointer"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.editableByPlayer} onChange={e => props.onUpdateCoreResourceEditable?.(crIdx, e.target.checked)} />Editable</label><label className="flex items-center gap-1 text-xs text-muted cursor-pointer"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.showNotes} onChange={e => props.onUpdateCoreResourceShowNotes?.(crIdx, e.target.checked)} />Show Notes</label></div>
             </div>)}</div>
             <button type="button" onClick={props.onAddCoreResource} className="btn-ghost text-xs mt-3 flex items-center gap-1">
@@ -353,31 +353,12 @@ export function TemplateRow(props: {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
               <h4 className="text-sm font-semibold text-foreground truncate max-w-[250px]">{props.template.name}</h4>
-              <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 badge badge-gold text-[0.55rem] px-2 py-0.5">
-                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {props.template.attributes.length} Attribute{props.template.attributes.length !== 1 ? 's' : ''}
-                </span>
-              </div>
+              {/* attribute count removed */}
             </div>
             {props.template.description && (
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-2">{props.template.description}</p>
             )}
-            {/* Attribute chips */}
-            <div className="flex gap-1.5 mt-2.5 flex-wrap">
-              {props.template.attributes.slice(0, 6).map((attr) => (
-                <span key={attr.key} className="text-[0.55rem] px-2 py-0.5 rounded-full bg-background/60 border border-border/30 text-muted font-medium">
-                  {attr.name}
-                </span>
-              ))}
-              {props.template.attributes.length > 6 && (
-                <span className="text-[0.55rem] px-2 py-0.5 rounded-full bg-background/60 border border-border/30 text-muted">
-                  +{props.template.attributes.length - 6} more
-                </span>
-              )}
-            </div>
+            {/* attribute chips removed */}
             {/* Feature indicators */}
             <div className="flex gap-1.5 mt-2.5 flex-wrap">
               {props.template.skills && props.template.skills.length > 0 && (
@@ -404,9 +385,7 @@ export function TemplateRow(props: {
                   {props.template.profiles.length} Profile{props.template.profiles.length !== 1 ? 's' : ''}
                 </span>
               )}
-              {!hasSkills && !hasSections && !hasProfiles && (
-                <span className="text-[0.5rem] px-2 py-0.5 text-muted italic">Basic template — no special features</span>
-              )}
+              {/* basic-template message removed */}
             </div>
           </div>
 

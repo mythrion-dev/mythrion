@@ -42,6 +42,7 @@ export type TemplateCoreResourceMinAggregateOutputType = {
   enabled: boolean | null
   editableByPlayer: boolean | null
   showNotes: boolean | null
+  color: string | null
   order: number | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -55,6 +56,7 @@ export type TemplateCoreResourceMaxAggregateOutputType = {
   enabled: boolean | null
   editableByPlayer: boolean | null
   showNotes: boolean | null
+  color: string | null
   order: number | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -68,6 +70,7 @@ export type TemplateCoreResourceCountAggregateOutputType = {
   enabled: number
   editableByPlayer: number
   showNotes: number
+  color: number
   order: number
   createdAt: number
   updatedAt: number
@@ -91,6 +94,7 @@ export type TemplateCoreResourceMinAggregateInputType = {
   enabled?: true
   editableByPlayer?: true
   showNotes?: true
+  color?: true
   order?: true
   createdAt?: true
   updatedAt?: true
@@ -104,6 +108,7 @@ export type TemplateCoreResourceMaxAggregateInputType = {
   enabled?: true
   editableByPlayer?: true
   showNotes?: true
+  color?: true
   order?: true
   createdAt?: true
   updatedAt?: true
@@ -117,6 +122,7 @@ export type TemplateCoreResourceCountAggregateInputType = {
   enabled?: true
   editableByPlayer?: true
   showNotes?: true
+  color?: true
   order?: true
   createdAt?: true
   updatedAt?: true
@@ -217,6 +223,7 @@ export type TemplateCoreResourceGroupByOutputType = {
   enabled: boolean
   editableByPlayer: boolean
   showNotes: boolean
+  color: string | null
   order: number
   createdAt: Date
   updatedAt: Date
@@ -253,6 +260,7 @@ export type TemplateCoreResourceWhereInput = {
   enabled?: Prisma.BoolFilter<"TemplateCoreResource"> | boolean
   editableByPlayer?: Prisma.BoolFilter<"TemplateCoreResource"> | boolean
   showNotes?: Prisma.BoolFilter<"TemplateCoreResource"> | boolean
+  color?: Prisma.StringNullableFilter<"TemplateCoreResource"> | string | null
   order?: Prisma.IntFilter<"TemplateCoreResource"> | number
   createdAt?: Prisma.DateTimeFilter<"TemplateCoreResource"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TemplateCoreResource"> | Date | string
@@ -268,6 +276,7 @@ export type TemplateCoreResourceOrderByWithRelationInput = {
   enabled?: Prisma.SortOrder
   editableByPlayer?: Prisma.SortOrder
   showNotes?: Prisma.SortOrder
+  color?: Prisma.SortOrderInput | Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -287,6 +296,7 @@ export type TemplateCoreResourceWhereUniqueInput = Prisma.AtLeast<{
   enabled?: Prisma.BoolFilter<"TemplateCoreResource"> | boolean
   editableByPlayer?: Prisma.BoolFilter<"TemplateCoreResource"> | boolean
   showNotes?: Prisma.BoolFilter<"TemplateCoreResource"> | boolean
+  color?: Prisma.StringNullableFilter<"TemplateCoreResource"> | string | null
   order?: Prisma.IntFilter<"TemplateCoreResource"> | number
   createdAt?: Prisma.DateTimeFilter<"TemplateCoreResource"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TemplateCoreResource"> | Date | string
@@ -302,6 +312,7 @@ export type TemplateCoreResourceOrderByWithAggregationInput = {
   enabled?: Prisma.SortOrder
   editableByPlayer?: Prisma.SortOrder
   showNotes?: Prisma.SortOrder
+  color?: Prisma.SortOrderInput | Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -323,6 +334,7 @@ export type TemplateCoreResourceScalarWhereWithAggregatesInput = {
   enabled?: Prisma.BoolWithAggregatesFilter<"TemplateCoreResource"> | boolean
   editableByPlayer?: Prisma.BoolWithAggregatesFilter<"TemplateCoreResource"> | boolean
   showNotes?: Prisma.BoolWithAggregatesFilter<"TemplateCoreResource"> | boolean
+  color?: Prisma.StringNullableWithAggregatesFilter<"TemplateCoreResource"> | string | null
   order?: Prisma.IntWithAggregatesFilter<"TemplateCoreResource"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"TemplateCoreResource"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"TemplateCoreResource"> | Date | string
@@ -335,6 +347,7 @@ export type TemplateCoreResourceCreateInput = {
   enabled?: boolean
   editableByPlayer?: boolean
   showNotes?: boolean
+  color?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -350,6 +363,7 @@ export type TemplateCoreResourceUncheckedCreateInput = {
   enabled?: boolean
   editableByPlayer?: boolean
   showNotes?: boolean
+  color?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -363,6 +377,7 @@ export type TemplateCoreResourceUpdateInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showNotes?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -378,6 +393,7 @@ export type TemplateCoreResourceUncheckedUpdateInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showNotes?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -392,6 +408,7 @@ export type TemplateCoreResourceCreateManyInput = {
   enabled?: boolean
   editableByPlayer?: boolean
   showNotes?: boolean
+  color?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -404,6 +421,7 @@ export type TemplateCoreResourceUpdateManyMutationInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showNotes?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -417,6 +435,7 @@ export type TemplateCoreResourceUncheckedUpdateManyInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showNotes?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -445,6 +464,7 @@ export type TemplateCoreResourceCountOrderByAggregateInput = {
   enabled?: Prisma.SortOrder
   editableByPlayer?: Prisma.SortOrder
   showNotes?: Prisma.SortOrder
+  color?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -462,6 +482,7 @@ export type TemplateCoreResourceMaxOrderByAggregateInput = {
   enabled?: Prisma.SortOrder
   editableByPlayer?: Prisma.SortOrder
   showNotes?: Prisma.SortOrder
+  color?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -475,6 +496,7 @@ export type TemplateCoreResourceMinOrderByAggregateInput = {
   enabled?: Prisma.SortOrder
   editableByPlayer?: Prisma.SortOrder
   showNotes?: Prisma.SortOrder
+  color?: Prisma.SortOrder
   order?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -552,6 +574,7 @@ export type TemplateCoreResourceCreateWithoutTemplateInput = {
   enabled?: boolean
   editableByPlayer?: boolean
   showNotes?: boolean
+  color?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -565,6 +588,7 @@ export type TemplateCoreResourceUncheckedCreateWithoutTemplateInput = {
   enabled?: boolean
   editableByPlayer?: boolean
   showNotes?: boolean
+  color?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -608,6 +632,7 @@ export type TemplateCoreResourceScalarWhereInput = {
   enabled?: Prisma.BoolFilter<"TemplateCoreResource"> | boolean
   editableByPlayer?: Prisma.BoolFilter<"TemplateCoreResource"> | boolean
   showNotes?: Prisma.BoolFilter<"TemplateCoreResource"> | boolean
+  color?: Prisma.StringNullableFilter<"TemplateCoreResource"> | string | null
   order?: Prisma.IntFilter<"TemplateCoreResource"> | number
   createdAt?: Prisma.DateTimeFilter<"TemplateCoreResource"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TemplateCoreResource"> | Date | string
@@ -620,6 +645,7 @@ export type TemplateCoreResourceCreateWithoutSheetValuesInput = {
   enabled?: boolean
   editableByPlayer?: boolean
   showNotes?: boolean
+  color?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -634,6 +660,7 @@ export type TemplateCoreResourceUncheckedCreateWithoutSheetValuesInput = {
   enabled?: boolean
   editableByPlayer?: boolean
   showNotes?: boolean
+  color?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -662,6 +689,7 @@ export type TemplateCoreResourceUpdateWithoutSheetValuesInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showNotes?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -676,6 +704,7 @@ export type TemplateCoreResourceUncheckedUpdateWithoutSheetValuesInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showNotes?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -688,6 +717,7 @@ export type TemplateCoreResourceCreateManyTemplateInput = {
   enabled?: boolean
   editableByPlayer?: boolean
   showNotes?: boolean
+  color?: string | null
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -700,6 +730,7 @@ export type TemplateCoreResourceUpdateWithoutTemplateInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showNotes?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -713,6 +744,7 @@ export type TemplateCoreResourceUncheckedUpdateWithoutTemplateInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showNotes?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -726,6 +758,7 @@ export type TemplateCoreResourceUncheckedUpdateManyWithoutTemplateInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showNotes?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -770,6 +803,7 @@ export type TemplateCoreResourceSelect<ExtArgs extends runtime.Types.Extensions.
   enabled?: boolean
   editableByPlayer?: boolean
   showNotes?: boolean
+  color?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -786,6 +820,7 @@ export type TemplateCoreResourceSelectCreateManyAndReturn<ExtArgs extends runtim
   enabled?: boolean
   editableByPlayer?: boolean
   showNotes?: boolean
+  color?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -800,6 +835,7 @@ export type TemplateCoreResourceSelectUpdateManyAndReturn<ExtArgs extends runtim
   enabled?: boolean
   editableByPlayer?: boolean
   showNotes?: boolean
+  color?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -814,12 +850,13 @@ export type TemplateCoreResourceSelectScalar = {
   enabled?: boolean
   editableByPlayer?: boolean
   showNotes?: boolean
+  color?: boolean
   order?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TemplateCoreResourceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "templateId" | "slug" | "displayName" | "enabled" | "editableByPlayer" | "showNotes" | "order" | "createdAt" | "updatedAt", ExtArgs["result"]["templateCoreResource"]>
+export type TemplateCoreResourceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "templateId" | "slug" | "displayName" | "enabled" | "editableByPlayer" | "showNotes" | "color" | "order" | "createdAt" | "updatedAt", ExtArgs["result"]["templateCoreResource"]>
 export type TemplateCoreResourceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   sheetValues?: boolean | Prisma.TemplateCoreResource$sheetValuesArgs<ExtArgs>
@@ -846,6 +883,7 @@ export type $TemplateCoreResourcePayload<ExtArgs extends runtime.Types.Extension
     enabled: boolean
     editableByPlayer: boolean
     showNotes: boolean
+    color: string | null
     order: number
     createdAt: Date
     updatedAt: Date
@@ -1281,6 +1319,7 @@ export interface TemplateCoreResourceFieldRefs {
   readonly enabled: Prisma.FieldRef<"TemplateCoreResource", 'Boolean'>
   readonly editableByPlayer: Prisma.FieldRef<"TemplateCoreResource", 'Boolean'>
   readonly showNotes: Prisma.FieldRef<"TemplateCoreResource", 'Boolean'>
+  readonly color: Prisma.FieldRef<"TemplateCoreResource", 'String'>
   readonly order: Prisma.FieldRef<"TemplateCoreResource", 'Int'>
   readonly createdAt: Prisma.FieldRef<"TemplateCoreResource", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"TemplateCoreResource", 'DateTime'>
