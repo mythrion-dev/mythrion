@@ -1,4 +1,4 @@
-function normalizeApiUrl(raw: string | undefined): string {
+export function normalizeApiUrl(raw: string | undefined): string {
   if (!raw) return 'https://mythrion-dev.up.railway.app/api'
   let url = raw.trim()
   // Add protocol if missing
@@ -77,7 +77,7 @@ async function request<T>(
   return res.json()
 }
 
-async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = getRefreshToken()
   if (!refreshToken) {
     // No refresh token, clear auth
