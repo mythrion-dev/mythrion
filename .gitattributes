@@ -1,0 +1,4 @@
+# When merging into a branch that has these lines, keep the target's version
+sonarqube/Dockerfile merge=ours
+sonar-project.properties merge=ours
+.github/workflows/sonarqube.yml merge=ours
