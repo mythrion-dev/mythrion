@@ -170,7 +170,6 @@ export function NpcsMobsSection({ adventureId, isGM, refreshKey }: NpcsMobsSecti
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted mt-0.5">
                   <span>Lv.{n.level ?? '?'}</span>
-                  <span>❤️ {n.hpActual ?? '?'}/{n.hpMax ?? '?'}</span>
                 </div>
               </div>
               <div className="flex gap-1 shrink-0 ml-2">
