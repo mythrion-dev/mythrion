@@ -210,6 +210,19 @@ describe('InventoryTab', () => {
     expect(screen.getByText('Failed to create item')).toBeInTheDocument()
   })
 
+  it('calls saveItemField when description InlineClickEdit is clicked on expanded item', () => {
+    const saveItemField = vi.fn()
+    render(<InventoryTab {...defaultProps({
+      expandedItems: { 'item-1': true },
+      saveItemField,
+    })} />)
+    // Description is a 4th InlineClickEdit (after name, weight, cost) when expanded
+    const edits = screen.getAllByTestId('inline-click-edit')
+    expect(edits.length).toBeGreaterThanOrEqual(4)
+    fireEvent.click(edits[3])
+    expect(saveItemField).toHaveBeenCalledWith('item-1', 'description', 'updated')
+  })
+
   it('hides owner controls when not owner', () => {
     render(<InventoryTab {...defaultProps({ isOwner: false, permissions: { canEditInventory: false } })} />)
     expect(screen.queryByText('Add Item')).not.toBeInTheDocument()

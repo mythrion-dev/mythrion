@@ -730,6 +730,42 @@ describe('inline interactions', () => {
     fireEvent.change(othersInput!, { target: { value: '3' } })
     expect(ooc).toHaveBeenCalledWith('skill-athletics', 3)
   })
+
+  it('calls saveAttributeValue when InlineText for attribute value is clicked', () => {
+    const sav = vi.fn()
+    render(<CharacterTab {...defaultProps()} saveAttributeValue={sav} />)
+    // Strength has value '16' in mock data — click its InlineText
+    const strVal = screen.getAllByTestId('inline-text').find(el =>
+      el.getAttribute('data-value') === '16'
+    )
+    expect(strVal).toBeDefined()
+    fireEvent.click(strVal!)
+    expect(sav).toHaveBeenCalledWith('attr-str', 'Updated Value')
+  })
+
+  it('calls handleCoreResourceChange when InlineText for resource notes is clicked', () => {
+    const hcrc = vi.fn()
+    render(<CharacterTab {...defaultProps()} handleCoreResourceChange={hcrc} />)
+    // HP (cr-hp) has notes='Wounded', showNotes=true, editableByPlayer=true
+    const notesField = screen.getAllByTestId('inline-text').find(el =>
+      el.getAttribute('data-value') === 'Wounded'
+    )
+    expect(notesField).toBeDefined()
+    fireEvent.click(notesField!)
+    expect(hcrc).toHaveBeenCalledWith('cr-hp', 'notes', 'Updated Value')
+  })
+
+  it('calls handleCoreResourceChange when InlineNumber for resource maximum is clicked', () => {
+    const hcrc = vi.fn()
+    render(<CharacterTab {...defaultProps()} handleCoreResourceChange={hcrc} />)
+    // HP maximum is 50
+    const maxField = screen.getAllByTestId('inline-number').find(el =>
+      el.getAttribute('data-value') === '50'
+    )
+    expect(maxField).toBeDefined()
+    fireEvent.click(maxField!)
+    expect(hcrc).toHaveBeenCalledWith('cr-hp', 'maximum', '42')
+  })
 })
 
 describe('CollapsibleSkillRow', () => {
