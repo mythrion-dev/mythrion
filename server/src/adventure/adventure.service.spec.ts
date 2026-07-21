@@ -17,7 +17,13 @@ const mockMembershipService = {
 }
 
 const mockCharacterSheetService = {
-  create: jest.fn().mockResolvedValue({ id: 'sheet-1', characterName: 'Goblin' }),
+  create: jest.fn().mockResolvedValue({
+    id: 'sheet-1',
+    level: 1,
+    coreResourceValues: [
+      { id: 'crv-1', current: null, maximum: null, coreResource: { slug: 'hp' } },
+    ],
+  }),
   update: jest.fn().mockResolvedValue({ id: 'sheet-1' }),
   remove: jest.fn().mockResolvedValue(undefined),
   findOne: jest.fn(),
@@ -240,7 +246,7 @@ describe('AdventureService', () => {
         expect(result[0].hpMax).toBe(24)
       })
 
-      it('falls back to DB values when HP resource has null current/maximum', async () => {
+      it('returns null when HP core resource exists but values are null', async () => {
         const createdAt = new Date('2025-01-01')
         prisma.characterSheet.findMany.mockResolvedValue([
           {
@@ -261,9 +267,10 @@ describe('AdventureService', () => {
 
         const result = await service.listNpcs('a1', 'u1')
 
-        // nullish coalescing — null ?? value gives value (legacy fallback)
-        expect(result[0].hpActual).toBe(8)
-        expect(result[0].hpMax).toBe(12)
+        // HP CRV exists with null values — return null so frontend shows '?'
+        // instead of falling through to the stale legacy column (which is 0).
+        expect(result[0].hpActual).toBeNull()
+        expect(result[0].hpMax).toBeNull()
       })
 
       it('handles multiple NPCs each mapped independently', async () => {
@@ -308,12 +315,17 @@ describe('AdventureService', () => {
     })
 
     describe('createNpc', () => {
-      it('requires GM role, creates sheet, updates to NPC', async () => {
+      it('requires GM role, creates sheet, initializes HP, updates to NPC', async () => {
         prisma.adventure.findUnique.mockResolvedValue({
           id: 'a1',
           templates: [{ id: 't1' }],
         })
-        mockCharacterSheetService.create.mockResolvedValue({ id: 'sheet-1' })
+        // sheetService.create now returns CRVs with null HP (from default mock)
+        prisma.characterSheetCoreResourceValue.update.mockResolvedValue({
+          id: 'crv-1',
+          current: 10,
+          maximum: 10,
+        })
         prisma.characterSheet.update.mockResolvedValue({
           id: 'sheet-1',
           characterName: 'Goblin King',
@@ -323,13 +335,21 @@ describe('AdventureService', () => {
           hpActual: 0,
           hpMax: 0,
           template: { id: 't1', name: 'Template' },
-          coreResourceValues: [],
+          coreResourceValues: [
+            { current: 10, maximum: 10, coreResource: { slug: 'hp' } },
+          ],
         })
 
         const result = await service.createNpc('a1', 'u1', { name: 'Goblin King', type: 'NPC' })
 
         expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
         expect(mockCharacterSheetService.create).toHaveBeenCalled()
+        expect(prisma.characterSheetCoreResourceValue.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: 'crv-1' },
+            data: { current: 10, maximum: 10 },
+          }),
+        )
         expect(prisma.characterSheet.update).toHaveBeenCalledWith(
           expect.objectContaining({
             where: { id: 'sheet-1' },
@@ -341,8 +361,8 @@ describe('AdventureService', () => {
           }),
         )
         expect(result).toBeDefined()
-        expect(result.hpActual).toBe(0)
-        expect(result.hpMax).toBe(0)
+        expect(result.hpActual).toBe(10)
+        expect(result.hpMax).toBe(10)
       })
 
       it('throws NotFoundException when adventure has no template', async () => {

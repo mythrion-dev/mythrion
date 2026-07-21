@@ -116,10 +116,16 @@ export class AdventureService {
       const hpResource = coreResourceValues?.find(
         (crv) => crv.coreResource.slug === 'hp',
       )
+      // If the HP resource record exists but values are null, it means values
+      // were never initialized. Don't fall through to the stale legacy column
+      // (which defaults to 0) — return null so the frontend shows "?".
+      const hasHpResource = hpResource !== undefined
       return {
         ...npc,
-        hpActual: hpResource?.current ?? npc.hpActual,
-        hpMax: hpResource?.maximum ?? npc.hpMax,
+        hpActual:
+          hpResource?.current ?? (hasHpResource ? null : npc.hpActual),
+        hpMax:
+          hpResource?.maximum ?? (hasHpResource ? null : npc.hpMax),
       }
     })
   }
@@ -158,6 +164,21 @@ export class AdventureService {
       templateId,
       adventureId,
     })
+
+    // ── Initialize HP core resource value ──
+    // characterSheetService.create() creates CRV records with null
+    // current/maximum.  Initialize HP here so NPC list and sidebar show
+    // real values instead of 0/0.
+    const hpCrv = (sheet as any).coreResourceValues?.find(
+      (crv: any) => crv.coreResource?.slug === 'hp',
+    )
+    if (hpCrv && (hpCrv.current === null || hpCrv.maximum === null)) {
+      const defaultHp = 10
+      await this.prisma.characterSheetCoreResourceValue.update({
+        where: { id: hpCrv.id },
+        data: { current: defaultHp, maximum: defaultHp },
+      })
+    }
 
     // Convert to NPC — set isNpc, npcType, and clear ownerId so only GMs can edit
     const { coreResourceValues: crvValues, ...npcData } =
