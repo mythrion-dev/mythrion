@@ -999,7 +999,7 @@ describe('InvitePanel', () => {
     render(<InvitePanel {...baseProps} inviteLink='https://example.com/invite/abc' />)
     const input = screen.getByDisplayValue('https://example.com/invite/abc')
     // Simulate focus with select
-    Object.defineProperty(input, 'select', { value: selectFn })
+    ;(input as HTMLInputElement).select = selectFn as any
     fireEvent.focus(input)
     expect(selectFn).toHaveBeenCalled()
   })
