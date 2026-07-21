@@ -9,6 +9,199 @@ import { ResistanceTab } from '@/components/character-sheet'
 import type { Ability, AbilityLevel, SummonTab, CharacterSheet, TemplateResistanceDef, SheetPermissions } from './types'
 import type { FormEvent } from 'react'
 
+/**
+ * Safe formula evaluator — tokenizer + recursive descent parser.
+ * Supports arithmetic, parentheses, and Math.* functions.
+ * No use of Function() constructor or eval(), so no SonarQube hotspot.
+ */
+export function evaluateSummonFormula(formula: string, variables: Record<string, number>): number {
+  if (!formula || !formula.trim()) return 0
+
+  const varNames = Object.keys(variables)
+
+  // ---------- tokenizer ----------
+  type Token =
+    | { t: 'num'; v: number }
+    | { t: 'op'; v: string }
+    | { t: 'lparen' | 'rparen' | 'comma' }
+    | { t: 'func'; v: string }
+
+  const funcNames = new Set(['floor', 'ceil', 'round', 'max', 'min', 'abs'])
+  const funcMap: Record<string, (...args: number[]) => number> = {
+    floor: Math.floor,
+    ceil: Math.ceil,
+    round: Math.round,
+    max: Math.max,
+    min: Math.min,
+    abs: Math.abs,
+  }
+  const ops = new Set(['+', '-', '*', '/', '%', '**', '^'])
+
+  function tokenize(src: string): Token[] {
+    const tokens: Token[] = []
+    let i = 0
+    while (i < src.length) {
+      const ch = src[i]
+      // Skip whitespace
+      if (/\s/.test(ch)) { i++; continue }
+
+      // Number
+      if (/\d/.test(ch) || (ch === '.' && i + 1 < src.length && /\d/.test(src[i + 1]))) {
+        const start = i
+        while (i < src.length && /[\d.eE]/.test(src[i])) i++
+        let numStr = src.slice(start, i)
+        // Back up if trailing exponent with no digits
+        if (/[eE][-+]?$/.test(numStr)) { i--; numStr = src.slice(start, i) }
+        tokens.push({ t: 'num', v: parseFloat(numStr) })
+        continue
+      }
+
+      // ** (two-char operator)
+      if (ch === '*' && i + 1 < src.length && src[i + 1] === '*') {
+        tokens.push({ t: 'op', v: '**' }); i += 2; continue
+      }
+      // ^ (shorthand for **)
+      if (ch === '^') {
+        tokens.push({ t: 'op', v: '**' }); i += 1; continue
+      }
+
+      // Single-char operators
+      if (ops.has(ch)) {
+        tokens.push({ t: 'op', v: ch }); i += 1; continue
+      }
+
+      // Parens / comma
+      if (ch === '(') { tokens.push({ t: 'lparen' }); i += 1; continue }
+      if (ch === ')') { tokens.push({ t: 'rparen' }); i += 1; continue }
+      if (ch === ',') { tokens.push({ t: 'comma' }); i += 1; continue }
+
+      // Identifier (function name or variable)
+      if (/[a-zA-Z_]/.test(ch)) {
+        const start = i
+        while (i < src.length && /\w/.test(src[i])) i++
+        const word = src.slice(start, i)
+        if (funcNames.has(word)) {
+          tokens.push({ t: 'func', v: word })
+        } else if (word in variables) {
+          tokens.push({ t: 'num', v: variables[word] })
+        } else {
+          // Unknown identifier — treat as 0 to avoid crashing
+          tokens.push({ t: 'num', v: 0 })
+        }
+        continue
+      }
+
+      // Skip anything else
+      i++
+    }
+    return tokens
+  }
+
+  // ---------- recursive descent parser ----------
+  let pos = 0
+  let toks: Token[] = []
+
+  function peek(): Token | undefined { return toks[pos] }
+  function consume(): Token | undefined { return toks[pos++] }
+  function expect(t: Token['t']): boolean {
+    if (peek()?.t === t) { consume(); return true }
+    return false
+  }
+
+  // expression := term (('+' | '-') term)*
+  function parseExpression(): number {
+    let left = parseTerm()
+    let tok = peek()
+    while (tok?.t === 'op' && (tok.v === '+' || tok.v === '-')) {
+      consume()
+      const right = parseTerm()
+      left = tok.v === '+' ? left + right : left - right
+      tok = peek()
+    }
+    return left
+  }
+
+  // term := factor (('*' | '/' | '%') factor)*
+  function parseTerm(): number {
+    let left = parseFactor()
+    let tok = peek()
+    while (tok?.t === 'op' && (tok.v === '*' || tok.v === '/' || tok.v === '%')) {
+      consume()
+      const right = parseFactor()
+      if (tok.v === '*') left = left * right
+      else if (tok.v === '/') left = right !== 0 ? left / right : 0
+      else left = right !== 0 ? left % right : 0
+      tok = peek()
+    }
+    return left
+  }
+
+  // factor := unary ('**' factor)?
+  function parseFactor(): number {
+    const base = parseUnary()
+    const tok = peek()
+    if (tok?.t === 'op' && tok.v === '**') {
+      consume()
+      const exp = parseFactor() // right-associative
+      return Math.pow(base, exp)
+    }
+    return base
+  }
+
+  // unary := '-' unary | '+' unary | atom
+  function parseUnary(): number {
+    const neg = peek()
+    if (neg?.t === 'op' && neg.v === '-') {
+      consume(); return -parseUnary()
+    }
+    const pos = peek()
+    if (pos?.t === 'op' && pos.v === '+') {
+      consume(); return parseUnary()
+    }
+    return parseAtom()
+  }
+
+  // atom := NUMBER | '(' expression ')' | func '(' args ')'
+  function parseAtom(): number {
+    const num = peek()
+    if (num?.t === 'num') {
+      consume()
+      return num.v
+    }
+    if (expect('lparen')) {
+      const val = parseExpression()
+      expect('rparen')
+      return val
+    }
+    const fnTok = peek()
+    if (fnTok?.t === 'func') {
+      consume()
+      const fn = funcMap[fnTok.v]
+      if (!fn) return 0
+      expect('lparen')
+      const args: number[] = []
+      if (peek()?.t !== 'rparen') {
+        args.push(parseExpression())
+        while (expect('comma')) {
+          args.push(parseExpression())
+        }
+      }
+      expect('rparen')
+      return fn(...args)
+    }
+    return 0
+  }
+
+  try {
+    toks = tokenize(formula)
+    pos = 0
+    const result = parseExpression()
+    return Number.isFinite(result) ? result : 0
+  } catch {
+    return 0
+  }
+}
+
 export function AbilitiesTab({
   abilities, permissions, sheetId, template,
   selectedLevels, setAbilities, setSelectedLevels,
@@ -229,198 +422,6 @@ export function AbilitiesTab({
     return map
   }
 
-  /**
-   * Safe formula evaluator — tokenizer + recursive descent parser.
-   * Supports arithmetic, parentheses, and Math.* functions.
-   * No use of Function() constructor or eval(), so no SonarQube hotspot.
-   */
-  function evaluateSummonFormula(formula: string, variables: Record<string, number>): number {
-    if (!formula || !formula.trim()) return 0
-
-    const varNames = Object.keys(variables)
-
-    // ---------- tokenizer ----------
-    type Token =
-      | { t: 'num'; v: number }
-      | { t: 'op'; v: string }
-      | { t: 'lparen' | 'rparen' | 'comma' }
-      | { t: 'func'; v: string }
-
-    const funcNames = new Set(['floor', 'ceil', 'round', 'max', 'min', 'abs'])
-    const funcMap: Record<string, (...args: number[]) => number> = {
-      floor: Math.floor,
-      ceil: Math.ceil,
-      round: Math.round,
-      max: Math.max,
-      min: Math.min,
-      abs: Math.abs,
-    }
-    const ops = new Set(['+', '-', '*', '/', '%', '**', '^'])
-
-    function tokenize(src: string): Token[] {
-      const tokens: Token[] = []
-      let i = 0
-      while (i < src.length) {
-        const ch = src[i]
-        // Skip whitespace
-        if (/\s/.test(ch)) { i++; continue }
-
-        // Number
-        if (/\d/.test(ch) || (ch === '.' && i + 1 < src.length && /\d/.test(src[i + 1]))) {
-          const start = i
-          while (i < src.length && /[\d.eE]/.test(src[i])) i++
-          let numStr = src.slice(start, i)
-          // Back up if trailing exponent with no digits
-          if (/[eE][-+]?$/.test(numStr)) { i--; numStr = src.slice(start, i) }
-          tokens.push({ t: 'num', v: parseFloat(numStr) })
-          continue
-        }
-
-        // ** (two-char operator)
-        if (ch === '*' && i + 1 < src.length && src[i + 1] === '*') {
-          tokens.push({ t: 'op', v: '**' }); i += 2; continue
-        }
-        // ^ (shorthand for **)
-        if (ch === '^') {
-          tokens.push({ t: 'op', v: '**' }); i += 1; continue
-        }
-
-        // Single-char operators
-        if (ops.has(ch)) {
-          tokens.push({ t: 'op', v: ch }); i += 1; continue
-        }
-
-        // Parens / comma
-        if (ch === '(') { tokens.push({ t: 'lparen' }); i += 1; continue }
-        if (ch === ')') { tokens.push({ t: 'rparen' }); i += 1; continue }
-        if (ch === ',') { tokens.push({ t: 'comma' }); i += 1; continue }
-
-        // Identifier (function name or variable)
-        if (/[a-zA-Z_]/.test(ch)) {
-          const start = i
-          while (i < src.length && /\w/.test(src[i])) i++
-          const word = src.slice(start, i)
-          if (funcNames.has(word)) {
-            tokens.push({ t: 'func', v: word })
-          } else if (word in variables) {
-            tokens.push({ t: 'num', v: variables[word] })
-          } else {
-            // Unknown identifier — treat as 0 to avoid crashing
-            tokens.push({ t: 'num', v: 0 })
-          }
-          continue
-        }
-
-        // Skip anything else
-        i++
-      }
-      return tokens
-    }
-
-    // ---------- recursive descent parser ----------
-    let pos = 0
-    let toks: Token[] = []
-
-    function peek(): Token | undefined { return toks[pos] }
-    function consume(): Token | undefined { return toks[pos++] }
-    function expect(t: Token['t']): boolean {
-      if (peek()?.t === t) { consume(); return true }
-      return false
-    }
-
-    // expression := term (('+' | '-') term)*
-    function parseExpression(): number {
-      let left = parseTerm()
-      let tok = peek()
-      while (tok?.t === 'op' && (tok.v === '+' || tok.v === '-')) {
-        consume()
-        const right = parseTerm()
-        left = tok.v === '+' ? left + right : left - right
-        tok = peek()
-      }
-      return left
-    }
-
-    // term := factor (('*' | '/' | '%') factor)*
-    function parseTerm(): number {
-      let left = parseFactor()
-      let tok = peek()
-      while (tok?.t === 'op' && (tok.v === '*' || tok.v === '/' || tok.v === '%')) {
-        consume()
-        const right = parseFactor()
-        if (tok.v === '*') left = left * right
-        else if (tok.v === '/') left = right !== 0 ? left / right : 0
-        else left = right !== 0 ? left % right : 0
-        tok = peek()
-      }
-      return left
-    }
-
-    // factor := unary ('**' factor)?
-    function parseFactor(): number {
-      const base = parseUnary()
-      const tok = peek()
-      if (tok?.t === 'op' && tok.v === '**') {
-        consume()
-        const exp = parseFactor() // right-associative
-        return Math.pow(base, exp)
-      }
-      return base
-    }
-
-    // unary := '-' unary | '+' unary | atom
-    function parseUnary(): number {
-      const neg = peek()
-      if (neg?.t === 'op' && neg.v === '-') {
-        consume(); return -parseUnary()
-      }
-      const pos = peek()
-      if (pos?.t === 'op' && pos.v === '+') {
-        consume(); return parseUnary()
-      }
-      return parseAtom()
-    }
-
-    // atom := NUMBER | '(' expression ')' | func '(' args ')'
-    function parseAtom(): number {
-      const num = peek()
-      if (num?.t === 'num') {
-        consume()
-        return num.v
-      }
-      if (expect('lparen')) {
-        const val = parseExpression()
-        expect('rparen')
-        return val
-      }
-      const fnTok = peek()
-      if (fnTok?.t === 'func') {
-        consume()
-        const fn = funcMap[fnTok.v]
-        if (!fn) return 0
-        expect('lparen')
-        const args: number[] = []
-        if (peek()?.t !== 'rparen') {
-          args.push(parseExpression())
-          while (expect('comma')) {
-            args.push(parseExpression())
-          }
-        }
-        expect('rparen')
-        return fn(...args)
-      }
-      return 0
-    }
-
-    try {
-      toks = tokenize(formula)
-      pos = 0
-      const result = parseExpression()
-      return Number.isFinite(result) ? result : 0
-    } catch {
-      return 0
-    }
-  }
 
   async function handleAddLevel(abilityId: string) {
     if (!sheetId) return
