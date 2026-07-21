@@ -99,7 +99,8 @@
       "!**/*.dto.ts",
       "!auth/google.service.ts",
       "!auth/google.strategy.ts",
-      "!auth/rate-limit.decorator.ts"
+      "!auth/rate-limit.decorator.ts",
+      "!**/coverage/**"
     ],
     "coverageDirectory": "../coverage",
     "coverageThreshold": {
