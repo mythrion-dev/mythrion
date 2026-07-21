@@ -7,7 +7,7 @@ import { api, API_URL, getAccessToken } from '@/lib/api'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import { StoryTab, CharacterTab, InventoryTab, PersonalAbilitiesTab, AbilitiesTab, ResistanceTab } from '@/components/character-sheet'
 import { PageNav } from '@/lib/breadcrumb'
-import type { SkillModifierProfile, ArmorClassAttributeModifierDef, SectionEntry, SummonSkillData, Ability, AbilityLevel, InventoryItem, Story, CharacterSheet, Tab, SummonTab, AcResultMap } from '@/components/character-sheet/types'
+import type { SkillModifierProfile, ArmorClassAttributeModifierDef, SectionEntry, SummonSkillData, Ability, AbilityLevel, InventoryItem, Story, CharacterSheet, Tab, SummonTab, AcResultMap, SheetPermissions } from '@/components/character-sheet/types'
 
 
 export default function CharacterSheetDetailPage() {
@@ -30,6 +30,17 @@ export default function CharacterSheetDetailPage() {
   othersValuesRef.current = othersValues
   const [activeTab, setActiveTab] = useState<Tab>('character')
   const isOwner = sheet?.ownerId === user?.id || (sheet?.isNpc === true)
+  const permissions: SheetPermissions = {
+    canEditCharacter: isOwner,
+    canEditSkills: isOwner,
+    canEditResources: isOwner,
+    canEditInventory: isOwner,
+    canEditStory: isOwner,
+    canEditProfessionalSkills: isOwner,
+    canEditPersonalAbilities: isOwner,
+    canEditResistances: isOwner,
+    canEditAbilities: isOwner,
+  }
 
   const [abilities, setAbilities] = useState<Ability[]>([]); const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]); const [story, setStory] = useState<Story | null>(null)
   const [selectedLevels, setSelectedLevels] = useState<Record<string, string>>({})
@@ -979,7 +990,7 @@ export default function CharacterSheetDetailPage() {
 
       {activeTab === 'character' && <CharacterTab
         sheet={sheet}
-        isOwner={isOwner}
+        permissions={permissions}
         enabledCoreResources={enabledCoreResources}
         handleCoreResourceChange={handleCoreResourceChange}
         handleCoreResourceModify={handleCoreResourceModify}
@@ -1006,7 +1017,7 @@ export default function CharacterSheetDetailPage() {
       />}
 
       {activeTab === 'abilities' && <AbilitiesTab
-        abilities={abilities} isOwner={isOwner} sheetId={sheet.id} template={sheet.template}
+        abilities={abilities} permissions={permissions} sheetId={sheet.id} template={sheet.template}
         selectedLevels={selectedLevels} setAbilities={setAbilities} setSelectedLevels={setSelectedLevels}
         searchQuery={abilitiesSearch} setSearchQuery={setAbilitiesSearch}
         showNewAbility={showNewAbility} setShowNewAbility={setShowNewAbility}
@@ -1034,7 +1045,7 @@ export default function CharacterSheetDetailPage() {
       />}
       {activeTab === 'inventory' && <InventoryTab
         inventoryItems={inventoryItems}
-        isOwner={isOwner}
+        permissions={permissions}
         searchQuery={inventorySearch}
         setSearchQuery={setInventorySearch}
         totalWeight={totalWeight}
@@ -1051,12 +1062,12 @@ export default function CharacterSheetDetailPage() {
         expandedItems={expandedItems}
         setExpandedItems={setExpandedItems}
       />}
-      {activeTab === 'story' && <StoryTab story={story} isOwner={isOwner} onSaveField={saveStoryField} />}
+      {activeTab === 'story' && <StoryTab story={story} permissions={permissions} onSaveField={saveStoryField} />}
 
       {activeTab === 'personal-abilities' && <PersonalAbilitiesTab
         sections={sheet.template.characterSections || []}
         entries={sectionEntries}
-        isOwner={isOwner}
+        permissions={permissions}
         toSingular={toSingular}
         expandedEntries={expandedSectionEntries}
         setExpandedEntries={setExpandedSectionEntries}
@@ -1074,7 +1085,7 @@ export default function CharacterSheetDetailPage() {
       {activeTab === 'resistances' && (
         <ResistanceTab
           resistances={resistanceData}
-          isOwner={!!isOwner}
+          permissions={permissions}
           onSaveComponent={handleSaveResistanceComponent}
           onSaveManual={handleSaveResistanceManual}
           sheetResistanceValues={sheetResistanceValues}

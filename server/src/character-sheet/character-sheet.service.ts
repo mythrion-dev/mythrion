@@ -411,9 +411,13 @@ export class CharacterSheetService {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can edit this character sheet')
-      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
-      catch { throw new ForbiddenException('Only the owner or a GM can edit this character sheet') }
+      // Only allow GM bypass for NPC sheets; player sheets are owner-only
+      if (sheet.isNpc && sheet.adventureId) {
+        try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+        catch { throw new ForbiddenException('You do not have permission to modify this Character.') }
+      } else {
+        throw new ForbiddenException('You do not have permission to modify this Character.')
+      }
     }
 
     if (dto.values) {
@@ -557,9 +561,12 @@ export class CharacterSheetService {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can delete this character sheet')
-      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
-      catch { throw new ForbiddenException('Only the owner or a GM can delete this character sheet') }
+      if (sheet.isNpc && sheet.adventureId) {
+        try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+        catch { throw new ForbiddenException('You do not have permission to modify this Character.') }
+      } else {
+        throw new ForbiddenException('You do not have permission to modify this Character.')
+      }
     }
     const deleted = await this.prisma.characterSheet.delete({ where: { id } })
 
@@ -587,9 +594,12 @@ export class CharacterSheetService {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can unlink this character sheet')
-      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
-      catch { throw new ForbiddenException('Only the owner or a GM can unlink this character sheet') }
+      if (sheet.isNpc && sheet.adventureId) {
+        try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+        catch { throw new ForbiddenException('You do not have permission to modify this Character.') }
+      } else {
+        throw new ForbiddenException('You do not have permission to modify this Character.')
+      }
     }
     const unlinked = await this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId: null }, include: sheetInclude })
 
@@ -1328,13 +1338,16 @@ export class CharacterSheetService {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) {
-      // Allow GMs of the adventure to manage NPC sheets and player sheets
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can manage this character sheet')
-      try {
-        await this.membership.requireRole(sheet.adventureId, userId, 'GM')
-      } catch {
-        throw new ForbiddenException('Only the owner or a GM can manage this character sheet')
+      // Only allow GM bypass for NPC sheets; player sheets are owner-only
+      if (sheet.isNpc && sheet.adventureId) {
+        try {
+          await this.membership.requireRole(sheet.adventureId, userId, 'GM')
+          return
+        } catch {
+          throw new ForbiddenException('You do not have permission to modify this Character.')
+        }
       }
+      throw new ForbiddenException('You do not have permission to modify this Character.')
     }
   }
 
