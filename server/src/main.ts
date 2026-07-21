@@ -32,7 +32,7 @@ export async function bootstrap() {
 }
 
 // Auto-bootstrap if running directly (for local dev)
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
   bootstrap().catch((err) => {
     console.error('Failed to bootstrap:', err)
     process.exit(1)

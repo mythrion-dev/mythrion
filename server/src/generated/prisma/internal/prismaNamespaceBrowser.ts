@@ -362,6 +362,7 @@ export const TemplateCoreResourceScalarFieldEnum = {
   enabled: 'enabled',
   editableByPlayer: 'editableByPlayer',
   showNotes: 'showNotes',
+  color: 'color',
   order: 'order',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

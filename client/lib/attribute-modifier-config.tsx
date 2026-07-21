@@ -23,7 +23,7 @@ const DEFAULT_CONFIG: ConfigValues = {
   modifier: 0,
 }
 
-function generateFormula(config: ConfigValues): string {
+export function generateFormula(config: ConfigValues): string {
   const { every, modifierIncrease, startingAttribute, modifier } = config
   if (every <= 0) return '0'
 
@@ -43,7 +43,7 @@ function generateFormula(config: ConfigValues): string {
   return `${modifier} + ${incTerm}`
 }
 
-function parseFormula(formula: string): ConfigValues | null {
+export function parseFormula(formula: string): ConfigValues | null {
   if (!formula?.trim()) return null
 
   const cleaned = formula.replace(/\s+/g, '')
@@ -91,7 +91,7 @@ function parseFormula(formula: string): ConfigValues | null {
   return { every, modifierIncrease, startingAttribute, modifier }
 }
 
-function generateProgression(config: ConfigValues): { attribute: number; modifier: number }[] {
+export function generateProgression(config: ConfigValues): { attribute: number; modifier: number }[] {
   const { every, modifierIncrease, startingAttribute, modifier } = config
   if (every <= 0) return []
 
