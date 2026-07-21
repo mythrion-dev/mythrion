@@ -155,9 +155,155 @@ describe('AdventureService', () => {
         expect(prisma.characterSheet.findMany).toHaveBeenCalledWith(
           expect.objectContaining({
             where: { adventureId: 'a1', isNpc: true },
+            select: expect.objectContaining({
+              coreResourceValues: expect.anything(),
+            }),
           }),
         )
         expect(result).toEqual(npcs)
+      })
+
+      it('maps HP from coreResourceValues when slug=hp is present', async () => {
+        const createdAt = new Date('2025-01-01')
+        prisma.characterSheet.findMany.mockResolvedValue([
+          {
+            id: 'n1',
+            characterName: 'Goblin',
+            isNpc: true,
+            npcType: 'NPC',
+            level: 1,
+            hpActual: 0,
+            hpMax: 0,
+            createdAt,
+            template: { id: 't1', name: 'Goblin Template' },
+            coreResourceValues: [
+              { current: 25, maximum: 50, coreResource: { slug: 'hp' } },
+            ],
+          },
+        ])
+
+        const result = await service.listNpcs('a1', 'u1')
+
+        expect(result).toHaveLength(1)
+        expect(result[0].hpActual).toBe(25)
+        expect(result[0].hpMax).toBe(50)
+        expect(result[0].characterName).toBe('Goblin')
+      })
+
+      it('falls back to DB hpActual/hpMax when coreResourceValues is empty', async () => {
+        const createdAt = new Date('2025-01-01')
+        prisma.characterSheet.findMany.mockResolvedValue([
+          {
+            id: 'n2',
+            characterName: 'Orc',
+            isNpc: true,
+            npcType: 'MOB',
+            level: 2,
+            hpActual: 15,
+            hpMax: 20,
+            createdAt,
+            template: { id: 't1', name: 'Orc Template' },
+            coreResourceValues: [],
+          },
+        ])
+
+        const result = await service.listNpcs('a1', 'u1')
+
+        expect(result[0].hpActual).toBe(15)
+        expect(result[0].hpMax).toBe(20)
+      })
+
+      it('identifies HP resource among multiple core resources', async () => {
+        const createdAt = new Date('2025-01-01')
+        prisma.characterSheet.findMany.mockResolvedValue([
+          {
+            id: 'n3',
+            characterName: 'Mage',
+            isNpc: true,
+            npcType: 'NPC',
+            level: 3,
+            hpActual: 0,
+            hpMax: 0,
+            createdAt,
+            template: { id: 't1', name: 'Mage Template' },
+            coreResourceValues: [
+              { current: 10, maximum: 10, coreResource: { slug: 'mp' } },
+              { current: 18, maximum: 24, coreResource: { slug: 'hp' } },
+              { current: 5, maximum: 5, coreResource: { slug: 'sp' } },
+            ],
+          },
+        ])
+
+        const result = await service.listNpcs('a1', 'u1')
+
+        expect(result[0].hpActual).toBe(18)
+        expect(result[0].hpMax).toBe(24)
+      })
+
+      it('falls back to DB values when HP resource has null current/maximum', async () => {
+        const createdAt = new Date('2025-01-01')
+        prisma.characterSheet.findMany.mockResolvedValue([
+          {
+            id: 'n4',
+            characterName: 'Undead',
+            isNpc: true,
+            npcType: 'NPC',
+            level: 1,
+            hpActual: 8,
+            hpMax: 12,
+            createdAt,
+            template: { id: 't1', name: 'Undead Template' },
+            coreResourceValues: [
+              { current: null, maximum: null, coreResource: { slug: 'hp' } },
+            ],
+          },
+        ])
+
+        const result = await service.listNpcs('a1', 'u1')
+
+        // nullish coalescing — null ?? value gives value (legacy fallback)
+        expect(result[0].hpActual).toBe(8)
+        expect(result[0].hpMax).toBe(12)
+      })
+
+      it('handles multiple NPCs each mapped independently', async () => {
+        const createdAt = new Date('2025-01-01')
+        prisma.characterSheet.findMany.mockResolvedValue([
+          {
+            id: 'n5',
+            characterName: 'Dragon',
+            isNpc: true,
+            npcType: 'NPC',
+            level: 10,
+            hpActual: 0,
+            hpMax: 0,
+            createdAt,
+            template: { id: 't1', name: 'Dragon Template' },
+            coreResourceValues: [
+              { current: 120, maximum: 200, coreResource: { slug: 'hp' } },
+            ],
+          },
+          {
+            id: 'n6',
+            characterName: 'Rat',
+            isNpc: true,
+            npcType: 'MOB',
+            level: 1,
+            hpActual: 5,
+            hpMax: 5,
+            createdAt,
+            template: { id: 't1', name: 'Rat Template' },
+            coreResourceValues: [],
+          },
+        ])
+
+        const result = await service.listNpcs('a1', 'u1')
+
+        expect(result).toHaveLength(2)
+        expect(result[0].hpActual).toBe(120)
+        expect(result[0].hpMax).toBe(200)
+        expect(result[1].hpActual).toBe(5)
+        expect(result[1].hpMax).toBe(5)
       })
     })
 
@@ -173,6 +319,11 @@ describe('AdventureService', () => {
           characterName: 'Goblin King',
           isNpc: true,
           npcType: 'NPC',
+          level: 1,
+          hpActual: 0,
+          hpMax: 0,
+          template: { id: 't1', name: 'Template' },
+          coreResourceValues: [],
         })
 
         const result = await service.createNpc('a1', 'u1', { name: 'Goblin King', type: 'NPC' })
@@ -190,6 +341,8 @@ describe('AdventureService', () => {
           }),
         )
         expect(result).toBeDefined()
+        expect(result.hpActual).toBe(0)
+        expect(result.hpMax).toBe(0)
       })
 
       it('throws NotFoundException when adventure has no template', async () => {
@@ -201,6 +354,56 @@ describe('AdventureService', () => {
         await expect(
           service.createNpc('a1', 'u1', { name: 'Ghost' }),
         ).rejects.toThrow(NotFoundException)
+      })
+
+      it('maps HP from coreResourceValues on create', async () => {
+        prisma.adventure.findUnique.mockResolvedValue({
+          id: 'a1',
+          templates: [{ id: 't1' }],
+        })
+        mockCharacterSheetService.create.mockResolvedValue({ id: 'sheet-1' })
+        prisma.characterSheet.update.mockResolvedValue({
+          id: 'sheet-1',
+          characterName: 'Goblin King',
+          isNpc: true,
+          npcType: 'NPC',
+          level: 1,
+          hpActual: 0,
+          hpMax: 0,
+          template: { id: 't1', name: 'Template' },
+          coreResourceValues: [
+            { current: 30, maximum: 60, coreResource: { slug: 'hp' } },
+          ],
+        })
+
+        const result = await service.createNpc('a1', 'u1', { name: 'Goblin King', type: 'NPC' })
+
+        expect(result.hpActual).toBe(30)
+        expect(result.hpMax).toBe(60)
+      })
+
+      it('falls back to DB values when no HP coreResource on create', async () => {
+        prisma.adventure.findUnique.mockResolvedValue({
+          id: 'a1',
+          templates: [{ id: 't1' }],
+        })
+        mockCharacterSheetService.create.mockResolvedValue({ id: 'sheet-1' })
+        prisma.characterSheet.update.mockResolvedValue({
+          id: 'sheet-1',
+          characterName: 'Orc',
+          isNpc: true,
+          npcType: 'MOB',
+          level: 2,
+          hpActual: 15,
+          hpMax: 20,
+          template: { id: 't1', name: 'Template' },
+          coreResourceValues: [],
+        })
+
+        const result = await service.createNpc('a1', 'u1', { name: 'Orc', type: 'MOB' })
+
+        expect(result.hpActual).toBe(15)
+        expect(result.hpMax).toBe(20)
       })
     })
 

@@ -100,10 +100,28 @@ export class AdventureService {
         template: {
           select: { id: true, name: true },
         },
+        coreResourceValues: {
+          select: {
+            current: true,
+            maximum: true,
+            coreResource: {
+              select: { slug: true },
+            },
+          },
+        },
       },
     })
 
-    return npcs
+    return npcs.map(({ coreResourceValues, ...npc }) => {
+      const hpResource = coreResourceValues?.find(
+        (crv) => crv.coreResource.slug === 'hp',
+      )
+      return {
+        ...npc,
+        hpActual: hpResource?.current ?? npc.hpActual,
+        hpMax: hpResource?.maximum ?? npc.hpMax,
+      }
+    })
   }
 
   /**
@@ -142,25 +160,44 @@ export class AdventureService {
     })
 
     // Convert to NPC — set isNpc, npcType, and clear ownerId so only GMs can edit
-    return this.prisma.characterSheet.update({
-      where: { id: sheet.id },
-      data: {
-        isNpc: true,
-        npcType: dto.type ?? 'NPC',
-        ownerId: null,
-        playerName: dto.description ?? null,
-      },
-      select: {
-        id: true,
-        characterName: true,
-        isNpc: true,
-        npcType: true,
-        level: true,
-        hpActual: true,
-        hpMax: true,
-        template: { select: { id: true, name: true } },
-      },
-    })
+    const { coreResourceValues: crvValues, ...npcData } =
+      await this.prisma.characterSheet.update({
+        where: { id: sheet.id },
+        data: {
+          isNpc: true,
+          npcType: dto.type ?? 'NPC',
+          ownerId: null,
+          playerName: dto.description ?? null,
+        },
+        select: {
+          id: true,
+          characterName: true,
+          isNpc: true,
+          npcType: true,
+          level: true,
+          hpActual: true,
+          hpMax: true,
+          template: { select: { id: true, name: true } },
+          coreResourceValues: {
+            select: {
+              current: true,
+              maximum: true,
+              coreResource: {
+                select: { slug: true },
+              },
+            },
+          },
+        },
+      })
+
+    const hpResource = crvValues?.find(
+      (crv) => crv.coreResource.slug === 'hp',
+    )
+    return {
+      ...npcData,
+      hpActual: hpResource?.current ?? npcData.hpActual,
+      hpMax: hpResource?.maximum ?? npcData.hpMax,
+    }
   }
 
   /**
