@@ -608,6 +608,40 @@ function SkillTable({
                     }`}
                   >
                     <div className="px-3 sm:px-4 py-2 space-y-2 border-t border-border/40 ml-10 bg-background/20">
+                      {/* Attribute selector */}
+                      {(sv.skill.allowedAttributeIds?.length ?? 0) > 0 ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">Attribute:</span>
+                          <select
+                            className="input-field py-0.5 text-[0.6rem] flex-1 min-w-0"
+                            value={sv.selectedAttributeId ?? ''}
+                            onChange={e => onAttributeChange(sv.skillId, e.target.value || null)}
+                          >
+                            {sv.skill.allowedAttributeIds.map(attrId => {
+                              const a = templateAttributes.find(x => x.id === attrId)
+                              if (!a) return null
+                              return <option key={attrId} value={attrId}>{a.name}</option>
+                            })}
+                          </select>
+                          {attrMod !== null && (
+                            <span className="text-[0.6rem] font-mono text-primary tabular-nums shrink-0">
+                              ({attrMod >= 0 ? '+' : ''}{attrMod})
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">Attribute:</span>
+                          <span className="text-[0.6rem] text-foreground">
+                            {selectedAttr?.name || '—'}
+                          </span>
+                          {attrMod !== null && (
+                            <span className="text-[0.6rem] font-mono text-primary tabular-nums">
+                              ({attrMod >= 0 ? '+' : ''}{attrMod})
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {skillProfiles.map(profile => {
                         const sid = profileSelections[sv.skillId]?.[profile.id]
                         return (

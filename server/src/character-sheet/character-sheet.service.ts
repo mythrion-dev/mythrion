@@ -1,6 +1,7 @@
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
   ForbiddenException,
   ConflictException,
   Logger,
@@ -611,6 +612,24 @@ export class CharacterSheetService {
 
   async updateSkillAttribute(sheetId: string, skillId: string, attributeId: string | null, userId: string) {
     await this.requireOwnership(sheetId, userId)
+
+    // Fetch the template skill to validate allowedAttributeIds
+    const templateSkill = await this.prisma.templateSkill.findUnique({
+      where: { id: skillId },
+      select: { allowedAttributeIds: true },
+    })
+    if (!templateSkill) throw new NotFoundException('Skill not found')
+
+    // Fixed skills (allowedAttributeIds is empty) reject any attribute change
+    if (templateSkill.allowedAttributeIds.length === 0) {
+      throw new BadRequestException('This skill has a fixed attribute and cannot be changed')
+    }
+
+    // Player-selectable skills must validate the chosen attribute is in the allowed list
+    if (attributeId !== null && !templateSkill.allowedAttributeIds.includes(attributeId)) {
+      throw new BadRequestException('The selected attribute is not allowed for this skill')
+    }
+
     const result = await this.prisma.characterSheetSkillValue.upsert({
       where: { sheetId_skillId: { sheetId, skillId } },
       create: { sheetId, skillId, value: '', selectedAttributeId: attributeId },
@@ -947,10 +966,19 @@ export class CharacterSheetService {
   async updateSummonSkillAttribute(summonSkillId: string, attributeId: string | null, userId: string) {
     const ss = await this.prisma.summonSkill.findUnique({
       where: { id: summonSkillId },
-      include: { ability: true },
+      include: { ability: true, skill: { select: { allowedAttributeIds: true } } },
     })
     if (!ss) throw new NotFoundException('Summon skill not found')
     await this.requireOwnership(ss.ability.sheetId, userId)
+
+    // Validate that the attribute change is allowed
+    if (ss.skill.allowedAttributeIds.length === 0) {
+      throw new BadRequestException('This skill has a fixed attribute and cannot be changed')
+    }
+    if (attributeId !== null && !ss.skill.allowedAttributeIds.includes(attributeId)) {
+      throw new BadRequestException('The selected attribute is not allowed for this skill')
+    }
+
     const result = await this.prisma.summonSkill.update({
       where: { id: summonSkillId },
       data: { selectedAttributeId: attributeId },
