@@ -313,6 +313,28 @@ export class CharacterSheetService {
       include: sheetInclude,
     })
 
+    // ── Diagnostic: log core resource values created ──
+    const crvsDebug = (sheet as any).coreResourceValues?.map((crv: any) => ({
+      id: crv.id,
+      slug: crv.coreResource?.slug,
+      enabled: crv.coreResource?.enabled,
+      current: crv.current,
+      maximum: crv.maximum,
+    }))
+    this.logger.debug(
+      `[DIAGNOSTIC] characterSheetService.create: sheet "${sheet.characterName}" | ` +
+      `templateId=${dto.templateId} | CRVs=${JSON.stringify(crvsDebug ?? [])}`,
+    )
+    const hpCrvDebug = (sheet as any).coreResourceValues?.find(
+      (crv: any) => crv.coreResource?.slug === 'hp',
+    )
+    if (!hpCrvDebug) {
+      this.logger.warn(
+        `[DIAGNOSTIC] characterSheetService.create: NO HP core resource for "${sheet.characterName}" | ` +
+        `templateId=${dto.templateId} | Template likely missing slug='hp' core resource`,
+      )
+    }
+
     // Invalidate user's list cache for the new sheet
     await this.invalidateCache(sheet.id, userId, adventureId ?? undefined).catch(() => {})
 

@@ -42,6 +42,17 @@ export function NpcsMobsSection({ adventureId, isGM, refreshKey }: NpcsMobsSecti
     setLoading(true)
     try {
       const data = await api.get<NpcSheet[]>(`/adventures/${adventureId}/npcs`)
+      // [DIAGNOSTIC] log raw API response for NPC HP values
+      console.debug(
+        `[DIAGNOSTIC] NpcsMobsSection: received ${data.length} NPCs from API`,
+        data.map(n => ({
+          id: n.id,
+          name: n.characterName,
+          type: n.npcType,
+          hpActual: n.hpActual,
+          hpMax: n.hpMax,
+        })),
+      )
       setNpcs(data)
     } catch {
       /* silently fail */
