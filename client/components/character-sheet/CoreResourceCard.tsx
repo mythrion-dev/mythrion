@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import { NumericInput } from '@/components/shared/NumericInput'
+import type { SheetPermissions } from './types'
 
 interface CoreResourceDef {
   id: string; slug: string; displayName: string
@@ -16,22 +17,22 @@ interface CoreResourceValue {
   coreResource: CoreResourceDef
 }
 
-export function CoreResourceCard({ resource, value, isOwner, onSave, onModify }: {
+export function CoreResourceCard({ resource, value, permissions, onSave, onModify }: {
   resource: CoreResourceDef
   value: CoreResourceValue
-  isOwner: boolean
+  permissions: SheetPermissions
   onSave: (coreResourceId: string, field: 'current' | 'maximum' | 'notes', val: string) => Promise<void>
   onModify?: (coreResourceId: string, delta: number) => void
 }) {
   const [modifier, setModifier] = useState(0)
-  const canEdit = isOwner && resource.editableByPlayer
+  const canEdit = permissions.canEditResources && resource.editableByPlayer
 
   return (
     <div className="card !p-4 space-y-3">
       <h3 className="font-semibold text-sm flex items-center gap-2">
         {resource.displayName}
         {resource.showNotes && (
-          isOwner
+          permissions.canEditResources
             ? <InlineText value={value.notes ?? ''} onSave={(v) => onSave(value.coreResourceId, 'notes', v)} placeholder="notes..." emptyDisplay="add notes" className="!text-xs !text-muted !font-normal" />
             : value.notes && <span className="text-xs text-muted font-normal">— {value.notes}</span>
         )}

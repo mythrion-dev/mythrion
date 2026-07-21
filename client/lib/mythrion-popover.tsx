@@ -34,6 +34,7 @@ export default function MythrionPopover({
   const popoverRef = useRef<HTMLDivElement>(null)
   const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({})
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const mouseInPopoverRef = useRef(false)
   const [isTouchDevice, setIsTouchDevice] = useState(false)
 
   const setOpen = useCallback(
@@ -46,7 +47,7 @@ export default function MythrionPopover({
 
   // Detect touch device
   useEffect(() => {
-    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0)
+    setIsTouchDevice(navigator.maxTouchPoints > 0)
   }, [])
 
   // Position the popover
@@ -224,6 +225,8 @@ export default function MythrionPopover({
 
   const handleMouseLeave = () => {
     if (isTouchDevice) return
+    if (mouseInPopoverRef.current) return
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
     hoverTimeoutRef.current = setTimeout(() => {
       setOpen(false)
     }, 150)
@@ -237,11 +240,13 @@ export default function MythrionPopover({
   }
 
   const handlePopoverMouseEnter = () => {
+    mouseInPopoverRef.current = true
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
   }
 
   const handlePopoverMouseLeave = () => {
     if (isTouchDevice) return
+    mouseInPopoverRef.current = false
     hoverTimeoutRef.current = setTimeout(() => {
       setOpen(false)
     }, 150)

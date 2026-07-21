@@ -2,13 +2,13 @@
 
 import { useState, useEffect, type FormEvent } from 'react'
 import { api } from '@/lib/api'
-import type { ProfessionalSkill } from './types'
+import type { ProfessionalSkill, SheetPermissions } from './types'
 
 // ── Props ──
 
 interface Props {
   sheetId: string
-  isOwner: boolean
+  permissions: SheetPermissions
   modifierResults: Record<string, number | null>
   templateAttributes: { id: string; key: string; name: string }[]
 }
@@ -17,10 +17,11 @@ interface Props {
 
 export function ProfessionalSkillsSection({
   sheetId,
-  isOwner,
+  permissions,
   modifierResults,
   templateAttributes,
 }: Props) {
+  const canEdit = permissions.canEditProfessionalSkills
   const [skills, setSkills] = useState<ProfessionalSkill[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -137,7 +138,7 @@ export function ProfessionalSkillsSection({
             {skills.length}
           </span>
         </div>
-        {isOwner && (
+        {canEdit && (
           <button onClick={openCreate} className="btn-primary text-sm">
             + Add Professional Skill
           </button>
@@ -171,7 +172,7 @@ export function ProfessionalSkillsSection({
                 <th className="py-2 pr-2 font-medium">Attribute</th>
                 <th className="py-2 pr-2 font-medium text-right">Total</th>
                 <th className="py-2 pr-2 font-medium text-right">Modifier</th>
-                {isOwner && <th className="py-2 font-medium text-right">Actions</th>}
+                {canEdit && <th className="py-2 font-medium text-right">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -237,7 +238,7 @@ export function ProfessionalSkillsSection({
                             ? (total >= 0 ? `+${total}` : total)
                             : '—'}
                         </td>
-                        {isOwner && (
+                        {canEdit && (
                           <td className="py-2 text-right">
                             <div className="flex gap-1 justify-end">
                               <button

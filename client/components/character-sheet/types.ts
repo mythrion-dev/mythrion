@@ -103,6 +103,18 @@ export interface CharacterSheet {
   ownerId: string | null; isNpc: boolean; npcType: string | null; adventureId: string | null; createdAt: string
 }
 
+export interface SheetPermissions {
+  canEditCharacter: boolean
+  canEditSkills: boolean
+  canEditResources: boolean
+  canEditInventory: boolean
+  canEditStory: boolean
+  canEditProfessionalSkills: boolean
+  canEditPersonalAbilities: boolean
+  canEditResistances: boolean
+  canEditAbilities: boolean
+}
+
 export type Tab = string
 export type SummonTab = 'stats' | 'skills' | 'abilities' | 'resistances'
 export type AcResultMap = Record<string, { total: number; name: string }>

@@ -257,6 +257,49 @@ describe('NumericInput', () => {
     expect(screen.getByRole('button', { name: 'Increase value' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Decrease value' })).toBeDisabled()
   })
+
+  it('falls back to 0 when no value prop is provided and input ref is empty', () => {
+    const onChange = vi.fn()
+    render(<NumericInput onChange={onChange} />)
+    // No value prop set; toNumber should resolve to 0 via the || 0 fallback
+    fireEvent.click(screen.getByRole('button', { name: 'Increase value' }))
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange.mock.calls[0][0].target.value).toBe('1')
+  })
+
+  it('does not call onChange when disabled buttons are clicked', () => {
+    const onChange = vi.fn()
+    render(<NumericInput disabled onChange={onChange} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Increase value' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Decrease value' }))
+    // React suppresses synthetic events on disabled elements
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('handles non-integer step values', () => {
+    const onChange = vi.fn()
+    render(<NumericInput value={0} step={0.1} onChange={onChange} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Increase value' }))
+    expect(onChange).toHaveBeenCalledTimes(1)
+    // Number.isInteger(0.1) is false, so toFixed(10) path is used
+    expect(onChange.mock.calls[0][0].target.value).toBe('0.1')
+  })
+
+  it('decrement does not go below min when value equals min', () => {
+    const onChange = vi.fn()
+    render(<NumericInput value={0} min={0} max={10} onChange={onChange} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Decrease value' }))
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange.mock.calls[0][0].target.value).toBe('0')
+  })
+
+  it('increment does not go above max when value equals max', () => {
+    const onChange = vi.fn()
+    render(<NumericInput value={10} min={0} max={10} onChange={onChange} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Increase value' }))
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange.mock.calls[0][0].target.value).toBe('10')
+  })
 })
 
 // ── PageHeader ──

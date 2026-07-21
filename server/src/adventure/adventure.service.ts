@@ -100,10 +100,34 @@ export class AdventureService {
         template: {
           select: { id: true, name: true },
         },
+        coreResourceValues: {
+          select: {
+            current: true,
+            maximum: true,
+            coreResource: {
+              select: { slug: true },
+            },
+          },
+        },
       },
     })
 
-    return npcs
+    return npcs.map(({ coreResourceValues, ...npc }) => {
+      const hpResource = coreResourceValues?.find(
+        (crv) => crv.coreResource.slug === 'hp',
+      )
+      // If the HP resource record exists but values are null, it means values
+      // were never initialized. Don't fall through to the stale legacy column
+      // (which defaults to 0) — return null so the frontend shows "?".
+      const hasHpResource = hpResource !== undefined
+      return {
+        ...npc,
+        hpActual:
+          hpResource?.current ?? (hasHpResource ? null : npc.hpActual),
+        hpMax:
+          hpResource?.maximum ?? (hasHpResource ? null : npc.hpMax),
+      }
+    })
   }
 
   /**
@@ -141,26 +165,60 @@ export class AdventureService {
       adventureId,
     })
 
+    // ── Initialize HP core resource value ──
+    // characterSheetService.create() creates CRV records with null
+    // current/maximum.  Initialize HP here so NPC list and sidebar show
+    // real values instead of 0/0.
+    const hpCrv = (sheet as any).coreResourceValues?.find(
+      (crv: any) => crv.coreResource?.slug === 'hp',
+    )
+    if (hpCrv && (hpCrv.current === null || hpCrv.maximum === null)) {
+      const defaultHp = 10
+      await this.prisma.characterSheetCoreResourceValue.update({
+        where: { id: hpCrv.id },
+        data: { current: defaultHp, maximum: defaultHp },
+      })
+    }
+
     // Convert to NPC — set isNpc, npcType, and clear ownerId so only GMs can edit
-    return this.prisma.characterSheet.update({
-      where: { id: sheet.id },
-      data: {
-        isNpc: true,
-        npcType: dto.type ?? 'NPC',
-        ownerId: null,
-        playerName: dto.description ?? null,
-      },
-      select: {
-        id: true,
-        characterName: true,
-        isNpc: true,
-        npcType: true,
-        level: true,
-        hpActual: true,
-        hpMax: true,
-        template: { select: { id: true, name: true } },
-      },
-    })
+    const { coreResourceValues: crvValues, ...npcData } =
+      await this.prisma.characterSheet.update({
+        where: { id: sheet.id },
+        data: {
+          isNpc: true,
+          npcType: dto.type ?? 'NPC',
+          ownerId: null,
+          playerName: dto.description ?? null,
+        },
+        select: {
+          id: true,
+          characterName: true,
+          isNpc: true,
+          npcType: true,
+          level: true,
+          hpActual: true,
+          hpMax: true,
+          template: { select: { id: true, name: true } },
+          coreResourceValues: {
+            select: {
+              current: true,
+              maximum: true,
+              coreResource: {
+                select: { slug: true },
+              },
+            },
+          },
+        },
+      })
+
+    const hpResource = crvValues?.find(
+      (crv) => crv.coreResource.slug === 'hp',
+    )
+    return {
+      ...npcData,
+      hpActual: hpResource?.current ?? npcData.hpActual,
+      hpMax: hpResource?.maximum ?? npcData.hpMax,
+    }
   }
 
   /**

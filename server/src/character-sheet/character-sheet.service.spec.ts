@@ -607,7 +607,7 @@ describe('CharacterSheetService', () => {
       })
 
       it('should allow GM to update when not owner but sheet belongs to an adventure', async () => {
-        const otherSheet = { ...mockSheet, ownerId: 'other-user', adventureId }
+        const otherSheet = { ...mockSheet, ownerId: 'other-user', adventureId, isNpc: true }
         prisma.characterSheet.findUnique.mockResolvedValue(otherSheet)
         mockMembershipService.requireRole.mockResolvedValue({ role: 'GM' })
         prisma.characterSheet.update.mockResolvedValue({ ...otherSheet, characterName: 'Updated Name' })
@@ -619,11 +619,12 @@ describe('CharacterSheetService', () => {
       })
 
       it('should throw ForbiddenException when not owner and not GM', async () => {
-        const otherSheet = { ...mockSheet, ownerId: 'other-user', adventureId }
+        const otherSheet = { ...mockSheet, ownerId: 'other-user', adventureId, isNpc: true }
         prisma.characterSheet.findUnique.mockResolvedValue(otherSheet)
         mockMembershipService.requireRole.mockRejectedValue(new Error())
 
         await expect(service.update(sheetId, userId, { characterName: 'Hack' })).rejects.toThrow(ForbiddenException)
+        expect(mockMembershipService.requireRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
       })
 
       it('should upsert attribute values', async () => {
@@ -826,15 +827,16 @@ describe('CharacterSheetService', () => {
       })
 
       it('should throw ForbiddenException when not owner and not GM', async () => {
-        const otherSheet = { ...mockSheet, ownerId: 'other-user', adventureId }
+        const otherSheet = { ...mockSheet, ownerId: 'other-user', adventureId, isNpc: true }
         prisma.characterSheet.findUnique.mockResolvedValue(otherSheet)
         mockMembershipService.requireRole.mockRejectedValue(new Error())
 
         await expect(service.remove(sheetId, 'different-user')).rejects.toThrow(ForbiddenException)
+        expect(mockMembershipService.requireRole).toHaveBeenCalledWith(adventureId, 'different-user', 'GM')
       })
 
       it('should allow GM to delete when sheet is in an adventure', async () => {
-        const otherSheet = { ...mockSheet, ownerId: 'other-user', adventureId }
+        const otherSheet = { ...mockSheet, ownerId: 'other-user', adventureId, isNpc: true }
         prisma.characterSheet.findUnique.mockResolvedValue(otherSheet)
         mockMembershipService.requireRole.mockResolvedValue({ role: 'GM' })
         prisma.characterSheet.delete.mockResolvedValue(otherSheet)
@@ -930,15 +932,16 @@ describe('CharacterSheetService', () => {
       })
 
       it('should throw ForbiddenException when not owner and not GM', async () => {
-        const otherSheet = { ...mockSheet, ownerId: 'different-owner', adventureId }
+        const otherSheet = { ...mockSheet, ownerId: 'different-owner', adventureId, isNpc: true }
         prisma.characterSheet.findUnique.mockResolvedValue(otherSheet)
         mockMembershipService.requireRole.mockRejectedValue(new Error())
 
         await expect(service.unlinkFromAdventure(sheetId, 'different-user')).rejects.toThrow(ForbiddenException)
+        expect(mockMembershipService.requireRole).toHaveBeenCalledWith(adventureId, 'different-user', 'GM')
       })
 
       it('should allow GM to unlink', async () => {
-        const advSheet = { ...mockSheet, ownerId: 'other-user', adventureId }
+        const advSheet = { ...mockSheet, ownerId: 'other-user', adventureId, isNpc: true }
         prisma.characterSheet.findUnique.mockResolvedValue(advSheet)
         mockMembershipService.requireRole.mockResolvedValue({ role: 'GM' })
         const unlinkedSheet = { ...advSheet, adventureId: null }
@@ -1132,6 +1135,7 @@ describe('CharacterSheetService', () => {
         id: 's1',
         ownerId: 'other-user',
         adventureId: 'a1',
+        isNpc: true,
       })
       mockMembershipService.requireRole.mockResolvedValue({ role: 'GM' })
       prisma.characterAbility.findMany.mockResolvedValue([])
@@ -1586,6 +1590,7 @@ describe('CharacterSheetService', () => {
 
     beforeEach(() => {
       prisma.characterSheet.findUnique.mockResolvedValue({ id: sheetId, ownerId: userId, adventureId: null })
+      prisma.templateSkill.findUnique.mockResolvedValue({ id: skillId, allowedAttributeIds: ['attr-1'] })
     })
 
     it('upserts skill value with the given selectedAttributeId', async () => {
@@ -1865,9 +1870,10 @@ describe('CharacterSheetService', () => {
       it('updates the attribute of a summon skill', async () => {
         prisma.summonSkill.findUnique.mockResolvedValue({
           id: 'ss-1', abilityId, ability: { sheetId: sheetId },
+          skill: { allowedAttributeIds: ['attr-1', 'attr-dex'] },
         })
         prisma.summonSkill.update.mockResolvedValue({
-          id: 'ss-1', attributeId: 'attr-dex', includes: { attribute: { id: 'attr-dex' } },
+          id: 'ss-1', attributeId: 'attr-dex',
         })
 
         const result = await service.updateSummonSkillAttribute('ss-1', 'attr-dex', userId)

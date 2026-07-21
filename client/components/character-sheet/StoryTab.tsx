@@ -2,17 +2,18 @@
 
 import { InlineTextarea } from '@/lib/inline-editable'
 import { StoryField } from '@/components/character-sheet'
-import type { Story } from './types'
+import type { Story, SheetPermissions } from './types'
 
 export function StoryTab({
   story,
-  isOwner,
+  permissions,
   onSaveField,
 }: {
   story: Story | null
-  isOwner: boolean
+  permissions: SheetPermissions
   onSaveField: (field: string, value: string) => Promise<void>
 }) {
+  const canEditStory = permissions.canEditStory
   return (
     <div className="space-y-4 animate-slide-up">
       {/* Appearance */}
@@ -20,7 +21,7 @@ export function StoryTab({
         <div className="header-accent">
           <h2 className="text-lg font-semibold text-gradient">Appearance</h2>
         </div>
-        {isOwner ? (
+        {canEditStory ? (
           <InlineTextarea
             value={story?.appearance ?? ''}
             label="Appearance"
@@ -38,7 +39,7 @@ export function StoryTab({
         <div className="header-accent">
           <h2 className="text-lg font-semibold text-gradient">Backstory</h2>
         </div>
-        {isOwner ? (
+        {canEditStory ? (
           <InlineTextarea
             value={story?.backstory ?? ''}
             label="Backstory"
@@ -56,7 +57,7 @@ export function StoryTab({
         <div className="header-accent">
           <h2 className="text-lg font-semibold text-gradient">Personality</h2>
         </div>
-        {isOwner ? (
+        {canEditStory ? (
           <InlineTextarea
             value={story?.personality ?? ''}
             label="Personality"
@@ -74,7 +75,7 @@ export function StoryTab({
         <div className="header-accent">
           <h2 className="text-lg font-semibold text-gradient">Goals</h2>
         </div>
-        {isOwner ? (
+        {canEditStory ? (
           <InlineTextarea
             value={story?.goals ?? ''}
             label="Goals"
@@ -92,7 +93,7 @@ export function StoryTab({
         <div className="header-accent">
           <h2 className="text-lg font-semibold text-gradient">Notes</h2>
         </div>
-        {isOwner ? (
+        {canEditStory ? (
           <InlineTextarea
             value={story?.notes ?? ''}
             label="Notes"

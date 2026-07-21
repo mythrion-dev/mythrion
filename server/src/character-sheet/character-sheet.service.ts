@@ -1,6 +1,7 @@
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
   ForbiddenException,
   ConflictException,
   Logger,
@@ -410,9 +411,13 @@ export class CharacterSheetService {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can edit this character sheet')
-      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
-      catch { throw new ForbiddenException('Only the owner or a GM can edit this character sheet') }
+      // Only allow GM bypass for NPC sheets; player sheets are owner-only
+      if (sheet.isNpc && sheet.adventureId) {
+        try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+        catch { throw new ForbiddenException('You do not have permission to modify this Character.') }
+      } else {
+        throw new ForbiddenException('You do not have permission to modify this Character.')
+      }
     }
 
     if (dto.values) {
@@ -556,9 +561,12 @@ export class CharacterSheetService {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can delete this character sheet')
-      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
-      catch { throw new ForbiddenException('Only the owner or a GM can delete this character sheet') }
+      if (sheet.isNpc && sheet.adventureId) {
+        try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+        catch { throw new ForbiddenException('You do not have permission to modify this Character.') }
+      } else {
+        throw new ForbiddenException('You do not have permission to modify this Character.')
+      }
     }
     const deleted = await this.prisma.characterSheet.delete({ where: { id } })
 
@@ -586,9 +594,12 @@ export class CharacterSheetService {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can unlink this character sheet')
-      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
-      catch { throw new ForbiddenException('Only the owner or a GM can unlink this character sheet') }
+      if (sheet.isNpc && sheet.adventureId) {
+        try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+        catch { throw new ForbiddenException('You do not have permission to modify this Character.') }
+      } else {
+        throw new ForbiddenException('You do not have permission to modify this Character.')
+      }
     }
     const unlinked = await this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId: null }, include: sheetInclude })
 
@@ -611,6 +622,24 @@ export class CharacterSheetService {
 
   async updateSkillAttribute(sheetId: string, skillId: string, attributeId: string | null, userId: string) {
     await this.requireOwnership(sheetId, userId)
+
+    // Fetch the template skill to validate allowedAttributeIds
+    const templateSkill = await this.prisma.templateSkill.findUnique({
+      where: { id: skillId },
+      select: { allowedAttributeIds: true },
+    })
+    if (!templateSkill) throw new NotFoundException('Skill not found')
+
+    // Fixed skills (allowedAttributeIds is empty) reject any attribute change
+    if (templateSkill.allowedAttributeIds.length === 0) {
+      throw new BadRequestException('This skill has a fixed attribute and cannot be changed')
+    }
+
+    // Player-selectable skills must validate the chosen attribute is in the allowed list
+    if (attributeId !== null && !templateSkill.allowedAttributeIds.includes(attributeId)) {
+      throw new BadRequestException('The selected attribute is not allowed for this skill')
+    }
+
     const result = await this.prisma.characterSheetSkillValue.upsert({
       where: { sheetId_skillId: { sheetId, skillId } },
       create: { sheetId, skillId, value: '', selectedAttributeId: attributeId },
@@ -947,10 +976,19 @@ export class CharacterSheetService {
   async updateSummonSkillAttribute(summonSkillId: string, attributeId: string | null, userId: string) {
     const ss = await this.prisma.summonSkill.findUnique({
       where: { id: summonSkillId },
-      include: { ability: true },
+      include: { ability: true, skill: { select: { allowedAttributeIds: true } } },
     })
     if (!ss) throw new NotFoundException('Summon skill not found')
     await this.requireOwnership(ss.ability.sheetId, userId)
+
+    // Validate that the attribute change is allowed
+    if (ss.skill.allowedAttributeIds.length === 0) {
+      throw new BadRequestException('This skill has a fixed attribute and cannot be changed')
+    }
+    if (attributeId !== null && !ss.skill.allowedAttributeIds.includes(attributeId)) {
+      throw new BadRequestException('The selected attribute is not allowed for this skill')
+    }
+
     const result = await this.prisma.summonSkill.update({
       where: { id: summonSkillId },
       data: { selectedAttributeId: attributeId },
@@ -1300,13 +1338,16 @@ export class CharacterSheetService {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) {
-      // Allow GMs of the adventure to manage NPC sheets and player sheets
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can manage this character sheet')
-      try {
-        await this.membership.requireRole(sheet.adventureId, userId, 'GM')
-      } catch {
-        throw new ForbiddenException('Only the owner or a GM can manage this character sheet')
+      // Only allow GM bypass for NPC sheets; player sheets are owner-only
+      if (sheet.isNpc && sheet.adventureId) {
+        try {
+          await this.membership.requireRole(sheet.adventureId, userId, 'GM')
+          return
+        } catch {
+          throw new ForbiddenException('You do not have permission to modify this Character.')
+        }
       }
+      throw new ForbiddenException('You do not have permission to modify this Character.')
     }
   }
 
