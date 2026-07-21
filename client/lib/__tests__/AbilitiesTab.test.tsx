@@ -230,6 +230,17 @@ function defaultProps(overrides: Record<string, unknown> = {}) {
   return {
     abilities: [],
     isOwner: true,
+    permissions: {
+      canEditAbilities: true,
+      canEditCharacter: true,
+      canEditInventory: true,
+      canEditPersonalAbilities: true,
+      canEditResistances: true,
+      canEditResources: true,
+      canEditSkills: true,
+      canEditStory: true,
+      canEditProfessionalSkills: true,
+    },
     sheetId: 'sheet-1',
     template: defaultTemplate,
     selectedLevels: {},
@@ -307,7 +318,7 @@ describe('AbilitiesTab', () => {
   })
 
   it('does not show "Create one below." when not owner and empty', () => {
-    renderAbilitiesTab({ isOwner: false })
+    renderAbilitiesTab({ isOwner: false, permissions: { canEditAbilities: false } })
     expect(screen.getByText('No abilities or summons yet.')).toBeInTheDocument()
     expect(screen.queryByText('Create one below.')).not.toBeInTheDocument()
   })
@@ -523,7 +534,7 @@ describe('AbilitiesTab', () => {
   })
 
   it('hides delete button for non-owner', () => {
-    renderAbilitiesTab({ abilities: [makeAbility()], isOwner: false })
+    renderAbilitiesTab({ abilities: [makeAbility()], isOwner: false, permissions: { canEditAbilities: false } })
     expect(screen.queryByTitle('Delete ability')).not.toBeInTheDocument()
     expect(screen.queryByTitle('Delete summon')).not.toBeInTheDocument()
   })
@@ -534,7 +545,7 @@ describe('AbilitiesTab', () => {
   })
 
   it('hides "New Ability or Summon" button for non-owner', () => {
-    renderAbilitiesTab({ isOwner: false })
+    renderAbilitiesTab({ isOwner: false, permissions: { canEditAbilities: false } })
     expect(screen.queryByText('New Ability or Summon')).not.toBeInTheDocument()
   })
 
@@ -547,7 +558,7 @@ describe('AbilitiesTab', () => {
   })
 
   it('hides create form when not owner', () => {
-    renderAbilitiesTab({ isOwner: false, showNewAbility: true })
+    renderAbilitiesTab({ isOwner: false, showNewAbility: true, permissions: { canEditAbilities: false } })
     expect(screen.queryByText('What would you like to create?')).not.toBeInTheDocument()
     expect(screen.queryByText('New Ability')).not.toBeInTheDocument()
     expect(screen.queryByText('New Summon')).not.toBeInTheDocument()
@@ -926,6 +937,7 @@ describe('AbilitiesTab', () => {
     renderAbilitiesTab({
       abilities: [makeSummon()],
       isOwner: false,
+      permissions: { canEditAbilities: false },
       expandedAbilities: { 'summon-1': true },
     })
     expect(screen.queryByText('Damage')).not.toBeInTheDocument()
@@ -1096,6 +1108,7 @@ describe('AbilitiesTab', () => {
     renderAbilitiesTab({
       abilities: [makeSummon()],
       isOwner: false,
+      permissions: { canEditAbilities: false },
       expandedAbilities: { 'summon-1': true },
       summonTabs: { 'summon-1': 'skills' },
     })
@@ -1279,6 +1292,7 @@ describe('AbilitiesTab', () => {
     renderAbilitiesTab({
       abilities: [makeAbility({ levels: [] })],
       isOwner: false,
+      permissions: { canEditAbilities: false },
       expandedAbilities: { 'abil-1': true },
     })
     expect(screen.queryByText('Add Level')).not.toBeInTheDocument()

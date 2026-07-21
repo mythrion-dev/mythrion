@@ -96,6 +96,17 @@ const defaultTemplateAttrs = [
 const defaultProps = {
   sheetId: 'sheet-1',
   isOwner: true,
+  permissions: {
+    canEditProfessionalSkills: true,
+    canEditAbilities: false,
+    canEditCharacter: false,
+    canEditInventory: false,
+    canEditPersonalAbilities: false,
+    canEditResistances: false,
+    canEditResources: false,
+    canEditSkills: false,
+    canEditStory: false,
+  },
   modifierResults: { str: 3, dex: 5 } as Record<string, number | null>,
   templateAttributes: defaultTemplateAttrs,
 }
@@ -143,7 +154,7 @@ describe('ProfessionalSkillsSection', () => {
   })
 
   it('does not show "+ Add Professional Skill" button when isOwner is false', async () => {
-    render(<ProfessionalSkillsSection {...defaultProps} isOwner={false} />)
+    render(<ProfessionalSkillsSection {...defaultProps} isOwner={false} permissions={{ ...defaultProps.permissions, canEditProfessionalSkills: false }} />)
     await waitFor(() => {
       expect(screen.getByText('No Professional Skills added yet.')).toBeInTheDocument()
     })
@@ -198,7 +209,7 @@ describe('ProfessionalSkillsSection', () => {
   it('hides Edit and Delete buttons when isOwner is false', async () => {
     const skills = [makeSkill()]
     mockGet.mockResolvedValue(skills)
-    render(<ProfessionalSkillsSection {...defaultProps} isOwner={false} />)
+    render(<ProfessionalSkillsSection {...defaultProps} isOwner={false} permissions={{ ...defaultProps.permissions, canEditProfessionalSkills: false }} />)
     await waitFor(() => {
       expect(screen.getByText('Blacksmith')).toBeInTheDocument()
     })
@@ -844,6 +855,18 @@ describe('CoreResourceCard', () => {
     coreResource: defaultResource,
   }
 
+  const defaultPermissions = {
+    canEditResources: true,
+    canEditAbilities: false,
+    canEditCharacter: false,
+    canEditInventory: false,
+    canEditPersonalAbilities: false,
+    canEditResistances: false,
+    canEditSkills: false,
+    canEditStory: false,
+    canEditProfessionalSkills: false,
+  }
+
   beforeEach(() => {
     mockOnSave = vi.fn()
     mockOnModify = vi.fn()
@@ -857,6 +880,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -869,6 +893,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -884,6 +909,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={{ ...defaultValue, current: null, maximum: null }}
         isOwner={false}
+        permissions={{ ...defaultPermissions, canEditResources: false }}
         onSave={mockOnSave}
       />,
     )
@@ -899,6 +925,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -914,6 +941,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={{ ...defaultValue, current: 50, maximum: null }}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -927,6 +955,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={{ ...defaultValue, current: 0, maximum: 0 }}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -940,6 +969,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={{ ...defaultValue, current: 150, maximum: 100 }}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -953,6 +983,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={{ ...defaultValue, current: -10, maximum: 100 }}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -966,6 +997,7 @@ describe('CoreResourceCard', () => {
         resource={{ ...defaultResource, color: '#ff0000' }}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -979,6 +1011,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -994,6 +1027,7 @@ describe('CoreResourceCard', () => {
         resource={{ ...defaultResource, showNotes: true }}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1006,6 +1040,7 @@ describe('CoreResourceCard', () => {
         resource={{ ...defaultResource, showNotes: true }}
         value={{ ...defaultValue, notes: 'Emergency only' }}
         isOwner={false}
+        permissions={{ ...defaultPermissions, canEditResources: false }}
         onSave={mockOnSave}
       />,
     )
@@ -1018,6 +1053,7 @@ describe('CoreResourceCard', () => {
         resource={{ ...defaultResource, showNotes: true }}
         value={defaultValue}
         isOwner={false}
+        permissions={{ ...defaultPermissions, canEditResources: false }}
         onSave={mockOnSave}
       />,
     )
@@ -1031,6 +1067,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1049,6 +1086,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1062,6 +1100,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={false}
+        permissions={{ ...defaultPermissions, canEditResources: false }}
         onSave={mockOnSave}
       />,
     )
@@ -1077,6 +1116,7 @@ describe('CoreResourceCard', () => {
         resource={{ ...defaultResource, editableByPlayer: false }}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1093,6 +1133,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1108,6 +1149,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1122,6 +1164,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={false}
+        permissions={{ ...defaultPermissions, canEditResources: false }}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1136,6 +1179,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1153,6 +1197,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1170,6 +1215,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1187,6 +1233,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1207,6 +1254,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1231,6 +1279,7 @@ describe('CoreResourceCard', () => {
         resource={{ ...defaultResource, showNotes: true }}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1246,6 +1295,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1262,6 +1312,7 @@ describe('CoreResourceCard', () => {
         resource={defaultResource}
         value={defaultValue}
         isOwner={true}
+        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,

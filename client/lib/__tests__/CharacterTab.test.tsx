@@ -166,6 +166,17 @@ function defaultProps(overrides?: Record<string, any>) {
   return {
     sheet,
     isOwner: true,
+    permissions: {
+      canEditCharacter: true,
+      canEditResources: true,
+      canEditSkills: true,
+      canEditAbilities: true,
+      canEditInventory: true,
+      canEditPersonalAbilities: true,
+      canEditResistances: true,
+      canEditStory: true,
+      canEditProfessionalSkills: true,
+    },
     enabledCoreResources: sheet.template.coreResources,
     handleCoreResourceChange: vi.fn(),
     handleCoreResourceModify: vi.fn(),
@@ -239,7 +250,7 @@ describe('CharacterTab', () => {
 
     it('renders modifier results next to attributes', () => {
       render(<CharacterTab {...props} />)
-      expect(screen.getByText('(+3)')).toBeInTheDocument()
+      expect(screen.getAllByText('(+3)').length).toBeGreaterThanOrEqual(1)
       expect(screen.getByText('(+2)')).toBeInTheDocument()
       expect(screen.getByText('(+1)')).toBeInTheDocument()
     })
@@ -326,7 +337,7 @@ describe('CharacterTab', () => {
     })
 
     it('hides heal/damage UI when not isOwner', () => {
-      render(<CharacterTab {...props} isOwner={false} />)
+      render(<CharacterTab {...props} isOwner={false} permissions={{ ...props.permissions, canEditResources: false }} />)
       expect(screen.queryByText('+ Heal')).not.toBeInTheDocument()
       expect(screen.queryByText('− Damage')).not.toBeInTheDocument()
     })

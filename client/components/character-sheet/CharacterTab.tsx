@@ -630,7 +630,7 @@ function SkillTable({
                               return <option key={attrId} value={attrId}>{a.name}</option>
                             })}
                           </select>
-                          {attrMod !== null && (
+                          {modifiersEnabled && attrMod !== null && (
                             <span className="text-[0.6rem] font-mono text-primary tabular-nums shrink-0">
                               ({attrMod >= 0 ? '+' : ''}{attrMod})
                             </span>
@@ -642,7 +642,7 @@ function SkillTable({
                           <span className="text-[0.6rem] text-foreground">
                             {selectedAttr?.name || '—'}
                           </span>
-                          {attrMod !== null && (
+                          {modifiersEnabled && attrMod !== null && (
                             <span className="text-[0.6rem] font-mono text-primary tabular-nums">
                               ({attrMod >= 0 ? '+' : ''}{attrMod})
                             </span>

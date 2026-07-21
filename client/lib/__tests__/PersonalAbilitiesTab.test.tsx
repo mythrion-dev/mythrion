@@ -37,6 +37,17 @@ function defaultProps(overrides = {}) {
     sections: [mockSection()],
     entries: [mockEntry()],
     isOwner: true,
+    permissions: {
+      canEditPersonalAbilities: true,
+      canEditAbilities: true,
+      canEditCharacter: true,
+      canEditInventory: true,
+      canEditResistances: true,
+      canEditResources: true,
+      canEditSkills: true,
+      canEditStory: true,
+      canEditProfessionalSkills: true,
+    },
     toSingular: (name: string) => name === 'Features' ? 'Feature' : name.slice(0, -1),
     expandedEntries: {},
     setExpandedEntries: vi.fn(),
@@ -187,7 +198,7 @@ describe('PersonalAbilitiesTab', () => {
   })
 
   it('hides owner controls when not owner', () => {
-    render(<PersonalAbilitiesTab {...defaultProps({ isOwner: false })} />)
+    render(<PersonalAbilitiesTab {...defaultProps({ isOwner: false, permissions: { canEditPersonalAbilities: false } })} />)
     expect(screen.queryByTitle('Delete entry')).not.toBeInTheDocument()
     expect(screen.queryByText('New Feature')).not.toBeInTheDocument()
   })

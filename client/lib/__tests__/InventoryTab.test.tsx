@@ -32,6 +32,17 @@ function defaultProps(overrides = {}) {
   return {
     inventoryItems: [mockItem()],
     isOwner: true,
+    permissions: {
+      canEditInventory: true,
+      canEditAbilities: true,
+      canEditCharacter: true,
+      canEditPersonalAbilities: true,
+      canEditResistances: true,
+      canEditResources: true,
+      canEditSkills: true,
+      canEditStory: true,
+      canEditProfessionalSkills: true,
+    },
     searchQuery: '',
     setSearchQuery: vi.fn(),
     totalWeight: 3,
@@ -200,7 +211,7 @@ describe('InventoryTab', () => {
   })
 
   it('hides owner controls when not owner', () => {
-    render(<InventoryTab {...defaultProps({ isOwner: false })} />)
+    render(<InventoryTab {...defaultProps({ isOwner: false, permissions: { canEditInventory: false } })} />)
     expect(screen.queryByText('Add Item')).not.toBeInTheDocument()
     expect(screen.queryByTitle('Delete item')).not.toBeInTheDocument()
     expect(screen.queryByTestId('inline-click-edit')).not.toBeInTheDocument()

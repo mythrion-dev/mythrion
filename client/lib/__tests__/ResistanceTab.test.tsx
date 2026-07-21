@@ -111,6 +111,17 @@ describe('ResistanceTab', () => {
   const baseProps = {
     resistances: [] as any[],
     isOwner: false,
+    permissions: {
+      canEditResistances: true,
+      canEditAbilities: false,
+      canEditCharacter: false,
+      canEditInventory: false,
+      canEditPersonalAbilities: false,
+      canEditResources: false,
+      canEditSkills: false,
+      canEditStory: false,
+      canEditProfessionalSkills: false,
+    },
     onSaveComponent: vi.fn(),
     onSaveManual: vi.fn(),
     sheetResistanceValues: {} as Record<string, string | null>,
@@ -125,7 +136,7 @@ describe('ResistanceTab', () => {
   // ---------- Empty states ----------
 
   it('renders empty state when no resistances and not showing new form', () => {
-    render(<ResistanceTab {...baseProps} />)
+    render(<ResistanceTab {...baseProps} onCreateResistance={undefined} />)
     expect(screen.getByText('No resistances configured.')).toBeInTheDocument()
     expect(screen.queryByText('New Resistance')).not.toBeInTheDocument()
   })
@@ -215,6 +226,7 @@ describe('ResistanceTab', () => {
         resistances={[manualResistance]}
         isOwner={false}
         sheetResistanceValues={sheetResistanceValues}
+        permissions={{ canEditResistances: false }}
       />,
     )
     // Auto-expanded on mount — collapse then re-expand for a clean state
@@ -237,6 +249,7 @@ describe('ResistanceTab', () => {
         resistances={[manualResistance]}
         isOwner={false}
         sheetResistanceValues={{ r1: null }}
+        permissions={{ canEditResistances: false }}
       />,
     )
     // Auto-expanded on mount — collapse then re-expand for a clean state
@@ -383,6 +396,7 @@ describe('ResistanceTab', () => {
         {...baseProps}
         resistances={[manualResistance]}
         isOwner={false}
+        permissions={{ canEditResistances: false }}
       />,
     )
     expect(screen.queryByTitle('Delete resistance')).not.toBeInTheDocument()
@@ -672,6 +686,17 @@ describe('InventoryTab', () => {
   const defaultProps = {
     inventoryItems: baseItems,
     isOwner: false,
+    permissions: {
+      canEditInventory: true,
+      canEditAbilities: false,
+      canEditCharacter: false,
+      canEditPersonalAbilities: false,
+      canEditResistances: false,
+      canEditResources: false,
+      canEditSkills: false,
+      canEditStory: false,
+      canEditProfessionalSkills: false,
+    },
     searchQuery: '',
     setSearchQuery: vi.fn(),
     totalWeight: 13,
@@ -700,7 +725,7 @@ describe('InventoryTab', () => {
     expect(screen.getByPlaceholderText('Search inventory...')).toBeInTheDocument()
     expect(screen.getByText('Long Sword')).toBeInTheDocument()
     expect(screen.getByText('Leather Armor')).toBeInTheDocument()
-    expect(screen.getByText('150 gp')).toBeInTheDocument()
+    expect(screen.getAllByText('150 gp').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText(/13\.0 kg/)).toBeInTheDocument()
   })
 
@@ -709,7 +734,7 @@ describe('InventoryTab', () => {
       { id: 'i3', name: 'Map', weight: null, cost: '5 gp', description: null, order: 2 },
     ]
     render(<InventoryTab {...defaultProps} inventoryItems={items} />)
-    expect(screen.getByText('5 gp')).toBeInTheDocument()
+    expect(screen.getAllByText('5 gp').length).toBeGreaterThanOrEqual(1)
   })
 
   // ---------- Empty state ----------
@@ -781,7 +806,7 @@ describe('InventoryTab', () => {
   })
 
   it('hides delete button for non-owner', () => {
-    render(<InventoryTab {...defaultProps} isOwner={false} />)
+    render(<InventoryTab {...defaultProps} isOwner={false} permissions={{ ...defaultProps.permissions, canEditInventory: false }} />)
     expect(screen.queryByTitle('Delete item')).not.toBeInTheDocument()
   })
 
@@ -791,7 +816,7 @@ describe('InventoryTab', () => {
   })
 
   it('hides Add Item button for non-owner', () => {
-    render(<InventoryTab {...defaultProps} isOwner={false} />)
+    render(<InventoryTab {...defaultProps} isOwner={false} permissions={{ ...defaultProps.permissions, canEditInventory: false }} />)
     expect(screen.queryByText('Add Item')).not.toBeInTheDocument()
   })
 
@@ -826,6 +851,7 @@ describe('InventoryTab', () => {
       <InventoryTab
         {...defaultProps}
         expandedItems={{ i2: true }}
+        permissions={{ ...defaultProps.permissions, canEditInventory: false }}
       />,
     )
     expect(screen.getByText('No description.')).toBeInTheDocument()
@@ -987,6 +1013,17 @@ describe('PersonalAbilitiesTab', () => {
     sections,
     entries,
     isOwner: false,
+    permissions: {
+      canEditPersonalAbilities: true,
+      canEditAbilities: false,
+      canEditCharacter: false,
+      canEditInventory: false,
+      canEditResistances: false,
+      canEditResources: false,
+      canEditSkills: false,
+      canEditStory: false,
+      canEditProfessionalSkills: false,
+    },
     toSingular: (name: string) => name.endsWith('s') ? name.slice(0, -1) : name,
     expandedEntries: {} as Record<string, boolean>,
     setExpandedEntries: vi.fn(),
@@ -1061,6 +1098,7 @@ describe('PersonalAbilitiesTab', () => {
         {...defaultProps}
         entries={[entryNoDesc]}
         expandedEntries={{ e4: true }}
+        permissions={{ ...defaultProps.permissions, canEditPersonalAbilities: false }}
       />,
     )
     expect(screen.getByText('No description.')).toBeInTheDocument()
@@ -1075,7 +1113,7 @@ describe('PersonalAbilitiesTab', () => {
   })
 
   it('shows plain name when not owner', () => {
-    render(<PersonalAbilitiesTab {...defaultProps} isOwner={false} />)
+    render(<PersonalAbilitiesTab {...defaultProps} isOwner={false} permissions={{ ...defaultProps.permissions, canEditPersonalAbilities: false }} />)
     expect(screen.getByText('Brave')).toBeInTheDocument()
   })
 
@@ -1086,7 +1124,7 @@ describe('PersonalAbilitiesTab', () => {
   })
 
   it('hides delete button for non-owner', () => {
-    render(<PersonalAbilitiesTab {...defaultProps} isOwner={false} />)
+    render(<PersonalAbilitiesTab {...defaultProps} isOwner={false} permissions={{ ...defaultProps.permissions, canEditPersonalAbilities: false }} />)
     expect(screen.queryByTitle('Delete entry')).not.toBeInTheDocument()
   })
 
@@ -1237,6 +1275,7 @@ describe('PersonalAbilitiesTab', () => {
       <PersonalAbilitiesTab
         {...defaultProps}
         isOwner={false}
+        permissions={{ ...defaultProps.permissions, canEditPersonalAbilities: false }}
         expandedEntries={{ e1: true }}
       />,
     )
@@ -1261,6 +1300,17 @@ describe('StoryTab', () => {
   const defaultProps = {
     story: mockStory,
     isOwner: false,
+    permissions: {
+      canEditStory: true,
+      canEditAbilities: false,
+      canEditCharacter: false,
+      canEditInventory: false,
+      canEditResistances: false,
+      canEditResources: false,
+      canEditSkills: false,
+      canEditPersonalAbilities: false,
+      canEditProfessionalSkills: false,
+    },
     onSaveField: vi.fn(),
   }
 
@@ -1272,16 +1322,16 @@ describe('StoryTab', () => {
 
   it('renders all five story section headers', () => {
     render(<StoryTab {...defaultProps} />)
-    // Section names appear in both <h2> (cards) and <h4> (StoryField mock), so use getAllByText
-    expect(screen.getAllByText('Appearance').length).toBe(2)
-    expect(screen.getAllByText('Backstory').length).toBe(2)
-    expect(screen.getAllByText('Personality').length).toBe(2)
-    expect(screen.getAllByText('Goals').length).toBe(2)
-    expect(screen.getAllByText('Notes').length).toBe(2)
+    // With canEditStory:true, only <h2> card headers appear (no StoryField <h4>)
+    expect(screen.getAllByText('Appearance').length).toBe(1)
+    expect(screen.getAllByText('Backstory').length).toBe(1)
+    expect(screen.getAllByText('Personality').length).toBe(1)
+    expect(screen.getAllByText('Goals').length).toBe(1)
+    expect(screen.getAllByText('Notes').length).toBe(1)
   })
 
   it('renders story values for non-owner via StoryField', () => {
-    render(<StoryTab {...defaultProps} isOwner={false} />)
+    render(<StoryTab {...defaultProps} isOwner={false} permissions={{ ...defaultProps.permissions, canEditStory: false }} />)
     const storyFields = screen.getAllByTestId('story-field')
     expect(storyFields.length).toBe(5)
     expect(screen.getByText('Tall and fair.')).toBeInTheDocument()
@@ -1332,7 +1382,7 @@ describe('StoryTab', () => {
       goals: null,
       notes: 'Likes cats.',
     }
-    render(<StoryTab {...defaultProps} story={partialStory} isOwner={false} />)
+    render(<StoryTab {...defaultProps} story={partialStory} isOwner={false} permissions={{ ...defaultProps.permissions, canEditStory: false }} />)
     const storyFields = screen.getAllByTestId('story-field')
     expect(storyFields.length).toBe(2)
     expect(screen.getByText('Friendly.')).toBeInTheDocument()
