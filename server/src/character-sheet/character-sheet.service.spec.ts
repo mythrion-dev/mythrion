@@ -1586,6 +1586,7 @@ describe('CharacterSheetService', () => {
 
     beforeEach(() => {
       prisma.characterSheet.findUnique.mockResolvedValue({ id: sheetId, ownerId: userId, adventureId: null })
+      prisma.templateSkill.findUnique.mockResolvedValue({ id: skillId, allowedAttributeIds: ['attr-1'] })
     })
 
     it('upserts skill value with the given selectedAttributeId', async () => {
@@ -1865,9 +1866,10 @@ describe('CharacterSheetService', () => {
       it('updates the attribute of a summon skill', async () => {
         prisma.summonSkill.findUnique.mockResolvedValue({
           id: 'ss-1', abilityId, ability: { sheetId: sheetId },
+          skill: { allowedAttributeIds: ['attr-1', 'attr-dex'] },
         })
         prisma.summonSkill.update.mockResolvedValue({
-          id: 'ss-1', attributeId: 'attr-dex', includes: { attribute: { id: 'attr-dex' } },
+          id: 'ss-1', attributeId: 'attr-dex',
         })
 
         const result = await service.updateSummonSkillAttribute('ss-1', 'attr-dex', userId)

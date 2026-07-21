@@ -36,6 +36,25 @@ function getRedisConstructorOptions(): Record<string, unknown> | null {
   return call[1] as Record<string, unknown>
 }
 
+function resetMockRedisInstance() {
+  mockRedisInstance.connect = jest.fn().mockResolvedValue(undefined)
+  mockRedisInstance.quit = jest.fn().mockResolvedValue(undefined)
+  mockRedisInstance.ping = jest.fn().mockResolvedValue('PONG')
+  mockRedisInstance.get = jest.fn().mockResolvedValue(null)
+  mockRedisInstance.set = jest.fn().mockResolvedValue('OK')
+  mockRedisInstance.setex = jest.fn().mockResolvedValue('OK')
+  mockRedisInstance.del = jest.fn().mockResolvedValue(1)
+  mockRedisInstance.exists = jest.fn().mockResolvedValue(1)
+  mockRedisInstance.expire = jest.fn().mockResolvedValue(1)
+  mockRedisInstance.incr = jest.fn().mockResolvedValue(1)
+  mockRedisInstance.ttl = jest.fn().mockResolvedValue(300)
+  mockRedisInstance.scanStream = jest.fn().mockReturnValue({
+    [Symbol.asyncIterator]: async function* () {
+      yield []
+    },
+  })
+}
+
 describe('RedisService', () => {
   let service: RedisService
   const OLD_URL = process.env.REDIS_URL
@@ -115,6 +134,7 @@ describe('RedisService', () => {
   describe('with connected client', () => {
     beforeEach(async () => {
       jest.clearAllMocks()
+      resetMockRedisInstance()
       process.env.REDIS_URL = 'redis://localhost:6379'
       service = new RedisService()
       await service.onModuleInit()
@@ -368,6 +388,7 @@ describe('RedisService', () => {
   describe('onModuleDestroy with client', () => {
     beforeEach(async () => {
       jest.clearAllMocks()
+      resetMockRedisInstance()
       process.env.REDIS_URL = 'redis://localhost:6379'
       service = new RedisService()
       await service.onModuleInit()
