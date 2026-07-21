@@ -31,18 +31,28 @@ describe('RateLimitGuard', () => {
     guard = module.get<RateLimitGuard>(RateLimitGuard)
   })
 
-  function buildContext(options?: { ip?: string; path?: string; url?: string }): ExecutionContext {
-    const ip = options?.ip ?? '127.0.0.1'
-    const path = options?.path ?? '/test'
-    const url = options?.url ?? '/test'
+  function buildContext(options?: {
+    ip?: string
+    path?: string
+    url?: string
+    socketRemoteAddress?: string
+  }): ExecutionContext {
+    const ip = options?.ip
+    const path = options?.path
+    const url = options?.url
+    const socketRemoteAddress = options?.socketRemoteAddress
+
+    const request: Record<string, any> = {}
+    if (ip !== undefined) request.ip = ip
+    if (path !== undefined) request.route = { path }
+    if (url !== undefined) request.url = url
+    if (socketRemoteAddress !== undefined) {
+      request.socket = { remoteAddress: socketRemoteAddress }
+    }
 
     return {
       switchToHttp: () => ({
-        getRequest: () => ({
-          ip,
-          route: { path },
-          url,
-        }),
+        getRequest: () => request,
         getResponse: () => ({}),
       }),
       getHandler: () => ({}),
@@ -88,7 +98,7 @@ describe('RateLimitGuard', () => {
       const result = await guard.canActivate(buildContext())
 
       expect(result).toBe(true)
-      expect(mockRedis.expire).toHaveBeenCalledWith(expect.any(String), 60)
+      expect(mockRedis.expire).toHaveBeenCalledWith(expect.stringMatching(/^ratelimit:/), 60)
     })
 
     it('should throw HttpException 429 when over the limit', async () => {
@@ -116,6 +126,108 @@ describe('RateLimitGuard', () => {
       const result = await guard.canActivate(buildContext())
 
       expect(result).toBe(true)
+    })
+
+    it('should strip IPv6 prefix from IP', async () => {
+      mockReflector.get.mockReturnValue({ windowSeconds: 60, maxRequests: 5 })
+      mockRedis.incr.mockResolvedValue(2)
+
+      await guard.canActivate(buildContext({ ip: '::ffff:192.168.1.1' }))
+
+      expect(mockRedis.incr).toHaveBeenCalledWith(
+        expect.stringContaining('192.168.1.1'),
+      )
+    })
+
+    it('should fallback to socket.remoteAddress when ip is undefined', async () => {
+      mockReflector.get.mockReturnValue({ windowSeconds: 60, maxRequests: 5 })
+      mockRedis.incr.mockResolvedValue(2)
+
+      await guard.canActivate(buildContext({
+        ip: undefined,
+        socketRemoteAddress: '10.0.0.1',
+      }))
+
+      expect(mockRedis.incr).toHaveBeenCalledWith(
+        expect.stringContaining('10.0.0.1'),
+      )
+    })
+
+    it('should fallback to "unknown" when ip and socket are undefined', async () => {
+      mockReflector.get.mockReturnValue({ windowSeconds: 60, maxRequests: 5 })
+      mockRedis.incr.mockResolvedValue(2)
+
+      await guard.canActivate(buildContext({ ip: undefined, url: '/test' }))
+
+      expect(mockRedis.incr).toHaveBeenCalledWith(
+        expect.stringContaining('unknown'),
+      )
+    })
+
+    it('should fallback to url when route.path is undefined', async () => {
+      mockReflector.get.mockReturnValue({ windowSeconds: 60, maxRequests: 5 })
+      mockRedis.incr.mockResolvedValue(2)
+
+      await guard.canActivate(buildContext({
+        path: undefined,
+        url: '/some-path',
+      }))
+
+      expect(mockRedis.incr).toHaveBeenCalledWith(
+        expect.stringMatching(/^ratelimit:\/some-path:/),
+      )
+    })
+
+    it('should fallback to "unknown" when both route.path and url are undefined', async () => {
+      mockReflector.get.mockReturnValue({ windowSeconds: 60, maxRequests: 5 })
+      mockRedis.incr.mockResolvedValue(2)
+
+      await guard.canActivate(buildContext({
+        ip: '1.2.3.4',
+        path: undefined,
+        url: undefined,
+      }))
+
+      expect(mockRedis.incr).toHaveBeenCalledWith(
+        expect.stringMatching(/^ratelimit:unknown:/),
+      )
+    })
+
+    it('should use redis.expire fallback TTL when ttl returns non-positive value', async () => {
+      mockReflector.get.mockReturnValue({ windowSeconds: 60, maxRequests: 5 })
+      mockRedis.incr.mockResolvedValue(6)
+      mockRedis.ttl.mockResolvedValue(-1) // no TTL set
+
+      try {
+        await guard.canActivate(buildContext())
+      } catch (err) {
+        if (err instanceof HttpException) {
+          const response = err.getResponse() as any
+          expect(response.retryAfterSeconds).toBe(60) // falls back to windowSeconds
+        }
+      }
+    })
+
+    it('should handle request with no ip, no socket, no route.path, no url', async () => {
+      mockReflector.get.mockReturnValue({ windowSeconds: 60, maxRequests: 5 })
+      mockRedis.incr.mockResolvedValue(2)
+
+      const request = {}
+      const context = {
+        switchToHttp: () => ({
+          getRequest: () => request,
+          getResponse: () => ({}),
+        }),
+        getHandler: () => ({}),
+        getClass: () => ({}),
+      } as ExecutionContext
+
+      const result = await guard.canActivate(context)
+
+      expect(result).toBe(true)
+      expect(mockRedis.incr).toHaveBeenCalledWith(
+        'ratelimit:unknown:unknown',
+      )
     })
   })
 })

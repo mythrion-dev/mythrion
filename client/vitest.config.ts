@@ -18,13 +18,6 @@ export default defineConfig({
         '**/__tests__/**',
         '**/index.ts',
         '**/types.ts',
-        '**/components/adventure/**',
-        '**/components/character-sheet/**',
-        '**/components/dashboard/**',
-        'lib/breadcrumb.tsx',
-        'lib/formula-builder.tsx',
-        'lib/mythrion-popover.tsx',
-        'lib/navigation-context.tsx',
       ],
       thresholds: {
         statements: 80,
