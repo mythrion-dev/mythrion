@@ -49,7 +49,7 @@ export class BookController {
   @Post()
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB limit
+      limits: { fileSize: 300 * 1024 * 1024 }, // 300 MB limit
       fileFilter: (_req, file, cb) => {
         if (file.mimetype !== 'application/pdf') {
           cb(new Error('Only PDF files are allowed'), false)
@@ -136,7 +136,7 @@ export class BookController {
   @Post(':bookId/replace')
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB limit
+      limits: { fileSize: 300 * 1024 * 1024 }, // 300 MB limit
       fileFilter: (_req, file, cb) => {
         if (file.mimetype !== 'application/pdf') {
           cb(new Error('Only PDF files are allowed'), false)
