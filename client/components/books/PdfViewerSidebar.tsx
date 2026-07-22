@@ -101,6 +101,7 @@ export function PdfViewerSidebar({
       return
     }
 
+    const url: string = pdfUrl
     let isCancelled = false
     let createdObjectUrl: string | null = null
 
@@ -110,7 +111,7 @@ export function PdfViewerSidebar({
 
       try {
         const token = localStorage.getItem('accessToken')
-        const res = await fetch(pdfUrl, {
+        const res = await fetch(url, {
           method: 'GET',
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         })
