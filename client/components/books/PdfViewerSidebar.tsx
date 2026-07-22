@@ -7,10 +7,10 @@ import type { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api'
 
 /* ── Configure PDF.js worker ── */
 
-// Use CDN worker for reliable cross-browser loading across bundlers
-// The version matches pdfjs-dist 6.1.200 installed in node_modules
+// Use CDN worker matching the pdfjs-dist version react-pdf depends on internally
+// react-pdf v10.4.1 ships pdfjs-dist@5.4.296 — the worker version must match the API version
 pdfjs.GlobalWorkerOptions.workerSrc =
-  'https://unpkg.com/pdfjs-dist@6.1.200/build/pdf.worker.min.mjs'
+  'https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs'
 
 /* ── Types ── */
 
