@@ -10,9 +10,10 @@
  * 🟢 You can import this file directly.
  */
 
-// Note: __dirname is set from the compiled CJS output;
-// import.meta.url removed for CJS compatibility with Node.js 24+.
-globalThis['__dirname'] = __dirname
+import * as process from 'node:process'
+import * as path from 'node:path'
+import { fileURLToPath } from 'node:url'
+globalThis['__dirname'] = path.dirname(fileURLToPath(import.meta.url))
 
 import * as runtime from "@prisma/client/runtime/client"
 import * as $Enums from "./enums.js"
@@ -50,6 +51,11 @@ export type User = Prisma.UserModel
  * 
  */
 export type Adventure = Prisma.AdventureModel
+/**
+ * Model Book
+ * 
+ */
+export type Book = Prisma.BookModel
 /**
  * Model CampaignMember
  * 

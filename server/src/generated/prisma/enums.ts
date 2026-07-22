@@ -25,3 +25,11 @@ export const InvitationStatus = {
 } as const
 
 export type InvitationStatus = (typeof InvitationStatus)[keyof typeof InvitationStatus]
+
+
+export const BookVisibility = {
+  GM_BOOK: 'GM_BOOK',
+  PLAYER_BOOK: 'PLAYER_BOOK'
+} as const
+
+export type BookVisibility = (typeof BookVisibility)[keyof typeof BookVisibility]

@@ -53,6 +53,7 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   User: 'User',
   Adventure: 'Adventure',
+  Book: 'Book',
   CampaignMember: 'CampaignMember',
   CampaignInvitation: 'CampaignInvitation',
   GoogleAccount: 'GoogleAccount',
@@ -142,6 +143,20 @@ export const AdventureScalarFieldEnum = {
 } as const
 
 export type AdventureScalarFieldEnum = (typeof AdventureScalarFieldEnum)[keyof typeof AdventureScalarFieldEnum]
+
+
+export const BookScalarFieldEnum = {
+  id: 'id',
+  adventureId: 'adventureId',
+  name: 'name',
+  visibility: 'visibility',
+  fileLength: 'fileLength',
+  gridfsFileId: 'gridfsFileId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BookScalarFieldEnum = (typeof BookScalarFieldEnum)[keyof typeof BookScalarFieldEnum]
 
 
 export const CampaignMemberScalarFieldEnum = {

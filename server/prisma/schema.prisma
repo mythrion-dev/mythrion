@@ -40,6 +40,7 @@ model Adventure {
   invitations     CampaignInvitation[]
   templates       Template[]
   characterSheets CharacterSheet[]
+  books           Book[]
   @@index([ownerId])
 }
 
@@ -53,6 +54,25 @@ enum InvitationStatus {
   ACCEPTED
   EXPIRED
   REVOKED
+}
+
+enum BookVisibility {
+  GM_BOOK
+  PLAYER_BOOK
+}
+
+model Book {
+  id            String         @id @default(cuid())
+  adventureId   String
+  adventure     Adventure      @relation(fields: [adventureId], references: [id], onDelete: Cascade)
+  name          String
+  visibility    BookVisibility @default(GM_BOOK)
+  fileLength    Int            @default(0)
+  gridfsFileId  String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([adventureId])
 }
 
 model CampaignMember {

@@ -28,6 +28,11 @@ export type User = Prisma.UserModel
  */
 export type Adventure = Prisma.AdventureModel
 /**
+ * Model Book
+ * 
+ */
+export type Book = Prisma.BookModel
+/**
  * Model CampaignMember
  * 
  */
