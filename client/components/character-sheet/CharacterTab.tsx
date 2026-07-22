@@ -578,6 +578,11 @@ function SkillTable({
                       <span className="text-xs font-medium text-foreground truncate block leading-tight">
                         {sv.skill.name}
                       </span>
+                      {selectedAttr && (
+                        <span className="text-[0.6rem] text-muted font-normal truncate block leading-tight">
+                          · {selectedAttr.name}
+                        </span>
+                      )}
                       {sv.skill.description && (
                         <span className="text-[0.6rem] text-muted truncate block leading-tight mt-0.5">
                           {sv.skill.description}
