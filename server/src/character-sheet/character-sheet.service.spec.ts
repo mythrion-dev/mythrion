@@ -2758,6 +2758,19 @@ describe('CharacterSheetService', () => {
 
         expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:${sheetId}`)
       })
+
+      it('throws ConflictException when skill name already exists on sheet', async () => {
+        prisma.sheetProfessionalSkill.count.mockResolvedValue(0)
+        const prismaErr = new Error('Unique constraint failed')
+        ;(prismaErr as any).code = 'P2002'
+        prisma.sheetProfessionalSkill.create.mockRejectedValue(prismaErr)
+
+        await expect(
+          service.createProfessionalSkill(sheetId, userId, { name: 'Duplicate' }),
+        ).rejects.toThrow(ConflictException)
+
+        expect(prisma.sheetProfessionalSkill.create).toHaveBeenCalled()
+      })
     })
 
     describe('updateProfessionalSkill', () => {

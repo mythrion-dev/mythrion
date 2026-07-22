@@ -9,6 +9,7 @@ import {
 import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { RedisService } from '../redis/redis.service.js'
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
 import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
 
@@ -1336,12 +1337,21 @@ export class CharacterSheetService {
   async createProfessionalSkill(sheetId: string, userId: string, dto: { name: string; attributeId?: string | null }) {
     await this.requireOwnership(sheetId, userId)
     const count = await this.prisma.sheetProfessionalSkill.count({ where: { sheetId } })
-    const result = await this.prisma.sheetProfessionalSkill.create({
-      data: { sheetId, name: dto.name, attributeId: dto.attributeId ?? null, order: count },
-      include: this.professionalSkillInclude,
-    })
-    await this.invalidateCache(sheetId).catch(() => {})
-    return result
+    try {
+      const result = await this.prisma.sheetProfessionalSkill.create({
+        data: { sheetId, name: dto.name, attributeId: dto.attributeId ?? null, order: count },
+        include: this.professionalSkillInclude,
+      })
+      await this.invalidateCache(sheetId).catch(() => {})
+      return result
+    } catch (err) {
+      if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'P2002') {
+        throw new ConflictException(
+          `A professional skill named "${dto.name}" already exists on this sheet.`,
+        )
+      }
+      throw err
+    }
   }
 
   async updateProfessionalSkill(skillId: string, userId: string, dto: { name?: string; attributeId?: string | null }) {
