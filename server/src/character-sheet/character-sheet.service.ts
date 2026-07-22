@@ -1312,14 +1312,24 @@ export class CharacterSheetService {
     return result
   }
 
-  // ── Professional Skills (CRUD) ──
+  // ── Professional Skills (CRUD + Profiles) ──
+
+  private professionalSkillInclude = {
+    attribute: { select: { id: true, key: true, name: true } },
+    profileValues: {
+      include: {
+        profile: { select: { id: true, name: true } },
+        option: { select: { id: true, label: true, value: true } },
+      },
+    },
+  } as const
 
   async listProfessionalSkills(sheetId: string, userId: string) {
     await this.requireOwnership(sheetId, userId)
     return this.prisma.sheetProfessionalSkill.findMany({
       where: { sheetId },
       orderBy: { order: 'asc' },
-      include: { attribute: { select: { id: true, key: true, name: true } } },
+      include: this.professionalSkillInclude,
     })
   }
 
@@ -1328,7 +1338,7 @@ export class CharacterSheetService {
     const count = await this.prisma.sheetProfessionalSkill.count({ where: { sheetId } })
     const result = await this.prisma.sheetProfessionalSkill.create({
       data: { sheetId, name: dto.name, attributeId: dto.attributeId ?? null, order: count },
-      include: { attribute: { select: { id: true, key: true, name: true } } },
+      include: this.professionalSkillInclude,
     })
     await this.invalidateCache(sheetId).catch(() => {})
     return result
@@ -1341,7 +1351,7 @@ export class CharacterSheetService {
     const result = await this.prisma.sheetProfessionalSkill.update({
       where: { id: skillId },
       data: { ...dto },
-      include: { attribute: { select: { id: true, key: true, name: true } } },
+      include: this.professionalSkillInclude,
     })
     await this.invalidateCache(skill.sheetId).catch(() => {})
     return result
@@ -1353,6 +1363,23 @@ export class CharacterSheetService {
     await this.requireOwnership(skill.sheetId, userId)
     const result = await this.prisma.sheetProfessionalSkill.delete({ where: { id: skillId } })
     await this.invalidateCache(skill.sheetId).catch(() => {})
+    return result
+  }
+
+  async updateProfessionalSkillProfileValue(
+    sheetId: string,
+    skillId: string,
+    profileId: string,
+    optionId: string | null,
+    userId: string,
+  ) {
+    await this.requireOwnership(sheetId, userId)
+    const result = await this.prisma.sheetProfessionalSkillProfileValue.upsert({
+      where: { sheetProfessionalSkillId_profileId: { sheetProfessionalSkillId: skillId, profileId } },
+      create: { sheetProfessionalSkillId: skillId, profileId, optionId },
+      update: { optionId },
+    })
+    await this.invalidateCache(sheetId).catch(() => {})
     return result
   }
 

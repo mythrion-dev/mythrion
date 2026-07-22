@@ -80,6 +80,7 @@ function createDeferred<T = void>() {
 // ── Imports (after mocks) ──
 
 import { ProfessionalSkillsSection } from '@/components/character-sheet/ProfessionalSkillsSection'
+import type { ProfessionalSkill } from '@/components/character-sheet/types'
 import { InlineClickEdit } from '@/components/character-sheet/InlineClickEdit'
 import { CoreResourceCard } from '@/components/character-sheet/CoreResourceCard'
 import { StoryField } from '@/components/character-sheet/StoryField'
@@ -95,7 +96,6 @@ const defaultTemplateAttrs = [
 
 const defaultProps = {
   sheetId: 'sheet-1',
-  isOwner: true,
   permissions: {
     canEditProfessionalSkills: true,
     canEditAbilities: false,
@@ -109,15 +109,19 @@ const defaultProps = {
   },
   modifierResults: { str: 3, dex: 5 } as Record<string, number | null>,
   templateAttributes: defaultTemplateAttrs,
+  allProfiles: [],
 }
 
-function makeSkill(overrides: Partial<Parameters<typeof makeSkill>[0]> = {}) {
-  const base = {
+interface MakeSkillOverrides extends Partial<ProfessionalSkill> {}
+
+function makeSkill(overrides: MakeSkillOverrides = {}) {
+  const base: ProfessionalSkill = {
     id: 'sk-1',
     name: 'Blacksmith',
     attributeId: 'attr-1',
     attribute: { id: 'attr-1', key: 'str', name: 'Strength' },
     order: 0,
+    profileValues: [],
   }
   return { ...base, ...overrides }
 }
@@ -153,8 +157,8 @@ describe('ProfessionalSkillsSection', () => {
     })
   })
 
-  it('does not show "+ Add Professional Skill" button when isOwner is false', async () => {
-    render(<ProfessionalSkillsSection {...defaultProps} isOwner={false} permissions={{ ...defaultProps.permissions, canEditProfessionalSkills: false }} />)
+  it('does not show "+ Add Professional Skill" button when canEditProfessionalSkills is false', async () => {
+    render(<ProfessionalSkillsSection {...defaultProps} permissions={{ ...defaultProps.permissions, canEditProfessionalSkills: false }} />)
     await waitFor(() => {
       expect(screen.getByText('No Professional Skills added yet.')).toBeInTheDocument()
     })
@@ -163,7 +167,7 @@ describe('ProfessionalSkillsSection', () => {
 
   // ── Renders skill rows ──
 
-  it('renders skill rows with name, attribute, total, and modifier', async () => {
+  it('renders skill rows with name, attribute, total, and MOD', async () => {
     const skills = [
       makeSkill({ id: 'sk-1', name: 'Blacksmith', attributeId: 'attr-1', attribute: { id: 'attr-1', key: 'str', name: 'Strength' } }),
       makeSkill({ id: 'sk-2', name: 'Alchemy', attributeId: 'attr-2', attribute: { id: 'attr-2', key: 'dex', name: 'Dexterity' } }),
@@ -179,9 +183,9 @@ describe('ProfessionalSkillsSection', () => {
     // Total values from modifierResults: str=3, dex=5
     expect(screen.getAllByText('3').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('5').length).toBeGreaterThanOrEqual(1)
-    // Modifier values: +3, +5
-    expect(screen.getByText('+3')).toBeInTheDocument()
-    expect(screen.getByText('+5')).toBeInTheDocument()
+    // MOD column shows dash when no profile values
+    const dashes = screen.getAllByText('—')
+    expect(dashes.length).toBeGreaterThanOrEqual(2)
   })
 
   it('renders skill count badge with correct count', async () => {
@@ -206,10 +210,10 @@ describe('ProfessionalSkillsSection', () => {
     expect(screen.getByText('Delete')).toBeInTheDocument()
   })
 
-  it('hides Edit and Delete buttons when isOwner is false', async () => {
+  it('hides Edit and Delete buttons when canEditProfessionalSkills is false', async () => {
     const skills = [makeSkill()]
     mockGet.mockResolvedValue(skills)
-    render(<ProfessionalSkillsSection {...defaultProps} isOwner={false} permissions={{ ...defaultProps.permissions, canEditProfessionalSkills: false }} />)
+    render(<ProfessionalSkillsSection {...defaultProps} permissions={{ ...defaultProps.permissions, canEditProfessionalSkills: false }} />)
     await waitFor(() => {
       expect(screen.getByText('Blacksmith')).toBeInTheDocument()
     })
@@ -223,7 +227,7 @@ describe('ProfessionalSkillsSection', () => {
     render(<ProfessionalSkillsSection {...defaultProps} />)
     await waitFor(() => {
       const dashes = screen.getAllByText('—')
-      expect(dashes.length).toBeGreaterThanOrEqual(2) // total and modifier
+      expect(dashes.length).toBeGreaterThanOrEqual(3) // total, MOD, and profile columns
     })
   })
 
@@ -233,7 +237,7 @@ describe('ProfessionalSkillsSection', () => {
     render(<ProfessionalSkillsSection {...defaultProps} />)
     await waitFor(() => {
       const dashes = screen.getAllByText('—')
-      expect(dashes.length).toBeGreaterThanOrEqual(2)
+      expect(dashes.length).toBeGreaterThanOrEqual(3)
     })
   })
 
@@ -244,7 +248,9 @@ describe('ProfessionalSkillsSection', () => {
     render(<ProfessionalSkillsSection {...defaultProps} />)
     await waitFor(() => {
       expect(screen.getByText('3')).toBeInTheDocument()
-      expect(screen.getByText('+3')).toBeInTheDocument()
+      // MOD shows dash when no profile values
+      const dashes = screen.getAllByText('—')
+      expect(dashes.length).toBeGreaterThanOrEqual(1)
     })
   })
 
@@ -319,7 +325,9 @@ describe('ProfessionalSkillsSection', () => {
       { name: 'Mining', attributeId: 'attr-2' },
     )
 
-    const newSkill = { id: 'sk-new', name: 'Mining', attributeId: 'attr-2', attribute: { id: 'attr-2', key: 'dex', name: 'Dexterity' }, order: 0 }
+    const newSkill: ProfessionalSkill = { id: 'sk-new', name: 'Mining', attributeId: 'attr-2', attribute: { id: 'attr-2', key: 'dex', name: 'Dexterity' }, order: 0, profileValues: [] }
+    // After create, handleCreate calls fetchSkills() — mock the refetch
+    mockGet.mockResolvedValue([newSkill])
     deferred.resolve(newSkill)
     await waitFor(() => {
       expect(screen.getByText('Mining')).toBeInTheDocument()
@@ -544,7 +552,7 @@ describe('ProfessionalSkillsSection', () => {
     mockGet.mockResolvedValue(skills)
     render(<ProfessionalSkillsSection {...defaultProps} />)
     await waitFor(() => {
-      expect(screen.getByText(/Modifiers are computed/)).toBeInTheDocument()
+      expect(screen.getByText(/Professional Skills use/)).toBeInTheDocument()
     })
   })
 
@@ -553,7 +561,7 @@ describe('ProfessionalSkillsSection', () => {
     await waitFor(() => {
       expect(screen.getByText('No Professional Skills added yet.')).toBeInTheDocument()
     })
-    expect(screen.queryByText(/Modifiers are computed/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Professional Skills use/)).not.toBeInTheDocument()
   })
 })
 

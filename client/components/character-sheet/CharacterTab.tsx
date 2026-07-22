@@ -429,6 +429,7 @@ export function CharacterTab(props: CharacterTabProps) {
         permissions={permissions}
         modifierResults={modifierResults}
         templateAttributes={sheet.template.attributes}
+        allProfiles={allProfiles}
       />
 
     </div>

@@ -2677,10 +2677,10 @@ describe('CharacterSheetService', () => {
     // ────────── Professional Skills ──────────
 
     describe('listProfessionalSkills', () => {
-      it('returns skills ordered by order with attribute include', async () => {
+      it('returns skills ordered by order with attribute and profileValues include', async () => {
         const skills = [
-          { id: 'ps-1', name: 'Cooking', order: 0, attribute: { id: 'attr-1', key: 'dex', name: 'Dexterity' } },
-          { id: 'ps-2', name: 'Brewing', order: 1, attribute: { id: 'attr-2', key: 'int', name: 'Intelligence' } },
+          { id: 'ps-1', name: 'Cooking', order: 0, attribute: { id: 'attr-1', key: 'dex', name: 'Dexterity' }, profileValues: [] },
+          { id: 'ps-2', name: 'Brewing', order: 1, attribute: { id: 'attr-2', key: 'int', name: 'Intelligence' }, profileValues: [] },
         ]
         prisma.sheetProfessionalSkill.findMany.mockResolvedValue(skills)
 
@@ -2689,7 +2689,15 @@ describe('CharacterSheetService', () => {
         expect(prisma.sheetProfessionalSkill.findMany).toHaveBeenCalledWith({
           where: { sheetId },
           orderBy: { order: 'asc' },
-          include: { attribute: { select: { id: true, key: true, name: true } } },
+          include: {
+            attribute: { select: { id: true, key: true, name: true } },
+            profileValues: {
+              include: {
+                profile: { select: { id: true, name: true } },
+                option: { select: { id: true, label: true, value: true } },
+              },
+            },
+          },
         })
         expect(result).toEqual(skills)
       })
@@ -2706,9 +2714,9 @@ describe('CharacterSheetService', () => {
     })
 
     describe('createProfessionalSkill', () => {
-      it('creates skill with auto-order and attribute include', async () => {
+      it('creates skill with auto-order and profile-aware include', async () => {
         prisma.sheetProfessionalSkill.count.mockResolvedValue(2)
-        const created = { id: 'ps-new', name: 'Cooking', attributeId: 'attr-1', order: 2, attribute: { id: 'attr-1', key: 'dex', name: 'Dexterity' } }
+        const created = { id: 'ps-new', name: 'Cooking', attributeId: 'attr-1', order: 2, attribute: { id: 'attr-1', key: 'dex', name: 'Dexterity' }, profileValues: [] }
         prisma.sheetProfessionalSkill.create.mockResolvedValue(created)
 
         const result = await service.createProfessionalSkill(sheetId, userId, { name: 'Cooking', attributeId: 'attr-1' })
@@ -2716,7 +2724,15 @@ describe('CharacterSheetService', () => {
         expect(prisma.sheetProfessionalSkill.count).toHaveBeenCalledWith({ where: { sheetId } })
         expect(prisma.sheetProfessionalSkill.create).toHaveBeenCalledWith({
           data: { sheetId, name: 'Cooking', attributeId: 'attr-1', order: 2 },
-          include: { attribute: { select: { id: true, key: true, name: true } } },
+          include: {
+            attribute: { select: { id: true, key: true, name: true } },
+            profileValues: {
+              include: {
+                profile: { select: { id: true, name: true } },
+                option: { select: { id: true, label: true, value: true } },
+              },
+            },
+          },
         })
         expect(result).toEqual(created)
       })
@@ -2751,7 +2767,7 @@ describe('CharacterSheetService', () => {
 
       it('updates the skill', async () => {
         prisma.sheetProfessionalSkill.findUnique.mockResolvedValue(mockSkill)
-        const updated = { ...mockSkill, ...dto, attribute: { id: 'attr-2', key: 'int', name: 'Intelligence' } }
+        const updated = { ...mockSkill, ...dto, attribute: { id: 'attr-2', key: 'int', name: 'Intelligence' }, profileValues: [] }
         prisma.sheetProfessionalSkill.update.mockResolvedValue(updated)
 
         const result = await service.updateProfessionalSkill(skillId, userId, dto)
@@ -2760,7 +2776,15 @@ describe('CharacterSheetService', () => {
         expect(prisma.sheetProfessionalSkill.update).toHaveBeenCalledWith({
           where: { id: skillId },
           data: { name: 'Expert Cooking', attributeId: 'attr-2' },
-          include: { attribute: { select: { id: true, key: true, name: true } } },
+          include: {
+            attribute: { select: { id: true, key: true, name: true } },
+            profileValues: {
+              include: {
+                profile: { select: { id: true, name: true } },
+                option: { select: { id: true, label: true, value: true } },
+              },
+            },
+          },
         })
         expect(result).toEqual(updated)
       })
@@ -2831,6 +2855,68 @@ describe('CharacterSheetService', () => {
         prisma.sheetProfessionalSkill.delete.mockResolvedValue(mockSkill)
 
         await service.removeProfessionalSkill(skillId, userId)
+
+        expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:${sheetId}`)
+      })
+    })
+
+    describe('updateProfessionalSkillProfileValue', () => {
+      const sheetId = 'sheet-ps-prof'
+      const skillId = 'ps-profile-1'
+      const profileId = 'prof-1'
+      const userId = 'u1'
+
+      beforeEach(() => {
+        prisma.characterSheet.findUnique.mockResolvedValue({ id: sheetId, ownerId: userId, adventureId: null })
+      })
+
+      it('upserts professional skill profile value with an optionId', async () => {
+        prisma.sheetProfessionalSkillProfileValue.upsert.mockResolvedValue({
+          id: 'pspv-1',
+          sheetProfessionalSkillId: skillId,
+          profileId,
+          optionId: 'opt-1',
+        })
+
+        const result = await service.updateProfessionalSkillProfileValue(sheetId, skillId, profileId, 'opt-1', userId)
+
+        expect(prisma.sheetProfessionalSkillProfileValue.upsert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              sheetProfessionalSkillId_profileId: { sheetProfessionalSkillId: skillId, profileId },
+            }),
+            update: expect.objectContaining({ optionId: 'opt-1' }),
+            create: expect.objectContaining({ sheetProfessionalSkillId: skillId, profileId, optionId: 'opt-1' }),
+          }),
+        )
+        expect(result.optionId).toBe('opt-1')
+      })
+
+      it('upserts professional skill profile value with null optionId', async () => {
+        prisma.sheetProfessionalSkillProfileValue.upsert.mockResolvedValue({
+          id: 'pspv-2',
+          sheetProfessionalSkillId: skillId,
+          profileId,
+          optionId: null,
+        })
+
+        const result = await service.updateProfessionalSkillProfileValue(sheetId, skillId, profileId, null, userId)
+
+        expect(result.optionId).toBeNull()
+      })
+
+      it('throws ForbiddenException when not the owner', async () => {
+        prisma.characterSheet.findUnique.mockResolvedValue({ id: sheetId, ownerId: 'other-owner', adventureId: null })
+
+        await expect(
+          service.updateProfessionalSkillProfileValue(sheetId, skillId, profileId, 'opt-1', 'other-user'),
+        ).rejects.toThrow(ForbiddenException)
+      })
+
+      it('invalidates cache after upsert', async () => {
+        prisma.sheetProfessionalSkillProfileValue.upsert.mockResolvedValue({ id: 'pspv-3' })
+
+        await service.updateProfessionalSkillProfileValue(sheetId, skillId, profileId, 'opt-1', userId)
 
         expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:${sheetId}`)
       })

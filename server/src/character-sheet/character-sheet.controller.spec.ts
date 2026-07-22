@@ -71,6 +71,7 @@ describe('CharacterSheetController', () => {
       createProfessionalSkill: jest.fn().mockResolvedValue({ id: 'ps-2', name: 'Alchemy' }),
       updateProfessionalSkill: jest.fn().mockResolvedValue({ id: 'ps-1', name: 'Master Crafting' }),
       removeProfessionalSkill: jest.fn().mockResolvedValue(undefined),
+      updateProfessionalSkillProfileValue: jest.fn().mockResolvedValue({ success: true }),
     }
 
     mockResistanceService = {
@@ -539,6 +540,14 @@ describe('CharacterSheetController', () => {
       const result = await controller.removeProfessionalSkill(mockReq, 'ps-1')
       expect(mockSheetService.removeProfessionalSkill).toHaveBeenCalledWith('ps-1', 'user-1')
       expect(result).toBeUndefined()
+    })
+  })
+
+  describe('updateProfessionalSkillProfileValue', () => {
+    it('should delegate to sheetService.updateProfessionalSkillProfileValue', async () => {
+      const result = await controller.updateProfessionalSkillProfileValue(mockReq, 'sheet-1', 'ps-1', 'profile-1', 'opt-1')
+      expect(mockSheetService.updateProfessionalSkillProfileValue).toHaveBeenCalledWith('sheet-1', 'ps-1', 'profile-1', 'opt-1', 'user-1')
+      expect(result).toEqual({ success: true })
     })
   })
 

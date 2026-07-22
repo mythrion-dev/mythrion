@@ -239,6 +239,7 @@ export type ProfileOptionWhereInput = {
   profile?: Prisma.XOR<Prisma.SkillModifierProfileScalarRelationFilter, Prisma.SkillModifierProfileWhereInput>
   selections?: Prisma.CharacterSheetSkillProfileValueListRelationFilter
   summonSelections?: Prisma.SummonSkillProfileValueListRelationFilter
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueListRelationFilter
 }
 
 export type ProfileOptionOrderByWithRelationInput = {
@@ -252,6 +253,7 @@ export type ProfileOptionOrderByWithRelationInput = {
   profile?: Prisma.SkillModifierProfileOrderByWithRelationInput
   selections?: Prisma.CharacterSheetSkillProfileValueOrderByRelationAggregateInput
   summonSelections?: Prisma.SummonSkillProfileValueOrderByRelationAggregateInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueOrderByRelationAggregateInput
 }
 
 export type ProfileOptionWhereUniqueInput = Prisma.AtLeast<{
@@ -269,6 +271,7 @@ export type ProfileOptionWhereUniqueInput = Prisma.AtLeast<{
   profile?: Prisma.XOR<Prisma.SkillModifierProfileScalarRelationFilter, Prisma.SkillModifierProfileWhereInput>
   selections?: Prisma.CharacterSheetSkillProfileValueListRelationFilter
   summonSelections?: Prisma.SummonSkillProfileValueListRelationFilter
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueListRelationFilter
 }, "id" | "profileId_label">
 
 export type ProfileOptionOrderByWithAggregationInput = {
@@ -309,6 +312,7 @@ export type ProfileOptionCreateInput = {
   profile: Prisma.SkillModifierProfileCreateNestedOneWithoutOptionsInput
   selections?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutOptionInput
   summonSelections?: Prisma.SummonSkillProfileValueCreateNestedManyWithoutOptionInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueCreateNestedManyWithoutOptionInput
 }
 
 export type ProfileOptionUncheckedCreateInput = {
@@ -321,6 +325,7 @@ export type ProfileOptionUncheckedCreateInput = {
   updatedAt?: Date | string
   selections?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
   summonSelections?: Prisma.SummonSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
 }
 
 export type ProfileOptionUpdateInput = {
@@ -333,6 +338,7 @@ export type ProfileOptionUpdateInput = {
   profile?: Prisma.SkillModifierProfileUpdateOneRequiredWithoutOptionsNestedInput
   selections?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutOptionNestedInput
   summonSelections?: Prisma.SummonSkillProfileValueUpdateManyWithoutOptionNestedInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueUpdateManyWithoutOptionNestedInput
 }
 
 export type ProfileOptionUncheckedUpdateInput = {
@@ -345,6 +351,7 @@ export type ProfileOptionUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   selections?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
   summonSelections?: Prisma.SummonSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
 }
 
 export type ProfileOptionCreateManyInput = {
@@ -502,6 +509,22 @@ export type ProfileOptionUpdateOneWithoutSelectionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProfileOptionUpdateToOneWithWhereWithoutSelectionsInput, Prisma.ProfileOptionUpdateWithoutSelectionsInput>, Prisma.ProfileOptionUncheckedUpdateWithoutSelectionsInput>
 }
 
+export type ProfileOptionCreateNestedOneWithoutProfessionalSkillProfileValuesInput = {
+  create?: Prisma.XOR<Prisma.ProfileOptionCreateWithoutProfessionalSkillProfileValuesInput, Prisma.ProfileOptionUncheckedCreateWithoutProfessionalSkillProfileValuesInput>
+  connectOrCreate?: Prisma.ProfileOptionCreateOrConnectWithoutProfessionalSkillProfileValuesInput
+  connect?: Prisma.ProfileOptionWhereUniqueInput
+}
+
+export type ProfileOptionUpdateOneWithoutProfessionalSkillProfileValuesNestedInput = {
+  create?: Prisma.XOR<Prisma.ProfileOptionCreateWithoutProfessionalSkillProfileValuesInput, Prisma.ProfileOptionUncheckedCreateWithoutProfessionalSkillProfileValuesInput>
+  connectOrCreate?: Prisma.ProfileOptionCreateOrConnectWithoutProfessionalSkillProfileValuesInput
+  upsert?: Prisma.ProfileOptionUpsertWithoutProfessionalSkillProfileValuesInput
+  disconnect?: Prisma.ProfileOptionWhereInput | boolean
+  delete?: Prisma.ProfileOptionWhereInput | boolean
+  connect?: Prisma.ProfileOptionWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProfileOptionUpdateToOneWithWhereWithoutProfessionalSkillProfileValuesInput, Prisma.ProfileOptionUpdateWithoutProfessionalSkillProfileValuesInput>, Prisma.ProfileOptionUncheckedUpdateWithoutProfessionalSkillProfileValuesInput>
+}
+
 export type ProfileOptionCreateNestedOneWithoutSummonSelectionsInput = {
   create?: Prisma.XOR<Prisma.ProfileOptionCreateWithoutSummonSelectionsInput, Prisma.ProfileOptionUncheckedCreateWithoutSummonSelectionsInput>
   connectOrCreate?: Prisma.ProfileOptionCreateOrConnectWithoutSummonSelectionsInput
@@ -527,6 +550,7 @@ export type ProfileOptionCreateWithoutProfileInput = {
   updatedAt?: Date | string
   selections?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutOptionInput
   summonSelections?: Prisma.SummonSkillProfileValueCreateNestedManyWithoutOptionInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueCreateNestedManyWithoutOptionInput
 }
 
 export type ProfileOptionUncheckedCreateWithoutProfileInput = {
@@ -538,6 +562,7 @@ export type ProfileOptionUncheckedCreateWithoutProfileInput = {
   updatedAt?: Date | string
   selections?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
   summonSelections?: Prisma.SummonSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
 }
 
 export type ProfileOptionCreateOrConnectWithoutProfileInput = {
@@ -588,6 +613,7 @@ export type ProfileOptionCreateWithoutSelectionsInput = {
   updatedAt?: Date | string
   profile: Prisma.SkillModifierProfileCreateNestedOneWithoutOptionsInput
   summonSelections?: Prisma.SummonSkillProfileValueCreateNestedManyWithoutOptionInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueCreateNestedManyWithoutOptionInput
 }
 
 export type ProfileOptionUncheckedCreateWithoutSelectionsInput = {
@@ -599,6 +625,7 @@ export type ProfileOptionUncheckedCreateWithoutSelectionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   summonSelections?: Prisma.SummonSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
 }
 
 export type ProfileOptionCreateOrConnectWithoutSelectionsInput = {
@@ -626,6 +653,7 @@ export type ProfileOptionUpdateWithoutSelectionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profile?: Prisma.SkillModifierProfileUpdateOneRequiredWithoutOptionsNestedInput
   summonSelections?: Prisma.SummonSkillProfileValueUpdateManyWithoutOptionNestedInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueUpdateManyWithoutOptionNestedInput
 }
 
 export type ProfileOptionUncheckedUpdateWithoutSelectionsInput = {
@@ -636,6 +664,71 @@ export type ProfileOptionUncheckedUpdateWithoutSelectionsInput = {
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  summonSelections?: Prisma.SummonSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
+}
+
+export type ProfileOptionCreateWithoutProfessionalSkillProfileValuesInput = {
+  id?: string
+  label: string
+  value?: number
+  order?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  profile: Prisma.SkillModifierProfileCreateNestedOneWithoutOptionsInput
+  selections?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutOptionInput
+  summonSelections?: Prisma.SummonSkillProfileValueCreateNestedManyWithoutOptionInput
+}
+
+export type ProfileOptionUncheckedCreateWithoutProfessionalSkillProfileValuesInput = {
+  id?: string
+  profileId: string
+  label: string
+  value?: number
+  order?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  selections?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
+  summonSelections?: Prisma.SummonSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
+}
+
+export type ProfileOptionCreateOrConnectWithoutProfessionalSkillProfileValuesInput = {
+  where: Prisma.ProfileOptionWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProfileOptionCreateWithoutProfessionalSkillProfileValuesInput, Prisma.ProfileOptionUncheckedCreateWithoutProfessionalSkillProfileValuesInput>
+}
+
+export type ProfileOptionUpsertWithoutProfessionalSkillProfileValuesInput = {
+  update: Prisma.XOR<Prisma.ProfileOptionUpdateWithoutProfessionalSkillProfileValuesInput, Prisma.ProfileOptionUncheckedUpdateWithoutProfessionalSkillProfileValuesInput>
+  create: Prisma.XOR<Prisma.ProfileOptionCreateWithoutProfessionalSkillProfileValuesInput, Prisma.ProfileOptionUncheckedCreateWithoutProfessionalSkillProfileValuesInput>
+  where?: Prisma.ProfileOptionWhereInput
+}
+
+export type ProfileOptionUpdateToOneWithWhereWithoutProfessionalSkillProfileValuesInput = {
+  where?: Prisma.ProfileOptionWhereInput
+  data: Prisma.XOR<Prisma.ProfileOptionUpdateWithoutProfessionalSkillProfileValuesInput, Prisma.ProfileOptionUncheckedUpdateWithoutProfessionalSkillProfileValuesInput>
+}
+
+export type ProfileOptionUpdateWithoutProfessionalSkillProfileValuesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  label?: Prisma.StringFieldUpdateOperationsInput | string
+  value?: Prisma.FloatFieldUpdateOperationsInput | number
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  profile?: Prisma.SkillModifierProfileUpdateOneRequiredWithoutOptionsNestedInput
+  selections?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutOptionNestedInput
+  summonSelections?: Prisma.SummonSkillProfileValueUpdateManyWithoutOptionNestedInput
+}
+
+export type ProfileOptionUncheckedUpdateWithoutProfessionalSkillProfileValuesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  profileId?: Prisma.StringFieldUpdateOperationsInput | string
+  label?: Prisma.StringFieldUpdateOperationsInput | string
+  value?: Prisma.FloatFieldUpdateOperationsInput | number
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  selections?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
   summonSelections?: Prisma.SummonSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
 }
 
@@ -648,6 +741,7 @@ export type ProfileOptionCreateWithoutSummonSelectionsInput = {
   updatedAt?: Date | string
   profile: Prisma.SkillModifierProfileCreateNestedOneWithoutOptionsInput
   selections?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutOptionInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueCreateNestedManyWithoutOptionInput
 }
 
 export type ProfileOptionUncheckedCreateWithoutSummonSelectionsInput = {
@@ -659,6 +753,7 @@ export type ProfileOptionUncheckedCreateWithoutSummonSelectionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   selections?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueUncheckedCreateNestedManyWithoutOptionInput
 }
 
 export type ProfileOptionCreateOrConnectWithoutSummonSelectionsInput = {
@@ -686,6 +781,7 @@ export type ProfileOptionUpdateWithoutSummonSelectionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profile?: Prisma.SkillModifierProfileUpdateOneRequiredWithoutOptionsNestedInput
   selections?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutOptionNestedInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueUpdateManyWithoutOptionNestedInput
 }
 
 export type ProfileOptionUncheckedUpdateWithoutSummonSelectionsInput = {
@@ -697,6 +793,7 @@ export type ProfileOptionUncheckedUpdateWithoutSummonSelectionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   selections?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
 }
 
 export type ProfileOptionCreateManyProfileInput = {
@@ -717,6 +814,7 @@ export type ProfileOptionUpdateWithoutProfileInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   selections?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutOptionNestedInput
   summonSelections?: Prisma.SummonSkillProfileValueUpdateManyWithoutOptionNestedInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueUpdateManyWithoutOptionNestedInput
 }
 
 export type ProfileOptionUncheckedUpdateWithoutProfileInput = {
@@ -728,6 +826,7 @@ export type ProfileOptionUncheckedUpdateWithoutProfileInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   selections?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
   summonSelections?: Prisma.SummonSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
+  professionalSkillProfileValues?: Prisma.SheetProfessionalSkillProfileValueUncheckedUpdateManyWithoutOptionNestedInput
 }
 
 export type ProfileOptionUncheckedUpdateManyWithoutProfileInput = {
@@ -747,11 +846,13 @@ export type ProfileOptionUncheckedUpdateManyWithoutProfileInput = {
 export type ProfileOptionCountOutputType = {
   selections: number
   summonSelections: number
+  professionalSkillProfileValues: number
 }
 
 export type ProfileOptionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   selections?: boolean | ProfileOptionCountOutputTypeCountSelectionsArgs
   summonSelections?: boolean | ProfileOptionCountOutputTypeCountSummonSelectionsArgs
+  professionalSkillProfileValues?: boolean | ProfileOptionCountOutputTypeCountProfessionalSkillProfileValuesArgs
 }
 
 /**
@@ -778,6 +879,13 @@ export type ProfileOptionCountOutputTypeCountSummonSelectionsArgs<ExtArgs extend
   where?: Prisma.SummonSkillProfileValueWhereInput
 }
 
+/**
+ * ProfileOptionCountOutputType without action
+ */
+export type ProfileOptionCountOutputTypeCountProfessionalSkillProfileValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SheetProfessionalSkillProfileValueWhereInput
+}
+
 
 export type ProfileOptionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -790,6 +898,7 @@ export type ProfileOptionSelect<ExtArgs extends runtime.Types.Extensions.Interna
   profile?: boolean | Prisma.SkillModifierProfileDefaultArgs<ExtArgs>
   selections?: boolean | Prisma.ProfileOption$selectionsArgs<ExtArgs>
   summonSelections?: boolean | Prisma.ProfileOption$summonSelectionsArgs<ExtArgs>
+  professionalSkillProfileValues?: boolean | Prisma.ProfileOption$professionalSkillProfileValuesArgs<ExtArgs>
   _count?: boolean | Prisma.ProfileOptionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["profileOption"]>
 
@@ -830,6 +939,7 @@ export type ProfileOptionInclude<ExtArgs extends runtime.Types.Extensions.Intern
   profile?: boolean | Prisma.SkillModifierProfileDefaultArgs<ExtArgs>
   selections?: boolean | Prisma.ProfileOption$selectionsArgs<ExtArgs>
   summonSelections?: boolean | Prisma.ProfileOption$summonSelectionsArgs<ExtArgs>
+  professionalSkillProfileValues?: boolean | Prisma.ProfileOption$professionalSkillProfileValuesArgs<ExtArgs>
   _count?: boolean | Prisma.ProfileOptionCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ProfileOptionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -845,6 +955,7 @@ export type $ProfileOptionPayload<ExtArgs extends runtime.Types.Extensions.Inter
     profile: Prisma.$SkillModifierProfilePayload<ExtArgs>
     selections: Prisma.$CharacterSheetSkillProfileValuePayload<ExtArgs>[]
     summonSelections: Prisma.$SummonSkillProfileValuePayload<ExtArgs>[]
+    professionalSkillProfileValues: Prisma.$SheetProfessionalSkillProfileValuePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1251,6 +1362,7 @@ export interface Prisma__ProfileOptionClient<T, Null = never, ExtArgs extends ru
   profile<T extends Prisma.SkillModifierProfileDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SkillModifierProfileDefaultArgs<ExtArgs>>): Prisma.Prisma__SkillModifierProfileClient<runtime.Types.Result.GetResult<Prisma.$SkillModifierProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   selections<T extends Prisma.ProfileOption$selectionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProfileOption$selectionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetSkillProfileValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   summonSelections<T extends Prisma.ProfileOption$summonSelectionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProfileOption$summonSelectionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummonSkillProfileValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  professionalSkillProfileValues<T extends Prisma.ProfileOption$professionalSkillProfileValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProfileOption$professionalSkillProfileValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SheetProfessionalSkillProfileValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1733,6 +1845,30 @@ export type ProfileOption$summonSelectionsArgs<ExtArgs extends runtime.Types.Ext
   take?: number
   skip?: number
   distinct?: Prisma.SummonSkillProfileValueScalarFieldEnum | Prisma.SummonSkillProfileValueScalarFieldEnum[]
+}
+
+/**
+ * ProfileOption.professionalSkillProfileValues
+ */
+export type ProfileOption$professionalSkillProfileValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SheetProfessionalSkillProfileValue
+   */
+  select?: Prisma.SheetProfessionalSkillProfileValueSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SheetProfessionalSkillProfileValue
+   */
+  omit?: Prisma.SheetProfessionalSkillProfileValueOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SheetProfessionalSkillProfileValueInclude<ExtArgs> | null
+  where?: Prisma.SheetProfessionalSkillProfileValueWhereInput
+  orderBy?: Prisma.SheetProfessionalSkillProfileValueOrderByWithRelationInput | Prisma.SheetProfessionalSkillProfileValueOrderByWithRelationInput[]
+  cursor?: Prisma.SheetProfessionalSkillProfileValueWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SheetProfessionalSkillProfileValueScalarFieldEnum | Prisma.SheetProfessionalSkillProfileValueScalarFieldEnum[]
 }
 
 /**
