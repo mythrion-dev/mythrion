@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common'
 import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
@@ -11,6 +12,8 @@ import { UpdateAdventureDto } from './dto/update-adventure.dto.js'
 
 @Injectable()
 export class AdventureService {
+  private readonly logger = new Logger(AdventureService.name)
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly membership: MembershipService,
@@ -112,6 +115,18 @@ export class AdventureService {
       },
     })
 
+    this.logger.debug(`[DIAGNOSTIC] listNpcs: found ${npcs.length} NPCs`)
+    for (const npc of npcs) {
+      const hpCrv = npc.coreResourceValues?.find(
+        (crv) => crv.coreResource.slug === 'hp',
+      )
+      this.logger.debug(
+        `[DIAGNOSTIC] listNpcs raw: "${npc.characterName}" | ` +
+        `hpCrv: ${hpCrv ? `current=${hpCrv.current}, maximum=${hpCrv.maximum}` : 'NOT FOUND'} | ` +
+        `legacy hpActual=${npc.hpActual}, hpMax=${npc.hpMax}`,
+      )
+    }
+
     return npcs.map(({ coreResourceValues, ...npc }) => {
       const hpResource = coreResourceValues?.find(
         (crv) => crv.coreResource.slug === 'hp',
@@ -120,12 +135,17 @@ export class AdventureService {
       // were never initialized. Don't fall through to the stale legacy column
       // (which defaults to 0) — return null so the frontend shows "?".
       const hasHpResource = hpResource !== undefined
+      const mappedHpActual =
+        hpResource?.current ?? (hasHpResource ? null : npc.hpActual)
+      const mappedHpMax =
+        hpResource?.maximum ?? (hasHpResource ? null : npc.hpMax)
+      this.logger.debug(
+        `[DIAGNOSTIC] listNpcs mapped: "${npc.characterName}" → hpActual=${mappedHpActual}, hpMax=${mappedHpMax}`,
+      )
       return {
         ...npc,
-        hpActual:
-          hpResource?.current ?? (hasHpResource ? null : npc.hpActual),
-        hpMax:
-          hpResource?.maximum ?? (hasHpResource ? null : npc.hpMax),
+        hpActual: mappedHpActual,
+        hpMax: mappedHpMax,
       }
     })
   }
@@ -169,15 +189,29 @@ export class AdventureService {
     // characterSheetService.create() creates CRV records with null
     // current/maximum.  Initialize HP here so NPC list and sidebar show
     // real values instead of 0/0.
-    const hpCrv = (sheet as any).coreResourceValues?.find(
+    const sheetCrvs = (sheet as any).coreResourceValues ?? []
+    this.logger.debug(
+      `[DIAGNOSTIC] createNpc: sheet created "${dto.name}" | templateId=${templateId} | ` +
+      `CRVs=${JSON.stringify(sheetCrvs.map((crv: any) => ({ id: crv.id, slug: crv.coreResource?.slug, current: crv.current, maximum: crv.maximum })))}`,
+    )
+    const hpCrv = sheetCrvs.find(
       (crv: any) => crv.coreResource?.slug === 'hp',
     )
     if (hpCrv && (hpCrv.current === null || hpCrv.maximum === null)) {
       const defaultHp = 10
+      this.logger.debug(
+        `[DIAGNOSTIC] createNpc: initializing HP for "${dto.name}" | crvId=${hpCrv.id} | setting to ${defaultHp}/${defaultHp}`,
+      )
       await this.prisma.characterSheetCoreResourceValue.update({
         where: { id: hpCrv.id },
         data: { current: defaultHp, maximum: defaultHp },
       })
+    } else if (!hpCrv) {
+      this.logger.warn(
+        `[DIAGNOSTIC] createNpc: no HP core resource found for "${dto.name}" | ` +
+        `templateId=${templateId} | adventureId=${adventureId} | ` +
+        `Available slugs: ${sheetCrvs.map((crv: any) => crv.coreResource?.slug).join(', ')}`,
+      )
     }
 
     // Convert to NPC — set isNpc, npcType, and clear ownerId so only GMs can edit

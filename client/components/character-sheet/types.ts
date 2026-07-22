@@ -138,4 +138,14 @@ export interface ProfessionalSkill {
   attributeId: string | null
   attribute: { id: string; key: string; name: string } | null
   order: number
+  profileValues: ProfessionalSkillProfileValue[]
+}
+
+export interface ProfessionalSkillProfileValue {
+  id: string
+  professionalSkillId?: string
+  profileId: string
+  optionId: string | null
+  profile: { id: string; name: string }
+  option: { id: string; label: string; value: number } | null
 }

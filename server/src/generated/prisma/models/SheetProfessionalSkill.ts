@@ -234,6 +234,7 @@ export type SheetProfessionalSkillWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"SheetProfessionalSkill"> | Date | string
   sheet?: Prisma.XOR<Prisma.CharacterSheetScalarRelationFilter, Prisma.CharacterSheetWhereInput>
   attribute?: Prisma.XOR<Prisma.TemplateAttributeNullableScalarRelationFilter, Prisma.TemplateAttributeWhereInput> | null
+  profileValues?: Prisma.SheetProfessionalSkillProfileValueListRelationFilter
 }
 
 export type SheetProfessionalSkillOrderByWithRelationInput = {
@@ -246,6 +247,7 @@ export type SheetProfessionalSkillOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   sheet?: Prisma.CharacterSheetOrderByWithRelationInput
   attribute?: Prisma.TemplateAttributeOrderByWithRelationInput
+  profileValues?: Prisma.SheetProfessionalSkillProfileValueOrderByRelationAggregateInput
 }
 
 export type SheetProfessionalSkillWhereUniqueInput = Prisma.AtLeast<{
@@ -262,6 +264,7 @@ export type SheetProfessionalSkillWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"SheetProfessionalSkill"> | Date | string
   sheet?: Prisma.XOR<Prisma.CharacterSheetScalarRelationFilter, Prisma.CharacterSheetWhereInput>
   attribute?: Prisma.XOR<Prisma.TemplateAttributeNullableScalarRelationFilter, Prisma.TemplateAttributeWhereInput> | null
+  profileValues?: Prisma.SheetProfessionalSkillProfileValueListRelationFilter
 }, "id" | "sheetId_name">
 
 export type SheetProfessionalSkillOrderByWithAggregationInput = {
@@ -300,6 +303,7 @@ export type SheetProfessionalSkillCreateInput = {
   updatedAt?: Date | string
   sheet: Prisma.CharacterSheetCreateNestedOneWithoutProfessionalSkillsInput
   attribute?: Prisma.TemplateAttributeCreateNestedOneWithoutProfessionalSkillsInput
+  profileValues?: Prisma.SheetProfessionalSkillProfileValueCreateNestedManyWithoutSheetProfessionalSkillInput
 }
 
 export type SheetProfessionalSkillUncheckedCreateInput = {
@@ -310,6 +314,7 @@ export type SheetProfessionalSkillUncheckedCreateInput = {
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  profileValues?: Prisma.SheetProfessionalSkillProfileValueUncheckedCreateNestedManyWithoutSheetProfessionalSkillInput
 }
 
 export type SheetProfessionalSkillUpdateInput = {
@@ -320,6 +325,7 @@ export type SheetProfessionalSkillUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutProfessionalSkillsNestedInput
   attribute?: Prisma.TemplateAttributeUpdateOneWithoutProfessionalSkillsNestedInput
+  profileValues?: Prisma.SheetProfessionalSkillProfileValueUpdateManyWithoutSheetProfessionalSkillNestedInput
 }
 
 export type SheetProfessionalSkillUncheckedUpdateInput = {
@@ -330,6 +336,7 @@ export type SheetProfessionalSkillUncheckedUpdateInput = {
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  profileValues?: Prisma.SheetProfessionalSkillProfileValueUncheckedUpdateManyWithoutSheetProfessionalSkillNestedInput
 }
 
 export type SheetProfessionalSkillCreateManyInput = {
@@ -411,6 +418,11 @@ export type SheetProfessionalSkillMinOrderByAggregateInput = {
 
 export type SheetProfessionalSkillSumOrderByAggregateInput = {
   order?: Prisma.SortOrder
+}
+
+export type SheetProfessionalSkillScalarRelationFilter = {
+  is?: Prisma.SheetProfessionalSkillWhereInput
+  isNot?: Prisma.SheetProfessionalSkillWhereInput
 }
 
 export type SheetProfessionalSkillCreateNestedManyWithoutAttributeInput = {
@@ -497,6 +509,20 @@ export type SheetProfessionalSkillUncheckedUpdateManyWithoutSheetNestedInput = {
   deleteMany?: Prisma.SheetProfessionalSkillScalarWhereInput | Prisma.SheetProfessionalSkillScalarWhereInput[]
 }
 
+export type SheetProfessionalSkillCreateNestedOneWithoutProfileValuesInput = {
+  create?: Prisma.XOR<Prisma.SheetProfessionalSkillCreateWithoutProfileValuesInput, Prisma.SheetProfessionalSkillUncheckedCreateWithoutProfileValuesInput>
+  connectOrCreate?: Prisma.SheetProfessionalSkillCreateOrConnectWithoutProfileValuesInput
+  connect?: Prisma.SheetProfessionalSkillWhereUniqueInput
+}
+
+export type SheetProfessionalSkillUpdateOneRequiredWithoutProfileValuesNestedInput = {
+  create?: Prisma.XOR<Prisma.SheetProfessionalSkillCreateWithoutProfileValuesInput, Prisma.SheetProfessionalSkillUncheckedCreateWithoutProfileValuesInput>
+  connectOrCreate?: Prisma.SheetProfessionalSkillCreateOrConnectWithoutProfileValuesInput
+  upsert?: Prisma.SheetProfessionalSkillUpsertWithoutProfileValuesInput
+  connect?: Prisma.SheetProfessionalSkillWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.SheetProfessionalSkillUpdateToOneWithWhereWithoutProfileValuesInput, Prisma.SheetProfessionalSkillUpdateWithoutProfileValuesInput>, Prisma.SheetProfessionalSkillUncheckedUpdateWithoutProfileValuesInput>
+}
+
 export type SheetProfessionalSkillCreateWithoutAttributeInput = {
   id?: string
   name: string
@@ -504,6 +530,7 @@ export type SheetProfessionalSkillCreateWithoutAttributeInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sheet: Prisma.CharacterSheetCreateNestedOneWithoutProfessionalSkillsInput
+  profileValues?: Prisma.SheetProfessionalSkillProfileValueCreateNestedManyWithoutSheetProfessionalSkillInput
 }
 
 export type SheetProfessionalSkillUncheckedCreateWithoutAttributeInput = {
@@ -513,6 +540,7 @@ export type SheetProfessionalSkillUncheckedCreateWithoutAttributeInput = {
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  profileValues?: Prisma.SheetProfessionalSkillProfileValueUncheckedCreateNestedManyWithoutSheetProfessionalSkillInput
 }
 
 export type SheetProfessionalSkillCreateOrConnectWithoutAttributeInput = {
@@ -561,6 +589,7 @@ export type SheetProfessionalSkillCreateWithoutSheetInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   attribute?: Prisma.TemplateAttributeCreateNestedOneWithoutProfessionalSkillsInput
+  profileValues?: Prisma.SheetProfessionalSkillProfileValueCreateNestedManyWithoutSheetProfessionalSkillInput
 }
 
 export type SheetProfessionalSkillUncheckedCreateWithoutSheetInput = {
@@ -570,6 +599,7 @@ export type SheetProfessionalSkillUncheckedCreateWithoutSheetInput = {
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  profileValues?: Prisma.SheetProfessionalSkillProfileValueUncheckedCreateNestedManyWithoutSheetProfessionalSkillInput
 }
 
 export type SheetProfessionalSkillCreateOrConnectWithoutSheetInput = {
@@ -598,6 +628,62 @@ export type SheetProfessionalSkillUpdateManyWithWhereWithoutSheetInput = {
   data: Prisma.XOR<Prisma.SheetProfessionalSkillUpdateManyMutationInput, Prisma.SheetProfessionalSkillUncheckedUpdateManyWithoutSheetInput>
 }
 
+export type SheetProfessionalSkillCreateWithoutProfileValuesInput = {
+  id?: string
+  name: string
+  order?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sheet: Prisma.CharacterSheetCreateNestedOneWithoutProfessionalSkillsInput
+  attribute?: Prisma.TemplateAttributeCreateNestedOneWithoutProfessionalSkillsInput
+}
+
+export type SheetProfessionalSkillUncheckedCreateWithoutProfileValuesInput = {
+  id?: string
+  sheetId: string
+  name: string
+  attributeId?: string | null
+  order?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type SheetProfessionalSkillCreateOrConnectWithoutProfileValuesInput = {
+  where: Prisma.SheetProfessionalSkillWhereUniqueInput
+  create: Prisma.XOR<Prisma.SheetProfessionalSkillCreateWithoutProfileValuesInput, Prisma.SheetProfessionalSkillUncheckedCreateWithoutProfileValuesInput>
+}
+
+export type SheetProfessionalSkillUpsertWithoutProfileValuesInput = {
+  update: Prisma.XOR<Prisma.SheetProfessionalSkillUpdateWithoutProfileValuesInput, Prisma.SheetProfessionalSkillUncheckedUpdateWithoutProfileValuesInput>
+  create: Prisma.XOR<Prisma.SheetProfessionalSkillCreateWithoutProfileValuesInput, Prisma.SheetProfessionalSkillUncheckedCreateWithoutProfileValuesInput>
+  where?: Prisma.SheetProfessionalSkillWhereInput
+}
+
+export type SheetProfessionalSkillUpdateToOneWithWhereWithoutProfileValuesInput = {
+  where?: Prisma.SheetProfessionalSkillWhereInput
+  data: Prisma.XOR<Prisma.SheetProfessionalSkillUpdateWithoutProfileValuesInput, Prisma.SheetProfessionalSkillUncheckedUpdateWithoutProfileValuesInput>
+}
+
+export type SheetProfessionalSkillUpdateWithoutProfileValuesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutProfessionalSkillsNestedInput
+  attribute?: Prisma.TemplateAttributeUpdateOneWithoutProfessionalSkillsNestedInput
+}
+
+export type SheetProfessionalSkillUncheckedUpdateWithoutProfileValuesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sheetId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  attributeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type SheetProfessionalSkillCreateManyAttributeInput = {
   id?: string
   sheetId: string
@@ -614,6 +700,7 @@ export type SheetProfessionalSkillUpdateWithoutAttributeInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutProfessionalSkillsNestedInput
+  profileValues?: Prisma.SheetProfessionalSkillProfileValueUpdateManyWithoutSheetProfessionalSkillNestedInput
 }
 
 export type SheetProfessionalSkillUncheckedUpdateWithoutAttributeInput = {
@@ -623,6 +710,7 @@ export type SheetProfessionalSkillUncheckedUpdateWithoutAttributeInput = {
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  profileValues?: Prisma.SheetProfessionalSkillProfileValueUncheckedUpdateManyWithoutSheetProfessionalSkillNestedInput
 }
 
 export type SheetProfessionalSkillUncheckedUpdateManyWithoutAttributeInput = {
@@ -650,6 +738,7 @@ export type SheetProfessionalSkillUpdateWithoutSheetInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attribute?: Prisma.TemplateAttributeUpdateOneWithoutProfessionalSkillsNestedInput
+  profileValues?: Prisma.SheetProfessionalSkillProfileValueUpdateManyWithoutSheetProfessionalSkillNestedInput
 }
 
 export type SheetProfessionalSkillUncheckedUpdateWithoutSheetInput = {
@@ -659,6 +748,7 @@ export type SheetProfessionalSkillUncheckedUpdateWithoutSheetInput = {
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  profileValues?: Prisma.SheetProfessionalSkillProfileValueUncheckedUpdateManyWithoutSheetProfessionalSkillNestedInput
 }
 
 export type SheetProfessionalSkillUncheckedUpdateManyWithoutSheetInput = {
@@ -671,6 +761,35 @@ export type SheetProfessionalSkillUncheckedUpdateManyWithoutSheetInput = {
 }
 
 
+/**
+ * Count Type SheetProfessionalSkillCountOutputType
+ */
+
+export type SheetProfessionalSkillCountOutputType = {
+  profileValues: number
+}
+
+export type SheetProfessionalSkillCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  profileValues?: boolean | SheetProfessionalSkillCountOutputTypeCountProfileValuesArgs
+}
+
+/**
+ * SheetProfessionalSkillCountOutputType without action
+ */
+export type SheetProfessionalSkillCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SheetProfessionalSkillCountOutputType
+   */
+  select?: Prisma.SheetProfessionalSkillCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * SheetProfessionalSkillCountOutputType without action
+ */
+export type SheetProfessionalSkillCountOutputTypeCountProfileValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SheetProfessionalSkillProfileValueWhereInput
+}
+
 
 export type SheetProfessionalSkillSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -682,6 +801,8 @@ export type SheetProfessionalSkillSelect<ExtArgs extends runtime.Types.Extension
   updatedAt?: boolean
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
   attribute?: boolean | Prisma.SheetProfessionalSkill$attributeArgs<ExtArgs>
+  profileValues?: boolean | Prisma.SheetProfessionalSkill$profileValuesArgs<ExtArgs>
+  _count?: boolean | Prisma.SheetProfessionalSkillCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["sheetProfessionalSkill"]>
 
 export type SheetProfessionalSkillSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -722,6 +843,8 @@ export type SheetProfessionalSkillOmit<ExtArgs extends runtime.Types.Extensions.
 export type SheetProfessionalSkillInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
   attribute?: boolean | Prisma.SheetProfessionalSkill$attributeArgs<ExtArgs>
+  profileValues?: boolean | Prisma.SheetProfessionalSkill$profileValuesArgs<ExtArgs>
+  _count?: boolean | Prisma.SheetProfessionalSkillCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type SheetProfessionalSkillIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sheet?: boolean | Prisma.CharacterSheetDefaultArgs<ExtArgs>
@@ -737,6 +860,7 @@ export type $SheetProfessionalSkillPayload<ExtArgs extends runtime.Types.Extensi
   objects: {
     sheet: Prisma.$CharacterSheetPayload<ExtArgs>
     attribute: Prisma.$TemplateAttributePayload<ExtArgs> | null
+    profileValues: Prisma.$SheetProfessionalSkillProfileValuePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1142,6 +1266,7 @@ export interface Prisma__SheetProfessionalSkillClient<T, Null = never, ExtArgs e
   readonly [Symbol.toStringTag]: "PrismaPromise"
   sheet<T extends Prisma.CharacterSheetDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheetDefaultArgs<ExtArgs>>): Prisma.Prisma__CharacterSheetClient<runtime.Types.Result.GetResult<Prisma.$CharacterSheetPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   attribute<T extends Prisma.SheetProfessionalSkill$attributeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SheetProfessionalSkill$attributeArgs<ExtArgs>>): Prisma.Prisma__TemplateAttributeClient<runtime.Types.Result.GetResult<Prisma.$TemplateAttributePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  profileValues<T extends Prisma.SheetProfessionalSkill$profileValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SheetProfessionalSkill$profileValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SheetProfessionalSkillProfileValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1595,6 +1720,30 @@ export type SheetProfessionalSkill$attributeArgs<ExtArgs extends runtime.Types.E
    */
   include?: Prisma.TemplateAttributeInclude<ExtArgs> | null
   where?: Prisma.TemplateAttributeWhereInput
+}
+
+/**
+ * SheetProfessionalSkill.profileValues
+ */
+export type SheetProfessionalSkill$profileValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SheetProfessionalSkillProfileValue
+   */
+  select?: Prisma.SheetProfessionalSkillProfileValueSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SheetProfessionalSkillProfileValue
+   */
+  omit?: Prisma.SheetProfessionalSkillProfileValueOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SheetProfessionalSkillProfileValueInclude<ExtArgs> | null
+  where?: Prisma.SheetProfessionalSkillProfileValueWhereInput
+  orderBy?: Prisma.SheetProfessionalSkillProfileValueOrderByWithRelationInput | Prisma.SheetProfessionalSkillProfileValueOrderByWithRelationInput[]
+  cursor?: Prisma.SheetProfessionalSkillProfileValueWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SheetProfessionalSkillProfileValueScalarFieldEnum | Prisma.SheetProfessionalSkillProfileValueScalarFieldEnum[]
 }
 
 /**

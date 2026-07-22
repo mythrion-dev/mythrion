@@ -1392,5 +1392,94 @@ describe('TemplateForm', () => {
       fireEvent.click(cancelBtn)
       expect(defaultFormProps.onCancelNew).toHaveBeenCalled()
     })
+
+    // ── Profiles tab callbacks ──
+    it('calls profile editing callbacks (onUpdateProfile, onRemoveProfile, target mode, options)', () => {
+      const onUpdateProfile = vi.fn()
+      const onRemoveProfile = vi.fn()
+      const onUpdateProfileTargetMode = vi.fn()
+      const onAddProfileOption = vi.fn()
+      const onRemoveProfileOption = vi.fn()
+      const onUpdateProfileOption = vi.fn()
+      advanceToStep2({
+        newFeatureSkillProfiles: true,
+        onAddProfile: vi.fn(),
+        onUpdateProfile,
+        onRemoveProfile,
+        onUpdateProfileTargetMode,
+        onAddProfileOption,
+        onRemoveProfileOption,
+        onUpdateProfileOption,
+        newTemplateProfiles: defaultProfiles,
+        newTemplateSkills: defaultSkills,
+        newFeatureSkills: true,
+      })
+      fireEvent.click(screen.getAllByText('Profiles')[0])
+
+      // Trigger onUpdateProfile: change profile name
+      const profileNameInput = screen.getByDisplayValue('mastery')
+      fireEvent.change(profileNameInput, { target: { value: 'expertise' } })
+      expect(onUpdateProfile).toHaveBeenCalledWith(0, 'expertise')
+
+      // Trigger onUpdateProfileTargetMode: click "Selected Skills"
+      fireEvent.click(screen.getByText('Selected Skills'))
+      expect(onUpdateProfileTargetMode).toHaveBeenCalledWith(0, 'SELECTED_SKILLS')
+
+      // Trigger onUpdateProfileOption: change option label
+      const optionLabelInput = screen.getByDisplayValue('Expert')
+      fireEvent.change(optionLabelInput, { target: { value: 'Master' } })
+      expect(onUpdateProfileOption).toHaveBeenCalledWith(0, 0, 'label', 'Master')
+
+      // Trigger onUpdateProfileOption: change option value
+      const optionValueInput = screen.getByTestId('numeric-input')
+      fireEvent.change(optionValueInput, { target: { value: '5' } })
+      expect(onUpdateProfileOption).toHaveBeenCalledWith(0, 0, 'value', '5')
+
+      // Trigger onRemoveProfileOption: click option's ✕
+      const allRemoveBtns = screen.getAllByText('✕')
+      fireEvent.click(allRemoveBtns[allRemoveBtns.length > 1 ? 1 : 0])
+      expect(onRemoveProfileOption).toHaveBeenCalledWith(0, 0)
+
+      // Trigger onAddProfileOption
+      fireEvent.click(screen.getByText('+ Add Option'))
+      expect(onAddProfileOption).toHaveBeenCalledWith(0)
+
+      // Trigger onRemoveProfile: click the profile's ✕ button (first one remaining)
+      const removeProfileBtn = screen.getAllByText('✕')[0]
+      fireEvent.click(removeProfileBtn)
+      expect(onRemoveProfile).toHaveBeenCalledWith(0)
+    })
+
+    it('calls ResistanceSystemConfig onChange in step 2', () => {
+      const onNewResistancesChange = vi.fn()
+      advanceToStep2({
+        newFeatureResistance: true,
+        onNewResistancesChange,
+        newResistances: defaultResistances,
+        attrsForNewResistance: defaultAttrs,
+      })
+      fireEvent.click(screen.getByText('Resistances'))
+      // Click the onChange button in the mocked ResistanceSystemConfig
+      fireEvent.click(screen.getByTestId('resistance-onchange'))
+      expect(onNewResistancesChange).toHaveBeenCalledWith([])
+    })
+
+    it('calls onUpdateNewAcAttributeModifierForConfig when AC attribute modifier changes', () => {
+      const onUpdateNewAcAttributeModifierForConfig = vi.fn()
+      advanceToStep2({
+        newFeatureArmorClass: true,
+        onAddNewAcConfig: vi.fn(),
+        onUpdateNewAcAttributeModifierForConfig,
+        newAcConfigs: defaultAcConfigs,
+        newAttrsForAc: defaultAttrs,
+        newAttrModifiersEnabled: true,
+        onUpdateNewAcConfig: vi.fn(),
+      })
+      fireEvent.click(screen.getByText('Armor Class'))
+      // The mock AcConfigList renders "Player Can Change" radio button
+      const playerCanChange = screen.getByLabelText('Player Can Change')
+      fireEvent.click(playerCanChange)
+      expect(onUpdateNewAcAttributeModifierForConfig).toHaveBeenCalled()
+    })
   })
 })

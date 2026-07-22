@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, type FormEvent } from 'react'
+import { useState, useEffect, useMemo, type FormEvent } from 'react'
 import { api } from '@/lib/api'
-import type { ProfessionalSkill, SheetPermissions } from './types'
+import type { ProfessionalSkill, SkillModifierProfile, SheetPermissions } from './types'
 
 // ── Props ──
 
@@ -11,6 +11,50 @@ interface Props {
   permissions: SheetPermissions
   modifierResults: Record<string, number | null>
   templateAttributes: { id: string; key: string; name: string }[]
+  allProfiles: SkillModifierProfile[]
+}
+
+// ── Helpers ──
+
+interface SkillResult {
+  total: number | null
+  modSum: number
+}
+
+/**
+ * Compute professional skill totals and MOD (profile) contribution.
+ * Mirrors the profile iteration logic from page.tsx computeSkills() (lines 406-414):
+ * iterate all template profiles, look up option values via profileValues[],
+ * then total = attributeModifier + sum(profileOptionValues).
+ */
+function computeSkillResults(
+  skills: ProfessionalSkill[],
+  modifierResults: Record<string, number | null>,
+): Record<string, SkillResult> {
+  const r: Record<string, SkillResult> = {}
+  for (const skill of skills) {
+    let total: number | null = null
+    let modSum = 0
+
+    // Attribute modifier contribution
+    // Use attribute ID to look up modifierResults (which is keyed by template attribute ID)
+    const attributeId = skill.attribute?.id ?? skill.attributeId
+    if (attributeId) {
+      const mod = modifierResults[attributeId] ?? null
+      if (mod !== null) total = (total ?? 0) + mod
+    }
+
+    // Profile option values contribution
+    for (const pv of skill.profileValues ?? []) {
+      if (pv.option?.value) {
+        total = (total ?? 0) + pv.option.value
+        modSum += pv.option.value
+      }
+    }
+
+    r[skill.id] = { total, modSum }
+  }
+  return r
 }
 
 // ── Component ──
@@ -20,6 +64,7 @@ export function ProfessionalSkillsSection({
   permissions,
   modifierResults,
   templateAttributes,
+  allProfiles,
 }: Props) {
   const canEdit = permissions.canEditProfessionalSkills
   const [skills, setSkills] = useState<ProfessionalSkill[]>([])
@@ -27,6 +72,7 @@ export function ProfessionalSkillsSection({
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [createName, setCreateName] = useState('')
   const [createAttributeId, setCreateAttributeId] = useState('')
+  const [createProfileSelections, setCreateProfileSelections] = useState<Record<string, string | null>>({})
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -51,11 +97,64 @@ export function ProfessionalSkillsSection({
     }
   }
 
+  // ── Computed results ──
+  // Recalculate whenever skills or modifierResults change (mirrors computeSkills pattern)
+
+  const results = useMemo(
+    () => computeSkillResults(skills, modifierResults),
+    [skills, modifierResults],
+  )
+
+  // ── Profile change handler ──
+  // Optimistic update matching handleProfileChange() pattern from page.tsx (lines 556-565).
+  // Immediately updates local skill data, then persists to the server.
+  // On failure, refetches skills to restore server state.
+
+  async function handleProfileChange(skillId: string, profileId: string, optionId: string | null) {
+    // Optimistic update: update profileValues in local state
+    const prevSkills = skills
+    setSkills(prev =>
+      prev.map(s => {
+        if (s.id !== skillId) return s
+        const existing = s.profileValues ?? []
+        const idx = existing.findIndex(pv => pv.profileId === profileId)
+        const profile = allProfiles.find(p => p.id === profileId)
+        const option = profile?.options.find(o => o.id === optionId) ?? null
+        const newPv: ProfessionalSkill['profileValues'][number] = idx >= 0
+          ? { ...existing[idx], optionId, option: option ? { id: option.id, label: option.label, value: option.value } : null }
+          : {
+              id: `__optimistic_${profileId}`,
+              profileId,
+              optionId,
+              profile: { id: profileId, name: profile?.name ?? '' },
+              option: option ? { id: option.id, label: option.label, value: option.value } : null,
+            }
+        return {
+          ...s,
+          profileValues: idx >= 0
+            ? existing.map((pv, i) => i === idx ? newPv : pv)
+            : [...existing, newPv],
+        }
+      }),
+    )
+
+    try {
+      await api.patch(
+        `/character-sheets/${sheetId}/professional-skills/${skillId}/profiles/${profileId}`,
+        { optionId },
+      )
+    } catch {
+      // Rollback on failure
+      setSkills(prevSkills)
+    }
+  }
+
   // ── Create ──
 
   function openCreate() {
     setCreateName('')
     setCreateAttributeId('')
+    setCreateProfileSelections({})
     setError(null)
     setShowCreateModal(true)
   }
@@ -70,7 +169,22 @@ export function ProfessionalSkillsSection({
         name: createName.trim(),
         attributeId: createAttributeId || null,
       })
-      setSkills(p => [...p, skill])
+
+      // Apply any profile selections from the create modal
+      const patchPromises = Object.entries(createProfileSelections)
+        .filter(([, optionId]) => optionId !== null && optionId !== '')
+        .map(([profileId, optionId]) =>
+          api.patch(
+            `/character-sheets/${sheetId}/professional-skills/${skill.id}/profiles/${profileId}`,
+            { optionId },
+          ),
+        )
+
+      if (patchPromises.length > 0) {
+        await Promise.all(patchPromises)
+      }
+
+      await fetchSkills()
       setShowCreateModal(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create')
@@ -119,12 +233,53 @@ export function ProfessionalSkillsSection({
     }
   }
 
-  // ── Derive total from modifierResults ──
+  // ── Render: Profile selectors (shared between view and edit mode) ──
 
-  function getTotal(skill: ProfessionalSkill): number | null {
-    if (!skill.attributeId) return null
-    // Try attribute key first, then fallback to attributeId
-    return modifierResults[skill.attribute?.key ?? ''] ?? modifierResults[skill.attributeId] ?? null
+  function renderProfileSelectors(skillId: string, disableAll = false) {
+    if (allProfiles.length === 0) {
+      return <span className="text-[0.6rem] text-muted">—</span>
+    }
+
+    const skill = skills.find(s => s.id === skillId)
+    if (!skill) return null
+
+    return (
+      <div className="space-y-1">
+        {allProfiles.map(profile => {
+          const currentValue = skill.profileValues?.find(pv => pv.profileId === profile.id)
+          const selectedOptionId = currentValue?.optionId ?? ''
+
+          return (
+            <div key={profile.id} className="flex items-center gap-1">
+              <label className="text-[0.55rem] text-muted whitespace-nowrap shrink-0 leading-none">
+                {profile.name}
+              </label>
+              <select
+                className="input-field py-0.5 text-[0.6rem] flex-1 min-w-0"
+                value={selectedOptionId}
+                onChange={e => handleProfileChange(skillId, profile.id, e.target.value || null)}
+                disabled={disableAll}
+              >
+                <option value="">—</option>
+                {profile.options.map(opt => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label} ({opt.value >= 0 ? '+' : ''}{opt.value})
+                  </option>
+                ))}
+              </select>
+              {selectedOptionId && (
+                <span className="text-[0.55rem] font-mono text-primary shrink-0 tabular-nums leading-none">
+                  {(() => {
+                    const opt = profile.options.find(o => o.id === selectedOptionId)
+                    return opt ? (opt.value >= 0 ? `+${opt.value}` : `${opt.value}`) : ''
+                  })()}
+                </span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
   }
 
   // ── Render ──
@@ -171,13 +326,16 @@ export function ProfessionalSkillsSection({
                 <th className="py-2 pr-2 font-medium">Profession</th>
                 <th className="py-2 pr-2 font-medium">Attribute</th>
                 <th className="py-2 pr-2 font-medium text-right">Total</th>
-                <th className="py-2 pr-2 font-medium text-right">Modifier</th>
+                <th className="py-2 pr-2 font-medium text-right">MOD</th>
+                <th className="py-2 pr-2 font-medium">Profile(s)</th>
                 {canEdit && <th className="py-2 font-medium text-right">Actions</th>}
               </tr>
             </thead>
             <tbody>
               {skills.map(skill => {
-                const total = getTotal(skill)
+                const skillResult = results[skill.id]
+                const total = skillResult?.total ?? null
+                const modSum = skillResult?.modSum ?? 0
                 const isEditing = editingId === skill.id
                 return (
                   <tr key={skill.id} className="border-b border-border/50">
@@ -204,10 +362,13 @@ export function ProfessionalSkillsSection({
                           </select>
                         </td>
                         <td className="py-2 pr-2 text-right">{total !== null ? total : '—'}</td>
-                        <td className="py-2 pr-2 text-right text-muted">
-                          {(skill.attributeId && total !== null)
-                            ? (total >= 0 ? `+${total}` : total)
+                        <td className="py-2 pr-2 text-right text-muted whitespace-nowrap">
+                          {modSum !== 0
+                            ? (modSum > 0 ? `+${modSum}` : `${modSum}`)
                             : '—'}
+                        </td>
+                        <td className="py-2 pr-2">
+                          {renderProfileSelectors(skill.id)}
                         </td>
                         <td className="py-2 text-right">
                           <div className="flex gap-1 justify-end">
@@ -233,10 +394,13 @@ export function ProfessionalSkillsSection({
                         <td className="py-2 pr-2 text-right font-semibold">
                           {total !== null ? total : '—'}
                         </td>
-                        <td className="py-2 pr-2 text-right text-muted">
-                          {(skill.attributeId && total !== null)
-                            ? (total >= 0 ? `+${total}` : total)
+                        <td className="py-2 pr-2 text-right text-muted whitespace-nowrap">
+                          {modSum !== 0
+                            ? (modSum > 0 ? `+${modSum}` : `${modSum}`)
                             : '—'}
+                        </td>
+                        <td className="py-2 pr-2">
+                          {renderProfileSelectors(skill.id, !canEdit)}
                         </td>
                         {canEdit && (
                           <td className="py-2 text-right">
@@ -302,6 +466,37 @@ export function ProfessionalSkillsSection({
               </select>
             </div>
 
+            {/* Profile selections in create modal */}
+            {allProfiles.length > 0 && (
+              <div>
+                <label className="label mb-1 block">Modifier Profiles (optional)</label>
+                <div className="space-y-2">
+                  {allProfiles.map(profile => (
+                    <div key={profile.id} className="flex items-center gap-2">
+                      <label className="text-xs text-muted min-w-[4rem]">{profile.name}:</label>
+                      <select
+                        className="input-field text-sm flex-1"
+                        value={createProfileSelections[profile.id] ?? ''}
+                        onChange={e =>
+                          setCreateProfileSelections(p => ({
+                            ...p,
+                            [profile.id]: e.target.value || null,
+                          }))
+                        }
+                      >
+                        <option value="">— No selection —</option>
+                        {profile.options.map(opt => (
+                          <option key={opt.id} value={opt.id}>
+                            {opt.label} {opt.value >= 0 ? `(+${opt.value})` : `(${opt.value})`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-2 justify-end">
               <button
                 type="button"
@@ -326,7 +521,9 @@ export function ProfessionalSkillsSection({
       {/* ── Helper text ── */}
       {skills.length > 0 && (
         <p className="text-xs text-muted mt-3">
-          Modifiers are computed from the selected attribute using the template&apos;s formula engine. Add your profession skills. Choose which attribute will be used for each one. All calculations follow the rules defined by the GM.
+          Professional Skills use the selected attribute&apos;s modifier plus any Modifier Profile bonuses.
+          Choose which attribute to use for each skill and select matching profiles. All calculations
+          follow the rules defined by the GM.
         </p>
       )}
     </div>

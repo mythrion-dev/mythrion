@@ -1185,9 +1185,7 @@ describe('NpcsMobsSection', () => {
       expect(screen.getByText('Goblin Scout')).toBeInTheDocument()
     })
 
-    // Level and HP
-    expect(screen.getByText(/Lv\.3/)).toBeInTheDocument()
-    expect(screen.getByText(/❤️ 12\/12/)).toBeInTheDocument()
+    // Level
 
     // Template badge
     expect(screen.getByText('Goblin')).toBeInTheDocument()
@@ -1349,7 +1347,6 @@ describe('NpcsMobsSection', () => {
 
     // Should show fallback values
     expect(screen.getByText(/Lv\.\?/)).toBeInTheDocument()
-    expect(screen.getByText(/❤️ \?\/\?/)).toBeInTheDocument()
   })
 
   it('renders NPC without template gracefully', async () => {

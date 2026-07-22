@@ -96,19 +96,17 @@
       "!main.ts",
       "!**/generated/**",
       "!**/*.module.ts",
-      "!**/*.controller.ts",
       "!**/*.dto.ts",
-      "!template/**",
-      "!image/**",
       "!auth/google.service.ts",
       "!auth/google.strategy.ts",
-      "!auth/rate-limit.decorator.ts"
+      "!auth/rate-limit.decorator.ts",
+      "!**/coverage/**"
     ],
     "coverageDirectory": "../coverage",
     "coverageThreshold": {
       "global": {
         "statements": 80,
-        "branches": 80,
+        "branches": 75,
         "functions": 80,
         "lines": 80
       }

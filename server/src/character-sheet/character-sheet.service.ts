@@ -9,6 +9,7 @@ import {
 import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { RedisService } from '../redis/redis.service.js'
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
 import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
 
@@ -312,6 +313,28 @@ export class CharacterSheetService {
       },
       include: sheetInclude,
     })
+
+    // ── Diagnostic: log core resource values created ──
+    const crvsDebug = (sheet as any).coreResourceValues?.map((crv: any) => ({
+      id: crv.id,
+      slug: crv.coreResource?.slug,
+      enabled: crv.coreResource?.enabled,
+      current: crv.current,
+      maximum: crv.maximum,
+    }))
+    this.logger.debug(
+      `[DIAGNOSTIC] characterSheetService.create: sheet "${sheet.characterName}" | ` +
+      `templateId=${dto.templateId} | CRVs=${JSON.stringify(crvsDebug ?? [])}`,
+    )
+    const hpCrvDebug = (sheet as any).coreResourceValues?.find(
+      (crv: any) => crv.coreResource?.slug === 'hp',
+    )
+    if (!hpCrvDebug) {
+      this.logger.warn(
+        `[DIAGNOSTIC] characterSheetService.create: NO HP core resource for "${sheet.characterName}" | ` +
+        `templateId=${dto.templateId} | Template likely missing slug='hp' core resource`,
+      )
+    }
 
     // Invalidate user's list cache for the new sheet
     await this.invalidateCache(sheet.id, userId, adventureId ?? undefined).catch(() => {})
@@ -1290,26 +1313,45 @@ export class CharacterSheetService {
     return result
   }
 
-  // ── Professional Skills (CRUD) ──
+  // ── Professional Skills (CRUD + Profiles) ──
+
+  private professionalSkillInclude = {
+    attribute: { select: { id: true, key: true, name: true } },
+    profileValues: {
+      include: {
+        profile: { select: { id: true, name: true } },
+        option: { select: { id: true, label: true, value: true } },
+      },
+    },
+  } as const
 
   async listProfessionalSkills(sheetId: string, userId: string) {
     await this.requireOwnership(sheetId, userId)
     return this.prisma.sheetProfessionalSkill.findMany({
       where: { sheetId },
       orderBy: { order: 'asc' },
-      include: { attribute: { select: { id: true, key: true, name: true } } },
+      include: this.professionalSkillInclude,
     })
   }
 
   async createProfessionalSkill(sheetId: string, userId: string, dto: { name: string; attributeId?: string | null }) {
     await this.requireOwnership(sheetId, userId)
     const count = await this.prisma.sheetProfessionalSkill.count({ where: { sheetId } })
-    const result = await this.prisma.sheetProfessionalSkill.create({
-      data: { sheetId, name: dto.name, attributeId: dto.attributeId ?? null, order: count },
-      include: { attribute: { select: { id: true, key: true, name: true } } },
-    })
-    await this.invalidateCache(sheetId).catch(() => {})
-    return result
+    try {
+      const result = await this.prisma.sheetProfessionalSkill.create({
+        data: { sheetId, name: dto.name, attributeId: dto.attributeId ?? null, order: count },
+        include: this.professionalSkillInclude,
+      })
+      await this.invalidateCache(sheetId).catch(() => {})
+      return result
+    } catch (err) {
+      if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'P2002') {
+        throw new ConflictException(
+          `A professional skill named "${dto.name}" already exists on this sheet.`,
+        )
+      }
+      throw err
+    }
   }
 
   async updateProfessionalSkill(skillId: string, userId: string, dto: { name?: string; attributeId?: string | null }) {
@@ -1319,7 +1361,7 @@ export class CharacterSheetService {
     const result = await this.prisma.sheetProfessionalSkill.update({
       where: { id: skillId },
       data: { ...dto },
-      include: { attribute: { select: { id: true, key: true, name: true } } },
+      include: this.professionalSkillInclude,
     })
     await this.invalidateCache(skill.sheetId).catch(() => {})
     return result
@@ -1331,6 +1373,23 @@ export class CharacterSheetService {
     await this.requireOwnership(skill.sheetId, userId)
     const result = await this.prisma.sheetProfessionalSkill.delete({ where: { id: skillId } })
     await this.invalidateCache(skill.sheetId).catch(() => {})
+    return result
+  }
+
+  async updateProfessionalSkillProfileValue(
+    sheetId: string,
+    skillId: string,
+    profileId: string,
+    optionId: string | null,
+    userId: string,
+  ) {
+    await this.requireOwnership(sheetId, userId)
+    const result = await this.prisma.sheetProfessionalSkillProfileValue.upsert({
+      where: { sheetProfessionalSkillId_profileId: { sheetProfessionalSkillId: skillId, profileId } },
+      create: { sheetProfessionalSkillId: skillId, profileId, optionId },
+      update: { optionId },
+    })
+    await this.invalidateCache(sheetId).catch(() => {})
     return result
   }
 

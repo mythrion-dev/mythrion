@@ -102,7 +102,7 @@ vi.mock('@/components/character-sheet/ResistanceTab', () => ({
 
 // ── Import component under test (after mocks) ──
 
-import { AbilitiesTab } from '@/components/character-sheet/AbilitiesTab'
+import { AbilitiesTab, evaluateSummonFormula } from '@/components/character-sheet/AbilitiesTab'
 
 // ── Helpers ──
 
@@ -1465,5 +1465,243 @@ describe('AbilitiesTab', () => {
     })
     // Non-owner only renders spans when values exist — with null values, nothing renders
     // But the component should not crash
+  })
+})
+
+// ════════════════════════════════════════════════════════════════
+// evaluateSummonFormula
+// ════════════════════════════════════════════════════════════════
+
+describe('evaluateSummonFormula', () => {
+  // ── Basic arithmetic ──
+
+  it('evaluates addition: 5 + 3 = 8', () => {
+    expect(evaluateSummonFormula('5 + 3', {})).toBe(8)
+  })
+
+  it('evaluates subtraction: 10 - 3 = 7', () => {
+    expect(evaluateSummonFormula('10 - 3', {})).toBe(7)
+  })
+
+  it('evaluates multiplication: 4 * 5 = 20', () => {
+    expect(evaluateSummonFormula('4 * 5', {})).toBe(20)
+  })
+
+  it('evaluates division: 10 / 2 = 5', () => {
+    expect(evaluateSummonFormula('10 / 2', {})).toBe(5)
+  })
+
+  it('evaluates modulo: 10 % 3 = 1', () => {
+    expect(evaluateSummonFormula('10 % 3', {})).toBe(1)
+  })
+
+  // ── Operator precedence ──
+
+  it('respects multiplication precedence: 5 + 3 * 2 = 11', () => {
+    expect(evaluateSummonFormula('5 + 3 * 2', {})).toBe(11)
+  })
+
+  it('respects division precedence: 10 - 6 / 2 = 7', () => {
+    expect(evaluateSummonFormula('10 - 6 / 2', {})).toBe(7)
+  })
+
+  it('respects modulo precedence: 10 + 8 % 3 = 12', () => {
+    expect(evaluateSummonFormula('10 + 8 % 3', {})).toBe(12)
+  })
+
+  // ── Parentheses ──
+
+  it('evaluates parentheses: (5 + 3) * 2 = 16', () => {
+    expect(evaluateSummonFormula('(5 + 3) * 2', {})).toBe(16)
+  })
+
+  it('evaluates nested parentheses: ((2 + 3) * (4 + 1)) = 25', () => {
+    expect(evaluateSummonFormula('((2 + 3) * (4 + 1))', {})).toBe(25)
+  })
+
+  // ── Unary operators ──
+
+  it('evaluates unary minus: -5 + 3 = -2', () => {
+    expect(evaluateSummonFormula('-5 + 3', {})).toBe(-2)
+  })
+
+  it('evaluates double unary minus: --5 = 5', () => {
+    expect(evaluateSummonFormula('--5', {})).toBe(5)
+  })
+
+  it('evaluates unary plus: +5 = 5', () => {
+    expect(evaluateSummonFormula('+5', {})).toBe(5)
+  })
+
+  it('evaluates unary minus with parentheses: -(5 + 3) = -8', () => {
+    expect(evaluateSummonFormula('-(5 + 3)', {})).toBe(-8)
+  })
+
+  // ── Exponentiation ──
+
+  it('evaluates exponentiation: 2 ** 3 = 8', () => {
+    expect(evaluateSummonFormula('2 ** 3', {})).toBe(8)
+  })
+
+  it('evaluates exponentiation with caret: 2 ^ 3 = 8', () => {
+    expect(evaluateSummonFormula('2 ^ 3', {})).toBe(8)
+  })
+
+  it('evaluates right-associative exponentiation: 2 ** 2 ** 3 = 256', () => {
+    expect(evaluateSummonFormula('2 ** 2 ** 3', {})).toBe(256)
+  })
+
+  it('handles exponentiation precedence: 2 * 3 ** 2 = 18', () => {
+    expect(evaluateSummonFormula('2 * 3 ** 2', {})).toBe(18)
+  })
+
+  // ── Math functions ──
+
+  it('evaluates floor: floor(7 / 2) = 3', () => {
+    expect(evaluateSummonFormula('floor(7 / 2)', {})).toBe(3)
+  })
+
+  it('evaluates ceil: ceil(7 / 2) = 4', () => {
+    expect(evaluateSummonFormula('ceil(7 / 2)', {})).toBe(4)
+  })
+
+  it('evaluates round: round(3.5) = 4', () => {
+    expect(evaluateSummonFormula('round(3.5)', {})).toBe(4)
+  })
+
+  it('evaluates round down: round(3.4) = 3', () => {
+    expect(evaluateSummonFormula('round(3.4)', {})).toBe(3)
+  })
+
+  it('evaluates min: min(5, 10) = 5', () => {
+    expect(evaluateSummonFormula('min(5, 10)', {})).toBe(5)
+  })
+
+  it('evaluates max: max(5, 10) = 10', () => {
+    expect(evaluateSummonFormula('max(5, 10)', {})).toBe(10)
+  })
+
+  it('evaluates abs: abs(-5) = 5', () => {
+    expect(evaluateSummonFormula('abs(-5)', {})).toBe(5)
+  })
+
+  it('evaluates abs with positive: abs(5) = 5', () => {
+    expect(evaluateSummonFormula('abs(5)', {})).toBe(5)
+  })
+
+  // ── Nested functions ──
+
+  it('evaluates nested functions: floor(max(5, 10) / 2) = 5', () => {
+    expect(evaluateSummonFormula('floor(max(5, 10) / 2)', {})).toBe(5)
+  })
+
+  it('evaluates deeply nested functions: ceil(floor(3.7)) = 3', () => {
+    expect(evaluateSummonFormula('ceil(floor(3.7))', {})).toBe(3)
+  })
+
+  it('evaluates functions with expression arguments: max(3 + 2, 4 * 2) = 8', () => {
+    expect(evaluateSummonFormula('max(3 + 2, 4 * 2)', {})).toBe(8)
+  })
+
+  it('evaluates min with three arguments: min(10, 5, 8) = 5', () => {
+    expect(evaluateSummonFormula('min(10, 5, 8)', {})).toBe(5)
+  })
+
+  // ── Variable substitution ──
+
+  it('substitutes a single variable: value / 2 with {value: 10} = 5', () => {
+    expect(evaluateSummonFormula('value / 2', { value: 10 })).toBe(5)
+  })
+
+  it('substitutes multiple variables: str + dex with {str: 10, dex: 8} = 18', () => {
+    expect(evaluateSummonFormula('str + dex', { str: 10, dex: 8 })).toBe(18)
+  })
+
+  it('uses variable in function: floor(value / 2) with {value: 18} = 9', () => {
+    expect(evaluateSummonFormula('floor(value / 2)', { value: 18 })).toBe(9)
+  })
+
+  it('treats unknown identifiers as 0', () => {
+    expect(evaluateSummonFormula('unknown + 5', {})).toBe(5)
+  })
+
+  // ── Edge cases ──
+
+  it('returns 0 for empty formula', () => {
+    expect(evaluateSummonFormula('', {})).toBe(0)
+  })
+
+  it('returns 0 for whitespace-only formula', () => {
+    expect(evaluateSummonFormula('   ', {})).toBe(0)
+  })
+
+  it('returns 0 for division by zero', () => {
+    expect(evaluateSummonFormula('10 / 0', {})).toBe(0)
+  })
+
+  it('returns 0 for modulo by zero', () => {
+    expect(evaluateSummonFormula('10 % 0', {})).toBe(0)
+  })
+
+  it('returns 0 for completely invalid formula', () => {
+    expect(evaluateSummonFormula('abc @@@ def', {})).toBe(0)
+  })
+
+  it('tolerates trailing operator: 5 + = 5', () => {
+    // The parser stops after consuming the number, trailing operator is ignored
+    expect(evaluateSummonFormula('5 +', {})).toBe(5)
+  })
+
+  it('tolerates missing closing paren: (5 + 3 = 8', () => {
+    // The parser is lenient — expect('rparen') returns false silently
+    expect(evaluateSummonFormula('(5 + 3', {})).toBe(8)
+  })
+
+  it('tolerates unclosed function call: floor(5 = 5', () => {
+    // The parser is lenient about missing closing paren
+    expect(evaluateSummonFormula('floor(5', {})).toBe(5)
+  })
+
+  it('handles decimal numbers: 3.5 + 1.5 = 5', () => {
+    expect(evaluateSummonFormula('3.5 + 1.5', {})).toBe(5)
+  })
+
+  it('handles negative result: 3 - 10 = -7', () => {
+    expect(evaluateSummonFormula('3 - 10', {})).toBe(-7)
+  })
+
+  // ── Complex formulas typical in templates ──
+
+  it('evaluates formula with mixed operators: 2 * (3 + 4) / 2 = 7', () => {
+    expect(evaluateSummonFormula('2 * (3 + 4) / 2', {})).toBe(7)
+  })
+
+  it('evaluates complex formula with variable and function: floor((value - 10) / 2) + 5 with {value: 18} = 9', () => {
+    expect(evaluateSummonFormula('floor((value - 10) / 2) + 5', { value: 18 })).toBe(9)
+  })
+
+  it('evaluates same formula as template default: floor(value / 2) with {value: 15} = 7', () => {
+    expect(evaluateSummonFormula('floor(value / 2)', { value: 15 })).toBe(7)
+  })
+
+  it('evaluates chained arithmetic: 1 + 2 + 3 + 4 + 5 = 15', () => {
+    expect(evaluateSummonFormula('1 + 2 + 3 + 4 + 5', {})).toBe(15)
+  })
+
+  it('evaluates chained multiplication: 2 * 3 * 4 = 24', () => {
+    expect(evaluateSummonFormula('2 * 3 * 4', {})).toBe(24)
+  })
+
+  it('returns 0 for NaN result from Math function', () => {
+    // min() with no arguments returns Infinity, wrapped in expression that makes it finite-checked
+    expect(evaluateSummonFormula('min()', {})).toBe(0)
+  })
+
+  it('handles multiple spaces and formatting:   5   +   3   ', () => {
+    expect(evaluateSummonFormula('   5   +   3   ', {})).toBe(8)
+  })
+
+  it('evaluates formula with decimal in variable context: value * 1.5 with {value: 10} = 15', () => {
+    expect(evaluateSummonFormula('value * 1.5', { value: 10 })).toBe(15)
   })
 })

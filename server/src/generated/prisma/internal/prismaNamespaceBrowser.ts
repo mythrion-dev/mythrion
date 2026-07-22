@@ -84,6 +84,7 @@ export const ModelName = {
   SheetResistanceComponent: 'SheetResistanceComponent',
   SheetResistanceAttributeModifier: 'SheetResistanceAttributeModifier',
   SheetProfessionalSkill: 'SheetProfessionalSkill',
+  SheetProfessionalSkillProfileValue: 'SheetProfessionalSkillProfileValue',
   CharacterAbility: 'CharacterAbility',
   CharacterAbilityLevel: 'CharacterAbilityLevel',
   SummonSkill: 'SummonSkill',
@@ -563,6 +564,18 @@ export const SheetProfessionalSkillScalarFieldEnum = {
 } as const
 
 export type SheetProfessionalSkillScalarFieldEnum = (typeof SheetProfessionalSkillScalarFieldEnum)[keyof typeof SheetProfessionalSkillScalarFieldEnum]
+
+
+export const SheetProfessionalSkillProfileValueScalarFieldEnum = {
+  id: 'id',
+  sheetProfessionalSkillId: 'sheetProfessionalSkillId',
+  profileId: 'profileId',
+  optionId: 'optionId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SheetProfessionalSkillProfileValueScalarFieldEnum = (typeof SheetProfessionalSkillProfileValueScalarFieldEnum)[keyof typeof SheetProfessionalSkillProfileValueScalarFieldEnum]
 
 
 export const CharacterAbilityScalarFieldEnum = {

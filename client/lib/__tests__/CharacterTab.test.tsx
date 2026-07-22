@@ -308,6 +308,66 @@ describe('CharacterTab', () => {
     })
   })
 
+  // ── Skill attribute indicator ──
+
+  describe('skill attribute indicator', () => {
+    it('shows attribute indicator next to skill name in collapsed row', () => {
+      render(<CharacterTab {...props} />)
+      // The indicator has the format "· <AttributeName>" using middot
+      expect(screen.getByText(/· Strength/)).toBeInTheDocument()
+      expect(screen.getByText(/· Dexterity/)).toBeInTheDocument()
+    })
+
+    it('shows fallback to defaultAttribute when selectedAttribute is null', () => {
+      const sheet = createMockSheet()
+      // Remove selectedAttribute, keep defaultAttribute
+      sheet.skillValues[0].selectedAttributeId = null as any
+      sheet.skillValues[0].selectedAttribute = null
+      // defaultAttribute is already set to Strength on the mock
+      render(<CharacterTab {...props} sheet={sheet} />)
+      expect(screen.getByText(/· Strength/)).toBeInTheDocument()
+    })
+
+    it('shows fallback to skill.attribute when both selected and default are null', () => {
+      const sheet = createMockSheet()
+      sheet.skillValues[0].selectedAttributeId = null as any
+      sheet.skillValues[0].selectedAttribute = null
+      sheet.skillValues[0].skill.defaultAttribute = null
+      // skill.attribute is still set to Strength
+      render(<CharacterTab {...props} sheet={sheet} />)
+      expect(screen.getByText(/· Strength/)).toBeInTheDocument()
+    })
+
+    it('does not render attribute indicator when no attribute available', () => {
+      const sheet = createMockSheet()
+      // Null out ALL skills' attribute sources so no indicator renders anywhere
+      sheet.skillValues.forEach(sv => {
+        sv.selectedAttributeId = null as any
+        sv.selectedAttribute = null
+        sv.skill.defaultAttribute = null
+        sv.skill.attribute = null
+      })
+      render(<CharacterTab {...props} sheet={sheet} />)
+      // Athletics should still render but without any attribute indicator
+      expect(screen.getByText('Athletics')).toBeInTheDocument()
+      expect(screen.queryByText(/· /)).not.toBeInTheDocument()
+    })
+
+    it('indicator updates when selectedAttribute changes via re-render', () => {
+      const { rerender } = render(<CharacterTab {...props} />)
+      expect(screen.getByText(/· Strength/)).toBeInTheDocument()
+
+      // Change the selectedAttribute to Dexterity and re-render
+      const updatedSheet = createMockSheet()
+      updatedSheet.skillValues[0].selectedAttributeId = 'attr-dex'
+      updatedSheet.skillValues[0].selectedAttribute = { id: 'attr-dex', key: 'dexterity', name: 'Dexterity' }
+      rerender(<CharacterTab {...props} sheet={updatedSheet} />)
+      // Multiple skills may show Dexterity — use getAllByText
+      expect(screen.getAllByText(/· Dexterity/).length).toBeGreaterThanOrEqual(1)
+      expect(screen.queryByText(/· Strength/)).not.toBeInTheDocument()
+    })
+  })
+
   // ── Owner vs non-owner ──
 
   describe('owner vs non-owner', () => {
