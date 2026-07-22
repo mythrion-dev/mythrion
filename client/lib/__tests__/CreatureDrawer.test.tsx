@@ -1984,10 +1984,7 @@ describe('CreatureDrawer', () => {
       expect(descTextarea.value).toBe('Updated description')
     })
 
-    it('updates description via internal state (notes uses displayNotes, description uses state)', async () => {
-      // The description textarea is bound to the `description` state variable and updates
-      // on change. The notes textarea is bound to `displayNotes` (derived from props) and
-      // does NOT visually update on change — the internal `notes` state is saved instead.
+    it('updates description and notes textareas visually when user types', async () => {
       setupSuccessfulLoad()
       const ability = mockAbility({ notes: 'Some GM notes' })
       render(
@@ -2005,19 +2002,18 @@ describe('CreatureDrawer', () => {
       const notesTextarea = screen.getByPlaceholderText('GM notes...') as HTMLTextAreaElement
       expect(notesTextarea.value).toBe('Some GM notes')
 
-      // After typing, the textarea doesn't update visually because it uses displayNotes
-      // derived from the prop, not from state. So we verify that the save handler
-      // will send the updated value via internal state.
       mockApi.patch.mockResolvedValue({})
 
       await act(async () => {
         fireEvent.change(notesTextarea, { target: { value: 'Updated notes' } })
       })
 
-      // The displayed value stays the same since it's derived from the prop
-      expect(notesTextarea.value).toBe('Some GM notes')
+      // The textarea value updates visually since displayNotes now uses local state
+      await waitFor(() => {
+        expect(notesTextarea.value).toBe('Updated notes')
+      })
 
-      // But clicking save sends the updated internal state
+      // Clicking save sends the updated internal state
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: /Save/i }))
       })
@@ -2073,6 +2069,342 @@ describe('CreatureDrawer', () => {
 
       const descTextarea = screen.getByPlaceholderText('Ability description...') as HTMLTextAreaElement
       expect(descTextarea.value).toBe('Extra damage')
+    })
+  })
+
+  /* ── 19. User interaction coverage (targeted function coverage) ── */
+  describe('User interaction coverage', () => {
+    it('updates HP max value when user types in max HP input', async () => {
+      const ability = mockAbility({
+        summonHealth: { id: 'sh-1', abilityId: 'ability-1', current: 30, maximum: 50, notes: '' },
+      })
+      setupSuccessfulLoad()
+      render(
+        <CreatureDrawer {...defaultProps} ability={ability} sheetId="sheet-1" />,
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('Health')).toBeInTheDocument()
+      })
+
+      const numericInputs = screen.getAllByTestId('numeric-input')
+      const maxHpInput = numericInputs[1]
+
+      await act(async () => {
+        fireEvent.change(maxHpInput, { target: { value: '75' } })
+      })
+
+      expect((maxHpInput as HTMLInputElement).value).toBe('75')
+    })
+
+    it('updates HP notes when user types in HP notes input', async () => {
+      const ability = mockAbility({
+        summonHealth: { id: 'sh-1', abilityId: 'ability-1', current: 30, maximum: 50, notes: '' },
+      })
+      setupSuccessfulLoad()
+      render(
+        <CreatureDrawer {...defaultProps} ability={ability} sheetId="sheet-1" />,
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('Health')).toBeInTheDocument()
+      })
+
+      const hpNotesInput = screen.getByPlaceholderText(/temp HP/) as HTMLInputElement
+      await act(async () => {
+        fireEvent.change(hpNotesInput, { target: { value: 'Has temp HP from spell' } })
+      })
+
+      expect(hpNotesInput.value).toBe('Has temp HP from spell')
+    })
+
+    it('updates AC field when user types in an AC field input', async () => {
+      const template = mockTemplate({
+        armorClasses: [
+          {
+            id: 'ac-main',
+            name: 'Main AC',
+            enabled: true,
+            fields: [
+              { id: 'field-base', name: 'Base', key: 'base', defaultValue: '10', editableByPlayer: false, description: null },
+            ],
+            attributeModifiers: [],
+          },
+        ],
+      })
+      setupSuccessfulLoad(template)
+      render(
+        <CreatureDrawer {...defaultProps} ability={mockAbility()} sheetId="sheet-1" />,
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('Armor Class')).toBeInTheDocument()
+      })
+
+      const baseInput = screen.getByDisplayValue('10') as HTMLInputElement
+      await act(async () => {
+        fireEvent.change(baseInput, { target: { value: '12' } })
+      })
+
+      expect(baseInput.value).toBe('12')
+    })
+
+    it('types in resistance component and manual value inputs', async () => {
+      const template = mockTemplate({
+        resistances: [
+          {
+            id: 'res-fire',
+            name: 'Fire',
+            calculationType: 'MANUAL',
+            order: 0,
+            components: [
+              { id: 'comp-base', name: 'Base', editableByPlayer: true, defaultValue: '0' },
+            ],
+            attributeModifiers: [],
+          },
+        ],
+      })
+      setupSuccessfulLoad(template, undefined, [
+        { resistanceId: 'res-fire', name: 'Fire', calculationType: 'MANUAL', total: 5 },
+      ])
+      render(
+        <CreatureDrawer {...defaultProps} ability={mockAbility()} sheetId="sheet-1" />,
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('Resistances')).toBeInTheDocument()
+      })
+
+      // Component input
+      const componentInput = screen.getByDisplayValue('0') as HTMLInputElement
+      await act(async () => {
+        fireEvent.change(componentInput, { target: { value: '3' } })
+      })
+      expect(componentInput.value).toBe('3')
+
+      // Manual value input — use querySelector to skip file-type inputs
+      const manualInputEl = document.querySelector<HTMLInputElement>(
+        'input:not([type="file"]):not([type="hidden"])[value=""]',
+      )
+      if (manualInputEl) {
+        await act(async () => {
+          fireEvent.change(manualInputEl, { target: { value: '8' } })
+        })
+        expect(manualInputEl.value).toBe('8')
+      }
+    })
+
+    it('changes creature name, description, notes, and attribute inputs', async () => {
+      const ability = mockAbility({
+        name: 'Goblin Scout',
+        description: 'A sneaky goblin',
+        notes: 'GM note',
+      })
+      const template = mockTemplate()
+      setupSuccessfulLoad(template)
+      render(
+        <CreatureDrawer {...defaultProps} ability={ability} sheetId="sheet-1" />,
+      )
+
+      // Wait for sections to render
+      await waitFor(() => {
+        expect(screen.getByText('Details')).toBeInTheDocument()
+      })
+
+      // Creature name (line 599)
+      const nameInput = screen.getByDisplayValue('Goblin Scout') as HTMLInputElement
+      await act(async () => {
+        fireEvent.change(nameInput, { target: { value: 'Goblin Champion' } })
+      })
+      expect(nameInput.value).toBe('Goblin Champion')
+
+      // Description textarea (line 648)
+      const descInput = screen.getByDisplayValue('A sneaky goblin') as HTMLTextAreaElement
+      await act(async () => {
+        fireEvent.change(descInput, { target: { value: 'A fierce goblin champion' } })
+      })
+      expect(descInput.value).toBe('A fierce goblin champion')
+
+      // Notes textarea (line 654) — use waitFor since controlled inputs re-render async
+      await act(async () => {
+        fireEvent.change(screen.getByDisplayValue('GM note'), { target: { value: 'Updated GM note' } })
+      })
+      await waitFor(() => {
+        expect((screen.getByDisplayValue('Updated GM note') as HTMLTextAreaElement).value).toBe('Updated GM note')
+      })
+
+      // Attribute input (line 713)
+      const attrInputs = screen.getAllByDisplayValue(/^\d+$/) as HTMLInputElement[]
+      if (attrInputs.length > 0) {
+        await act(async () => {
+          fireEvent.change(attrInputs[0], { target: { value: '18' } })
+        })
+        expect(attrInputs[0].value).toBe('18')
+      }
+    })
+
+    it('opens, fills, and cancels the new child ability form', async () => {
+      setupSuccessfulLoad()
+      render(
+        <CreatureDrawer {...defaultProps} ability={mockAbility()} sheetId="sheet-1" />,
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('Abilities')).toBeInTheDocument()
+      })
+
+      // Click "Add Ability" (line 849)
+      const addBtn = screen.getByText(/Add Ability/)
+      await act(async () => {
+        fireEvent.click(addBtn)
+      })
+
+      // Fill in form fields
+      const nameInput = screen.getByPlaceholderText('Ability name') as HTMLInputElement
+      await act(async () => {
+        fireEvent.change(nameInput, { target: { value: 'Fireball' } })
+      })
+      expect(nameInput.value).toBe('Fireball')
+
+      const descInput = screen.getByPlaceholderText(/What does this ability/) as HTMLTextAreaElement
+      await act(async () => {
+        fireEvent.change(descInput, { target: { value: 'A fiery explosion' } })
+      })
+      expect(descInput.value).toBe('A fiery explosion')
+
+      // Click "Cancel" (line 910) — pick the form's Cancel button (second match)
+      const cancelBtns = screen.getAllByText('Cancel')
+      const formCancelBtn = cancelBtns[cancelBtns.length - 1]
+      await act(async () => {
+        fireEvent.click(formCancelBtn)
+      })
+    })
+
+    it('edits child ability name and description inline', async () => {
+      const childAbilities: any[] = [
+        {
+          id: 'child-1',
+          name: 'Sneak Attack',
+          description: 'Extra damage when unseen',
+          notes: null,
+          levels: [
+            { id: 'lvl-1', abilityId: 'child-1', level: '1', manaCost: 2, range: '5ft', description: 'Basic', notes: null, damage: '1d6' },
+          ],
+        },
+      ]
+      const ability = mockAbility({ childAbilities })
+      setupSuccessfulLoad()
+      render(
+        <CreatureDrawer {...defaultProps} ability={ability} sheetId="sheet-1" />,
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('Abilities')).toBeInTheDocument()
+      })
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Sneak Attack')).toBeInTheDocument()
+      })
+
+      // Edit child ability name inline (line 936 → saveChildAbilityField)
+      const nameInput = screen.getByDisplayValue('Sneak Attack') as HTMLInputElement
+      await act(async () => {
+        fireEvent.change(nameInput, { target: { value: 'Backstab' } })
+      })
+      expect(nameInput.value).toBe('Backstab')
+
+      // Expand the child ability
+      const expandBtn = Array.from(document.querySelectorAll('button')).find(btn => {
+        const svg = btn.querySelector('svg')
+        return svg && svg.innerHTML.includes('M9 5l7 7-7 7')
+      })
+      expect(expandBtn).not.toBeNull()
+      await act(async () => {
+        fireEvent.click(expandBtn!)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Levels')).toBeInTheDocument()
+      })
+
+      // Edit child ability description (line 951 → saveChildAbilityField)
+      const descTextarea = screen.getByDisplayValue('Extra damage when unseen') as HTMLTextAreaElement
+      await act(async () => {
+        fireEvent.change(descTextarea, { target: { value: 'Deals massive extra damage' } })
+      })
+      expect(descTextarea.value).toBe('Deals massive extra damage')
+    })
+
+    it('interacts with child ability level fields', async () => {
+      const childAbilities: any[] = [
+        {
+          id: 'child-1',
+          name: 'Sneak Attack',
+          description: 'Extra damage',
+          notes: null,
+          levels: [
+            { id: 'lvl-1', abilityId: 'child-1', level: '1', manaCost: 2, range: '5ft', description: 'Basic', notes: null, damage: '1d6' },
+          ],
+        },
+      ]
+      const ability = mockAbility({ childAbilities })
+      setupSuccessfulLoad()
+      render(
+        <CreatureDrawer {...defaultProps} ability={ability} sheetId="sheet-1" />,
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('Abilities')).toBeInTheDocument()
+      })
+
+      // Expand the child ability
+      const expandBtn = Array.from(document.querySelectorAll('button')).find(btn => {
+        const svg = btn.querySelector('svg')
+        return svg && svg.innerHTML.includes('M9 5l7 7-7 7')
+      })
+      expect(expandBtn).not.toBeNull()
+      await act(async () => {
+        fireEvent.click(expandBtn!)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Levels')).toBeInTheDocument()
+      })
+
+      // Edit level fields (handleSaveLevelField)
+      // Level number input (line 972) — change to a value that won't collide with manaCost's '2'
+      const lvlInput = screen.getByDisplayValue('1') as HTMLInputElement
+      await act(async () => {
+        fireEvent.change(lvlInput, { target: { value: '3' } })
+      })
+      expect(lvlInput.value).toBe('3')
+
+      // Mana cost input (line 986)
+      const mpInput = screen.getByDisplayValue('2') as HTMLInputElement
+      await act(async () => {
+        fireEvent.change(mpInput, { target: { value: '3' } })
+      })
+      expect(mpInput.value).toBe('3')
+
+      // Range input (line 992)
+      const rangeInput = screen.getByDisplayValue('5ft') as HTMLInputElement
+      await act(async () => {
+        fireEvent.change(rangeInput, { target: { value: '10ft' } })
+      })
+      expect(rangeInput.value).toBe('10ft')
+
+      // Damage input (line 998)
+      const dmgInput = screen.getByDisplayValue('1d6') as HTMLInputElement
+      await act(async () => {
+        fireEvent.change(dmgInput, { target: { value: '2d6' } })
+      })
+      expect(dmgInput.value).toBe('2d6')
+
+      // Level description (line 1003)
+      const lvlDescInput = screen.getByDisplayValue('Basic') as HTMLTextAreaElement
+      await act(async () => {
+        fireEvent.change(lvlDescInput, { target: { value: 'Advanced' } })
+      })
+      expect(lvlDescInput.value).toBe('Advanced')
     })
   })
 })
