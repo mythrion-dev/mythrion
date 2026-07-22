@@ -5,6 +5,16 @@ import { api, API_URL } from '@/lib/api'
 import { Document, Page, pdfjs } from 'react-pdf'
 import type { DocumentInitParameters, PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api'
 
+/* ── Import native PDF text/annotation layer styles ──
+ *
+ * react-pdf renders a transparent text layer overlay on top of the canvas to
+ * enable text selection, copy, and search highlighting.  The layer is positioned
+ * with CSS (position: absolute; inset: 0) — without these imports the layer
+ * defaults to a normal block flow below the canvas, producing the appearance of
+ * duplicated/OCR text underneath each page. */
+import 'react-pdf/dist/Page/TextLayer.css'
+import 'react-pdf/dist/Page/AnnotationLayer.css'
+
 /* ── Configure PDF.js worker ── */
 
 // Use CDN worker matching the pdfjs-dist version react-pdf depends on internally
@@ -93,6 +103,9 @@ export function PdfViewerSidebar({
 
   /* ── Search state ── */
   const [searchQuery, setSearchQuery] = useState('')
+  /** Committed query text (lowercased) — set only on form submit, not on every
+   *  keystroke. Drives the text-layer search-highlight via customTextRenderer. */
+  const [activeSearchQuery, setActiveSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<
     { pageNumber: number; matchCount: number }[]
   >([])
@@ -210,6 +223,7 @@ export function PdfViewerSidebar({
     setSearchResults([])
     setTotalMatches(0)
     setCurrentMatchIndex(0)
+    setActiveSearchQuery('')
     setPdfError(null)
     setLoadProgress(0)
   }, [activeBookId])
@@ -270,6 +284,7 @@ export function PdfViewerSidebar({
       setSearchResults([])
       setTotalMatches(0)
       setCurrentMatchIndex(0)
+      setActiveSearchQuery('')
       return
     }
 
@@ -277,6 +292,7 @@ export function PdfViewerSidebar({
     if (!pdf) return
 
     const query = searchQuery.toLowerCase()
+    setActiveSearchQuery(query)
     const results: { pageNumber: number; matchCount: number }[] = []
     let total = 0
 
@@ -336,6 +352,24 @@ export function PdfViewerSidebar({
       setPageNumber(page)
     }
   }
+
+  /* ── Search highlighting via native text layer ──
+   *
+   * customTextRenderer is called by react-pdf's TextLayer for every text item
+   * on the rendered page.  When a search is active, we wrap matching portions
+   * in <mark class="highlight"> so pdf.js's own text-layer CSS paints a
+   * coloured background behind the (invisible) text, exactly like a native
+   * PDF viewer. */
+  const customTextRenderer = useCallback(
+    ({ str }: { str?: string }) => {
+      if (!activeSearchQuery || !str) return str
+      if (!str.toLowerCase().includes(activeSearchQuery)) return str
+      const escaped = activeSearchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const regex = new RegExp(`(${escaped})`, 'gi')
+      return str.replace(regex, '<mark class="highlight">$1</mark>')
+    },
+    [activeSearchQuery],
+  )
 
   /* ── Sidebar close — respects internal vs external state ── */
   function handleClose() {
@@ -649,6 +683,7 @@ export function PdfViewerSidebar({
                       pageNumber={pageNumber}
                       scale={scale}
                       width={pageWidth}
+                      customTextRenderer={customTextRenderer}
                       loading={
                         <div className="flex items-center justify-center py-8">
                           <div
