@@ -1,26 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { api, API_URL } from '@/lib/api'
-import { Document, Page, pdfjs } from 'react-pdf'
-import type { DocumentInitParameters, PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api'
-
-/* ── Import native PDF text/annotation layer styles ──
- *
- * react-pdf renders a transparent text layer overlay on top of the canvas to
- * enable text selection, copy, and search highlighting.  The layer is positioned
- * with CSS (position: absolute; inset: 0) — without these imports the layer
- * defaults to a normal block flow below the canvas, producing the appearance of
- * duplicated/OCR text underneath each page. */
-import 'react-pdf/dist/Page/TextLayer.css'
-import 'react-pdf/dist/Page/AnnotationLayer.css'
-
-/* ── Configure PDF.js worker ── */
-
-// Use CDN worker matching the pdfjs-dist version react-pdf depends on internally
-// react-pdf v10.4.1 ships pdfjs-dist@5.4.296 — the worker version must match the API version
-pdfjs.GlobalWorkerOptions.workerSrc =
-  'https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs'
 
 /* ── Types ── */
 
@@ -44,18 +25,6 @@ interface PdfViewerSidebarProps {
   onBookSelect?: (bookId: string) => void
   /** Hide the floating toggle button (adventure-page use where BookListPanel drives it). */
   hideToggle?: boolean
-}
-
-/* ── localStorage constants ── */
-
-const LS_PREFIX = 'pdf-viewer:'
-const LS_VERSION = 1
-
-interface PersistedState {
-  version: number
-  bookId: string
-  pageNumber: number
-  scale: number
 }
 
 /* ── Helpers ── */
@@ -85,60 +54,21 @@ export function PdfViewerSidebar({
 
   /* ── Refs ── */
   const bookNameMapRef = useRef<Map<string, string>>(new Map())
-  const pdfRef = useRef<PDFDocumentProxy | null>(null)
-  const contentRef = useRef<HTMLDivElement>(null)
 
   /* ── Book list state ── */
   const [books, setBooks] = useState<Book[]>([])
   const [loadingList, setLoadingList] = useState(false)
 
   /* ── PDF viewer state ── */
-  const [pageNumber, setPageNumber] = useState(1)
-  const [numPages, setNumPages] = useState<number | null>(null)
-  const [scale, setScale] = useState(1.0)
-  const [pageWidth, setPageWidth] = useState(400)
   const [pdfError, setPdfError] = useState<string | null>(null)
-  const [loadProgress, setLoadProgress] = useState(0)
-  const [token, setToken] = useState<string | null>(null)
-
-  /* ── Search state ── */
-  const [searchQuery, setSearchQuery] = useState('')
-  /** Committed query text (lowercased) — set only on form submit, not on every
-   *  keystroke. Drives the text-layer search-highlight via customTextRenderer. */
-  const [activeSearchQuery, setActiveSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<
-    { pageNumber: number; matchCount: number }[]
-  >([])
-  const [totalMatches, setTotalMatches] = useState(0)
-  const [currentMatchIndex, setCurrentMatchIndex] = useState(0)
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null)
 
   /* ── Derived state ── */
   const activeBookId = bookId ?? internalBookId
   const isViewerMode = activeBookId !== null
 
   /* ── Sidebar visibility ── */
-  const sidebarVisible = bookId !== null || internalBookId !== null || internalListOpen
-
-  // Get auth token on mount
-  useEffect(() => {
-    setToken(localStorage.getItem('accessToken'))
-  }, [])
-
-  /* ── Open when external bookId changes to non-null ── */
-  useEffect(() => {
-    if (bookId) {
-      setInternalBookId(null)
-      setInternalListOpen(false)
-      setIsOpen(true)
-    }
-  }, [bookId])
-
-  /* ── Open sidebar when internalListOpen is toggled ── */
-  useEffect(() => {
-    if (internalListOpen) {
-      setIsOpen(true)
-    }
-  }, [internalListOpen])
+  const sidebarVisible = isOpen || bookId !== null || internalBookId !== null || internalListOpen
 
   /* ── Fetch books for internal list ── */
   const fetchBooks = useCallback(async () => {
@@ -160,224 +90,63 @@ export function PdfViewerSidebar({
     }
   }, [adventureId])
 
+  /* ── PDF URL ── */
+  const pdfUrl = activeBookId
+    ? `${API_URL}/adventures/${adventureId}/books/${activeBookId}/file`
+    : null
+
+  /* ── Load PDF via authenticated blob URL so the browser can render it natively ── */
   useEffect(() => {
-    if (sidebarVisible) {
-      fetchBooks()
-    }
-  }, [sidebarVisible, fetchBooks])
-
-  /* ── Restore localStorage state on book selection ── */
-  useEffect(() => {
-    if (activeBookId) {
-      try {
-        const raw = localStorage.getItem(`${LS_PREFIX}${adventureId}`)
-        if (raw) {
-          const saved: PersistedState = JSON.parse(raw)
-          if (saved.version === LS_VERSION && saved.bookId === activeBookId) {
-            setPageNumber(saved.pageNumber)
-            setScale(saved.scale)
-            return
-          }
-        }
-      } catch {
-        /* ignore corrupt data */
-      }
-      // No saved state or different book → reset
-      setPageNumber(1)
-      setScale(1.0)
-    }
-  }, [activeBookId, adventureId])
-
-  /* ── Persist viewer state to localStorage ── */
-  useEffect(() => {
-    if (activeBookId && pageNumber > 0) {
-      try {
-        const state: PersistedState = {
-          version: LS_VERSION,
-          bookId: activeBookId,
-          pageNumber,
-          scale,
-        }
-        localStorage.setItem(`${LS_PREFIX}${adventureId}`, JSON.stringify(state))
-      } catch {
-        /* quota exceeded — ignore */
-      }
-    }
-  }, [activeBookId, adventureId, pageNumber, scale])
-
-  /* ── ResizeObserver for measuring content width ── */
-  useEffect(() => {
-    if (!contentRef.current) return
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setPageWidth(Math.max(200, entry.contentRect.width - 32))
-      }
-    })
-    observer.observe(contentRef.current)
-    return () => observer.disconnect()
-  }, [])
-
-  /* ── Reset search when book changes ── */
-  useEffect(() => {
-    setSearchQuery('')
-    setSearchResults([])
-    setTotalMatches(0)
-    setCurrentMatchIndex(0)
-    setActiveSearchQuery('')
-    setPdfError(null)
-    setLoadProgress(0)
-  }, [activeBookId])
-
-  /* ── PDF callbacks ── */
-  function handleLoadSuccess(pdf: PDFDocumentProxy) {
-    pdfRef.current = pdf
-    setNumPages(pdf.numPages)
-    setPdfError(null)
-  }
-
-  function handleLoadError(error: Error) {
-    setPdfError(error.message || 'Failed to load PDF')
-    setNumPages(null)
-  }
-
-  function handleLoadProgress(progress: { loaded: number; total: number }) {
-    if (progress.total > 0) {
-      setLoadProgress(Math.round((progress.loaded / progress.total) * 100))
-    }
-  }
-
-  /* ── Zoom controls ── */
-  function zoomIn() {
-    setScale((s) => Math.min(s + 0.25, 2.0))
-  }
-
-  function zoomOut() {
-    setScale((s) => Math.max(s - 0.25, 0.5))
-  }
-
-  function resetZoom() {
-    setScale(1.0)
-  }
-
-  /* ── Page navigation ── */
-  function goToPage(n: number) {
-    if (numPages && n >= 1 && n <= numPages) {
-      setPageNumber(n)
-    }
-  }
-
-  /* ── Search ── */
-
-  /** Map a flat match index (0-based) to the page it belongs to. */
-  function pageForMatchIndex(index: number): number | null {
-    let cumulative = 0
-    for (const r of searchResults) {
-      if (index < cumulative + r.matchCount) return r.pageNumber
-      cumulative += r.matchCount
-    }
-    return null
-  }
-
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault()
-    if (!searchQuery.trim()) {
-      setSearchResults([])
-      setTotalMatches(0)
-      setCurrentMatchIndex(0)
-      setActiveSearchQuery('')
+    if (!activeBookId || !pdfUrl) {
       return
     }
 
-    const pdf = pdfRef.current
-    if (!pdf) return
+    let isCancelled = false
+    let createdObjectUrl: string | null = null
 
-    const query = searchQuery.toLowerCase()
-    setActiveSearchQuery(query)
-    const results: { pageNumber: number; matchCount: number }[] = []
-    let total = 0
+    async function loadPdf() {
+      setPdfError(null)
+      setPdfBlobUrl(null)
 
-    // Scan all pages for text content matches
-    const pagePromises: Promise<void>[] = []
-    for (let n = 1; n <= pdf.numPages; n++) {
-      pagePromises.push(
-        pdf.getPage(n).then((page) =>
-          page.getTextContent().then((textContent) => {
-            const count = (textContent.items as any[]).filter((item) =>
-              typeof item.str === 'string' && item.str.toLowerCase().includes(query)
-            ).length
-            if (count > 0) {
-              results.push({ pageNumber: n, matchCount: count })
-              total += count
-            }
-          })
-        )
-      )
-    }
+      try {
+        const token = localStorage.getItem('accessToken')
+        const res = await fetch(pdfUrl, {
+          method: 'GET',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
 
-    Promise.all(pagePromises).then(() => {
-      // Sort results by page number (in case async ordering is non-deterministic)
-      results.sort((a, b) => a.pageNumber - b.pageNumber)
-      setSearchResults(results)
-      setTotalMatches(total)
-
-      // Navigate to first match on or after current page
-      const firstMatch = results.find((r) => r.pageNumber >= pageNumber) ?? results[0]
-      if (firstMatch) {
-        // Calculate flat index: sum of matchCount for all results before firstMatch
-        let idx = 0
-        for (const r of results) {
-          if (r === firstMatch) break
-          idx += r.matchCount
+        if (!res.ok) {
+          throw new Error('Failed to load PDF file')
         }
-        setCurrentMatchIndex(idx)
-        setPageNumber(firstMatch.pageNumber)
+
+        const blob = await res.blob()
+        if (isCancelled) return
+
+        createdObjectUrl = URL.createObjectURL(blob)
+        setPdfBlobUrl(createdObjectUrl)
+      } catch {
+        if (!isCancelled) {
+          setPdfError('Failed to load PDF')
+        }
       }
-    })
-  }
-
-  function goToPrevMatch() {
-    const newIndex = (currentMatchIndex - 1 + totalMatches) % totalMatches
-    const page = pageForMatchIndex(newIndex)
-    if (page !== null) {
-      setCurrentMatchIndex(newIndex)
-      setPageNumber(page)
     }
-  }
 
-  function goToNextMatch() {
-    const newIndex = (currentMatchIndex + 1) % totalMatches
-    const page = pageForMatchIndex(newIndex)
-    if (page !== null) {
-      setCurrentMatchIndex(newIndex)
-      setPageNumber(page)
+    void loadPdf()
+
+    return () => {
+      isCancelled = true
+      if (createdObjectUrl) {
+        URL.revokeObjectURL(createdObjectUrl)
+      }
     }
-  }
-
-  /* ── Search highlighting via native text layer ──
-   *
-   * customTextRenderer is called by react-pdf's TextLayer for every text item
-   * on the rendered page.  When a search is active, we wrap matching portions
-   * in <mark class="highlight"> so pdf.js's own text-layer CSS paints a
-   * coloured background behind the (invisible) text, exactly like a native
-   * PDF viewer. */
-  const customTextRenderer = useCallback(
-    ({ str }: { str?: string }) => {
-      if (!activeSearchQuery || !str) return str
-      if (!str.toLowerCase().includes(activeSearchQuery)) return str
-      const escaped = activeSearchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      const regex = new RegExp(`(${escaped})`, 'gi')
-      return str.replace(regex, '<mark class="highlight">$1</mark>')
-    },
-    [activeSearchQuery],
-  )
+  }, [activeBookId, adventureId, pdfUrl])
 
   /* ── Sidebar close — respects internal vs external state ── */
   function handleClose() {
     if (internalBookId) {
-      // Go back to list mode
       setInternalBookId(null)
-      setPageNumber(1)
       setInternalListOpen(true)
+      setIsOpen(true)
       return
     }
     if (internalListOpen) {
@@ -391,39 +160,32 @@ export function PdfViewerSidebar({
   function handleInternalSelect(id: string) {
     setInternalBookId(id)
     setInternalListOpen(false)
+    setIsOpen(true)
     onBookSelect?.(id)
   }
 
   /* ── Floating toggle button ── */
   function handleToggle() {
     if (isOpen && !isViewerMode && !internalListOpen) {
-      // Sidebar was showing list — close it
       handleClose()
-    } else if (isOpen && isViewerMode) {
-      // In viewer mode — go back to list if internally managed
+      return
+    }
+
+    if (isOpen && isViewerMode) {
       if (internalBookId) {
         setInternalBookId(null)
         setInternalListOpen(true)
+        setIsOpen(true)
       } else {
         handleClose()
       }
-    } else {
-      // Closed — open list
-      setInternalListOpen(true)
+      return
     }
+
+    setInternalListOpen(true)
+    setIsOpen(true)
+    void fetchBooks()
   }
-
-  /* ── PDF URL + auth options ── */
-  const pdfUrl = activeBookId
-    ? `${API_URL}/adventures/${adventureId}/books/${activeBookId}/file`
-    : null
-
-  const pdfOptions: DocumentInitParameters | undefined = useMemo(() => {
-    if (!token) return undefined
-    return {
-      httpHeaders: { Authorization: `Bearer ${token}` },
-    } as DocumentInitParameters & { httpHeaders: Record<string, string> }
-  }, [token])
 
   /* ── Render: closed state ── */
   if (!isOpen && !sidebarVisible) {
@@ -465,7 +227,7 @@ export function PdfViewerSidebar({
         <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
           <h2 className="text-lg font-semibold text-foreground">
             {isViewerMode
-              ? (bookNameMapRef.current.get(activeBookId) ?? 'PDF Viewer')
+              ? (books.find((book) => book.id === activeBookId)?.name ?? 'PDF Viewer')
               : 'Campaign Books'}
           </h2>
           <div className="flex items-center gap-1">
@@ -501,138 +263,11 @@ export function PdfViewerSidebar({
         {isViewerMode ? (
           /* ══════ VIEWER MODE ══════ */
           <>
-            {/* Toolbar */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0 gap-1 flex-nowrap">
-              {/* Zoom controls */}
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={zoomOut}
-                  disabled={scale <= 0.5}
-                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors disabled:opacity-40"
-                  aria-label="Zoom out"
-                  title="Zoom out"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
-                  </svg>
-                </button>
-                <button
-                  onClick={resetZoom}
-                  className="px-2 py-0.5 text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-hover rounded transition-colors"
-                  title="Reset zoom"
-                >
-                  {Math.round(scale * 100)}%
-                </button>
-                <button
-                  onClick={zoomIn}
-                  disabled={scale >= 2.0}
-                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors disabled:opacity-40"
-                  aria-label="Zoom in"
-                  title="Zoom in"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Page navigation */}
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => goToPage(pageNumber - 1)}
-                  disabled={pageNumber <= 1}
-                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors disabled:opacity-40"
-                  aria-label="Previous page"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">
-                  {pageNumber}
-                  {numPages ? ` / ${numPages}` : ''}
-                </span>
-                <button
-                  onClick={() => goToPage(pageNumber + 1)}
-                  disabled={!numPages || pageNumber >= numPages}
-                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors disabled:opacity-40"
-                  aria-label="Next page"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Search */}
-              <form
-                onSubmit={handleSearch}
-                className="flex items-center gap-1"
-              >
-                <div className="relative">
-                  <svg className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search..."
-                    className="w-20 pl-7 pr-2 py-1 rounded bg-input border border-border text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent/50"
-                  />
-                </div>
-                {searchQuery && totalMatches > 0 && (
-                  <span className="text-[10px] text-muted-foreground whitespace-nowrap tabular-nums">
-                    {currentMatchIndex + 1}/{totalMatches}
-                  </span>
-                )}
-                {searchQuery && totalMatches > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={goToPrevMatch}
-                      className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
-                      aria-label="Previous match"
-                      title="Previous match"
-                    >
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={goToNextMatch}
-                      className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
-                      aria-label="Next match"
-                      title="Next match"
-                    >
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </>
-                )}
-              </form>
+            <div className="border-b border-border shrink-0 px-4 py-2 text-[11px] text-muted-foreground">
+              PDF opens inside the campaign panel for a cleaner reading experience.
             </div>
 
-            {/* PDF viewer */}
-            <div ref={contentRef} className="flex-1 overflow-y-auto bg-[#525659]">
-              {loadProgress > 0 && loadProgress < 100 && (
-                <div className="flex items-center justify-center py-12">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-32 h-1.5 rounded-full bg-surface overflow-hidden">
-                      <div
-                        className="h-full bg-accent rounded-full transition-all duration-300"
-                        style={{ width: `${loadProgress}%` }}
-                      />
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      Loading PDF… {loadProgress}%
-                    </span>
-                  </div>
-                </div>
-              )}
-
+            <div className="flex-1 bg-[#525659] overflow-hidden">
               {pdfError && (
                 <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
                   <div className="w-12 h-12 rounded-full bg-danger-muted flex items-center justify-center text-xl mb-3">
@@ -649,56 +284,24 @@ export function PdfViewerSidebar({
                 </div>
               )}
 
-              {pdfUrl && !pdfError && (
-                <div className="flex flex-col items-center py-4 px-2">
-                  <Document
-                    file={pdfUrl}
-                    onLoadSuccess={handleLoadSuccess}
-                    onLoadError={handleLoadError}
-                    onLoadProgress={handleLoadProgress}
-                    options={pdfOptions as any}
-                    loading={
-                      <div className="flex items-center justify-center py-12">
-                        <div className="flex flex-col items-center gap-3">
-                          <svg className="w-8 h-8 text-accent animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                          <span className="text-xs text-muted-foreground">Loading PDF…</span>
-                        </div>
-                      </div>
-                    }
-                    error={
-                      <div className="flex items-center justify-center py-12">
-                        <p className="text-sm text-danger">Failed to load PDF.</p>
-                      </div>
-                    }
-                    noData={
-                      <div className="flex items-center justify-center py-12">
-                        <p className="text-sm text-muted-foreground">No PDF file specified.</p>
-                      </div>
-                    }
-                  >
-                    <Page
-                      pageNumber={pageNumber}
-                      scale={scale}
-                      width={pageWidth}
-                      customTextRenderer={customTextRenderer}
-                      loading={
-                        <div className="flex items-center justify-center py-8">
-                          <div
-                            className="skeleton h-[500px] rounded"
-                            style={{ width: pageWidth }}
-                          />
-                        </div>
-                      }
-                      error={
-                        <div className="flex items-center justify-center py-8">
-                          <p className="text-xs text-danger">Failed to load page {pageNumber}.</p>
-                        </div>
-                      }
-                    />
-                  </Document>
+              {!pdfError && pdfBlobUrl && (
+                <iframe
+                  src={pdfBlobUrl}
+                  title={books.find((book) => book.id === activeBookId)?.name ?? 'PDF Viewer'}
+                  className="w-full h-full min-h-0 border-0 bg-white"
+                  loading="lazy"
+                />
+              )}
+
+              {!pdfError && !pdfBlobUrl && (
+                <div className="flex items-center justify-center h-full">
+                  <div className="flex flex-col items-center gap-3">
+                    <svg className="w-8 h-8 text-accent animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    <span className="text-xs text-muted-foreground">Loading PDF…</span>
+                  </div>
                 </div>
               )}
             </div>
