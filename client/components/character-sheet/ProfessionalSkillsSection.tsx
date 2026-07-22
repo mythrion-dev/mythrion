@@ -37,11 +37,10 @@ function computeSkillResults(
     let modSum = 0
 
     // Attribute modifier contribution
-    if (skill.attribute?.key) {
-      const mod = modifierResults[skill.attribute.key] ?? null
-      if (mod !== null) total = (total ?? 0) + mod
-    } else if (skill.attributeId) {
-      const mod = modifierResults[skill.attributeId] ?? null
+    // Use attribute ID to look up modifierResults (which is keyed by template attribute ID)
+    const attributeId = skill.attribute?.id ?? skill.attributeId
+    if (attributeId) {
+      const mod = modifierResults[attributeId] ?? null
       if (mod !== null) total = (total ?? 0) + mod
     }
 
@@ -238,25 +237,25 @@ export function ProfessionalSkillsSection({
 
   function renderProfileSelectors(skillId: string, disableAll = false) {
     if (allProfiles.length === 0) {
-      return <span className="text-xs text-muted">—</span>
+      return <span className="text-[0.6rem] text-muted">—</span>
     }
 
     const skill = skills.find(s => s.id === skillId)
     if (!skill) return null
 
     return (
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         {allProfiles.map(profile => {
           const currentValue = skill.profileValues?.find(pv => pv.profileId === profile.id)
           const selectedOptionId = currentValue?.optionId ?? ''
 
           return (
-            <div key={profile.id} className="flex items-center gap-1.5">
-              <label className="text-[0.6rem] text-muted whitespace-nowrap min-w-[3rem]">
-                {profile.name}:
+            <div key={profile.id} className="flex items-center gap-1">
+              <label className="text-[0.55rem] text-muted whitespace-nowrap shrink-0 leading-none">
+                {profile.name}
               </label>
               <select
-                className="input-field text-xs py-1 px-1.5 min-w-[7rem]"
+                className="input-field py-0.5 text-[0.6rem] flex-1 min-w-0"
                 value={selectedOptionId}
                 onChange={e => handleProfileChange(skillId, profile.id, e.target.value || null)}
                 disabled={disableAll}
@@ -264,10 +263,18 @@ export function ProfessionalSkillsSection({
                 <option value="">—</option>
                 {profile.options.map(opt => (
                   <option key={opt.id} value={opt.id}>
-                    {opt.label} {opt.value >= 0 ? `(+${opt.value})` : `(${opt.value})`}
+                    {opt.label} ({opt.value >= 0 ? '+' : ''}{opt.value})
                   </option>
                 ))}
               </select>
+              {selectedOptionId && (
+                <span className="text-[0.55rem] font-mono text-primary shrink-0 tabular-nums leading-none">
+                  {(() => {
+                    const opt = profile.options.find(o => o.id === selectedOptionId)
+                    return opt ? (opt.value >= 0 ? `+${opt.value}` : `${opt.value}`) : ''
+                  })()}
+                </span>
+              )}
             </div>
           )
         })}

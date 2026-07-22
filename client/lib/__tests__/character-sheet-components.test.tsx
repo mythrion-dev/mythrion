@@ -80,7 +80,7 @@ function createDeferred<T = void>() {
 // ── Imports (after mocks) ──
 
 import { ProfessionalSkillsSection } from '@/components/character-sheet/ProfessionalSkillsSection'
-import type { ProfessionalSkill } from '@/components/character-sheet/types'
+import type { ProfessionalSkill, ProfessionalSkillProfileValue, SkillModifierProfile } from '@/components/character-sheet/types'
 import { InlineClickEdit } from '@/components/character-sheet/InlineClickEdit'
 import { CoreResourceCard } from '@/components/character-sheet/CoreResourceCard'
 import { StoryField } from '@/components/character-sheet/StoryField'
@@ -107,7 +107,7 @@ const defaultProps = {
     canEditSkills: false,
     canEditStory: false,
   },
-  modifierResults: { str: 3, dex: 5 } as Record<string, number | null>,
+  modifierResults: { 'attr-1': 3, 'attr-2': 5 } as Record<string, number | null>,
   templateAttributes: defaultTemplateAttrs,
   allProfiles: [],
 }
@@ -241,13 +241,13 @@ describe('ProfessionalSkillsSection', () => {
     })
   })
 
-  it('uses attribute key for modifierResults lookup first, then attributeId fallback', async () => {
-    // modifierResults has 'str' key, skill uses attribute key 'str'
-    const skills = [makeSkill({ attributeId: 'attr-1', attribute: { id: 'attr-1', key: 'str', name: 'Strength' } })]
+  it('uses attribute ID for modifierResults lookup', async () => {
+    // modifierResults is keyed by attribute ID, skill uses attribute.id 'attr-2'
+    const skills = [makeSkill({ attributeId: 'attr-2', attribute: { id: 'attr-2', key: 'dex', name: 'Dexterity' } })]
     mockGet.mockResolvedValue(skills)
     render(<ProfessionalSkillsSection {...defaultProps} />)
     await waitFor(() => {
-      expect(screen.getByText('3')).toBeInTheDocument()
+      expect(screen.getByText('5')).toBeInTheDocument()
       // MOD shows dash when no profile values
       const dashes = screen.getAllByText('—')
       expect(dashes.length).toBeGreaterThanOrEqual(1)
@@ -562,6 +562,144 @@ describe('ProfessionalSkillsSection', () => {
       expect(screen.getByText('No Professional Skills added yet.')).toBeInTheDocument()
     })
     expect(screen.queryByText(/Professional Skills use/)).not.toBeInTheDocument()
+  })
+
+  // ── Profile selectors ──
+
+  const testProfiles: SkillModifierProfile[] = [
+    {
+      id: 'prof-1',
+      name: 'Expertise',
+      options: [
+        { id: 'opt-1', label: 'Untrained', value: 0 },
+        { id: 'opt-2', label: 'Trained', value: 2 },
+        { id: 'opt-3', label: 'Specialized', value: 4 },
+      ],
+    },
+  ]
+
+  it('renders profile selectors in view mode when allProfiles provided', async () => {
+    const skills = [makeSkill()]
+    mockGet.mockResolvedValue(skills)
+    render(<ProfessionalSkillsSection {...defaultProps} allProfiles={testProfiles} />)
+    await waitFor(() => {
+      expect(screen.getByText('Blacksmith')).toBeInTheDocument()
+    })
+    // Profile name should appear as a label
+    expect(screen.getByText('Expertise')).toBeInTheDocument()
+    // Default "—" option should exist in select
+    expect(screen.getByRole('option', { name: '—' })).toBeInTheDocument()
+  })
+
+  it('shows MOD value with positive profile option', async () => {
+    const pv: ProfessionalSkillProfileValue = {
+      id: 'pv-1',
+      profileId: 'prof-1',
+      optionId: 'opt-2',
+      profile: { id: 'prof-1', name: 'Expertise' },
+      option: { id: 'opt-2', label: 'Trained', value: 2 },
+    }
+    const skills: ProfessionalSkill[] = [{
+      id: 'sk-1',
+      name: 'Blacksmith',
+      attributeId: 'attr-1',
+      attribute: { id: 'attr-1', key: 'str', name: 'Strength' },
+      order: 0,
+      profileValues: [pv],
+    }]
+    mockGet.mockResolvedValue(skills)
+    render(<ProfessionalSkillsSection {...defaultProps} allProfiles={testProfiles} />)
+    // Wait for total to appear (should be 3 attr + 2 profile = 5)
+    await waitFor(() => {
+      expect(screen.getByText('5')).toBeInTheDocument()
+    })
+    // MOD column should show +2 (MOD + profile value span both show +2)
+    expect(screen.getAllByText('+2').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('shows MOD value with negative profile option', async () => {
+    const negProfile: SkillModifierProfile = {
+      id: 'prof-neg',
+      name: 'Handicap',
+      options: [
+        { id: 'neg-opt-1', label: 'None', value: 0 },
+        { id: 'neg-opt-2', label: 'Penalty', value: -1 },
+      ],
+    }
+    const pv: ProfessionalSkillProfileValue = {
+      id: 'pv-neg',
+      profileId: 'prof-neg',
+      optionId: 'neg-opt-2',
+      profile: { id: 'prof-neg', name: 'Handicap' },
+      option: { id: 'neg-opt-2', label: 'Penalty', value: -1 },
+    }
+    const skills: ProfessionalSkill[] = [{
+      id: 'sk-1',
+      name: 'Blacksmith',
+      attributeId: 'attr-1',
+      attribute: { id: 'attr-1', key: 'str', name: 'Strength' },
+      order: 0,
+      profileValues: [pv],
+    }]
+    mockGet.mockResolvedValue(skills)
+    render(<ProfessionalSkillsSection {...defaultProps} allProfiles={[negProfile]} />)
+    await waitFor(() => {
+      expect(screen.getByText('2')).toBeInTheDocument()
+    })
+    // MOD column shows "-1" (3 attr + -1 profile = 2 total)
+    expect(screen.getAllByText('-1').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('shows profile selectors in create modal', async () => {
+    mockGet.mockResolvedValue([])
+    render(<ProfessionalSkillsSection {...defaultProps} allProfiles={testProfiles} />)
+    await waitFor(() => {
+      expect(screen.getByText('+ Add Professional Skill')).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByText('+ Add Professional Skill'))
+    // Modal should show profile label and select
+    expect(screen.getByText('Modifier Profiles (optional)')).toBeInTheDocument()
+    expect(screen.getByText('Expertise:')).toBeInTheDocument()
+  })
+
+  it('calls PATCH when profile dropdown changes', async () => {
+    mockPatch.mockResolvedValue({})
+    const pv: ProfessionalSkillProfileValue = {
+      id: 'pv-1',
+      profileId: 'prof-1',
+      optionId: '',
+      profile: { id: 'prof-1', name: 'Expertise' },
+      option: null,
+    }
+    const skills = [makeSkill({ profileValues: [pv] })]
+    mockGet.mockResolvedValue(skills)
+    render(<ProfessionalSkillsSection {...defaultProps} allProfiles={testProfiles} />)
+    await waitFor(() => {
+      expect(screen.getByText('Blacksmith')).toBeInTheDocument()
+    })
+    // Find the profile select (there should be one for Expertise)
+    const selects = screen.getAllByRole('combobox')
+    // Change the last select (the profile one) to "Trained"
+    const profileSelect = selects[selects.length - 1]
+    fireEvent.change(profileSelect, { target: { value: 'opt-2' } })
+    await waitFor(() => {
+      expect(mockPatch).toHaveBeenCalledWith(
+        '/character-sheets/sheet-1/professional-skills/sk-1/profiles/prof-1',
+        { optionId: 'opt-2' },
+      )
+    })
+  })
+
+  it('shows "—" for profile section when allProfiles is empty', async () => {
+    const skills = [makeSkill()]
+    mockGet.mockResolvedValue(skills)
+    render(<ProfessionalSkillsSection {...defaultProps} allProfiles={[]} />)
+    await waitFor(() => {
+      expect(screen.getByText('Blacksmith')).toBeInTheDocument()
+    })
+    // Profile column should show dash since no profiles
+    const dashes = screen.getAllByText('—')
+    expect(dashes.length).toBeGreaterThanOrEqual(1)
   })
 })
 
