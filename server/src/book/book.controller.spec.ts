@@ -145,7 +145,7 @@ describe('BookController', () => {
         contentLength: 100,
       })
 
-      await controller.getFile('adventure-1', 'book-1', { user: { id: 'user-1' } } as any, mockRes)
+      await controller.getFile('adventure-1', 'book-1', { user: { sub: 'user-1' } } as any, mockRes)
 
       expect(mockBookService.getStream).toHaveBeenCalledWith('adventure-1', 'book-1', 'user-1')
       expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf')
@@ -160,7 +160,7 @@ describe('BookController', () => {
       const mockRes = createMockResponse()
       mockBookService.getStream.mockRejectedValue(new NotFoundException('Book not found'))
 
-      await controller.getFile('adventure-1', 'nonexistent', { user: { id: 'user-1' } } as any, mockRes)
+      await controller.getFile('adventure-1', 'nonexistent', { user: { sub: 'user-1' } } as any, mockRes)
 
       expect(mockRes.status).toHaveBeenCalledWith(404)
       expect(mockRes.json).toHaveBeenCalledWith({ message: 'Book not found' })

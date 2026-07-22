@@ -37,7 +37,7 @@ export class BookController {
     @Param('adventureId') adventureId: string,
     @Req() req: Request,
   ) {
-    const userId = (req as any).user?.id
+    const userId = (req as any).user?.sub
     return this.bookService.list(adventureId, userId)
   }
 
@@ -69,7 +69,7 @@ export class BookController {
       throw new NotFoundException('No file provided')
     }
 
-    const userId = (req as any).user?.id
+    const userId = (req as any).user?.sub
     this.logger.log(`Uploading book "${dto.name}" for adventure ${adventureId}: ${file.originalname}`)
 
     return this.bookService.create(adventureId, userId, {
@@ -90,7 +90,7 @@ export class BookController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    const userId = (req as any).user?.id
+    const userId = (req as any).user?.sub
 
     try {
       const { stream, contentType, contentLength } = await this.bookService.getStream(
@@ -125,7 +125,7 @@ export class BookController {
     @Req() req: Request,
     @Body() dto: UpdateBookDto,
   ) {
-    const userId = (req as any).user?.id
+    const userId = (req as any).user?.sub
     return this.bookService.update(adventureId, bookId, userId, dto)
   }
 
@@ -156,7 +156,7 @@ export class BookController {
       throw new NotFoundException('No file provided')
     }
 
-    const userId = (req as any).user?.id
+    const userId = (req as any).user?.sub
     this.logger.log(`Replacing file for book ${bookId} in adventure ${adventureId}: ${file.originalname}`)
 
     return this.bookService.replaceFile(adventureId, bookId, userId, {
@@ -176,7 +176,7 @@ export class BookController {
     @Param('bookId') bookId: string,
     @Req() req: Request,
   ) {
-    const userId = (req as any).user?.id
+    const userId = (req as any).user?.sub
     await this.bookService.delete(adventureId, bookId, userId)
     return { deleted: true }
   }
