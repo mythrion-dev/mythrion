@@ -84,7 +84,10 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: BookListPanel
 
   /* ── Upload book ── */
   async function handleUpload(file: File) {
-    if (!uploadName.trim()) return
+    if (!uploadName.trim()) {
+      setError('Please enter a book name before uploading')
+      return
+    }
 
     setUploading(true)
     setError(null)
