@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { api, API_URL } from '@/lib/api'
 import { Document, Page, pdfjs } from 'react-pdf'
-import type { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api'
+import type { DocumentInitParameters, PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api'
 
 /* ── Configure PDF.js worker ── */
 
@@ -73,6 +73,11 @@ export function PdfViewerSidebar({
   const [internalBookId, setInternalBookId] = useState<string | null>(null)
   const [internalListOpen, setInternalListOpen] = useState(false)
 
+  /* ── Refs ── */
+  const bookNameMapRef = useRef<Map<string, string>>(new Map())
+  const pdfRef = useRef<PDFDocumentProxy | null>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+
   /* ── Book list state ── */
   const [books, setBooks] = useState<Book[]>([])
   const [loadingList, setLoadingList] = useState(false)
@@ -81,13 +86,17 @@ export function PdfViewerSidebar({
   const [pageNumber, setPageNumber] = useState(1)
   const [numPages, setNumPages] = useState<number | null>(null)
   const [scale, setScale] = useState(1.0)
+  const [pageWidth, setPageWidth] = useState(400)
   const [pdfError, setPdfError] = useState<string | null>(null)
   const [loadProgress, setLoadProgress] = useState(0)
   const [token, setToken] = useState<string | null>(null)
 
   /* ── Search state ── */
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchMatches, setSearchMatches] = useState(0)
+  const [searchResults, setSearchResults] = useState<
+    { pageNumber: number; matchCount: number }[]
+  >([])
+  const [totalMatches, setTotalMatches] = useState(0)
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0)
 
   /* ── Derived state ── */
@@ -125,6 +134,12 @@ export function PdfViewerSidebar({
     try {
       const data = await api.get<Book[]>(`/adventures/${adventureId}/books`)
       setBooks(data)
+      // Build book name lookup map
+      const map = new Map<string, string>()
+      for (const book of data) {
+        map.set(book.id, book.name)
+      }
+      bookNameMapRef.current = map
     } catch {
       /* silently fail */
     } finally {
@@ -133,10 +148,10 @@ export function PdfViewerSidebar({
   }, [adventureId])
 
   useEffect(() => {
-    if (sidebarVisible && !isViewerMode) {
+    if (sidebarVisible) {
       fetchBooks()
     }
-  }, [sidebarVisible, isViewerMode, fetchBooks])
+  }, [sidebarVisible, fetchBooks])
 
   /* ── Restore localStorage state on book selection ── */
   useEffect(() => {
@@ -177,17 +192,31 @@ export function PdfViewerSidebar({
     }
   }, [activeBookId, adventureId, pageNumber, scale])
 
+  /* ── ResizeObserver for measuring content width ── */
+  useEffect(() => {
+    if (!contentRef.current) return
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setPageWidth(Math.max(200, entry.contentRect.width - 32))
+      }
+    })
+    observer.observe(contentRef.current)
+    return () => observer.disconnect()
+  }, [])
+
   /* ── Reset search when book changes ── */
   useEffect(() => {
     setSearchQuery('')
-    setSearchMatches(0)
+    setSearchResults([])
+    setTotalMatches(0)
     setCurrentMatchIndex(0)
     setPdfError(null)
     setLoadProgress(0)
   }, [activeBookId])
 
   /* ── PDF callbacks ── */
-  function handleLoadSuccess(pdf: { numPages: number }) {
+  function handleLoadSuccess(pdf: PDFDocumentProxy) {
+    pdfRef.current = pdf
     setNumPages(pdf.numPages)
     setPdfError(null)
   }
@@ -224,17 +253,88 @@ export function PdfViewerSidebar({
   }
 
   /* ── Search ── */
+
+  /** Map a flat match index (0-based) to the page it belongs to. */
+  function pageForMatchIndex(index: number): number | null {
+    let cumulative = 0
+    for (const r of searchResults) {
+      if (index < cumulative + r.matchCount) return r.pageNumber
+      cumulative += r.matchCount
+    }
+    return null
+  }
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
     if (!searchQuery.trim()) {
-      setSearchMatches(0)
+      setSearchResults([])
+      setTotalMatches(0)
       setCurrentMatchIndex(0)
       return
     }
-    // Simple search: count matches in the search query
-    // For MVP, we just show query was found; full text search would need pdfjs page iteration
-    setSearchMatches(searchQuery.length > 0 ? 1 : 0)
-    setCurrentMatchIndex(1)
+
+    const pdf = pdfRef.current
+    if (!pdf) return
+
+    const query = searchQuery.toLowerCase()
+    const results: { pageNumber: number; matchCount: number }[] = []
+    let total = 0
+
+    // Scan all pages for text content matches
+    const pagePromises: Promise<void>[] = []
+    for (let n = 1; n <= pdf.numPages; n++) {
+      pagePromises.push(
+        pdf.getPage(n).then((page) =>
+          page.getTextContent().then((textContent) => {
+            const count = (textContent.items as any[]).filter((item) =>
+              typeof item.str === 'string' && item.str.toLowerCase().includes(query)
+            ).length
+            if (count > 0) {
+              results.push({ pageNumber: n, matchCount: count })
+              total += count
+            }
+          })
+        )
+      )
+    }
+
+    Promise.all(pagePromises).then(() => {
+      // Sort results by page number (in case async ordering is non-deterministic)
+      results.sort((a, b) => a.pageNumber - b.pageNumber)
+      setSearchResults(results)
+      setTotalMatches(total)
+
+      // Navigate to first match on or after current page
+      const firstMatch = results.find((r) => r.pageNumber >= pageNumber) ?? results[0]
+      if (firstMatch) {
+        // Calculate flat index: sum of matchCount for all results before firstMatch
+        let idx = 0
+        for (const r of results) {
+          if (r === firstMatch) break
+          idx += r.matchCount
+        }
+        setCurrentMatchIndex(idx)
+        setPageNumber(firstMatch.pageNumber)
+      }
+    })
+  }
+
+  function goToPrevMatch() {
+    const newIndex = (currentMatchIndex - 1 + totalMatches) % totalMatches
+    const page = pageForMatchIndex(newIndex)
+    if (page !== null) {
+      setCurrentMatchIndex(newIndex)
+      setPageNumber(page)
+    }
+  }
+
+  function goToNextMatch() {
+    const newIndex = (currentMatchIndex + 1) % totalMatches
+    const page = pageForMatchIndex(newIndex)
+    if (page !== null) {
+      setCurrentMatchIndex(newIndex)
+      setPageNumber(page)
+    }
   }
 
   /* ── Sidebar close — respects internal vs external state ── */
@@ -323,14 +423,16 @@ export function PdfViewerSidebar({
 
       {/* Sidebar panel */}
       <aside
-        className={`fixed top-0 right-0 z-50 h-full bg-surface border-l border-border shadow-2xl transition-all duration-300 flex flex-col w-[420px] max-w-[95vw] ${
+        className={`fixed top-0 right-0 z-50 h-full bg-surface border-l border-border shadow-2xl transition-all duration-300 flex flex-col w-1/2 max-sm:w-full sm:max-w-[95vw] lg:w-1/2 xl:w-[45%] ${
           sidebarVisible ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
           <h2 className="text-lg font-semibold text-foreground">
-            {isViewerMode ? 'PDF Viewer' : 'Campaign Books'}
+            {isViewerMode
+              ? (bookNameMapRef.current.get(activeBookId) ?? 'PDF Viewer')
+              : 'Campaign Books'}
           </h2>
           <div className="flex items-center gap-1">
             {/* Back to list (internal viewer mode) */}
@@ -366,7 +468,7 @@ export function PdfViewerSidebar({
           /* ══════ VIEWER MODE ══════ */
           <>
             {/* Toolbar */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0 gap-2 flex-wrap">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0 gap-1 flex-nowrap">
               {/* Zoom controls */}
               <div className="flex items-center gap-1">
                 <button
@@ -442,19 +544,45 @@ export function PdfViewerSidebar({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search..."
-                    className="w-24 pl-7 pr-2 py-1 rounded bg-input border border-border text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent/50"
+                    className="w-20 pl-7 pr-2 py-1 rounded bg-input border border-border text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent/50"
                   />
                 </div>
-                {searchQuery && searchMatches > 0 && (
+                {searchQuery && totalMatches > 0 && (
                   <span className="text-[10px] text-muted-foreground whitespace-nowrap tabular-nums">
-                    {currentMatchIndex}/{searchMatches}
+                    {currentMatchIndex + 1}/{totalMatches}
                   </span>
+                )}
+                {searchQuery && totalMatches > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={goToPrevMatch}
+                      className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
+                      aria-label="Previous match"
+                      title="Previous match"
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={goToNextMatch}
+                      className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
+                      aria-label="Next match"
+                      title="Next match"
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </>
                 )}
               </form>
             </div>
 
             {/* PDF viewer */}
-            <div className="flex-1 overflow-y-auto bg-[#525659]">
+            <div ref={contentRef} className="flex-1 overflow-y-auto bg-[#525659]">
               {loadProgress > 0 && loadProgress < 100 && (
                 <div className="flex items-center justify-center py-12">
                   <div className="flex flex-col items-center gap-3">
@@ -520,12 +648,13 @@ export function PdfViewerSidebar({
                     <Page
                       pageNumber={pageNumber}
                       scale={scale}
-                      width={380}
-                      renderTextLayer
-                      renderAnnotationLayer
+                      width={pageWidth}
                       loading={
                         <div className="flex items-center justify-center py-8">
-                          <div className="skeleton w-[380px] h-[500px] rounded" />
+                          <div
+                            className="skeleton h-[500px] rounded"
+                            style={{ width: pageWidth }}
+                          />
                         </div>
                       }
                       error={

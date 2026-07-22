@@ -6,11 +6,20 @@ import { api } from '@/lib/api'
 /* ── Mock react-pdf ── */
 
 vi.mock('react-pdf', () => {
-  const mockWorker = { workerSrc: '' }
+  const mockTextContent = {
+    items: [
+      { str: 'Lorem ipsum dragon dolor sit', transform: [10, 0, 0, 10, 50, 700], width: 200, height: 10, hasEOL: false },
+      { str: 'amet monster consectetur', transform: [10, 0, 0, 10, 50, 680], width: 150, height: 10, hasEOL: false },
+    ],
+  }
+  const pdfProxy = {
+    numPages: 10,
+    getPage: vi.fn().mockResolvedValue({
+      getTextContent: vi.fn().mockResolvedValue(mockTextContent),
+    }),
+  }
   return {
-    pdfjs: {
-      GlobalWorkerOptions: mockWorker,
-    },
+    pdfjs: { GlobalWorkerOptions: { workerSrc: '' } },
     Document: ({
       children,
       onLoadSuccess,
@@ -18,28 +27,24 @@ vi.mock('react-pdf', () => {
       onLoadProgress,
       file,
       loading: Loading,
-      error: ErrorEl,
     }: any) => {
-      // If no file provided but loading is shown, render loading
-      if (!file) {
-        return Loading || null
-      }
-      // Simulate PDF load progress then success
+      if (!file) return Loading || null
       onLoadProgress?.({ loaded: 500_000, total: 1_000_000 })
-      // Schedule onLoadSuccess asynchronously so React can process the state
-      Promise.resolve().then(() => {
-        onLoadSuccess?.({ numPages: 10 })
-      })
-      // Don't render children until load is "complete" — in test we just render them
-      // to allow the Page mock to appear
-      return (
-        <div data-testid="document-mock">
-          {children}
-        </div>
-      )
+      if ((window as any).__PDF_ERROR__) {
+        Promise.resolve().then(() => onLoadError?.(new Error('PDF load failed')))
+        return null
+      }
+      Promise.resolve().then(() => onLoadSuccess?.(pdfProxy))
+      return <div data-testid="document-mock">{children}</div>
     },
-    Page: ({ pageNumber, scale }: any) => (
-      <div data-testid="pdf-page" data-page-number={pageNumber} data-scale={scale}>
+    Page: ({ pageNumber, scale, renderTextLayer, renderAnnotationLayer }: any) => (
+      <div
+        data-testid="pdf-page"
+        data-page-number={pageNumber}
+        data-scale={scale}
+        data-has-text-layer={renderTextLayer ? 'true' : undefined}
+        data-has-annotation-layer={renderAnnotationLayer ? 'true' : undefined}
+      >
         Page {pageNumber}
       </div>
     ),
@@ -136,8 +141,9 @@ describe('PdfViewerSidebar', () => {
   it('opens in viewer mode when bookId is provided', async () => {
     renderSidebar({ bookId: 'book-1' })
 
-    // Should show PDF Viewer header
-    expect(await screen.findByText('PDF Viewer')).toBeInTheDocument()
+    // Should show book title instead of PDF Viewer
+    expect(await screen.findByText('Campaign Guide')).toBeInTheDocument()
+    expect(screen.queryByText('PDF Viewer')).not.toBeInTheDocument()
     // Should show toolbar with zoom/page controls
     expect(screen.getByLabelText('Zoom out')).toBeInTheDocument()
     expect(screen.getByLabelText('Zoom in')).toBeInTheDocument()
@@ -145,6 +151,21 @@ describe('PdfViewerSidebar', () => {
     expect(screen.getByLabelText('Next page')).toBeInTheDocument()
     // Should not show book list back button (externally managed)
     expect(screen.queryByLabelText('Back to book list')).not.toBeInTheDocument()
+  })
+
+  it('renders sidebar with responsive width classes', async () => {
+    renderSidebar({ bookId: 'book-1' })
+    const aside = await screen.findByRole('complementary')
+    expect(aside.className).toContain('w-1/2')
+  })
+
+  it('does not render text or annotation layers on Page', async () => {
+    renderSidebar({ bookId: 'book-1' })
+    const page = await screen.findByTestId('pdf-page')
+    // data-has-text-layer and data-has-annotation-layer are set to undefined
+    // when the props are absent — so they should not be present as attributes
+    expect(page).not.toHaveAttribute('data-has-text-layer')
+    expect(page).not.toHaveAttribute('data-has-annotation-layer')
   })
 
   it('shows page navigation with numPages after PDF loads', async () => {
@@ -286,6 +307,46 @@ describe('PdfViewerSidebar', () => {
     expect(next).toBeDisabled()
   })
 
+  /* ── Internal viewer mode ── */
+
+  it('shows back button and returns to list in internal viewer mode', async () => {
+    renderSidebar()
+
+    // Open sidebar and click a book to enter internal viewer mode
+    fireEvent.click(screen.getByLabelText('Open books sidebar'))
+    const bookButton = await screen.findByText('Campaign Guide')
+    fireEvent.click(bookButton)
+
+    // Should now be in viewer mode with a back button
+    expect(await screen.findByLabelText('Back to book list')).toBeInTheDocument()
+    // Header should show book title
+    expect(screen.getByText('Campaign Guide')).toBeInTheDocument()
+
+    // Click back button — should return to list
+    fireEvent.click(screen.getByLabelText('Back to book list'))
+    expect(await screen.findByText('Campaign Books')).toBeInTheDocument()
+  })
+
+  /* ── Error state ── */
+
+  it('shows error message and retry button when PDF fails to load', async () => {
+    (window as any).__PDF_ERROR__ = true
+    renderSidebar({ bookId: 'book-1' })
+
+    expect(await screen.findByText('Failed to load PDF')).toBeInTheDocument()
+    expect(screen.getByText('PDF load failed')).toBeInTheDocument()
+    expect(screen.getByText('Retry')).toBeInTheDocument()
+    expect(screen.queryByTestId('pdf-page')).not.toBeInTheDocument()
+
+    // Click retry — error should clear
+    fireEvent.click(screen.getByText('Retry'))
+    await waitFor(() => {
+      expect(screen.queryByText('Failed to load PDF')).not.toBeInTheDocument()
+    })
+
+    ;(window as any).__PDF_ERROR__ = false
+  })
+
   /* ── Search ── */
 
   it('shows search input in viewer mode', async () => {
@@ -293,16 +354,54 @@ describe('PdfViewerSidebar', () => {
     expect(await screen.findByPlaceholderText('Search...')).toBeInTheDocument()
   })
 
-  it('shows match count after searching', async () => {
+  it('finds matching text across pages using getTextContent', async () => {
     renderSidebar({ bookId: 'book-1' })
     const searchInput = await screen.findByPlaceholderText('Search...')
 
-    // Type a query and submit
+    // Each of the 10 mock pages has 1 match for "dragon" (first text item)
     fireEvent.change(searchInput, { target: { value: 'dragon' } })
     fireEvent.submit(searchInput)
 
-    // Should show 1/1 (MVP: any non-empty query returns 1 match)
-    expect(screen.getByText('1/1')).toBeInTheDocument()
+    // Wait for async search results — shows "1/10"
+    expect(await screen.findByText('1/10')).toBeInTheDocument()
+  })
+
+  it('shows 0 matches for text not found in PDF', async () => {
+    renderSidebar({ bookId: 'book-1' })
+    const searchInput = await screen.findByPlaceholderText('Search...')
+
+    fireEvent.change(searchInput, { target: { value: 'nonexistent' } })
+    fireEvent.submit(searchInput)
+
+    // No match counter should appear (totalMatches === 0)
+    await waitFor(() => {
+      expect(screen.queryByText(/\d+\/\d+/)).not.toBeInTheDocument()
+    })
+  })
+
+  it('navigates through matches with prev/next buttons', async () => {
+    renderSidebar({ bookId: 'book-1' })
+    const searchInput = await screen.findByPlaceholderText('Search...')
+
+    fireEvent.change(searchInput, { target: { value: 'dragon' } })
+    fireEvent.submit(searchInput)
+
+    // Wait for "1/10"
+    expect(await screen.findByText('1/10')).toBeInTheDocument()
+
+    // Click next match button (should go to 2/10)
+    const nextMatch = screen.getByTitle('Next match')
+    fireEvent.click(nextMatch)
+    expect(screen.getByText('2/10')).toBeInTheDocument()
+
+    // Click previous match button (should go back to 1/10)
+    const prevMatch = screen.getByTitle('Previous match')
+    fireEvent.click(prevMatch)
+    expect(screen.getByText('1/10')).toBeInTheDocument()
+
+    // Click previous when at first match wraps to last (10/10)
+    fireEvent.click(prevMatch)
+    expect(screen.getByText('10/10')).toBeInTheDocument()
   })
 
   /* ── Close button ── */
@@ -311,7 +410,7 @@ describe('PdfViewerSidebar', () => {
     const onClose = vi.fn()
     renderSidebar({ bookId: 'book-1', onClose })
 
-    expect(await screen.findByText('PDF Viewer')).toBeInTheDocument()
+    expect(await screen.findByText('Campaign Guide')).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('Close sidebar'))
     expect(onClose).toHaveBeenCalledTimes(1)
@@ -330,10 +429,11 @@ describe('PdfViewerSidebar', () => {
     )
 
     const searchInput = await screen.findByPlaceholderText('Search...')
-    fireEvent.change(searchInput, { target: { value: 'test' } })
+    fireEvent.change(searchInput, { target: { value: 'dragon' } })
     fireEvent.submit(searchInput)
 
-    expect(screen.getByText('1/1')).toBeInTheDocument()
+    // Each of 10 pages has 1 match → "1/10"
+    expect(await screen.findByText('1/10')).toBeInTheDocument()
 
     // Rerender with new bookId
     rerender(
@@ -345,9 +445,95 @@ describe('PdfViewerSidebar', () => {
       />,
     )
 
-    // Search should be cleared (submit again with empty query → no match display)
+    // Search should be cleared — match counter should disappear
     await waitFor(() => {
-      expect(screen.queryByText('1/1')).not.toBeInTheDocument()
+      expect(screen.queryByText(/\d+\/\d+/)).not.toBeInTheDocument()
     })
+  })
+
+  /* ── Close behavior ── */
+
+  it('closes sidebar from internal list mode', async () => {
+    const onClose = vi.fn()
+    renderSidebar({ onClose })
+
+    // Open sidebar
+    fireEvent.click(screen.getByLabelText('Open books sidebar'))
+    expect(await screen.findByText('Campaign Books')).toBeInTheDocument()
+
+    // Click close button
+    fireEvent.click(screen.getByLabelText('Close sidebar'))
+    await waitFor(() => {
+      expect(screen.queryByText('Campaign Books')).not.toBeInTheDocument()
+    })
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('closes sidebar from internal viewer mode with close button', async () => {
+    const onClose = vi.fn()
+    renderSidebar({ onClose })
+
+    // Open sidebar and select a book to enter internal viewer mode
+    fireEvent.click(screen.getByLabelText('Open books sidebar'))
+    const book = await screen.findByText('Campaign Guide')
+    fireEvent.click(book)
+
+    // Should be in viewer mode
+    expect(await screen.findByTestId('pdf-page')).toBeInTheDocument()
+
+    // Click close button (X) — return to list since internal viewer
+    fireEvent.click(screen.getByLabelText('Close sidebar'))
+    await waitFor(() => {
+      expect(screen.getByText('Campaign Books')).toBeInTheDocument()
+    })
+    // onClose is NOT called — internal viewer mode returns to list
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  /* ── Empty search guard ── */
+
+  it('resets search results when query is only whitespace', async () => {
+    renderSidebar({ bookId: 'book-1' })
+    const searchInput = await screen.findByPlaceholderText('Search...')
+
+    // First search to get results
+    fireEvent.change(searchInput, { target: { value: 'dragon' } })
+    fireEvent.submit(searchInput)
+    expect(await screen.findByText('1/10')).toBeInTheDocument()
+
+    // Submit whitespace-only query — should clear results
+    fireEvent.change(searchInput, { target: { value: '   ' } })
+    fireEvent.submit(searchInput)
+    await waitFor(() => {
+      expect(screen.queryByText(/\d+\/\d+/)).not.toBeInTheDocument()
+    })
+  })
+
+  /* ── Auth token ── */
+
+  it('uses auth token when accessing PDF', async () => {
+    localStorage.setItem('accessToken', 'test-token')
+    renderSidebar({ bookId: 'book-1' })
+
+    // Should render normally with token set
+    expect(await screen.findByText('Campaign Guide')).toBeInTheDocument()
+    expect(screen.getByTestId('pdf-page')).toBeInTheDocument()
+  })
+
+  /* ── LocalStorage state restoration ── */
+
+  it('restores page number and zoom from localStorage', async () => {
+    localStorage.setItem(
+      'pdf-viewer:adv-1',
+      JSON.stringify({ version: 1, bookId: 'book-1', pageNumber: 3, scale: 1.5 }),
+    )
+    renderSidebar({ bookId: 'book-1' })
+
+    // Wait for the PDF to load, then check page nav shows restored page 3
+    await waitFor(() => {
+      expect(screen.getByText(/3 \/ 10/)).toBeInTheDocument()
+    })
+    // Check zoom reflects restored scale
+    expect(screen.getByText('150%')).toBeInTheDocument()
   })
 })
