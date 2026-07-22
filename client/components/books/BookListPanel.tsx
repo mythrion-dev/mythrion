@@ -246,7 +246,7 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: BookListPanel
               type="file"
               accept=".pdf,application/pdf"
               className="hidden"
-              disabled={uploading || !uploadName.trim()}
+              disabled={uploading}
               onChange={e => {
                 const f = e.target.files?.[0]
                 if (f) handleUpload(f)
