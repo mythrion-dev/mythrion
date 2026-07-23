@@ -15,11 +15,20 @@ import {
   PDFLinkService,
   PDFFindController,
   EventBus,
-  type IL10n,
 } from 'pdfjs-dist/web/pdf_viewer.mjs'
 import 'pdfjs-dist/web/pdf_viewer.css'
 
 /* ── Types ── */
+
+/** Matches pdfjs-dist's internal IL10n interface for the null-l10n stub. */
+interface IL10n {
+  getLanguage(): string
+  getDirection(): string
+  get(ids: string | string[], args?: Record<string, unknown> | null, fallback?: string): Promise<string>
+  translate(element: HTMLElement): Promise<void>
+  pause(): void
+  resume(): void
+}
 
 export interface OutlineItem {
   title: string
@@ -87,23 +96,15 @@ if (typeof window !== 'undefined') {
 
 /* ── Helper: map pdfjs outline item to our interface ── */
 
-function mapOutlineItem(item: {
-  title: string
-  dest?: string | unknown[] | null
-  url?: string | null
-  items?: unknown[]
-  bold?: boolean
-  italic?: boolean
-  color?: number[]
-}): OutlineItem {
+function mapOutlineItem(item: Record<string, unknown>): OutlineItem {
   return {
-    title: item.title,
-    dest: item.dest,
-    url: item.url,
-    bold: item.bold,
-    italic: item.italic,
-    color: item.color,
-    items: item.items?.map(mapOutlineItem),
+    title: item.title as string,
+    dest: item.dest as string | unknown[] | null | undefined,
+    url: item.url as string | null | undefined,
+    bold: (item.bold as boolean) ?? undefined,
+    italic: (item.italic as boolean) ?? undefined,
+    color: item.color as number[] | undefined,
+    items: (item.items as unknown[])?.map((child) => mapOutlineItem(child as Record<string, unknown>)),
   }
 }
 
@@ -270,7 +271,7 @@ export const PdfJsViewer = forwardRef(function PdfJsViewer(
 
         // Load document
         try {
-          const doc = await pdfjsLib.getDocument({ data: pdfData }).promise
+          const doc = await pdfjsLib.getDocument({ data: pdfData as ArrayBuffer }).promise
           if (cancelled) {
             doc.destroy()
             return
@@ -331,7 +332,7 @@ export const PdfJsViewer = forwardRef(function PdfJsViewer(
       },
       setScale(value: number | string) {
         if (pdfViewerRef.current) {
-          pdfViewerRef.current.currentScaleValue = value
+          pdfViewerRef.current.currentScaleValue = value as unknown as string
         }
       },
       goToPage(pageNumber: number) {

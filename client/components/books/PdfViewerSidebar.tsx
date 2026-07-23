@@ -180,7 +180,7 @@ export function PdfViewerSidebar({
 
       try {
         const token = localStorage.getItem('accessToken')
-        const res = await fetch(pdfUrl, {
+        const res = await fetch(pdfUrl!, {
           method: 'GET',
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         })
