@@ -2,11 +2,11 @@
 
 import { useState } from 'react'
 import { api } from '@/lib/api'
-import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import { NumericInput } from '@/components/shared/NumericInput'
 import { InlineClickEdit } from '@/components/character-sheet'
-import { ResistanceTab } from '@/components/character-sheet'
-import type { Ability, AbilityLevel, SummonTab, CharacterSheet, TemplateResistanceDef, SheetPermissions } from './types'
+import { SummonResourceCard } from './SummonResourceCard'
+import type { AttributeDisplay } from './SummonResourceCard'
+import type { Ability, AbilityLevel, CharacterSheet, SheetPermissions } from './types'
 import type { FormEvent } from 'react'
 
 /**
@@ -218,11 +218,8 @@ export function AbilitiesTab({
   levelModalError, setLevelModalError,
   expandedAbilities, setExpandedAbilities,
   summonModifierResults, summonAcResults,
-  saveSummonAttribute, saveSummonAcValue, saveSummonAcAttributeValue, saveSummonHealth,
-  summonTabs, setSummonTabs,
-  summonSkillResults,
-  handleAddSummonSkill, handleRemoveSummonSkill,
-  handleSummonSkillAttributeChange, handleSummonSkillProfileChange,
+  saveSummonAttribute, saveSummonAcValue, saveSummonHealth,
+  handleAddSummonSkill, handleRemoveSummonSkill, handleUpdateSummonSkill,
   handleCreateSummonAbility,
 }: {
   abilities: Ability[]; permissions: SheetPermissions; sheetId: string
@@ -245,15 +242,11 @@ export function AbilitiesTab({
   summonModifierResults: Record<string, Record<string, number | null>>
   summonAcResults: Record<string, number | null>
   saveSummonAttribute: (abilityId: string, attributeId: string, value: string) => Promise<void>
-  saveSummonAcValue: (abilityId: string, fieldId: string, value: string) => Promise<void>
-  saveSummonAcAttributeValue: (abilityId: string, acAttributeModifierId: string, selectedAttributeId: string | null) => Promise<void>
+  saveSummonAcValue: (abilityId: string, value: string) => Promise<void>
   saveSummonHealth: (abilityId: string, field: 'current' | 'maximum', value: number | null) => Promise<void>
-  summonTabs: Record<string, SummonTab>; setSummonTabs: React.Dispatch<React.SetStateAction<Record<string, SummonTab>>>
-  summonSkillResults: Record<string, Record<string, number | null>>
-  handleAddSummonSkill: (abilityId: string, skillId: string) => Promise<void>
+  handleAddSummonSkill: (abilityId: string, name: string, manualValue: number) => Promise<void>
   handleRemoveSummonSkill: (abilityId: string, summonSkillId: string) => Promise<void>
-  handleSummonSkillAttributeChange: (abilityId: string, summonSkillId: string, attributeId: string | null) => Promise<void>
-  handleSummonSkillProfileChange: (abilityId: string, summonSkillId: string, profileId: string, optionId: string | null) => Promise<void>
+  handleUpdateSummonSkill: (abilityId: string, summonSkillId: string, name: string, manualValue: number) => Promise<void>
   handleCreateSummonAbility: (summonId: string, e: FormEvent) => Promise<void>
 }) {
   const canEditAbilities = permissions.canEditAbilities
@@ -261,11 +254,6 @@ export function AbilitiesTab({
   const [confirmDeleteLevel, setConfirmDeleteLevel] = useState<string | null>(null)
   const [deletingAbility, setDeletingAbility] = useState(false)
   const [deletingLevel, setDeletingLevel] = useState(false)
-
-  // Summon skill search state per summon
-  const [skillSearchOpen, setSkillSearchOpen] = useState<string | null>(null)
-  const [skillSearchQuery, setSkillSearchQuery] = useState('')
-  const [summonHpAmount, setSummonHpAmount] = useState<Record<string, string>>({})
 
   // Summon-scoped ability creation state
   const [showNewSummonAbility, setShowNewSummonAbility] = useState<string | null>(null)
@@ -277,151 +265,6 @@ export function AbilitiesTab({
     if (selId) return ability.levels.find(l => l.id === selId)
     return ability.levels[ability.levels.length - 1]
   }
-
-  // ── Summon Resistance Helpers ──
-
-  /**
-   * Build the CalculatedResistance[] format expected by ResistanceTab
-   * from a summon's ability data + template resistance definitions.
-   */
-  function buildSummonResistances(ability: Ability): Array<{
-    resistanceId: string
-    name: string
-    calculationType: string
-    total: number
-    componentValues: Array<{ componentId: string; componentName: string; value: number; editableByPlayer: boolean }>
-    attributeModifierValues: Array<{ attributeId: string; attributeKey: string; attributeName: string; enabled: boolean; rawModifier: number; effectiveModifier: number }>
-  }> {
-    const srvs = ability.summonResistanceValues ?? []
-    const scvs = ability.summonResistanceComponentValues ?? []
-    const attrs = ability.summonAttributes ?? []
-
-    // Build attribute value map from summon attributes
-    const attrValues: Record<string, number> = {}
-    const attrKeyById: Record<string, string> = {}
-    const attrNameById: Record<string, string> = {}
-    for (const attr of templateAttributes) {
-      attrKeyById[attr.id] = attr.key
-      attrNameById[attr.id] = attr.name
-    }
-    for (const sa of attrs) {
-      const num = parseFloat(sa.value)
-      attrValues[sa.attributeId] = isNaN(num) ? 0 : num
-    }
-
-    // Compute attribute modifiers
-    const formula = template.attributeModifierFormula
-    const attrMods = new Map<string, number>()
-    if (formula && disableAttributeModifiers === false) {
-      for (const sa of attrs) {
-        const key = attrKeyById[sa.attributeId]
-        if (!key) continue
-        const val = attrValues[sa.attributeId] ?? 0
-        // Build variables for formula evaluation
-        const vars: Record<string, number> = { value: val }
-        for (const [aid, v] of Object.entries(attrValues)) {
-          const k = attrKeyById[aid]
-          if (k) vars[k] = v
-        }
-        const mod = evaluateSummonFormula(formula, vars)
-        attrMods.set(sa.attributeId, mod)
-      }
-    }
-
-    const results: Array<{
-      resistanceId: string
-      name: string
-      calculationType: string
-      total: number
-      componentValues: Array<{ componentId: string; componentName: string; value: number; editableByPlayer: boolean }>
-      attributeModifierValues: Array<{ attributeId: string; attributeKey: string; attributeName: string; enabled: boolean; rawModifier: number; effectiveModifier: number }>
-    }> = []
-
-    for (const resistance of templateResistances) {
-      if (resistance.calculationType === 'MANUAL') {
-        const srv = srvs.find(s => s.resistanceId === resistance.id)
-        const manualVal = parseFloat(srv?.manualValue ?? '0')
-        results.push({
-          resistanceId: resistance.id,
-          name: resistance.name,
-          calculationType: 'MANUAL',
-          total: isNaN(manualVal) ? 0 : manualVal,
-          componentValues: [],
-          attributeModifierValues: [],
-        })
-        continue
-      }
-
-      // CALCULATED resistance
-      let total = 0
-
-      const componentValues: Array<{ componentId: string; componentName: string; value: number; editableByPlayer: boolean }> = []
-      for (const component of resistance.components) {
-        if (component.editableByPlayer) {
-          const scv = scvs.find(c => c.componentId === component.id)
-          const val = parseFloat(scv?.value ?? component.defaultValue)
-          componentValues.push({
-            componentId: component.id,
-            componentName: component.name,
-            value: isNaN(val) ? 0 : val,
-            editableByPlayer: true,
-          })
-          total += isNaN(val) ? 0 : val
-        } else {
-          const defaultVal = parseFloat(component.defaultValue)
-          componentValues.push({
-            componentId: component.id,
-            componentName: component.name,
-            value: isNaN(defaultVal) ? 0 : defaultVal,
-            editableByPlayer: false,
-          })
-          total += isNaN(defaultVal) ? 0 : defaultVal
-        }
-      }
-
-      // Sum attribute modifiers (ignore negative), only when modifiers are enabled
-      const attributeModifierValues: Array<{ attributeId: string; attributeKey: string; attributeName: string; enabled: boolean; rawModifier: number; effectiveModifier: number }> = []
-      if (disableAttributeModifiers === false) {
-        for (const am of resistance.attributeModifiers) {
-          if (!am.enabled) continue
-          const rawMod = attrMods.get(am.attributeId) ?? 0
-          const effectiveMod = Math.max(rawMod, 0)
-          total += effectiveMod
-          attributeModifierValues.push({
-            attributeId: am.attributeId,
-            attributeKey: am.attribute?.key ?? '',
-            attributeName: am.attribute?.name ?? (attrNameById[am.attributeId] ?? ''),
-            enabled: am.enabled,
-            rawModifier: rawMod,
-            effectiveModifier: effectiveMod,
-          })
-        }
-      }
-
-      results.push({
-        resistanceId: resistance.id,
-        name: resistance.name,
-        calculationType: 'CALCULATED',
-        total,
-        componentValues,
-        attributeModifierValues,
-      })
-    }
-
-    return results
-  }
-
-  /**
-   * Build a Record<resistanceId, manualValue | null> for a summon's manual resistances.
-   */
-  function summonResistanceValueMap(ability: Ability): Record<string, string | null> {
-    const map: Record<string, string | null> = {}
-    for (const srv of ability.summonResistanceValues ?? []) {
-      map[srv.resistanceId] = srv.manualValue
-    }
-    return map
-  }
-
 
   async function handleAddLevel(abilityId: string) {
     if (!sheetId) return
@@ -439,17 +282,6 @@ export function AbilitiesTab({
       setShowAddLevelModal(null)
     } catch (err) { setLevelModalError(err instanceof Error ? err.message : 'Failed to create level') }
     finally { setLevelModalSaving(false) }
-  }
-
-  const armorClasses = template.armorClasses?.filter(ac => ac.enabled) ?? []
-  const allTemplateSkills = template.templateSkills ?? []
-  const templateAttributes = template.attributes ?? []
-  const disableAttributeModifiers = !template.attributeModifiersEnabled
-  const templateResistances = template.resistances ?? []
-
-  const summonSkillTabClass = (aid: string, t: SummonTab) => {
-    const active = summonTabs[aid] ?? 'stats'
-    return `px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${active === t ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground border border-transparent'}`
   }
 
   const q = searchQuery.toLowerCase()
@@ -506,7 +338,6 @@ export function AbilitiesTab({
             const isExpanded = expandedAbilities[a.id] ?? false
             const isAbility = a.type !== 'SUMMON'
             const selLevel = isAbility ? getSelectedLevel(a) : undefined
-            const currentSummonTab = summonTabs[a.id] ?? 'stats'
 
             return (
               <div key={a.id} className={`card !p-0 overflow-hidden transition-all duration-200 ${isExpanded ? 'border-primary/20' : ''}`}>
@@ -711,385 +542,177 @@ export function AbilitiesTab({
                     {/* SUMMON content */}
                     {!isAbility && (
                       <div className="pt-1">
-                        {/* Sub-tabs */}
-                        <div className="flex gap-1 mb-4 border-b border-border pb-2">
-                          <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'stats' }))} className={summonSkillTabClass(a.id, 'stats')}>Stats</button>
-                          <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'skills' }))} className={summonSkillTabClass(a.id, 'skills')}>Skills</button>
-                          <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'abilities' }))} className={summonSkillTabClass(a.id, 'abilities')}>Abilities</button>
-                          <button type="button" onClick={() => setSummonTabs(prev => ({ ...prev, [a.id]: 'resistances' }))} className={summonSkillTabClass(a.id, 'resistances')}>Resistances</button>
+                        {/* Description / Notes (always visible) */}
+                        <div className="space-y-2 mb-4">
+                          {canEditAbilities ? (
+                            <>
+                              <div>
+                                <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
+                                <InlineClickEdit
+                                  value={a.description ?? ''}
+                                  onSave={async (v) => {
+                                    try {
+                                      await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}`, { description: v.trim() || null })
+                                      setAbilities(prev => prev.map(ab => ab.id === a.id ? { ...ab, description: v.trim() || null } : ab))
+                                    } catch {}
+                                  }}
+                                  as="textarea"
+                                  className="text-sm text-muted-foreground whitespace-pre-wrap"
+                                  emptyDisplay="Add description..."
+                                />
+                              </div>
+                              <div>
+                                <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
+                                <InlineClickEdit
+                                  value={a.notes ?? ''}
+                                  onSave={async (v) => {
+                                    try {
+                                      await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}`, { notes: v.trim() || null })
+                                      setAbilities(prev => prev.map(ab => ab.id === a.id ? { ...ab, notes: v.trim() || null } : ab))
+                                    } catch {}
+                                  }}
+                                  as="textarea"
+                                  className="text-xs text-muted italic whitespace-pre-wrap"
+                                  emptyDisplay="Add notes..."
+                                />
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              {a.description && <div><h5 className="text-xs font-medium text-muted mb-1">Description</h5><p className="text-sm text-muted-foreground whitespace-pre-wrap">{a.description}</p></div>}
+                              {a.notes && <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><p className="text-xs text-muted italic whitespace-pre-wrap">{a.notes}</p></div>}
+                            </>
+                          )}
                         </div>
 
-                        {/* Stats tab */}
-                        {currentSummonTab === 'stats' && (
-                          <div className="space-y-4">
-                            {/* Description / Notes */}
+                        {/* Summon Resource Card */}
+                        {(() => {
+                          const attributeDisplays: AttributeDisplay[] = (a.summonAttributes ?? []).map(sa => {
+                            const attr = template.attributes.find(at => at.id === sa.attributeId)
+                            if (!attr) return null
+                            const modResult = (summonModifierResults[a.id] ?? {})[attr.id]
+                            return {
+                              key: attr.key,
+                              name: attr.name,
+                              value: sa.value,
+                              modifier: (modResult !== null && modResult !== undefined) ? Math.floor(modResult) : null,
+                              attributeId: attr.id,
+                            }
+                          }).filter((d): d is AttributeDisplay => d !== null)
+
+                          return (
+                            <SummonResourceCard
+                              ability={a}
+                              attributeDisplays={attributeDisplays}
+                              acResult={summonAcResults[a.id] ?? null}
+                              permissions={permissions}
+                              saveSummonAttribute={saveSummonAttribute}
+                              saveSummonAcValue={saveSummonAcValue}
+                              saveSummonHealth={saveSummonHealth}
+                              handleAddSummonSkill={handleAddSummonSkill}
+                              handleUpdateSummonSkill={handleUpdateSummonSkill}
+                              handleRemoveSummonSkill={handleRemoveSummonSkill}
+                            />
+                          )
+                        })()}
+
+                        {/* Child abilities (always visible) */}
+                        <div className="mt-6 space-y-3">
+                          <h4 className="text-xs font-semibold text-muted uppercase tracking-wider">Abilities</h4>
+                          {(a.childAbilities ?? []).length === 0 && !showNewSummonAbility ? (
+                            <div className="text-xs text-muted italic py-2">No abilities yet.</div>
+                          ) : (
                             <div className="space-y-2">
-                              {canEditAbilities ? (
-                                <>
-                                  <div>
-                                    <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
-                                    <InlineClickEdit
-                                      value={a.description ?? ''}
-                                      onSave={async (v) => {
-                                        try {
-                                          await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}`, { description: v.trim() || null })
-                                          setAbilities(prev => prev.map(ab => ab.id === a.id ? { ...ab, description: v.trim() || null } : ab))
-                                        } catch {}
-                                      }}
-                                      as="textarea"
-                                      className="text-sm text-muted-foreground whitespace-pre-wrap"
-                                      emptyDisplay="Add description..."
-                                    />
-                                  </div>
-                                  <div>
-                                    <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
-                                    <InlineClickEdit
-                                      value={a.notes ?? ''}
-                                      onSave={async (v) => {
-                                        try {
-                                          await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}`, { notes: v.trim() || null })
-                                          setAbilities(prev => prev.map(ab => ab.id === a.id ? { ...ab, notes: v.trim() || null } : ab))
-                                        } catch {}
-                                      }}
-                                      as="textarea"
-                                      className="text-xs text-muted italic whitespace-pre-wrap"
-                                      emptyDisplay="Add notes..."
-                                    />
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  {a.description && <div><h5 className="text-xs font-medium text-muted mb-1">Description</h5><p className="text-sm text-muted-foreground whitespace-pre-wrap">{a.description}</p></div>}
-                                  {a.notes && <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><p className="text-xs text-muted italic whitespace-pre-wrap">{a.notes}</p></div>}
-                                </>
-                              )}
-                            </div>
-
-                            {/* Health (always shown for summons) */}
-                            <div className="card !p-4 !bg-background/30">
-                              <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Health</h4>
-                              <div className="flex items-center justify-center gap-4 mb-4">
-                                <div className="text-center">
-                                  <span className="text-xs text-muted block mb-0.5">Current</span>
-                                  <span className="text-xl font-bold text-foreground">{a.summonHealth?.current ?? 0}</span>
-                                </div>
-                                <span className="text-muted text-xl">/</span>
-                                <div className="text-center">
-                                  <span className="text-xs text-muted block mb-0.5">Max</span>
-                                  {canEditAbilities ? (
-                                    <InlineNumber value={a.summonHealth?.maximum ?? 0} onSave={(v) => saveSummonHealth(a.id, 'maximum', v)} min={0} className="text-xl font-bold text-foreground" />
-                                  ) : (
-                                    <span className="text-xl font-bold text-foreground">{a.summonHealth?.maximum ?? '—'}</span>
-                                  )}
-                                </div>
-                              </div>
-                              {canEditAbilities && (
-                                <div className="flex items-center justify-center gap-3">
-                                  <NumericInput
-                                    min={1}
-                                    value={summonHpAmount[a.id] ?? ''}
-                                    onChange={e => setSummonHpAmount(prev => ({ ...prev, [a.id]: e.target.value }))}
-                                    placeholder="Amount"
-                                    className="w-20 text-center text-sm bg-background/50 border border-border rounded-md px-2 py-1.5 text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary"
-                                    wrapperClassName="w-20"
-                                    inputClassName="!text-center !text-sm"
-                                  />
-                                  <button
-                                    onClick={() => {
-                                      const amt = parseInt(summonHpAmount[a.id], 10)
-                                      if (isNaN(amt) || amt <= 0) return
-                                      saveSummonHealth(a.id, 'current', Math.max(0, (a.summonHealth?.current ?? 0) - amt))
-                                      setSummonHpAmount(prev => ({ ...prev, [a.id]: '' }))
-                                    }}
-                                    className="px-4 py-1.5 text-sm font-bold rounded-md bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
-                                  >
-                                    Damage
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      const amt = parseInt(summonHpAmount[a.id], 10)
-                                      if (isNaN(amt) || amt <= 0) return
-                                      saveSummonHealth(a.id, 'current', (a.summonHealth?.current ?? 0) + amt)
-                                      setSummonHpAmount(prev => ({ ...prev, [a.id]: '' }))
-                                    }}
-                                    className="px-4 py-1.5 text-sm font-bold rounded-md bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 transition-colors"
-                                  >
-                                    Heal
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Attributes */}
-                            {(a.summonAttributes ?? []).length > 0 && (
-                              <div className="card !p-4 !bg-background/30">
-                                <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Attributes</h4>
-                                <div className="grid gap-2 sm:grid-cols-2">
-                                  {a.summonAttributes.map(sa => {
-                                    const attr = template.attributes.find(at => at.id === sa.attributeId)
-                                    if (!attr) return null
-                                    const modResult = (summonModifierResults[a.id] ?? {})[attr.id]
-                                    return (
-                                      <div key={sa.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
-                                        <span className="text-sm text-foreground">{attr.name}</span>
-                                        <div className="flex items-center gap-2">
-                                          {canEditAbilities ? (
-                                            <InlineText value={sa.value} onSave={(v) => saveSummonAttribute(a.id, sa.attributeId, v)} className="text-sm font-semibold text-foreground" />
-                                          ) : (
-                                            <span className="text-sm font-semibold text-foreground">{sa.value || '—'}</span>
-                                          )}
-                                          {template.attributeModifiersEnabled !== false && modResult !== undefined && modResult !== null && (
-                                            <span className="text-sm font-semibold text-primary">({modResult >= 0 ? '+' : ''}{modResult})</span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    )
-                                  })}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* AC */}
-                            {armorClasses.map(ac => ((a.summonAcValues ?? []).length > 0) && (
-                              <div key={ac.id} className="card !p-4 !bg-background/30">
-                                <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Armor Class: {(ac as any).name ?? 'AC'}</h4>
-                                <div className="flex items-center justify-center mb-4">
-                                  <div className="w-20 h-20 rounded-full border-2 border-primary/30 flex items-center justify-center bg-background/50">
-                                    <span className="text-3xl font-bold text-primary">{summonAcResults[a.id] !== null && summonAcResults[a.id] !== undefined ? summonAcResults[a.id] : '—'}</span>
-                                  </div>
-                                </div>
-                                <div className="space-y-1.5">
-                                  {ac.fields.map(field => {
-                                    const acv = a.summonAcValues.find(v => v.fieldId === field.id)
-                                    const val = acv?.value ?? field.defaultValue
-                                    const canEdit = canEditAbilities && field.editableByPlayer
-                                    return (
-                                      <div key={field.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
-                                        <div className="flex items-center gap-1 min-w-0">
-                                          <span className="text-sm text-foreground truncate">{field.name}</span>
-                                          {field.description && <span className="text-[0.6rem] text-muted hidden sm:inline">— {field.description}</span>}
-                                        </div>
-                                        {canEdit ? (
-                                          <NumericInput className="py-0.5 text-xs w-16 text-right" inputClassName="!text-right" wrapperClassName="w-16" value={val} onChange={e => saveSummonAcValue(a.id, field.id, e.target.value)} />
-                                        ) : (
-                                          <span className="text-sm font-semibold text-foreground">{val}</span>
-                                        )}
-                                      </div>
-                                    )
-                                  })}
-                                </div>
-                                {template.attributeModifiersEnabled !== false && (ac.attributeModifiers ?? []).length > 0 && (
-                                  <div className="mt-3 pt-3 border-t border-border/50">
-                                    <h5 className="text-[0.6rem] font-semibold text-muted uppercase tracking-wider mb-2">Attribute Modifiers</h5>
-                                    <div className="grid gap-1.5 sm:grid-cols-2">
-                                      {(ac.attributeModifiers ?? []).map(am => {
-                                        const acAttrValue = (a.summonAcAttributeValues ?? []).find(v => v.acAttributeModifierId === am.id)
-                                        const selectedAttributeId = acAttrValue?.selectedAttributeId ?? am.defaultAttributeId ?? am.attributeId
-                                        const selectedAttribute = template.attributes.find(at => at.id === selectedAttributeId) ?? am.defaultAttribute ?? am.attribute
-                                        const modResult = selectedAttribute ? (summonModifierResults[a.id] ?? {})[selectedAttribute.id] : null
-                                        const canChangeAttribute = canEditAbilities && am.allowPlayerSelection
-                                        return (
-                                          <div key={am.id} className="flex items-center justify-between gap-2 py-1.5 px-3 rounded-lg bg-background/50 border border-border">
-                                            {canChangeAttribute ? (
-                                              <select
-                                                className="input-field py-0.5 text-xs w-auto min-w-[130px]"
-                                                value={selectedAttribute?.id ?? ''}
-                                                onChange={e => saveSummonAcAttributeValue(a.id, am.id, e.target.value || null)}
-                                              >
-                                                {template.attributes.map(attr => (
-                                                  <option key={attr.id} value={attr.id}>{attr.name}</option>
-                                                ))}
-                                              </select>
-                                            ) : (
-                                              <span className="text-xs text-foreground truncate">
-                                                {selectedAttribute?.name ?? am.attribute?.name} Mod
-                                              </span>
-                                            )}
-                                            <span className="text-xs font-semibold text-muted">
-                                              {modResult !== null && modResult !== undefined ? `${modResult >= 0 ? '+' : ''}${modResult}` : '—'}
-                                            </span>
-                                          </div>
-                                        )
-                                      })}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Skills tab */}
-                        {currentSummonTab === 'skills' && (
-                          <div className="space-y-3">
-                            {canEditAbilities && (
-                              <div>
-                                {skillSearchOpen !== a.id ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => { setSkillSearchOpen(a.id); setSkillSearchQuery('') }}
-                                    className="btn-ghost text-xs"
-                                  >
-                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
-                                    </svg>
-                                    Add Skill
-                                  </button>
-                                ) : (
-                                  <div className="space-y-1">
-                                    <div className="relative">
-                                      <svg className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                              {(a.childAbilities ?? []).map((ca: Ability) => {
+                                const caExpanded = expandedAbilities[ca.id] ?? false
+                                const caSelLevel = getSelectedLevel(ca)
+                                return (
+                                  <div key={ca.id} className={`rounded-lg border transition-all duration-200 ${caExpanded ? 'border-primary/20 bg-background/40' : 'border-border bg-background/20'}`}>
+                                    <button
+                                      type="button"
+                                      onClick={() => setExpandedAbilities(prev => ({ ...prev, [ca.id]: !prev[ca.id] }))}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-foreground/5 transition-colors"
+                                    >
+                                      <svg className={`w-3.5 h-3.5 text-muted transition-transform duration-200 shrink-0 ${caExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
                                       </svg>
-                                      <input
-                                        className="input-field pl-8 py-1 text-xs w-full"
-                                        placeholder="Search Skill..."
-                                        value={skillSearchQuery}
-                                        onChange={e => setSkillSearchQuery(e.target.value)}
-                                        autoFocus
-                                        onKeyDown={e => { if (e.key === 'Escape') setSkillSearchOpen(null) }}
-                                      />
-                                    </div>
-                                    <div className="max-h-40 overflow-y-auto border border-border rounded-lg divide-y divide-border">
-                                      {allTemplateSkills
-                                        .filter(s => {
-                                          const alreadyAdded = (a.summonSkills ?? []).some(ss => ss.skillId === s.id)
-                                          if (alreadyAdded) return false
-                                          if (!skillSearchQuery.trim()) return true
-                                          return s.name.toLowerCase().includes(skillSearchQuery.toLowerCase())
-                                        })
-                                        .slice(0, 25)
-                                        .map(s => (
-                                          <button
-                                            key={s.id}
-                                            type="button"
-                                            onClick={() => { handleAddSummonSkill(a.id, s.id); setSkillSearchOpen(null); setSkillSearchQuery('') }}
-                                            className="w-full text-left px-3 py-1.5 text-xs hover:bg-foreground/5 transition-colors"
-                                          >{s.name}</button>
-                                        ))}
-                                      {allTemplateSkills.filter(s => !(a.summonSkills ?? []).some(ss => ss.skillId === s.id) && (!skillSearchQuery.trim() || s.name.toLowerCase().includes(skillSearchQuery.toLowerCase()))).length === 0 && (
-                                        <div className="px-3 py-2 text-xs text-muted italic">No skills found</div>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {(a.summonSkills ?? []).length === 0 ? (
-                              <div className="text-xs text-muted italic py-2">No skills added. Click &quot;Add Skill&quot; to select from the template.</div>
-                            ) : (
-                              <div className="space-y-1.5">
-                                {(a.summonSkills ?? []).map(ss => {
-                                  const result = (summonSkillResults[a.id] ?? {})[ss.id]
-                                  const hasAttrDropdown = (ss.skill.allowedAttributeIds?.length ?? 0) > 0
-                                  return (
-                                    <div key={ss.id} className="flex items-center gap-2 py-2 px-3 rounded-lg bg-background/50 border border-border">
-                                      <div className="flex-1 min-w-0 flex items-center gap-2">
-                                        <span className="text-sm font-medium text-foreground truncate">{ss.skill.name}</span>
-                                        {canEditAbilities && hasAttrDropdown && template.attributeModifiersEnabled !== false ? (
+                                      <span className="text-sm font-medium text-foreground truncate flex-1">{ca.name}</span>
+                                      {canEditAbilities && ca.levels.length > 0 && (
+                                        <div onClick={e => e.stopPropagation()}>
                                           <select
-                                            className="input-field py-0.5 text-xs w-auto min-w-[80px]"
-                                            value={ss.selectedAttributeId ?? ''}
-                                            onChange={e => handleSummonSkillAttributeChange(a.id, ss.id, e.target.value || null)}
+                                            className="input-field py-0.5 px-1.5 text-[0.6rem] min-w-[70px]"
+                                            value={caSelLevel?.id ?? ''}
+                                            onChange={e => setSelectedLevels(prev => ({ ...prev, [ca.id]: e.target.value }))}
                                           >
-                                            {ss.skill.allowedAttributeIds.map(attrId => {
-                                              const attr = template.attributes.find(x => x.id === attrId)
-                                              if (!attr) return null
-                                              return <option key={attrId} value={attrId}>{attr.name}</option>
-                                            })}
+                                            {ca.levels.map(l => <option key={l.id} value={l.id}>Level {l.level}</option>)}
                                           </select>
-                                        ) : canEditAbilities && hasAttrDropdown ? (
-                                          <span className="text-xs text-muted opacity-40 min-w-[80px] inline-block">{ss.selectedAttribute?.name || ss.skill.defaultAttribute?.name || ss.skill.attribute?.name || '—'}</span>
-                                        ) : null}
-                                      </div>
-                                      <span className="text-sm font-bold text-primary shrink-0">{result != null ? (result >= 0 ? '+' : '') + result : '—'}</span>
-                                      {canEditAbilities && (
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRemoveSummonSkill(a.id, ss.id)}
-                                          className="text-muted hover:text-danger p-0.5 transition-colors shrink-0"
-                                          title="Remove skill"
-                                        >
-                                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                                          </svg>
-                                        </button>
+                                        </div>
                                       )}
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Abilities tab (child abilities) */}
-                        {currentSummonTab === 'abilities' && (
-                          <div className="space-y-3">
-                            {(a.childAbilities ?? []).length === 0 && !showNewSummonAbility ? (
-                              <div className="text-xs text-muted italic py-2">No abilities yet.</div>
-                            ) : (
-                              <div className="space-y-2">
-                                {(a.childAbilities ?? []).map((ca: Ability) => {
-                                  const caExpanded = expandedAbilities[ca.id] ?? false
-                                  const caSelLevel = getSelectedLevel(ca)
-                                  return (
-                                    <div key={ca.id} className={`rounded-lg border transition-all duration-200 ${caExpanded ? 'border-primary/20 bg-background/40' : 'border-border bg-background/20'}`}>
-                                      <button
-                                        type="button"
-                                        onClick={() => setExpandedAbilities(prev => ({ ...prev, [ca.id]: !prev[ca.id] }))}
-                                        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-foreground/5 transition-colors"
-                                      >
-                                        <svg className={`w-3.5 h-3.5 text-muted transition-transform duration-200 shrink-0 ${caExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-                                        </svg>
-                                        <span className="text-sm font-medium text-foreground truncate flex-1">{ca.name}</span>
-                                        {canEditAbilities && ca.levels.length > 0 && (
-                                          <div onClick={e => e.stopPropagation()}>
-                                            <select
-                                              className="input-field py-0.5 px-1.5 text-[0.6rem] min-w-[70px]"
-                                              value={caSelLevel?.id ?? ''}
-                                              onChange={e => setSelectedLevels(prev => ({ ...prev, [ca.id]: e.target.value }))}
+                                      {canEditAbilities && (
+                                        <div onClick={e => e.stopPropagation()}>
+                                          <button onClick={() => handleDeleteAbility(ca.id)} className="text-muted hover:text-danger p-0.5 transition-colors shrink-0">
+                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+                                          </button>
+                                        </div>
+                                      )}
+                                    </button>
+                                    {caExpanded && caSelLevel && (
+                                      <div className="px-3 pb-3 pt-2 space-y-2 border-t border-border animate-fade-in">
+                                        {/* Delete level */}
+                                        {canEditAbilities && ca.levels.length > 1 && (
+                                          <div className="flex justify-end">
+                                            <button
+                                              onClick={() => setConfirmDeleteLevel(caSelLevel.id)}
+                                              className="text-[0.6rem] text-danger/70 hover:text-danger px-1.5 py-0.5 transition-colors"
                                             >
-                                              {ca.levels.map(l => <option key={l.id} value={l.id}>Level {l.level}</option>)}
-                                            </select>
-                                          </div>
-                                        )}
-                                        {canEditAbilities && (
-                                          <div onClick={e => e.stopPropagation()}>
-                                            <button onClick={() => handleDeleteAbility(ca.id)} className="text-muted hover:text-danger p-0.5 transition-colors shrink-0">
-                                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                                              </svg>
+                                              Delete Level {caSelLevel.level}
                                             </button>
                                           </div>
                                         )}
-                                      </button>
-                                      {caExpanded && caSelLevel && (
-                                        <div className="px-3 pb-3 pt-2 space-y-2 border-t border-border animate-fade-in">
-                                          {/* Delete level */}
-                                          {canEditAbilities && ca.levels.length > 1 && (
-                                            <div className="flex justify-end">
-                                              <button
-                                                onClick={() => setConfirmDeleteLevel(caSelLevel.id)}
-                                                className="text-[0.6rem] text-danger/70 hover:text-danger px-1.5 py-0.5 transition-colors"
-                                              >
-                                                Delete Level {caSelLevel.level}
-                                              </button>
-                                            </div>
-                                          )}
-                                          <div className="flex flex-wrap gap-3 text-xs text-muted">
-                                            {canEditAbilities ? (
-                                              <>
+                                        <div className="flex flex-wrap gap-3 text-xs text-muted">
+                                          {canEditAbilities ? (
+                                            <>
+                                              <span className="inline-flex items-center gap-1">
+                                                Mana:
+                                                <InlineClickEdit
+                                                  value={caSelLevel.manaCost?.toString() ?? ''}
+                                                  onSave={async (v) => {
+                                                    try {
+                                                      await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { manaCost: v.trim() ? parseInt(v, 10) : null })
+                                                      setAbilities(prev => prev.map(ab => ({ ...ab, childAbilities: (ab.childAbilities ?? []).map(c => c.id === ca.id ? { ...c, levels: c.levels.map(l => l.id === caSelLevel.id ? { ...l, manaCost: v.trim() ? parseInt(v, 10) : null } : l) } : c) })))
+                                                    } catch {}
+                                                  }}
+                                                  className="!text-xs"
+                                                  inputClassName="!text-xs w-16"
+                                                  emptyDisplay="—"
+                                                />
+                                              </span>
+                                              <span className="inline-flex items-center gap-1">
+                                                Range:
+                                                <InlineClickEdit
+                                                  value={caSelLevel.range ?? ''}
+                                                  onSave={async (v) => {
+                                                    try {
+                                                      await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { range: v.trim() || null })
+                                                      setAbilities(prev => prev.map(ab => ({ ...ab, childAbilities: (ab.childAbilities ?? []).map(c => c.id === ca.id ? { ...c, levels: c.levels.map(l => l.id === caSelLevel.id ? { ...l, range: v.trim() || null } : l) } : c) })))
+                                                    } catch {}
+                                                  }}
+                                                  className="!text-xs"
+                                                  inputClassName="!text-xs w-20"
+                                                  emptyDisplay="—"
+                                                />
+                                              </span>
+                                              {caSelLevel.damage != null && (
                                                 <span className="inline-flex items-center gap-1">
-                                                  Mana:
+                                                  Damage:
                                                   <InlineClickEdit
-                                                    value={caSelLevel.manaCost?.toString() ?? ''}
+                                                    value={caSelLevel.damage ?? ''}
                                                     onSave={async (v) => {
                                                       try {
-                                                        await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { manaCost: v.trim() ? parseInt(v, 10) : null })
-                                                        setAbilities(prev => prev.map(ab => ({ ...ab, childAbilities: (ab.childAbilities ?? []).map(c => c.id === ca.id ? { ...c, levels: c.levels.map(l => l.id === caSelLevel.id ? { ...l, manaCost: v.trim() ? parseInt(v, 10) : null } : l) } : c) })))
+                                                        await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { damage: v.trim() || null })
+                                                        setAbilities(prev => prev.map(ab => ({ ...ab, childAbilities: (ab.childAbilities ?? []).map(c => c.id === ca.id ? { ...c, levels: c.levels.map(l => l.id === caSelLevel.id ? { ...l, damage: v.trim() || null } : l) } : c) })))
                                                       } catch {}
                                                     }}
                                                     className="!text-xs"
@@ -1097,202 +720,147 @@ export function AbilitiesTab({
                                                     emptyDisplay="—"
                                                   />
                                                 </span>
-                                                <span className="inline-flex items-center gap-1">
-                                                  Range:
-                                                  <InlineClickEdit
-                                                    value={caSelLevel.range ?? ''}
-                                                    onSave={async (v) => {
-                                                      try {
-                                                        await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { range: v.trim() || null })
-                                                        setAbilities(prev => prev.map(ab => ({ ...ab, childAbilities: (ab.childAbilities ?? []).map(c => c.id === ca.id ? { ...c, levels: c.levels.map(l => l.id === caSelLevel.id ? { ...l, range: v.trim() || null } : l) } : c) })))
-                                                      } catch {}
-                                                    }}
-                                                    className="!text-xs"
-                                                    inputClassName="!text-xs w-20"
-                                                    emptyDisplay="—"
-                                                  />
-                                                </span>
-                                                {caSelLevel.damage != null && (
-                                                  <span className="inline-flex items-center gap-1">
-                                                    Damage:
-                                                    <InlineClickEdit
-                                                      value={caSelLevel.damage ?? ''}
-                                                      onSave={async (v) => {
-                                                        try {
-                                                          await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { damage: v.trim() || null })
-                                                          setAbilities(prev => prev.map(ab => ({ ...ab, childAbilities: (ab.childAbilities ?? []).map(c => c.id === ca.id ? { ...c, levels: c.levels.map(l => l.id === caSelLevel.id ? { ...l, damage: v.trim() || null } : l) } : c) })))
-                                                        } catch {}
-                                                      }}
-                                                      className="!text-xs"
-                                                      inputClassName="!text-xs w-16"
-                                                      emptyDisplay="—"
-                                                    />
-                                                  </span>
-                                                )}
-                                              </>
-                                            ) : (
-                                              <>
-                                                {caSelLevel.manaCost != null && <span>Mana: {caSelLevel.manaCost}</span>}
-                                                {caSelLevel.range && <span>Range: {caSelLevel.range}</span>}
-                                                {caSelLevel.damage && <span>Damage: {caSelLevel.damage}</span>}
-                                              </>
-                                            )}
-                                          </div>
-                                          {canEditAbilities ? (
-                                            <>
-                                              <div>
-                                                <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
-                                                <InlineClickEdit
-                                                  value={caSelLevel.description ?? ''}
-                                                  onSave={async (v) => {
-                                                    try {
-                                                      await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { description: v.trim() || null })
-                                                      setAbilities(prev => prev.map(ab => ({ ...ab, childAbilities: (ab.childAbilities ?? []).map(c => c.id === ca.id ? { ...c, levels: c.levels.map(l => l.id === caSelLevel.id ? { ...l, description: v.trim() || null } : l) } : c) })))
-                                                    } catch {}
-                                                  }}
-                                                  as="textarea"
-                                                  className="text-xs text-muted-foreground whitespace-pre-wrap"
-                                                  emptyDisplay="Add description..."
-                                                />
-                                              </div>
-                                              <div>
-                                                <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
-                                                <InlineClickEdit
-                                                  value={caSelLevel.notes ?? ''}
-                                                  onSave={async (v) => {
-                                                    try {
-                                                      await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { notes: v.trim() || null })
-                                                      setAbilities(prev => prev.map(ab => ({ ...ab, childAbilities: (ab.childAbilities ?? []).map(c => c.id === ca.id ? { ...c, levels: c.levels.map(l => l.id === caSelLevel.id ? { ...l, notes: v.trim() || null } : l) } : c) })))
-                                                    } catch {}
-                                                  }}
-                                                  as="textarea"
-                                                  className="text-xs text-muted italic whitespace-pre-wrap"
-                                                  emptyDisplay="Add notes..."
-                                                />
-                                              </div>
-                                              {/* Add level button */}
-                                              <div className="flex items-center justify-between pt-1">
-                                                {canEditAbilities && (
-                                                  <button
-                                                    onClick={() => { setShowAddLevelModal(ca.id); setNewLevelForm({ level: Math.max(...ca.levels.map(l => parseInt(l.level)).filter(n => !isNaN(n)), 0) + 1, copyFromPrevious: ca.levels.length > 0 }); setLevelModalError(null) }}
-                                                    className="btn-ghost text-[0.6rem]"
-                                                  >
-                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
-                                                    </svg>
-                                                    Add Level
-                                                  </button>
-                                                )}
-                                              </div>
+                                              )}
                                             </>
                                           ) : (
                                             <>
-                                              {caSelLevel.description && <div><h5 className="text-xs font-medium text-muted mb-1">Description</h5><p className="text-xs text-muted-foreground whitespace-pre-wrap">{caSelLevel.description}</p></div>}
-                                              {caSelLevel.notes && <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><p className="text-xs text-muted italic whitespace-pre-wrap">{caSelLevel.notes}</p></div>}
+                                              {caSelLevel.manaCost != null && <span>Mana: {caSelLevel.manaCost}</span>}
+                                              {caSelLevel.range && <span>Range: {caSelLevel.range}</span>}
+                                              {caSelLevel.damage && <span>Damage: {caSelLevel.damage}</span>}
                                             </>
                                           )}
                                         </div>
-                                      )}
-                                      {caExpanded && !caSelLevel && (
-                                        <div className="px-3 pb-3 pt-2 border-t border-border animate-fade-in">
-                                          <div className="flex items-center justify-between">
-                                            <p className="text-[0.6rem] text-muted italic">No levels added yet.</p>
-                                            {canEditAbilities && (
-                                              <button
-                                                onClick={() => { setShowAddLevelModal(ca.id); setNewLevelForm({ level: 1, copyFromPrevious: false }); setLevelModalError(null) }}
-                                                className="btn-ghost text-[0.6rem]"
-                                              >
-                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
-                                                </svg>
-                                                Add Level
-                                              </button>
-                                            )}
-                                          </div>
+                                        {canEditAbilities ? (
+                                          <>
+                                            <div>
+                                              <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
+                                              <InlineClickEdit
+                                                value={caSelLevel.description ?? ''}
+                                                onSave={async (v) => {
+                                                  try {
+                                                    await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { description: v.trim() || null })
+                                                    setAbilities(prev => prev.map(ab => ({ ...ab, childAbilities: (ab.childAbilities ?? []).map(c => c.id === ca.id ? { ...c, levels: c.levels.map(l => l.id === caSelLevel.id ? { ...l, description: v.trim() || null } : l) } : c) })))
+                                                  } catch {}
+                                                }}
+                                                as="textarea"
+                                                className="text-xs text-muted-foreground whitespace-pre-wrap"
+                                                emptyDisplay="Add description..."
+                                              />
+                                            </div>
+                                            <div>
+                                              <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
+                                              <InlineClickEdit
+                                                value={caSelLevel.notes ?? ''}
+                                                onSave={async (v) => {
+                                                  try {
+                                                    await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { notes: v.trim() || null })
+                                                    setAbilities(prev => prev.map(ab => ({ ...ab, childAbilities: (ab.childAbilities ?? []).map(c => c.id === ca.id ? { ...c, levels: c.levels.map(l => l.id === caSelLevel.id ? { ...l, notes: v.trim() || null } : l) } : c) })))
+                                                  } catch {}
+                                                }}
+                                                as="textarea"
+                                                className="text-xs text-muted italic whitespace-pre-wrap"
+                                                emptyDisplay="Add notes..."
+                                              />
+                                            </div>
+                                            {/* Add level button */}
+                                            <div className="flex items-center justify-between pt-1">
+                                              {canEditAbilities && (
+                                                <button
+                                                  onClick={() => { setShowAddLevelModal(ca.id); setNewLevelForm({ level: Math.max(...ca.levels.map(l => parseInt(l.level)).filter(n => !isNaN(n)), 0) + 1, copyFromPrevious: ca.levels.length > 0 }); setLevelModalError(null) }}
+                                                  className="btn-ghost text-[0.6rem]"
+                                                >
+                                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
+                                                  </svg>
+                                                  Add Level
+                                                </button>
+                                              )}
+                                            </div>
+                                          </>
+                                        ) : (
+                                          <>
+                                            {caSelLevel.description && <div><h5 className="text-xs font-medium text-muted mb-1">Description</h5><p className="text-xs text-muted-foreground whitespace-pre-wrap">{caSelLevel.description}</p></div>}
+                                            {caSelLevel.notes && <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><p className="text-xs text-muted italic whitespace-pre-wrap">{caSelLevel.notes}</p></div>}
+                                          </>
+                                        )}
+                                      </div>
+                                    )}
+                                    {caExpanded && !caSelLevel && (
+                                      <div className="px-3 pb-3 pt-2 border-t border-border animate-fade-in">
+                                        <div className="flex items-center justify-between">
+                                          <p className="text-[0.6rem] text-muted italic">No levels added yet.</p>
+                                          {canEditAbilities && (
+                                            <button
+                                              onClick={() => { setShowAddLevelModal(ca.id); setNewLevelForm({ level: 1, copyFromPrevious: false }); setLevelModalError(null) }}
+                                              className="btn-ghost text-[0.6rem]"
+                                            >
+                                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
+                                              </svg>
+                                              Add Level
+                                            </button>
+                                          )}
                                         </div>
-                                      )}
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            )}
-
-                            {canEditAbilities && (
-                              <>
-                                {showNewSummonAbility === a.id ? (
-                                  <form onSubmit={(e) => { handleCreateSummonAbility(a.id, e); setShowNewSummonAbility(null) }} className="card !p-4 space-y-3 border-primary/20">
-                                    <h5 className="text-xs font-semibold text-primary">New Ability for {a.name}</h5>
-                                    <div>
-                                      <label className="text-[0.65rem] text-muted">Name</label>
-                                      <input className="input-field text-xs" value={newAbility.name} onChange={e => setNewAbility(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Bite" />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <div>
-                                        <label className="text-[0.65rem] text-muted">Mana Cost</label>
-                                        <NumericInput className="input-field text-xs" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder="0" />
                                       </div>
-                                      <div>
-                                        <label className="text-[0.65rem] text-muted">Range</label>
-                                        <input className="input-field text-xs" value={newAbility.range} onChange={e => setNewAbility(p => ({ ...p, range: e.target.value }))} placeholder="melee" />
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <label className="text-[0.65rem] text-muted">Damage</label>
-                                      <input className="input-field text-xs" value={newAbility.damage} onChange={e => setNewAbility(p => ({ ...p, damage: e.target.value }))} placeholder="1d6" />
-                                    </div>
-                                    <div>
-                                      <label className="text-[0.65rem] text-muted">Description</label>
-                                      <textarea className="input-field resize-none text-xs" rows={2} value={newAbility.description} onChange={e => setNewAbility(p => ({ ...p, description: e.target.value }))} />
-                                    </div>
-                                    <div>
-                                      <label className="text-[0.65rem] text-muted">Notes</label>
-                                      <textarea className="input-field resize-none text-xs" rows={1} value={newAbility.notes} onChange={e => setNewAbility(p => ({ ...p, notes: e.target.value }))} />
-                                    </div>
-                                    {abilityError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-2 py-1 text-[0.65rem] text-danger">{abilityError}</div>}
-                                    <div className="flex gap-2 justify-end">
-                                      <button type="button" onClick={() => { setShowNewSummonAbility(null); resetNewAbility() }} className="btn-ghost text-xs">Cancel</button>
-                                      <button type="submit" disabled={abilitySaving || !newAbility.name.trim()} className="btn-primary text-xs">{abilitySaving ? 'Creating...' : 'Create'}</button>
-                                    </div>
-                                  </form>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => { setShowNewSummonAbility(a.id); setNewAbility({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '', level: '', hpCurrent: '', hpMax: '' }) }}
-                                    className="btn-ghost text-xs"
-                                  >
-                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
-                                    </svg>
-                                    Add Ability
-                                  </button>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        )}
+                                    )}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
 
-                        {/* Resistances tab */}
-                        {currentSummonTab === 'resistances' && (
-                          <div className="space-y-3">
-                            <ResistanceTab
-                              resistances={buildSummonResistances(a)}
-                              permissions={permissions}
-                              onSaveComponent={async (componentId, value) => {
-                                try {
-                                  await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}/summon-resistance-components/${componentId}`, { value: value.toString() })
-                                } catch {}
-                              }}
-                              onSaveManual={async (resistanceId, value) => {
-                                try {
-                                  await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}/summon-resistances/${resistanceId}`, { value: value.toString() })
-                                } catch {}
-                              }}
-                              sheetResistanceValues={summonResistanceValueMap(a)}
-                              templateAttributes={templateAttributes}
-                              disableAttributeModifiers={disableAttributeModifiers}
-                            />
-                          </div>
-                        )}
+                          {canEditAbilities && (
+                            <>
+                              {showNewSummonAbility === a.id ? (
+                                <form onSubmit={(e) => { handleCreateSummonAbility(a.id, e); setShowNewSummonAbility(null) }} className="card !p-4 space-y-3 border-primary/20">
+                                  <h5 className="text-xs font-semibold text-primary">New Ability for {a.name}</h5>
+                                  <div>
+                                    <label className="text-[0.65rem] text-muted">Name</label>
+                                    <input className="input-field text-xs" value={newAbility.name} onChange={e => setNewAbility(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Bite" />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <label className="text-[0.65rem] text-muted">Mana Cost</label>
+                                      <NumericInput className="input-field text-xs" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder="0" />
+                                    </div>
+                                    <div>
+                                      <label className="text-[0.65rem] text-muted">Range</label>
+                                      <input className="input-field text-xs" value={newAbility.range} onChange={e => setNewAbility(p => ({ ...p, range: e.target.value }))} placeholder="melee" />
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label className="text-[0.65rem] text-muted">Damage</label>
+                                    <input className="input-field text-xs" value={newAbility.damage} onChange={e => setNewAbility(p => ({ ...p, damage: e.target.value }))} placeholder="1d6" />
+                                  </div>
+                                  <div>
+                                    <label className="text-[0.65rem] text-muted">Description</label>
+                                    <textarea className="input-field resize-none text-xs" rows={2} value={newAbility.description} onChange={e => setNewAbility(p => ({ ...p, description: e.target.value }))} />
+                                  </div>
+                                  <div>
+                                    <label className="text-[0.65rem] text-muted">Notes</label>
+                                    <textarea className="input-field resize-none text-xs" rows={1} value={newAbility.notes} onChange={e => setNewAbility(p => ({ ...p, notes: e.target.value }))} />
+                                  </div>
+                                  {abilityError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-2 py-1 text-[0.65rem] text-danger">{abilityError}</div>}
+                                  <div className="flex gap-2 justify-end">
+                                    <button type="button" onClick={() => { setShowNewSummonAbility(null); resetNewAbility() }} className="btn-ghost text-xs">Cancel</button>
+                                    <button type="submit" disabled={abilitySaving || !newAbility.name.trim()} className="btn-primary text-xs">{abilitySaving ? 'Creating...' : 'Create'}</button>
+                                  </div>
+                                </form>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => { setShowNewSummonAbility(a.id); setNewAbility({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '', level: '', hpCurrent: '', hpMax: '' }) }}
+                                  className="btn-ghost text-xs"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
+                                  </svg>
+                                  Add Ability
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

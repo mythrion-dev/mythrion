@@ -180,6 +180,15 @@ export class CharacterSheetController {
     return this.sheetService.addSummonSkill(abilityId, name, manualValue ?? 0, req.user.sub)
   }
 
+  @Patch(':id/abilities/:abilityId/summon-skills/:summonSkillId')
+  updateSummonSkill(
+    @Req() req: AuthenticatedRequest,
+    @Param('summonSkillId') summonSkillId: string,
+    @Body() dto: { name?: string; manualValue?: number },
+  ) {
+    return this.sheetService.updateSummonSkill(summonSkillId, req.user.sub, dto)
+  }
+
   @Delete(':id/abilities/:abilityId/summon-skills/:summonSkillId')
   removeSummonSkill(@Req() req: AuthenticatedRequest, @Param('summonSkillId') summonSkillId: string) {
     return this.sheetService.removeSummonSkill(summonSkillId, req.user.sub)

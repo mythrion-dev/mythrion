@@ -932,6 +932,24 @@ export class CharacterSheetService {
     return result
   }
 
+  async updateSummonSkill(summonSkillId: string, userId: string, dto: { name?: string; manualValue?: number }) {
+    const ss = await this.prisma.summonSkill.findUnique({
+      where: { id: summonSkillId },
+      include: { ability: true },
+    })
+    if (!ss) throw new NotFoundException('Summon skill not found')
+    await this.requireOwnership(ss.ability.sheetId, userId)
+    const result = await this.prisma.summonSkill.update({
+      where: { id: summonSkillId },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.manualValue !== undefined ? { manualValue: dto.manualValue } : {}),
+      },
+    })
+    await this.invalidateCache(ss.ability.sheetId).catch(() => {})
+    return result
+  }
+
   async removeSummonSkill(summonSkillId: string, userId: string) {
     const ss = await this.prisma.summonSkill.findUnique({
       where: { id: summonSkillId },
