@@ -232,11 +232,6 @@ export type CharacterAbilityLevel = Prisma.CharacterAbilityLevelModel
  */
 export type SummonSkill = Prisma.SummonSkillModel
 /**
- * Model SummonSkillProfileValue
- * 
- */
-export type SummonSkillProfileValue = Prisma.SummonSkillProfileValueModel
-/**
  * Model SummonAttribute
  * 
  */
@@ -247,25 +242,10 @@ export type SummonAttribute = Prisma.SummonAttributeModel
  */
 export type SummonArmorClassValue = Prisma.SummonArmorClassValueModel
 /**
- * Model SummonArmorClassAttributeValue
- * 
- */
-export type SummonArmorClassAttributeValue = Prisma.SummonArmorClassAttributeValueModel
-/**
  * Model SummonHealth
  * 
  */
 export type SummonHealth = Prisma.SummonHealthModel
-/**
- * Model SummonResistanceValue
- * 
- */
-export type SummonResistanceValue = Prisma.SummonResistanceValueModel
-/**
- * Model SummonResistanceComponentValue
- * 
- */
-export type SummonResistanceComponentValue = Prisma.SummonResistanceComponentValueModel
 /**
  * Model CharacterInventoryItem
  * 

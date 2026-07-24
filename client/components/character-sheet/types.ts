@@ -44,19 +44,12 @@ export interface SectionEntry { id: string; sheetId: string; sectionId: string; 
 
 export interface AbilityLevel { id: string; abilityId: string; level: string; manaCost: number | null; range: string | null; description: string | null; notes: string | null; damage: string | null }
 export interface SummonAttribute { id: string; abilityId: string; attributeId: string; value: string }
-export interface SummonAcValue { id: string; abilityId: string; fieldId: string; value: string }
-export interface SummonAcAttributeValue { id: string; abilityId: string; acAttributeModifierId: string; selectedAttributeId: string | null; selectedAttribute: { id: string; key: string; name: string } | null }
+export interface SummonAcValue { id: string; abilityId: string; value: string }
 export interface SummonHealth { id: string; abilityId: string; current: number | null; maximum: number | null; notes: string | null }
-export interface SummonResistanceValue { id: string; abilityId: string; resistanceId: string; manualValue: string | null }
-export interface SummonResistanceComponentValue { id: string; abilityId: string; componentId: string; value: string }
 
 export interface SummonSkillData {
-  id: string; abilityId: string; skillId: string; selectedAttributeId: string | null
-  selectedAttribute: { id: string; key: string; name: string } | null
-  skill: { id: string; name: string; description: string | null; attributeId: string | null; allowedAttributeIds: string[]; defaultAttributeId: string | null; attribute: { id: string; key: string; name: string } | null; defaultAttribute: { id: string; key: string; name: string } | null }
-  profileValues: SummonSkillProfileValueData[]
+  id: string; abilityId: string; name: string; manualValue: number
 }
-export interface SummonSkillProfileValueData { id: string; summonSkillId: string; profileId: string; optionId: string | null; profile: { id: string; name: string; targetMode?: string; targetSkillIds?: string[] }; option: { id: string; label: string; value: number } | null }
 
 export interface Ability {
   id: string; name: string; type: string; description: string | null; notes: string | null; order: number
@@ -64,11 +57,8 @@ export interface Ability {
   levels: AbilityLevel[]
   summonAttributes: SummonAttribute[]
   summonAcValues: SummonAcValue[]
-  summonAcAttributeValues?: SummonAcAttributeValue[]
   summonHealth: SummonHealth | null
   summonSkills?: SummonSkillData[]
-  summonResistanceValues?: SummonResistanceValue[]
-  summonResistanceComponentValues?: SummonResistanceComponentValue[]
   childAbilities?: Ability[]
 }
 export interface InventoryItem { id: string; name: string; weight: number | null; cost: string | null; description: string | null; order: number }
@@ -116,7 +106,6 @@ export interface SheetPermissions {
 }
 
 export type Tab = string
-export type SummonTab = 'stats' | 'skills' | 'abilities' | 'resistances'
 export type AcResultMap = Record<string, { total: number; name: string }>
 
 export interface ResistanceComponentDef {

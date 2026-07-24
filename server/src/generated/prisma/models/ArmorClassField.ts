@@ -258,7 +258,6 @@ export type ArmorClassFieldWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"ArmorClassField"> | Date | string
   armorClass?: Prisma.XOR<Prisma.TemplateArmorClassScalarRelationFilter, Prisma.TemplateArmorClassWhereInput>
   sheetValues?: Prisma.CharacterSheetArmorClassValueListRelationFilter
-  summonAcValues?: Prisma.SummonArmorClassValueListRelationFilter
 }
 
 export type ArmorClassFieldOrderByWithRelationInput = {
@@ -274,7 +273,6 @@ export type ArmorClassFieldOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   armorClass?: Prisma.TemplateArmorClassOrderByWithRelationInput
   sheetValues?: Prisma.CharacterSheetArmorClassValueOrderByRelationAggregateInput
-  summonAcValues?: Prisma.SummonArmorClassValueOrderByRelationAggregateInput
 }
 
 export type ArmorClassFieldWhereUniqueInput = Prisma.AtLeast<{
@@ -294,7 +292,6 @@ export type ArmorClassFieldWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"ArmorClassField"> | Date | string
   armorClass?: Prisma.XOR<Prisma.TemplateArmorClassScalarRelationFilter, Prisma.TemplateArmorClassWhereInput>
   sheetValues?: Prisma.CharacterSheetArmorClassValueListRelationFilter
-  summonAcValues?: Prisma.SummonArmorClassValueListRelationFilter
 }, "id" | "armorClassId_key">
 
 export type ArmorClassFieldOrderByWithAggregationInput = {
@@ -343,7 +340,6 @@ export type ArmorClassFieldCreateInput = {
   updatedAt?: Date | string
   armorClass: Prisma.TemplateArmorClassCreateNestedOneWithoutFieldsInput
   sheetValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutFieldInput
-  summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutFieldInput
 }
 
 export type ArmorClassFieldUncheckedCreateInput = {
@@ -358,7 +354,6 @@ export type ArmorClassFieldUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sheetValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutFieldInput
-  summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutFieldInput
 }
 
 export type ArmorClassFieldUpdateInput = {
@@ -373,7 +368,6 @@ export type ArmorClassFieldUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   armorClass?: Prisma.TemplateArmorClassUpdateOneRequiredWithoutFieldsNestedInput
   sheetValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutFieldNestedInput
-  summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutFieldNestedInput
 }
 
 export type ArmorClassFieldUncheckedUpdateInput = {
@@ -388,7 +382,6 @@ export type ArmorClassFieldUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheetValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutFieldNestedInput
-  summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutFieldNestedInput
 }
 
 export type ArmorClassFieldCreateManyInput = {
@@ -552,20 +545,6 @@ export type ArmorClassFieldUpdateOneRequiredWithoutSheetValuesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ArmorClassFieldUpdateToOneWithWhereWithoutSheetValuesInput, Prisma.ArmorClassFieldUpdateWithoutSheetValuesInput>, Prisma.ArmorClassFieldUncheckedUpdateWithoutSheetValuesInput>
 }
 
-export type ArmorClassFieldCreateNestedOneWithoutSummonAcValuesInput = {
-  create?: Prisma.XOR<Prisma.ArmorClassFieldCreateWithoutSummonAcValuesInput, Prisma.ArmorClassFieldUncheckedCreateWithoutSummonAcValuesInput>
-  connectOrCreate?: Prisma.ArmorClassFieldCreateOrConnectWithoutSummonAcValuesInput
-  connect?: Prisma.ArmorClassFieldWhereUniqueInput
-}
-
-export type ArmorClassFieldUpdateOneRequiredWithoutSummonAcValuesNestedInput = {
-  create?: Prisma.XOR<Prisma.ArmorClassFieldCreateWithoutSummonAcValuesInput, Prisma.ArmorClassFieldUncheckedCreateWithoutSummonAcValuesInput>
-  connectOrCreate?: Prisma.ArmorClassFieldCreateOrConnectWithoutSummonAcValuesInput
-  upsert?: Prisma.ArmorClassFieldUpsertWithoutSummonAcValuesInput
-  connect?: Prisma.ArmorClassFieldWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.ArmorClassFieldUpdateToOneWithWhereWithoutSummonAcValuesInput, Prisma.ArmorClassFieldUpdateWithoutSummonAcValuesInput>, Prisma.ArmorClassFieldUncheckedUpdateWithoutSummonAcValuesInput>
-}
-
 export type ArmorClassFieldCreateWithoutArmorClassInput = {
   id?: string
   name: string
@@ -577,7 +556,6 @@ export type ArmorClassFieldCreateWithoutArmorClassInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sheetValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutFieldInput
-  summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutFieldInput
 }
 
 export type ArmorClassFieldUncheckedCreateWithoutArmorClassInput = {
@@ -591,7 +569,6 @@ export type ArmorClassFieldUncheckedCreateWithoutArmorClassInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sheetValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutFieldInput
-  summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutFieldInput
 }
 
 export type ArmorClassFieldCreateOrConnectWithoutArmorClassInput = {
@@ -647,7 +624,6 @@ export type ArmorClassFieldCreateWithoutSheetValuesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   armorClass: Prisma.TemplateArmorClassCreateNestedOneWithoutFieldsInput
-  summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutFieldInput
 }
 
 export type ArmorClassFieldUncheckedCreateWithoutSheetValuesInput = {
@@ -661,7 +637,6 @@ export type ArmorClassFieldUncheckedCreateWithoutSheetValuesInput = {
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutFieldInput
 }
 
 export type ArmorClassFieldCreateOrConnectWithoutSheetValuesInput = {
@@ -691,7 +666,6 @@ export type ArmorClassFieldUpdateWithoutSheetValuesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   armorClass?: Prisma.TemplateArmorClassUpdateOneRequiredWithoutFieldsNestedInput
-  summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutFieldNestedInput
 }
 
 export type ArmorClassFieldUncheckedUpdateWithoutSheetValuesInput = {
@@ -705,79 +679,6 @@ export type ArmorClassFieldUncheckedUpdateWithoutSheetValuesInput = {
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutFieldNestedInput
-}
-
-export type ArmorClassFieldCreateWithoutSummonAcValuesInput = {
-  id?: string
-  name: string
-  key: string
-  defaultValue?: string
-  editableByPlayer?: boolean
-  description?: string | null
-  order?: number
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  armorClass: Prisma.TemplateArmorClassCreateNestedOneWithoutFieldsInput
-  sheetValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutFieldInput
-}
-
-export type ArmorClassFieldUncheckedCreateWithoutSummonAcValuesInput = {
-  id?: string
-  armorClassId: string
-  name: string
-  key: string
-  defaultValue?: string
-  editableByPlayer?: boolean
-  description?: string | null
-  order?: number
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  sheetValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutFieldInput
-}
-
-export type ArmorClassFieldCreateOrConnectWithoutSummonAcValuesInput = {
-  where: Prisma.ArmorClassFieldWhereUniqueInput
-  create: Prisma.XOR<Prisma.ArmorClassFieldCreateWithoutSummonAcValuesInput, Prisma.ArmorClassFieldUncheckedCreateWithoutSummonAcValuesInput>
-}
-
-export type ArmorClassFieldUpsertWithoutSummonAcValuesInput = {
-  update: Prisma.XOR<Prisma.ArmorClassFieldUpdateWithoutSummonAcValuesInput, Prisma.ArmorClassFieldUncheckedUpdateWithoutSummonAcValuesInput>
-  create: Prisma.XOR<Prisma.ArmorClassFieldCreateWithoutSummonAcValuesInput, Prisma.ArmorClassFieldUncheckedCreateWithoutSummonAcValuesInput>
-  where?: Prisma.ArmorClassFieldWhereInput
-}
-
-export type ArmorClassFieldUpdateToOneWithWhereWithoutSummonAcValuesInput = {
-  where?: Prisma.ArmorClassFieldWhereInput
-  data: Prisma.XOR<Prisma.ArmorClassFieldUpdateWithoutSummonAcValuesInput, Prisma.ArmorClassFieldUncheckedUpdateWithoutSummonAcValuesInput>
-}
-
-export type ArmorClassFieldUpdateWithoutSummonAcValuesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  key?: Prisma.StringFieldUpdateOperationsInput | string
-  defaultValue?: Prisma.StringFieldUpdateOperationsInput | string
-  editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  order?: Prisma.IntFieldUpdateOperationsInput | number
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  armorClass?: Prisma.TemplateArmorClassUpdateOneRequiredWithoutFieldsNestedInput
-  sheetValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutFieldNestedInput
-}
-
-export type ArmorClassFieldUncheckedUpdateWithoutSummonAcValuesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  armorClassId?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  key?: Prisma.StringFieldUpdateOperationsInput | string
-  defaultValue?: Prisma.StringFieldUpdateOperationsInput | string
-  editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  order?: Prisma.IntFieldUpdateOperationsInput | number
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  sheetValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutFieldNestedInput
 }
 
 export type ArmorClassFieldCreateManyArmorClassInput = {
@@ -803,7 +704,6 @@ export type ArmorClassFieldUpdateWithoutArmorClassInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheetValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutFieldNestedInput
-  summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutFieldNestedInput
 }
 
 export type ArmorClassFieldUncheckedUpdateWithoutArmorClassInput = {
@@ -817,7 +717,6 @@ export type ArmorClassFieldUncheckedUpdateWithoutArmorClassInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheetValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutFieldNestedInput
-  summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutFieldNestedInput
 }
 
 export type ArmorClassFieldUncheckedUpdateManyWithoutArmorClassInput = {
@@ -839,12 +738,10 @@ export type ArmorClassFieldUncheckedUpdateManyWithoutArmorClassInput = {
 
 export type ArmorClassFieldCountOutputType = {
   sheetValues: number
-  summonAcValues: number
 }
 
 export type ArmorClassFieldCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sheetValues?: boolean | ArmorClassFieldCountOutputTypeCountSheetValuesArgs
-  summonAcValues?: boolean | ArmorClassFieldCountOutputTypeCountSummonAcValuesArgs
 }
 
 /**
@@ -864,13 +761,6 @@ export type ArmorClassFieldCountOutputTypeCountSheetValuesArgs<ExtArgs extends r
   where?: Prisma.CharacterSheetArmorClassValueWhereInput
 }
 
-/**
- * ArmorClassFieldCountOutputType without action
- */
-export type ArmorClassFieldCountOutputTypeCountSummonAcValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.SummonArmorClassValueWhereInput
-}
-
 
 export type ArmorClassFieldSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -885,7 +775,6 @@ export type ArmorClassFieldSelect<ExtArgs extends runtime.Types.Extensions.Inter
   updatedAt?: boolean
   armorClass?: boolean | Prisma.TemplateArmorClassDefaultArgs<ExtArgs>
   sheetValues?: boolean | Prisma.ArmorClassField$sheetValuesArgs<ExtArgs>
-  summonAcValues?: boolean | Prisma.ArmorClassField$summonAcValuesArgs<ExtArgs>
   _count?: boolean | Prisma.ArmorClassFieldCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["armorClassField"]>
 
@@ -934,7 +823,6 @@ export type ArmorClassFieldOmit<ExtArgs extends runtime.Types.Extensions.Interna
 export type ArmorClassFieldInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   armorClass?: boolean | Prisma.TemplateArmorClassDefaultArgs<ExtArgs>
   sheetValues?: boolean | Prisma.ArmorClassField$sheetValuesArgs<ExtArgs>
-  summonAcValues?: boolean | Prisma.ArmorClassField$summonAcValuesArgs<ExtArgs>
   _count?: boolean | Prisma.ArmorClassFieldCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ArmorClassFieldIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -949,7 +837,6 @@ export type $ArmorClassFieldPayload<ExtArgs extends runtime.Types.Extensions.Int
   objects: {
     armorClass: Prisma.$TemplateArmorClassPayload<ExtArgs>
     sheetValues: Prisma.$CharacterSheetArmorClassValuePayload<ExtArgs>[]
-    summonAcValues: Prisma.$SummonArmorClassValuePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1358,7 +1245,6 @@ export interface Prisma__ArmorClassFieldClient<T, Null = never, ExtArgs extends 
   readonly [Symbol.toStringTag]: "PrismaPromise"
   armorClass<T extends Prisma.TemplateArmorClassDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateArmorClassDefaultArgs<ExtArgs>>): Prisma.Prisma__TemplateArmorClassClient<runtime.Types.Result.GetResult<Prisma.$TemplateArmorClassPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   sheetValues<T extends Prisma.ArmorClassField$sheetValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ArmorClassField$sheetValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetArmorClassValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  summonAcValues<T extends Prisma.ArmorClassField$summonAcValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ArmorClassField$summonAcValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummonArmorClassValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1820,30 +1706,6 @@ export type ArmorClassField$sheetValuesArgs<ExtArgs extends runtime.Types.Extens
   take?: number
   skip?: number
   distinct?: Prisma.CharacterSheetArmorClassValueScalarFieldEnum | Prisma.CharacterSheetArmorClassValueScalarFieldEnum[]
-}
-
-/**
- * ArmorClassField.summonAcValues
- */
-export type ArmorClassField$summonAcValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the SummonArmorClassValue
-   */
-  select?: Prisma.SummonArmorClassValueSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the SummonArmorClassValue
-   */
-  omit?: Prisma.SummonArmorClassValueOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SummonArmorClassValueInclude<ExtArgs> | null
-  where?: Prisma.SummonArmorClassValueWhereInput
-  orderBy?: Prisma.SummonArmorClassValueOrderByWithRelationInput | Prisma.SummonArmorClassValueOrderByWithRelationInput[]
-  cursor?: Prisma.SummonArmorClassValueWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.SummonArmorClassValueScalarFieldEnum | Prisma.SummonArmorClassValueScalarFieldEnum[]
 }
 
 /**

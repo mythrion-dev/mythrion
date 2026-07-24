@@ -242,7 +242,6 @@ export type ResistanceComponentWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"ResistanceComponent"> | Date | string
   resistance?: Prisma.XOR<Prisma.TemplateResistanceScalarRelationFilter, Prisma.TemplateResistanceWhereInput>
   sheetValues?: Prisma.CharacterSheetResistanceComponentValueListRelationFilter
-  summonValues?: Prisma.SummonResistanceComponentValueListRelationFilter
 }
 
 export type ResistanceComponentOrderByWithRelationInput = {
@@ -256,7 +255,6 @@ export type ResistanceComponentOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   resistance?: Prisma.TemplateResistanceOrderByWithRelationInput
   sheetValues?: Prisma.CharacterSheetResistanceComponentValueOrderByRelationAggregateInput
-  summonValues?: Prisma.SummonResistanceComponentValueOrderByRelationAggregateInput
 }
 
 export type ResistanceComponentWhereUniqueInput = Prisma.AtLeast<{
@@ -273,7 +271,6 @@ export type ResistanceComponentWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"ResistanceComponent"> | Date | string
   resistance?: Prisma.XOR<Prisma.TemplateResistanceScalarRelationFilter, Prisma.TemplateResistanceWhereInput>
   sheetValues?: Prisma.CharacterSheetResistanceComponentValueListRelationFilter
-  summonValues?: Prisma.SummonResistanceComponentValueListRelationFilter
 }, "id">
 
 export type ResistanceComponentOrderByWithAggregationInput = {
@@ -316,7 +313,6 @@ export type ResistanceComponentCreateInput = {
   updatedAt?: Date | string
   resistance: Prisma.TemplateResistanceCreateNestedOneWithoutComponentsInput
   sheetValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutComponentInput
-  summonValues?: Prisma.SummonResistanceComponentValueCreateNestedManyWithoutComponentInput
 }
 
 export type ResistanceComponentUncheckedCreateInput = {
@@ -329,7 +325,6 @@ export type ResistanceComponentUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sheetValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutComponentInput
-  summonValues?: Prisma.SummonResistanceComponentValueUncheckedCreateNestedManyWithoutComponentInput
 }
 
 export type ResistanceComponentUpdateInput = {
@@ -342,7 +337,6 @@ export type ResistanceComponentUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resistance?: Prisma.TemplateResistanceUpdateOneRequiredWithoutComponentsNestedInput
   sheetValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutComponentNestedInput
-  summonValues?: Prisma.SummonResistanceComponentValueUpdateManyWithoutComponentNestedInput
 }
 
 export type ResistanceComponentUncheckedUpdateInput = {
@@ -355,7 +349,6 @@ export type ResistanceComponentUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheetValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutComponentNestedInput
-  summonValues?: Prisma.SummonResistanceComponentValueUncheckedUpdateManyWithoutComponentNestedInput
 }
 
 export type ResistanceComponentCreateManyInput = {
@@ -502,20 +495,6 @@ export type ResistanceComponentUpdateOneRequiredWithoutSheetValuesNestedInput = 
   update?: Prisma.XOR<Prisma.XOR<Prisma.ResistanceComponentUpdateToOneWithWhereWithoutSheetValuesInput, Prisma.ResistanceComponentUpdateWithoutSheetValuesInput>, Prisma.ResistanceComponentUncheckedUpdateWithoutSheetValuesInput>
 }
 
-export type ResistanceComponentCreateNestedOneWithoutSummonValuesInput = {
-  create?: Prisma.XOR<Prisma.ResistanceComponentCreateWithoutSummonValuesInput, Prisma.ResistanceComponentUncheckedCreateWithoutSummonValuesInput>
-  connectOrCreate?: Prisma.ResistanceComponentCreateOrConnectWithoutSummonValuesInput
-  connect?: Prisma.ResistanceComponentWhereUniqueInput
-}
-
-export type ResistanceComponentUpdateOneRequiredWithoutSummonValuesNestedInput = {
-  create?: Prisma.XOR<Prisma.ResistanceComponentCreateWithoutSummonValuesInput, Prisma.ResistanceComponentUncheckedCreateWithoutSummonValuesInput>
-  connectOrCreate?: Prisma.ResistanceComponentCreateOrConnectWithoutSummonValuesInput
-  upsert?: Prisma.ResistanceComponentUpsertWithoutSummonValuesInput
-  connect?: Prisma.ResistanceComponentWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.ResistanceComponentUpdateToOneWithWhereWithoutSummonValuesInput, Prisma.ResistanceComponentUpdateWithoutSummonValuesInput>, Prisma.ResistanceComponentUncheckedUpdateWithoutSummonValuesInput>
-}
-
 export type ResistanceComponentCreateWithoutResistanceInput = {
   id?: string
   name: string
@@ -525,7 +504,6 @@ export type ResistanceComponentCreateWithoutResistanceInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sheetValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutComponentInput
-  summonValues?: Prisma.SummonResistanceComponentValueCreateNestedManyWithoutComponentInput
 }
 
 export type ResistanceComponentUncheckedCreateWithoutResistanceInput = {
@@ -537,7 +515,6 @@ export type ResistanceComponentUncheckedCreateWithoutResistanceInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sheetValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutComponentInput
-  summonValues?: Prisma.SummonResistanceComponentValueUncheckedCreateNestedManyWithoutComponentInput
 }
 
 export type ResistanceComponentCreateOrConnectWithoutResistanceInput = {
@@ -589,7 +566,6 @@ export type ResistanceComponentCreateWithoutSheetValuesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   resistance: Prisma.TemplateResistanceCreateNestedOneWithoutComponentsInput
-  summonValues?: Prisma.SummonResistanceComponentValueCreateNestedManyWithoutComponentInput
 }
 
 export type ResistanceComponentUncheckedCreateWithoutSheetValuesInput = {
@@ -601,7 +577,6 @@ export type ResistanceComponentUncheckedCreateWithoutSheetValuesInput = {
   order?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  summonValues?: Prisma.SummonResistanceComponentValueUncheckedCreateNestedManyWithoutComponentInput
 }
 
 export type ResistanceComponentCreateOrConnectWithoutSheetValuesInput = {
@@ -629,7 +604,6 @@ export type ResistanceComponentUpdateWithoutSheetValuesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resistance?: Prisma.TemplateResistanceUpdateOneRequiredWithoutComponentsNestedInput
-  summonValues?: Prisma.SummonResistanceComponentValueUpdateManyWithoutComponentNestedInput
 }
 
 export type ResistanceComponentUncheckedUpdateWithoutSheetValuesInput = {
@@ -641,71 +615,6 @@ export type ResistanceComponentUncheckedUpdateWithoutSheetValuesInput = {
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  summonValues?: Prisma.SummonResistanceComponentValueUncheckedUpdateManyWithoutComponentNestedInput
-}
-
-export type ResistanceComponentCreateWithoutSummonValuesInput = {
-  id?: string
-  name: string
-  editableByPlayer?: boolean
-  defaultValue?: string
-  order?: number
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  resistance: Prisma.TemplateResistanceCreateNestedOneWithoutComponentsInput
-  sheetValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutComponentInput
-}
-
-export type ResistanceComponentUncheckedCreateWithoutSummonValuesInput = {
-  id?: string
-  resistanceId: string
-  name: string
-  editableByPlayer?: boolean
-  defaultValue?: string
-  order?: number
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  sheetValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutComponentInput
-}
-
-export type ResistanceComponentCreateOrConnectWithoutSummonValuesInput = {
-  where: Prisma.ResistanceComponentWhereUniqueInput
-  create: Prisma.XOR<Prisma.ResistanceComponentCreateWithoutSummonValuesInput, Prisma.ResistanceComponentUncheckedCreateWithoutSummonValuesInput>
-}
-
-export type ResistanceComponentUpsertWithoutSummonValuesInput = {
-  update: Prisma.XOR<Prisma.ResistanceComponentUpdateWithoutSummonValuesInput, Prisma.ResistanceComponentUncheckedUpdateWithoutSummonValuesInput>
-  create: Prisma.XOR<Prisma.ResistanceComponentCreateWithoutSummonValuesInput, Prisma.ResistanceComponentUncheckedCreateWithoutSummonValuesInput>
-  where?: Prisma.ResistanceComponentWhereInput
-}
-
-export type ResistanceComponentUpdateToOneWithWhereWithoutSummonValuesInput = {
-  where?: Prisma.ResistanceComponentWhereInput
-  data: Prisma.XOR<Prisma.ResistanceComponentUpdateWithoutSummonValuesInput, Prisma.ResistanceComponentUncheckedUpdateWithoutSummonValuesInput>
-}
-
-export type ResistanceComponentUpdateWithoutSummonValuesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  defaultValue?: Prisma.StringFieldUpdateOperationsInput | string
-  order?: Prisma.IntFieldUpdateOperationsInput | number
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  resistance?: Prisma.TemplateResistanceUpdateOneRequiredWithoutComponentsNestedInput
-  sheetValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutComponentNestedInput
-}
-
-export type ResistanceComponentUncheckedUpdateWithoutSummonValuesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  resistanceId?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  editableByPlayer?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  defaultValue?: Prisma.StringFieldUpdateOperationsInput | string
-  order?: Prisma.IntFieldUpdateOperationsInput | number
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  sheetValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutComponentNestedInput
 }
 
 export type ResistanceComponentCreateManyResistanceInput = {
@@ -727,7 +636,6 @@ export type ResistanceComponentUpdateWithoutResistanceInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheetValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutComponentNestedInput
-  summonValues?: Prisma.SummonResistanceComponentValueUpdateManyWithoutComponentNestedInput
 }
 
 export type ResistanceComponentUncheckedUpdateWithoutResistanceInput = {
@@ -739,7 +647,6 @@ export type ResistanceComponentUncheckedUpdateWithoutResistanceInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sheetValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutComponentNestedInput
-  summonValues?: Prisma.SummonResistanceComponentValueUncheckedUpdateManyWithoutComponentNestedInput
 }
 
 export type ResistanceComponentUncheckedUpdateManyWithoutResistanceInput = {
@@ -759,12 +666,10 @@ export type ResistanceComponentUncheckedUpdateManyWithoutResistanceInput = {
 
 export type ResistanceComponentCountOutputType = {
   sheetValues: number
-  summonValues: number
 }
 
 export type ResistanceComponentCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sheetValues?: boolean | ResistanceComponentCountOutputTypeCountSheetValuesArgs
-  summonValues?: boolean | ResistanceComponentCountOutputTypeCountSummonValuesArgs
 }
 
 /**
@@ -784,13 +689,6 @@ export type ResistanceComponentCountOutputTypeCountSheetValuesArgs<ExtArgs exten
   where?: Prisma.CharacterSheetResistanceComponentValueWhereInput
 }
 
-/**
- * ResistanceComponentCountOutputType without action
- */
-export type ResistanceComponentCountOutputTypeCountSummonValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.SummonResistanceComponentValueWhereInput
-}
-
 
 export type ResistanceComponentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -803,7 +701,6 @@ export type ResistanceComponentSelect<ExtArgs extends runtime.Types.Extensions.I
   updatedAt?: boolean
   resistance?: boolean | Prisma.TemplateResistanceDefaultArgs<ExtArgs>
   sheetValues?: boolean | Prisma.ResistanceComponent$sheetValuesArgs<ExtArgs>
-  summonValues?: boolean | Prisma.ResistanceComponent$summonValuesArgs<ExtArgs>
   _count?: boolean | Prisma.ResistanceComponentCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["resistanceComponent"]>
 
@@ -846,7 +743,6 @@ export type ResistanceComponentOmit<ExtArgs extends runtime.Types.Extensions.Int
 export type ResistanceComponentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   resistance?: boolean | Prisma.TemplateResistanceDefaultArgs<ExtArgs>
   sheetValues?: boolean | Prisma.ResistanceComponent$sheetValuesArgs<ExtArgs>
-  summonValues?: boolean | Prisma.ResistanceComponent$summonValuesArgs<ExtArgs>
   _count?: boolean | Prisma.ResistanceComponentCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ResistanceComponentIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -861,7 +757,6 @@ export type $ResistanceComponentPayload<ExtArgs extends runtime.Types.Extensions
   objects: {
     resistance: Prisma.$TemplateResistancePayload<ExtArgs>
     sheetValues: Prisma.$CharacterSheetResistanceComponentValuePayload<ExtArgs>[]
-    summonValues: Prisma.$SummonResistanceComponentValuePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1268,7 +1163,6 @@ export interface Prisma__ResistanceComponentClient<T, Null = never, ExtArgs exte
   readonly [Symbol.toStringTag]: "PrismaPromise"
   resistance<T extends Prisma.TemplateResistanceDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateResistanceDefaultArgs<ExtArgs>>): Prisma.Prisma__TemplateResistanceClient<runtime.Types.Result.GetResult<Prisma.$TemplateResistancePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   sheetValues<T extends Prisma.ResistanceComponent$sheetValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ResistanceComponent$sheetValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetResistanceComponentValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  summonValues<T extends Prisma.ResistanceComponent$summonValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ResistanceComponent$summonValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummonResistanceComponentValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1728,30 +1622,6 @@ export type ResistanceComponent$sheetValuesArgs<ExtArgs extends runtime.Types.Ex
   take?: number
   skip?: number
   distinct?: Prisma.CharacterSheetResistanceComponentValueScalarFieldEnum | Prisma.CharacterSheetResistanceComponentValueScalarFieldEnum[]
-}
-
-/**
- * ResistanceComponent.summonValues
- */
-export type ResistanceComponent$summonValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the SummonResistanceComponentValue
-   */
-  select?: Prisma.SummonResistanceComponentValueSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the SummonResistanceComponentValue
-   */
-  omit?: Prisma.SummonResistanceComponentValueOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SummonResistanceComponentValueInclude<ExtArgs> | null
-  where?: Prisma.SummonResistanceComponentValueWhereInput
-  orderBy?: Prisma.SummonResistanceComponentValueOrderByWithRelationInput | Prisma.SummonResistanceComponentValueOrderByWithRelationInput[]
-  cursor?: Prisma.SummonResistanceComponentValueWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.SummonResistanceComponentValueScalarFieldEnum | Prisma.SummonResistanceComponentValueScalarFieldEnum[]
 }
 
 /**

@@ -135,11 +135,8 @@ describe('CharacterSheetService', () => {
       skillValues: [],
       skillProfileValues: [],
       acValues: [],
-      acAttributeValues: [],
       coreResourceValues: [],
       abilities: [],
-      resistanceValues: [],
-      resistanceComponentValues: [],
       inventoryItems: [],
       sectionEntries: [],
       story: null,
@@ -153,11 +150,8 @@ describe('CharacterSheetService', () => {
       skillValues: expect.anything(),
       skillProfileValues: expect.anything(),
       acValues: expect.anything(),
-      acAttributeValues: expect.anything(),
       coreResourceValues: expect.anything(),
       abilities: expect.anything(),
-      resistanceValues: expect.anything(),
-      resistanceComponentValues: expect.anything(),
       inventoryItems: expect.anything(),
       sectionEntries: expect.anything(),
       story: expect.anything(),
@@ -207,9 +201,6 @@ describe('CharacterSheetService', () => {
       prisma.characterSheetSkillProfileValue.upsert.mockResolvedValue({})
       prisma.characterSheetCoreResourceValue.upsert.mockResolvedValue({})
       prisma.characterSheetArmorClassValue.upsert.mockResolvedValue({})
-      prisma.characterSheetArmorClassAttributeValue.upsert.mockResolvedValue({})
-      prisma.characterSheetResistanceValue.upsert.mockResolvedValue({})
-      prisma.characterSheetResistanceComponentValue.upsert.mockResolvedValue({})
     })
 
     // Restore mocks to original defaults after core CRUD tests
@@ -588,9 +579,6 @@ describe('CharacterSheetService', () => {
         skillProfileValues: [{ skillId: 'skill-1', profileId: 'prof-1', optionId: 'opt-1' }],
         coreResourceValues: [{ coreResourceId: 'cr-1', current: 50, maximum: 100, notes: 'Half' }],
         acValues: [{ fieldId: 'ac-field-1', value: '15' }],
-        acAttributeValues: [{ acAttributeModifierId: 'ac-mod-1', selectedAttributeId: 'attr-2' }],
-        resistanceValues: [{ resistanceId: 'res-1', manualValue: '10' }],
-        resistanceComponentValues: [{ componentId: 'res-comp-1', value: '5' }],
       }
 
       it('should throw NotFoundException when sheet does not exist', async () => {
@@ -692,76 +680,6 @@ describe('CharacterSheetService', () => {
           where: { sheetId_fieldId: { sheetId, fieldId: 'ac-field-1' } },
           create: { sheetId, fieldId: 'ac-field-1', value: '15' },
           update: { value: '15' },
-        })
-      })
-
-      it('should upsert AC attribute values', async () => {
-        await service.update(sheetId, userId, { acAttributeValues: [{ acAttributeModifierId: 'ac-mod-1', selectedAttributeId: 'attr-2' }] })
-
-        expect(prisma.characterSheetArmorClassAttributeValue.upsert).toHaveBeenCalledWith({
-          where: { sheetId_acAttributeModifierId: { sheetId, acAttributeModifierId: 'ac-mod-1' } },
-          create: { sheetId, acAttributeModifierId: 'ac-mod-1', selectedAttributeId: 'attr-2' },
-          update: { selectedAttributeId: 'attr-2' },
-        })
-      })
-
-      it('should handle sheet-specific resistance values by updating existing component', async () => {
-        prisma.sheetResistance.findUnique.mockResolvedValue({ id: 'sheet-res-1', calculationType: 'MANUAL' })
-        prisma.sheetResistanceComponent.findFirst.mockResolvedValue({
-          id: 'sheet-res-comp-1', sheetResistanceId: 'sheet-res-1', name: 'Value', value: '0', order: 0,
-        })
-
-        await service.update(sheetId, userId, { resistanceValues: [{ resistanceId: 'sheet-res-1', manualValue: '15' }] })
-
-        expect(prisma.sheetResistanceComponent.update).toHaveBeenCalledWith({
-          where: { id: 'sheet-res-comp-1' },
-          data: { value: '15' },
-        })
-      })
-
-      it('should handle sheet-specific resistance values by creating component when none exists', async () => {
-        prisma.sheetResistance.findUnique.mockResolvedValue({ id: 'sheet-res-1', calculationType: 'MANUAL' })
-        prisma.sheetResistanceComponent.findFirst.mockResolvedValue(null)
-
-        await service.update(sheetId, userId, { resistanceValues: [{ resistanceId: 'sheet-res-1', manualValue: '15' }] })
-
-        expect(prisma.sheetResistanceComponent.create).toHaveBeenCalledWith({
-          data: { sheetResistanceId: 'sheet-res-1', name: 'Value', value: '15', order: 0 },
-        })
-      })
-
-      it('should handle template resistance values via upsert', async () => {
-        prisma.sheetResistance.findUnique.mockResolvedValue(null)
-
-        await service.update(sheetId, userId, { resistanceValues: [{ resistanceId: 'res-1', manualValue: '10' }] })
-
-        expect(prisma.characterSheetResistanceValue.upsert).toHaveBeenCalledWith({
-          where: { sheetId_resistanceId: { sheetId, resistanceId: 'res-1' } },
-          create: { sheetId, resistanceId: 'res-1', manualValue: '10' },
-          update: { manualValue: '10' },
-        })
-      })
-
-      it('should handle sheet-specific resistance component values by updating directly', async () => {
-        prisma.sheetResistanceComponent.findUnique.mockResolvedValue({ id: 'sheet-res-comp-1' })
-
-        await service.update(sheetId, userId, { resistanceComponentValues: [{ componentId: 'sheet-res-comp-1', value: '7' }] })
-
-        expect(prisma.sheetResistanceComponent.update).toHaveBeenCalledWith({
-          where: { id: 'sheet-res-comp-1' },
-          data: { value: '7' },
-        })
-      })
-
-      it('should handle template resistance component values via upsert', async () => {
-        prisma.sheetResistanceComponent.findUnique.mockResolvedValue(null)
-
-        await service.update(sheetId, userId, { resistanceComponentValues: [{ componentId: 'res-comp-1', value: '5' }] })
-
-        expect(prisma.characterSheetResistanceComponentValue.upsert).toHaveBeenCalledWith({
-          where: { sheetId_componentId: { sheetId, componentId: 'res-comp-1' } },
-          create: { sheetId, componentId: 'res-comp-1', value: '5' },
-          update: { value: '5' },
         })
       })
 
@@ -1820,28 +1738,42 @@ describe('CharacterSheetService', () => {
     })
 
     describe('addSummonSkill', () => {
-      it('adds a skill to a summon', async () => {
-        prisma.templateSkill.findUnique.mockResolvedValue({
-          id: 'tsk-1', name: 'Bite', templateId: 'tpl-1', defaultAttributeId: 'attr-str',
-        })
+      it('creates a free-form skill with name and manualValue', async () => {
+        prisma.characterAbility.findUnique.mockResolvedValue({ id: abilityId, sheetId, type: 'SUMMON' })
         prisma.summonSkill.create.mockResolvedValue({
-          id: 'ss-1', skillId: 'tsk-1', abilityId, selectedAttributeId: 'attr-str',
+          id: 'ss-1', name: 'Bite', manualValue: 5, abilityId,
         })
 
-        const result = await service.addSummonSkill(abilityId, 'tsk-1', userId)
+        const result = await service.addSummonSkill(abilityId, 'Bite', 5, userId)
 
-        expect(result.skillId).toBe('tsk-1')
+        expect(result.name).toBe('Bite')
+        expect(result.manualValue).toBe(5)
         expect(prisma.summonSkill.create).toHaveBeenCalledWith(
           expect.objectContaining({
-            data: expect.objectContaining({ selectedAttributeId: 'attr-str' }),
+            data: expect.objectContaining({
+              name: 'Bite',
+              manualValue: 5,
+              abilityId,
+            }),
           }),
         )
+      })
+
+      it('defaults manualValue to 0 when not provided', async () => {
+        prisma.characterAbility.findUnique.mockResolvedValue({ id: abilityId, sheetId, type: 'SUMMON' })
+        prisma.summonSkill.create.mockResolvedValue({
+          id: 'ss-2', name: 'Claw', manualValue: 0, abilityId,
+        })
+
+        const result = await service.addSummonSkill(abilityId, 'Claw', 0, userId)
+
+        expect(result.manualValue).toBe(0)
       })
 
       it('throws ForbiddenException when parent is not SUMMON type', async () => {
         prisma.characterAbility.findUnique.mockResolvedValue({ id: abilityId, sheetId: sheetId, type: 'CLASS' })
 
-        await expect(service.addSummonSkill(abilityId, 'tsk-1', userId))
+        await expect(service.addSummonSkill(abilityId, 'Bite', 5, userId))
           .rejects.toThrow('Skills can only be added to summons')
       })
     })
@@ -1865,42 +1797,11 @@ describe('CharacterSheetService', () => {
           .rejects.toThrow('not found')
       })
     })
-
-    describe('updateSummonSkillAttribute', () => {
-      it('updates the attribute of a summon skill', async () => {
-        prisma.summonSkill.findUnique.mockResolvedValue({
-          id: 'ss-1', abilityId, ability: { sheetId: sheetId },
-          skill: { allowedAttributeIds: ['attr-1', 'attr-dex'] },
-        })
-        prisma.summonSkill.update.mockResolvedValue({
-          id: 'ss-1', attributeId: 'attr-dex',
-        })
-
-        const result = await service.updateSummonSkillAttribute('ss-1', 'attr-dex', userId)
-
-        expect(result.attributeId).toBe('attr-dex')
-      })
-    })
-
-    describe('updateSummonSkillProfile', () => {
-      it('upserts a skill profile value for a summon', async () => {
-        prisma.summonSkill.findUnique.mockResolvedValue({
-          id: 'ss-1', abilityId, ability: { sheetId: sheetId },
-        })
-        prisma.summonSkillProfileValue.upsert.mockResolvedValue({
-          id: 'sspv-1', skillId: 'ss-1', profileId: 'prof-1', optionId: 'opt-1',
-        })
-
-        const result = await service.updateSummonSkillProfile('ss-1', 'prof-1', 'opt-1', userId)
-
-        expect(result.optionId).toBe('opt-1')
-      })
-    })
   })
 
   // ── Summon values ─────────────────────────────────────────────
 
-  describe('summon values (attribute, AC, health, resistances)', () => {
+  describe('summon values (attribute, AC, health)', () => {
     const userId = 'u1'
     const abilityId = 'ab-summon'
     const sheetId = 'sheet-sum'
@@ -1922,24 +1823,19 @@ describe('CharacterSheetService', () => {
     })
 
     describe('updateSummonAcValue', () => {
-      it('upserts a summon AC value', async () => {
-        prisma.summonArmorClassValue.upsert.mockResolvedValue({ id: 'sac-1', fieldId: 'ac-field-1', value: '12' })
+      it('upserts a summon AC value by abilityId', async () => {
+        prisma.summonArmorClassValue.upsert.mockResolvedValue({ id: 'sac-1', abilityId, value: '18' })
 
-        const result = await service.updateSummonAcValue(abilityId, 'ac-field-1', '12', userId)
+        const result = await service.updateSummonAcValue(abilityId, '18', userId)
 
-        expect(result.value).toBe('12')
-      })
-    })
-
-    describe('updateSummonAcAttributeValue', () => {
-      it('upserts a summon AC attribute value', async () => {
-        prisma.summonArmorClassAttributeValue.upsert.mockResolvedValue({
-          id: 'sacav-1', acAttributeModifierId: 'am-1', selectedAttributeId: 'attr-dex',
-        })
-
-        const result = await service.updateSummonAcAttributeValue(abilityId, 'am-1', 'attr-dex', userId)
-
-        expect(result.selectedAttributeId).toBe('attr-dex')
+        expect(result.value).toBe('18')
+        expect(prisma.summonArmorClassValue.upsert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { abilityId },
+            create: expect.objectContaining({ abilityId, value: '18' }),
+            update: expect.objectContaining({ value: '18' }),
+          }),
+        )
       })
     })
 
@@ -1950,26 +1846,6 @@ describe('CharacterSheetService', () => {
         const result = await service.updateSummonHealth(abilityId, userId, { current: 50, maximum: 50 })
 
         expect(result.current).toBe(50)
-      })
-    })
-
-    describe('updateSummonResistanceValue', () => {
-      it('upserts a summon resistance value', async () => {
-        prisma.summonResistanceValue.upsert.mockResolvedValue({ id: 'srv-1', resistanceId: 'res-1', manualValue: '12' })
-
-        const result = await service.updateSummonResistanceValue(abilityId, 'res-1', '12', userId)
-
-        expect(result.manualValue).toBe('12')
-      })
-    })
-
-    describe('updateSummonResistanceComponentValue', () => {
-      it('upserts a summon resistance component value', async () => {
-        prisma.summonResistanceComponentValue.upsert.mockResolvedValue({ id: 'srcv-1', componentId: 'comp-1', value: '5' })
-
-        const result = await service.updateSummonResistanceComponentValue(abilityId, 'comp-1', '5', userId)
-
-        expect(result.value).toBe('5')
       })
     })
   })
