@@ -108,6 +108,9 @@ export class BookController {
       res.setHeader('Accept-Ranges', 'bytes')
       res.setHeader('Cache-Control', 'public, max-age=86400')
       res.setHeader('Content-Disposition', 'inline')
+      // Allow cross-origin iframe embedding (override any platform-level DENY)
+      res.setHeader('Content-Security-Policy', "frame-ancestors *")
+      res.removeHeader('X-Frame-Options')
 
       if (range) {
         // Valid range → 206 Partial Content

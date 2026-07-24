@@ -135,13 +135,6 @@ describe('PdfViewerSidebar', () => {
     )
   })
 
-  it('iframe has correct sandbox attributes for browser PDF viewer', async () => {
-    renderSidebar({ bookId: 'book-1' })
-
-    const iframe = await screen.findByTestId('pdf-iframe')
-    expect(iframe).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms')
-  })
-
   it('iframe has book name as title', async () => {
     renderSidebar({ bookId: 'book-1' })
 

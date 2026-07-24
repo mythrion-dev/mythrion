@@ -317,7 +317,6 @@ export function PdfViewerSidebar({
               <iframe
                 src={iframeUrl}
                 className="w-full h-full border-0"
-                sandbox="allow-scripts allow-same-origin allow-forms"
                 title={activeBookName}
                 onLoad={handleIframeLoad}
                 onError={handleIframeError}

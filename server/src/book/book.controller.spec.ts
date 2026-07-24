@@ -23,6 +23,7 @@ const mockBookService = {
 function createMockResponse(): Response {
   return {
     setHeader: jest.fn(),
+    removeHeader: jest.fn(),
     status: jest.fn().mockReturnThis(),
     json: jest.fn(),
     end: jest.fn(),
@@ -168,6 +169,8 @@ describe('BookController', () => {
       expect(mockRes.setHeader).toHaveBeenCalledWith('Accept-Ranges', 'bytes')
       expect(mockRes.setHeader).toHaveBeenCalledWith('Cache-Control', 'public, max-age=86400')
       expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Disposition', 'inline')
+      expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Security-Policy', 'frame-ancestors *')
+      expect(mockRes.removeHeader).toHaveBeenCalledWith('X-Frame-Options')
       expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf')
       expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Length', 10000)
       expect(mockRes.status).not.toHaveBeenCalledWith(206)
