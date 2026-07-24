@@ -17,6 +17,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { BookService } from './book.service.js'
+import { parseRange } from './range-parser.js'
 import { CreateBookDto } from './dto/create-book.dto.js'
 import { UpdateBookDto } from './dto/update-book.dto.js'
 import type { Response, Request } from 'express'
@@ -81,7 +82,12 @@ export class BookController {
 
   /**
    * GET /api/adventures/:adventureId/books/:bookId/file
-   * Stream a book's PDF. Member only; Player cannot access GM_BOOK.
+   * Stream a book's PDF with HTTP Range Request support.
+   * Member only; Player cannot access GM_BOOK.
+   *
+   * - No Range header → 200 OK, full file
+   * - Valid Range → 206 Partial Content with Content-Range
+   * - Invalid/unsatisfiable Range → 416 Range Not Satisfiable
    */
   @Get(':bookId/file')
   async getFile(
@@ -93,18 +99,45 @@ export class BookController {
     const userId = (req as any).user?.sub
 
     try {
-      const { stream, contentType, contentLength } = await this.bookService.getStream(
-        adventureId,
-        bookId,
-        userId,
-      )
+      const { stream, contentType, contentLength, fileSize, isPartial } =
+        await this.bookService.getStreamRange(adventureId, bookId, userId)
 
-      res.setHeader('Content-Type', contentType)
-      res.setHeader('Content-Length', contentLength)
-      res.setHeader('Cache-Control', 'public, max-age=86400') // cache for 1 day
+      const rangeHeader = req.headers.range
+      const range = parseRange(rangeHeader, fileSize)
+
+      res.setHeader('Accept-Ranges', 'bytes')
+      res.setHeader('Cache-Control', 'public, max-age=86400')
       res.setHeader('Content-Disposition', 'inline')
+      // Allow cross-origin iframe embedding (override any platform-level DENY)
+      res.setHeader('Content-Security-Policy', "frame-ancestors *")
+      res.removeHeader('X-Frame-Options')
 
-      stream.pipe(res)
+      if (range) {
+        // Valid range → 206 Partial Content
+        res.status(206)
+        res.setHeader('Content-Type', contentType)
+        res.setHeader('Content-Range', `bytes ${range.start}-${range.end}/${fileSize}`)
+        res.setHeader('Content-Length', range.chunkSize)
+
+        const rangeResult = await this.bookService.getStreamRange(
+          adventureId,
+          bookId,
+          userId,
+          range.start,
+          range.end,
+        )
+        rangeResult.stream.pipe(res)
+      } else if (rangeHeader) {
+        // Range header was present but invalid/unsatisfiable → 416
+        res.status(416)
+        res.setHeader('Content-Range', `bytes */${fileSize}`)
+        res.end()
+      } else {
+        // No Range header → full file
+        res.setHeader('Content-Type', contentType)
+        res.setHeader('Content-Length', contentLength)
+        stream.pipe(res)
+      }
     } catch (err) {
       if (err instanceof NotFoundException) {
         res.status(404).json({ message: err.message })

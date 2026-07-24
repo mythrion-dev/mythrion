@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
+import cookieParser from 'cookie-parser'
 import { AppModule } from './app.module.js'
 
 export async function bootstrap() {
@@ -15,6 +16,8 @@ export async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
+
+  app.use(cookieParser())
 
   app.setGlobalPrefix('api', {
     exclude: ['health'],

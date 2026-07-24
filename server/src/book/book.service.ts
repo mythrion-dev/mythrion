@@ -171,15 +171,14 @@ export class BookService implements OnModuleInit {
   }
 
   /**
-   * Stream a book's PDF file.
-   * Both GM and Player can access, but Player cannot access GM_BOOK.
+   * Resolve a book for access (auth + visibility checks).
+   * Returns the Prisma book record or throws.
    */
-  async getStream(
+  private async resolveBookForAccess(
     adventureId: string,
     bookId: string,
     userId: string,
-  ): Promise<{ stream: Readable; contentType: string; contentLength: number }> {
-    // Ensure the user is a member of this adventure
+  ) {
     const isMember = await this.membership.isMember(adventureId, userId)
     if (!isMember) {
       throw new ForbiddenException('You are not a member of this adventure')
@@ -199,11 +198,18 @@ export class BookService implements OnModuleInit {
       throw new NotFoundException('Book file not found (no file uploaded)')
     }
 
+    return book
+  }
+
+  /**
+   * Look up the GridFS file metadata and return the file document.
+   */
+  private async getGridFsFile(gridfsFileId: string): Promise<GridFsFile> {
     this.ensureReady()
 
     const files = await this.db!
       .collection(`${BUCKET_NAME}.files`)
-      .find({ _id: new ObjectId(book.gridfsFileId) })
+      .find({ _id: new ObjectId(gridfsFileId) })
       .limit(1)
       .toArray()
 
@@ -211,13 +217,52 @@ export class BookService implements OnModuleInit {
       throw new NotFoundException('Book file not found in storage')
     }
 
-    const gridFile = files[0] as unknown as GridFsFile
-    const stream = this.bucket!.openDownloadStream(gridFile._id)
+    return files[0] as unknown as GridFsFile
+  }
+
+  /**
+   * Stream a book's PDF file.
+   * Both GM and Player can access, but Player cannot access GM_BOOK.
+   */
+  async getStream(
+    adventureId: string,
+    bookId: string,
+    userId: string,
+  ): Promise<{ stream: Readable; contentType: string; contentLength: number; fileSize: number }> {
+    const { stream, fileSize } = await this.getStreamRange(adventureId, bookId, userId)
+    return { stream, contentType: 'application/pdf', contentLength: fileSize, fileSize }
+  }
+
+  /**
+   * Stream a book's PDF file with optional byte range.
+   * When start and end are provided, only that byte range is streamed via
+   * GridFS's built-in byte-range support.
+   */
+  async getStreamRange(
+    adventureId: string,
+    bookId: string,
+    userId: string,
+    start?: number,
+    end?: number,
+  ): Promise<{ stream: Readable; contentType: string; contentLength: number; fileSize: number; isPartial: boolean }> {
+    const book = await this.resolveBookForAccess(adventureId, bookId, userId)
+    const gridFile = await this.getGridFsFile(book.gridfsFileId!)
+
+    const fileSize = gridFile.length
+    const isPartial = start !== undefined && end !== undefined
+
+    const stream = isPartial
+      ? this.bucket!.openDownloadStream(gridFile._id, { start, end })
+      : this.bucket!.openDownloadStream(gridFile._id)
+
+    const contentLength = isPartial ? end - start + 1 : fileSize
 
     return {
       stream,
       contentType: 'application/pdf',
-      contentLength: gridFile.length,
+      contentLength,
+      fileSize,
+      isPartial,
     }
   }
 

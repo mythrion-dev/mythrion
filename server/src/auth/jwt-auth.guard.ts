@@ -7,19 +7,46 @@ import {
 import { JwtService } from '@nestjs/jwt'
 import type { AuthenticatedRequest } from './AuthenticatedRequest.js'
 
+function extractBearerToken(header?: string): string | null {
+  if (!header || !header.startsWith('Bearer ')) return null
+  return header.slice(7)
+}
+
+function extractCookieToken(cookies?: string): string | null {
+  if (!cookies) return null
+  const match = cookies.match(/(?:^|;\s*)auth_token=([^;]*)/)
+  return match ? decodeURIComponent(match[1]) : null
+}
+
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(private readonly jwtService: JwtService) {}
 
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<AuthenticatedRequest>()
-    const header = req.headers.authorization
 
-    if (!header || !header.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Missing token')
+    // 1. Try Authorization header first
+    let token = extractBearerToken(req.headers.authorization)
+
+    // 2. Fall back to auth_token cookie (same-origin iframe)
+    if (!token) {
+      // cookieParser makes req.cookies available — use the parsed value directly
+      if (req.cookies?.auth_token) {
+        token = req.cookies.auth_token
+      } else if (req.headers.cookie) {
+        // Fall back to raw cookie header if cookieParser didn't parse it
+        token = extractCookieToken(req.headers.cookie)
+      }
     }
 
-    const token = header.slice(7)
+    // 3. Fall back to ?token= query param (cross-origin iframe — Vercel → Railway)
+    if (!token && req.query?.token) {
+      token = req.query.token as string
+    }
+
+    if (!token) {
+      throw new UnauthorizedException('Missing token')
+    }
 
     try {
       const payload = this.jwtService.verify<AuthenticatedRequest['user']>(token)
