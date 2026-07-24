@@ -33,9 +33,11 @@ function CheckoutContent() {
 
     let cancelled = false
 
+    const safePlanId = planId
+
     async function checkout() {
       try {
-        const result = await createSubscription(planId)
+        const result = await createSubscription(safePlanId)
         if (cancelled) return
         setStatus('redirecting')
         // Refresh subscription state in the background
