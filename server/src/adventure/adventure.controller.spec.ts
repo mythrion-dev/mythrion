@@ -7,7 +7,7 @@ import { AdventureService } from './adventure.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { CreateAdventureDto } from './dto/create-adventure.dto.js'
 import { UpdateAdventureDto } from './dto/update-adventure.dto.js'
-import type { AuthenticatedRequest } from '../auth/jwt-auth.guard.js'
+import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
 
 describe('AdventureController', () => {
   let controller: AdventureController

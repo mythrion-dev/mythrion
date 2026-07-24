@@ -9,6 +9,8 @@ import { GoogleService } from './google.service.js'
 import { GoogleStrategy } from './google.strategy.js'
 import { TokenService } from './token.service.js'
 import { RateLimitGuard } from './rate-limit.guard.js'
+import { AdminService } from './admin.service.js'
+import { SubscriptionGuard } from './subscription.guard.js'
 
 @Module({
   imports: [
@@ -27,7 +29,18 @@ import { RateLimitGuard } from './rate-limit.guard.js'
     GoogleStrategy,
     TokenService,
     RateLimitGuard,
+    AdminService,
+    SubscriptionGuard,
   ],
-  exports: [JwtAuthGuard, JwtModule, AuthService, GoogleService, TokenService, RateLimitGuard],
+  exports: [
+    JwtAuthGuard,
+    JwtModule,
+    AuthService,
+    GoogleService,
+    TokenService,
+    RateLimitGuard,
+    AdminService,
+    SubscriptionGuard,
+  ],
 })
 export class AuthModule {}

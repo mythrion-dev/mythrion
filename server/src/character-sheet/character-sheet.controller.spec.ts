@@ -9,7 +9,7 @@ import { AcCalculationService } from './ac-calculation.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
 import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
-import type { AuthenticatedRequest } from '../auth/jwt-auth.guard.js'
+import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
 
 describe('CharacterSheetController', () => {
   let controller: CharacterSheetController
