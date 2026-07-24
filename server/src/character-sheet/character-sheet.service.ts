@@ -116,27 +116,10 @@ const sheetInclude = {
     include: {
       levels: { orderBy: { level: 'asc' as const } },
       summonAttributes: { orderBy: { createdAt: 'asc' as const } },
-      summonAcValues: { orderBy: { createdAt: 'asc' as const } },
-      summonAcAttributeValues: {
-        include: {
-          selectedAttribute: { select: { id: true, key: true, name: true } },
-        },
-      },
+      summonAcValues: true,
       summonHealth: true,
-      summonResistanceValues: true,
-      summonResistanceComponentValues: true,
       summonSkills: {
         orderBy: { createdAt: 'asc' as const },
-        include: {
-          skill: { select: { id: true, name: true, description: true, attributeId: true, allowedAttributeIds: true, defaultAttributeId: true, attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } } },
-          selectedAttribute: { select: { id: true, key: true, name: true } },
-          profileValues: {
-            include: {
-              profile: { select: { id: true, name: true, targetMode: true, targetSkillIds: true } },
-              option: { select: { id: true, label: true, value: true } },
-            },
-          },
-        },
       },
       childAbilities: {
         orderBy: { order: 'asc' as const },
@@ -677,27 +660,10 @@ export class CharacterSheetService {
   private abilityInclude = {
     levels: { orderBy: { level: 'asc' as const } },
     summonAttributes: { orderBy: { createdAt: 'asc' as const } },
-    summonAcValues: { orderBy: { createdAt: 'asc' as const } },
-    summonAcAttributeValues: {
-      include: {
-        selectedAttribute: { select: { id: true, key: true, name: true } },
-      },
-    },
+    summonAcValues: true,
     summonHealth: true,
-    summonResistanceValues: true,
-    summonResistanceComponentValues: true,
     summonSkills: {
       orderBy: { createdAt: 'asc' as const },
-      include: {
-        skill: { select: { id: true, name: true, description: true, attributeId: true, allowedAttributeIds: true, defaultAttributeId: true, attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } } },
-        selectedAttribute: { select: { id: true, key: true, name: true } },
-        profileValues: {
-          include: {
-            profile: { select: { id: true, name: true, targetMode: true, targetSkillIds: true } },
-            option: { select: { id: true, label: true, value: true } },
-          },
-        },
-      },
     },
     childAbilities: {
       orderBy: { order: 'asc' as const },
@@ -730,20 +696,18 @@ export class CharacterSheetService {
     const abilityType = dto.type ?? 'ABILITY'
 
     if (abilityType === 'SUMMON') {
-      // Fetch template attributes & AC fields to create summon data
+      // Fetch template attributes to create summon attribute data
       const sheet = await this.prisma.characterSheet.findUnique({
         where: { id: sheetId },
         select: {
           template: {
             select: {
               attributes: true,
-              armorClasses: { include: { fields: true } },
             },
           },
         },
       })
       const templateAttrs = sheet?.template?.attributes ?? []
-      const acFields = sheet?.template?.armorClasses?.flatMap(ac => ac.fields) ?? []
 
       const summonAttrData = dto.summonAttributeValues ?? templateAttrs.map(a => ({ attributeId: a.id, value: '' }))
 
@@ -758,9 +722,7 @@ export class CharacterSheetService {
           summonAttributes: summonAttrData.length > 0
             ? { create: summonAttrData.map(sa => ({ attributeId: sa.attributeId, value: sa.value })) }
             : undefined,
-          summonAcValues: acFields.length > 0
-            ? { create: acFields.map(f => ({ fieldId: f.id, value: f.defaultValue })) }
-            : undefined,
+          summonAcValues: { create: [{ value: '10' }] },
           summonHealth: (dto.summonHealthCurrent !== undefined || dto.summonHealthMax !== undefined)
             ? { create: { current: dto.summonHealthCurrent ?? null, maximum: dto.summonHealthMax ?? null } }
             : undefined,
@@ -953,31 +915,17 @@ export class CharacterSheetService {
 
   // ── Summon Skills ──
 
-  async addSummonSkill(abilityId: string, skillId: string, userId: string) {
+  async addSummonSkill(abilityId: string, name: string, manualValue: number, userId: string) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
     if (!ability) throw new NotFoundException('Summon not found')
     if (ability.type !== 'SUMMON') throw new ForbiddenException('Skills can only be added to summons')
     await this.requireOwnership(ability.sheetId, userId)
 
-    // Default the selected attribute to the skill's default
-    const skill = await this.prisma.templateSkill.findUnique({ where: { id: skillId } })
-    const defaultAttrId = skill?.defaultAttributeId ?? skill?.attributeId ?? null
-
     const result = await this.prisma.summonSkill.create({
       data: {
         abilityId,
-        skillId,
-        selectedAttributeId: defaultAttrId ?? null,
-      },
-      include: {
-        skill: { select: { id: true, name: true, description: true, attributeId: true, allowedAttributeIds: true, defaultAttributeId: true, attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } } },
-        selectedAttribute: { select: { id: true, key: true, name: true } },
-        profileValues: {
-          include: {
-            profile: { select: { id: true, name: true } },
-            option: { select: { id: true, label: true, value: true } },
-          },
-        },
+        name,
+        manualValue,
       },
     })
     await this.invalidateCache(ability.sheetId).catch(() => {})
@@ -992,56 +940,6 @@ export class CharacterSheetService {
     if (!ss) throw new NotFoundException('Summon skill not found')
     await this.requireOwnership(ss.ability.sheetId, userId)
     const result = await this.prisma.summonSkill.delete({ where: { id: summonSkillId } })
-    await this.invalidateCache(ss.ability.sheetId).catch(() => {})
-    return result
-  }
-
-  async updateSummonSkillAttribute(summonSkillId: string, attributeId: string | null, userId: string) {
-    const ss = await this.prisma.summonSkill.findUnique({
-      where: { id: summonSkillId },
-      include: { ability: true, skill: { select: { allowedAttributeIds: true } } },
-    })
-    if (!ss) throw new NotFoundException('Summon skill not found')
-    await this.requireOwnership(ss.ability.sheetId, userId)
-
-    // Validate that the attribute change is allowed
-    if (ss.skill.allowedAttributeIds.length === 0) {
-      throw new BadRequestException('This skill has a fixed attribute and cannot be changed')
-    }
-    if (attributeId !== null && !ss.skill.allowedAttributeIds.includes(attributeId)) {
-      throw new BadRequestException('The selected attribute is not allowed for this skill')
-    }
-
-    const result = await this.prisma.summonSkill.update({
-      where: { id: summonSkillId },
-      data: { selectedAttributeId: attributeId },
-      include: {
-        skill: { select: { id: true, name: true, description: true, attributeId: true, allowedAttributeIds: true, defaultAttributeId: true, attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } } },
-        selectedAttribute: { select: { id: true, key: true, name: true } },
-        profileValues: {
-          include: {
-            profile: { select: { id: true, name: true } },
-            option: { select: { id: true, label: true, value: true } },
-          },
-        },
-      },
-    })
-    await this.invalidateCache(ss.ability.sheetId).catch(() => {})
-    return result
-  }
-
-  async updateSummonSkillProfile(summonSkillId: string, profileId: string, optionId: string | null, userId: string) {
-    const ss = await this.prisma.summonSkill.findUnique({
-      where: { id: summonSkillId },
-      include: { ability: true },
-    })
-    if (!ss) throw new NotFoundException('Summon skill not found')
-    await this.requireOwnership(ss.ability.sheetId, userId)
-    const result = await this.prisma.summonSkillProfileValue.upsert({
-      where: { summonSkillId_profileId: { summonSkillId, profileId } },
-      create: { summonSkillId, profileId, optionId },
-      update: { optionId },
-    })
     await this.invalidateCache(ss.ability.sheetId).catch(() => {})
     return result
   }
@@ -1063,29 +961,14 @@ export class CharacterSheetService {
 
   // ── Summon AC Values ──
 
-  async updateSummonAcValue(abilityId: string, fieldId: string, value: string, userId: string) {
+  async updateSummonAcValue(abilityId: string, value: string, userId: string) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
     if (!ability) throw new NotFoundException('Ability not found')
     await this.requireOwnership(ability.sheetId, userId)
     const result = await this.prisma.summonArmorClassValue.upsert({
-      where: { abilityId_fieldId: { abilityId, fieldId } },
-      create: { abilityId, fieldId, value },
+      where: { abilityId },
+      create: { abilityId, value },
       update: { value },
-    })
-    await this.invalidateCache(ability.sheetId).catch(() => {})
-    return result
-  }
-
-  // ── Summon AC Attribute Modifier Selection ──
-
-  async updateSummonAcAttributeValue(abilityId: string, acAttributeModifierId: string, selectedAttributeId: string | null, userId: string) {
-    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
-    await this.requireOwnership(ability.sheetId, userId)
-    const result = await this.prisma.summonArmorClassAttributeValue.upsert({
-      where: { abilityId_acAttributeModifierId: { abilityId, acAttributeModifierId } },
-      create: { abilityId, acAttributeModifierId, selectedAttributeId },
-      update: { selectedAttributeId },
     })
     await this.invalidateCache(ability.sheetId).catch(() => {})
     return result
@@ -1101,34 +984,6 @@ export class CharacterSheetService {
       where: { abilityId },
       create: { abilityId, current: dto.current ?? null, maximum: dto.maximum ?? null, notes: dto.notes ?? null },
       update: { current: dto.current, maximum: dto.maximum, notes: dto.notes },
-    })
-    await this.invalidateCache(ability.sheetId).catch(() => {})
-    return result
-  }
-
-  // ── Summon Resistance Values ──
-
-  async updateSummonResistanceValue(abilityId: string, resistanceId: string, value: string | null, userId: string) {
-    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
-    await this.requireOwnership(ability.sheetId, userId)
-    const result = await this.prisma.summonResistanceValue.upsert({
-      where: { abilityId_resistanceId: { abilityId, resistanceId } },
-      create: { abilityId, resistanceId, manualValue: value },
-      update: { manualValue: value },
-    })
-    await this.invalidateCache(ability.sheetId).catch(() => {})
-    return result
-  }
-
-  async updateSummonResistanceComponentValue(abilityId: string, componentId: string, value: string, userId: string) {
-    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
-    await this.requireOwnership(ability.sheetId, userId)
-    const result = await this.prisma.summonResistanceComponentValue.upsert({
-      where: { abilityId_componentId: { abilityId, componentId } },
-      create: { abilityId, componentId, value },
-      update: { value },
     })
     await this.invalidateCache(ability.sheetId).catch(() => {})
     return result
