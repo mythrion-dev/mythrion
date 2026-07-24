@@ -162,6 +162,58 @@ describe('JwtAuthGuard', () => {
       expect(mockJwtService.verify).toHaveBeenCalledWith('header-token')
     })
 
+    it('should extract token from req.query.token (cross-origin iframe fallback)', () => {
+      const payload = { sub: 'user-1', email: 'test@test.com' }
+      mockJwtService.verify.mockReturnValue(payload)
+
+      const request: any = {
+        headers: {},
+        cookies: {},
+        query: { token: 'query-param-token' },
+        user: undefined,
+      }
+
+      const context: ExecutionContext = {
+        switchToHttp: () => ({
+          getRequest: () => request,
+          getResponse: () => ({}),
+        }),
+        getHandler: () => ({}),
+        getClass: () => ({}),
+      } as ExecutionContext
+
+      const result = guard.canActivate(context)
+
+      expect(mockJwtService.verify).toHaveBeenCalledWith('query-param-token')
+      expect(request.user).toEqual(payload)
+      expect(result).toBe(true)
+    })
+
+    it('should prefer cookie over query param', () => {
+      const payload = { sub: 'user-1', email: 'test@test.com' }
+      mockJwtService.verify.mockReturnValue(payload)
+
+      const request: any = {
+        headers: {},
+        cookies: { auth_token: 'cookie-token' },
+        query: { token: 'query-token' },
+        user: undefined,
+      }
+
+      const context: ExecutionContext = {
+        switchToHttp: () => ({
+          getRequest: () => request,
+          getResponse: () => ({}),
+        }),
+        getHandler: () => ({}),
+        getClass: () => ({}),
+      } as ExecutionContext
+
+      guard.canActivate(context)
+
+      expect(mockJwtService.verify).toHaveBeenCalledWith('cookie-token')
+    })
+
     it('should throw UnauthorizedException on invalid or expired token', () => {
       mockJwtService.verify.mockImplementation(() => {
         throw new Error('jwt expired')

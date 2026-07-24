@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { api, API_URL } from '@/lib/api'
+import { api, API_URL, getAccessToken } from '@/lib/api'
 
 /* ── Types ── */
 
@@ -103,9 +103,12 @@ export function PdfViewerSidebar({
     bookNameMapRef.current.get(activeBookId ?? '') ??
     'PDF Viewer'
 
-  const iframeUrl = activeBookId
-    ? `${API_URL}/adventures/${adventureId}/books/${activeBookId}/file`
-    : null
+  const iframeUrl = (() => {
+    if (!activeBookId) return null
+    const token = getAccessToken()
+    const base = `${API_URL}/adventures/${adventureId}/books/${activeBookId}/file`
+    return token ? `${base}?token=${encodeURIComponent(token)}` : base
+  })()
 
   /* ── Fetch books for internal list ── */
   const fetchBooks = useCallback(async () => {

@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
 import { PdfViewerSidebar } from '@/components/books/PdfViewerSidebar'
-import { api } from '@/lib/api'
+import { api, getAccessToken } from '@/lib/api'
 
 /* ── Mock api module ── */
 
 vi.mock('@/lib/api', () => ({
   api: { get: vi.fn() },
   API_URL: 'http://localhost:3001/api',
+  getAccessToken: vi.fn(() => null),
 }))
 
 /* ── Test data ── */
@@ -52,6 +53,7 @@ describe('PdfViewerSidebar', () => {
     vi.clearAllMocks()
     window.localStorage.clear()
     ;(api.get as any).mockResolvedValue(mockBooks)
+    ;(getAccessToken as any).mockReturnValue(null)
   })
 
   afterEach(() => {
@@ -120,6 +122,17 @@ describe('PdfViewerSidebar', () => {
     const iframe = await screen.findByTestId('pdf-iframe')
     expect(iframe).toBeInTheDocument()
     expect(iframe).toHaveAttribute('src', 'http://localhost:3001/api/adventures/adv-1/books/book-1/file')
+  })
+
+  it('includes ?token= query param in iframe URL when access token is available', async () => {
+    ;(getAccessToken as any).mockReturnValue('test-jwt-token')
+    renderSidebar({ bookId: 'book-1' })
+
+    const iframe = await screen.findByTestId('pdf-iframe')
+    expect(iframe).toHaveAttribute(
+      'src',
+      'http://localhost:3001/api/adventures/adv-1/books/book-1/file?token=test-jwt-token',
+    )
   })
 
   it('iframe has correct sandbox attributes for browser PDF viewer', async () => {

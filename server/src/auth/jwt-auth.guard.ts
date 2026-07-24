@@ -32,7 +32,7 @@ export class JwtAuthGuard implements CanActivate {
     // 1. Try Authorization header first
     let token = extractBearerToken(req.headers.authorization)
 
-    // 2. Fall back to auth_token cookie for iframe requests
+    // 2. Fall back to auth_token cookie (same-origin iframe)
     if (!token) {
       // cookieParser makes req.cookies available — use the parsed value directly
       if (req.cookies?.auth_token) {
@@ -41,6 +41,11 @@ export class JwtAuthGuard implements CanActivate {
         // Fall back to raw cookie header if cookieParser didn't parse it
         token = extractCookieToken(req.headers.cookie)
       }
+    }
+
+    // 3. Fall back to ?token= query param (cross-origin iframe — Vercel → Railway)
+    if (!token && req.query?.token) {
+      token = req.query.token as string
     }
 
     if (!token) {
