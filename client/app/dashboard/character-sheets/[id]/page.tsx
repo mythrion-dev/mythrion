@@ -7,6 +7,7 @@ import { api, API_URL, getAccessToken } from '@/lib/api'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import { StoryTab, CharacterTab, InventoryTab, PersonalAbilitiesTab, AbilitiesTab, ResistanceTab } from '@/components/character-sheet'
 import { PageNav } from '@/lib/breadcrumb'
+import { PdfViewerSidebar } from '@/components/books/PdfViewerSidebar'
 import type { SkillModifierProfile, ArmorClassAttributeModifierDef, SectionEntry, SummonSkillData, Ability, AbilityLevel, InventoryItem, Story, CharacterSheet, Tab, SummonTab, AcResultMap, SheetPermissions } from '@/components/character-sheet/types'
 
 
@@ -28,6 +29,7 @@ export default function CharacterSheetDetailPage() {
   const [othersValues, setOthersValues] = useState<Record<string, number>>({})
   const othersValuesRef = useRef(othersValues)
   othersValuesRef.current = othersValues
+  const [selectedBookId, setSelectedBookId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('character')
   const isOwner = sheet?.ownerId === user?.id || (sheet?.isNpc === true)
   const permissions: SheetPermissions = {
@@ -971,6 +973,11 @@ export default function CharacterSheetDetailPage() {
           {/* Actions - delete button vertically centered */}
           {isOwner && (
             <div className="flex flex-col gap-3 justify-center shrink-0" style={{ minHeight: '170px' }}>
+              {sheet.adventure?.id && (
+                <button onClick={() => setSelectedBookId(selectedBookId ? null : '')} className="btn-ghost text-sm px-6 py-2.5 border border-border/60">
+                  <svg className="w-4 h-4 inline mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>Books
+                </button>
+              )}
               <button onClick={() => setConfirmDelete(true)} className="btn-danger text-sm px-6 py-2.5">
                 <svg className="w-4 h-4 inline mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>Delete
               </button>
@@ -1097,6 +1104,15 @@ export default function CharacterSheetDetailPage() {
       )}
 
       {confirmDelete && <DeleteModal name={sheet.characterName} error={deleteError} loading={deleting} onCancel={() => setConfirmDelete(false)} onConfirm={handleDelete} />}
+
+      {sheet.adventure && (
+        <PdfViewerSidebar
+          adventureId={sheet.adventure.id}
+          isGM={isOwner}
+          bookId={selectedBookId || null}
+          onClose={() => setSelectedBookId(null)}
+        />
+      )}
     </div>
   </div>)
 }

@@ -18,6 +18,8 @@ import { CharactersSection } from '@/components/adventure/CharactersSection'
 import { TemplatesSection } from '@/components/adventure/TemplatesSection'
 import { CampaignCreatureSidebar } from '@/components/adventure/CampaignCreatureSidebar'
 import { NpcsMobsSection } from '@/components/adventure/NpcsMobsSection'
+import { BookListPanel } from '@/components/books/BookListPanel'
+import { PdfViewerSidebar } from '@/components/books/PdfViewerSidebar'
 import type { CoreResource, AcConfigDraft, ArmorClassAttributeModifierDraft, ResistanceDef } from '@/components/adventure/types'
 import { emptyAcConfig, slugify } from '@/components/adventure/types'
 
@@ -254,7 +256,8 @@ export default function AdventureDetailPage() {
   const [showNpcsMobs, setShowNpcsMobs] = useState(false)
 
   const [npcRefreshKey, setNpcRefreshKey] = useState(0)
-  const isGM = userRole === 'GM'; const [activeTab, setActiveTab] = useState<'campaign' | 'templates'>('campaign')
+  const isGM = userRole === 'GM'; const [activeTab, setActiveTab] = useState<'campaign' | 'templates' | 'books'>('campaign')
+  const [selectedBookId, setSelectedBookId] = useState<string | null>(null)
 
   const fetchAdventure = useCallback(async () => { try { const d = await api.get<Adventure>(`/adventures/${id}`); setAdventure(d); setEditName(d.name); setEditCampaign(d.campaign); setEditSynopsis(d.synopsis ?? ''); setEditMaxPlayers(d.maxPlayers) } catch (e: unknown) { if ((e as { statusCode?: number }).statusCode === 401 || (e as { statusCode?: number }).statusCode === 403) router.replace('/login') } finally { setFetching(false) } }, [id, router])
   const resolveRole = useCallback(async () => { try { const all = await api.get<Array<{ id: string; role: string }>>('/me/adventures'); const e = all.find(a => a.id === id); if (e) setUserRole(e.role) } catch { } }, [id])
@@ -473,10 +476,10 @@ export default function AdventureDetailPage() {
       <AdventureHeader adventure={adventure} isGM={isGM} userRole={userRole} onEdit={() => setEditing(true)} onDelete={() => setConfirmDelete(true)} />
       {!editing ? (<div className="space-y-6 mt-8">
         <div className="flex items-center justify-between gap-4">
-          <nav className="flex gap-1"><button onClick={() => setActiveTab('campaign')} className={`tab-pill ${activeTab === 'campaign' ? 'tab-pill-active' : ''}`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>Campaign</button><button onClick={() => setActiveTab('templates')} className={`tab-pill ${activeTab === 'templates' ? 'tab-pill-active' : ''}`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>Templates</button></nav>
+          <nav className="flex gap-1"><button onClick={() => setActiveTab('campaign')} className={`tab-pill ${activeTab === 'campaign' ? 'tab-pill-active' : ''}`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>Campaign</button><button onClick={() => setActiveTab('books')} className={`tab-pill ${activeTab === 'books' ? 'tab-pill-active' : ''}`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>Books</button><button onClick={() => setActiveTab('templates')} className={`tab-pill ${activeTab === 'templates' ? 'tab-pill-active' : ''}`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>Templates</button></nav>
         </div>
         <hr className="divider" />
-        {activeTab === 'campaign' ? (<div className="space-y-6">
+        {activeTab === 'campaign' && (<div className="space-y-6">
           <CollapsibleSection title="Party Members" accent expanded={showMembers} onToggle={() => { setShowMembers(!showMembers); if (!showMembers) { fetchMembers(); if (isGM) fetchInvitations() } }}>
             {members.length === 0 ? <LoadingSkeleton variant="list" /> : <div className="space-y-2">{members.map(m => <MemberRow key={m.id} member={m} isGM={isGM} isSelf={m.user.id === user?.id} onRemove={() => handleRemoveMember(m.user.id)} />)}</div>}
           </CollapsibleSection>
@@ -491,7 +494,8 @@ export default function AdventureDetailPage() {
               <NpcsMobsSection adventureId={id} isGM={isGM} refreshKey={npcRefreshKey} />
             </CollapsibleSection>
           )}
-        </div>) : (
+        </div>)}
+        {activeTab === 'templates' && (
           <TemplatesSection templates={templates} isGM={isGM} showNewTemplate={showNewTemplate} editingTemplateId={editingTemplateId}
             newTemplateName={newTemplateName} newTemplateDescription={newTemplateDescription} newTemplateAttrs={newTemplateAttrs} newAttrModifierFormula={newAttrModifierFormula} newSkillFormula={newSkillFormula} newTemplateFields={newTemplateFields} templateError={templateError} templateCreating={templateCreating}
             editTemplateName={editTemplateName} editTemplateDescription={editTemplateDescription} editTemplateAttrs={editTemplateAttrs} editAttrModifierFormula={editAttrModifierFormula} editSkillFormula={editSkillFormula} editingTemplateError={editingTemplateError} templateSaving={templateSaving}
@@ -558,6 +562,9 @@ export default function AdventureDetailPage() {
             editFeatureResistance={editFeatureResistance} onEditFeatureResistanceChange={setEditFeatureResistance}
           />
         )}
+        {activeTab === 'books' && (
+          <BookListPanel adventureId={id} isGM={isGM} onSelectBook={setSelectedBookId} />
+        )}
         {confirmDelete && <DeleteModal name={adventure.name} error={deleteError} loading={deleting} onCancel={() => setConfirmDelete(false)} onConfirm={handleDelete} />}
       </div>) : (<EditForm name={editName} campaign={editCampaign} synopsis={editSynopsis} maxPlayers={editMaxPlayers} error={editError} saving={saving} onNameChange={setEditName} onCampaignChange={setEditCampaign} onSynopsisChange={setEditSynopsis} onMaxPlayersChange={setEditMaxPlayers} onCancel={() => { setEditing(false); setEditError(null) }} onSubmit={handleUpdate} />)}
 
@@ -569,6 +576,15 @@ export default function AdventureDetailPage() {
           onCreaturesChange={() => setNpcRefreshKey(k => k + 1)}
         />
       )}
+
+      {/* Books Sidebar — right-side PDF viewer */}
+      <PdfViewerSidebar
+        adventureId={id}
+        isGM={isGM}
+        bookId={selectedBookId}
+        onClose={() => setSelectedBookId(null)}
+        hideToggle
+      />
     </div>
   )
 }

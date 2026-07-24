@@ -35,3 +35,26 @@ Object.defineProperty(document, 'cookie', {
   writable: true,
   value: '',
 })
+
+// Polyfill ResizeObserver for jsdom
+class ResizeObserverMock {
+  constructor(private callback: ResizeObserverCallback) {}
+  observe(target: Element) {
+    // Fire a dummy entry so the observer's callback gets exercised
+    const entry: ResizeObserverEntry = {
+      target,
+      contentRect: { top: 0, left: 0, width: 400, height: 600, x: 0, y: 0, toJSON: () => {} },
+      borderBoxSize: [],
+      contentBoxSize: [],
+      devicePixelContentBoxSize: [],
+    }
+    this.callback([entry], this)
+  }
+  unobserve() {}
+  disconnect() {}
+}
+
+Object.defineProperty(window, 'ResizeObserver', {
+  value: ResizeObserverMock,
+  writable: true,
+})

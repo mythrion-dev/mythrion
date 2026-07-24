@@ -245,6 +245,7 @@ export type AdventureWhereInput = {
   invitations?: Prisma.CampaignInvitationListRelationFilter
   templates?: Prisma.TemplateListRelationFilter
   characterSheets?: Prisma.CharacterSheetListRelationFilter
+  books?: Prisma.BookListRelationFilter
 }
 
 export type AdventureOrderByWithRelationInput = {
@@ -261,6 +262,7 @@ export type AdventureOrderByWithRelationInput = {
   invitations?: Prisma.CampaignInvitationOrderByRelationAggregateInput
   templates?: Prisma.TemplateOrderByRelationAggregateInput
   characterSheets?: Prisma.CharacterSheetOrderByRelationAggregateInput
+  books?: Prisma.BookOrderByRelationAggregateInput
 }
 
 export type AdventureWhereUniqueInput = Prisma.AtLeast<{
@@ -280,6 +282,7 @@ export type AdventureWhereUniqueInput = Prisma.AtLeast<{
   invitations?: Prisma.CampaignInvitationListRelationFilter
   templates?: Prisma.TemplateListRelationFilter
   characterSheets?: Prisma.CharacterSheetListRelationFilter
+  books?: Prisma.BookListRelationFilter
 }, "id">
 
 export type AdventureOrderByWithAggregationInput = {
@@ -325,6 +328,7 @@ export type AdventureCreateInput = {
   invitations?: Prisma.CampaignInvitationCreateNestedManyWithoutAdventureInput
   templates?: Prisma.TemplateCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAdventureInput
+  books?: Prisma.BookCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateInput = {
@@ -340,6 +344,7 @@ export type AdventureUncheckedCreateInput = {
   invitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutAdventureInput
   templates?: Prisma.TemplateUncheckedCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAdventureInput
+  books?: Prisma.BookUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUpdateInput = {
@@ -355,6 +360,7 @@ export type AdventureUpdateInput = {
   invitations?: Prisma.CampaignInvitationUpdateManyWithoutAdventureNestedInput
   templates?: Prisma.TemplateUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutAdventureNestedInput
+  books?: Prisma.BookUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateInput = {
@@ -370,6 +376,7 @@ export type AdventureUncheckedUpdateInput = {
   invitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutAdventureNestedInput
   templates?: Prisma.TemplateUncheckedUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAdventureNestedInput
+  books?: Prisma.BookUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureCreateManyInput = {
@@ -515,6 +522,20 @@ export type IntFieldUpdateOperationsInput = {
   divide?: number
 }
 
+export type AdventureCreateNestedOneWithoutBooksInput = {
+  create?: Prisma.XOR<Prisma.AdventureCreateWithoutBooksInput, Prisma.AdventureUncheckedCreateWithoutBooksInput>
+  connectOrCreate?: Prisma.AdventureCreateOrConnectWithoutBooksInput
+  connect?: Prisma.AdventureWhereUniqueInput
+}
+
+export type AdventureUpdateOneRequiredWithoutBooksNestedInput = {
+  create?: Prisma.XOR<Prisma.AdventureCreateWithoutBooksInput, Prisma.AdventureUncheckedCreateWithoutBooksInput>
+  connectOrCreate?: Prisma.AdventureCreateOrConnectWithoutBooksInput
+  upsert?: Prisma.AdventureUpsertWithoutBooksInput
+  connect?: Prisma.AdventureWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AdventureUpdateToOneWithWhereWithoutBooksInput, Prisma.AdventureUpdateWithoutBooksInput>, Prisma.AdventureUncheckedUpdateWithoutBooksInput>
+}
+
 export type AdventureCreateNestedOneWithoutMembersInput = {
   create?: Prisma.XOR<Prisma.AdventureCreateWithoutMembersInput, Prisma.AdventureUncheckedCreateWithoutMembersInput>
   connectOrCreate?: Prisma.AdventureCreateOrConnectWithoutMembersInput
@@ -585,6 +606,7 @@ export type AdventureCreateWithoutOwnerInput = {
   invitations?: Prisma.CampaignInvitationCreateNestedManyWithoutAdventureInput
   templates?: Prisma.TemplateCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAdventureInput
+  books?: Prisma.BookCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateWithoutOwnerInput = {
@@ -599,6 +621,7 @@ export type AdventureUncheckedCreateWithoutOwnerInput = {
   invitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutAdventureInput
   templates?: Prisma.TemplateUncheckedCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAdventureInput
+  books?: Prisma.BookUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureCreateOrConnectWithoutOwnerInput = {
@@ -641,6 +664,82 @@ export type AdventureScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Adventure"> | Date | string
 }
 
+export type AdventureCreateWithoutBooksInput = {
+  id?: string
+  name: string
+  campaign: string
+  synopsis?: string | null
+  maxPlayers?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  owner: Prisma.UserCreateNestedOneWithoutAdventuresInput
+  members?: Prisma.CampaignMemberCreateNestedManyWithoutAdventureInput
+  invitations?: Prisma.CampaignInvitationCreateNestedManyWithoutAdventureInput
+  templates?: Prisma.TemplateCreateNestedManyWithoutAdventureInput
+  characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAdventureInput
+}
+
+export type AdventureUncheckedCreateWithoutBooksInput = {
+  id?: string
+  name: string
+  campaign: string
+  synopsis?: string | null
+  maxPlayers?: number
+  ownerId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  members?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutAdventureInput
+  invitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutAdventureInput
+  templates?: Prisma.TemplateUncheckedCreateNestedManyWithoutAdventureInput
+  characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAdventureInput
+}
+
+export type AdventureCreateOrConnectWithoutBooksInput = {
+  where: Prisma.AdventureWhereUniqueInput
+  create: Prisma.XOR<Prisma.AdventureCreateWithoutBooksInput, Prisma.AdventureUncheckedCreateWithoutBooksInput>
+}
+
+export type AdventureUpsertWithoutBooksInput = {
+  update: Prisma.XOR<Prisma.AdventureUpdateWithoutBooksInput, Prisma.AdventureUncheckedUpdateWithoutBooksInput>
+  create: Prisma.XOR<Prisma.AdventureCreateWithoutBooksInput, Prisma.AdventureUncheckedCreateWithoutBooksInput>
+  where?: Prisma.AdventureWhereInput
+}
+
+export type AdventureUpdateToOneWithWhereWithoutBooksInput = {
+  where?: Prisma.AdventureWhereInput
+  data: Prisma.XOR<Prisma.AdventureUpdateWithoutBooksInput, Prisma.AdventureUncheckedUpdateWithoutBooksInput>
+}
+
+export type AdventureUpdateWithoutBooksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  campaign?: Prisma.StringFieldUpdateOperationsInput | string
+  synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.UserUpdateOneRequiredWithoutAdventuresNestedInput
+  members?: Prisma.CampaignMemberUpdateManyWithoutAdventureNestedInput
+  invitations?: Prisma.CampaignInvitationUpdateManyWithoutAdventureNestedInput
+  templates?: Prisma.TemplateUpdateManyWithoutAdventureNestedInput
+  characterSheets?: Prisma.CharacterSheetUpdateManyWithoutAdventureNestedInput
+}
+
+export type AdventureUncheckedUpdateWithoutBooksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  campaign?: Prisma.StringFieldUpdateOperationsInput | string
+  synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  members?: Prisma.CampaignMemberUncheckedUpdateManyWithoutAdventureNestedInput
+  invitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutAdventureNestedInput
+  templates?: Prisma.TemplateUncheckedUpdateManyWithoutAdventureNestedInput
+  characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAdventureNestedInput
+}
+
 export type AdventureCreateWithoutMembersInput = {
   id?: string
   name: string
@@ -653,6 +752,7 @@ export type AdventureCreateWithoutMembersInput = {
   invitations?: Prisma.CampaignInvitationCreateNestedManyWithoutAdventureInput
   templates?: Prisma.TemplateCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAdventureInput
+  books?: Prisma.BookCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateWithoutMembersInput = {
@@ -667,6 +767,7 @@ export type AdventureUncheckedCreateWithoutMembersInput = {
   invitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutAdventureInput
   templates?: Prisma.TemplateUncheckedCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAdventureInput
+  books?: Prisma.BookUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureCreateOrConnectWithoutMembersInput = {
@@ -697,6 +798,7 @@ export type AdventureUpdateWithoutMembersInput = {
   invitations?: Prisma.CampaignInvitationUpdateManyWithoutAdventureNestedInput
   templates?: Prisma.TemplateUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutAdventureNestedInput
+  books?: Prisma.BookUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateWithoutMembersInput = {
@@ -711,6 +813,7 @@ export type AdventureUncheckedUpdateWithoutMembersInput = {
   invitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutAdventureNestedInput
   templates?: Prisma.TemplateUncheckedUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAdventureNestedInput
+  books?: Prisma.BookUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureCreateWithoutInvitationsInput = {
@@ -725,6 +828,7 @@ export type AdventureCreateWithoutInvitationsInput = {
   members?: Prisma.CampaignMemberCreateNestedManyWithoutAdventureInput
   templates?: Prisma.TemplateCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAdventureInput
+  books?: Prisma.BookCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateWithoutInvitationsInput = {
@@ -739,6 +843,7 @@ export type AdventureUncheckedCreateWithoutInvitationsInput = {
   members?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutAdventureInput
   templates?: Prisma.TemplateUncheckedCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAdventureInput
+  books?: Prisma.BookUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureCreateOrConnectWithoutInvitationsInput = {
@@ -769,6 +874,7 @@ export type AdventureUpdateWithoutInvitationsInput = {
   members?: Prisma.CampaignMemberUpdateManyWithoutAdventureNestedInput
   templates?: Prisma.TemplateUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutAdventureNestedInput
+  books?: Prisma.BookUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateWithoutInvitationsInput = {
@@ -783,6 +889,7 @@ export type AdventureUncheckedUpdateWithoutInvitationsInput = {
   members?: Prisma.CampaignMemberUncheckedUpdateManyWithoutAdventureNestedInput
   templates?: Prisma.TemplateUncheckedUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAdventureNestedInput
+  books?: Prisma.BookUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureCreateWithoutTemplatesInput = {
@@ -797,6 +904,7 @@ export type AdventureCreateWithoutTemplatesInput = {
   members?: Prisma.CampaignMemberCreateNestedManyWithoutAdventureInput
   invitations?: Prisma.CampaignInvitationCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAdventureInput
+  books?: Prisma.BookCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateWithoutTemplatesInput = {
@@ -811,6 +919,7 @@ export type AdventureUncheckedCreateWithoutTemplatesInput = {
   members?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutAdventureInput
   invitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAdventureInput
+  books?: Prisma.BookUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureCreateOrConnectWithoutTemplatesInput = {
@@ -841,6 +950,7 @@ export type AdventureUpdateWithoutTemplatesInput = {
   members?: Prisma.CampaignMemberUpdateManyWithoutAdventureNestedInput
   invitations?: Prisma.CampaignInvitationUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutAdventureNestedInput
+  books?: Prisma.BookUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateWithoutTemplatesInput = {
@@ -855,6 +965,7 @@ export type AdventureUncheckedUpdateWithoutTemplatesInput = {
   members?: Prisma.CampaignMemberUncheckedUpdateManyWithoutAdventureNestedInput
   invitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAdventureNestedInput
+  books?: Prisma.BookUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureCreateWithoutCharacterSheetsInput = {
@@ -869,6 +980,7 @@ export type AdventureCreateWithoutCharacterSheetsInput = {
   members?: Prisma.CampaignMemberCreateNestedManyWithoutAdventureInput
   invitations?: Prisma.CampaignInvitationCreateNestedManyWithoutAdventureInput
   templates?: Prisma.TemplateCreateNestedManyWithoutAdventureInput
+  books?: Prisma.BookCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateWithoutCharacterSheetsInput = {
@@ -883,6 +995,7 @@ export type AdventureUncheckedCreateWithoutCharacterSheetsInput = {
   members?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutAdventureInput
   invitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutAdventureInput
   templates?: Prisma.TemplateUncheckedCreateNestedManyWithoutAdventureInput
+  books?: Prisma.BookUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureCreateOrConnectWithoutCharacterSheetsInput = {
@@ -913,6 +1026,7 @@ export type AdventureUpdateWithoutCharacterSheetsInput = {
   members?: Prisma.CampaignMemberUpdateManyWithoutAdventureNestedInput
   invitations?: Prisma.CampaignInvitationUpdateManyWithoutAdventureNestedInput
   templates?: Prisma.TemplateUpdateManyWithoutAdventureNestedInput
+  books?: Prisma.BookUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateWithoutCharacterSheetsInput = {
@@ -927,6 +1041,7 @@ export type AdventureUncheckedUpdateWithoutCharacterSheetsInput = {
   members?: Prisma.CampaignMemberUncheckedUpdateManyWithoutAdventureNestedInput
   invitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutAdventureNestedInput
   templates?: Prisma.TemplateUncheckedUpdateManyWithoutAdventureNestedInput
+  books?: Prisma.BookUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureCreateManyOwnerInput = {
@@ -951,6 +1066,7 @@ export type AdventureUpdateWithoutOwnerInput = {
   invitations?: Prisma.CampaignInvitationUpdateManyWithoutAdventureNestedInput
   templates?: Prisma.TemplateUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutAdventureNestedInput
+  books?: Prisma.BookUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateWithoutOwnerInput = {
@@ -965,6 +1081,7 @@ export type AdventureUncheckedUpdateWithoutOwnerInput = {
   invitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutAdventureNestedInput
   templates?: Prisma.TemplateUncheckedUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAdventureNestedInput
+  books?: Prisma.BookUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateManyWithoutOwnerInput = {
@@ -987,6 +1104,7 @@ export type AdventureCountOutputType = {
   invitations: number
   templates: number
   characterSheets: number
+  books: number
 }
 
 export type AdventureCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -994,6 +1112,7 @@ export type AdventureCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensi
   invitations?: boolean | AdventureCountOutputTypeCountInvitationsArgs
   templates?: boolean | AdventureCountOutputTypeCountTemplatesArgs
   characterSheets?: boolean | AdventureCountOutputTypeCountCharacterSheetsArgs
+  books?: boolean | AdventureCountOutputTypeCountBooksArgs
 }
 
 /**
@@ -1034,6 +1153,13 @@ export type AdventureCountOutputTypeCountCharacterSheetsArgs<ExtArgs extends run
   where?: Prisma.CharacterSheetWhereInput
 }
 
+/**
+ * AdventureCountOutputType without action
+ */
+export type AdventureCountOutputTypeCountBooksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.BookWhereInput
+}
+
 
 export type AdventureSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1049,6 +1175,7 @@ export type AdventureSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   invitations?: boolean | Prisma.Adventure$invitationsArgs<ExtArgs>
   templates?: boolean | Prisma.Adventure$templatesArgs<ExtArgs>
   characterSheets?: boolean | Prisma.Adventure$characterSheetsArgs<ExtArgs>
+  books?: boolean | Prisma.Adventure$booksArgs<ExtArgs>
   _count?: boolean | Prisma.AdventureCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["adventure"]>
 
@@ -1094,6 +1221,7 @@ export type AdventureInclude<ExtArgs extends runtime.Types.Extensions.InternalAr
   invitations?: boolean | Prisma.Adventure$invitationsArgs<ExtArgs>
   templates?: boolean | Prisma.Adventure$templatesArgs<ExtArgs>
   characterSheets?: boolean | Prisma.Adventure$characterSheetsArgs<ExtArgs>
+  books?: boolean | Prisma.Adventure$booksArgs<ExtArgs>
   _count?: boolean | Prisma.AdventureCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type AdventureIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1111,6 +1239,7 @@ export type $AdventurePayload<ExtArgs extends runtime.Types.Extensions.InternalA
     invitations: Prisma.$CampaignInvitationPayload<ExtArgs>[]
     templates: Prisma.$TemplatePayload<ExtArgs>[]
     characterSheets: Prisma.$CharacterSheetPayload<ExtArgs>[]
+    books: Prisma.$BookPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1520,6 +1649,7 @@ export interface Prisma__AdventureClient<T, Null = never, ExtArgs extends runtim
   invitations<T extends Prisma.Adventure$invitationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Adventure$invitationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignInvitationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   templates<T extends Prisma.Adventure$templatesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Adventure$templatesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TemplatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   characterSheets<T extends Prisma.Adventure$characterSheetsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Adventure$characterSheetsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  books<T extends Prisma.Adventure$booksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Adventure$booksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2051,6 +2181,30 @@ export type Adventure$characterSheetsArgs<ExtArgs extends runtime.Types.Extensio
   take?: number
   skip?: number
   distinct?: Prisma.CharacterSheetScalarFieldEnum | Prisma.CharacterSheetScalarFieldEnum[]
+}
+
+/**
+ * Adventure.books
+ */
+export type Adventure$booksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Book
+   */
+  select?: Prisma.BookSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Book
+   */
+  omit?: Prisma.BookOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BookInclude<ExtArgs> | null
+  where?: Prisma.BookWhereInput
+  orderBy?: Prisma.BookOrderByWithRelationInput | Prisma.BookOrderByWithRelationInput[]
+  cursor?: Prisma.BookWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.BookScalarFieldEnum | Prisma.BookScalarFieldEnum[]
 }
 
 /**
