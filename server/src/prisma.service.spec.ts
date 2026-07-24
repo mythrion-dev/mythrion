@@ -50,6 +50,20 @@ describe('PrismaService', () => {
       service = new PrismaService()
       expect(service).toBeDefined()
     })
+
+    it('should strip prisma+ prefix from DATABASE_URL', () => {
+      process.env.DATABASE_URL = 'prisma+postgres://localhost:5432/test'
+      const { Pool } = require('pg')
+
+      service = new PrismaService()
+
+      // The constructor should have stripped "prisma+" before passing to Pool
+      expect(Pool).toHaveBeenCalledWith(
+        expect.objectContaining({
+          connectionString: 'postgres://localhost:5432/test',
+        }),
+      )
+    })
   })
 
   describe('onModuleInit', () => {
@@ -65,6 +79,22 @@ describe('PrismaService', () => {
     it('should handle $connect error gracefully and not throw', async () => {
       service = new PrismaService()
       jest.spyOn(service, '$connect' as any).mockRejectedValue(new Error('Connection refused'))
+
+      // Should not throw despite the error
+      await expect(service.onModuleInit()).resolves.toBeUndefined()
+    })
+
+    it('should handle non-Error thrown values gracefully', async () => {
+      service = new PrismaService()
+      jest.spyOn(service, '$connect' as any).mockRejectedValue('string error message')
+
+      // Should not throw despite the error
+      await expect(service.onModuleInit()).resolves.toBeUndefined()
+    })
+
+    it('should handle object thrown values gracefully', async () => {
+      service = new PrismaService()
+      jest.spyOn(service, '$connect' as any).mockRejectedValue({ code: 'ECONNREFUSED' })
 
       // Should not throw despite the error
       await expect(service.onModuleInit()).resolves.toBeUndefined()

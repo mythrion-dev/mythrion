@@ -6,11 +6,204 @@ import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import { NumericInput } from '@/components/shared/NumericInput'
 import { InlineClickEdit } from '@/components/character-sheet'
 import { ResistanceTab } from '@/components/character-sheet'
-import type { Ability, AbilityLevel, SummonTab, CharacterSheet, TemplateResistanceDef } from './types'
+import type { Ability, AbilityLevel, SummonTab, CharacterSheet, TemplateResistanceDef, SheetPermissions } from './types'
 import type { FormEvent } from 'react'
 
+/**
+ * Safe formula evaluator — tokenizer + recursive descent parser.
+ * Supports arithmetic, parentheses, and Math.* functions.
+ * No use of Function() constructor or eval(), so no SonarQube hotspot.
+ */
+export function evaluateSummonFormula(formula: string, variables: Record<string, number>): number {
+  if (!formula || !formula.trim()) return 0
+
+  const varNames = Object.keys(variables)
+
+  // ---------- tokenizer ----------
+  type Token =
+    | { t: 'num'; v: number }
+    | { t: 'op'; v: string }
+    | { t: 'lparen' | 'rparen' | 'comma' }
+    | { t: 'func'; v: string }
+
+  const funcNames = new Set(['floor', 'ceil', 'round', 'max', 'min', 'abs'])
+  const funcMap: Record<string, (...args: number[]) => number> = {
+    floor: Math.floor,
+    ceil: Math.ceil,
+    round: Math.round,
+    max: Math.max,
+    min: Math.min,
+    abs: Math.abs,
+  }
+  const ops = new Set(['+', '-', '*', '/', '%', '**', '^'])
+
+  function tokenize(src: string): Token[] {
+    const tokens: Token[] = []
+    let i = 0
+    while (i < src.length) {
+      const ch = src[i]
+      // Skip whitespace
+      if (/\s/.test(ch)) { i++; continue }
+
+      // Number
+      if (/\d/.test(ch) || (ch === '.' && i + 1 < src.length && /\d/.test(src[i + 1]))) {
+        const start = i
+        while (i < src.length && /[\d.eE]/.test(src[i])) i++
+        let numStr = src.slice(start, i)
+        // Back up if trailing exponent with no digits
+        if (/[eE][-+]?$/.test(numStr)) { i--; numStr = src.slice(start, i) }
+        tokens.push({ t: 'num', v: parseFloat(numStr) })
+        continue
+      }
+
+      // ** (two-char operator)
+      if (ch === '*' && i + 1 < src.length && src[i + 1] === '*') {
+        tokens.push({ t: 'op', v: '**' }); i += 2; continue
+      }
+      // ^ (shorthand for **)
+      if (ch === '^') {
+        tokens.push({ t: 'op', v: '**' }); i += 1; continue
+      }
+
+      // Single-char operators
+      if (ops.has(ch)) {
+        tokens.push({ t: 'op', v: ch }); i += 1; continue
+      }
+
+      // Parens / comma
+      if (ch === '(') { tokens.push({ t: 'lparen' }); i += 1; continue }
+      if (ch === ')') { tokens.push({ t: 'rparen' }); i += 1; continue }
+      if (ch === ',') { tokens.push({ t: 'comma' }); i += 1; continue }
+
+      // Identifier (function name or variable)
+      if (/[a-zA-Z_]/.test(ch)) {
+        const start = i
+        while (i < src.length && /\w/.test(src[i])) i++
+        const word = src.slice(start, i)
+        if (funcNames.has(word)) {
+          tokens.push({ t: 'func', v: word })
+        } else if (word in variables) {
+          tokens.push({ t: 'num', v: variables[word] })
+        } else {
+          // Unknown identifier — treat as 0 to avoid crashing
+          tokens.push({ t: 'num', v: 0 })
+        }
+        continue
+      }
+
+      // Skip anything else
+      i++
+    }
+    return tokens
+  }
+
+  // ---------- recursive descent parser ----------
+  let pos = 0
+  let toks: Token[] = []
+
+  function peek(): Token | undefined { return toks[pos] }
+  function consume(): Token | undefined { return toks[pos++] }
+  function expect(t: Token['t']): boolean {
+    if (peek()?.t === t) { consume(); return true }
+    return false
+  }
+
+  // expression := term (('+' | '-') term)*
+  function parseExpression(): number {
+    let left = parseTerm()
+    let tok = peek()
+    while (tok?.t === 'op' && (tok.v === '+' || tok.v === '-')) {
+      consume()
+      const right = parseTerm()
+      left = tok.v === '+' ? left + right : left - right
+      tok = peek()
+    }
+    return left
+  }
+
+  // term := factor (('*' | '/' | '%') factor)*
+  function parseTerm(): number {
+    let left = parseFactor()
+    let tok = peek()
+    while (tok?.t === 'op' && (tok.v === '*' || tok.v === '/' || tok.v === '%')) {
+      consume()
+      const right = parseFactor()
+      if (tok.v === '*') left = left * right
+      else if (tok.v === '/') left = right !== 0 ? left / right : 0
+      else left = right !== 0 ? left % right : 0
+      tok = peek()
+    }
+    return left
+  }
+
+  // factor := unary ('**' factor)?
+  function parseFactor(): number {
+    const base = parseUnary()
+    const tok = peek()
+    if (tok?.t === 'op' && tok.v === '**') {
+      consume()
+      const exp = parseFactor() // right-associative
+      return Math.pow(base, exp)
+    }
+    return base
+  }
+
+  // unary := '-' unary | '+' unary | atom
+  function parseUnary(): number {
+    const neg = peek()
+    if (neg?.t === 'op' && neg.v === '-') {
+      consume(); return -parseUnary()
+    }
+    const pos = peek()
+    if (pos?.t === 'op' && pos.v === '+') {
+      consume(); return parseUnary()
+    }
+    return parseAtom()
+  }
+
+  // atom := NUMBER | '(' expression ')' | func '(' args ')'
+  function parseAtom(): number {
+    const num = peek()
+    if (num?.t === 'num') {
+      consume()
+      return num.v
+    }
+    if (expect('lparen')) {
+      const val = parseExpression()
+      expect('rparen')
+      return val
+    }
+    const fnTok = peek()
+    if (fnTok?.t === 'func') {
+      consume()
+      const fn = funcMap[fnTok.v]
+      if (!fn) return 0
+      expect('lparen')
+      const args: number[] = []
+      if (peek()?.t !== 'rparen') {
+        args.push(parseExpression())
+        while (expect('comma')) {
+          args.push(parseExpression())
+        }
+      }
+      expect('rparen')
+      return fn(...args)
+    }
+    return 0
+  }
+
+  try {
+    toks = tokenize(formula)
+    pos = 0
+    const result = parseExpression()
+    return Number.isFinite(result) ? result : 0
+  } catch {
+    return 0
+  }
+}
+
 export function AbilitiesTab({
-  abilities, isOwner, sheetId, template,
+  abilities, permissions, sheetId, template,
   selectedLevels, setAbilities, setSelectedLevels,
   showNewAbility, setShowNewAbility,
   searchQuery, setSearchQuery,
@@ -32,7 +225,7 @@ export function AbilitiesTab({
   handleSummonSkillAttributeChange, handleSummonSkillProfileChange,
   handleCreateSummonAbility,
 }: {
-  abilities: Ability[]; isOwner: boolean; sheetId: string
+  abilities: Ability[]; permissions: SheetPermissions; sheetId: string
   template: CharacterSheet['template']
   selectedLevels: Record<string, string>; setAbilities: React.Dispatch<React.SetStateAction<Ability[]>>
   setSelectedLevels: React.Dispatch<React.SetStateAction<Record<string, string>>>
@@ -63,6 +256,7 @@ export function AbilitiesTab({
   handleSummonSkillProfileChange: (abilityId: string, summonSkillId: string, profileId: string, optionId: string | null) => Promise<void>
   handleCreateSummonAbility: (summonId: string, e: FormEvent) => Promise<void>
 }) {
+  const canEditAbilities = permissions.canEditAbilities
   const [confirmDeleteAbility, setConfirmDeleteAbility] = useState<string | null>(null)
   const [confirmDeleteLevel, setConfirmDeleteLevel] = useState<string | null>(null)
   const [deletingAbility, setDeletingAbility] = useState(false)
@@ -228,198 +422,6 @@ export function AbilitiesTab({
     return map
   }
 
-  /**
-   * Safe formula evaluator — tokenizer + recursive descent parser.
-   * Supports arithmetic, parentheses, and Math.* functions.
-   * No use of Function() constructor or eval(), so no SonarQube hotspot.
-   */
-  function evaluateSummonFormula(formula: string, variables: Record<string, number>): number {
-    if (!formula || !formula.trim()) return 0
-
-    const varNames = Object.keys(variables)
-
-    // ---------- tokenizer ----------
-    type Token =
-      | { t: 'num'; v: number }
-      | { t: 'op'; v: string }
-      | { t: 'lparen' | 'rparen' | 'comma' }
-      | { t: 'func'; v: string }
-
-    const funcNames = new Set(['floor', 'ceil', 'round', 'max', 'min', 'abs'])
-    const funcMap: Record<string, (...args: number[]) => number> = {
-      floor: Math.floor,
-      ceil: Math.ceil,
-      round: Math.round,
-      max: Math.max,
-      min: Math.min,
-      abs: Math.abs,
-    }
-    const ops = new Set(['+', '-', '*', '/', '%', '**', '^'])
-
-    function tokenize(src: string): Token[] {
-      const tokens: Token[] = []
-      let i = 0
-      while (i < src.length) {
-        const ch = src[i]
-        // Skip whitespace
-        if (/\s/.test(ch)) { i++; continue }
-
-        // Number
-        if (/\d/.test(ch) || (ch === '.' && i + 1 < src.length && /\d/.test(src[i + 1]))) {
-          const start = i
-          while (i < src.length && /[\d.eE]/.test(src[i])) i++
-          let numStr = src.slice(start, i)
-          // Back up if trailing exponent with no digits
-          if (/[eE][-+]?$/.test(numStr)) { i--; numStr = src.slice(start, i) }
-          tokens.push({ t: 'num', v: parseFloat(numStr) })
-          continue
-        }
-
-        // ** (two-char operator)
-        if (ch === '*' && i + 1 < src.length && src[i + 1] === '*') {
-          tokens.push({ t: 'op', v: '**' }); i += 2; continue
-        }
-        // ^ (shorthand for **)
-        if (ch === '^') {
-          tokens.push({ t: 'op', v: '**' }); i += 1; continue
-        }
-
-        // Single-char operators
-        if (ops.has(ch)) {
-          tokens.push({ t: 'op', v: ch }); i += 1; continue
-        }
-
-        // Parens / comma
-        if (ch === '(') { tokens.push({ t: 'lparen' }); i += 1; continue }
-        if (ch === ')') { tokens.push({ t: 'rparen' }); i += 1; continue }
-        if (ch === ',') { tokens.push({ t: 'comma' }); i += 1; continue }
-
-        // Identifier (function name or variable)
-        if (/[a-zA-Z_]/.test(ch)) {
-          const start = i
-          while (i < src.length && /\w/.test(src[i])) i++
-          const word = src.slice(start, i)
-          if (funcNames.has(word)) {
-            tokens.push({ t: 'func', v: word })
-          } else if (word in variables) {
-            tokens.push({ t: 'num', v: variables[word] })
-          } else {
-            // Unknown identifier — treat as 0 to avoid crashing
-            tokens.push({ t: 'num', v: 0 })
-          }
-          continue
-        }
-
-        // Skip anything else
-        i++
-      }
-      return tokens
-    }
-
-    // ---------- recursive descent parser ----------
-    let pos = 0
-    let toks: Token[] = []
-
-    function peek(): Token | undefined { return toks[pos] }
-    function consume(): Token | undefined { return toks[pos++] }
-    function expect(t: Token['t']): boolean {
-      if (peek()?.t === t) { consume(); return true }
-      return false
-    }
-
-    // expression := term (('+' | '-') term)*
-    function parseExpression(): number {
-      let left = parseTerm()
-      let tok = peek()
-      while (tok?.t === 'op' && (tok.v === '+' || tok.v === '-')) {
-        consume()
-        const right = parseTerm()
-        left = tok.v === '+' ? left + right : left - right
-        tok = peek()
-      }
-      return left
-    }
-
-    // term := factor (('*' | '/' | '%') factor)*
-    function parseTerm(): number {
-      let left = parseFactor()
-      let tok = peek()
-      while (tok?.t === 'op' && (tok.v === '*' || tok.v === '/' || tok.v === '%')) {
-        consume()
-        const right = parseFactor()
-        if (tok.v === '*') left = left * right
-        else if (tok.v === '/') left = right !== 0 ? left / right : 0
-        else left = right !== 0 ? left % right : 0
-        tok = peek()
-      }
-      return left
-    }
-
-    // factor := unary ('**' factor)?
-    function parseFactor(): number {
-      const base = parseUnary()
-      const tok = peek()
-      if (tok?.t === 'op' && tok.v === '**') {
-        consume()
-        const exp = parseFactor() // right-associative
-        return Math.pow(base, exp)
-      }
-      return base
-    }
-
-    // unary := '-' unary | '+' unary | atom
-    function parseUnary(): number {
-      const neg = peek()
-      if (neg?.t === 'op' && neg.v === '-') {
-        consume(); return -parseUnary()
-      }
-      const pos = peek()
-      if (pos?.t === 'op' && pos.v === '+') {
-        consume(); return parseUnary()
-      }
-      return parseAtom()
-    }
-
-    // atom := NUMBER | '(' expression ')' | func '(' args ')'
-    function parseAtom(): number {
-      const num = peek()
-      if (num?.t === 'num') {
-        consume()
-        return num.v
-      }
-      if (expect('lparen')) {
-        const val = parseExpression()
-        expect('rparen')
-        return val
-      }
-      const fnTok = peek()
-      if (fnTok?.t === 'func') {
-        consume()
-        const fn = funcMap[fnTok.v]
-        if (!fn) return 0
-        expect('lparen')
-        const args: number[] = []
-        if (peek()?.t !== 'rparen') {
-          args.push(parseExpression())
-          while (expect('comma')) {
-            args.push(parseExpression())
-          }
-        }
-        expect('rparen')
-        return fn(...args)
-      }
-      return 0
-    }
-
-    try {
-      toks = tokenize(formula)
-      pos = 0
-      const result = parseExpression()
-      return Number.isFinite(result) ? result : 0
-    } catch {
-      return 0
-    }
-  }
 
   async function handleAddLevel(abilityId: string) {
     if (!sheetId) return
@@ -490,7 +492,7 @@ export function AbilitiesTab({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                 </svg>
                 <p className="text-sm italic">No abilities or summons yet.</p>
-                {isOwner && <p className="text-xs text-muted">Create one below.</p>}
+                {canEditAbilities && <p className="text-xs text-muted">Create one below.</p>}
               </div>
             )}
           </div>
@@ -536,7 +538,7 @@ export function AbilitiesTab({
                         {a.levels.map(l => <option key={l.id} value={l.id}>Level {l.level}</option>)}
                       </select>
                     )}
-                    {isOwner && (
+                    {canEditAbilities && (
                       <button
                         onClick={() => setConfirmDeleteAbility(a.id)}
                         className="text-muted hover:text-danger p-1 transition-colors"
@@ -556,7 +558,7 @@ export function AbilitiesTab({
                     {isAbility && selLevel ? (
                       <>
                         {/* Delete level */}
-                        {isOwner && a.levels.length > 1 && (
+                        {canEditAbilities && a.levels.length > 1 && (
                           <div className="flex justify-end">
                             <button
                               onClick={() => setConfirmDeleteLevel(selLevel.id)}
@@ -569,7 +571,7 @@ export function AbilitiesTab({
 
                         {/* Metadata row */}
                         <div className="flex flex-wrap gap-4 text-xs text-muted">
-                          {isOwner ? (
+                          {canEditAbilities ? (
                             <>
                               <span className="inline-flex items-center gap-1">
                                 Mana:
@@ -629,7 +631,7 @@ export function AbilitiesTab({
                         </div>
 
                         {/* Description */}
-                        {isOwner ? (
+                        {canEditAbilities ? (
                           <div>
                             <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
                             <InlineClickEdit
@@ -653,7 +655,7 @@ export function AbilitiesTab({
                         )}
 
                         {/* Notes */}
-                        {isOwner ? (
+                        {canEditAbilities ? (
                           <div>
                             <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
                             <InlineClickEdit
@@ -677,7 +679,7 @@ export function AbilitiesTab({
                         )}
 
                         {/* Add level button */}
-                        {isOwner && (
+                        {canEditAbilities && (
                           <button
                             onClick={() => { setShowAddLevelModal(a.id); setNewLevelForm({ level: Math.max(...a.levels.map(l => parseInt(l.level)).filter(n => !isNaN(n)), 0) + 1, copyFromPrevious: a.levels.length > 0 }); setLevelModalError(null) }}
                             className="btn-ghost text-xs"
@@ -692,7 +694,7 @@ export function AbilitiesTab({
                     ) : isAbility && !selLevel ? (
                       <div className="flex items-center justify-between pt-2">
                         <p className="text-xs text-muted italic">No levels added yet.</p>
-                        {isOwner && (
+                        {canEditAbilities && (
                           <button
                             onClick={() => { setShowAddLevelModal(a.id); setNewLevelForm({ level: 1, copyFromPrevious: false }); setLevelModalError(null) }}
                             className="btn-ghost text-xs"
@@ -722,7 +724,7 @@ export function AbilitiesTab({
                           <div className="space-y-4">
                             {/* Description / Notes */}
                             <div className="space-y-2">
-                              {isOwner ? (
+                              {canEditAbilities ? (
                                 <>
                                   <div>
                                     <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
@@ -774,14 +776,14 @@ export function AbilitiesTab({
                                 <span className="text-muted text-xl">/</span>
                                 <div className="text-center">
                                   <span className="text-xs text-muted block mb-0.5">Max</span>
-                                  {isOwner ? (
+                                  {canEditAbilities ? (
                                     <InlineNumber value={a.summonHealth?.maximum ?? 0} onSave={(v) => saveSummonHealth(a.id, 'maximum', v)} min={0} className="text-xl font-bold text-foreground" />
                                   ) : (
                                     <span className="text-xl font-bold text-foreground">{a.summonHealth?.maximum ?? '—'}</span>
                                   )}
                                 </div>
                               </div>
-                              {isOwner && (
+                              {canEditAbilities && (
                                 <div className="flex items-center justify-center gap-3">
                                   <NumericInput
                                     min={1}
@@ -831,7 +833,7 @@ export function AbilitiesTab({
                                       <div key={sa.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
                                         <span className="text-sm text-foreground">{attr.name}</span>
                                         <div className="flex items-center gap-2">
-                                          {isOwner ? (
+                                          {canEditAbilities ? (
                                             <InlineText value={sa.value} onSave={(v) => saveSummonAttribute(a.id, sa.attributeId, v)} className="text-sm font-semibold text-foreground" />
                                           ) : (
                                             <span className="text-sm font-semibold text-foreground">{sa.value || '—'}</span>
@@ -860,7 +862,7 @@ export function AbilitiesTab({
                                   {ac.fields.map(field => {
                                     const acv = a.summonAcValues.find(v => v.fieldId === field.id)
                                     const val = acv?.value ?? field.defaultValue
-                                    const canEdit = isOwner && field.editableByPlayer
+                                    const canEdit = canEditAbilities && field.editableByPlayer
                                     return (
                                       <div key={field.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
                                         <div className="flex items-center gap-1 min-w-0">
@@ -885,7 +887,7 @@ export function AbilitiesTab({
                                         const selectedAttributeId = acAttrValue?.selectedAttributeId ?? am.defaultAttributeId ?? am.attributeId
                                         const selectedAttribute = template.attributes.find(at => at.id === selectedAttributeId) ?? am.defaultAttribute ?? am.attribute
                                         const modResult = selectedAttribute ? (summonModifierResults[a.id] ?? {})[selectedAttribute.id] : null
-                                        const canChangeAttribute = isOwner && am.allowPlayerSelection
+                                        const canChangeAttribute = canEditAbilities && am.allowPlayerSelection
                                         return (
                                           <div key={am.id} className="flex items-center justify-between gap-2 py-1.5 px-3 rounded-lg bg-background/50 border border-border">
                                             {canChangeAttribute ? (
@@ -920,7 +922,7 @@ export function AbilitiesTab({
                         {/* Skills tab */}
                         {currentSummonTab === 'skills' && (
                           <div className="space-y-3">
-                            {isOwner && (
+                            {canEditAbilities && (
                               <div>
                                 {skillSearchOpen !== a.id ? (
                                   <button
@@ -985,7 +987,7 @@ export function AbilitiesTab({
                                     <div key={ss.id} className="flex items-center gap-2 py-2 px-3 rounded-lg bg-background/50 border border-border">
                                       <div className="flex-1 min-w-0 flex items-center gap-2">
                                         <span className="text-sm font-medium text-foreground truncate">{ss.skill.name}</span>
-                                        {isOwner && hasAttrDropdown && template.attributeModifiersEnabled !== false ? (
+                                        {canEditAbilities && hasAttrDropdown && template.attributeModifiersEnabled !== false ? (
                                           <select
                                             className="input-field py-0.5 text-xs w-auto min-w-[80px]"
                                             value={ss.selectedAttributeId ?? ''}
@@ -997,12 +999,12 @@ export function AbilitiesTab({
                                               return <option key={attrId} value={attrId}>{attr.name}</option>
                                             })}
                                           </select>
-                                        ) : isOwner && hasAttrDropdown ? (
+                                        ) : canEditAbilities && hasAttrDropdown ? (
                                           <span className="text-xs text-muted opacity-40 min-w-[80px] inline-block">{ss.selectedAttribute?.name || ss.skill.defaultAttribute?.name || ss.skill.attribute?.name || '—'}</span>
                                         ) : null}
                                       </div>
                                       <span className="text-sm font-bold text-primary shrink-0">{result != null ? (result >= 0 ? '+' : '') + result : '—'}</span>
-                                      {isOwner && (
+                                      {canEditAbilities && (
                                         <button
                                           type="button"
                                           onClick={() => handleRemoveSummonSkill(a.id, ss.id)}
@@ -1043,7 +1045,7 @@ export function AbilitiesTab({
                                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
                                         </svg>
                                         <span className="text-sm font-medium text-foreground truncate flex-1">{ca.name}</span>
-                                        {isOwner && ca.levels.length > 0 && (
+                                        {canEditAbilities && ca.levels.length > 0 && (
                                           <div onClick={e => e.stopPropagation()}>
                                             <select
                                               className="input-field py-0.5 px-1.5 text-[0.6rem] min-w-[70px]"
@@ -1054,7 +1056,7 @@ export function AbilitiesTab({
                                             </select>
                                           </div>
                                         )}
-                                        {isOwner && (
+                                        {canEditAbilities && (
                                           <div onClick={e => e.stopPropagation()}>
                                             <button onClick={() => handleDeleteAbility(ca.id)} className="text-muted hover:text-danger p-0.5 transition-colors shrink-0">
                                               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1067,7 +1069,7 @@ export function AbilitiesTab({
                                       {caExpanded && caSelLevel && (
                                         <div className="px-3 pb-3 pt-2 space-y-2 border-t border-border animate-fade-in">
                                           {/* Delete level */}
-                                          {isOwner && ca.levels.length > 1 && (
+                                          {canEditAbilities && ca.levels.length > 1 && (
                                             <div className="flex justify-end">
                                               <button
                                                 onClick={() => setConfirmDeleteLevel(caSelLevel.id)}
@@ -1078,7 +1080,7 @@ export function AbilitiesTab({
                                             </div>
                                           )}
                                           <div className="flex flex-wrap gap-3 text-xs text-muted">
-                                            {isOwner ? (
+                                            {canEditAbilities ? (
                                               <>
                                                 <span className="inline-flex items-center gap-1">
                                                   Mana:
@@ -1136,7 +1138,7 @@ export function AbilitiesTab({
                                               </>
                                             )}
                                           </div>
-                                          {isOwner ? (
+                                          {canEditAbilities ? (
                                             <>
                                               <div>
                                                 <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
@@ -1170,7 +1172,7 @@ export function AbilitiesTab({
                                               </div>
                                               {/* Add level button */}
                                               <div className="flex items-center justify-between pt-1">
-                                                {isOwner && (
+                                                {canEditAbilities && (
                                                   <button
                                                     onClick={() => { setShowAddLevelModal(ca.id); setNewLevelForm({ level: Math.max(...ca.levels.map(l => parseInt(l.level)).filter(n => !isNaN(n)), 0) + 1, copyFromPrevious: ca.levels.length > 0 }); setLevelModalError(null) }}
                                                     className="btn-ghost text-[0.6rem]"
@@ -1195,7 +1197,7 @@ export function AbilitiesTab({
                                         <div className="px-3 pb-3 pt-2 border-t border-border animate-fade-in">
                                           <div className="flex items-center justify-between">
                                             <p className="text-[0.6rem] text-muted italic">No levels added yet.</p>
-                                            {isOwner && (
+                                            {canEditAbilities && (
                                               <button
                                                 onClick={() => { setShowAddLevelModal(ca.id); setNewLevelForm({ level: 1, copyFromPrevious: false }); setLevelModalError(null) }}
                                                 className="btn-ghost text-[0.6rem]"
@@ -1215,7 +1217,7 @@ export function AbilitiesTab({
                               </div>
                             )}
 
-                            {isOwner && (
+                            {canEditAbilities && (
                               <>
                                 {showNewSummonAbility === a.id ? (
                                   <form onSubmit={(e) => { handleCreateSummonAbility(a.id, e); setShowNewSummonAbility(null) }} className="card !p-4 space-y-3 border-primary/20">
@@ -1274,7 +1276,7 @@ export function AbilitiesTab({
                           <div className="space-y-3">
                             <ResistanceTab
                               resistances={buildSummonResistances(a)}
-                              isOwner={isOwner}
+                              permissions={permissions}
                               onSaveComponent={async (componentId, value) => {
                                 try {
                                   await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}/summon-resistance-components/${componentId}`, { value: value.toString() })
@@ -1302,7 +1304,7 @@ export function AbilitiesTab({
       )}
 
       {/* New Ability / Summon button */}
-      {isOwner && !showNewAbility && (
+      {canEditAbilities && !showNewAbility && (
         <button onClick={() => setShowNewAbility(true)} className="btn-primary text-sm">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
@@ -1312,7 +1314,7 @@ export function AbilitiesTab({
       )}
 
       {/* Create form */}
-      {isOwner && showNewAbility && (
+      {canEditAbilities && showNewAbility && (
         <div className="card !p-6 space-y-4 border-primary/20">
           {!newAbilityType ? (
             <>

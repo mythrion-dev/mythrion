@@ -168,7 +168,23 @@ export class TemplateService {
       include: templateInclude,
     })
 
-    // Fetch created attributes for key->id resolution
+    // ── Diagnostic: log core resources created ──
+    const createdCrSlugs = created.coreResources?.map((cr: any) => ({
+      slug: cr.slug,
+      enabled: cr.enabled,
+    })) ?? []
+    const hasHpCoreResource = created.coreResources?.some(
+      (cr: any) => cr.slug === 'hp' && cr.enabled,
+    )
+    this.logger.debug(
+      `[DIAGNOSTIC] template.create: "${created.name}" | coreResources=${JSON.stringify(createdCrSlugs)} | hasHp=${hasHpCoreResource}`,
+    )
+    if (!hasHpCoreResource) {
+      this.logger.warn(
+        `[DIAGNOSTIC] template.create: "${created.name}" is MISSING enabled 'hp' core resource — NPC sheets will show 0/0! ` +
+        `Add a core resource with slug='hp' and enabled=true via TemplateForm`,
+      )
+    }
     const createdAttrs = await this.prisma.templateAttribute.findMany({ where: { templateId: created.id } })
     const attrKeyToId = new Map(createdAttrs.map(a => [a.key, a.id]))
 

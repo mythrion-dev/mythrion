@@ -386,6 +386,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   User: 'User',
   Adventure: 'Adventure',
+  Book: 'Book',
   CampaignMember: 'CampaignMember',
   CampaignInvitation: 'CampaignInvitation',
   GoogleAccount: 'GoogleAccount',
@@ -417,6 +418,7 @@ export const ModelName = {
   SheetResistanceComponent: 'SheetResistanceComponent',
   SheetResistanceAttributeModifier: 'SheetResistanceAttributeModifier',
   SheetProfessionalSkill: 'SheetProfessionalSkill',
+  SheetProfessionalSkillProfileValue: 'SheetProfessionalSkillProfileValue',
   CharacterAbility: 'CharacterAbility',
   CharacterAbilityLevel: 'CharacterAbilityLevel',
   SummonSkill: 'SummonSkill',
@@ -446,7 +448,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adventure" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateCoreResource" | "characterSheetCoreResourceValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "armorClassAttributeModifier" | "characterSheetArmorClassAttributeValue" | "templateResistance" | "resistanceComponent" | "resistanceAttributeModifier" | "characterSheetResistanceValue" | "characterSheetResistanceComponentValue" | "sheetResistance" | "sheetResistanceComponent" | "sheetResistanceAttributeModifier" | "sheetProfessionalSkill" | "characterAbility" | "characterAbilityLevel" | "summonSkill" | "summonSkillProfileValue" | "summonAttribute" | "summonArmorClassValue" | "summonArmorClassAttributeValue" | "summonHealth" | "summonResistanceValue" | "summonResistanceComponentValue" | "characterInventoryItem" | "characterStory" | "templateCharacterSection" | "characterSectionEntry"
+    modelProps: "user" | "adventure" | "book" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateCoreResource" | "characterSheetCoreResourceValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "armorClassAttributeModifier" | "characterSheetArmorClassAttributeValue" | "templateResistance" | "resistanceComponent" | "resistanceAttributeModifier" | "characterSheetResistanceValue" | "characterSheetResistanceComponentValue" | "sheetResistance" | "sheetResistanceComponent" | "sheetResistanceAttributeModifier" | "sheetProfessionalSkill" | "sheetProfessionalSkillProfileValue" | "characterAbility" | "characterAbilityLevel" | "summonSkill" | "summonSkillProfileValue" | "summonAttribute" | "summonArmorClassValue" | "summonArmorClassAttributeValue" | "summonHealth" | "summonResistanceValue" | "summonResistanceComponentValue" | "characterInventoryItem" | "characterStory" | "templateCharacterSection" | "characterSectionEntry"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -595,6 +597,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.AdventureCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.AdventureCountAggregateOutputType> | number
+        }
+      }
+    }
+    Book: {
+      payload: Prisma.$BookPayload<ExtArgs>
+      fields: Prisma.BookFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BookFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BookFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookPayload>
+        }
+        findFirst: {
+          args: Prisma.BookFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BookFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookPayload>
+        }
+        findMany: {
+          args: Prisma.BookFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookPayload>[]
+        }
+        create: {
+          args: Prisma.BookCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookPayload>
+        }
+        createMany: {
+          args: Prisma.BookCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BookCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookPayload>[]
+        }
+        delete: {
+          args: Prisma.BookDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookPayload>
+        }
+        update: {
+          args: Prisma.BookUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookPayload>
+        }
+        deleteMany: {
+          args: Prisma.BookDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BookUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BookUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookPayload>[]
+        }
+        upsert: {
+          args: Prisma.BookUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookPayload>
+        }
+        aggregate: {
+          args: Prisma.BookAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBook>
+        }
+        groupBy: {
+          args: Prisma.BookGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BookGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BookCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BookCountAggregateOutputType> | number
         }
       }
     }
@@ -2892,6 +2968,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    SheetProfessionalSkillProfileValue: {
+      payload: Prisma.$SheetProfessionalSkillProfileValuePayload<ExtArgs>
+      fields: Prisma.SheetProfessionalSkillProfileValueFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SheetProfessionalSkillProfileValueFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillProfileValuePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SheetProfessionalSkillProfileValueFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillProfileValuePayload>
+        }
+        findFirst: {
+          args: Prisma.SheetProfessionalSkillProfileValueFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillProfileValuePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SheetProfessionalSkillProfileValueFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillProfileValuePayload>
+        }
+        findMany: {
+          args: Prisma.SheetProfessionalSkillProfileValueFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillProfileValuePayload>[]
+        }
+        create: {
+          args: Prisma.SheetProfessionalSkillProfileValueCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillProfileValuePayload>
+        }
+        createMany: {
+          args: Prisma.SheetProfessionalSkillProfileValueCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SheetProfessionalSkillProfileValueCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillProfileValuePayload>[]
+        }
+        delete: {
+          args: Prisma.SheetProfessionalSkillProfileValueDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillProfileValuePayload>
+        }
+        update: {
+          args: Prisma.SheetProfessionalSkillProfileValueUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillProfileValuePayload>
+        }
+        deleteMany: {
+          args: Prisma.SheetProfessionalSkillProfileValueDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SheetProfessionalSkillProfileValueUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SheetProfessionalSkillProfileValueUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillProfileValuePayload>[]
+        }
+        upsert: {
+          args: Prisma.SheetProfessionalSkillProfileValueUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SheetProfessionalSkillProfileValuePayload>
+        }
+        aggregate: {
+          args: Prisma.SheetProfessionalSkillProfileValueAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSheetProfessionalSkillProfileValue>
+        }
+        groupBy: {
+          args: Prisma.SheetProfessionalSkillProfileValueGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SheetProfessionalSkillProfileValueGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SheetProfessionalSkillProfileValueCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SheetProfessionalSkillProfileValueCountAggregateOutputType> | number
+        }
+      }
+    }
     CharacterAbility: {
       payload: Prisma.$CharacterAbilityPayload<ExtArgs>
       fields: Prisma.CharacterAbilityFieldRefs
@@ -3994,6 +4144,20 @@ export const AdventureScalarFieldEnum = {
 export type AdventureScalarFieldEnum = (typeof AdventureScalarFieldEnum)[keyof typeof AdventureScalarFieldEnum]
 
 
+export const BookScalarFieldEnum = {
+  id: 'id',
+  adventureId: 'adventureId',
+  name: 'name',
+  visibility: 'visibility',
+  fileLength: 'fileLength',
+  gridfsFileId: 'gridfsFileId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BookScalarFieldEnum = (typeof BookScalarFieldEnum)[keyof typeof BookScalarFieldEnum]
+
+
 export const CampaignMemberScalarFieldEnum = {
   id: 'id',
   adventureId: 'adventureId',
@@ -4416,6 +4580,18 @@ export const SheetProfessionalSkillScalarFieldEnum = {
 export type SheetProfessionalSkillScalarFieldEnum = (typeof SheetProfessionalSkillScalarFieldEnum)[keyof typeof SheetProfessionalSkillScalarFieldEnum]
 
 
+export const SheetProfessionalSkillProfileValueScalarFieldEnum = {
+  id: 'id',
+  sheetProfessionalSkillId: 'sheetProfessionalSkillId',
+  profileId: 'profileId',
+  optionId: 'optionId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SheetProfessionalSkillProfileValueScalarFieldEnum = (typeof SheetProfessionalSkillProfileValueScalarFieldEnum)[keyof typeof SheetProfessionalSkillProfileValueScalarFieldEnum]
+
+
 export const CharacterAbilityScalarFieldEnum = {
   id: 'id',
   sheetId: 'sheetId',
@@ -4683,6 +4859,20 @@ export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
+ * Reference to a field of type 'BookVisibility'
+ */
+export type EnumBookVisibilityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BookVisibility'>
+    
+
+
+/**
+ * Reference to a field of type 'BookVisibility[]'
+ */
+export type ListEnumBookVisibilityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BookVisibility[]'>
+    
+
+
+/**
  * Reference to a field of type 'MemberRole'
  */
 export type EnumMemberRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MemberRole'>
@@ -4835,6 +5025,7 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
   adventure?: Prisma.AdventureOmit
+  book?: Prisma.BookOmit
   campaignMember?: Prisma.CampaignMemberOmit
   campaignInvitation?: Prisma.CampaignInvitationOmit
   googleAccount?: Prisma.GoogleAccountOmit
@@ -4866,6 +5057,7 @@ export type GlobalOmitConfig = {
   sheetResistanceComponent?: Prisma.SheetResistanceComponentOmit
   sheetResistanceAttributeModifier?: Prisma.SheetResistanceAttributeModifierOmit
   sheetProfessionalSkill?: Prisma.SheetProfessionalSkillOmit
+  sheetProfessionalSkillProfileValue?: Prisma.SheetProfessionalSkillProfileValueOmit
   characterAbility?: Prisma.CharacterAbilityOmit
   characterAbilityLevel?: Prisma.CharacterAbilityLevelOmit
   summonSkill?: Prisma.SummonSkillOmit

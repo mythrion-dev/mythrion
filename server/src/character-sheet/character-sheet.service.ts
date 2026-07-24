@@ -1,6 +1,7 @@
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
   ForbiddenException,
   ConflictException,
   Logger,
@@ -8,6 +9,7 @@ import {
 import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { RedisService } from '../redis/redis.service.js'
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
 import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
 
@@ -312,6 +314,28 @@ export class CharacterSheetService {
       include: sheetInclude,
     })
 
+    // ── Diagnostic: log core resource values created ──
+    const crvsDebug = (sheet as any).coreResourceValues?.map((crv: any) => ({
+      id: crv.id,
+      slug: crv.coreResource?.slug,
+      enabled: crv.coreResource?.enabled,
+      current: crv.current,
+      maximum: crv.maximum,
+    }))
+    this.logger.debug(
+      `[DIAGNOSTIC] characterSheetService.create: sheet "${sheet.characterName}" | ` +
+      `templateId=${dto.templateId} | CRVs=${JSON.stringify(crvsDebug ?? [])}`,
+    )
+    const hpCrvDebug = (sheet as any).coreResourceValues?.find(
+      (crv: any) => crv.coreResource?.slug === 'hp',
+    )
+    if (!hpCrvDebug) {
+      this.logger.warn(
+        `[DIAGNOSTIC] characterSheetService.create: NO HP core resource for "${sheet.characterName}" | ` +
+        `templateId=${dto.templateId} | Template likely missing slug='hp' core resource`,
+      )
+    }
+
     // Invalidate user's list cache for the new sheet
     await this.invalidateCache(sheet.id, userId, adventureId ?? undefined).catch(() => {})
 
@@ -410,9 +434,13 @@ export class CharacterSheetService {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can edit this character sheet')
-      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
-      catch { throw new ForbiddenException('Only the owner or a GM can edit this character sheet') }
+      // Only allow GM bypass for NPC sheets; player sheets are owner-only
+      if (sheet.isNpc && sheet.adventureId) {
+        try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+        catch { throw new ForbiddenException('You do not have permission to modify this Character.') }
+      } else {
+        throw new ForbiddenException('You do not have permission to modify this Character.')
+      }
     }
 
     if (dto.values) {
@@ -556,9 +584,12 @@ export class CharacterSheetService {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can delete this character sheet')
-      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
-      catch { throw new ForbiddenException('Only the owner or a GM can delete this character sheet') }
+      if (sheet.isNpc && sheet.adventureId) {
+        try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+        catch { throw new ForbiddenException('You do not have permission to modify this Character.') }
+      } else {
+        throw new ForbiddenException('You do not have permission to modify this Character.')
+      }
     }
     const deleted = await this.prisma.characterSheet.delete({ where: { id } })
 
@@ -586,9 +617,12 @@ export class CharacterSheetService {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can unlink this character sheet')
-      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
-      catch { throw new ForbiddenException('Only the owner or a GM can unlink this character sheet') }
+      if (sheet.isNpc && sheet.adventureId) {
+        try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+        catch { throw new ForbiddenException('You do not have permission to modify this Character.') }
+      } else {
+        throw new ForbiddenException('You do not have permission to modify this Character.')
+      }
     }
     const unlinked = await this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId: null }, include: sheetInclude })
 
@@ -611,6 +645,24 @@ export class CharacterSheetService {
 
   async updateSkillAttribute(sheetId: string, skillId: string, attributeId: string | null, userId: string) {
     await this.requireOwnership(sheetId, userId)
+
+    // Fetch the template skill to validate allowedAttributeIds
+    const templateSkill = await this.prisma.templateSkill.findUnique({
+      where: { id: skillId },
+      select: { allowedAttributeIds: true },
+    })
+    if (!templateSkill) throw new NotFoundException('Skill not found')
+
+    // Fixed skills (allowedAttributeIds is empty) reject any attribute change
+    if (templateSkill.allowedAttributeIds.length === 0) {
+      throw new BadRequestException('This skill has a fixed attribute and cannot be changed')
+    }
+
+    // Player-selectable skills must validate the chosen attribute is in the allowed list
+    if (attributeId !== null && !templateSkill.allowedAttributeIds.includes(attributeId)) {
+      throw new BadRequestException('The selected attribute is not allowed for this skill')
+    }
+
     const result = await this.prisma.characterSheetSkillValue.upsert({
       where: { sheetId_skillId: { sheetId, skillId } },
       create: { sheetId, skillId, value: '', selectedAttributeId: attributeId },
@@ -947,10 +999,19 @@ export class CharacterSheetService {
   async updateSummonSkillAttribute(summonSkillId: string, attributeId: string | null, userId: string) {
     const ss = await this.prisma.summonSkill.findUnique({
       where: { id: summonSkillId },
-      include: { ability: true },
+      include: { ability: true, skill: { select: { allowedAttributeIds: true } } },
     })
     if (!ss) throw new NotFoundException('Summon skill not found')
     await this.requireOwnership(ss.ability.sheetId, userId)
+
+    // Validate that the attribute change is allowed
+    if (ss.skill.allowedAttributeIds.length === 0) {
+      throw new BadRequestException('This skill has a fixed attribute and cannot be changed')
+    }
+    if (attributeId !== null && !ss.skill.allowedAttributeIds.includes(attributeId)) {
+      throw new BadRequestException('The selected attribute is not allowed for this skill')
+    }
+
     const result = await this.prisma.summonSkill.update({
       where: { id: summonSkillId },
       data: { selectedAttributeId: attributeId },
@@ -1252,26 +1313,45 @@ export class CharacterSheetService {
     return result
   }
 
-  // ── Professional Skills (CRUD) ──
+  // ── Professional Skills (CRUD + Profiles) ──
+
+  private professionalSkillInclude = {
+    attribute: { select: { id: true, key: true, name: true } },
+    profileValues: {
+      include: {
+        profile: { select: { id: true, name: true } },
+        option: { select: { id: true, label: true, value: true } },
+      },
+    },
+  } as const
 
   async listProfessionalSkills(sheetId: string, userId: string) {
     await this.requireOwnership(sheetId, userId)
     return this.prisma.sheetProfessionalSkill.findMany({
       where: { sheetId },
       orderBy: { order: 'asc' },
-      include: { attribute: { select: { id: true, key: true, name: true } } },
+      include: this.professionalSkillInclude,
     })
   }
 
   async createProfessionalSkill(sheetId: string, userId: string, dto: { name: string; attributeId?: string | null }) {
     await this.requireOwnership(sheetId, userId)
     const count = await this.prisma.sheetProfessionalSkill.count({ where: { sheetId } })
-    const result = await this.prisma.sheetProfessionalSkill.create({
-      data: { sheetId, name: dto.name, attributeId: dto.attributeId ?? null, order: count },
-      include: { attribute: { select: { id: true, key: true, name: true } } },
-    })
-    await this.invalidateCache(sheetId).catch(() => {})
-    return result
+    try {
+      const result = await this.prisma.sheetProfessionalSkill.create({
+        data: { sheetId, name: dto.name, attributeId: dto.attributeId ?? null, order: count },
+        include: this.professionalSkillInclude,
+      })
+      await this.invalidateCache(sheetId).catch(() => {})
+      return result
+    } catch (err) {
+      if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'P2002') {
+        throw new ConflictException(
+          `A professional skill named "${dto.name}" already exists on this sheet.`,
+        )
+      }
+      throw err
+    }
   }
 
   async updateProfessionalSkill(skillId: string, userId: string, dto: { name?: string; attributeId?: string | null }) {
@@ -1281,7 +1361,7 @@ export class CharacterSheetService {
     const result = await this.prisma.sheetProfessionalSkill.update({
       where: { id: skillId },
       data: { ...dto },
-      include: { attribute: { select: { id: true, key: true, name: true } } },
+      include: this.professionalSkillInclude,
     })
     await this.invalidateCache(skill.sheetId).catch(() => {})
     return result
@@ -1296,17 +1376,37 @@ export class CharacterSheetService {
     return result
   }
 
+  async updateProfessionalSkillProfileValue(
+    sheetId: string,
+    skillId: string,
+    profileId: string,
+    optionId: string | null,
+    userId: string,
+  ) {
+    await this.requireOwnership(sheetId, userId)
+    const result = await this.prisma.sheetProfessionalSkillProfileValue.upsert({
+      where: { sheetProfessionalSkillId_profileId: { sheetProfessionalSkillId: skillId, profileId } },
+      create: { sheetProfessionalSkillId: skillId, profileId, optionId },
+      update: { optionId },
+    })
+    await this.invalidateCache(sheetId).catch(() => {})
+    return result
+  }
+
   private async requireOwnership(sheetId: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException('Character sheet not found')
     if (sheet.ownerId !== userId) {
-      // Allow GMs of the adventure to manage NPC sheets and player sheets
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can manage this character sheet')
-      try {
-        await this.membership.requireRole(sheet.adventureId, userId, 'GM')
-      } catch {
-        throw new ForbiddenException('Only the owner or a GM can manage this character sheet')
+      // Only allow GM bypass for NPC sheets; player sheets are owner-only
+      if (sheet.isNpc && sheet.adventureId) {
+        try {
+          await this.membership.requireRole(sheet.adventureId, userId, 'GM')
+          return
+        } catch {
+          throw new ForbiddenException('You do not have permission to modify this Character.')
+        }
       }
+      throw new ForbiddenException('You do not have permission to modify this Character.')
     }
   }
 

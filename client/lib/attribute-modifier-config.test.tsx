@@ -104,6 +104,54 @@ describe('parseFormula', () => {
   it('returns null for invalid formula', () => {
     expect(parseFormula('invalid')).toBeNull()
   })
+
+  it('returns null for whitespace-only string', () => {
+    expect(parseFormula('   ')).toBeNull()
+  })
+
+  it('parses formula with multiplier: "2 * floor((value - 10) / 2)"', () => {
+    const result = parseFormula('2 * floor((value - 10) / 2)')
+    expect(result).toEqual({
+      every: 2,
+      startingAttribute: 10,
+      modifierIncrease: 2,
+      modifier: 0,
+    })
+  })
+
+  it('parses formula with negative starting attribute: "floor((value - -5) / 3)"', () => {
+    const result = parseFormula('floor((value - -5) / 3)')
+    expect(result).toEqual({
+      every: 3,
+      startingAttribute: -5,
+      modifierIncrease: 1,
+      modifier: 0,
+    })
+  })
+
+  it('returns null when formula has non-positive every: "floor((value - 10) / -2)"', () => {
+    expect(parseFormula('floor((value - 10) / -2)')).toBeNull()
+  })
+
+  it('parses formula with modifier and multiplier: "5 + 2 * floor((value - 10) / 2)"', () => {
+    const result = parseFormula('5 + 2 * floor((value - 10) / 2)')
+    expect(result).toEqual({
+      every: 2,
+      startingAttribute: 10,
+      modifierIncrease: 2,
+      modifier: 5,
+    })
+  })
+
+  it('parses formula with negative multiplier: "-2 * floor((value - 10) / 3)"', () => {
+    const result = parseFormula('-2 * floor((value - 10) / 3)')
+    expect(result).toEqual({
+      every: 3,
+      startingAttribute: 10,
+      modifierIncrease: -2,
+      modifier: 0,
+    })
+  })
 })
 
 // --------------- generateProgression ---------------
@@ -162,6 +210,40 @@ describe('generateProgression', () => {
       modifier: 0,
     })
     expect(rows).toEqual([])
+  })
+
+  it('respects non-zero base modifier: attribute 10 has modifier 5', () => {
+    const rows = generateProgression({
+      every: 2,
+      modifierIncrease: 1,
+      startingAttribute: 10,
+      modifier: 5,
+    })
+    const row = rows.find(r => r.attribute === 10)
+    expect(row?.modifier).toBe(5)
+  })
+
+  it('respects non-unity modifierIncrease: attribute 12 has modifier 3 when increase is 3', () => {
+    const rows = generateProgression({
+      every: 2,
+      modifierIncrease: 3,
+      startingAttribute: 10,
+      modifier: 0,
+    })
+    const row = rows.find(r => r.attribute === 12)
+    expect(row?.modifier).toBe(3)
+  })
+
+  it('generates correct range when startingAttribute is 5 (minAttr = -5)', () => {
+    const rows = generateProgression({
+      every: 2,
+      modifierIncrease: 1,
+      startingAttribute: 5,
+      modifier: 0,
+    })
+    expect(rows.length).toBe(21) // min=-5, max=15 → 21 rows
+    expect(rows[0].attribute).toBe(-5)
+    expect(rows[rows.length - 1].attribute).toBe(15)
   })
 })
 
@@ -262,5 +344,166 @@ describe('AttributeModifierConfig component', () => {
       expect(screen.getByText('Attribute Modifier Progression')).toBeInTheDocument()
     })
     expect(container.querySelector('.animate-pulse')).toBeNull()
+  })
+
+  // --------------- Config Input Interactions ---------------
+
+  it('calls onChange with updated formula when "every" input changes', async () => {
+    const onChange = vi.fn()
+    render(<AttributeModifierConfig value="" onChange={onChange} />)
+    await waitFor(() => {
+      expect(screen.getByText('Attribute Modifier Progression')).toBeInTheDocument()
+    })
+
+    const everyInput = screen.getByDisplayValue('2')
+    fireEvent.change(everyInput, { target: { value: '3' } })
+
+    await waitFor(() => {
+      // Every=3, startingAttribute=10, modifierIncrease=1, modifier=0
+      expect(onChange).toHaveBeenCalledWith('floor((value - 10) / 3)')
+    })
+  })
+
+  it('calls onChange with updated formula when modifierIncrease changes', async () => {
+    const onChange = vi.fn()
+    render(<AttributeModifierConfig value="" onChange={onChange} />)
+    await waitFor(() => {
+      expect(screen.getByText('Attribute Modifier Progression')).toBeInTheDocument()
+    })
+
+    const increaseInput = screen.getByDisplayValue('1')
+    // There are multiple inputs with displayValue 1; find the modifierIncrease one
+    // The modifierIncrease input is the second "1" input by display order
+    const inputs = screen.getAllByDisplayValue('1')
+    // First '1' is modifierIncrease (default 1), second '1' doesn't exist...
+    // Actually there's only one displayValue '1' on initial render (modifierIncrease=1, modifier=0)
+    fireEvent.change(increaseInput, { target: { value: '2' } })
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith('2 * floor((value - 10) / 2)')
+    })
+  })
+
+  it('calls onChange with updated formula when modifier changes', async () => {
+    const onChange = vi.fn()
+    render(<AttributeModifierConfig value="" onChange={onChange} />)
+    await waitFor(() => {
+      expect(screen.getByText('Attribute Modifier Progression')).toBeInTheDocument()
+    })
+
+    const modifierInput = screen.getByDisplayValue('0')
+    fireEvent.change(modifierInput, { target: { value: '5' } })
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith('5 + floor((value - 10) / 2)')
+    })
+  })
+
+  it('calls onChange with updated formula when startingAttribute changes', async () => {
+    const onChange = vi.fn()
+    render(<AttributeModifierConfig value="" onChange={onChange} />)
+    await waitFor(() => {
+      expect(screen.getByText('Attribute Modifier Progression')).toBeInTheDocument()
+    })
+
+    const startInput = screen.getByDisplayValue('10')
+    fireEvent.change(startInput, { target: { value: '8' } })
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith('floor((value - 8) / 2)')
+    })
+  })
+
+  it('clamps every input to minimum of 1 when cleared', async () => {
+    const onChange = vi.fn()
+    render(<AttributeModifierConfig value="" onChange={onChange} />)
+    await waitFor(() => {
+      expect(screen.getByText('Attribute Modifier Progression')).toBeInTheDocument()
+    })
+
+    const everyInput = screen.getByDisplayValue('2')
+    fireEvent.change(everyInput, { target: { value: '' } })
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith('floor((value - 10) / 1)')
+    })
+  })
+
+  it('handles negative modifier value', async () => {
+    const onChange = vi.fn()
+    render(<AttributeModifierConfig value="" onChange={onChange} />)
+    await waitFor(() => {
+      expect(screen.getByText('Attribute Modifier Progression')).toBeInTheDocument()
+    })
+
+    const modifierInput = screen.getByDisplayValue('0')
+    fireEvent.change(modifierInput, { target: { value: '-3' } })
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith('-3 + floor((value - 10) / 2)')
+    })
+  })
+
+  // --------------- Custom Formula Interactions ---------------
+
+  it('edits custom formula textarea and calls onChange', async () => {
+    const onChange = vi.fn()
+    render(
+      <AttributeModifierConfig value="custom_expr(value, 3)" onChange={onChange} />,
+    )
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/this template uses a custom formula/i),
+      ).toBeInTheDocument()
+    })
+
+    const textarea = screen.getByDisplayValue('custom_expr(value, 3)')
+    fireEvent.change(textarea, { target: { value: 'my_formula(x, 5)' } })
+
+    expect(onChange).toHaveBeenCalledWith('my_formula(x, 5)')
+  })
+
+  // --------------- External value prop with parseable formula ---------------
+
+  it('initializes config from a parseable external formula value', async () => {
+    const onChange = vi.fn()
+    render(
+      <AttributeModifierConfig
+        value="3 + 2 * floor((value - 8) / 4)"
+        onChange={onChange}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Attribute Modifier Progression')).toBeInTheDocument()
+    })
+
+    // Config should be parsed: every=4, modifierIncrease=2, startingAttribute=8, modifier=3
+    expect(screen.getByDisplayValue('4')).toBeInTheDocument() // every
+  })
+
+  it('rerenders with updated values and custom placeholder', async () => {
+    const onChange = vi.fn()
+    const { rerender } = render(
+      <AttributeModifierConfig value="" onChange={onChange} placeholder="Enter formula" />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Attribute Modifier Progression')).toBeInTheDocument()
+    })
+
+    // Rerender into custom mode with a non-empty value to trigger the useEffect again
+    rerender(
+      <AttributeModifierConfig
+        value="another_custom_fn(x)"
+        onChange={onChange}
+        placeholder="Enter formula"
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('another_custom_fn(x)')).toBeInTheDocument()
+    })
   })
 })

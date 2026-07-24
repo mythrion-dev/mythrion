@@ -53,6 +53,7 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   User: 'User',
   Adventure: 'Adventure',
+  Book: 'Book',
   CampaignMember: 'CampaignMember',
   CampaignInvitation: 'CampaignInvitation',
   GoogleAccount: 'GoogleAccount',
@@ -84,6 +85,7 @@ export const ModelName = {
   SheetResistanceComponent: 'SheetResistanceComponent',
   SheetResistanceAttributeModifier: 'SheetResistanceAttributeModifier',
   SheetProfessionalSkill: 'SheetProfessionalSkill',
+  SheetProfessionalSkillProfileValue: 'SheetProfessionalSkillProfileValue',
   CharacterAbility: 'CharacterAbility',
   CharacterAbilityLevel: 'CharacterAbilityLevel',
   SummonSkill: 'SummonSkill',
@@ -141,6 +143,20 @@ export const AdventureScalarFieldEnum = {
 } as const
 
 export type AdventureScalarFieldEnum = (typeof AdventureScalarFieldEnum)[keyof typeof AdventureScalarFieldEnum]
+
+
+export const BookScalarFieldEnum = {
+  id: 'id',
+  adventureId: 'adventureId',
+  name: 'name',
+  visibility: 'visibility',
+  fileLength: 'fileLength',
+  gridfsFileId: 'gridfsFileId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BookScalarFieldEnum = (typeof BookScalarFieldEnum)[keyof typeof BookScalarFieldEnum]
 
 
 export const CampaignMemberScalarFieldEnum = {
@@ -563,6 +579,18 @@ export const SheetProfessionalSkillScalarFieldEnum = {
 } as const
 
 export type SheetProfessionalSkillScalarFieldEnum = (typeof SheetProfessionalSkillScalarFieldEnum)[keyof typeof SheetProfessionalSkillScalarFieldEnum]
+
+
+export const SheetProfessionalSkillProfileValueScalarFieldEnum = {
+  id: 'id',
+  sheetProfessionalSkillId: 'sheetProfessionalSkillId',
+  profileId: 'profileId',
+  optionId: 'optionId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SheetProfessionalSkillProfileValueScalarFieldEnum = (typeof SheetProfessionalSkillProfileValueScalarFieldEnum)[keyof typeof SheetProfessionalSkillProfileValueScalarFieldEnum]
 
 
 export const CharacterAbilityScalarFieldEnum = {
