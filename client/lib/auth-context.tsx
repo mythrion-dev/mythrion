@@ -16,6 +16,7 @@ import {
   getRefreshToken,
   setRefreshToken,
   removeRefreshToken,
+  decodeJwtPayload,
   getInvitationToken,
   removeInvitationToken,
 } from './api'
@@ -25,6 +26,7 @@ interface User {
   email: string
   displayName: string | null
   onboardingComplete: boolean
+  isAdmin: boolean
 }
 
 interface AuthState {
@@ -42,10 +44,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
+  /** Read the admin flag from the local JWT payload (not the API response). */
+  const isAdminFromToken = useCallback((): boolean => {
+    const token = getAccessToken()
+    if (!token) return false
+    const payload = decodeJwtPayload(token)
+    return payload?.role === 'admin'
+  }, [])
+
   const fetchProfile = useCallback(async () => {
     try {
-      const profile = await api.get<User>('/auth/profile')
-      setUser(profile)
+      const profile = await api.get<Omit<User, 'isAdmin'>>('/auth/profile')
+      setUser({ ...profile, isAdmin: isAdminFromToken() })
     } catch {
       removeAccessToken()
       removeRefreshToken()
@@ -53,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [isAdminFromToken])
 
   useEffect(() => {
     const token = getAccessToken()
@@ -108,12 +118,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const completeOnboarding = useCallback(
     async (displayName: string) => {
-      const updated = await api.post<User>('/auth/onboarding', {
+      const updated = await api.post<Omit<User, 'isAdmin'>>('/auth/onboarding', {
         displayName,
       })
-      setUser(updated)
+      setUser({ ...updated, isAdmin: isAdminFromToken() })
     },
-    [],
+    [isAdminFromToken],
   )
 
   return (
