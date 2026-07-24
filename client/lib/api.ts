@@ -118,7 +118,12 @@ export function getAccessToken(): string | null {
 export function setAccessToken(token: string): void {
   if (typeof window === 'undefined') return
   localStorage.setItem('accessToken', token)
-  document.cookie = `auth_token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=None; Secure`
+  // HTTPS → SameSite=None + Secure for cross-site iframe support
+  // HTTP (localhost dev) → SameSite=Lax (None requires Secure, which fails on HTTP)
+  const isSecure = window.location.protocol === 'https:'
+  const sameSite = isSecure ? 'None' : 'Lax'
+  const secureFlag = isSecure ? '; Secure' : ''
+  document.cookie = `auth_token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=${sameSite}${secureFlag}`
 }
 
 export function removeAccessToken(): void {

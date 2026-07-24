@@ -34,14 +34,12 @@ export class JwtAuthGuard implements CanActivate {
 
     // 2. Fall back to auth_token cookie for iframe requests
     if (!token) {
-      // cookieParser makes req.cookies available; fall back to raw header
-      const rawCookies =
-        req.cookies?.auth_token ?? req.headers.cookie
-      if (rawCookies) {
-        token =
-          typeof rawCookies === 'string'
-            ? extractCookieToken(rawCookies)
-            : rawCookies
+      // cookieParser makes req.cookies available — use the parsed value directly
+      if (req.cookies?.auth_token) {
+        token = req.cookies.auth_token
+      } else if (req.headers.cookie) {
+        // Fall back to raw cookie header if cookieParser didn't parse it
+        token = extractCookieToken(req.headers.cookie)
       }
     }
 
