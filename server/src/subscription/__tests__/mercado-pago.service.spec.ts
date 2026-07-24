@@ -80,7 +80,6 @@ describe('MercadoPagoService', () => {
           back_url: backUrl,
           status: 'pending',
           reason: 'Mythrion Premium',
-          auto_recurring: true,
         },
       })
     })

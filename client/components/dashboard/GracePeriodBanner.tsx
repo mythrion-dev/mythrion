@@ -20,8 +20,10 @@ export function GracePeriodBanner() {
     }
 
     function calcDays() {
+      const sub = subscription
+      if (!sub || !sub.graceEndsAt) return
       const now = Date.now()
-      const graceEnd = new Date(subscription.graceEndsAt!).getTime()
+      const graceEnd = new Date(sub.graceEndsAt).getTime()
       const diff = graceEnd - now
       setDaysLeft(Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24))))
     }

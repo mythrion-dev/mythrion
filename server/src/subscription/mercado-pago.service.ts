@@ -71,7 +71,6 @@ export class MercadoPagoService {
           back_url: backUrl,
           status: 'pending',
           reason: 'Mythrion Premium',
-          auto_recurring: true,
         },
       })
       return response as unknown as MercadoPagoSubscriptionResponse
