@@ -16,7 +16,7 @@ import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
 import { ResistanceCalculationService } from './resistance-calculation.service.js'
 import { AcCalculationService } from './ac-calculation.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
-import type { AuthenticatedRequest } from '../auth/jwt-auth.guard.js'
+import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
 
 @Controller('character-sheets')
 @UseGuards(JwtAuthGuard)

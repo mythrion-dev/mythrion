@@ -121,15 +121,25 @@ export function Sidebar() {
       {/* User section */}
       <div className={`pt-4 border-t border-border space-y-3 w-full transition-all duration-300 ${collapsed ? 'pt-3 flex flex-col items-center' : ''}`}>
         <div className={`flex items-center gap-3 ${collapsed ? 'flex-col' : ''}`}>
-          <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+          <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-xs font-bold text-primary shrink-0 relative">
             {getInitials(user?.displayName ?? null)}
+            {user?.isAdmin && (
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-background" />
+            )}
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-foreground truncate">
                 {user?.displayName ?? 'User'}
               </p>
-              <p className="text-xs text-muted truncate">{user?.email}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs text-muted truncate">{user?.email}</p>
+                {user?.isAdmin && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                    Admin
+                  </span>
+                )}
+              </div>
             </div>
           )}
         </div>

@@ -9,7 +9,7 @@ import { TemplateService } from './template.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { CreateTemplateDto } from './dto/create-template.dto.js'
 import { UpdateTemplateDto } from './dto/update-template.dto.js'
-import type { AuthenticatedRequest } from '../auth/jwt-auth.guard.js'
+import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
 
 describe('TemplateController', () => {
   let controller: TemplateController
