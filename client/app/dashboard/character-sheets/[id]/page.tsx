@@ -74,8 +74,6 @@ export default function CharacterSheetDetailPage() {
   // Summon modifier results per ability (computed from summon attributes)
   const [summonModifierResults, setSummonModifierResults] = useState<Record<string, Record<string, number | null>>>({})
 
-  // Summon skill results (just manualValues now)
-  const [summonSkillResults, setSummonSkillResults] = useState<Record<string, Record<string, number | null>>>({})
 
   // Resistance state
   const [resistanceData, setResistanceData] = useState<Array<{ resistanceId: string; name: string; calculationType: string; total: number; componentValues: Array<{ componentId: string; componentName: string; value: number; editableByPlayer: boolean }>; attributeModifierValues: Array<{ attributeId: string; attributeKey: string; attributeName: string; enabled: boolean; rawModifier: number; effectiveModifier: number }> }>>([])
@@ -211,16 +209,6 @@ export default function CharacterSheetDetailPage() {
     return { modifierVars, skillConfig: skillConfig as any, evaluateFn: skillFormulaFn } as any
   }, [])
 
-  const computeSummonSkills = useCallback(async (ability: Ability, _sd: CharacterSheet) => {
-    // Summon skills are now just manual values — no formula evaluation
-    const results: Record<string, number | null> = {}
-    if (!ability.summonSkills?.length) return results
-    for (const ss of ability.summonSkills) {
-      results[ss.id] = ss.manualValue
-    }
-    return results
-  }, [])
-
   const computeAC = useCallback((sd: CharacterSheet, mods: Record<string, number | null>) => {
     const acs = sd.template.armorClasses?.filter(ac => ac.enabled) ?? []
     if (acs.length === 0) { setAcResults({}); return }
@@ -351,23 +339,14 @@ export default function CharacterSheetDetailPage() {
       // Compute summon ACs, skills
       const summonAc: Record<string, number | null> = {}
       const summonMods: Record<string, Record<string, number | null>> = {}
-      const summonSkills: Record<string, Record<string, number | null>> = {}
       for (const ability of d.abilities || []) {
         if (ability.type === 'SUMMON') {
           const sm = await computeSummonModifiers(ability, d)
           summonMods[ability.id] = sm
           summonAc[ability.id] = computeSummonAC(ability, d, sm)
-          if (ability.summonSkills?.length) {
-            const results: Record<string, number | null> = {}
-            for (const ss of ability.summonSkills) {
-              results[ss.id] = ss.manualValue
-            }
-            summonSkills[ability.id] = results
-          }
         }
       }
       setSummonModifierResults(summonMods); setSummonAcResults(summonAc)
-      setSummonSkillResults(summonSkills)
       // Check if an avatar exists on the server (cache-bust to avoid stale 204s)
       try {
         const avatarRes = await fetch(avatarServerUrl + '?t=' + Date.now(), { method: 'HEAD', cache: 'no-store' })
@@ -375,7 +354,7 @@ export default function CharacterSheetDetailPage() {
       } catch { /* no avatar */ }
     } catch (e: unknown) { if ((e as { statusCode?: number }).statusCode === 401 || (e as { statusCode?: number }).statusCode === 403) router.replace('/login') }
     finally { setFetching(false) }
-  }, [id, router, computeModifiers, computeSkills, computeAC, computeSummonModifiers, computeSummonAC, computeSummonSkills])
+  }, [id, router, computeModifiers, computeSkills, computeAC, computeSummonModifiers, computeSummonAC])
 
   useEffect(() => { fetchSheet() }, [fetchSheet])
 
@@ -533,10 +512,6 @@ export default function CharacterSheetDetailPage() {
         const sm = await computeSummonModifiers(ability, sheet)
         setSummonModifierResults(prev => ({ ...prev, [abilityId]: sm }))
         setSummonAcResults(prev => ({ ...prev, [abilityId]: computeSummonAC({ ...ability, summonAttributes: ability.summonAttributes.map(sa => sa.attributeId === attributeId ? { ...sa, value } : sa) }, sheet, sm) }))
-        if (ability.summonSkills?.length) {
-          const ss = await computeSummonSkills({ ...ability, summonAttributes: ability.summonAttributes.map(sa => sa.attributeId === attributeId ? { ...sa, value } : sa) }, sheet)
-          setSummonSkillResults(prev => ({ ...prev, [abilityId]: ss }))
-        }
       }
     } catch {}
   }
@@ -569,9 +544,6 @@ export default function CharacterSheetDetailPage() {
     try {
       const ss = await api.post<SummonSkillData>(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-skills`, { name, manualValue })
       setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, summonSkills: [...(a.summonSkills ?? []), ss] } : a))
-      if (ss) {
-        setSummonSkillResults(prev => ({ ...prev, [abilityId]: { ...(prev[abilityId] ?? {}), [ss.id]: ss.manualValue } }))
-      }
     } catch {}
   }
 
@@ -580,12 +552,6 @@ export default function CharacterSheetDetailPage() {
     try {
       await api.delete(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-skills/${summonSkillId}`)
       setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, summonSkills: (a.summonSkills ?? []).filter(s => s.id !== summonSkillId) } : a))
-      const ability = abilities.find(a => a.id === abilityId)
-      if (ability) {
-        const updated = { ...ability, summonSkills: (ability.summonSkills ?? []).filter(s => s.id !== summonSkillId) }
-        const sk = await computeSummonSkills(updated, sheet)
-        setSummonSkillResults(prev => ({ ...prev, [abilityId]: sk }))
-      }
     } catch {}
   }
 
@@ -595,7 +561,6 @@ export default function CharacterSheetDetailPage() {
     try {
       await api.patch(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-skills/${summonSkillId}`, { name, manualValue })
       setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, summonSkills: (a.summonSkills ?? []).map(s => s.id === summonSkillId ? { ...s, name, manualValue } : s) } : a))
-      setSummonSkillResults(prev => ({ ...prev, [abilityId]: { ...(prev[abilityId] ?? {}), [summonSkillId]: manualValue } }))
     } catch {}
   }
 
@@ -648,7 +613,6 @@ export default function CharacterSheetDetailPage() {
         const sm = await computeSummonModifiers(a, sheet)
         setSummonModifierResults(prev => ({ ...prev, [a.id]: sm }))
         setSummonAcResults(prev => ({ ...prev, [a.id]: computeSummonAC(a, sheet, sm) }))
-        computeSummonSkills(a, sheet).then(sk => setSummonSkillResults(prev => ({ ...prev, [a.id]: sk })))
       }
       setExpandedAbilities(prev => ({ ...prev, [a.id]: true }))
       resetNewAbility()
@@ -876,7 +840,6 @@ export default function CharacterSheetDetailPage() {
         summonModifierResults={summonModifierResults} summonAcResults={summonAcResults}
         saveSummonAttribute={saveSummonAttribute} saveSummonAcValue={saveSummonAcValue}
         saveSummonHealth={saveSummonHealth}
-        summonSkillResults={summonSkillResults}
         handleAddSummonSkill={handleAddSummonSkill}
         handleUpdateSummonSkill={handleUpdateSummonSkill}
         handleRemoveSummonSkill={handleRemoveSummonSkill}

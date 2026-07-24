@@ -112,7 +112,6 @@ export function SummonResourceCard({
                       onSave={async (v: number) => {
                         await saveSummonAttribute(ability.id, attr.attributeId, String(v))
                       }}
-                      placeholder="0"
                       className="text-sm text-foreground"
                       inputClassName="w-12 text-center text-sm"
                     />
@@ -150,7 +149,6 @@ export function SummonResourceCard({
               onSave={async (v: number) => {
                 await saveSummonAcValue(ability.id, String(v))
               }}
-              placeholder="10"
               className="text-xs"
               inputClassName="w-20 text-center"
             />
@@ -208,7 +206,6 @@ export function SummonResourceCard({
                       onSave={async (v: number) => {
                         await handleSaveSummonSkillValue(skill.id, v)
                       }}
-                      placeholder="0"
                       className="w-16 text-center text-sm tabular-nums font-semibold"
                       inputClassName="w-16 text-center text-sm"
                     />
