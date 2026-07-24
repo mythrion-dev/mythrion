@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { AuthProvider } from '@/lib/auth-context'
 import { NavigationProvider } from '@/lib/navigation-context'
+import { SubscriptionProvider } from '@/lib/subscription-context'
 import './globals.css'
 
 const geistSans = Geist({
@@ -35,7 +36,9 @@ export default function RootLayout({
         {/* Subtle top ornament */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent pointer-events-none" />
         <AuthProvider>
-          <NavigationProvider>{children}</NavigationProvider>
+          <SubscriptionProvider>
+            <NavigationProvider>{children}</NavigationProvider>
+          </SubscriptionProvider>
         </AuthProvider>
       </body>
     </html>

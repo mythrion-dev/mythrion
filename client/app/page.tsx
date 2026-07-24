@@ -58,7 +58,13 @@ export default function HomePage() {
             <Link href="#features" className="hidden text-sm text-muted transition-colors hover:text-foreground sm:inline-flex">
               Features
             </Link>
-            <Link href="/login?redirect=/dashboard" className="btn-primary px-5 py-2.5 text-sm">
+            <Link href="/pricing" className="hidden sm:inline-flex text-sm text-muted transition-colors hover:text-foreground">
+              Pricing
+            </Link>
+            <Link href="/login?redirect=/dashboard" className="text-sm text-muted transition-colors hover:text-foreground">
+              Sign in
+            </Link>
+            <Link href="/login?redirect=/pricing" className="btn-primary px-5 py-2.5 text-sm">
               Begin your adventure
             </Link>
           </div>

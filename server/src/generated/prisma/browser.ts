@@ -262,3 +262,18 @@ export type TemplateCharacterSection = Prisma.TemplateCharacterSectionModel
  * 
  */
 export type CharacterSectionEntry = Prisma.CharacterSectionEntryModel
+/**
+ * Model SubscriptionPlan
+ * 
+ */
+export type SubscriptionPlan = Prisma.SubscriptionPlanModel
+/**
+ * Model UserSubscription
+ * 
+ */
+export type UserSubscription = Prisma.UserSubscriptionModel
+/**
+ * Model SubscriptionInvoice
+ * 
+ */
+export type SubscriptionInvoice = Prisma.SubscriptionInvoiceModel

@@ -24,6 +24,7 @@ model User {
   googleAccount      GoogleAccount?
   refreshTokens      RefreshToken[]
   characterSheets    CharacterSheet[]
+  subscription       UserSubscription?
 }
 
 model Adventure {
@@ -912,4 +913,64 @@ model CharacterSectionEntry {
 
   @@index([sheetId])
   @@index([sectionId])
+}
+
+// ── Subscription Models ──
+
+enum SubscriptionStatus {
+  PENDING
+  AUTHORIZED
+  ACTIVE
+  GRACE
+  EXPIRED
+  CANCELLED
+}
+
+model SubscriptionPlan {
+  id            String              @id
+  slug          String              @unique
+  name          String
+  description   String?
+  price         Int
+  mpPlanId      String              @unique
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  subscriptions UserSubscription[]
+}
+
+model UserSubscription {
+  id                 String               @id @default(cuid())
+  userId             String               @unique
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId             String
+  plan               SubscriptionPlan     @relation(fields: [planId], references: [id])
+  mpSubscriptionId   String?              @unique
+  status             SubscriptionStatus   @default(PENDING)
+  graceEndsAt        DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelledAt        DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  invoices           SubscriptionInvoice[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model SubscriptionInvoice {
+  id              String             @id @default(cuid())
+  subscriptionId  String
+  subscription    UserSubscription   @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  mpInvoiceId     String?            @unique
+  amount          Int
+  currency        String             @default("BRL")
+  status          String             @default("pending")
+  paidAt          DateTime?
+  dueDate         DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([subscriptionId])
+  @@index([mpInvoiceId])
 }

@@ -33,3 +33,15 @@ export const BookVisibility = {
 } as const
 
 export type BookVisibility = (typeof BookVisibility)[keyof typeof BookVisibility]
+
+
+export const SubscriptionStatus = {
+  PENDING: 'PENDING',
+  AUTHORIZED: 'AUTHORIZED',
+  ACTIVE: 'ACTIVE',
+  GRACE: 'GRACE',
+  EXPIRED: 'EXPIRED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type SubscriptionStatus = (typeof SubscriptionStatus)[keyof typeof SubscriptionStatus]

@@ -11,8 +11,20 @@ import { FormulaModule } from './formula/formula.module.js';
 import { ImageModule } from './image/image.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import { BookModule } from './book/book.module.js';
+import { SubscriptionModule } from './subscription/subscription.module.js';
+
 @Module({
-  imports: [AuthModule, AdventureModule, TemplateModule, CharacterSheetModule, FormulaModule, ImageModule, RedisModule, BookModule],
+  imports: [
+    AuthModule,
+    AdventureModule,
+    TemplateModule,
+    CharacterSheetModule,
+    FormulaModule,
+    ImageModule,
+    RedisModule,
+    BookModule,
+    SubscriptionModule,
+  ],
   controllers: [AppController, HealthController],
   providers: [AppService, PrismaService],
   exports: [PrismaService],

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, forwardRef } from '@nestjs/common'
 import { JwtModule } from '@nestjs/jwt'
 import { PassportModule } from '@nestjs/passport'
 import { AuthService } from './auth.service.js'
@@ -11,6 +11,7 @@ import { TokenService } from './token.service.js'
 import { RateLimitGuard } from './rate-limit.guard.js'
 import { AdminService } from './admin.service.js'
 import { SubscriptionGuard } from './subscription.guard.js'
+import { SubscriptionModule } from '../subscription/subscription.module.js'
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { SubscriptionGuard } from './subscription.guard.js'
       signOptions: { expiresIn: '15m' },
     }),
     PassportModule,
+    forwardRef(() => SubscriptionModule),
   ],
   controllers: [AuthController],
   providers: [

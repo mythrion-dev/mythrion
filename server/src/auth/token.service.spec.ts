@@ -7,6 +7,7 @@ import { JwtService } from '@nestjs/jwt'
 import { TokenService } from './token.service.js'
 import { PrismaService } from '../prisma.service.js'
 import { RedisService } from '../redis/redis.service.js'
+import { AdminService } from './admin.service.js'
 import { createMockPrismaService } from '../__mocks__/prisma-service.mock'
 import * as bcrypt from 'bcrypt'
 
@@ -55,6 +56,7 @@ describe('TokenService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: JwtService, useValue: mockJwtService },
         { provide: RedisService, useValue: mockRedis },
+        { provide: AdminService, useValue: { isAdmin: jest.fn().mockReturnValue(false) } },
       ],
     }).compile()
 
@@ -69,7 +71,7 @@ describe('TokenService', () => {
       const result = await service.generateTokens('user-1', 'test@test.com')
 
       expect(mockJwtService.sign).toHaveBeenCalledWith(
-        { sub: 'user-1', email: 'test@test.com' },
+        { sub: 'user-1', email: 'test@test.com', role: 'user' },
         { expiresIn: '15m' },
       )
       expect(result.accessToken).toBe('mock-access-token')
