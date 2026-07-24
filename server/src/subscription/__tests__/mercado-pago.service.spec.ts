@@ -6,13 +6,18 @@ const mockSubscriptionInstance = {
   update: jest.fn(),
   get: jest.fn(),
 }
-jest.mock('mercadopago', () => ({
-  MercadoPagoConfig: jest.fn().mockImplementation(() => ({
+jest.mock('mercadopago', () => {
+  const MockConfig = jest.fn().mockImplementation(() => ({
     accessToken: 'test-token',
     options: {},
-  })),
-  Subscription: jest.fn().mockImplementation(() => mockSubscriptionInstance),
-}))
+  }))
+  return {
+    __esModule: true,
+    default: MockConfig,
+    MercadoPagoConfig: MockConfig,
+    PreApproval: jest.fn().mockImplementation(() => mockSubscriptionInstance),
+  }
+})
 
 import { MercadoPagoService } from '../mercado-pago.service'
 

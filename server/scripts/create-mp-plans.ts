@@ -92,7 +92,7 @@ async function main() {
   console.log('This will create subscription plans in your MP account.\n')
 
   const results = await Promise.all(PLANS.map(createPlan))
-  const created = results.filter(Boolean)
+  const created = results.filter((r): r is NonNullable<typeof r> => r !== null)
 
   console.log('\n=== Results ===')
   if (created.length === 0) {

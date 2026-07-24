@@ -1,5 +1,5 @@
 import { Injectable, Logger, UnprocessableEntityException } from '@nestjs/common'
-import { MercadoPagoConfig, Subscription } from 'mercadopago'
+import MercadoPagoConfig, { PreApproval } from 'mercadopago'
 import { createHash, timingSafeEqual } from 'crypto'
 
 interface MercadoPagoSubscriptionResponse {
@@ -63,8 +63,8 @@ export class MercadoPagoService {
     backUrl: string,
   ): Promise<MercadoPagoSubscriptionResponse> {
     try {
-      const subscription = new Subscription(this.client)
-      const response = await subscription.create({
+      const preApproval = new PreApproval(this.client)
+      const response = await preApproval.create({
         body: {
           preapproval_plan_id: planId,
           payer_email: payerEmail,
@@ -90,8 +90,8 @@ export class MercadoPagoService {
    */
   async cancelSubscription(mpSubscriptionId: string): Promise<void> {
     try {
-      const subscription = new Subscription(this.client)
-      await subscription.update({
+      const preApproval = new PreApproval(this.client)
+      await preApproval.update({
         id: mpSubscriptionId,
         body: { status: 'cancelled' },
       })
@@ -111,8 +111,8 @@ export class MercadoPagoService {
     mpSubscriptionId: string,
   ): Promise<MercadoPagoSubscriptionResponse> {
     try {
-      const subscription = new Subscription(this.client)
-      const response = await subscription.get({ id: mpSubscriptionId })
+      const preApproval = new PreApproval(this.client)
+      const response = await preApproval.get({ id: mpSubscriptionId })
       return response as unknown as MercadoPagoSubscriptionResponse
     } catch (err) {
       this.logger.error(

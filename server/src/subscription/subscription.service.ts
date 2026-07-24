@@ -11,14 +11,14 @@ import { createHash, randomBytes } from 'crypto'
 
 type SubscriptionStatus = 'PENDING' | 'AUTHORIZED' | 'ACTIVE' | 'GRACE' | 'EXPIRED' | 'CANCELLED'
 
-interface CreateSubscriptionResult {
+export interface CreateSubscriptionResult {
   /** The Mercado Pago Checkout Pro redirect URL */
   initPoint: string
   /** Our internal subscription ID */
   subscriptionId: string
 }
 
-interface MySubscriptionResult {
+export interface MySubscriptionResult {
   id: string
   plan: {
     slug: string
