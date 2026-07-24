@@ -25,7 +25,7 @@ interface AuthenticatedRequest extends Request {
   }
 }
 
-@Controller('api/subscriptions')
+@Controller('subscriptions')
 export class SubscriptionController {
   private readonly logger = new Logger(SubscriptionController.name)
 
