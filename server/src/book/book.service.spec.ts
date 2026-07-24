@@ -63,6 +63,14 @@ function createMockWritable(id = 'mock-file-id') {
   })
 }
 
+function createMockReadable(data: Buffer = Buffer.from('pdf-content')) {
+  const { Readable } = require('stream')
+  const stream = new Readable()
+  stream.push(data)
+  stream.push(null)
+  return stream
+}
+
 // ---------------------------------------------------------------------------
 // Imports
 // ---------------------------------------------------------------------------
@@ -314,12 +322,12 @@ describe('BookService', () => {
   })
 
   // -----------------------------------------------------------------------
-  // getStream
+  // getStream (delegates to getStreamRange)
   // -----------------------------------------------------------------------
   describe('getStream', () => {
     beforeEach(() => service.onModuleInit())
 
-    it('returns stream for a PLAYER_BOOK for any member', async () => {
+    it('returns stream with contentType and contentLength for a PLAYER_BOOK', async () => {
       mockPrisma.book.findUnique.mockResolvedValueOnce({
         id: mockBookId,
         adventureId: mockAdventureId,
@@ -331,9 +339,7 @@ describe('BookService', () => {
       mockCursor.toArray.mockResolvedValueOnce([
         { _id: 'gridfs-id-42', length: 100, metadata: { contentType: 'application/pdf' } },
       ])
-      const downloadStream = new (require('stream').Readable)()
-      downloadStream.push(Buffer.from('pdf-content'))
-      downloadStream.push(null)
+      const downloadStream = createMockReadable()
       mockBucketInstance.openDownloadStream.mockReturnValue(downloadStream)
 
       const result = await service.getStream(mockAdventureId, mockBookId, mockUserId)
@@ -341,6 +347,7 @@ describe('BookService', () => {
       expect(mockMembership.isMember).toHaveBeenCalledWith(mockAdventureId, mockUserId)
       expect(result.contentType).toBe('application/pdf')
       expect(result.contentLength).toBe(100)
+      expect(result.fileSize).toBe(100)
       expect(mockBucketInstance.openDownloadStream).toHaveBeenCalledWith('gridfs-id-42')
     })
 
@@ -353,14 +360,12 @@ describe('BookService', () => {
         gridfsFileId: 'gridfs-id-42',
         fileLength: 100,
       })
-      // After GM check passes, service looks up GridFS files
       mockCursor.toArray.mockResolvedValueOnce([
         { _id: 'gridfs-id-42', length: 100, metadata: { contentType: 'application/pdf' } },
       ])
 
       await service.getStream(mockAdventureId, mockBookId, mockUserId)
 
-      // requireRole should have been called with GM
       const requireRoleCalls = (mockMembership.requireRole as jest.Mock).mock.calls
       const gmCall = requireRoleCalls.find(
         (c: any[]) => c[2] === MemberRole.GM,
@@ -412,6 +417,119 @@ describe('BookService', () => {
 
       await expect(
         service.getStream(mockAdventureId, mockBookId, mockUserId),
+      ).rejects.toThrow(NotFoundException)
+    })
+  })
+
+  // -----------------------------------------------------------------------
+  // getStreamRange
+  // -----------------------------------------------------------------------
+  describe('getStreamRange', () => {
+    beforeEach(() => service.onModuleInit())
+
+    const gridFsFile = { _id: 'gridfs-id-42', length: 10000, metadata: { contentType: 'application/pdf' } }
+
+    function mockBookFound(overrides: Partial<any> = {}) {
+      mockPrisma.book.findUnique.mockResolvedValueOnce({
+        id: mockBookId,
+        adventureId: mockAdventureId,
+        name: 'Test Book',
+        visibility: 'PLAYER_BOOK',
+        gridfsFileId: 'gridfs-id-42',
+        fileLength: 10000,
+        ...overrides,
+      })
+      mockCursor.toArray.mockResolvedValueOnce([gridFsFile])
+    }
+
+    it('returns full stream with isPartial: false when no range params provided', async () => {
+      mockBookFound()
+      const downloadStream = createMockReadable()
+      mockBucketInstance.openDownloadStream.mockReturnValue(downloadStream)
+
+      const result = await service.getStreamRange(mockAdventureId, mockBookId, mockUserId)
+
+      expect(result.isPartial).toBe(false)
+      expect(result.contentLength).toBe(10000)
+      expect(result.fileSize).toBe(10000)
+      expect(result.contentType).toBe('application/pdf')
+      expect(mockBucketInstance.openDownloadStream).toHaveBeenCalledWith('gridfs-id-42')
+    })
+
+    it('returns partial stream with isPartial: true when range params provided', async () => {
+      mockBookFound()
+      const downloadStream = createMockReadable(Buffer.alloc(1024))
+      mockBucketInstance.openDownloadStream.mockReturnValue(downloadStream)
+
+      const result = await service.getStreamRange(mockAdventureId, mockBookId, mockUserId, 0, 1023)
+
+      expect(result.isPartial).toBe(true)
+      expect(result.contentLength).toBe(1024)
+      expect(result.fileSize).toBe(10000)
+      expect(mockBucketInstance.openDownloadStream).toHaveBeenCalledWith('gridfs-id-42', { start: 0, end: 1023 })
+    })
+
+    it('returns partial stream for mid-file range', async () => {
+      mockBookFound()
+      const downloadStream = createMockReadable(Buffer.alloc(500))
+      mockBucketInstance.openDownloadStream.mockReturnValue(downloadStream)
+
+      const result = await service.getStreamRange(mockAdventureId, mockBookId, mockUserId, 5000, 5499)
+
+      expect(result.isPartial).toBe(true)
+      expect(result.contentLength).toBe(500)
+      expect(mockBucketInstance.openDownloadStream).toHaveBeenCalledWith('gridfs-id-42', { start: 5000, end: 5499 })
+    })
+
+    it('requires GM role for GM_BOOK', async () => {
+      mockBookFound({ visibility: 'GM_BOOK' })
+      const downloadStream = createMockReadable()
+      mockBucketInstance.openDownloadStream.mockReturnValue(downloadStream)
+
+      await service.getStreamRange(mockAdventureId, mockBookId, mockUserId, 0, 1023)
+
+      const requireRoleCalls = (mockMembership.requireRole as jest.Mock).mock.calls
+      const gmCall = requireRoleCalls.find((c: any[]) => c[2] === MemberRole.GM)
+      expect(gmCall).toBeDefined()
+    })
+
+    it('throws ForbiddenException if user is not a member', async () => {
+      mockMembership.isMember.mockResolvedValueOnce(false)
+
+      await expect(
+        service.getStreamRange(mockAdventureId, mockBookId, mockUserId),
+      ).rejects.toThrow(ForbiddenException)
+    })
+
+    it('throws NotFoundException when book is not found', async () => {
+      mockPrisma.book.findUnique.mockResolvedValueOnce(null)
+
+      await expect(
+        service.getStreamRange(mockAdventureId, mockBookId, mockUserId),
+      ).rejects.toThrow(NotFoundException)
+    })
+
+    it('throws NotFoundException when book has no GridFS file', async () => {
+      mockPrisma.book.findUnique.mockResolvedValueOnce({
+        id: mockBookId,
+        adventureId: mockAdventureId,
+        name: 'No File Book',
+        visibility: 'PLAYER_BOOK',
+        gridfsFileId: null,
+        fileLength: 0,
+      })
+
+      await expect(
+        service.getStreamRange(mockAdventureId, mockBookId, mockUserId),
+      ).rejects.toThrow(NotFoundException)
+    })
+
+    it('throws NotFoundException when GridFS file is missing from storage', async () => {
+      mockBookFound()
+      mockCursor.toArray.mockReset()
+      mockCursor.toArray.mockResolvedValueOnce([])
+      await expect(
+        service.getStreamRange(mockAdventureId, mockBookId, mockUserId, 0, 1023),
       ).rejects.toThrow(NotFoundException)
     })
   })
@@ -486,8 +604,6 @@ describe('BookService', () => {
 
       const result = await service.replaceFile(mockAdventureId, mockBookId, mockUserId, mockFile)
 
-      // Old file should be deleted
-      // Note: deleteFromGridFS uses dynamic import so we can't easily assert on bucket.delete here
       expect(mockPrisma.book.findUnique).toHaveBeenCalled()
       expect(mockPrisma.book.update).toHaveBeenCalled()
       expect(mockRedis.invalidatePattern).toHaveBeenCalledWith(`books:${mockAdventureId}:list*`)

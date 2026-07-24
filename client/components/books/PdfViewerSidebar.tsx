@@ -1,10 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { api, API_URL } from '@/lib/api'
-import { PdfJsViewer, type PdfJsViewerHandle, type OutlineItem } from './PdfJsViewer'
-import { SearchToolbar, type SearchState } from './SearchToolbar'
-import { OutlinePanel } from './OutlinePanel'
 
 /* ── Types ── */
 
@@ -33,12 +30,10 @@ interface PdfViewerSidebarProps {
 /* ── Constants ── */
 
 const LS_PREFIX = 'pdf-viewer'
-const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3] as const
-const DEFAULT_PAGE_INPUT = ''
 
 interface PersistedState {
-  page: number
-  scale: string | number
+  bookId: string
+  bookName: string
 }
 
 /* ── Helpers ── */
@@ -56,7 +51,7 @@ function loadPersistedState(adventureId: string): PersistedState | null {
     const raw = localStorage.getItem(`${LS_PREFIX}:${adventureId}`)
     if (!raw) return null
     const state = JSON.parse(raw) as PersistedState
-    if (typeof state.page === 'number' && (typeof state.scale === 'number' || typeof state.scale === 'string')) {
+    if (typeof state.bookId === 'string' && typeof state.bookName === 'string') {
       return state
     }
     return null
@@ -88,41 +83,29 @@ export function PdfViewerSidebar({
   const [internalBookId, setInternalBookId] = useState<string | null>(null)
   const [internalListOpen, setInternalListOpen] = useState(false)
 
-  /* ── Refs ── */
-  const bookNameMapRef = useRef<Map<string, string>>(new Map())
-  const viewerRef = useRef<PdfJsViewerHandle>(null)
-  const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
   /* ── Book list state ── */
   const [books, setBooks] = useState<Book[]>([])
   const [loadingList, setLoadingList] = useState(false)
 
-  /* ── PDF loading state ── */
-  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null)
-  const [fetchError, setFetchError] = useState<string | null>(null)
-  const [fetchingPdf, setFetchingPdf] = useState(false)
+  /* ── iframe state ── */
+  const [iframeLoading, setIframeLoading] = useState(false)
+  const [iframeError, setIframeError] = useState(false)
 
-  /* ── Viewer metadata ── */
-  const [pagesCount, setPagesCount] = useState(0)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [currentScale, setCurrentScale] = useState(1)
-  const [pageInput, setPageInput] = useState(DEFAULT_PAGE_INPUT)
-
-  /* ── Search state ── */
-  const [searchState, setSearchState] = useState<SearchState | null>(null)
-
-  /* ── Outline state ── */
-  const [outlineItems, setOutlineItems] = useState<OutlineItem[]>([])
-  const [outlineOpen, setOutlineOpen] = useState(false)
+  /* ── Refs ── */
+  const bookNameMapRef = useRef<Map<string, string>>(new Map())
 
   /* ── Derived state ── */
   const activeBookId = bookId ?? internalBookId
   const isViewerMode = activeBookId !== null
   const sidebarVisible = isOpen || bookId !== null || internalBookId !== null || internalListOpen
-  const activeBookName = books.find((b) => b.id === activeBookId)?.name ?? 'PDF Viewer'
+  const activeBookName =
+    books.find((b) => b.id === activeBookId)?.name ??
+    bookNameMapRef.current.get(activeBookId ?? '') ??
+    'PDF Viewer'
 
-  // Restore persisted state
-  const persistedState = useMemo(() => loadPersistedState(adventureId), [adventureId])
+  const iframeUrl = activeBookId
+    ? `${API_URL}/adventures/${adventureId}/books/${activeBookId}/file`
+    : null
 
   /* ── Fetch books for internal list ── */
   const fetchBooks = useCallback(async () => {
@@ -143,211 +126,42 @@ export function PdfViewerSidebar({
     }
   }, [adventureId])
 
-  // Fetch books on mount when sidebar is visible (e.g., external viewer mode)
+  // Fetch books on mount when adventure page
   useEffect(() => {
     if (adventureId) {
       void fetchBooks()
     }
   }, [adventureId, fetchBooks])
 
-  /* ── Fetch PDF as ArrayBuffer ── */
-  const pdfUrl = activeBookId
-    ? `${API_URL}/adventures/${adventureId}/books/${activeBookId}/file`
-    : null
+  /* ── iframe load/error handlers ── */
 
+  const handleIframeLoad = useCallback(() => {
+    setIframeLoading(false)
+    setIframeError(false)
+  }, [])
+
+  const handleIframeError = useCallback(() => {
+    setIframeLoading(false)
+    setIframeError(true)
+  }, [])
+
+  // Reset iframe state when book changes
   useEffect(() => {
-    if (!activeBookId || !pdfUrl) {
-      setPdfData(null)
-      setFetchError(null)
-      setPagesCount(0)
-      setCurrentPage(1)
-      setCurrentScale(1)
-      setSearchState(null)
-      setOutlineItems([])
-      return
-    }
-
-    let isCancelled = false
-
-    async function loadPdf() {
-      setFetchError(null)
-      setPdfData(null)
-      setFetchingPdf(true)
-      setPagesCount(0)
-      setCurrentPage(1)
-      setSearchState(null)
-      setOutlineItems([])
-
-      try {
-        const token = localStorage.getItem('accessToken')
-        const res = await fetch(pdfUrl!, {
-          method: 'GET',
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        })
-
-        if (!res.ok) {
-          throw new Error(`Failed to load PDF: ${res.status}`)
-        }
-
-        const buffer = await res.arrayBuffer()
-        if (isCancelled) return
-
-        setPdfData(buffer)
-
-        // Restore persisted page/scale after document loads
-        if (persistedState) {
-          // The viewer callbacks will pick this up on document load
-        }
-      } catch (err) {
-        if (!isCancelled) {
-          setFetchError(err instanceof Error ? err.message : 'Failed to load PDF')
-        }
-      } finally {
-        if (!isCancelled) setFetchingPdf(false)
-      }
-    }
-
-    void loadPdf()
-
-    return () => {
-      isCancelled = true
-    }
-  }, [activeBookId, adventureId, pdfUrl]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  /* ── Apply persisted state after document loads ── */
-  const handleDocumentLoad = useCallback(
-    (info: { pagesCount: number }) => {
-      setPagesCount(info.pagesCount)
-
-      // Restore persisted state
-      const state = loadPersistedState(adventureId)
-      if (state && state.page >= 1 && state.page <= info.pagesCount) {
-        if (viewerRef.current) {
-          viewerRef.current.goToPage(state.page)
-        }
-      }
-      if (state && state.scale) {
-        if (viewerRef.current) {
-          viewerRef.current.setScale(state.scale)
-        }
-      }
-    },
-    [adventureId],
-  )
-
-  /* ── Persist state (debounced) ── */
-  const schedulePersist = useCallback(
-    (page: number, scale: number) => {
-      if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current)
-      persistTimeoutRef.current = setTimeout(() => {
-        savePersistedState(adventureId, { page, scale })
-      }, 500)
-    },
-    [adventureId],
-  )
-
-  const handlePageChange = useCallback(
-    (pageNumber: number) => {
-      setCurrentPage(pageNumber)
-      setPageInput(DEFAULT_PAGE_INPUT)
-      schedulePersist(pageNumber, currentScale)
-    },
-    [currentScale, schedulePersist],
-  )
-
-  const handleScaleChange = useCallback(
-    (scale: number) => {
-      setCurrentScale(scale)
-      schedulePersist(currentPage, scale)
-    },
-    [currentPage, schedulePersist],
-  )
-
-  const handleFindResults = useCallback((current: number, total: number) => {
-    if (total === 0) {
-      setSearchState(null)
+    if (activeBookId && iframeUrl) {
+      setIframeLoading(true)
+      setIframeError(false)
     } else {
-      setSearchState({ current, total })
+      setIframeLoading(false)
+      setIframeError(false)
     }
-  }, [])
+  }, [activeBookId, iframeUrl])
 
-  const handleOutline = useCallback((items: OutlineItem[]) => {
-    setOutlineItems(items)
-  }, [])
-
-  /* ── Toolbar actions ── */
-
-  const handleZoomIn = useCallback(() => {
-    viewerRef.current?.zoomIn()
-  }, [])
-
-  const handleZoomOut = useCallback(() => {
-    viewerRef.current?.zoomOut()
-  }, [])
-
-  const handleZoomReset = useCallback(() => {
-    viewerRef.current?.setScale(1)
-  }, [])
-
-  const handleZoomActualSize = useCallback(() => {
-    viewerRef.current?.setScale('page-actual')
-  }, [])
-
-  const handlePagePrev = useCallback(() => {
-    viewerRef.current?.previousPage()
-  }, [])
-
-  const handlePageNext = useCallback(() => {
-    viewerRef.current?.nextPage()
-  }, [])
-
-  const handlePageInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setPageInput(e.target.value)
-  }, [])
-
-  const handlePageInputKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-        const num = parseInt(pageInput, 10)
-        if (!isNaN(num) && num >= 1 && num <= pagesCount) {
-          viewerRef.current?.goToPage(num)
-        }
-        setPageInput(DEFAULT_PAGE_INPUT)
-      }
-    },
-    [pageInput, pagesCount],
-  )
-
-  const handleSearch = useCallback((query: string) => {
-    if (!query.trim()) {
-      setSearchState(null)
-      return
+  // Persist current book when viewer mode changes
+  useEffect(() => {
+    if (activeBookId) {
+      savePersistedState(adventureId, { bookId: activeBookId, bookName: activeBookName })
     }
-    viewerRef.current?.search(query)
-  }, [])
-
-  const handleSearchNext = useCallback(() => {
-    viewerRef.current?.searchNext()
-  }, [])
-
-  const handleSearchPrev = useCallback(() => {
-    viewerRef.current?.searchPrevious()
-  }, [])
-
-  const handleRotate = useCallback(() => {
-    viewerRef.current?.rotate(90)
-  }, [])
-
-  const handleOutlineToggle = useCallback(() => {
-    setOutlineOpen((prev) => !prev)
-  }, [])
-
-  const handleOutlineNavigate = useCallback(
-    (dest: string | unknown[]) => {
-      viewerRef.current?.goToDestination(dest)
-    },
-    [],
-  )
+  }, [activeBookId, activeBookName, adventureId])
 
   /* ── Sidebar close ── */
   function handleClose() {
@@ -395,13 +209,6 @@ export function PdfViewerSidebar({
     void fetchBooks()
   }
 
-  /* ── Cleanup persist timeout on unmount ── */
-  useEffect(() => {
-    return () => {
-      if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current)
-    }
-  }, [])
-
   /* ── Render: closed state ── */
   if (!isOpen && !sidebarVisible) {
     if (hideToggle) return null
@@ -434,6 +241,7 @@ export function PdfViewerSidebar({
         className={`fixed top-0 right-0 z-50 h-full bg-surface border-l border-border shadow-2xl transition-all duration-300 flex flex-col w-1/2 max-sm:w-full sm:max-w-[95vw] lg:w-1/2 xl:w-[45%] ${
           sidebarVisible ? 'translate-x-0' : 'translate-x-full'
         }`}
+        role="complementary"
       >
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
@@ -473,191 +281,47 @@ export function PdfViewerSidebar({
 
         {/* ── Content ── */}
         {isViewerMode ? (
-          /* ══════ VIEWER MODE ══════ */
-
-          /* Toolbar */
-          <>
-            {/* Main toolbar: Zoom, page nav, rotate, outline toggle */}
-            <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border shrink-0 flex-wrap">
-              {/* Zoom out */}
-              <button
-                onClick={handleZoomOut}
-                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
-                aria-label="Zoom out"
-                title="Zoom out"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
-                </svg>
-              </button>
-
-              {/* Zoom level display */}
-              <button
-                onClick={handleZoomReset}
-                className="px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground hover:text-foreground hover:bg-hover rounded transition-colors min-w-[4ch] text-center"
-                title="Reset zoom to 100%"
-              >
-                {Math.round(currentScale * 100)}%
-              </button>
-
-              {/* Zoom in */}
-              <button
-                onClick={handleZoomIn}
-                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
-                aria-label="Zoom in"
-                title="Zoom in"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-              </button>
-
-              {/* Zoom to actual size */}
-              <button
-                onClick={handleZoomActualSize}
-                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
-                aria-label="Actual size"
-                title="Actual size"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                </svg>
-              </button>
-
-              {/* Separator */}
-              <div className="w-px h-4 bg-border mx-1" />
-
-              {/* Page prev */}
-              <button
-                onClick={handlePagePrev}
-                disabled={currentPage <= 1}
-                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-hover transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                aria-label="Previous page"
-                title="Previous page"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-
-              {/* Page input */}
-              <div className="flex items-center gap-0.5">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={pageInput || currentPage}
-                  onChange={handlePageInputChange}
-                  onKeyDown={handlePageInputKeyDown}
-                  className="w-8 text-center text-xs tabular-nums bg-transparent text-foreground border border-border rounded px-1 py-0.5 outline-none focus:border-accent"
-                  aria-label="Current page number"
-                />
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  / {pagesCount}
-                </span>
+          /* ══════ VIEWER MODE (iframe) ══════ */
+          <div className="flex-1 relative bg-[#525659]">
+            {/* Loading spinner */}
+            {iframeLoading && (
+              <div className="absolute inset-0 flex items-center justify-center z-10 bg-[#525659]">
+                <div className="flex flex-col items-center gap-3">
+                  <svg className="w-8 h-8 text-white/60 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  <span className="text-xs text-white/60">Loading PDF…</span>
+                </div>
               </div>
+            )}
 
-              {/* Page next */}
-              <button
-                onClick={handlePageNext}
-                disabled={currentPage >= pagesCount}
-                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-hover transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                aria-label="Next page"
-                title="Next page"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-
-              {/* Separator */}
-              <div className="w-px h-4 bg-border mx-1" />
-
-              {/* Rotate */}
-              <button
-                onClick={handleRotate}
-                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
-                aria-label="Rotate 90°"
-                title="Rotate 90°"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 13v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </button>
-
-              {/* Separator */}
-              <div className="w-px h-4 bg-border mx-1" />
-
-              {/* Outline toggle */}
-              <button
-                onClick={handleOutlineToggle}
-                className={`p-1 rounded transition-colors ${
-                  outlineOpen
-                    ? 'text-accent bg-accent/10'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-hover'
-                }`}
-                aria-label="Toggle table of contents"
-                title="Table of contents"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Search toolbar */}
-            <SearchToolbar
-              onSearch={handleSearch}
-              onNextMatch={handleSearchNext}
-              onPrevMatch={handleSearchPrev}
-              searchState={searchState}
-            />
-
-            {/* Viewer + Outline panel */}
-            <div className="flex-1 flex overflow-hidden">
-              {/* PDF viewer */}
-              <div className="flex-1 min-w-0 relative bg-[#525659]">
-                {fetchError ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
-                    <div className="w-12 h-12 rounded-full bg-danger-muted flex items-center justify-center text-xl mb-3">
-                      ⚠️
-                    </div>
-                    <p className="text-sm text-danger font-medium mb-1">Failed to load PDF</p>
-                    <p className="text-xs text-muted-foreground">{fetchError}</p>
-                  </div>
-                ) : fetchingPdf ? (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <svg className="w-8 h-8 text-white/60 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      <span className="text-xs text-white/60">Loading PDF…</span>
-                    </div>
-                  </div>
-                ) : (
-                  <PdfJsViewer
-                    ref={viewerRef}
-                    pdfData={pdfData}
-                    onDocumentLoad={handleDocumentLoad}
-                    onPageChange={handlePageChange}
-                    onScaleChange={handleScaleChange}
-                    onOutline={handleOutline}
-                    onFindResults={handleFindResults}
-                  />
-                )}
+            {/* Error state */}
+            {iframeError && !iframeLoading ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
+                <div className="w-12 h-12 rounded-full bg-danger-muted flex items-center justify-center text-xl mb-3">
+                  ⚠️
+                </div>
+                <p className="text-sm text-danger font-medium mb-1">Failed to load PDF</p>
+                <p className="text-xs text-muted-foreground">
+                  The PDF could not be loaded. Please try again.
+                </p>
               </div>
+            ) : null}
 
-              {/* Outline panel */}
-              {outlineOpen && (
-                <OutlinePanel
-                  items={outlineItems}
-                  onNavigate={handleOutlineNavigate}
-                  isOpen={outlineOpen}
-                  onToggle={handleOutlineToggle}
-                />
-              )}
-            </div>
-          </>
+            {/* iframe — native browser PDF viewer */}
+            {iframeUrl && (
+              <iframe
+                src={iframeUrl}
+                className="w-full h-full border-0"
+                sandbox="allow-scripts allow-same-origin allow-forms"
+                title={activeBookName}
+                onLoad={handleIframeLoad}
+                onError={handleIframeError}
+                data-testid="pdf-iframe"
+              />
+            )}
+          </div>
         ) : (
           /* ══════ LIST MODE ══════ */
           <>
