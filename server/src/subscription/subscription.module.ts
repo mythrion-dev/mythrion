@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 import { JwtModule } from '@nestjs/jwt'
+import { PrismaService } from '../prisma.service.js'
 import { SubscriptionService } from './subscription.service.js'
 import { SubscriptionController } from './subscription.controller.js'
 import { MercadoPagoService } from './mercado-pago.service.js'
@@ -12,7 +13,7 @@ import { MercadoPagoService } from './mercado-pago.service.js'
     }),
   ],
   controllers: [SubscriptionController],
-  providers: [SubscriptionService, MercadoPagoService],
+  providers: [SubscriptionService, MercadoPagoService, PrismaService],
   exports: [SubscriptionService],
 })
 export class SubscriptionModule {}
