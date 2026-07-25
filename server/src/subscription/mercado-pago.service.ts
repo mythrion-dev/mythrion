@@ -74,12 +74,15 @@ export class MercadoPagoService {
         },
       })
       return response as unknown as MercadoPagoSubscriptionResponse
-    } catch (err) {
-      this.logger.error(
-        `Failed to create MP subscription: ${err instanceof Error ? err.message : String(err)}`,
-      )
+    } catch (err: any) {
+      const mpError =
+        err?.response?.data?.message ||
+        err?.cause?.[0]?.description ||
+        err?.message ||
+        JSON.stringify(err)
+      this.logger.error(`Failed to create MP subscription: ${mpError}`)
       throw new UnprocessableEntityException(
-        'Failed to create Mercado Pago subscription. Please check your plan selection and try again.',
+        `Mercado Pago error: ${mpError}`,
       )
     }
   }
@@ -95,10 +98,13 @@ export class MercadoPagoService {
         body: { status: 'cancelled' },
       })
       this.logger.log(`Cancelled MP subscription ${mpSubscriptionId}`)
-    } catch (err) {
-      this.logger.error(
-        `Failed to cancel MP subscription ${mpSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
-      )
+    } catch (err: any) {
+      const mpError =
+        err?.response?.data?.message ||
+        err?.cause?.[0]?.description ||
+        err?.message ||
+        JSON.stringify(err)
+      this.logger.error(`Failed to cancel MP subscription ${mpSubscriptionId}: ${mpError}`)
       throw new UnprocessableEntityException('Failed to cancel subscription')
     }
   }
@@ -113,10 +119,13 @@ export class MercadoPagoService {
       const preApproval = new PreApproval(this.client)
       const response = await preApproval.get({ id: mpSubscriptionId })
       return response as unknown as MercadoPagoSubscriptionResponse
-    } catch (err) {
-      this.logger.error(
-        `Failed to fetch MP subscription ${mpSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
-      )
+    } catch (err: any) {
+      const mpError =
+        err?.response?.data?.message ||
+        err?.cause?.[0]?.description ||
+        err?.message ||
+        JSON.stringify(err)
+      this.logger.error(`Failed to fetch MP subscription ${mpSubscriptionId}: ${mpError}`)
       throw new UnprocessableEntityException('Failed to fetch subscription')
     }
   }
