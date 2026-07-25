@@ -1,5 +1,7 @@
 'use client'
 
+import { Select } from '@/components/shared/Select'
+
 interface SkillValue {
   id: string; skillId: string; value: string; selectedAttributeId: string | null
   selectedAttribute: { id: string; key: string; name: string } | null
@@ -84,21 +86,17 @@ export function CollapsibleSkillRow({
         <div className="px-4 py-3 space-y-2 border-t border-border ml-10">
           {profiles.map(profile => {
             const sid = selections[profile.id]
-            const so = sid ? profile.options.find(o => o.id === sid) : null
             return (
               <div key={profile.id} className="flex items-center gap-2">
                 <span className="text-xs text-muted shrink-0 min-w-[80px]">{profile.name}:</span>
-                <select
-                  className="input-field py-1 text-xs flex-1"
-                  value={sid ?? ''}
-                  onChange={e => { onProfileChange(profile.id, e.target.value || null) }}
-                >
-                  <option value="">— Select —</option>
-                  {profile.options.map(opt => (
-                    <option key={opt.id} value={opt.id}>{opt.label} ({opt.value >= 0 ? '+' : ''}{opt.value})</option>
-                  ))}
-                </select>
-                {so && <span className="text-xs font-mono text-primary shrink-0">{so.value >= 0 ? '+' : ''}{so.value}</span>}
+                <Select
+                  options={profile.options}
+                  value={sid}
+                  onChange={(id) => onProfileChange(profile.id, id)}
+                  showBadge
+                  size="sm"
+                  className="flex-1"
+                />
               </div>
             )
           })}

@@ -328,7 +328,22 @@ export default function CharacterSheetDetailPage() {
       const actives: Record<string, boolean> = {}; const others: Record<string, number> = {}
       d.skillValues.forEach(sv => { const parts = (sv.value || '').split('|'); actives[sv.skillId] = parts[0] === '1'; others[sv.skillId] = parseInt(parts[1] || '0', 10) || 0 })
       setActiveSkills(actives); setOthersValues(others)
-      const selMap: Record<string, Record<string, string | null>> = {}; d.skillProfileValues.forEach(spv => { if (!selMap[spv.skillId]) selMap[spv.skillId] = {}; selMap[spv.skillId][spv.profileId] = spv.optionId }); setProfileSelections(selMap)
+      const selMap: Record<string, Record<string, string | null>> = {}; d.skillProfileValues.forEach(spv => { if (!selMap[spv.skillId]) selMap[spv.skillId] = {}; selMap[spv.skillId][spv.profileId] = spv.optionId })
+      // Auto-select lowest-value option for profiles without a saved selection
+      const skillModifierProfiles = d.template?.skillModifierProfiles || []
+      for (const sv of d.skillValues) {
+        if (!selMap[sv.skillId]) selMap[sv.skillId] = {}
+        for (const profile of skillModifierProfiles) {
+          const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
+          const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
+          if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(sv.skill.name)) continue
+          if (selMap[sv.skillId][profile.id] === undefined && profile.options.length > 0) {
+            const lowest = profile.options.reduce((a, b) => a.value <= b.value ? a : b)
+            selMap[sv.skillId][profile.id] = lowest.id
+          }
+        }
+      }
+      setProfileSelections(selMap)
       setAbilities(d.abilities || []); setInventoryItems(d.inventoryItems || []); setStory(d.story || null)
       setSectionEntries(d.sectionEntries || [])
       // All abilities start collapsed

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { api, API_URL } from '@/lib/api'
+import { Select } from '@/components/shared/Select'
 
 /* ── Types ── */
 
@@ -195,6 +196,13 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
         sps[sv.skillId] = {}
         for (const pv of sv.profileValues ?? []) {
           sps[sv.skillId][pv.profileId] = pv.optionId
+        }
+        // Auto-select lowest-value option for profiles without saved selection
+        for (const profile of data.template.skillModifierProfiles ?? []) {
+          if (!(profile.id in sps[sv.skillId]) && profile.options.length > 0) {
+            const lowest = profile.options.reduce((a, b) => a.value <= b.value ? a : b)
+            sps[sv.skillId][profile.id] = lowest.id
+          }
         }
       }
       setSkillProfileSelections(sps)
@@ -836,19 +844,17 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
                         return (
                           <div key={profile.id} className="flex items-center gap-2">
                             <label className="text-[10px] text-muted-foreground shrink-0">{profile.name}:</label>
-                            <select
-                              value={currentOpt ?? ''}
-                              onChange={e => setSkillProfileSelections(prev => ({
+                            <Select
+                              options={profile.options}
+                              value={currentOpt}
+                              onChange={(id) => setSkillProfileSelections(prev => ({
                                 ...prev,
-                                [sv.skillId]: { ...(prev[sv.skillId] ?? {}), [profile.id]: e.target.value || null },
+                                [sv.skillId]: { ...(prev[sv.skillId] ?? {}), [profile.id]: id },
                               }))}
-                              className="input-field py-0.5 text-xs flex-1"
-                            >
-                              <option value="">— None —</option>
-                              {profile.options.map(o => (
-                                <option key={o.id} value={o.id}>{o.label} ({o.value >= 0 ? '+' : ''}{o.value})</option>
-                              ))}
-                            </select>
+                              showBadge
+                              size="sm"
+                              className="flex-1"
+                            />
                           </div>
                         )
                       })}

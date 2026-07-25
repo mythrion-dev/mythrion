@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import { NumericInput } from '@/components/shared/NumericInput'
+import { Select } from '@/components/shared/Select'
 import { ProfessionalSkillsSection } from './ProfessionalSkillsSection'
 import type { CharacterSheet, AcResultMap, SkillModifierProfile, SheetPermissions } from './types'
 
@@ -660,23 +661,15 @@ function SkillTable({
                         return (
                           <div key={profile.id} className="flex items-center gap-2">
                             <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">{profile.name}:</span>
-                            <select
-                              className="input-field py-0.5 text-[0.6rem] flex-1"
-                              value={sid ?? ''}
-                              onChange={e => onProfileChange(sv.skillId, profile.id, e.target.value || null)}
+                            <Select
+                              options={profile.options}
+                              value={sid}
+                              onChange={(id) => onProfileChange(sv.skillId, profile.id, id)}
                               disabled={!canEditSkills}
-                            >
-                              <option value="">— Select —</option>
-                              {profile.options.map(opt => (
-                                <option key={opt.id} value={opt.id}>{opt.label} ({opt.value >= 0 ? '+' : ''}{opt.value})</option>
-                              ))}
-                            </select>
-                            {sid && (
-                              <span className="text-[0.6rem] font-mono text-primary shrink-0 tabular-nums">
-                                {profile.options.find(o => o.id === sid)?.value ?? 0 >= 0 ? '+' : ''}
-                                {profile.options.find(o => o.id === sid)?.value ?? 0}
-                              </span>
-                            )}
+                              showBadge
+                              size="sm"
+                              className="flex-1"
+                            />
                           </div>
                         )
                       })}

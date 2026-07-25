@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
+// scrollIntoView is not available in jsdom
+Element.prototype.scrollIntoView = vi.fn()
+
 // ── Mocks ──
 
 const mockGet = vi.fn()
@@ -587,8 +590,8 @@ describe('ProfessionalSkillsSection', () => {
     })
     // Profile name should appear as a label
     expect(screen.getByText('Expertise')).toBeInTheDocument()
-    // Default "—" option should exist in select
-    expect(screen.getByRole('option', { name: '—' })).toBeInTheDocument()
+    // Select component should be rendered (combobox role)
+    expect(screen.getByRole('combobox')).toBeInTheDocument()
   })
 
   it('shows MOD value with positive profile option', async () => {
@@ -681,7 +684,8 @@ describe('ProfessionalSkillsSection', () => {
     const selects = screen.getAllByRole('combobox')
     // Change the last select (the profile one) to "Trained"
     const profileSelect = selects[selects.length - 1]
-    fireEvent.change(profileSelect, { target: { value: 'opt-2' } })
+    fireEvent.click(profileSelect)
+    fireEvent.click(screen.getByRole('option', { name: /Trained/ }))
     await waitFor(() => {
       expect(mockPatch).toHaveBeenCalledWith(
         '/character-sheets/sheet-1/professional-skills/sk-1/profiles/prof-1',

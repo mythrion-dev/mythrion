@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, type FormEvent } from 'react'
 import { api } from '@/lib/api'
+import { Select } from '@/components/shared/Select'
 import type { ProfessionalSkill, SkillModifierProfile, SheetPermissions } from './types'
 
 // ── Props ──
@@ -154,7 +155,15 @@ export function ProfessionalSkillsSection({
   function openCreate() {
     setCreateName('')
     setCreateAttributeId('')
-    setCreateProfileSelections({})
+    // Auto-select the lowest-value option for each profile
+    const initialSelections: Record<string, string | null> = {}
+    for (const profile of allProfiles) {
+      if (profile.options.length > 0) {
+        const lowest = profile.options.reduce((a, b) => a.value <= b.value ? a : b)
+        initialSelections[profile.id] = lowest.id
+      }
+    }
+    setCreateProfileSelections(initialSelections)
     setError(null)
     setShowCreateModal(true)
   }
@@ -254,27 +263,15 @@ export function ProfessionalSkillsSection({
               <label className="text-[0.55rem] text-muted whitespace-nowrap shrink-0 leading-none">
                 {profile.name}
               </label>
-              <select
-                className="input-field py-0.5 text-[0.6rem] flex-1 min-w-0"
-                value={selectedOptionId}
-                onChange={e => handleProfileChange(skillId, profile.id, e.target.value || null)}
+              <Select
+                options={profile.options}
+                value={selectedOptionId || null}
+                onChange={(id) => handleProfileChange(skillId, profile.id, id)}
                 disabled={disableAll}
-              >
-                <option value="">—</option>
-                {profile.options.map(opt => (
-                  <option key={opt.id} value={opt.id}>
-                    {opt.label} ({opt.value >= 0 ? '+' : ''}{opt.value})
-                  </option>
-                ))}
-              </select>
-              {selectedOptionId && (
-                <span className="text-[0.55rem] font-mono text-primary shrink-0 tabular-nums leading-none">
-                  {(() => {
-                    const opt = profile.options.find(o => o.id === selectedOptionId)
-                    return opt ? (opt.value >= 0 ? `+${opt.value}` : `${opt.value}`) : ''
-                  })()}
-                </span>
-              )}
+                showBadge
+                size="sm"
+                className="flex-1 min-w-0"
+              />
             </div>
           )
         })}
@@ -474,23 +471,19 @@ export function ProfessionalSkillsSection({
                   {allProfiles.map(profile => (
                     <div key={profile.id} className="flex items-center gap-2">
                       <label className="text-xs text-muted min-w-[4rem]">{profile.name}:</label>
-                      <select
-                        className="input-field text-sm flex-1"
-                        value={createProfileSelections[profile.id] ?? ''}
-                        onChange={e =>
+                      <Select
+                        options={profile.options}
+                        value={createProfileSelections[profile.id] ?? null}
+                        onChange={(id) =>
                           setCreateProfileSelections(p => ({
                             ...p,
-                            [profile.id]: e.target.value || null,
+                            [profile.id]: id,
                           }))
                         }
-                      >
-                        <option value="">— No selection —</option>
-                        {profile.options.map(opt => (
-                          <option key={opt.id} value={opt.id}>
-                            {opt.label} {opt.value >= 0 ? `(+${opt.value})` : `(${opt.value})`}
-                          </option>
-                        ))}
-                      </select>
+                        showBadge
+                        size="sm"
+                        className="flex-1"
+                      />
                     </div>
                   ))}
                 </div>
