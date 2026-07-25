@@ -5,6 +5,26 @@ import { render, screen, fireEvent, act } from '@testing-library/react'
 
 const mockOnSaveInlineText = vi.fn()
 const mockOnSaveInlineNumber = vi.fn()
+const mockOnSaveInlineClickEdit = vi.fn()
+
+vi.mock('@/components/character-sheet', () => ({
+  InlineClickEdit: ({ value, onSave, as, rows, className, emptyDisplay }: {
+    value: string; onSave: (v: string) => Promise<void>; as?: string; rows?: number; className?: string; emptyDisplay?: string
+  }) => (
+    <button
+      type="button"
+      data-testid="inline-click-edit"
+      data-value={value}
+      data-as={as}
+      data-rows={rows}
+      data-empty-display={emptyDisplay}
+      className={className}
+      onClick={() => { mockOnSaveInlineClickEdit.mockImplementation(onSave); onSave('updated-text') }}
+    >
+      {value?.trim() || emptyDisplay || '—'}
+    </button>
+  ),
+}))
 
 vi.mock('@/lib/inline-editable', () => ({
   InlineText: ({ value, onSave, placeholder, className, emptyDisplay }: {
@@ -133,6 +153,7 @@ describe('SummonResourceCard', () => {
   beforeEach(() => {
     mockOnSaveInlineText.mockReset()
     mockOnSaveInlineNumber.mockReset()
+    mockOnSaveInlineClickEdit.mockReset()
   })
 
   describe('Full render', () => {
@@ -977,6 +998,184 @@ describe('SummonResourceCard', () => {
       })
 
       expect(handleAddSummonSkill).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Header card', () => {
+    it('renders summon name and badge', () => {
+      render(
+        <SummonResourceCard
+          ability={makeAbility({ name: 'Fire Elemental' })}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: false })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+        />
+      )
+
+      expect(screen.getByText('Fire Elemental')).toBeTruthy()
+      expect(screen.getByText('Summon')).toBeTruthy()
+    })
+  })
+
+  describe('Notes section', () => {
+    it('renders description as read-only text when saveDescription is not provided', () => {
+      render(
+        <SummonResourceCard
+          ability={makeAbility({ description: 'A loyal companion' })}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: false })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+        />
+      )
+
+      expect(screen.getByText('Notes')).toBeTruthy()
+      expect(screen.getByText('Description')).toBeTruthy()
+      expect(screen.getByText('A loyal companion')).toBeTruthy()
+    })
+
+    it('renders InlineClickEdit for description when saveDescription is provided and canEdit is true', () => {
+      const saveDescription = vi.fn()
+
+      render(
+        <SummonResourceCard
+          ability={makeAbility({ description: 'Edit me' })}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: true })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+          saveDescription={saveDescription}
+        />
+      )
+
+      const inlineClickEdit = screen.getByTestId('inline-click-edit')
+      expect(inlineClickEdit).toBeTruthy()
+      expect(inlineClickEdit.getAttribute('data-value')).toBe('Edit me')
+      expect(inlineClickEdit.getAttribute('data-as')).toBe('textarea')
+      expect(inlineClickEdit.getAttribute('data-rows')).toBe('2')
+    })
+
+    it('renders InlineClickEdit for notes when saveNotes is provided and canEdit is true', () => {
+      const saveNotes = vi.fn()
+
+      render(
+        <SummonResourceCard
+          ability={makeAbility({ notes: 'Some notes' })}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: true })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+          saveNotes={saveNotes}
+        />
+      )
+
+      const inlineClickEdits = screen.getAllByTestId('inline-click-edit')
+      const notesEditor = inlineClickEdits.find(el => el.getAttribute('data-value') === 'Some notes')
+      expect(notesEditor).toBeTruthy()
+    })
+
+    it('calls saveDescription when InlineClickEdit is saved', () => {
+      const saveDescription = vi.fn()
+
+      render(
+        <SummonResourceCard
+          ability={makeAbility({ description: 'Old description' })}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: true })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+          saveDescription={saveDescription}
+        />
+      )
+
+      const inlineClickEdit = screen.getByTestId('inline-click-edit')
+      fireEvent.click(inlineClickEdit)
+
+      expect(saveDescription).toHaveBeenCalledWith('summon-1', 'updated-text')
+    })
+
+    it('renders notes as read-only text when saveNotes is not provided', () => {
+      render(
+        <SummonResourceCard
+          ability={makeAbility({ notes: 'Important note here' })}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: false })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+        />
+      )
+
+      expect(screen.getByText('Important note here')).toBeTruthy()
+    })
+
+    it('does not render Notes card when description and notes are both empty and canEdit is false', () => {
+      render(
+        <SummonResourceCard
+          ability={makeAbility({ description: null, notes: null })}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: false })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+        />
+      )
+
+      expect(screen.queryByText('Notes')).toBeNull()
+    })
+
+    it('renders Notes card when description and notes are empty but canEdit is true (for add placeholder)', () => {
+      render(
+        <SummonResourceCard
+          ability={makeAbility({ description: null, notes: null })}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: true })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+          saveDescription={vi.fn()}
+        />
+      )
+
+      expect(screen.getByText('Notes')).toBeTruthy()
     })
   })
 })
