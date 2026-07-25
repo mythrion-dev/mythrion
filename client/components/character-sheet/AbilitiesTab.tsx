@@ -542,49 +542,6 @@ export function AbilitiesTab({
                     {/* SUMMON content */}
                     {!isAbility && (
                       <div className="pt-1">
-                        {/* Description / Notes (always visible) */}
-                        <div className="space-y-2 mb-4">
-                          {canEditAbilities ? (
-                            <>
-                              <div>
-                                <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
-                                <InlineClickEdit
-                                  value={a.description ?? ''}
-                                  onSave={async (v) => {
-                                    try {
-                                      await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}`, { description: v.trim() || null })
-                                      setAbilities(prev => prev.map(ab => ab.id === a.id ? { ...ab, description: v.trim() || null } : ab))
-                                    } catch {}
-                                  }}
-                                  as="textarea"
-                                  className="text-sm text-muted-foreground whitespace-pre-wrap"
-                                  emptyDisplay="Add description..."
-                                />
-                              </div>
-                              <div>
-                                <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
-                                <InlineClickEdit
-                                  value={a.notes ?? ''}
-                                  onSave={async (v) => {
-                                    try {
-                                      await api.patch(`/character-sheets/${sheetId}/abilities/${a.id}`, { notes: v.trim() || null })
-                                      setAbilities(prev => prev.map(ab => ab.id === a.id ? { ...ab, notes: v.trim() || null } : ab))
-                                    } catch {}
-                                  }}
-                                  as="textarea"
-                                  className="text-xs text-muted italic whitespace-pre-wrap"
-                                  emptyDisplay="Add notes..."
-                                />
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              {a.description && <div><h5 className="text-xs font-medium text-muted mb-1">Description</h5><p className="text-sm text-muted-foreground whitespace-pre-wrap">{a.description}</p></div>}
-                              {a.notes && <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><p className="text-xs text-muted italic whitespace-pre-wrap">{a.notes}</p></div>}
-                            </>
-                          )}
-                        </div>
-
                         {/* Summon Resource Card */}
                         {(() => {
                           const attributeDisplays: AttributeDisplay[] = (a.summonAttributes ?? []).map(sa => {
@@ -612,6 +569,18 @@ export function AbilitiesTab({
                               handleAddSummonSkill={handleAddSummonSkill}
                               handleUpdateSummonSkill={handleUpdateSummonSkill}
                               handleRemoveSummonSkill={handleRemoveSummonSkill}
+                              saveDescription={async (abilityId, value) => {
+                                try {
+                                  await api.patch(`/character-sheets/${sheetId}/abilities/${abilityId}`, { description: value.trim() || null })
+                                  setAbilities(prev => prev.map(ab => ab.id === abilityId ? { ...ab, description: value.trim() || null } : ab))
+                                } catch {}
+                              }}
+                              saveNotes={async (abilityId, value) => {
+                                try {
+                                  await api.patch(`/character-sheets/${sheetId}/abilities/${abilityId}`, { notes: value.trim() || null })
+                                  setAbilities(prev => prev.map(ab => ab.id === abilityId ? { ...ab, notes: value.trim() || null } : ab))
+                                } catch {}
+                              }}
                             />
                           )
                         })()}
