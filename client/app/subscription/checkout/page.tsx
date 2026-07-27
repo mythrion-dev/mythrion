@@ -1,10 +1,16 @@
 'use client'
 
-import { useEffect, useState, Suspense, useCallback } from 'react'
+import { useEffect, useState, Suspense, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useSubscription } from '@/lib/subscription-context'
 import { createSubscription, fetchPlans, type Plan } from '@/lib/subscription-api'
+import initMercadoPago from '@mercadopago/sdk-react/esm/mercadoPago/initMercadoPago'
+import CardNumber from '@mercadopago/sdk-react/esm/secureFields/cardNumber'
+import SecurityCode from '@mercadopago/sdk-react/esm/secureFields/securityCode'
+import ExpirationDate from '@mercadopago/sdk-react/esm/secureFields/expirationDate'
+import createCardToken from '@mercadopago/sdk-react/esm/secureFields/createCardToken'
+import type { FieldStyle } from '@mercadopago/sdk-react/esm/secureFields/util/types'
 import Link from 'next/link'
 
 const MP_PUBLIC_KEY = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY
@@ -23,62 +29,15 @@ const TEST_CARDS: TestCard[] = [
   { label: 'American Express', number: '3753651246888671', cvv: '1234', expiry: '12/2028' },
 ]
 
-function formatCardNumber(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 16)
-  return digits.replace(/(\d{4})(?=\d)/g, '$1 ')
-}
-
-function formatExpiry(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 4)
-  if (digits.length >= 3) return `${digits.slice(0, 2)}/${digits.slice(2)}`
-  return digits
-}
-
-/**
- * Create a Mercado Pago card token directly via the MP API.
- * This is more reliable than relying on SDK internal imports.
- */
-async function createCardToken(cardData: {
-  cardNumber: string
-  cardholderName: string
-  expirationMonth: string
-  expirationYear: string
-  securityCode: string
-}): Promise<string> {
-  if (!MP_PUBLIC_KEY) {
-    throw new Error(
-      'Chave pública do Mercado Pago não configurada. ' +
-        'Configure NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY nas variáveis de ambiente.',
-    )
-  }
-
-  const response = await fetch(
-    `https://api.mercadopago.com/v1/card_tokens?public_key=${MP_PUBLIC_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        card_number: cardData.cardNumber,
-        cardholder: { name: cardData.cardholderName },
-        expiration_month: cardData.expirationMonth,
-        expiration_year: cardData.expirationYear,
-        security_code: cardData.securityCode,
-      }),
-    },
-  )
-
-  const data = await response.json()
-
-  if (!response.ok) {
-    const mpError = data?.message || data?.cause?.[0]?.description || JSON.stringify(data)
-    throw new Error(`Erro ao gerar token do cartão: ${mpError}`)
-  }
-
-  if (!data?.id) {
-    throw new Error('Falha ao gerar token do cartão. Resposta inesperada do Mercado Pago.')
-  }
-
-  return data.id
+/** Styles applied to the MP secure-field iframe inputs */
+const SECURE_FIELD_STYLE: FieldStyle = {
+  color: '#e1e1e1',
+  'font-family': 'Inter, system-ui, sans-serif',
+  'font-size': '14px',
+  height: '24px',
+  padding: '0',
+  'placeholder-color': '#71717a',
+  width: '100%',
 }
 
 function CheckoutContent() {
@@ -89,18 +48,54 @@ function CheckoutContent() {
   const [status, setStatus] = useState<'form' | 'loading' | 'redirecting' | 'error'>('form')
   const [errorMessage, setErrorMessage] = useState('')
   const [plan, setPlan] = useState<Plan | null>(null)
+  const [mpInitialized, setMpInitialized] = useState(false)
+  const mpInitAttempted = useRef(false)
 
   // Card form state
-  const [cardNumber, setCardNumber] = useState('')
   const [cardName, setCardName] = useState('')
-  const [cardExpiry, setCardExpiry] = useState('')
-  const [cardCvv, setCardCvv] = useState('')
   const [installments, setInstallments] = useState(1)
   const [installmentOptions, setInstallmentOptions] = useState<
     Array<{ value: number; label: string }>
   >([])
 
+  // Secure field validity trackers
+  const [cardNumberValid, setCardNumberValid] = useState(false)
+  const [securityCodeValid, setSecurityCodeValid] = useState(false)
+  const [expirationDateValid, setExpirationDateValid] = useState(false)
+
+  // BIN (first 6 digits) captured from the card for installments lookup
+  const [bin, setBin] = useState<string | null>(null)
+
   const planId = searchParams.get('planId')
+
+  // Initialize Mercado Pago SDK once
+  useEffect(() => {
+    if (!MP_PUBLIC_KEY) {
+      setErrorMessage(
+        'Chave pública do Mercado Pago não configurada. ' +
+          'Configure NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY nas variáveis de ambiente.',
+      )
+      return
+    }
+
+    if (mpInitAttempted.current) return
+    mpInitAttempted.current = true
+
+    initMercadoPago(MP_PUBLIC_KEY, {
+      locale: 'pt-BR',
+    })
+
+    // Wait for SDK to fully load — the secure fields need the MP script
+    let attempts = 0
+    const check = setInterval(() => {
+      attempts++
+      if ((window as any).MercadoPago || attempts >= 30) {
+        clearInterval(check)
+        setMpInitialized(true)
+      }
+    }, 200)
+    return () => clearInterval(check)
+  }, [])
 
   // Fetch plan details
   useEffect(() => {
@@ -149,26 +144,27 @@ function CheckoutContent() {
       setErrorMessage('')
 
       try {
-        // Validate card
-        if (!cardNumber.trim() || !cardName.trim() || !cardExpiry.trim() || !cardCvv.trim()) {
-          throw new Error('Preencha todos os dados do cartão')
+        // Validate cardholder name
+        if (!cardName.trim()) {
+          throw new Error('Preencha o nome do titular do cartão')
         }
 
-        // Parse expiry
-        const [expMonth, expYear] = cardExpiry.split('/')
-        if (!expMonth || !expYear) throw new Error('Data de validade inválida')
+        // Validate secure fields are filled
+        if (!cardNumberValid || !securityCodeValid || !expirationDateValid) {
+          throw new Error('Preencha todos os dados do cartão corretamente')
+        }
 
-        // Create card token directly via MP API
-        const cardTokenId = await createCardToken({
-          cardNumber: cardNumber.replace(/\s/g, ''),
+        // Create card token via MP secure fields
+        const token = await createCardToken({
           cardholderName: cardName,
-          expirationMonth: expMonth,
-          expirationYear: expYear.length === 2 ? `20${expYear}` : expYear,
-          securityCode: cardCvv,
         })
 
+        if (!token || !token.id) {
+          throw new Error('Falha ao gerar token do cartão. Tente novamente.')
+        }
+
         // Create subscription with the card token
-        const result = await createSubscription(plan?.id ?? planId ?? '', cardTokenId)
+        const result = await createSubscription(plan?.id ?? planId ?? '', token.id)
 
         setStatus('redirecting')
         refresh()
@@ -186,15 +182,13 @@ function CheckoutContent() {
         )
       }
     },
-    [cardNumber, cardName, cardExpiry, cardCvv, plan, planId, router, refresh],
+    [cardName, cardNumberValid, securityCodeValid, expirationDateValid, plan, planId, router, refresh],
   )
 
-  // Auto-fill test card for development
+  // Auto-fill test card — only sets the cardholder name since secure fields
+  // handle the card number, CVV, and expiry; the user types them manually
   const fillTestCard = useCallback((testCard: TestCard) => {
-    setCardNumber(testCard.number)
     setCardName('Test User')
-    setCardExpiry(testCard.expiry)
-    setCardCvv(testCard.cvv)
   }, [])
 
   // Show payment pending states
@@ -266,20 +260,25 @@ function CheckoutContent() {
 
         {/* Card form */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Card number */}
+          {/* Card number — secure field */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">
               Número do cartão
             </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="0000 0000 0000 0000"
-              value={cardNumber}
-              onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-              className="w-full px-4 py-2.5 bg-surface border border-border rounded-lg text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              required
-            />
+            <div className="w-full px-4 py-2.5 bg-surface border border-border rounded-lg focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary">
+              {mpInitialized ? (
+                <CardNumber
+                  placeholder="0000 0000 0000 0000"
+                  style={SECURE_FIELD_STYLE}
+                  onValidityChange={(e: any) => setCardNumberValid(!e?.errorMessages?.length)}
+                  onBinChange={(e: any) => setBin(e?.bin ?? null)}
+                />
+              ) : (
+                <div className="h-6 flex items-center">
+                  <span className="text-sm text-muted-foreground/50">Carregando...</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Card name */}
@@ -301,27 +300,36 @@ function CheckoutContent() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Validade</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="MM/AA"
-                value={cardExpiry}
-                onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
-                className="w-full px-4 py-2.5 bg-surface border border-border rounded-lg text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                required
-              />
+              <div className="w-full px-4 py-2.5 bg-surface border border-border rounded-lg focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary">
+                {mpInitialized ? (
+                  <ExpirationDate
+                    placeholder="MM/AA"
+                    mode="short"
+                    style={SECURE_FIELD_STYLE}
+                    onValidityChange={(e: any) => setExpirationDateValid(!e?.errorMessages?.length)}
+                  />
+                ) : (
+                  <div className="h-6 flex items-center">
+                    <span className="text-sm text-muted-foreground/50">Carregando...</span>
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">CVV</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="123"
-                value={cardCvv}
-                onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                className="w-full px-4 py-2.5 bg-surface border border-border rounded-lg text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                required
-              />
+              <div className="w-full px-4 py-2.5 bg-surface border border-border rounded-lg focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary">
+                {mpInitialized ? (
+                  <SecurityCode
+                    placeholder="123"
+                    style={SECURE_FIELD_STYLE}
+                    onValidityChange={(e: any) => setSecurityCodeValid(!e?.errorMessages?.length)}
+                  />
+                ) : (
+                  <div className="h-6 flex items-center">
+                    <span className="text-sm text-muted-foreground/50">Carregando...</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -359,9 +367,12 @@ function CheckoutContent() {
           {/* Submit */}
           <button
             type="submit"
-            className="w-full py-3 px-6 rounded-lg bg-primary text-background font-semibold hover:opacity-90 transition-opacity"
+            disabled={!mpInitialized}
+            className="w-full py-3 px-6 rounded-lg bg-primary text-background font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {`Assinar — R$ ${(plan ? plan.price / (installments || 1) : 0).toFixed(2)}${installments > 1 ? ` × ${installments}` : ''}`}
+            {mpInitialized
+              ? `Assinar — R$ ${(plan ? plan.price / (installments || 1) : 0).toFixed(2)}${installments > 1 ? ` × ${installments}` : ''}`
+              : 'Carregando...'}
           </button>
         </form>
 
@@ -370,6 +381,10 @@ function CheckoutContent() {
           <div className="mt-8 p-4 rounded-lg bg-surface border border-border">
             <p className="text-xs text-muted-foreground mb-2 font-medium">
               🧪 Cartões de teste (ambiente dev)
+            </p>
+            <p className="text-xs text-muted-foreground/60 mb-2">
+              Digite os dados do cartão manualmente nos campos seguros acima. Apenas o nome é
+              preenchido automaticamente.
             </p>
             <div className="flex flex-wrap gap-2">
               {TEST_CARDS.map((card) => (
