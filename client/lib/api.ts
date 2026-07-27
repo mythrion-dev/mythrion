@@ -77,7 +77,17 @@ async function request<T>(
   return res.json()
 }
 
+/** Guard: only one refresh-in-flight at a time.
+ *  Multiple concurrent 401 responses all await the same
+ *  single refresh, avoiding race conditions where parallel
+ *  requests revoke each other's newly-issued tokens. */
+let refreshPromise: Promise<string | null> | null = null
+
 export async function refreshAccessToken(): Promise<string | null> {
+  // If a refresh is already in-flight, wait for it instead of firing a second one
+  if (refreshPromise) {
+    return refreshPromise
+  }
   const refreshToken = getRefreshToken()
   if (!refreshToken) {
     // No refresh token, clear auth
@@ -86,27 +96,35 @@ export async function refreshAccessToken(): Promise<string | null> {
     return null
   }
 
-  try {
-    const res = await fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    })
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      })
 
-    if (!res.ok) {
+      if (!res.ok) {
+        removeAccessToken()
+        removeRefreshToken()
+        return null
+      }
+
+      const data = await res.json()
+      setAccessToken(data.accessToken)
+      setRefreshToken(data.refreshToken)
+      return data.accessToken
+    } catch {
       removeAccessToken()
       removeRefreshToken()
       return null
     }
+  })()
 
-    const data = await res.json()
-    setAccessToken(data.accessToken)
-    setRefreshToken(data.refreshToken)
-    return data.accessToken
-  } catch {
-    removeAccessToken()
-    removeRefreshToken()
-    return null
+  try {
+    return await refreshPromise
+  } finally {
+    refreshPromise = null
   }
 }
 
