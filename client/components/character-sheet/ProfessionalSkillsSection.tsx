@@ -347,16 +347,13 @@ export function ProfessionalSkillsSection({
                           />
                         </td>
                         <td className="py-2 pr-2">
-                          <select
-                            className="input-field text-sm w-full"
-                            value={editAttributeId}
-                            onChange={e => setEditAttributeId(e.target.value)}
-                          >
-                            <option value="">None</option>
-                            {templateAttributes.map(attr => (
-                              <option key={attr.id} value={attr.id}>{attr.name}</option>
-                            ))}
-                          </select>
+                          <Select
+                            options={[{ id: '', label: 'None' }, ...templateAttributes.map(attr => ({ id: attr.id, label: attr.name }))]}
+                            value={editAttributeId ?? ''}
+                            onChange={val => setEditAttributeId(val)}
+                            size="sm"
+                            className="w-full text-sm"
+                          />
                         </td>
                         <td className="py-2 pr-2 text-right">{total !== null ? total : '—'}</td>
                         <td className="py-2 pr-2 text-right text-muted whitespace-nowrap">
@@ -451,16 +448,13 @@ export function ProfessionalSkillsSection({
 
             <div>
               <label className="label">Attribute</label>
-              <select
-                className="input-field"
-                value={createAttributeId}
-                onChange={e => setCreateAttributeId(e.target.value)}
-              >
-                <option value="">None</option>
-                {templateAttributes.map(attr => (
-                  <option key={attr.id} value={attr.id}>{attr.name}</option>
-                ))}
-              </select>
+              <Select
+                options={[{ id: '', label: 'None' }, ...templateAttributes.map(attr => ({ id: attr.id, label: attr.name }))]}
+                value={createAttributeId ?? ''}
+                onChange={val => setCreateAttributeId(val)}
+                size="md"
+                className="w-full"
+              />
             </div>
 
             {/* Profile selections in create modal */}

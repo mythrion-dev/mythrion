@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { Select } from '@/components/shared/Select'
 import type { SheetPermissions } from './types'
 
 interface ResistanceComponentValue {
@@ -448,29 +449,24 @@ export function ResistanceTab({
                           </div>
                         )}
                         <div className="relative">
-                          <select
-                            className="input-field text-sm"
+                          <Select
+                            options={[
+                              { id: '', label: '+ Add Attribute Modifier' },
+                              ...templateAttributes
+                                .filter(a => !draft.attributeModifiers.some(am => am.attributeId === a.id))
+                                .map(a => ({ id: `${a.id}::${a.key}::${a.name}`, label: a.name }))
+                            ]}
                             value=""
-                            onChange={e => {
-                              const val = e.target.value
+                            onChange={val => {
                               if (!val) return
                               const parts = val.split('::')
                               if (parts.length === 3) {
                                 addAttributeModifier(parts[0], parts[1], parts[2])
                               }
-                              e.target.value = ''
                             }}
-                          >
-                            <option value="">+ Add Attribute Modifier</option>
-                            {templateAttributes
-                              .filter(a => !draft.attributeModifiers.some(am => am.attributeId === a.id))
-                              .map(a => (
-                                <option key={a.id} value={`${a.id}::${a.key}::${a.name}`}>
-                                  {a.name}
-                                </option>
-                              ))
-                            }
-                          </select>
+                            className="text-sm"
+                            size="md"
+                          />
                         </div>
                       </div>
                     </div>

@@ -57,17 +57,16 @@ export function CollapsibleSkillRow({
           </div>
           <div className="flex items-center gap-2 shrink-0 ml-3" onClick={e => e.stopPropagation()}>
             {hasAttrDropdown && modifiersEnabled !== false ? (
-              <select
-                className="input-field py-0.5 text-xs w-auto min-w-[90px]"
-                value={skill.selectedAttributeId ?? ''}
-                onChange={e => onAttributeChange!(e.target.value || null)}
-              >
-                {skill.skill.allowedAttributeIds.map(attrId => {
+              <Select
+                options={skill.skill.allowedAttributeIds.map(attrId => {
                   const a = templateAttributes!.find(x => x.id === attrId)
-                  if (!a) return null
-                  return <option key={attrId} value={attrId}>{a.name}</option>
-                })}
-              </select>
+                  return a ? { id: attrId, label: a.name } : null
+                }).filter(Boolean) as { id: string; label: string }[]}
+                value={skill.selectedAttributeId ?? ''}
+                onChange={val => onAttributeChange!(val || null)}
+                size="sm"
+                className="w-auto min-w-[90px] text-xs"
+              />
             ) : (
               <span className="text-xs text-muted opacity-40 min-w-[90px] inline-block">
                 {skill.selectedAttribute

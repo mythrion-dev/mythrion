@@ -214,15 +214,16 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: BookListPanel
               className="flex-1 px-3 py-2 rounded-lg bg-input border border-border text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 transition-shadow"
               disabled={uploading}
             />
-            <select
+            <Select
+              options={[
+                { id: 'GM_BOOK', label: 'GM Only' },
+                { id: 'PLAYER_BOOK', label: 'Player Visible' },
+              ]}
               value={uploadVisibility}
-              onChange={e => setUploadVisibility(e.target.value as 'GM_BOOK' | 'PLAYER_BOOK')}
-              className="px-3 py-2 rounded-lg bg-input border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 transition-shadow"
+              onChange={val => setUploadVisibility(val as 'GM_BOOK' | 'PLAYER_BOOK')}
+              className="text-sm"
               disabled={uploading}
-            >
-              <option value="GM_BOOK">GM Only</option>
-              <option value="PLAYER_BOOK">Player Visible</option>
-            </select>
+            />
           </div>
           <label className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
             uploading

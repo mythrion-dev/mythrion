@@ -334,15 +334,13 @@ export function CharacterTab(props: CharacterTabProps) {
                           return (
                             <div key={am.id} className="flex items-center justify-between gap-1 text-[0.7rem]">
                               {canChangeAttribute ? (
-                                <select
-                                  className="input-field py-0.5 text-[0.7rem] w-auto min-w-[80px]"
+                                <Select
+                                  options={sheet.template.attributes.map(attr => ({ id: attr.id, label: attr.name }))}
                                   value={selectedAttribute?.id ?? ''}
-                                  onChange={e => handleAcAttributeModifierChange(am.id, e.target.value || null)}
-                                >
-                                  {sheet.template.attributes.map(attr => (
-                                    <option key={attr.id} value={attr.id}>{attr.name}</option>
-                                  ))}
-                                </select>
+                                  onChange={val => handleAcAttributeModifierChange(am.id, val || null)}
+                                  size="sm"
+                                  className="min-w-[80px] text-[0.7rem]"
+                                />
                               ) : (
                                 <span className="text-muted truncate">
                                   {(selectedAttribute?.name ?? am.attribute.name)}
@@ -625,18 +623,17 @@ function SkillTable({
                       {(sv.skill.allowedAttributeIds?.length ?? 0) > 0 ? (
                         <div className="flex items-center gap-2">
                           <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">Attribute:</span>
-                          <select
-                            className="input-field py-0.5 text-[0.6rem] flex-1 min-w-0"
-                            value={sv.selectedAttributeId ?? ''}
-                            onChange={e => onAttributeChange(sv.skillId, e.target.value || null)}
-                            disabled={!canEditSkills}
-                          >
-                            {sv.skill.allowedAttributeIds.map(attrId => {
+                          <Select
+                            options={sv.skill.allowedAttributeIds.map(attrId => {
                               const a = templateAttributes.find(x => x.id === attrId)
-                              if (!a) return null
-                              return <option key={attrId} value={attrId}>{a.name}</option>
-                            })}
-                          </select>
+                              return a ? { id: attrId, label: a.name } : null
+                            }).filter(Boolean) as { id: string; label: string }[]}
+                            value={sv.selectedAttributeId ?? ''}
+                            onChange={val => onAttributeChange(sv.skillId, val || null)}
+                            disabled={!canEditSkills}
+                            size="sm"
+                            className="flex-1 min-w-0 text-[0.6rem]"
+                          />
                           {modifiersEnabled && attrMod !== null && (
                             <span className="text-[0.6rem] font-mono text-primary tabular-nums shrink-0">
                               ({attrMod >= 0 ? '+' : ''}{attrMod})

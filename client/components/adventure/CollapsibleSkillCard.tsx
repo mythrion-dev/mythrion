@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Select } from '@/components/shared/Select'
 
 export function CollapsibleSkillCard({ index, skill, onUpdateSkill, onRemove, attributes, onToggleAllowedAttr, onUpdateDefaultAttr }: {
   index: number
@@ -49,10 +50,19 @@ export function CollapsibleSkillCard({ index, skill, onUpdateSkill, onRemove, at
           </div>
           <div>
             <label className="text-xs text-muted mb-1 block">Default Attribute</label>
-            <select className="input-field" value={defaultAttr} onChange={e => { if (onUpdateDefaultAttr) onUpdateDefaultAttr(index, e.target.value); else onUpdateSkill?.(index, 'defaultAttributeId', e.target.value) }}>
-              <option value="">— Select Default —</option>
-              {allowed.map((k: string) => { const a = attributes.find((x: any) => x.key === k); return a ? <option key={k} value={k}>{a.name}</option> : null })}
-            </select>
+            <Select
+              options={[
+                { id: '', label: '— Select Default —' },
+                ...allowed.map((k: string) => {
+                  const a = attributes.find((x: any) => x.key === k)
+                  return a ? { id: k, label: a.name } : null
+                }).filter(Boolean) as { id: string; label: string }[],
+              ]}
+              value={defaultAttr}
+              onChange={val => { if (onUpdateDefaultAttr) onUpdateDefaultAttr(index, val); else onUpdateSkill?.(index, 'defaultAttributeId', val) }}
+              className="text-xs"
+              size="sm"
+            />
           </div>
           <div className="flex justify-end">
             <button type="button" onClick={onRemove} className="text-xs text-danger hover:text-danger/80 transition-colors">Remove Skill</button>

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { api } from '@/lib/api'
 import { NumericInput } from '@/components/shared/NumericInput'
 import { InlineClickEdit } from '@/components/character-sheet'
+import { Select } from '@/components/shared/Select'
 import { SummonResourceCard } from './SummonResourceCard'
 import type { AttributeDisplay } from './SummonResourceCard'
 import type { Ability, AbilityLevel, CharacterSheet, SheetPermissions } from './types'
@@ -361,13 +362,13 @@ export function AbilitiesTab({
                   </div>
                   <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
                     {isAbility && a.levels.length > 0 && (
-                      <select
-                        className="input-field py-1 px-2 text-xs min-w-[80px]"
+                      <Select
+                        options={a.levels.map(l => ({ id: l.id, label: `Level ${l.level}` }))}
                         value={selLevel?.id ?? ''}
-                        onChange={e => setSelectedLevels(prev => ({ ...prev, [a.id]: e.target.value }))}
-                      >
-                        {a.levels.map(l => <option key={l.id} value={l.id}>Level {l.level}</option>)}
-                      </select>
+                        onChange={val => setSelectedLevels(prev => ({ ...prev, [a.id]: val }))}
+                        size="sm"
+                        className="text-xs min-w-[80px]"
+                      />
                     )}
                     {canEditAbilities && (
                       <button
@@ -608,13 +609,13 @@ export function AbilitiesTab({
                                       <span className="text-sm font-medium text-foreground truncate flex-1">{ca.name}</span>
                                       {canEditAbilities && ca.levels.length > 0 && (
                                         <div onClick={e => e.stopPropagation()}>
-                                          <select
-                                            className="input-field py-0.5 px-1.5 text-[0.6rem] min-w-[70px]"
+                                          <Select
+                                            options={ca.levels.map(l => ({ id: l.id, label: `Level ${l.level}` }))}
                                             value={caSelLevel?.id ?? ''}
-                                            onChange={e => setSelectedLevels(prev => ({ ...prev, [ca.id]: e.target.value }))}
-                                          >
-                                            {ca.levels.map(l => <option key={l.id} value={l.id}>Level {l.level}</option>)}
-                                          </select>
+                                            onChange={val => setSelectedLevels(prev => ({ ...prev, [ca.id]: val }))}
+                                            size="sm"
+                                            className="min-w-[70px] text-[0.6rem]"
+                                          />
                                         </div>
                                       )}
                                       {canEditAbilities && (
