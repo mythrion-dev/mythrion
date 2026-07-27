@@ -1,6 +1,15 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
+import {
+  useFloating,
+  autoUpdate,
+  offset,
+  flip,
+  shift,
+  size as floatingSize,
+} from '@floating-ui/react'
 
 export interface SelectOption {
   id: string
@@ -34,18 +43,59 @@ export function Select({
 }: SelectProps) {
   const [open, setOpen] = useState(false)
   const [highlightIndex, setHighlightIndex] = useState(-1)
+  const containerRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
 
   const selectedOption = options.find(o => o.id === value) ?? null
   const displayLabel = selectedOption?.label ?? ''
 
-  // Close on outside click
+  // ── Floating UI positioning (portal-ready) ──
+
+  const { refs, floatingStyles } = useFloating({
+    strategy: 'fixed',
+    placement: 'bottom-start',
+    middleware: [
+      offset(4),
+      flip({ padding: 8 }),
+      shift({ padding: 8 }),
+      floatingSize({
+        apply({ availableHeight, elements }) {
+          Object.assign(elements.floating.style, {
+            maxHeight: `${Math.min(availableHeight || 192, 192)}px`,
+          })
+        },
+      }),
+    ],
+    whileElementsMounted: autoUpdate,
+  })
+
+  // Sync refs — triggerRef + listRef for imperative access, refs for Floating UI
+  const setReference = useCallback(
+    (node: HTMLButtonElement | null) => {
+      triggerRef.current = node
+      refs.setReference(node)
+    },
+    [refs],
+  )
+
+  const setFloating = useCallback(
+    (node: HTMLDivElement | null) => {
+      listRef.current = node
+      refs.setFloating(node)
+    },
+    [refs],
+  )
+
+  // ── Outside click (portal-aware: checks both container & floating element) ──
+
   useEffect(() => {
     if (!open) return
     function handleMouseDown(e: MouseEvent | TouchEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      const inContainer = containerRef.current?.contains(target)
+      const inFloating = listRef.current?.contains(target)
+      if (!inContainer && !inFloating) {
         setOpen(false)
       }
     }
@@ -57,7 +107,8 @@ export function Select({
     }
   }, [open])
 
-  // Scroll highlight into view
+  // ── Scroll highlighted option into view ──
+
   useEffect(() => {
     if (!open || highlightIndex < 0 || !listRef.current) return
     const items = listRef.current.querySelectorAll<HTMLButtonElement>('[role="option"]')
@@ -66,6 +117,8 @@ export function Select({
       item.scrollIntoView({ block: 'nearest' })
     }
   }, [open, highlightIndex])
+
+  // ── Keyboard navigation ──
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -112,6 +165,8 @@ export function Select({
     [disabled, open, highlightIndex, options, value, onChange],
   )
 
+  // ── Event handlers ──
+
   const handleClickTrigger = () => {
     if (disabled) return
     const nextOpen = !open
@@ -128,19 +183,26 @@ export function Select({
     triggerRef.current?.focus()
   }
 
-  const badgeValue = showBadge && selectedOption?.value != null
-    ? (selectedOption.value >= 0 ? '+' : '') + selectedOption.value
-    : null
+  const badgeValue =
+    showBadge && selectedOption?.value != null
+      ? (selectedOption.value >= 0 ? '+' : '') + selectedOption.value
+      : null
+
+  // ── Render ──
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       <button
-        ref={triggerRef}
+        ref={setReference}
         type="button"
         role="combobox"
         aria-expanded={open}
         aria-haspopup="listbox"
-        aria-activedescendant={open && highlightIndex >= 0 ? `select-opt-${options[highlightIndex]?.id}` : undefined}
+        aria-activedescendant={
+          open && highlightIndex >= 0
+            ? `select-opt-${options[highlightIndex]?.id}`
+            : undefined
+        }
         onClick={handleClickTrigger}
         onKeyDown={handleKeyDown}
         disabled={disabled}
@@ -171,55 +233,74 @@ export function Select({
         </svg>
       </button>
 
-      {open && (
-        <div
-          ref={listRef}
-          role="listbox"
-          tabIndex={-1}
-          className="
-            absolute z-[100] left-0 right-0 mt-1
-            max-h-48 overflow-y-auto
-            rounded-lg border border-[#2a2240]
-            bg-[#0d0a14] shadow-xl
-            transition-all duration-150
-          "
-        >
-          {options.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-muted">No options</div>
-          ) : (
-            options.map((opt, idx) => {
-              const isSelected = opt.id === value
-              const isHighlighted = idx === highlightIndex
-              return (
-                <button
-                  key={opt.id}
-                  id={`select-opt-${opt.id}`}
-                  type="button"
-                  role="option"
-                  aria-selected={isSelected}
-                  onClick={() => handleSelect(opt.id)}
-                  onMouseEnter={() => setHighlightIndex(idx)}
-                  className={`
-                    w-full text-left px-3 py-1.5 text-xs leading-none
-                    transition-colors duration-75
-                    flex items-center gap-1.5
-                    ${isSelected ? 'text-[#c9a44b] bg-[rgba(201,164,75,0.15)] border-l-2 border-[#c9a44b]' : 'text-[#e8e2d9] border-l-2 border-transparent'}
-                    ${isHighlighted && !isSelected ? 'bg-[rgba(201,164,75,0.08)]' : ''}
-                    ${!isSelected && !isHighlighted ? 'hover:bg-[rgba(201,164,75,0.05)]' : ''}
-                  `}
-                >
-                  <span className="flex-1">{opt.label}</span>
-                  {showBadge && opt.value != null && (
-                    <span className="font-mono text-[0.55rem] text-muted tabular-nums">
-                      {opt.value >= 0 ? '+' : ''}{opt.value}
-                    </span>
-                  )}
-                </button>
-              )
-            })
-          )}
-        </div>
-      )}
+      {open &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            ref={setFloating}
+            role="listbox"
+            tabIndex={-1}
+            style={{
+              ...floatingStyles,
+              zIndex: 10000,
+              overflowY: 'auto',
+            }}
+            className="
+              rounded-lg border border-[#2a2240]
+              bg-[#0d0a14] shadow-xl
+              transition-all duration-150
+            "
+          >
+            {options.length === 0 ? (
+              <div className="px-3 py-2 text-xs text-muted">No options</div>
+            ) : (
+              options.map((opt, idx) => {
+                const isSelected = opt.id === value
+                const isHighlighted = idx === highlightIndex
+                return (
+                  <button
+                    key={opt.id}
+                    id={`select-opt-${opt.id}`}
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={() => handleSelect(opt.id)}
+                    onMouseEnter={() => setHighlightIndex(idx)}
+                    className={`
+                      w-full text-left px-3 py-1.5 text-xs leading-none
+                      transition-colors duration-75
+                      flex items-center gap-1.5
+                      ${
+                        isSelected
+                          ? 'text-[#c9a44b] bg-[rgba(201,164,75,0.15)] border-l-2 border-[#c9a44b]'
+                          : 'text-[#e8e2d9] border-l-2 border-transparent'
+                      }
+                      ${
+                        isHighlighted && !isSelected
+                          ? 'bg-[rgba(201,164,75,0.08)]'
+                          : ''
+                      }
+                      ${
+                        !isSelected && !isHighlighted
+                          ? 'hover:bg-[rgba(201,164,75,0.05)]'
+                          : ''
+                      }
+                    `}
+                  >
+                    <span className="flex-1">{opt.label}</span>
+                    {showBadge && opt.value != null && (
+                      <span className="font-mono text-[0.55rem] text-muted tabular-nums">
+                        {opt.value >= 0 ? '+' : ''}
+                        {opt.value}
+                      </span>
+                    )}
+                  </button>
+                )
+              })
+            )}
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }

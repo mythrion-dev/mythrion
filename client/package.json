@@ -12,6 +12,7 @@
     "test:cov": "vitest run --coverage"
   },
   "dependencies": {
+    "@floating-ui/react": "^0.27.20",
     "@mercadopago/sdk-react": "^1.0.7",
     "next": "16.2.7",
     "react": "19.2.4",
