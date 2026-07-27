@@ -18,6 +18,7 @@ import {
   removeRefreshToken,
   getInvitationToken,
   removeInvitationToken,
+  refreshAccessToken,
 } from './api'
 
 interface User {
@@ -60,10 +61,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token) {
       fetchProfile()
     } else {
-      const refreshToken = getRefreshToken()
-      if (refreshToken) {
-        // Try to refresh on page load
-        fetchProfile()
+      const storedRefresh = getRefreshToken()
+      if (storedRefresh) {
+        // We have a refresh token but no access token — refresh first,
+        // then fetch the profile, avoiding an unnecessary 401 round-trip.
+        refreshAccessToken().then((newToken) => {
+          if (newToken) {
+            fetchProfile()
+          } else {
+            setLoading(false)
+          }
+        })
       } else {
         setLoading(false)
       }
