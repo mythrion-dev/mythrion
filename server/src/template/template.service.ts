@@ -69,6 +69,26 @@ export class TemplateService {
     }
   }
 
+  /**
+   * Invalidate all character-sheet caches that embed this template's data.
+   * When a template is updated (e.g. new profile options added), each sheet's
+   * Redis cache stores a stale snapshot of the template. Clearing those keys
+   * forces the next sheet load to re-read from the database with fresh data.
+   */
+  private async invalidateSheetCaches(templateId: string): Promise<void> {
+    try {
+      const sheets = await this.prisma.characterSheet.findMany({
+        where: { templateId },
+        select: { id: true },
+      })
+      if (sheets.length > 0) {
+        await this.redis.del(...sheets.map(s => `character-sheet:${s.id}`))
+      }
+    } catch (err) {
+      this.logger.warn('Failed to invalidate character sheet caches', err)
+    }
+  }
+
   async create(adventureId: string, userId: string, dto: CreateTemplateDto) {
     await this.membership.requireRole(adventureId, userId, 'GM')
 
@@ -885,8 +905,9 @@ export class TemplateService {
       include: templateInclude,
     })
 
-    // Invalidate caches
+    // Invalidate template caches and all character-sheet caches using this template
     await this.invalidateCache(template.adventureId, id)
+    await this.invalidateSheetCaches(id)
 
     return result
   }
@@ -895,9 +916,13 @@ export class TemplateService {
     const template = await this.prisma.template.findUnique({ where: { id } })
     if (!template) throw new NotFoundException('Template not found')
     await this.membership.requireRole(template.adventureId, userId, 'GM')
+
+    // Invalidate sheet caches before cascade delete clears the DB records
+    await this.invalidateSheetCaches(id)
+
     const result = await this.prisma.template.delete({ where: { id } })
 
-    // Invalidate caches
+    // Invalidate template caches
     await this.invalidateCache(template.adventureId, id)
 
     return result
