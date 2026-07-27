@@ -1,11 +1,11 @@
 'use client'
 
 import { InlineClickEdit } from '@/components/character-sheet'
-import type { InventoryItem } from './types'
+import type { InventoryItem, SheetPermissions } from './types'
 import type { FormEvent } from 'react'
 
 export function InventoryTab({
-  inventoryItems, isOwner,
+  inventoryItems, permissions,
   searchQuery, setSearchQuery,
   totalWeight,
   saveItemField, handleDeleteItem,
@@ -15,7 +15,7 @@ export function InventoryTab({
   handleCreateItem, resetNewItem,
   expandedItems, setExpandedItems,
 }: {
-  inventoryItems: InventoryItem[]; isOwner: boolean
+  inventoryItems: InventoryItem[]; permissions: SheetPermissions
   searchQuery: string; setSearchQuery: React.Dispatch<React.SetStateAction<string>>
   totalWeight: number
   saveItemField: (itemId: string, field: string, value: string) => Promise<void>
@@ -29,6 +29,7 @@ export function InventoryTab({
   expandedItems: Record<string, boolean>
   setExpandedItems: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
 }) {
+  const canEditInventory = permissions.canEditInventory
   const q = searchQuery.toLowerCase()
   const filtered = q
     ? inventoryItems.filter(i =>
@@ -80,7 +81,7 @@ export function InventoryTab({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                 </svg>
                 <p className="text-sm italic">Inventory is empty.</p>
-                {isOwner && <p className="text-xs text-muted">Add your first item below.</p>}
+                {canEditInventory && <p className="text-xs text-muted">Add your first item below.</p>}
               </div>
             )}
           </div>
@@ -98,7 +99,7 @@ export function InventoryTab({
               {/* Item header row */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  {isOwner ? (
+                  {canEditInventory ? (
                     <InlineClickEdit
                       value={item.name}
                       onSave={async (v) => saveItemField(item.id, 'name', v)}
@@ -122,7 +123,7 @@ export function InventoryTab({
                       {item.cost}
                     </span>
                   )}
-                  {isOwner && (
+                  {canEditInventory && (
                     <button
                       onClick={() => handleDeleteItem(item.id)}
                       className="text-muted hover:text-danger p-1 transition-colors"
@@ -137,7 +138,7 @@ export function InventoryTab({
               </div>
 
               {/* Inline editable fields for owner */}
-              {isOwner && (
+              {canEditInventory && (
                 <div className="flex flex-wrap gap-4 text-xs text-muted">
                   <span className="inline-flex items-center gap-1">
                     Weight:
@@ -177,7 +178,7 @@ export function InventoryTab({
                 </button>
                 {expandedItems[item.id] && (
                   <div className="mt-2 pl-5 animate-fade-in">
-                    {isOwner ? (
+                    {canEditInventory ? (
                       <InlineClickEdit
                         value={item.description ?? ''}
                         onSave={async (v) => saveItemField(item.id, 'description', v)}
@@ -199,7 +200,7 @@ export function InventoryTab({
       )}
 
       {/* Add Item button */}
-      {isOwner && !showNewItem && (
+      {canEditInventory && !showNewItem && (
         <button onClick={() => setShowNewItem(true)} className="btn-primary text-sm">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
@@ -209,7 +210,7 @@ export function InventoryTab({
       )}
 
       {/* New Item form */}
-      {isOwner && showNewItem && (
+      {canEditInventory && showNewItem && (
         <form onSubmit={handleCreateItem} className="card !p-6 space-y-4 border-primary/20">
           <div className="header-accent">
             <h3 className="text-base font-semibold text-gradient">New Item</h3>

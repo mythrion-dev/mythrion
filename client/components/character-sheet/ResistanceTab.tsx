@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import type { SheetPermissions } from './types'
 
 interface ResistanceComponentValue {
   componentId: string
@@ -46,7 +47,7 @@ function emptyDraft(): NewResistanceDraft {
 
 interface Props {
   resistances: CalculatedResistance[]
-  isOwner: boolean
+  permissions: SheetPermissions
   onSaveComponent: (componentId: string, value: number) => Promise<void>
   onSaveManual: (resistanceId: string, value: number) => Promise<void>
   sheetResistanceValues: Record<string, string | null>
@@ -59,10 +60,11 @@ interface Props {
 export type { NewResistanceDraft }
 
 export function ResistanceTab({
-  resistances, isOwner, onSaveComponent, onSaveManual, sheetResistanceValues,
+  resistances, permissions, onSaveComponent, onSaveManual, sheetResistanceValues,
   templateAttributes = [], disableAttributeModifiers = false,
   onCreateResistance, onDeleteResistance,
 }: Props) {
+  const canEditResistances = permissions.canEditResistances
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [showNewForm, setShowNewForm] = useState(false)
   const [draft, setDraft] = useState<NewResistanceDraft>(emptyDraft)
@@ -198,7 +200,7 @@ export function ResistanceTab({
                 <div className="w-10 h-10 rounded-full border-2 border-primary/30 flex items-center justify-center bg-background/50">
                   <span className="text-base font-bold text-primary">{r.total}</span>
                 </div>
-                {isOwner && onDeleteResistance && (
+                {canEditResistances && onDeleteResistance && (
                   <button
                     type="button"
                     onClick={() => handleDelete(r.resistanceId)}
@@ -225,7 +227,7 @@ export function ResistanceTab({
                 {isManual ? (
                   <div>
                     <label className="label">{r.name}</label>
-                    {isOwner ? (
+                    {canEditResistances ? (
                       <input
                         type="number"
                         className="input-field"
@@ -243,7 +245,7 @@ export function ResistanceTab({
                         <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Components</h4>
                         <div className="space-y-1.5">
                           {r.componentValues.map(cv => {
-                            const canEdit = isOwner && cv.editableByPlayer
+                            const canEdit = canEditResistances && cv.editableByPlayer
                             return (
                               <div key={cv.componentId} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
                                 <span className="text-sm text-foreground">{cv.componentName}</span>
@@ -291,7 +293,7 @@ export function ResistanceTab({
       })}
 
       {/* New Resistance Form */}
-      {isOwner && onCreateResistance && (
+      {canEditResistances && onCreateResistance && (
         <>
           {!showNewForm ? (
             <button

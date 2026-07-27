@@ -355,6 +355,23 @@ export class CharacterSheetController {
     return this.sheetService.removeProfessionalSkill(skillId, req.user.sub)
   }
 
+  @Patch(':id/professional-skills/:skillId/profiles/:profileId')
+  updateProfessionalSkillProfileValue(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('skillId') skillId: string,
+    @Param('profileId') profileId: string,
+    @Body('optionId') optionId: string | null,
+  ) {
+    return this.sheetService.updateProfessionalSkillProfileValue(
+      id,
+      skillId,
+      profileId,
+      optionId,
+      req.user.sub,
+    )
+  }
+
   // ── Armor Class Calculation ──
 
   @Get(':id/armor-class')

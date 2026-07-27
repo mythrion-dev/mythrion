@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import { NumericInput } from '@/components/shared/NumericInput'
 import { ProfessionalSkillsSection } from './ProfessionalSkillsSection'
-import type { CharacterSheet, AcResultMap, SkillModifierProfile } from './types'
+import type { CharacterSheet, AcResultMap, SkillModifierProfile, SheetPermissions } from './types'
 
 // ── Helpers ──
 
@@ -20,7 +20,7 @@ function getAttrModifier(
 
 interface CharacterTabProps {
   sheet: CharacterSheet
-  isOwner: boolean
+  permissions: SheetPermissions
   enabledCoreResources: CharacterSheet['template']['coreResources']
   handleCoreResourceChange: (coreResourceId: string, field: 'current' | 'maximum' | 'notes', value: string) => Promise<void>
   handleCoreResourceModify?: (coreResourceId: string, delta: number) => void
@@ -48,7 +48,7 @@ interface CharacterTabProps {
 
 export function CharacterTab(props: CharacterTabProps) {
   const {
-    sheet, isOwner,
+    sheet, permissions,
     enabledCoreResources,
     handleCoreResourceChange, handleCoreResourceModify,
     saveFieldValue, modifierResults, saveAttributeValue, modifiersEnabled,
@@ -59,6 +59,7 @@ export function CharacterTab(props: CharacterTabProps) {
     skillResults,
     sheetId,
   } = props
+  const { canEditCharacter, canEditResources, canEditSkills } = permissions
 
   const [modifierInputs, setModifierInputs] = useState<Record<string, number>>({})
 
@@ -125,7 +126,7 @@ export function CharacterTab(props: CharacterTabProps) {
                     className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-background/40 border border-border/60"
                   >
                     <span className="text-xs text-muted font-medium">{fv.templateField.label}</span>
-                    {isOwner ? (
+                    {canEditCharacter ? (
                       <InlineText
                         value={fv.value}
                         onSave={(v) => saveFieldValue(fv.templateFieldId, v)}
@@ -160,7 +161,7 @@ export function CharacterTab(props: CharacterTabProps) {
                     >
                       <span className="text-xs font-medium text-foreground">{attr.name}</span>
                       <div className="flex items-center gap-2">
-                        {isOwner ? (
+                        {canEditCharacter ? (
                           <InlineText
                             value={val?.value ?? ''}
                             onSave={(v) => saveAttributeValue(attr.id, v)}
@@ -191,7 +192,7 @@ export function CharacterTab(props: CharacterTabProps) {
               {enabledCoreResources.map(cr => {
                 const crv = sheet.coreResourceValues.find(v => v.coreResourceId === cr.id)
                 if (!crv) return null
-                const canEdit = isOwner && cr.editableByPlayer
+                const canEdit = canEditResources && cr.editableByPlayer
                 const modVal = modifierInputs[cr.id] || 0
                 return (
                   <div key={cr.id} className="card !p-3 space-y-2 flex flex-col">
@@ -243,6 +244,18 @@ export function CharacterTab(props: CharacterTabProps) {
                         )}
                       </div>
                     </div>
+                    {crv.maximum != null && crv.maximum > 0 && (
+                      <div className="w-full h-2 rounded-full bg-background/60 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-300 ease-out"
+                          style={{
+                            width: `${Math.min(100, Math.max(0, ((crv.current ?? 0) / crv.maximum) * 100))}%`,
+                            backgroundColor: cr.color || 'var(--color-primary)',
+                            filter: 'brightness(1.15)',
+                          }}
+                        />
+                      </div>
+                    )}
                     {canEdit && handleCoreResourceModify && (
                       <div className="space-y-1.5 pt-2 border-t border-border/50">
                         <input
@@ -292,7 +305,7 @@ export function CharacterTab(props: CharacterTabProps) {
                     {ac.fields.map(field => {
                       const acv = sheet.acValues.find(v => v.fieldId === field.id)
                       const val = acv?.value ?? field.defaultValue
-                      const canEdit = isOwner && field.editableByPlayer
+                      const canEdit = canEditCharacter && field.editableByPlayer
                       return (
                         <div key={field.id} className="flex items-center justify-between gap-1 text-[0.7rem]">
                           <span className="text-muted truncate">{field.name}</span>
@@ -316,7 +329,7 @@ export function CharacterTab(props: CharacterTabProps) {
                           const selectedAttributeId = acAttrValue?.selectedAttributeId ?? am.defaultAttributeId ?? am.attributeId
                           const selectedAttribute = sheet.template.attributes.find(a => a.id === selectedAttributeId) ?? am.defaultAttribute ?? am.attribute
                           const modResult = selectedAttribute ? modifierResults[selectedAttribute.id] : null
-                          const canChangeAttribute = isOwner && am.allowPlayerSelection
+                          const canChangeAttribute = canEditCharacter && am.allowPlayerSelection
                           return (
                             <div key={am.id} className="flex items-center justify-between gap-1 text-[0.7rem]">
                               {canChangeAttribute ? (
@@ -360,6 +373,7 @@ export function CharacterTab(props: CharacterTabProps) {
                 title="Active"
                 skills={activeSkillValues}
                 isActiveSide
+                canEditSkills={canEditSkills}
                 allProfiles={allProfiles}
                 profileSelections={profileSelections}
                 othersValues={othersValues}
@@ -380,6 +394,7 @@ export function CharacterTab(props: CharacterTabProps) {
                 title="Inactive"
                 skills={inactiveSkillValues}
                 isActiveSide={false}
+                canEditSkills={canEditSkills}
                 allProfiles={allProfiles}
                 profileSelections={profileSelections}
                 othersValues={othersValues}
@@ -411,17 +426,12 @@ export function CharacterTab(props: CharacterTabProps) {
       {/* ─── FULL WIDTH: Professional Skills ─── */}
       <ProfessionalSkillsSection
         sheetId={sheetId}
-        isOwner={isOwner}
+        permissions={permissions}
         modifierResults={modifierResults}
         templateAttributes={sheet.template.attributes}
+        allProfiles={allProfiles}
       />
 
-      {/* ── Footer ── */}
-      <div className="text-center pt-2">
-        <p className="text-xs text-muted">
-          {isOwner ? 'You own this character sheet.' : 'This character sheet belongs to another player.'}
-        </p>
-      </div>
     </div>
   )
 }
@@ -432,6 +442,7 @@ interface SkillTableProps {
   title: string
   skills: CharacterSheet['skillValues']
   isActiveSide: boolean
+  canEditSkills: boolean
   allProfiles: SkillModifierProfile[]
   profileSelections: Record<string, Record<string, string | null>>
   othersValues: Record<string, number>
@@ -451,6 +462,7 @@ function SkillTable({
   title,
   skills,
   isActiveSide,
+  canEditSkills,
   allProfiles,
   profileSelections,
   othersValues,
@@ -552,19 +564,25 @@ function SkillTable({
                         type="checkbox"
                         checked={isActiveSide}
                         onChange={() => onToggle(sv.skillId)}
-                        className="shrink-0 w-3.5 h-3.5 rounded border-border accent-primary cursor-pointer"
+                        disabled={!canEditSkills}
+                        className="shrink-0 w-3.5 h-3.5 rounded border-border accent-primary cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                       />
                     </div>
 
                     <button
                       type="button"
                       onClick={() => onExpandToggle(isExpanded ? null : sv.skillId)}
-                      disabled={!isActiveSide}
+                      disabled={!isActiveSide || !canEditSkills}
                       className="flex-1 shrink-0 text-left disabled:cursor-default"
                     >
                       <span className="text-xs font-medium text-foreground truncate block leading-tight">
                         {sv.skill.name}
                       </span>
+                      {selectedAttr && (
+                        <span className="text-[0.6rem] text-muted font-normal truncate block leading-tight">
+                          · {selectedAttr.name}
+                        </span>
+                      )}
                       {sv.skill.description && (
                         <span className="text-[0.6rem] text-muted truncate block leading-tight mt-0.5">
                           {sv.skill.description}
@@ -581,7 +599,7 @@ function SkillTable({
                     <button
                       type="button"
                       onClick={() => onExpandToggle(isExpanded ? null : sv.skillId)}
-                      disabled={!isActiveSide}
+                      disabled={!isActiveSide || !canEditSkills}
                       className="w-8 shrink-0 flex items-center justify-center disabled:cursor-default"
                     >
                       <svg
@@ -602,6 +620,41 @@ function SkillTable({
                     }`}
                   >
                     <div className="px-3 sm:px-4 py-2 space-y-2 border-t border-border/40 ml-10 bg-background/20">
+                      {/* Attribute selector */}
+                      {(sv.skill.allowedAttributeIds?.length ?? 0) > 0 ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">Attribute:</span>
+                          <select
+                            className="input-field py-0.5 text-[0.6rem] flex-1 min-w-0"
+                            value={sv.selectedAttributeId ?? ''}
+                            onChange={e => onAttributeChange(sv.skillId, e.target.value || null)}
+                            disabled={!canEditSkills}
+                          >
+                            {sv.skill.allowedAttributeIds.map(attrId => {
+                              const a = templateAttributes.find(x => x.id === attrId)
+                              if (!a) return null
+                              return <option key={attrId} value={attrId}>{a.name}</option>
+                            })}
+                          </select>
+                          {modifiersEnabled && attrMod !== null && (
+                            <span className="text-[0.6rem] font-mono text-primary tabular-nums shrink-0">
+                              ({attrMod >= 0 ? '+' : ''}{attrMod})
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">Attribute:</span>
+                          <span className="text-[0.6rem] text-foreground">
+                            {selectedAttr?.name || '—'}
+                          </span>
+                          {modifiersEnabled && attrMod !== null && (
+                            <span className="text-[0.6rem] font-mono text-primary tabular-nums">
+                              ({attrMod >= 0 ? '+' : ''}{attrMod})
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {skillProfiles.map(profile => {
                         const sid = profileSelections[sv.skillId]?.[profile.id]
                         return (
@@ -611,6 +664,7 @@ function SkillTable({
                               className="input-field py-0.5 text-[0.6rem] flex-1"
                               value={sid ?? ''}
                               onChange={e => onProfileChange(sv.skillId, profile.id, e.target.value || null)}
+                              disabled={!canEditSkills}
                             >
                               <option value="">— Select —</option>
                               {profile.options.map(opt => (
@@ -636,6 +690,7 @@ function SkillTable({
                           value={othersValues[sv.skillId] || ''}
                           placeholder="0"
                           onChange={e => onOthersChange(sv.skillId, parseInt(e.target.value, 10) || 0)}
+                          disabled={!canEditSkills}
                         />
                         <span className="text-[0.6rem] font-mono text-primary tabular-nums">
                           +{othersValues[sv.skillId] || 0}

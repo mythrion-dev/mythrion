@@ -142,6 +142,10 @@ export class CoreResourceDefDto {
   @IsBoolean()
   @IsOptional()
   showNotes?: boolean
+
+  @IsString()
+  @IsOptional()
+  color?: string
 }
 
 export class ArmorClassFieldDefDto {

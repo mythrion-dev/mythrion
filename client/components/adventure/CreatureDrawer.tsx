@@ -557,7 +557,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
   if (!ability) return null
 
   const isMob = ability.notes?.startsWith('[MOB]')
-  const displayNotes = isMob ? (ability.notes?.replace(/^\[MOB\]\s*/, '') ?? '') : (ability.notes ?? '')
+  const displayNotes = isMob ? (notes.replace(/^\[MOB\]\s*/, '') ?? '') : notes
 
   return (
     <>

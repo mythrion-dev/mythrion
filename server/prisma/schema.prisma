@@ -40,6 +40,7 @@ model Adventure {
   invitations     CampaignInvitation[]
   templates       Template[]
   characterSheets CharacterSheet[]
+  books           Book[]
   @@index([ownerId])
 }
 
@@ -53,6 +54,25 @@ enum InvitationStatus {
   ACCEPTED
   EXPIRED
   REVOKED
+}
+
+enum BookVisibility {
+  GM_BOOK
+  PLAYER_BOOK
+}
+
+model Book {
+  id            String         @id @default(cuid())
+  adventureId   String
+  adventure     Adventure      @relation(fields: [adventureId], references: [id], onDelete: Cascade)
+  name          String
+  visibility    BookVisibility @default(GM_BOOK)
+  fileLength    Int            @default(0)
+  gridfsFileId  String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([adventureId])
 }
 
 model CampaignMember {
@@ -154,6 +174,7 @@ model SkillModifierProfile {
   options            ProfileOption[]
   skillProfileValues CharacterSheetSkillProfileValue[]
   summonSkillProfileValues SummonSkillProfileValue[]
+  professionalSkillProfileValues SheetProfessionalSkillProfileValue[]
   createdAt          DateTime                          @default(now())
   updatedAt          DateTime                          @updatedAt
 
@@ -170,6 +191,7 @@ model ProfileOption {
   order      Int                               @default(0)
   selections CharacterSheetSkillProfileValue[]
   summonSelections SummonSkillProfileValue[]
+  professionalSkillProfileValues SheetProfessionalSkillProfileValue[]
   createdAt  DateTime                          @default(now())
   updatedAt  DateTime                          @updatedAt
 
@@ -369,6 +391,7 @@ model TemplateCoreResource {
   enabled          Boolean                             @default(true)
   editableByPlayer Boolean                             @default(true)
   showNotes        Boolean                             @default(true)
+  color            String?
   order            Int                                 @default(0)
   sheetValues      CharacterSheetCoreResourceValue[]
   createdAt        DateTime                            @default(now())
@@ -615,19 +638,36 @@ model SheetResistanceAttributeModifier {
 // ── Professional Skills (character-specific, not template-defined) ──
 
 model SheetProfessionalSkill {
-  id          String            @id @default(cuid())
-  sheetId     String
-  sheet       CharacterSheet    @relation(fields: [sheetId], references: [id], onDelete: Cascade)
-  name        String
-  attributeId String?
-  attribute   TemplateAttribute? @relation(fields: [attributeId], references: [id], onDelete: SetNull)
-  order       Int               @default(0)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id            String                              @id @default(cuid())
+  sheetId       String
+  sheet         CharacterSheet                      @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  name          String
+  attributeId   String?
+  attribute     TemplateAttribute?                   @relation(fields: [attributeId], references: [id], onDelete: SetNull)
+  order         Int                                 @default(0)
+  profileValues SheetProfessionalSkillProfileValue[]
+  createdAt     DateTime                            @default(now())
+  updatedAt     DateTime                            @updatedAt
 
   @@unique([sheetId, name])
   @@index([sheetId])
   @@index([attributeId])
+}
+
+model SheetProfessionalSkillProfileValue {
+  id                        String                  @id @default(cuid())
+  sheetProfessionalSkillId  String
+  sheetProfessionalSkill    SheetProfessionalSkill   @relation(fields: [sheetProfessionalSkillId], references: [id], onDelete: Cascade)
+  profileId                 String
+  profile                   SkillModifierProfile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  optionId                  String?
+  option                    ProfileOption?           @relation(fields: [optionId], references: [id], onDelete: SetNull)
+  createdAt                 DateTime                @default(now())
+  updatedAt                 DateTime                @updatedAt
+
+  @@unique([sheetProfessionalSkillId, profileId])
+  @@index([sheetProfessionalSkillId])
+  @@index([profileId])
 }
 
 // ── Character Abilities & Summons (Player-only) ──

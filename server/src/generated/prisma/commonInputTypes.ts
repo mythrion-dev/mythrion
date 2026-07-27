@@ -150,6 +150,23 @@ export type IntWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedIntFilter<$PrismaModel>
 }
 
+export type EnumBookVisibilityFilter<$PrismaModel = never> = {
+  equals?: $Enums.BookVisibility | Prisma.EnumBookVisibilityFieldRefInput<$PrismaModel>
+  in?: $Enums.BookVisibility[] | Prisma.ListEnumBookVisibilityFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BookVisibility[] | Prisma.ListEnumBookVisibilityFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBookVisibilityFilter<$PrismaModel> | $Enums.BookVisibility
+}
+
+export type EnumBookVisibilityWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.BookVisibility | Prisma.EnumBookVisibilityFieldRefInput<$PrismaModel>
+  in?: $Enums.BookVisibility[] | Prisma.ListEnumBookVisibilityFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BookVisibility[] | Prisma.ListEnumBookVisibilityFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBookVisibilityWithAggregatesFilter<$PrismaModel> | $Enums.BookVisibility
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumBookVisibilityFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumBookVisibilityFilter<$PrismaModel>
+}
+
 export type EnumMemberRoleFilter<$PrismaModel = never> = {
   equals?: $Enums.MemberRole | Prisma.EnumMemberRoleFieldRefInput<$PrismaModel>
   in?: $Enums.MemberRole[] | Prisma.ListEnumMemberRoleFieldRefInput<$PrismaModel>
@@ -437,6 +454,23 @@ export type NestedFloatFilter<$PrismaModel = never> = {
   gt?: number | Prisma.FloatFieldRefInput<$PrismaModel>
   gte?: number | Prisma.FloatFieldRefInput<$PrismaModel>
   not?: Prisma.NestedFloatFilter<$PrismaModel> | number
+}
+
+export type NestedEnumBookVisibilityFilter<$PrismaModel = never> = {
+  equals?: $Enums.BookVisibility | Prisma.EnumBookVisibilityFieldRefInput<$PrismaModel>
+  in?: $Enums.BookVisibility[] | Prisma.ListEnumBookVisibilityFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BookVisibility[] | Prisma.ListEnumBookVisibilityFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBookVisibilityFilter<$PrismaModel> | $Enums.BookVisibility
+}
+
+export type NestedEnumBookVisibilityWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.BookVisibility | Prisma.EnumBookVisibilityFieldRefInput<$PrismaModel>
+  in?: $Enums.BookVisibility[] | Prisma.ListEnumBookVisibilityFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BookVisibility[] | Prisma.ListEnumBookVisibilityFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBookVisibilityWithAggregatesFilter<$PrismaModel> | $Enums.BookVisibility
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumBookVisibilityFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumBookVisibilityFilter<$PrismaModel>
 }
 
 export type NestedEnumMemberRoleFilter<$PrismaModel = never> = {

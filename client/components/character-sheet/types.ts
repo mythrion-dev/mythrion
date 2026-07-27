@@ -12,6 +12,7 @@ export interface CoreResourceDef {
   enabled: boolean
   editableByPlayer: boolean
   showNotes: boolean
+  color?: string
 }
 export interface CoreResourceValue {
   id: string; coreResourceId: string; current: number | null; maximum: number | null; notes: string | null
@@ -102,6 +103,18 @@ export interface CharacterSheet {
   ownerId: string | null; isNpc: boolean; npcType: string | null; adventureId: string | null; createdAt: string
 }
 
+export interface SheetPermissions {
+  canEditCharacter: boolean
+  canEditSkills: boolean
+  canEditResources: boolean
+  canEditInventory: boolean
+  canEditStory: boolean
+  canEditProfessionalSkills: boolean
+  canEditPersonalAbilities: boolean
+  canEditResistances: boolean
+  canEditAbilities: boolean
+}
+
 export type Tab = string
 export type SummonTab = 'stats' | 'skills' | 'abilities' | 'resistances'
 export type AcResultMap = Record<string, { total: number; name: string }>
@@ -125,4 +138,14 @@ export interface ProfessionalSkill {
   attributeId: string | null
   attribute: { id: string; key: string; name: string } | null
   order: number
+  profileValues: ProfessionalSkillProfileValue[]
+}
+
+export interface ProfessionalSkillProfileValue {
+  id: string
+  professionalSkillId?: string
+  profileId: string
+  optionId: string | null
+  profile: { id: string; name: string }
+  option: { id: string; label: string; value: number } | null
 }

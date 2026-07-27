@@ -3,34 +3,36 @@
 import { useState } from 'react'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import { NumericInput } from '@/components/shared/NumericInput'
+import type { SheetPermissions } from './types'
 
 interface CoreResourceDef {
   id: string; slug: string; displayName: string
   enabled: boolean
   editableByPlayer: boolean
   showNotes: boolean
+  color?: string
 }
 interface CoreResourceValue {
   id: string; coreResourceId: string; current: number | null; maximum: number | null; notes: string | null
   coreResource: CoreResourceDef
 }
 
-export function CoreResourceCard({ resource, value, isOwner, onSave, onModify }: {
+export function CoreResourceCard({ resource, value, permissions, onSave, onModify }: {
   resource: CoreResourceDef
   value: CoreResourceValue
-  isOwner: boolean
+  permissions: SheetPermissions
   onSave: (coreResourceId: string, field: 'current' | 'maximum' | 'notes', val: string) => Promise<void>
   onModify?: (coreResourceId: string, delta: number) => void
 }) {
   const [modifier, setModifier] = useState(0)
-  const canEdit = isOwner && resource.editableByPlayer
+  const canEdit = permissions.canEditResources && resource.editableByPlayer
 
   return (
     <div className="card !p-4 space-y-3">
       <h3 className="font-semibold text-sm flex items-center gap-2">
         {resource.displayName}
         {resource.showNotes && (
-          isOwner
+          permissions.canEditResources
             ? <InlineText value={value.notes ?? ''} onSave={(v) => onSave(value.coreResourceId, 'notes', v)} placeholder="notes..." emptyDisplay="add notes" className="!text-xs !text-muted !font-normal" />
             : value.notes && <span className="text-xs text-muted font-normal">— {value.notes}</span>
         )}
@@ -52,6 +54,18 @@ export function CoreResourceCard({ resource, value, isOwner, onSave, onModify }:
           }
         </div>
       </div>
+      {value.maximum != null && value.maximum > 0 && (
+        <div className="w-full h-2 rounded-full bg-background/60 overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-300 ease-out"
+            style={{
+              width: `${Math.min(100, Math.max(0, ((value.current ?? 0) / value.maximum) * 100))}%`,
+              backgroundColor: resource.color || 'var(--color-primary)',
+              filter: 'brightness(1.15)',
+            }}
+          />
+        </div>
+      )}
       {canEdit && onModify && (
         <div className="space-y-2 pt-2 border-t border-border">
           <div className="flex items-center gap-2">

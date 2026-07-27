@@ -10,8 +10,9 @@ import { CharacterSheetModule } from './character-sheet/character-sheet.module.j
 import { FormulaModule } from './formula/formula.module.js';
 import { ImageModule } from './image/image.module.js';
 import { RedisModule } from './redis/redis.module.js';
+import { BookModule } from './book/book.module.js';
 @Module({
-  imports: [AuthModule, AdventureModule, TemplateModule, CharacterSheetModule, FormulaModule, ImageModule, RedisModule],
+  imports: [AuthModule, AdventureModule, TemplateModule, CharacterSheetModule, FormulaModule, ImageModule, RedisModule, BookModule],
   controllers: [AppController, HealthController],
   providers: [AppService, PrismaService],
   exports: [PrismaService],

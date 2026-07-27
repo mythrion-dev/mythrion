@@ -1,18 +1,18 @@
 'use client'
 
 import { InlineClickEdit } from '@/components/character-sheet'
-import type { TemplateCharacterSection, SectionEntry } from './types'
+import type { TemplateCharacterSection, SectionEntry, SheetPermissions } from './types'
 import type { FormEvent } from 'react'
 
 export function PersonalAbilitiesTab({
-  sections, entries, isOwner, toSingular,
+  sections, entries, permissions, toSingular,
   expandedEntries, setExpandedEntries,
   handleUpdateEntry, handleDeleteEntry,
   showNewEntry, setShowNewEntry,
   newEntryForm, setNewEntryForm,
   handleCreateEntry, saving, resetForm,
 }: {
-  sections: TemplateCharacterSection[]; entries: SectionEntry[]; isOwner: boolean
+  sections: TemplateCharacterSection[]; entries: SectionEntry[]; permissions: SheetPermissions
   toSingular: (name: string) => string
   expandedEntries: Record<string, boolean>
   setExpandedEntries: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
@@ -26,6 +26,7 @@ export function PersonalAbilitiesTab({
   saving: boolean
   resetForm: () => void
 }) {
+  const canEditPersonalAbilities = permissions.canEditPersonalAbilities
   if (sections.length === 0) {
     return (
       <div className="card !p-6 animate-slide-up">
@@ -59,7 +60,7 @@ export function PersonalAbilitiesTab({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                 </svg>
                 <p className="text-sm italic">No entries yet.</p>
-                {isOwner && (
+                {canEditPersonalAbilities && (
                   <button
                     onClick={() => setShowNewEntry(section.id)}
                     className="btn-primary text-xs mt-3"
@@ -104,7 +105,7 @@ export function PersonalAbilitiesTab({
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
                         </svg>
                         <span className="text-sm font-medium flex-1 truncate">
-                          {isOwner ? (
+                          {canEditPersonalAbilities ? (
                             <InlineClickEdit
                               value={entry.name}
                               onSave={(v) => handleUpdateEntry(entry.id, 'name', v)}
@@ -113,7 +114,7 @@ export function PersonalAbilitiesTab({
                             />
                           ) : entry.name}
                         </span>
-                        {isOwner && (
+                        {canEditPersonalAbilities && (
                           <button
                             type="button"
                             onClick={e => { e.stopPropagation(); handleDeleteEntry(entry.id) }}
@@ -131,7 +132,7 @@ export function PersonalAbilitiesTab({
                       {isExpanded && (
                         <div className="px-4 pb-4 pt-3 border-t border-border animate-fade-in">
                           <h5 className="text-xs font-medium text-muted mb-1.5">Description</h5>
-                          {isOwner ? (
+                          {canEditPersonalAbilities ? (
                             <InlineClickEdit
                               value={entry.description ?? ''}
                               onSave={(v) => handleUpdateEntry(entry.id, 'description', v)}
@@ -154,7 +155,7 @@ export function PersonalAbilitiesTab({
             )}
 
             {/* New entry button or form */}
-            {isOwner && showNewEntry !== section.id && sectionEntries.length > 0 && (
+            {canEditPersonalAbilities && showNewEntry !== section.id && sectionEntries.length > 0 && (
               <button
                 onClick={() => setShowNewEntry(section.id)}
                 className="btn-primary text-sm"
@@ -166,7 +167,7 @@ export function PersonalAbilitiesTab({
               </button>
             )}
 
-            {isOwner && showNewEntry === section.id && (
+            {canEditPersonalAbilities && showNewEntry === section.id && (
               <form onSubmit={(e) => handleCreateEntry(section.id, e)} className="card !p-5 space-y-4 border-primary/20 mt-4">
                 <div className="header-accent">
                   <h4 className="text-sm font-semibold text-gradient">New {singular}</h4>

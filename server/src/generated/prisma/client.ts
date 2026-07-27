@@ -52,6 +52,11 @@ export type User = Prisma.UserModel
  */
 export type Adventure = Prisma.AdventureModel
 /**
+ * Model Book
+ * 
+ */
+export type Book = Prisma.BookModel
+/**
  * Model CampaignMember
  * 
  */
@@ -206,6 +211,11 @@ export type SheetResistanceAttributeModifier = Prisma.SheetResistanceAttributeMo
  * 
  */
 export type SheetProfessionalSkill = Prisma.SheetProfessionalSkillModel
+/**
+ * Model SheetProfessionalSkillProfileValue
+ * 
+ */
+export type SheetProfessionalSkillProfileValue = Prisma.SheetProfessionalSkillProfileValueModel
 /**
  * Model CharacterAbility
  * 

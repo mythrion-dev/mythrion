@@ -1,0 +1,31 @@
+name: Tests & Coverage
+on:
+  push:
+    branches: [dev, main, qa]
+  pull_request:
+    branches: [dev, main, qa]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
+
+      - name: Install server deps
+        run: cd server && npm ci
+
+      - name: Run server tests with coverage
+        run: cd server && npm run test:cov
+
+      - name: Install client deps
+        run: cd client && npm ci
+
+      - name: Run client tests with coverage
+        run: cd client && npm run test:cov
