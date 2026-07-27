@@ -248,7 +248,6 @@ export function Select({
             className="
               rounded-lg border border-[#2a2240]
               bg-[#0d0a14] shadow-xl
-              transition-all duration-150
             "
           >
             {options.length === 0 ? (
