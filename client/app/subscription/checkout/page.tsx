@@ -48,7 +48,15 @@ const SECURE_FIELD_STYLE: FieldStyle = {
  * Matches the card-name <input> so all form fields look uniform.
  */
 const FIELD_WRAPPER_CLASS =
-  'w-full h-11 px-4 bg-surface border border-border rounded-lg flex items-center focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary'
+  'w-full h-11 px-4 bg-surface border border-border rounded-lg flex items-center focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary relative'
+
+/** Always render secure fields (don't conditionally mount/unmount based on mpReady).
+ *  MP SDK recreates the iframe on every parent re-render because
+ *  getInitializationDependencies compares all param references.
+ *  A remount resets the field in the SDK's internal registry, and if
+ *  createCardToken is called during that window it fails with
+ *  "No primary field found". This keeps the fields mounted and
+ *  simply overlays a loading indicator until the SDK is loaded. */
 
 function CheckoutContent() {
   const router = useRouter()
@@ -322,16 +330,15 @@ function CheckoutContent() {
               Número do cartão
             </label>
             <div className={FIELD_WRAPPER_CLASS}>
-              {mpReady ? (
-                <CardNumber
-                  placeholder="0000 0000 0000 0000"
-                  style={SECURE_FIELD_STYLE}
-                  onValidityChange={onCardNumberValidity}
-                  onBinChange={onCardNumberBin}
-                  onReady={onCardNumberReady}
-                />
-              ) : (
-                <span className="text-sm text-muted-foreground/50 w-full">
+              <CardNumber
+                placeholder="0000 0000 0000 0000"
+                style={SECURE_FIELD_STYLE}
+                onValidityChange={onCardNumberValidity}
+                onBinChange={onCardNumberBin}
+                onReady={onCardNumberReady}
+              />
+              {!mpReady && (
+                <span className="absolute inset-0 flex items-center px-4 text-sm text-muted-foreground/50 pointer-events-none">
                   {mpError ? 'Erro ao carregar' : 'Carregando...'}
                 </span>
               )}
@@ -358,16 +365,15 @@ function CheckoutContent() {
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Validade</label>
               <div className={FIELD_WRAPPER_CLASS}>
-                {mpReady ? (
-                  <ExpirationDate
-                    placeholder="MM/AA"
-                    mode="short"
-                    style={SECURE_FIELD_STYLE}
-                    onValidityChange={onExpirationDateValidity}
-                    onReady={onExpirationDateReady}
-                  />
-                ) : (
-                  <span className="text-sm text-muted-foreground/50 w-full">
+                <ExpirationDate
+                  placeholder="MM/AA"
+                  mode="short"
+                  style={SECURE_FIELD_STYLE}
+                  onValidityChange={onExpirationDateValidity}
+                  onReady={onExpirationDateReady}
+                />
+                {!mpReady && (
+                  <span className="absolute inset-0 flex items-center px-4 text-sm text-muted-foreground/50 pointer-events-none">
                     {mpError ? 'Erro' : 'Carregando...'}
                   </span>
                 )}
@@ -376,15 +382,14 @@ function CheckoutContent() {
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">CVV</label>
               <div className={FIELD_WRAPPER_CLASS}>
-                {mpReady ? (
-                  <SecurityCode
-                    placeholder="123"
-                    style={SECURE_FIELD_STYLE}
-                    onValidityChange={onSecurityCodeValidity}
-                    onReady={onSecurityCodeReady}
-                  />
-                ) : (
-                  <span className="text-sm text-muted-foreground/50 w-full">
+                <SecurityCode
+                  placeholder="123"
+                  style={SECURE_FIELD_STYLE}
+                  onValidityChange={onSecurityCodeValidity}
+                  onReady={onSecurityCodeReady}
+                />
+                {!mpReady && (
+                  <span className="absolute inset-0 flex items-center px-4 text-sm text-muted-foreground/50 pointer-events-none">
                     {mpError ? 'Erro' : 'Carregando...'}
                   </span>
                 )}
