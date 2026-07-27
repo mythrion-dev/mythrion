@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { api, API_URL } from '@/lib/api'
+import { Select } from '@/components/shared/Select'
 
 /* ── Types ── */
 
