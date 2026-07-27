@@ -47,8 +47,12 @@ export async function fetchPlans(): Promise<Plan[]> {
 
 export async function createSubscription(
   planId: string,
+  cardTokenId?: string,
 ): Promise<CreateSubscriptionResponse> {
-  return api.post<CreateSubscriptionResponse>('/subscriptions', { planId })
+  return api.post<CreateSubscriptionResponse>('/subscriptions', {
+    planId,
+    ...(cardTokenId ? { cardTokenId } : {}),
+  })
 }
 
 export async function fetchMySubscription(): Promise<MySubscription | null> {

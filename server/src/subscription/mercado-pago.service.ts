@@ -36,50 +36,77 @@ export interface MercadoPagoWebhookEvent {
 @Injectable()
 export class MercadoPagoService {
   private readonly logger = new Logger(MercadoPagoService.name)
+  private readonly accessToken: string
   private readonly client: MercadoPagoConfig
   private readonly webhookSecret: string
+  private readonly mpApiBase = 'https://api.mercadopago.com'
 
   constructor() {
-    const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN
-    if (!accessToken) {
+    this.accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN ?? ''
+    if (!this.accessToken) {
       this.logger.warn(
         'MERCADO_PAGO_ACCESS_TOKEN is not set — Mercado Pago integration will fail at runtime',
       )
     }
     this.webhookSecret = process.env.MERCADO_PAGO_WEBHOOK_SECRET ?? ''
     this.client = new MercadoPagoConfig({
-      accessToken: accessToken ?? '',
+      accessToken: this.accessToken,
       options: { timeout: 15000 },
     })
   }
 
   /**
    * Create a Mercado Pago subscription (preapproval) for a given plan.
+   * Uses the raw MP API (not SDK) to avoid SDK-level validation issues.
    * Returns the subscription object with an `init_point` URL.
    */
   async createSubscription(
     planId: string,
     payerEmail: string,
     backUrl: string,
+    cardTokenId?: string,
   ): Promise<MercadoPagoSubscriptionResponse> {
     try {
-      const preApproval = new PreApproval(this.client)
-      const response = await preApproval.create({
-        body: {
-          preapproval_plan_id: planId,
-          payer_email: payerEmail,
-          back_url: backUrl,
-          status: 'pending',
-          reason: 'Mythrion Premium',
+      const body: Record<string, any> = {
+        preapproval_plan_id: planId,
+        payer_email: payerEmail,
+        back_url: backUrl,
+        reason: 'Mythrion Premium',
+        status: 'pending',
+        auto_return: 'approved',
+      }
+
+      if (cardTokenId) {
+        body.card_token_id = cardTokenId
+      }
+
+      const response = await fetch(`${this.mpApiBase}/preapproval`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify(body),
       })
-      return response as unknown as MercadoPagoSubscriptionResponse
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        const mpError = data?.message || JSON.stringify(data)
+        this.logger.error(
+          `MP API error (${response.status}): ${mpError}`,
+        )
+        throw new UnprocessableEntityException(
+          `Mercado Pago error: ${mpError}`,
+        )
+      }
+
+      return data as MercadoPagoSubscriptionResponse
     } catch (err: any) {
-      const mpError =
-        err?.response?.data?.message ||
-        err?.cause?.[0]?.description ||
-        err?.message ||
-        JSON.stringify(err)
+      // If it's already our UnprocessableEntityException, re-throw
+      if (err instanceof UnprocessableEntityException) throw err
+
+      const mpError = err?.message || JSON.stringify(err)
       this.logger.error(`Failed to create MP subscription: ${mpError}`)
       throw new UnprocessableEntityException(
         `Mercado Pago error: ${mpError}`,

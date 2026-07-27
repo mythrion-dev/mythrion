@@ -72,6 +72,7 @@ export class SubscriptionService {
     userId: string,
     planId: string,
     email: string,
+    cardTokenId?: string,
   ): Promise<CreateSubscriptionResult> {
     // Check for existing active subscription
     const existing = await this.prisma.userSubscription.findUnique({
@@ -100,6 +101,7 @@ export class SubscriptionService {
       plan.mpPlanId,
       email,
       backUrl,
+      cardTokenId,
     )
 
     // Upsert the UserSubscription row (create or replace cancelled/expired one)
