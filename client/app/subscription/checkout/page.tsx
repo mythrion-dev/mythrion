@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense, useCallback } from 'react'
+import { useEffect, useState, Suspense, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useSubscription } from '@/lib/subscription-context'
@@ -9,7 +9,6 @@ import initMercadoPago, { MercadoPagoInstance } from '@mercadopago/sdk-react/esm
 import CardNumber from '@mercadopago/sdk-react/esm/secureFields/cardNumber'
 import SecurityCode from '@mercadopago/sdk-react/esm/secureFields/securityCode'
 import ExpirationDate from '@mercadopago/sdk-react/esm/secureFields/expirationDate'
-import createCardToken from '@mercadopago/sdk-react/esm/secureFields/createCardToken'
 import type { FieldStyle } from '@mercadopago/sdk-react/esm/secureFields/util/types'
 import Link from 'next/link'
 
@@ -70,6 +69,10 @@ function CheckoutContent() {
   // --- Mercado Pago SDK lifecycle ---
   const [mpReady, setMpReady] = useState(false)
   const [mpError, setMpError] = useState(false)
+
+  // Keep a stable ref to the MP instance so we always call createCardToken on
+  // the exact same object that registered the secure fields.
+  const mpInstanceRef = useRef<any>(null)
 
   // Per-field ready flag — the SDK fires onReady once the iframe is mounted
   // and the card input is interactive. We gate the submit button on ALL three.
@@ -139,7 +142,10 @@ function CheckoutContent() {
     //    mounts — but we gate secure fields behind mpReady, creating a
     //    deadlock where nothing ever triggers the load.
     MercadoPagoInstance.getInstance()
-      .then(() => setMpReady(true))
+      .then((instance: any) => {
+        mpInstanceRef.current = instance
+        setMpReady(true)
+      })
       .catch((err: unknown) => {
         console.error('Failed to load Mercado Pago SDK:', err)
         setMpError(true)
@@ -206,7 +212,32 @@ function CheckoutContent() {
         }
 
         console.log('[checkout] Creating card token...')
-        const token = await createCardToken({ cardholderName: cardName })
+
+        // Use the cached MP instance ref (same object that registered the secure fields)
+        // with a retry loop in case the SDK hasn't fully registered the fields yet.
+        const mp = mpInstanceRef.current
+        if (!mp) {
+          throw new Error('Mercado Pago SDK não foi carregado. Recarregue a página.')
+        }
+
+        let token: any = null
+        for (let attempt = 0; attempt < 5; attempt++) {
+          try {
+            token = await mp.fields.createCardToken({ cardholderName: cardName })
+            break
+          } catch (retryErr: any) {
+            if (
+              retryErr?.message?.includes('No primary field found') &&
+              attempt < 4
+            ) {
+              console.log(`[checkout] Primary field not found (attempt ${attempt + 1}), retrying in 300ms...`)
+              await new Promise((r) => setTimeout(r, 300))
+              continue
+            }
+            throw retryErr
+          }
+        }
+
         console.log('[checkout] Card token response:', token)
 
         if (!token || !token.id) {
