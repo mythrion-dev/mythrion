@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState, Suspense, useCallback, useRef } from 'react'
+import { useEffect, useState, Suspense, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useSubscription } from '@/lib/subscription-context'
 import { createSubscription, fetchPlans, type Plan } from '@/lib/subscription-api'
-import initMercadoPago from '@mercadopago/sdk-react/esm/mercadoPago/initMercadoPago'
+import initMercadoPago, { MercadoPagoInstance } from '@mercadopago/sdk-react/esm/mercadoPago/initMercadoPago'
 import CardNumber from '@mercadopago/sdk-react/esm/secureFields/cardNumber'
 import SecurityCode from '@mercadopago/sdk-react/esm/secureFields/securityCode'
 import ExpirationDate from '@mercadopago/sdk-react/esm/secureFields/expirationDate'
@@ -29,16 +29,26 @@ const TEST_CARDS: TestCard[] = [
   { label: 'American Express', number: '3753651246888671', cvv: '1234', expiry: '12/2028' },
 ]
 
-/** Styles applied to the MP secure-field iframe inputs */
+/**
+ * Styles applied inside the MP secure-field iframe (the <input> element).
+ * Font-size 16px prevents mobile zoom on focus.
+ * No height here — the iframe is sized by the container div.
+ */
 const SECURE_FIELD_STYLE: FieldStyle = {
   color: '#e1e1e1',
-  'font-family': 'Inter, system-ui, sans-serif',
-  'font-size': '14px',
-  height: '20px',
+  'font-family': "'Inter', system-ui, sans-serif",
+  'font-size': '16px',
   padding: '0',
   'placeholder-color': '#71717a',
   width: '100%',
 }
+
+/**
+ * CSS class shared by every secure-field wrapper.
+ * Matches the card-name <input> so all form fields look uniform.
+ */
+const FIELD_WRAPPER_CLASS =
+  'w-full h-11 px-4 bg-surface border border-border rounded-lg flex items-center focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary'
 
 function CheckoutContent() {
   const router = useRouter()
@@ -48,8 +58,16 @@ function CheckoutContent() {
   const [status, setStatus] = useState<'form' | 'loading' | 'redirecting' | 'error'>('form')
   const [errorMessage, setErrorMessage] = useState('')
   const [plan, setPlan] = useState<Plan | null>(null)
-  const [mpInitialized, setMpInitialized] = useState(false)
-  const mpInitAttempted = useRef(false)
+
+  // --- Mercado Pago SDK lifecycle ---
+  const [mpReady, setMpReady] = useState(false)
+  const [mpError, setMpError] = useState(false)
+
+  // Per-field ready flag — the SDK fires onReady once the iframe is mounted
+  // and the card input is interactive. We gate the submit button on ALL three.
+  const [cardNumberReady, setCardNumberReady] = useState(false)
+  const [expirationDateReady, setExpirationDateReady] = useState(false)
+  const [securityCodeReady, setSecurityCodeReady] = useState(false)
 
   // Card form state
   const [cardName, setCardName] = useState('')
@@ -63,30 +81,41 @@ function CheckoutContent() {
   const [securityCodeValid, setSecurityCodeValid] = useState(false)
   const [expirationDateValid, setExpirationDateValid] = useState(false)
 
-  // BIN (first 6 digits) captured from the card for installments lookup
+  // BIN (first 6 digits) captured from the card — used for installments lookup
   const [bin, setBin] = useState<string | null>(null)
 
-  // Memoized secure-field event handlers — stable references prevent
-  // the MP SDK from re-creating the iframes on every render
+  // All secure fields are mounted and the user can interact with them
+  const allFieldsReady = cardNumberReady && expirationDateReady && securityCodeReady
+
+  // ----- Stable callbacks (useCallback with [] deps) -----
+  // These NEVER change reference, so the secure-field internal useEffect
+  // won't unmount+remount the iframe on every render.
+
   const onCardNumberValidity = useCallback(
     (e: any) => setCardNumberValid(!e?.errorMessages?.length),
     [],
   )
   const onCardNumberBin = useCallback((e: any) => setBin(e?.bin ?? null), [])
+  const onCardNumberReady = useCallback(() => setCardNumberReady(true), [])
+
   const onExpirationDateValidity = useCallback(
     (e: any) => setExpirationDateValid(!e?.errorMessages?.length),
     [],
   )
+  const onExpirationDateReady = useCallback(() => setExpirationDateReady(true), [])
+
   const onSecurityCodeValidity = useCallback(
     (e: any) => setSecurityCodeValid(!e?.errorMessages?.length),
     [],
   )
+  const onSecurityCodeReady = useCallback(() => setSecurityCodeReady(true), [])
 
   const planId = searchParams.get('planId')
 
-  // Initialize Mercado Pago SDK once
+  // ----- Proactively load MP SDK -----
   useEffect(() => {
     if (!MP_PUBLIC_KEY) {
+      setMpError(true)
       setErrorMessage(
         'Chave pública do Mercado Pago não configurada. ' +
           'Configure NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY nas variáveis de ambiente.',
@@ -94,26 +123,23 @@ function CheckoutContent() {
       return
     }
 
-    if (mpInitAttempted.current) return
-    mpInitAttempted.current = true
+    // 1. Store config (key + options) in the singleton
+    initMercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' })
 
-    initMercadoPago(MP_PUBLIC_KEY, {
-      locale: 'pt-BR',
-    })
-
-    // Wait for SDK to fully load — the secure fields need the MP script
-    let attempts = 0
-    const check = setInterval(() => {
-      attempts++
-      if ((window as any).MercadoPago || attempts >= 30) {
-        clearInterval(check)
-        setMpInitialized(true)
-      }
-    }, 200)
-    return () => clearInterval(check)
+    // 2. Force-load the CDN script and create the MP instance.
+    //    Without this explicit call, the SDK only loads when a secure field
+    //    mounts — but we gate secure fields behind mpReady, creating a
+    //    deadlock where nothing ever triggers the load.
+    MercadoPagoInstance.getInstance()
+      .then(() => setMpReady(true))
+      .catch((err: unknown) => {
+        console.error('Failed to load Mercado Pago SDK:', err)
+        setMpError(true)
+        setErrorMessage('Falha ao carregar o Mercado Pago. Recarregue a página.')
+      })
   }, [])
 
-  // Fetch plan details
+  // ----- Fetch plan details -----
   useEffect(() => {
     if (authLoading || !planId) return
     fetchPlans()
@@ -140,7 +166,7 @@ function CheckoutContent() {
       .catch(() => {})
   }, [authLoading, planId])
 
-  // Auth check
+  // ----- Auth check -----
   useEffect(() => {
     if (authLoading) return
     if (!user) {
@@ -153,6 +179,7 @@ function CheckoutContent() {
     }
   }, [authLoading, user, planId, router])
 
+  // ----- Submit handler -----
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
@@ -170,17 +197,19 @@ function CheckoutContent() {
           throw new Error('Preencha todos os dados do cartão corretamente')
         }
 
-        // Create card token via MP secure fields
-        const token = await createCardToken({
-          cardholderName: cardName,
-        })
+        console.log('[checkout] Creating card token...')
+        const token = await createCardToken({ cardholderName: cardName })
+        console.log('[checkout] Card token response:', token)
 
         if (!token || !token.id) {
-          throw new Error('Falha ao gerar token do cartão. Tente novamente.')
+          throw new Error(
+            `Falha ao gerar token do cartão. Resposta: ${JSON.stringify(token)}`,
+          )
         }
 
-        // Create subscription with the card token
+        console.log('[checkout] Creating subscription...')
         const result = await createSubscription(plan?.id ?? planId ?? '', token.id)
+        console.log('[checkout] Subscription result:', result)
 
         setStatus('redirecting')
         refresh()
@@ -192,22 +221,32 @@ function CheckoutContent() {
           router.push('/subscription/success')
         }
       } catch (err) {
+        console.error('[checkout] Error:', err)
         setStatus('form')
         setErrorMessage(
           err instanceof Error ? err.message : 'Falha ao criar assinatura. Tente novamente.',
         )
       }
     },
-    [cardName, cardNumberValid, securityCodeValid, expirationDateValid, plan, planId, router, refresh],
+    [
+      cardName,
+      cardNumberValid,
+      securityCodeValid,
+      expirationDateValid,
+      plan,
+      planId,
+      router,
+      refresh,
+    ],
   )
 
-  // Auto-fill test card — only sets the cardholder name since secure fields
+  // Auto-fill test card — only sets cardholder name since secure fields
   // handle the card number, CVV, and expiry; the user types them manually
-  const fillTestCard = useCallback((testCard: TestCard) => {
+  const fillTestCard = useCallback((_testCard: TestCard) => {
     setCardName('Test User')
   }, [])
 
-  // Show payment pending states
+  // ----- Render: loading / redirecting / error -----
   if (status === 'loading') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-screen bg-background bg-pattern">
@@ -257,6 +296,7 @@ function CheckoutContent() {
     )
   }
 
+  // ----- Render: form -----
   return (
     <div className="flex-1 flex items-center justify-center min-h-screen bg-background bg-pattern px-4 py-12">
       <div className="w-full max-w-lg">
@@ -276,28 +316,29 @@ function CheckoutContent() {
 
         {/* Card form */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Card number — secure field */}
+          {/* ----- Card number (secure field) ----- */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">
               Número do cartão
             </label>
-            <div className="w-full px-4 py-1.5 bg-surface border border-border rounded-lg focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary">
-              {mpInitialized ? (
+            <div className={FIELD_WRAPPER_CLASS}>
+              {mpReady ? (
                 <CardNumber
                   placeholder="0000 0000 0000 0000"
                   style={SECURE_FIELD_STYLE}
                   onValidityChange={onCardNumberValidity}
                   onBinChange={onCardNumberBin}
+                  onReady={onCardNumberReady}
                 />
               ) : (
-                <div className="h-5 flex items-center">
-                  <span className="text-sm text-muted-foreground/50">Carregando...</span>
-                </div>
+                <span className="text-sm text-muted-foreground/50 w-full">
+                  {mpError ? 'Erro ao carregar' : 'Carregando...'}
+                </span>
               )}
             </div>
           </div>
 
-          {/* Card name */}
+          {/* ----- Card name ----- */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">
               Nome do titular
@@ -307,56 +348,58 @@ function CheckoutContent() {
               placeholder="Nome como está no cartão"
               value={cardName}
               onChange={(e) => setCardName(e.target.value)}
-              className="w-full px-4 py-2.5 bg-surface border border-border rounded-lg text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full h-11 px-4 bg-surface border border-border rounded-lg text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               required
             />
           </div>
 
-          {/* Expiry + CVV */}
+          {/* ----- Expiry + CVV ----- */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Validade</label>
-              <div className="w-full px-4 py-1.5 bg-surface border border-border rounded-lg focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary">
-                {mpInitialized ? (
+              <div className={FIELD_WRAPPER_CLASS}>
+                {mpReady ? (
                   <ExpirationDate
                     placeholder="MM/AA"
                     mode="short"
                     style={SECURE_FIELD_STYLE}
                     onValidityChange={onExpirationDateValidity}
+                    onReady={onExpirationDateReady}
                   />
                 ) : (
-                  <div className="h-5 flex items-center">
-                    <span className="text-sm text-muted-foreground/50">Carregando...</span>
-                  </div>
+                  <span className="text-sm text-muted-foreground/50 w-full">
+                    {mpError ? 'Erro' : 'Carregando...'}
+                  </span>
                 )}
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">CVV</label>
-              <div className="w-full px-4 py-1.5 bg-surface border border-border rounded-lg focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary">
-                {mpInitialized ? (
+              <div className={FIELD_WRAPPER_CLASS}>
+                {mpReady ? (
                   <SecurityCode
                     placeholder="123"
                     style={SECURE_FIELD_STYLE}
                     onValidityChange={onSecurityCodeValidity}
+                    onReady={onSecurityCodeReady}
                   />
                 ) : (
-                  <div className="h-5 flex items-center">
-                    <span className="text-sm text-muted-foreground/50">Carregando...</span>
-                  </div>
+                  <span className="text-sm text-muted-foreground/50 w-full">
+                    {mpError ? 'Erro' : 'Carregando...'}
+                  </span>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Installments */}
+          {/* ----- Installments ----- */}
           {installmentOptions.length > 1 && (
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Parcelas</label>
               <select
                 value={installments}
                 onChange={(e) => setInstallments(Number(e.target.value))}
-                className="w-full px-4 py-2.5 bg-surface border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary appearance-none"
+                className="w-full h-11 px-4 bg-surface border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary appearance-none"
                 style={{
                   backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                   backgroundPosition: 'right 0.75rem center',
@@ -373,26 +416,28 @@ function CheckoutContent() {
             </div>
           )}
 
-          {/* Error */}
+          {/* ----- Error ----- */}
           {errorMessage && (
             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
               {errorMessage}
             </div>
           )}
 
-          {/* Submit */}
+          {/* ----- Submit ----- */}
           <button
             type="submit"
-            disabled={!mpInitialized}
-            className="w-full py-3 px-6 rounded-lg bg-primary text-background font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!allFieldsReady && !mpError}
+            className="w-full h-11 rounded-lg bg-primary text-background font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {mpInitialized
-              ? `Assinar — R$ ${(plan ? plan.price / (installments || 1) : 0).toFixed(2)}${installments > 1 ? ` × ${installments}` : ''}`
+            {allFieldsReady || mpError
+              ? mpError
+                ? 'Erro ao carregar — recarregue a página'
+                : `Assinar — R$ ${(plan ? plan.price / (installments || 1) : 0).toFixed(2)}${installments > 1 ? ` × ${installments}` : ''}`
               : 'Carregando...'}
           </button>
         </form>
 
-        {/* Test cards (only in dev) */}
+        {/* ----- Test cards (only in dev) ----- */}
         {process.env.NODE_ENV === 'development' && (
           <div className="mt-8 p-4 rounded-lg bg-surface border border-border">
             <p className="text-xs text-muted-foreground mb-2 font-medium">
