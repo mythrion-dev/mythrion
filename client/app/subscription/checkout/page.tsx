@@ -34,7 +34,7 @@ const SECURE_FIELD_STYLE: FieldStyle = {
   color: '#e1e1e1',
   'font-family': 'Inter, system-ui, sans-serif',
   'font-size': '14px',
-  height: '24px',
+  height: '20px',
   padding: '0',
   'placeholder-color': '#71717a',
   width: '100%',
@@ -65,6 +65,22 @@ function CheckoutContent() {
 
   // BIN (first 6 digits) captured from the card for installments lookup
   const [bin, setBin] = useState<string | null>(null)
+
+  // Memoized secure-field event handlers — stable references prevent
+  // the MP SDK from re-creating the iframes on every render
+  const onCardNumberValidity = useCallback(
+    (e: any) => setCardNumberValid(!e?.errorMessages?.length),
+    [],
+  )
+  const onCardNumberBin = useCallback((e: any) => setBin(e?.bin ?? null), [])
+  const onExpirationDateValidity = useCallback(
+    (e: any) => setExpirationDateValid(!e?.errorMessages?.length),
+    [],
+  )
+  const onSecurityCodeValidity = useCallback(
+    (e: any) => setSecurityCodeValid(!e?.errorMessages?.length),
+    [],
+  )
 
   const planId = searchParams.get('planId')
 
@@ -265,16 +281,16 @@ function CheckoutContent() {
             <label className="block text-sm font-medium text-foreground mb-1.5">
               Número do cartão
             </label>
-            <div className="w-full px-4 py-2.5 bg-surface border border-border rounded-lg focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary">
+            <div className="w-full px-4 py-1.5 bg-surface border border-border rounded-lg focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary">
               {mpInitialized ? (
                 <CardNumber
                   placeholder="0000 0000 0000 0000"
                   style={SECURE_FIELD_STYLE}
-                  onValidityChange={(e: any) => setCardNumberValid(!e?.errorMessages?.length)}
-                  onBinChange={(e: any) => setBin(e?.bin ?? null)}
+                  onValidityChange={onCardNumberValidity}
+                  onBinChange={onCardNumberBin}
                 />
               ) : (
-                <div className="h-6 flex items-center">
+                <div className="h-5 flex items-center">
                   <span className="text-sm text-muted-foreground/50">Carregando...</span>
                 </div>
               )}
@@ -300,16 +316,16 @@ function CheckoutContent() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Validade</label>
-              <div className="w-full px-4 py-2.5 bg-surface border border-border rounded-lg focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary">
+              <div className="w-full px-4 py-1.5 bg-surface border border-border rounded-lg focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary">
                 {mpInitialized ? (
                   <ExpirationDate
                     placeholder="MM/AA"
                     mode="short"
                     style={SECURE_FIELD_STYLE}
-                    onValidityChange={(e: any) => setExpirationDateValid(!e?.errorMessages?.length)}
+                    onValidityChange={onExpirationDateValidity}
                   />
                 ) : (
-                  <div className="h-6 flex items-center">
+                  <div className="h-5 flex items-center">
                     <span className="text-sm text-muted-foreground/50">Carregando...</span>
                   </div>
                 )}
@@ -317,15 +333,15 @@ function CheckoutContent() {
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">CVV</label>
-              <div className="w-full px-4 py-2.5 bg-surface border border-border rounded-lg focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary">
+              <div className="w-full px-4 py-1.5 bg-surface border border-border rounded-lg focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary">
                 {mpInitialized ? (
                   <SecurityCode
                     placeholder="123"
                     style={SECURE_FIELD_STYLE}
-                    onValidityChange={(e: any) => setSecurityCodeValid(!e?.errorMessages?.length)}
+                    onValidityChange={onSecurityCodeValidity}
                   />
                 ) : (
-                  <div className="h-6 flex items-center">
+                  <div className="h-5 flex items-center">
                     <span className="text-sm text-muted-foreground/50">Carregando...</span>
                   </div>
                 )}
