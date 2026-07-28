@@ -28,6 +28,7 @@ export class AdventureService {
         synopsis: dto.synopsis ?? null,
         maxPlayers: dto.maxPlayers,
         ownerId: userId,
+        isPublic: dto.isPublic ?? false,
       },
     })
 
@@ -43,13 +44,31 @@ export class AdventureService {
   }
 
   async findOne(id: string, userId: string) {
-    const adventure = await this.prisma.adventure.findUnique({ where: { id } })
+    const adventure = await this.prisma.adventure.findUnique({
+      where: { id },
+      include: {
+        owner: { select: { id: true, displayName: true } },
+        _count: { select: { members: true } },
+      },
+    })
     if (!adventure) {
       throw new NotFoundException('Adventure not found')
     }
 
-    // Check membership (GMs and players can view)
+    // Check membership
     const isMember = await this.membership.isMember(id, userId)
+
+    // If adventure is public and user is not a member, return limited data
+    if (adventure.isPublic && !isMember) {
+      const { _count, owner, ...rest } = adventure
+      return {
+        ...rest,
+        owner,
+        memberCount: _count.members,
+        isPublic: true,
+      }
+    }
+
     if (!isMember) {
       throw new ForbiddenException('You are not a member of this adventure')
     }
@@ -68,8 +87,129 @@ export class AdventureService {
         ...(dto.campaign !== undefined && { campaign: dto.campaign }),
         ...(dto.synopsis !== undefined && { synopsis: dto.synopsis }),
         ...(dto.maxPlayers !== undefined && { maxPlayers: dto.maxPlayers }),
+        ...(dto.isPublic !== undefined && { isPublic: dto.isPublic }),
       },
     })
+  }
+
+  /**
+   * Toggle adventure visibility (make public or private).
+   * GM only.
+   */
+  async updateVisibility(adventureId: string, userId: string, isPublic: boolean) {
+    await this.membership.requireRole(adventureId, userId, 'GM')
+
+    return this.prisma.adventure.update({
+      where: { id: adventureId },
+      data: { isPublic },
+    })
+  }
+
+  /**
+   * Find public adventures with pagination and optional filters.
+   * No auth required.
+   */
+  async findPublic(params: { page?: number; limit?: number; campaign?: string; search?: string }) {
+    const page = params.page ?? 1
+    const limit = params.limit ?? 10
+    const skip = (page - 1) * limit
+
+    const where: any = { isPublic: true }
+
+    if (params.campaign) {
+      where.campaign = params.campaign
+    }
+
+    if (params.search) {
+      where.OR = [
+        { name: { contains: params.search, mode: 'insensitive' } },
+        { synopsis: { contains: params.search, mode: 'insensitive' } },
+      ]
+    }
+
+    const [adventures, total] = await this.prisma.$transaction([
+      this.prisma.adventure.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          campaign: true,
+          synopsis: true,
+          maxPlayers: true,
+          isPublic: true,
+          createdAt: true,
+          owner: { select: { id: true, displayName: true } },
+          _count: { select: { members: true } },
+        },
+      }),
+      this.prisma.adventure.count({ where }),
+    ])
+
+    return {
+      data: adventures,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    }
+  }
+
+  /**
+   * Find a single public adventure by ID. Only returns if isPublic=true.
+   * No auth required.
+   */
+  async findPublicById(id: string) {
+    const adventure = await this.prisma.adventure.findFirst({
+      where: { id, isPublic: true },
+      select: {
+        id: true,
+        name: true,
+        campaign: true,
+        synopsis: true,
+        maxPlayers: true,
+        isPublic: true,
+        createdAt: true,
+        owner: { select: { id: true, displayName: true } },
+        _count: { select: { members: true } },
+      },
+    })
+
+    if (!adventure) {
+      throw new NotFoundException('Adventure not found or is not public')
+    }
+
+    return adventure
+  }
+
+  /**
+   * Return public adventure with limited fields — suitable for non-members viewing a public adventure.
+   * No auth required.
+   */
+  async findOnePublic(id: string) {
+    const adventure = await this.prisma.adventure.findFirst({
+      where: { id, isPublic: true },
+      select: {
+        id: true,
+        name: true,
+        campaign: true,
+        synopsis: true,
+        maxPlayers: true,
+        createdAt: true,
+        owner: { select: { id: true, displayName: true } },
+        _count: { select: { members: true } },
+      },
+    })
+
+    if (!adventure) {
+      throw new NotFoundException('Adventure not found or is not public')
+    }
+
+    return adventure
   }
 
   async remove(id: string, userId: string) {

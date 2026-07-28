@@ -53,6 +53,7 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   User: 'User',
   Adventure: 'Adventure',
+  JoinRequest: 'JoinRequest',
   Book: 'Book',
   CampaignMember: 'CampaignMember',
   CampaignInvitation: 'CampaignInvitation',
@@ -138,11 +139,25 @@ export const AdventureScalarFieldEnum = {
   synopsis: 'synopsis',
   maxPlayers: 'maxPlayers',
   ownerId: 'ownerId',
+  isPublic: 'isPublic',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type AdventureScalarFieldEnum = (typeof AdventureScalarFieldEnum)[keyof typeof AdventureScalarFieldEnum]
+
+
+export const JoinRequestScalarFieldEnum = {
+  id: 'id',
+  adventureId: 'adventureId',
+  userId: 'userId',
+  status: 'status',
+  message: 'message',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type JoinRequestScalarFieldEnum = (typeof JoinRequestScalarFieldEnum)[keyof typeof JoinRequestScalarFieldEnum]
 
 
 export const BookScalarFieldEnum = {
@@ -219,6 +234,7 @@ export type RefreshTokenScalarFieldEnum = (typeof RefreshTokenScalarFieldEnum)[k
 export const TemplateScalarFieldEnum = {
   id: 'id',
   adventureId: 'adventureId',
+  ownerId: 'ownerId',
   name: 'name',
   description: 'description',
   attributeModifierFormula: 'attributeModifierFormula',

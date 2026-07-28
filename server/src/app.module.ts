@@ -11,8 +11,10 @@ import { FormulaModule } from './formula/formula.module.js';
 import { ImageModule } from './image/image.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import { BookModule } from './book/book.module.js';
+import { JoinRequestModule } from './join-request/join-request.module.js';
+import { CommunityModule } from './community/community.module.js';
 @Module({
-  imports: [AuthModule, AdventureModule, TemplateModule, CharacterSheetModule, FormulaModule, ImageModule, RedisModule, BookModule],
+  imports: [AuthModule, AdventureModule, TemplateModule, CharacterSheetModule, FormulaModule, ImageModule, RedisModule, BookModule, JoinRequestModule, CommunityModule],
   controllers: [AppController, HealthController],
   providers: [AppService, PrismaService],
   exports: [PrismaService],

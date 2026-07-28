@@ -21,6 +21,8 @@ model User {
   adventures         Adventure[]
   memberships        CampaignMember[]
   sentInvitations    CampaignInvitation[] @relation("SentInvitations")
+  joinRequests       JoinRequest[]
+  ownedTemplates     Template[]
   googleAccount      GoogleAccount?
   refreshTokens      RefreshToken[]
   characterSheets    CharacterSheet[]
@@ -34,14 +36,39 @@ model Adventure {
   maxPlayers      Int                  @default(5)
   ownerId         String
   owner           User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  isPublic        Boolean              @default(false)
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
   members         CampaignMember[]
   invitations     CampaignInvitation[]
+  joinRequests    JoinRequest[]
   templates       Template[]
   characterSheets CharacterSheet[]
   books           Book[]
   @@index([ownerId])
+}
+
+enum JoinRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model JoinRequest {
+  id          String             @id @default(cuid())
+  adventureId String
+  adventure   Adventure          @relation(fields: [adventureId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      JoinRequestStatus  @default(PENDING)
+  message     String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([adventureId, userId])
+  @@index([adventureId])
+  @@index([userId])
+  @@index([status])
 }
 
 enum MemberRole {
@@ -141,6 +168,8 @@ model Template {
   id                       String                    @id @default(cuid())
   adventureId              String
   adventure                Adventure                 @relation(fields: [adventureId], references: [id], onDelete: Cascade)
+  ownerId                  String?
+  owner                    User?                     @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   name                     String
   description              String?
   attributeModifierFormula String?
@@ -159,6 +188,7 @@ model Template {
   updatedAt                DateTime                  @updatedAt
 
   @@index([adventureId])
+  @@index([ownerId])
 }
 
 // ── Skill Modifier Profiles ──

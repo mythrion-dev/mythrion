@@ -9,11 +9,17 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common'
+import { IsBoolean } from 'class-validator'
 import { AdventureService } from './adventure.service.js'
 import { CreateAdventureDto } from './dto/create-adventure.dto.js'
 import { UpdateAdventureDto } from './dto/update-adventure.dto.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import type { AuthenticatedRequest } from '../auth/jwt-auth.guard.js'
+
+class UpdateVisibilityDto {
+  @IsBoolean()
+  isPublic!: boolean
+}
 
 @Controller('adventures')
 @UseGuards(JwtAuthGuard)
@@ -42,6 +48,15 @@ export class AdventureController {
     @Body() dto: UpdateAdventureDto,
   ) {
     return this.adventureService.update(id, req.user.sub, dto)
+  }
+
+  @Patch(':id/visibility')
+  updateVisibility(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: UpdateVisibilityDto,
+  ) {
+    return this.adventureService.updateVisibility(id, req.user.sub, dto.isPublic)
   }
 
   @Delete(':id')

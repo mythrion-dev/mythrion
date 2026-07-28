@@ -93,6 +93,7 @@ describe('TemplateService', () => {
         templateSkills: [],
         armorClasses: [],
       })
+      prisma.adventure.findUnique.mockResolvedValue({ id: adventureId, isPublic: false })
       prisma.template.create.mockResolvedValue(created)
       prisma.templateAttribute.findMany.mockResolvedValue(created.attributes)
       prisma.templateArmorClass.findMany.mockResolvedValue([])
@@ -184,6 +185,7 @@ describe('TemplateService', () => {
         }],
       })
 
+      prisma.adventure.findUnique.mockResolvedValue({ id: adventureId, isPublic: false })
       prisma.template.create.mockResolvedValue(created)
       prisma.templateAttribute.findMany.mockResolvedValue(createdAttrs)
       prisma.templateArmorClass.findMany.mockResolvedValue(created.armorClasses)
@@ -224,6 +226,7 @@ describe('TemplateService', () => {
 
       const createdAcs = [{ id: 'ac-1', name: 'Armor Class', templateId: 'template-1', enabled: true, createdAt: new Date('2025-01-01') }]
 
+      prisma.adventure.findUnique.mockResolvedValue({ id: adventureId, isPublic: false })
       prisma.template.create.mockResolvedValue(created)
       prisma.templateAttribute.findMany.mockResolvedValue(createdAttrs)
       prisma.templateArmorClass.findMany.mockResolvedValue(createdAcs as any)
@@ -709,6 +712,206 @@ describe('TemplateService', () => {
       await expect(service.remove(id, userId)).rejects.toThrow(NotFoundException)
       await expect(service.remove(id, userId)).rejects.toThrow('Template not found')
       expect(prisma.template.delete).not.toHaveBeenCalled()
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  clone()
+  // ──────────────────────────────────────────────
+
+  describe('clone', () => {
+    const id = 'template-1'
+    const userId = 'user-1'
+
+    it('deep copies a template with all relations', async () => {
+      const original = mockTemplateWithInclude({
+        name: 'Original',
+        description: 'A test template',
+        attributes: [
+          { id: 'attr-1', key: 'str', name: 'Strength', templateId: id, order: 0 },
+        ],
+        templateSkills: [
+          { id: 'skill-1', name: 'Athletics', templateId: id, order: 0, attributeId: 'attr-1', allowedAttributeIds: ['attr-1'], defaultAttributeId: 'attr-1', description: null },
+        ],
+        armorClasses: [
+          {
+            id: 'ac-1', name: 'Armor Class', templateId: id, enabled: true,
+            attributeModifiers: [
+              { id: 'am-1', attributeId: 'attr-1', allowPlayerSelection: false, defaultAttributeId: null },
+            ],
+            fields: [
+              { id: 'acf-1', name: 'Total', key: 'total', defaultValue: '10', editableByPlayer: false, description: null, order: 0, armorClassId: 'ac-1' },
+            ],
+          },
+        ],
+        coreResources: [
+          { id: 'cr-1', slug: 'hp', displayName: 'Hit Points', enabled: true, editableByPlayer: true, showNotes: true, color: null, order: 0 },
+        ],
+        characterSections: [{ id: 'cs-1', name: 'Equipment', templateId: id, order: 0 }],
+        resistances: [
+          {
+            id: 'res-1', name: 'Damage Resistances', templateId: id, calculationType: 'MANUAL', order: 0,
+            components: [{ id: 'rc-1', name: 'Slashing', resistanceId: 'res-1', editableByPlayer: true, defaultValue: '0', order: 0 }],
+            attributeModifiers: [],
+          },
+        ],
+        skillModifierProfiles: [],
+        templateFields: [],
+      })
+
+      prisma.template.findUnique.mockResolvedValue(original)
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'adv-1', isPublic: false })
+      // The create will be called internally by clone()
+      const cloned = mockTemplateWithInclude({
+        name: 'Original (copy)',
+      })
+      prisma.template.create.mockResolvedValue(cloned)
+      prisma.templateAttribute.findMany.mockResolvedValue([])
+      prisma.templateArmorClass.findMany.mockResolvedValue([])
+      prisma.template.findUnique.mockResolvedValue(cloned)
+
+      const result = await service.clone(id, userId)
+
+      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('adv-1', userId, 'GM')
+      expect(prisma.template.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id } }),
+      )
+      expect(result).toBeDefined()
+    })
+
+    it('uses custom name when provided', async () => {
+      const original = mockTemplateWithInclude({ name: 'Original' })
+      prisma.template.findUnique.mockResolvedValue(original)
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'adv-1', isPublic: false })
+      const cloned = mockTemplateWithInclude({ name: 'Custom Clone' })
+      prisma.template.create.mockResolvedValue(cloned)
+      prisma.templateAttribute.findMany.mockResolvedValue([])
+      prisma.templateArmorClass.findMany.mockResolvedValue([])
+      prisma.template.findUnique.mockResolvedValue(cloned)
+
+      const result = await service.clone(id, userId, 'Custom Clone')
+
+      expect(result.name).toBe('Custom Clone')
+    })
+
+    it('throws NotFoundException when template not found', async () => {
+      prisma.template.findUnique.mockResolvedValue(null)
+
+      await expect(service.clone('nonexistent', userId)).rejects.toThrow(
+        NotFoundException,
+      )
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  findPublicAll()
+  // ──────────────────────────────────────────────
+
+  describe('findPublicAll', () => {
+    it('returns paginated public templates', async () => {
+      const templates = [
+        {
+          id: 't1',
+          name: 'Public Template',
+          description: 'A public template',
+          createdAt: new Date(),
+          adventure: { id: 'adv-1', name: 'Adventure', campaign: 'Camp' },
+          owner: { id: 'u1', displayName: 'Owner' },
+          _count: { characterSheets: 3 },
+        },
+      ]
+      prisma.$transaction.mockResolvedValue([templates, 1])
+
+      const result = await service.findPublicAll({ page: 1, limit: 10 })
+
+      expect(result.data).toEqual(templates)
+      expect(result.meta.total).toBe(1)
+    })
+
+    it('filters by adventureId', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublicAll({ adventureId: 'adv-1' })
+
+      expect(prisma.template.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            adventureId: 'adv-1',
+          }),
+        }),
+      )
+    })
+
+    it('filters by search', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublicAll({ search: 'warrior' })
+
+      expect(prisma.template.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            AND: expect.arrayContaining([
+              expect.objectContaining({
+                OR: expect.arrayContaining([
+                  { name: { contains: 'warrior', mode: 'insensitive' } },
+                  { description: { contains: 'warrior', mode: 'insensitive' } },
+                ]),
+              }),
+            ]),
+          }),
+        }),
+      )
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  findOnePublic()
+  // ──────────────────────────────────────────────
+
+  describe('findOnePublic', () => {
+    it('returns a public template with its full structure', async () => {
+      const template = {
+        id: 't1',
+        name: 'Public Template',
+        description: 'A public template',
+        attributeModifiersEnabled: true,
+        attributeModifierFormula: null,
+        skillFormula: null,
+        createdAt: new Date(),
+        adventure: { id: 'adv-1', name: 'Adventure', campaign: 'Camp' },
+        owner: { id: 'u1', displayName: 'Owner' },
+        _count: { characterSheets: 3 },
+        attributes: [],
+        templateFields: [],
+        templateSkills: [],
+        skillModifierProfiles: [],
+        coreResources: [],
+        armorClasses: [],
+        characterSections: [],
+        resistances: [],
+      }
+      prisma.template.findFirst.mockResolvedValue(template)
+
+      const result = await service.findOnePublic('t1')
+
+      expect(prisma.template.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            id: 't1',
+            adventure: { isPublic: true },
+            ownerId: { not: null },
+          },
+        }),
+      )
+      expect(result).toEqual(template)
+    })
+
+    it('throws NotFoundException when template not found or not public', async () => {
+      prisma.template.findFirst.mockResolvedValue(null)
+
+      await expect(service.findOnePublic('nonexistent')).rejects.toThrow(
+        NotFoundException,
+      )
     })
   })
 
