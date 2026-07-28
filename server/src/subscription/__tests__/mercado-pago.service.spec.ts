@@ -102,7 +102,7 @@ describe('MercadoPagoService', () => {
       expect(sentBody.auto_recurring).toEqual({
         frequency: 1,
         frequency_type: 'months',
-        transaction_amount: 12000,
+        transaction_amount: 120, // planPrice 12000 / 100 = R$ 120
         currency_id: 'BRL',
       })
       expect(sentBody.payer_email).toBe(payerEmail)
@@ -123,7 +123,7 @@ describe('MercadoPagoService', () => {
       expect(sentBody.auto_recurring).toEqual({
         frequency: 12,
         frequency_type: 'months',
-        transaction_amount: 120000,
+        transaction_amount: 1200, // planPrice 120000 / 100 = R$ 1.200
         currency_id: 'BRL',
       })
     })

@@ -98,7 +98,7 @@ export class MercadoPagoService {
         body.auto_recurring = {
           frequency,
           frequency_type: frequencyType,
-          transaction_amount: planPrice,
+          transaction_amount: planPrice / 100,
           currency_id: 'BRL',
         }
         body.status = 'pending'
