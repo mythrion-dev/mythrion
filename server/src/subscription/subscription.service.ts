@@ -116,9 +116,10 @@ export class SubscriptionService {
         planId: plan.id,
         mpSubscriptionId: mpSubscription.id,
         status: 'PENDING' as SubscriptionStatus,
-        graceEndsAt: null,
-        currentPeriodStart: null,
-        currentPeriodEnd: null,
+        // Don't reset period/grace dates here — they are only assigned
+        // by webhook handlers when MP provides actual values. Resetting
+        // them to null on upsert causes P2011 if a prior migration on
+        // the target database lacks the NOT NULL → nullable change.
         cancelledAt: null,
       },
       create: {
