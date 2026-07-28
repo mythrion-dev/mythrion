@@ -73,12 +73,14 @@ export class MercadoPagoService {
         back_url: backUrl,
         reason: 'Mythrion Premium',
         status: 'pending',
-        auto_return: 'approved',
       }
 
       if (cardTokenId) {
         body.card_token_id = cardTokenId
       }
+
+      const jsonBody = JSON.stringify(body)
+      this.logger.log(`Creating MP preapproval with body: ${jsonBody}`)
 
       const response = await fetch(`${this.mpApiBase}/preapproval`, {
         method: 'POST',
@@ -86,13 +88,13 @@ export class MercadoPagoService {
           'Authorization': `Bearer ${this.accessToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(body),
+        body: jsonBody,
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        const mpError = data?.message || JSON.stringify(data)
+        const mpError = JSON.stringify(data)
         this.logger.error(
           `MP API error (${response.status}): ${mpError}`,
         )
