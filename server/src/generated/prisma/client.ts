@@ -10,10 +10,9 @@
  * 🟢 You can import this file directly.
  */
 
-import * as process from 'node:process'
-import * as path from 'node:path'
-import { fileURLToPath } from 'node:url'
-globalThis['__dirname'] = path.dirname(fileURLToPath(import.meta.url))
+// Note: __dirname is set from the compiled CJS output;
+// import.meta.url removed for CJS compatibility with Node.js 24+.
+globalThis['__dirname'] = __dirname
 
 import * as runtime from "@prisma/client/runtime/client"
 import * as $Enums from "./enums.js"
@@ -51,6 +50,11 @@ export type User = Prisma.UserModel
  * 
  */
 export type Adventure = Prisma.AdventureModel
+/**
+ * Model JoinRequest
+ * 
+ */
+export type JoinRequest = Prisma.JoinRequestModel
 /**
  * Model Book
  * 
@@ -232,11 +236,6 @@ export type CharacterAbilityLevel = Prisma.CharacterAbilityLevelModel
  */
 export type SummonSkill = Prisma.SummonSkillModel
 /**
- * Model SummonSkillProfileValue
- * 
- */
-export type SummonSkillProfileValue = Prisma.SummonSkillProfileValueModel
-/**
  * Model SummonAttribute
  * 
  */
@@ -247,25 +246,10 @@ export type SummonAttribute = Prisma.SummonAttributeModel
  */
 export type SummonArmorClassValue = Prisma.SummonArmorClassValueModel
 /**
- * Model SummonArmorClassAttributeValue
- * 
- */
-export type SummonArmorClassAttributeValue = Prisma.SummonArmorClassAttributeValueModel
-/**
  * Model SummonHealth
  * 
  */
 export type SummonHealth = Prisma.SummonHealthModel
-/**
- * Model SummonResistanceValue
- * 
- */
-export type SummonResistanceValue = Prisma.SummonResistanceValueModel
-/**
- * Model SummonResistanceComponentValue
- * 
- */
-export type SummonResistanceComponentValue = Prisma.SummonResistanceComponentValueModel
 /**
  * Model CharacterInventoryItem
  * 
@@ -286,3 +270,18 @@ export type TemplateCharacterSection = Prisma.TemplateCharacterSectionModel
  * 
  */
 export type CharacterSectionEntry = Prisma.CharacterSectionEntryModel
+/**
+ * Model SubscriptionPlan
+ * 
+ */
+export type SubscriptionPlan = Prisma.SubscriptionPlanModel
+/**
+ * Model UserSubscription
+ * 
+ */
+export type UserSubscription = Prisma.UserSubscriptionModel
+/**
+ * Model SubscriptionInvoice
+ * 
+ */
+export type SubscriptionInvoice = Prisma.SubscriptionInvoiceModel

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import Link from 'next/link'
 import { PageNav } from '@/lib/breadcrumb'
+import { TemplatePickerModal } from '@/components/adventure/TemplatePickerModal'
 
 export default function NewAdventurePage() {
   const router = useRouter()
@@ -12,12 +13,24 @@ export default function NewAdventurePage() {
   const [campaign, setCampaign] = useState('')
   const [synopsis, setSynopsis] = useState('')
   const [maxPlayers, setMaxPlayers] = useState(4)
+  const [isPublic, setIsPublic] = useState(false)
+  const [sessionWeekday, setSessionWeekday] = useState('')
+  const [sessionTime, setSessionTime] = useState('')
+  const [sessionType, setSessionType] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [templateId, setTemplateId] = useState<string | null>(null)
+  const [templateName, setTemplateName] = useState<string | null>(null)
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
+
+  const weekdays = [
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+  ]
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
+
     setSubmitting(true)
 
     try {
@@ -26,6 +39,11 @@ export default function NewAdventurePage() {
         campaign: campaign.trim(),
         synopsis: synopsis.trim() || undefined,
         maxPlayers,
+        isPublic: isPublic || undefined,
+        ...(templateId && { templateId }),
+        ...(sessionWeekday && { sessionWeekday }),
+        ...(sessionTime && { sessionTime }),
+        ...(sessionType && { sessionType }),
       })
       router.push(`/dashboard/adventures/${created.id}`)
     } catch (err) {
@@ -153,6 +171,115 @@ export default function NewAdventurePage() {
               <span>1</span>
               <span>5</span>
             </div>
+          </div>
+
+          {/* Session Info */}
+          <div>
+            <label className="label">
+              Session Schedule <span className="text-muted font-normal">(optional)</span>
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-1.5">
+              <div>
+                <label htmlFor="sessionWeekday" className="text-xs text-muted mb-1 block">Day</label>
+                <select
+                  id="sessionWeekday"
+                  value={sessionWeekday}
+                  onChange={(e) => setSessionWeekday(e.target.value)}
+                  className="input-field"
+                >
+                  <option value="">Select day...</option>
+                  {weekdays.map((day) => (
+                    <option key={day} value={day}>{day}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="sessionTime" className="text-xs text-muted mb-1 block">Time</label>
+                <input
+                  id="sessionTime"
+                  type="time"
+                  value={sessionTime}
+                  onChange={(e) => setSessionTime(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted mb-1 block">Format</label>
+                <div className="flex gap-1 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setSessionType('ONLINE')}
+                    className={`tab-pill flex-1 ${sessionType === 'ONLINE' ? 'tab-pill-active' : ''}`}
+                  >
+                    🌐 Online
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSessionType('IN_PERSON')}
+                    className={`tab-pill flex-1 ${sessionType === 'IN_PERSON' ? 'tab-pill-active' : ''}`}
+                  >
+                    📍 In Person
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Public toggle */}
+          <div className="flex items-start gap-3 pt-1">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isPublic}
+              onClick={() => setIsPublic(!isPublic)}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isPublic ? 'bg-accent' : 'bg-border'}`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow ring-0 transition duration-200 ease-in-out ${isPublic ? 'translate-x-5' : 'translate-x-0'}`}
+              />
+            </button>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-foreground">Public Campaign</span>
+              <span className="text-xs text-muted">Anyone can see this campaign in the community explorer</span>
+            </div>
+          </div>
+
+          {/* Template selection */}
+          <div className="pt-2">
+            <label className="label">
+              Character Sheet Template{' '}
+              <span className="text-muted font-normal">(optional)</span>
+            </label>
+            <div className="flex items-center gap-2 mt-1.5">
+              {templateName ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="badge text-xs" style={{ background: 'rgba(124,92,231,0.12)', color: '#9070f0', border: '1px solid rgba(124,92,231,0.18)' }}>
+                    {templateName}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setTemplateId(null); setTemplateName(null) }}
+                    className="btn-ghost text-xs !px-2 !py-0.5"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowTemplatePicker(true)}
+                  className="btn-ghost text-xs"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0" />
+                  </svg>
+                  Select Template
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-muted mt-1">
+              Attach a character sheet template to let players create characters.
+            </p>
           </div>
 
           {error && (

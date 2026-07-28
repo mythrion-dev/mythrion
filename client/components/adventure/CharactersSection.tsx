@@ -1,5 +1,6 @@
 'use client'
 
+import { Select } from '@/components/shared/Select'
 import type { FormEvent } from 'react'
 
 interface Template {
@@ -149,19 +150,15 @@ export function CharactersSection({
                 No templates available. Ask your GM to create one.
               </p>
             ) : (
-              <select
-                className="input-field"
+              <Select
+                options={[
+                  { id: '', label: 'Select a template...' },
+                  ...templates.map(t => ({ id: t.id, label: t.name })),
+                ]}
                 value={newCharTemplateId}
-                onChange={e => onNewCharTemplateChange(e.target.value)}
-                required
-              >
-                <option value="">Select a template...</option>
-                {templates.map(t => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
+                onChange={val => onNewCharTemplateChange(val)}
+                className="text-sm"
+              />
             )}
           </div>
 
@@ -204,19 +201,15 @@ export function CharactersSection({
             {userSheets.length === 0 ? (
               <p className="text-sm text-muted italic">No unlinked characters available.</p>
             ) : (
-              <select
-                className="input-field"
+              <Select
+                options={[
+                  { id: '', label: 'Select a character...' },
+                  ...userSheets.map(s => ({ id: s.id, label: `${s.characterName} (${s.template.name})` })),
+                ]}
                 value={linkSheetId}
-                onChange={e => onLinkSheetChange(e.target.value)}
-                required
-              >
-                <option value="">Select a character...</option>
-                {userSheets.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.characterName} ({s.template.name})
-                  </option>
-                ))}
-              </select>
+                onChange={val => onLinkSheetChange(val)}
+                className="text-sm"
+              />
             )}
           </div>
 

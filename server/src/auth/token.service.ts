@@ -6,6 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt'
 import { PrismaService } from '../prisma.service.js'
 import { RedisService } from '../redis/redis.service.js'
+import { AdminService } from './admin.service.js'
 import { v4 as uuid } from 'uuid'
 import * as bcrypt from 'bcrypt'
 
@@ -18,12 +19,14 @@ export class TokenService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly redis: RedisService,
+    private readonly adminService: AdminService,
   ) {}
 
   /** Generate access token (short-lived) and refresh token (long-lived, stored in DB) */
   async generateTokens(userId: string, email: string) {
+    const role = this.adminService.isAdmin(email) ? 'admin' : 'user'
     const accessToken = this.jwtService.sign(
-      { sub: userId, email },
+      { sub: userId, email, role },
       { expiresIn: ACCESS_TOKEN_EXPIRY },
     )
 

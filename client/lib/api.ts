@@ -128,6 +128,20 @@ export async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
+/** Decode the payload of a JWT without verifying the signature.
+ *  Security note: the decoded payload is not verified — it is extracted
+ *  from the JWT only for presentation (e.g. checking `role`). All
+ *  authorization decisions MUST be enforced server-side by guards. */
+export function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const payload = token.split('.')[1]
+    if (!payload) return null
+    return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
+  } catch {
+    return null
+  }
+}
+
 export function getAccessToken(): string | null {
   if (typeof window === 'undefined') return null
   return localStorage.getItem('accessToken')

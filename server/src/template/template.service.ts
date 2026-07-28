@@ -37,6 +37,89 @@ const templateInclude = {
   },
 }
 
+// ── Snapshot type definition ──
+// Matches the full template structure stored as JSON in Adventure.templateSnapshot.
+// Preserves original entity IDs for CharacterSheet FK backward compatibility.
+export interface TemplateSnapshotAttribute {
+  id: string; templateId: string; key: string; name: string; order: number
+}
+
+export interface TemplateSnapshotField {
+  id: string; templateId: string; key: string; label: string; order: number
+}
+
+export interface TemplateSnapshotSkill {
+  id: string; templateId: string; name: string; description: string | null;
+  attributeId: string | null; allowedAttributeIds: string[];
+  defaultAttributeId: string | null; order: number
+}
+
+export interface TemplateSnapshotProfileOption {
+  id: string; profileId: string; label: string; value: number; order: number
+}
+
+export interface TemplateSnapshotModifierProfile {
+  id: string; templateId: string; name: string; order: number;
+  targetMode: string; targetSkillIds: string[];
+  options: TemplateSnapshotProfileOption[]
+}
+
+export interface TemplateSnapshotCoreResource {
+  id: string; templateId: string; slug: string; displayName: string;
+  enabled: boolean; editableByPlayer: boolean; showNotes: boolean;
+  color: string | null; order: number
+}
+
+export interface TemplateSnapshotAcAttributeModifier {
+  id: string; armorClassId: string; attributeId: string;
+  allowPlayerSelection: boolean; defaultAttributeId: string | null
+}
+
+export interface TemplateSnapshotAcField {
+  id: string; armorClassId: string; name: string; key: string;
+  defaultValue: string; editableByPlayer: boolean; description: string | null; order: number
+}
+
+export interface TemplateSnapshotArmorClass {
+  id: string; templateId: string; name: string; enabled: boolean;
+  attributeModifiers: TemplateSnapshotAcAttributeModifier[];
+  fields: TemplateSnapshotAcField[]
+}
+
+export interface TemplateSnapshotCharacterSection {
+  id: string; templateId: string; name: string; order: number
+}
+
+export interface TemplateSnapshotResistanceAttributeModifier {
+  id: string; resistanceId: string; attributeId: string; enabled: boolean
+}
+
+export interface TemplateSnapshotResistanceComponent {
+  id: string; resistanceId: string; name: string;
+  editableByPlayer: boolean; defaultValue: string; order: number
+}
+
+export interface TemplateSnapshotResistance {
+  id: string; templateId: string; name: string;
+  calculationType: string; order: number;
+  components: TemplateSnapshotResistanceComponent[];
+  attributeModifiers: TemplateSnapshotResistanceAttributeModifier[]
+}
+
+export interface TemplateSnapshot {
+  id: string; name: string; description: string | null;
+  attributeModifierFormula: string | null;
+  attributeModifiersEnabled: boolean; skillFormula: string | null;
+  attributes: TemplateSnapshotAttribute[];
+  templateFields: TemplateSnapshotField[];
+  templateSkills: TemplateSnapshotSkill[];
+  skillModifierProfiles: TemplateSnapshotModifierProfile[];
+  coreResources: TemplateSnapshotCoreResource[];
+  armorClasses: TemplateSnapshotArmorClass[];
+  characterSections: TemplateSnapshotCharacterSection[];
+  resistances: TemplateSnapshotResistance[];
+}
+
 @Injectable()
 export class TemplateService {
   private readonly logger = new Logger(TemplateService.name)
@@ -57,26 +140,64 @@ export class TemplateService {
     return `templates:adventure:${adventureId}`
   }
 
-  /** Invalidate cached templates for an adventure (and optionally a specific template) */
-  private async invalidateCache(adventureId: string, templateId?: string): Promise<void> {
+  private userListCacheKey(userId: string): string {
+    return `templates:user:${userId}`
+  }
+
+  /** Invalidate cached templates for an adventure, user list, and optionally a specific template */
+  private async invalidateCache(
+    adventureId: string | null,
+    templateId?: string,
+    userId?: string,
+  ): Promise<void> {
     try {
       if (templateId) {
         await this.redis.del(this.cacheKey(templateId))
       }
-      await this.redis.del(this.listCacheKey(adventureId))
+      if (adventureId) {
+        await this.redis.del(this.listCacheKey(adventureId))
+      }
+      if (userId) {
+        await this.redis.del(this.userListCacheKey(userId))
+      }
     } catch (err) {
       this.logger.warn('Failed to invalidate template cache', err)
+    }
+  }
+
+  /**
+   * Invalidate all character-sheet caches that embed this template's data.
+   * When a template is updated (e.g. new profile options added), each sheet's
+   * Redis cache stores a stale snapshot of the template. Clearing those keys
+   * forces the next sheet load to re-read from the database with fresh data.
+   */
+  private async invalidateSheetCaches(templateId: string): Promise<void> {
+    try {
+      const sheets = await this.prisma.characterSheet.findMany({
+        where: { templateId },
+        select: { id: true },
+      })
+      if (sheets.length > 0) {
+        await this.redis.del(...sheets.map(s => `character-sheet:${s.id}`))
+      }
+    } catch (err) {
+      this.logger.warn('Failed to invalidate character sheet caches', err)
     }
   }
 
   async create(adventureId: string, userId: string, dto: CreateTemplateDto) {
     await this.membership.requireRole(adventureId, userId, 'GM')
 
+    // Look up the adventure to check if it's public and set ownerId
+    const adventure = await this.prisma.adventure.findUnique({ where: { id: adventureId } })
+    if (!adventure) throw new NotFoundException('Adventure not found')
+
     // Create the template with attributes and skills (initially without attribute links)
     const armorClasses = dto.armorClasses ?? []
     const created = await this.prisma.template.create({
       data: {
         adventureId, name: dto.name, description: dto.description ?? null,
+        ownerId: userId,
         attributeModifiersEnabled: dto.attributeModifiersEnabled ?? true,
         attributeModifierFormula: dto.attributeModifierFormula ?? null,
         skillFormula: dto.skillFormula ?? null,
@@ -277,16 +398,13 @@ export class TemplateService {
     // Try cache first
     const cached = await this.redis.cacheGet<any>(this.cacheKey(id))
     if (cached) {
-      // Verify membership still valid (fast check — user is cached, but verify fresh)
-      const isMember = await this.membership.isMember(cached.adventureId, userId)
-      if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
+      await this.ensureTemplateAccess(cached, userId)
       return cached
     }
 
     const template = await this.prisma.template.findUnique({ where: { id }, include: templateInclude })
     if (!template) throw new NotFoundException('Template not found')
-    const isMember = await this.membership.isMember(template.adventureId, userId)
-    if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
+    await this.ensureTemplateAccess(template, userId)
 
     // Cache the result (skip if Redis unavailable — cacheGet returns null gracefully)
     await this.redis.cacheSet(this.cacheKey(id), template, this.CACHE_TTL).catch(() => {})
@@ -294,10 +412,35 @@ export class TemplateService {
     return template
   }
 
+  /**
+   * Auth check for template access: owner can always view; adventure members can view
+   * if adventureId is set; public templates are visible to anyone.
+   */
+  private async ensureTemplateAccess(template: { ownerId: string | null; adventureId: string | null; isPublic: boolean }, userId: string): Promise<void> {
+    // Owner always has access
+    if (template.ownerId === userId) return
+    // Public templates visible to anyone
+    if (template.isPublic) return
+    // Adventure members can view
+    if (template.adventureId) {
+      const isMember = await this.membership.isMember(template.adventureId, userId)
+      if (isMember) return
+    }
+    throw new ForbiddenException('You do not have access to this template')
+  }
+
   async update(id: string, userId: string, dto: UpdateTemplateDto) {
     const template = await this.prisma.template.findUnique({ where: { id } })
     if (!template) throw new NotFoundException('Template not found')
-    await this.membership.requireRole(template.adventureId, userId, 'GM')
+
+    // Owner OR GM of associated adventure can update
+    if (template.ownerId !== userId) {
+      if (template.adventureId) {
+        await this.membership.requireRole(template.adventureId, userId, 'GM')
+      } else {
+        throw new ForbiddenException('Only the template owner can update this template')
+      }
+    }
 
     if (dto.attributes) {
       const existingAttrs = await this.prisma.templateAttribute.findMany({ where: { templateId: id } })
@@ -885,8 +1028,9 @@ export class TemplateService {
       include: templateInclude,
     })
 
-    // Invalidate caches
-    await this.invalidateCache(template.adventureId, id)
+    // Invalidate template caches and all character-sheet caches using this template
+    await this.invalidateCache(template.adventureId, id, userId)
+    await this.invalidateSheetCaches(id)
 
     return result
   }
@@ -894,13 +1038,602 @@ export class TemplateService {
   async remove(id: string, userId: string) {
     const template = await this.prisma.template.findUnique({ where: { id } })
     if (!template) throw new NotFoundException('Template not found')
-    await this.membership.requireRole(template.adventureId, userId, 'GM')
+
+    // Owner OR GM of associated adventure can delete
+    if (template.ownerId !== userId) {
+      if (template.adventureId) {
+        await this.membership.requireRole(template.adventureId, userId, 'GM')
+      } else {
+        throw new ForbiddenException('Only the template owner can delete this template')
+      }
+    }
+
+    // Block deletion if character sheets reference this template
+    const sheetCount = await this.prisma.characterSheet.count({ where: { templateId: id } })
+    if (sheetCount > 0) {
+      throw new ForbiddenException(
+        `Cannot delete template: ${sheetCount} character sheet(s) still reference it. ` +
+        'Remove or reassign all sheets first.',
+      )
+    }
+
+    // Invalidate sheet caches before cascade delete clears the DB records
+    await this.invalidateSheetCaches(id)
+
     const result = await this.prisma.template.delete({ where: { id } })
 
-    // Invalidate caches
-    await this.invalidateCache(template.adventureId, id)
+    // Invalidate template caches
+    await this.invalidateCache(template.adventureId, id, userId)
 
     return result
+  }
+
+  /**
+   * Clone a template as a standalone copy into the user's template library.
+   * Copies all relations: attributes, fields, skills, profiles, core resources,
+   * armor classes, character sections, and resistances.
+   *
+   * Auth: public templates can be cloned by any authenticated user;
+   * otherwise owner can always clone, and adventure GM can clone.
+   */
+  async clone(id: string, userId: string, newName?: string) {
+    const original = await this.prisma.template.findUnique({
+      where: { id },
+      include: templateInclude,
+    })
+    if (!original) throw new NotFoundException('Template not found')
+
+    // Auth: owner can always clone; anyone can clone public; GM of adventure can clone
+    if (original.ownerId !== userId && !original.isPublic) {
+      if (original.adventureId) {
+        await this.membership.requireRole(original.adventureId, userId, 'GM')
+      } else {
+        throw new ForbiddenException('You do not have permission to clone this template')
+      }
+    }
+
+    // Reconstruct the DTO from the existing template data for deep copy
+    const dto: CreateTemplateDto = {
+      name: newName ?? `${original.name} (copy)`,
+      description: original.description ?? undefined,
+      attributeModifiersEnabled: original.attributeModifiersEnabled,
+      attributeModifierFormula: original.attributeModifierFormula ?? undefined,
+      skillFormula: original.skillFormula ?? undefined,
+      attributes: (original.attributes ?? []).map(a => ({ key: a.key, name: a.name })),
+      templateFields: (original.templateFields ?? []).map(f => ({ key: f.key, label: f.label })),
+      skills: (original.templateSkills ?? []).map(s => ({
+        name: s.name,
+        description: s.description ?? undefined,
+        attributeId: s.attributeId ?? undefined,
+        allowedAttributeIds: (s.allowedAttributeIds ?? []) as string[],
+        defaultAttributeId: s.defaultAttributeId ?? undefined,
+      })),
+      skillModifierProfiles: (original.skillModifierProfiles ?? []).map(p => ({
+        name: p.name,
+        targetMode: p.targetMode,
+        targetSkillIds: p.targetSkillIds as string[],
+        options: (p.options ?? []).map(o => ({ label: o.label, value: o.value })),
+      })),
+      coreResources: (original.coreResources ?? []).map(cr => ({
+        slug: cr.slug,
+        displayName: cr.displayName,
+        enabled: cr.enabled,
+        editableByPlayer: cr.editableByPlayer,
+        showNotes: cr.showNotes,
+        color: cr.color ?? undefined,
+      })),
+      armorClasses: (original.armorClasses ?? []).map(ac => ({
+        name: ac.name,
+        enabled: ac.enabled,
+        attributeModifiers: (ac.attributeModifiers ?? []).map(am => ({
+          attributeId: am.attributeId,
+          allowPlayerSelection: am.allowPlayerSelection,
+          defaultAttributeId: am.defaultAttributeId ?? undefined,
+        })),
+        fields: (ac.fields ?? []).map((f: any) => ({
+          name: f.name,
+          key: f.key,
+          defaultValue: f.defaultValue,
+          editableByPlayer: f.editableByPlayer,
+          description: f.description ?? undefined,
+        })),
+      })),
+      characterSections: (original.characterSections ?? []).map(s => ({ name: s.name })),
+      resistances: (original.resistances ?? []).map(r => ({
+        name: r.name,
+        calculationType: r.calculationType,
+        components: (r.components ?? []).map(c => ({
+          name: c.name,
+          editableByPlayer: c.editableByPlayer,
+          defaultValue: c.defaultValue,
+        })),
+      })),
+    }
+
+    return this.createStandalone(userId, dto)
+  }
+
+  /**
+   * Find all public templates (using the standalone isPublic flag).
+   * No auth required.
+   */
+  async findPublicAll(params: { page?: number; limit?: number; adventureId?: string; search?: string }) {
+    const page = params.page ?? 1
+    const limit = params.limit ?? 10
+    const skip = (page - 1) * limit
+
+    const where: any = {
+      isPublic: true,
+    }
+
+    if (params.adventureId) {
+      where.adventureId = params.adventureId
+    }
+
+    if (params.search) {
+      where.AND = [
+        {
+          OR: [
+            { name: { contains: params.search, mode: 'insensitive' } },
+            { description: { contains: params.search, mode: 'insensitive' } },
+          ],
+        },
+      ]
+    }
+
+    const [templates, total] = await this.prisma.$transaction([
+      this.prisma.template.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          createdAt: true,
+          adventure: { select: { id: true, name: true, campaign: true } },
+          owner: { select: { id: true, displayName: true } },
+          _count: { select: { characterSheets: true } },
+        },
+      }),
+      this.prisma.template.count({ where }),
+    ])
+
+    return {
+      data: templates,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    }
+  }
+
+  /**
+   * Find a single public template by ID (using standalone isPublic flag).
+   * No auth required.
+   */
+  async findOnePublic(id: string) {
+    const template = await this.prisma.template.findFirst({
+      where: {
+        id,
+        isPublic: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        attributeModifiersEnabled: true,
+        attributeModifierFormula: true,
+        skillFormula: true,
+        createdAt: true,
+        adventure: { select: { id: true, name: true, campaign: true } },
+        owner: { select: { id: true, displayName: true } },
+        _count: { select: { characterSheets: true } },
+        attributes: { orderBy: { order: 'asc' as const }, select: { id: true, key: true, name: true } },
+        templateFields: { orderBy: { order: 'asc' as const }, select: { id: true, key: true, label: true } },
+        templateSkills: {
+          orderBy: { order: 'asc' as const },
+          select: {
+            id: true, name: true, description: true,
+            attributeId: true,
+            allowedAttributeIds: true,
+            defaultAttributeId: true,
+            attribute: { select: { id: true, key: true, name: true } },
+            defaultAttribute: { select: { id: true, key: true, name: true } },
+          },
+        },
+        skillModifierProfiles: {
+          orderBy: { order: 'asc' as const },
+          select: {
+            id: true, name: true, targetMode: true, targetSkillIds: true,
+            options: { orderBy: { order: 'asc' as const }, select: { id: true, label: true, value: true } },
+          },
+        },
+        coreResources: { orderBy: { order: 'asc' as const }, select: { id: true, slug: true, displayName: true, enabled: true, editableByPlayer: true, showNotes: true, color: true } },
+        armorClasses: {
+          orderBy: { createdAt: 'asc' as const },
+          select: {
+            id: true, name: true, enabled: true,
+            attributeModifiers: {
+              orderBy: { createdAt: 'asc' as const },
+              select: {
+                id: true, attributeId: true, allowPlayerSelection: true, defaultAttributeId: true,
+                attribute: { select: { id: true, key: true, name: true } },
+                defaultAttribute: { select: { id: true, key: true, name: true } },
+              },
+            },
+            fields: { orderBy: { order: 'asc' as const }, select: { id: true, name: true, key: true, defaultValue: true, editableByPlayer: true, description: true } },
+          },
+        },
+        characterSections: { orderBy: { order: 'asc' as const }, select: { id: true, name: true } },
+        resistances: {
+          orderBy: { order: 'asc' as const },
+          select: {
+            id: true, name: true, calculationType: true,
+            components: { orderBy: { order: 'asc' as const }, select: { id: true, name: true, editableByPlayer: true, defaultValue: true } },
+            attributeModifiers: { select: { id: true, attributeId: true, enabled: true } },
+          },
+        },
+      },
+    })
+
+    if (!template) {
+      throw new NotFoundException('Template not found or is not public')
+    }
+
+    return template
+  }
+
+  // ── New methods for standalone template decoupling ──
+
+  /**
+   * Create a standalone template (no adventure context).
+   * The template is owned by the creating user and is not public by default.
+   */
+  async createStandalone(userId: string, dto: CreateTemplateDto) {
+    const created = await this.prisma.template.create({
+      data: {
+        adventureId: null,
+        ownerId: userId,
+        isPublic: false,
+        useCount: 0,
+        name: dto.name,
+        description: dto.description ?? null,
+        attributeModifiersEnabled: dto.attributeModifiersEnabled ?? true,
+        attributeModifierFormula: dto.attributeModifierFormula ?? null,
+        skillFormula: dto.skillFormula ?? null,
+        attributes: {
+          create: dto.attributes.map((attr, idx) => ({
+            key: attr.key, name: attr.name, order: idx,
+          })),
+        },
+        templateFields: {
+          create: (dto.templateFields || []).map((f, idx) => ({
+            key: f.key, label: f.label, order: idx,
+          })),
+        },
+        templateSkills: {
+          create: (dto.skills || []).map((s, idx) => ({
+            name: s.name, description: s.description ?? null, order: idx,
+            allowedAttributeIds: s.allowedAttributeIds ?? [],
+            defaultAttributeId: null,
+          })),
+        },
+        skillModifierProfiles: {
+          create: (dto.skillModifierProfiles || []).map((p, pIdx) => ({
+            name: p.name,
+            order: pIdx,
+            targetMode: p.targetMode ?? 'ALL_SKILLS',
+            targetSkillIds: p.targetSkillIds ?? [],
+            options: {
+              create: p.options.map((o, oIdx) => ({
+                label: o.label,
+                value: o.value,
+                order: oIdx,
+              })),
+            },
+          })),
+        },
+        coreResources: {
+          create: (dto.coreResources || []).map((cr, crIdx) => ({
+            slug: cr.slug.trim(),
+            displayName: cr.displayName?.trim() ?? cr.slug.trim(),
+            enabled: cr.enabled ?? true,
+            editableByPlayer: cr.editableByPlayer ?? true,
+            showNotes: cr.showNotes ?? true,
+            color: cr.color ?? null,
+            order: crIdx,
+          })),
+        },
+        armorClasses: (dto.armorClasses ?? []).length > 0
+          ? {
+              create: (dto.armorClasses ?? []).filter(ac => ac.enabled).map(ac => ({
+                name: ac.name ?? 'Armor Class',
+                enabled: true,
+                fields: {
+                  create: (ac.fields || [])
+                    .filter(f => (f.key?.trim() ?? '') !== '')
+                    .map((f, fIdx) => ({
+                    name: f.name,
+                    key: f.key,
+                    defaultValue: f.defaultValue ?? '0',
+                    editableByPlayer: f.editableByPlayer ?? false,
+                    description: f.description ?? null,
+                    order: fIdx,
+                  })),
+                },
+              })),
+            }
+          : undefined,
+        characterSections: {
+          create: (dto.characterSections || []).map((s, idx) => ({
+            name: s.name.trim(), order: idx,
+          })),
+        },
+        resistances: {
+          create: (dto.resistances || []).map((r, rIdx) => ({
+            name: r.name.trim(),
+            calculationType: r.calculationType ?? 'MANUAL',
+            order: rIdx,
+            components: {
+              create: (r.components || []).map((c, cIdx) => ({
+                name: c.name.trim(),
+                editableByPlayer: c.editableByPlayer ?? false,
+                defaultValue: c.defaultValue ?? '0',
+                order: cIdx,
+              })),
+            },
+          })),
+        },
+      },
+      include: templateInclude,
+    })
+
+    // Resolve attribute links (same pattern as create())
+    const createdAttrs = await this.prisma.templateAttribute.findMany({ where: { templateId: created.id } })
+    const attrKeyToId = new Map(createdAttrs.map(a => [a.key, a.id]))
+
+    // Resolve AC attribute modifiers
+    const createdAcs = await this.prisma.templateArmorClass.findMany({ where: { templateId: created.id }, orderBy: { createdAt: 'asc' } })
+    for (let i = 0; i < (dto.armorClasses ?? []).length; i++) {
+      const ac = (dto.armorClasses ?? [])[i]
+      if (!ac.enabled || !ac.attributeModifiers?.length) continue
+      const createdAc = createdAcs.find(c => c.name === (ac.name ?? 'Armor Class'))
+      if (!createdAc) continue
+      const resolvedModifiers = ac.attributeModifiers
+        .map(am => {
+          const resolvedAttrId = attrKeyToId.get(am.attributeId) ?? am.attributeId
+          const resolvedDefaultId = am.defaultAttributeId ? (attrKeyToId.get(am.defaultAttributeId) ?? am.defaultAttributeId) : null
+          return { attributeId: resolvedAttrId, allowPlayerSelection: am.allowPlayerSelection ?? false, defaultAttributeId: resolvedDefaultId }
+        })
+        .filter(am => am.attributeId)
+
+      if (resolvedModifiers.length > 0) {
+        await this.prisma.templateArmorClass.update({
+          where: { id: createdAc.id },
+          data: {
+            attributeModifiers: {
+              create: resolvedModifiers.map(am => ({
+                attributeId: am.attributeId,
+                allowPlayerSelection: am.allowPlayerSelection,
+                defaultAttributeId: am.defaultAttributeId,
+              })),
+            },
+          },
+        })
+      }
+    }
+
+    // Post-create: link skills to their attributes
+    if (dto.skills?.length) {
+      for (const s of dto.skills) {
+        const skill = (created.templateSkills || []).find(sk => sk.name === s.name)
+        if (!skill) continue
+
+        const legacyAttrId = s.attributeId ? attrKeyToId.get(s.attributeId) ?? null : null
+        const allowedIds = (s.allowedAttributeIds || []).map(k => attrKeyToId.get(k)).filter(Boolean) as string[]
+        const effectiveAllowed = allowedIds.length > 0 ? allowedIds : (legacyAttrId ? [legacyAttrId] : [])
+        const defaultAttrId = s.defaultAttributeId
+          ? (attrKeyToId.get(s.defaultAttributeId) ?? null)
+          : (effectiveAllowed.length > 0 ? effectiveAllowed[0] : null)
+
+        await this.prisma.templateSkill.update({
+          where: { id: skill.id },
+          data: {
+            attributeId: legacyAttrId,
+            allowedAttributeIds: effectiveAllowed,
+            defaultAttributeId: defaultAttrId,
+          },
+        })
+      }
+    }
+
+    // Invalidate user list cache
+    await this.invalidateCache(null, created.id, userId)
+
+    return this.prisma.template.findUnique({ where: { id: created.id }, include: templateInclude })
+  }
+
+  /**
+   * Find all templates owned by a user.
+   * Results are cached with a 15-second TTL per user.
+   */
+  async findAllByUser(userId: string) {
+    // Try cache first
+    const cached = await this.redis.cacheGet<any[]>(this.userListCacheKey(userId))
+    if (cached) {
+      return cached
+    }
+
+    const templates = await this.prisma.template.findMany({
+      where: { ownerId: userId },
+      include: templateInclude,
+      orderBy: { createdAt: 'desc' },
+    })
+
+    // Cache the list
+    await this.redis.cacheSet(this.userListCacheKey(userId), templates, this.LIST_CACHE_TTL).catch(() => {})
+
+    return templates
+  }
+
+  /**
+   * Build an immutable snapshot (deep clone) from a fully-included template.
+   * The snapshot preserves original entity IDs for CharacterSheet FK backward compat.
+   * Used when attaching a template to an adventure.
+   */
+  async buildSnapshot(template: any): Promise<TemplateSnapshot> {
+    return {
+      id: template.id,
+      name: template.name,
+      description: template.description,
+      attributeModifierFormula: template.attributeModifierFormula,
+      attributeModifiersEnabled: template.attributeModifiersEnabled,
+      skillFormula: template.skillFormula,
+      attributes: (template.attributes ?? []).map((a: any) => ({
+        id: a.id, templateId: a.templateId, key: a.key, name: a.name, order: a.order,
+      })),
+      templateFields: (template.templateFields ?? []).map((f: any) => ({
+        id: f.id, templateId: f.templateId, key: f.key, label: f.label, order: f.order,
+      })),
+      templateSkills: (template.templateSkills ?? []).map((s: any) => ({
+        id: s.id, templateId: s.templateId, name: s.name, description: s.description,
+        attributeId: s.attributeId, allowedAttributeIds: s.allowedAttributeIds ?? [],
+        defaultAttributeId: s.defaultAttributeId, order: s.order,
+      })),
+      skillModifierProfiles: (template.skillModifierProfiles ?? []).map((p: any) => ({
+        id: p.id, templateId: p.templateId, name: p.name, order: p.order,
+        targetMode: p.targetMode, targetSkillIds: p.targetSkillIds ?? [],
+        options: (p.options ?? []).map((o: any) => ({
+          id: o.id, profileId: o.profileId, label: o.label, value: o.value, order: o.order,
+        })),
+      })),
+      coreResources: (template.coreResources ?? []).map((cr: any) => ({
+        id: cr.id, templateId: cr.templateId, slug: cr.slug,
+        displayName: cr.displayName, enabled: cr.enabled,
+        editableByPlayer: cr.editableByPlayer, showNotes: cr.showNotes,
+        color: cr.color, order: cr.order,
+      })),
+      armorClasses: (template.armorClasses ?? []).map((ac: any) => ({
+        id: ac.id, templateId: ac.templateId, name: ac.name, enabled: ac.enabled,
+        attributeModifiers: (ac.attributeModifiers ?? []).map((am: any) => ({
+          id: am.id, armorClassId: am.armorClassId, attributeId: am.attributeId,
+          allowPlayerSelection: am.allowPlayerSelection, defaultAttributeId: am.defaultAttributeId,
+        })),
+        fields: (ac.fields ?? []).map((f: any) => ({
+          id: f.id, armorClassId: f.armorClassId, name: f.name, key: f.key,
+          defaultValue: f.defaultValue, editableByPlayer: f.editableByPlayer,
+          description: f.description, order: f.order,
+        })),
+      })),
+      characterSections: (template.characterSections ?? []).map((cs: any) => ({
+        id: cs.id, templateId: cs.templateId, name: cs.name, order: cs.order,
+      })),
+      resistances: (template.resistances ?? []).map((r: any) => ({
+        id: r.id, templateId: r.templateId, name: r.name,
+        calculationType: r.calculationType, order: r.order,
+        components: (r.components ?? []).map((c: any) => ({
+          id: c.id, resistanceId: c.resistanceId, name: c.name,
+          editableByPlayer: c.editableByPlayer, defaultValue: c.defaultValue, order: c.order,
+        })),
+        attributeModifiers: (r.attributeModifiers ?? []).map((am: any) => ({
+          id: am.id, resistanceId: am.resistanceId,
+          attributeId: am.attributeId, enabled: am.enabled,
+        })),
+      })),
+    }
+  }
+
+  /**
+   * Attach a template to an adventure (GM only).
+   * Creates an immutable snapshot from the template, stores it on the adventure,
+   * increments the template's useCount, and clears the adventure's template list cache.
+   */
+  async attachToAdventure(templateId: string, adventureId: string, userId: string) {
+    // GM only
+    await this.membership.requireRole(adventureId, userId, 'GM')
+
+    const template = await this.prisma.template.findUnique({
+      where: { id: templateId },
+      include: templateInclude,
+    })
+    if (!template) throw new NotFoundException('Template not found')
+
+    // Build and store the snapshot
+    const snapshot = await this.buildSnapshot(template)
+
+    const adventure = await this.prisma.adventure.update({
+      where: { id: adventureId },
+      data: {
+        templateSnapshot: snapshot as any,
+        originalTemplateId: templateId,
+      },
+    })
+
+    // Increment useCount
+    await this.prisma.template.update({
+      where: { id: templateId },
+      data: { useCount: { increment: 1 } },
+    })
+
+    // Invalidate adventure template list cache
+    await this.invalidateCache(adventureId, templateId)
+
+    return adventure
+  }
+
+  /**
+   * Detach the template link from an adventure (GM only).
+   * Clears originalTemplateId but keeps the snapshot for historical reference.
+   */
+  async detachFromAdventure(adventureId: string, userId: string) {
+    // GM only
+    await this.membership.requireRole(adventureId, userId, 'GM')
+
+    // Read the current adventure to get the originalTemplateId for cache invalidation
+    const current = await this.prisma.adventure.findUnique({
+      where: { id: adventureId },
+      select: { originalTemplateId: true },
+    })
+
+    const adventure = await this.prisma.adventure.update({
+      where: { id: adventureId },
+      data: {
+        originalTemplateId: null,
+      },
+    })
+
+    // Invalidate adventure template list cache
+    await this.invalidateCache(adventureId, current?.originalTemplateId ?? undefined)
+
+    return adventure
+  }
+
+  /**
+   * Get the snapshot JSON for an adventure's attached template.
+   * Membership access required.
+   */
+  async getTemplateSnapshot(adventureId: string, userId: string) {
+    const isMember = await this.membership.isMember(adventureId, userId)
+    if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
+
+    const adventure = await this.prisma.adventure.findUnique({
+      where: { id: adventureId },
+      select: { templateSnapshot: true, originalTemplateId: true },
+    })
+
+    if (!adventure) throw new NotFoundException('Adventure not found')
+    if (!adventure.templateSnapshot) {
+      throw new NotFoundException('No template snapshot found for this adventure')
+    }
+
+    return {
+      snapshot: adventure.templateSnapshot as any as TemplateSnapshot,
+      originalTemplateId: adventure.originalTemplateId,
+    }
   }
 
   private extractVariableNames(formula: string): string[] {

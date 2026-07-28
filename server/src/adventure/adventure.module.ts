@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common'
 import { AdventureService } from './adventure.service.js'
 import { AdventureController } from './adventure.controller.js'
+import { AdventureTemplateController } from './adventure-template.controller.js'
 import { PrismaService } from '../prisma.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { JwtModule } from '@nestjs/jwt'
 import { CollaborationModule } from '../collaboration/collaboration.module.js'
 import { CharacterSheetModule } from '../character-sheet/character-sheet.module.js'
+import { TemplateModule } from '../template/template.module.js'
 
 @Module({
   imports: [
@@ -15,8 +17,9 @@ import { CharacterSheetModule } from '../character-sheet/character-sheet.module.
     }),
     CollaborationModule,
     CharacterSheetModule,
+    TemplateModule,
   ],
-  controllers: [AdventureController],
+  controllers: [AdventureController, AdventureTemplateController],
   providers: [AdventureService, PrismaService, JwtAuthGuard],
   exports: [AdventureService],
 })

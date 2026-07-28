@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { CharacterSheetService } from '../character-sheet/character-sheet.service.js'
+import { TemplateService } from '../template/template.service.js'
 import { CreateAdventureDto } from './dto/create-adventure.dto.js'
 import { UpdateAdventureDto } from './dto/update-adventure.dto.js'
 
@@ -18,6 +19,7 @@ export class AdventureService {
     private readonly prisma: PrismaService,
     private readonly membership: MembershipService,
     private readonly sheetService: CharacterSheetService,
+    private readonly templateService: TemplateService,
   ) {}
 
   async create(userId: string, dto: CreateAdventureDto) {
@@ -28,11 +30,27 @@ export class AdventureService {
         synopsis: dto.synopsis ?? null,
         maxPlayers: dto.maxPlayers,
         ownerId: userId,
+        isPublic: dto.isPublic ?? false,
+        sessionWeekday: dto.sessionWeekday ?? null,
+        sessionTime: dto.sessionTime ?? null,
+        sessionType: dto.sessionType ?? null,
       },
     })
 
     // Auto-create GM membership for the creator
     await this.membership.createMembership(adventure.id, userId, 'GM')
+
+    // If a templateId was provided, attach it to the adventure
+    if (dto.templateId) {
+      try {
+        await this.templateService.attachToAdventure(dto.templateId, adventure.id, userId)
+      } catch (err: any) {
+        this.logger.warn(
+          `Failed to attach template ${dto.templateId} to adventure ${adventure.id}: ${err.message}`,
+        )
+        // Don't fail adventure creation — template attachment is optional
+      }
+    }
 
     return adventure
   }
@@ -43,13 +61,31 @@ export class AdventureService {
   }
 
   async findOne(id: string, userId: string) {
-    const adventure = await this.prisma.adventure.findUnique({ where: { id } })
+    const adventure = await this.prisma.adventure.findUnique({
+      where: { id },
+      include: {
+        owner: { select: { id: true, displayName: true } },
+        _count: { select: { members: true } },
+      },
+    })
     if (!adventure) {
       throw new NotFoundException('Adventure not found')
     }
 
-    // Check membership (GMs and players can view)
+    // Check membership
     const isMember = await this.membership.isMember(id, userId)
+
+    // If adventure is public and user is not a member, return limited data
+    if (adventure.isPublic && !isMember) {
+      const { _count, owner, ...rest } = adventure
+      return {
+        ...rest,
+        owner,
+        memberCount: _count.members,
+        isPublic: true,
+      }
+    }
+
     if (!isMember) {
       throw new ForbiddenException('You are not a member of this adventure')
     }
@@ -68,8 +104,161 @@ export class AdventureService {
         ...(dto.campaign !== undefined && { campaign: dto.campaign }),
         ...(dto.synopsis !== undefined && { synopsis: dto.synopsis }),
         ...(dto.maxPlayers !== undefined && { maxPlayers: dto.maxPlayers }),
+        ...(dto.isPublic !== undefined && { isPublic: dto.isPublic }),
+        ...(dto.sessionWeekday !== undefined && { sessionWeekday: dto.sessionWeekday }),
+        ...(dto.sessionTime !== undefined && { sessionTime: dto.sessionTime }),
+        ...(dto.sessionType !== undefined && { sessionType: dto.sessionType }),
       },
     })
+  }
+
+  /**
+   * Toggle adventure visibility (make public or private).
+   * GM only.
+   */
+  async updateVisibility(adventureId: string, userId: string, isPublic: boolean) {
+    await this.membership.requireRole(adventureId, userId, 'GM')
+
+    return this.prisma.adventure.update({
+      where: { id: adventureId },
+      data: { isPublic },
+    })
+  }
+
+  /**
+   * Find public adventures with pagination and optional filters.
+   * No auth required.
+   */
+  async findPublic(params: {
+    page?: number
+    limit?: number
+    campaign?: string
+    search?: string
+    sessionWeekday?: string
+    sessionType?: string
+    timePeriod?: 'morning' | 'afternoon' | 'night'
+  }) {
+    const page = params.page ?? 1
+    const limit = params.limit ?? 10
+    const skip = (page - 1) * limit
+
+    const where: any = { isPublic: true }
+
+    if (params.campaign) {
+      where.campaign = params.campaign
+    }
+
+    if (params.search) {
+      where.OR = [
+        { name: { contains: params.search, mode: 'insensitive' } },
+        { synopsis: { contains: params.search, mode: 'insensitive' } },
+      ]
+    }
+
+    if (params.sessionWeekday) {
+      where.sessionWeekday = params.sessionWeekday
+    }
+
+    if (params.sessionType) {
+      where.sessionType = params.sessionType
+    }
+
+    if (params.timePeriod) {
+      const timeFilters: Record<string, { gte: string; lt: string }> = {
+        morning: { gte: '06:00', lt: '12:00' },
+        afternoon: { gte: '12:00', lt: '18:00' },
+        night: { gte: '18:00', lt: '24:00' },
+      }
+      const filter = timeFilters[params.timePeriod]
+      where.sessionTime = { gte: filter.gte, lt: filter.lt }
+    }
+
+    const [adventures, total] = await this.prisma.$transaction([
+      this.prisma.adventure.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          campaign: true,
+          synopsis: true,
+          maxPlayers: true,
+          isPublic: true,
+          sessionWeekday: true,
+          sessionTime: true,
+          sessionType: true,
+          createdAt: true,
+          owner: { select: { id: true, displayName: true } },
+          _count: { select: { members: true } },
+        },
+      }),
+      this.prisma.adventure.count({ where }),
+    ])
+
+    return {
+      data: adventures,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    }
+  }
+
+  /**
+   * Find a single public adventure by ID. Only returns if isPublic=true.
+   * No auth required.
+   */
+  async findPublicById(id: string) {
+    const adventure = await this.prisma.adventure.findFirst({
+      where: { id, isPublic: true },
+      select: {
+        id: true,
+        name: true,
+        campaign: true,
+        synopsis: true,
+        maxPlayers: true,
+        isPublic: true,
+        createdAt: true,
+        owner: { select: { id: true, displayName: true } },
+        _count: { select: { members: true } },
+      },
+    })
+
+    if (!adventure) {
+      throw new NotFoundException('Adventure not found or is not public')
+    }
+
+    return adventure
+  }
+
+  /**
+   * Return public adventure with limited fields — suitable for non-members viewing a public adventure.
+   * No auth required.
+   */
+  async findOnePublic(id: string) {
+    const adventure = await this.prisma.adventure.findFirst({
+      where: { id, isPublic: true },
+      select: {
+        id: true,
+        name: true,
+        campaign: true,
+        synopsis: true,
+        maxPlayers: true,
+        createdAt: true,
+        owner: { select: { id: true, displayName: true } },
+        _count: { select: { members: true } },
+      },
+    })
+
+    if (!adventure) {
+      throw new NotFoundException('Adventure not found or is not public')
+    }
+
+    return adventure
   }
 
   async remove(id: string, userId: string) {
@@ -168,13 +357,17 @@ export class AdventureService {
 
     const adventure = await this.prisma.adventure.findUnique({
       where: { id: adventureId },
-      include: { templates: { take: 1 } },
+      include: { templates: { take: 1, orderBy: { createdAt: 'asc' } } },
     })
     if (!adventure) throw new NotFoundException('Adventure not found')
 
-    const templateId = adventure.templates[0]?.id
+    // Prefer originalTemplateId (snapshot-based) over legacy templates[0]
+    const templateId = adventure.originalTemplateId ?? adventure.templates[0]?.id
     if (!templateId) {
-      throw new NotFoundException('No template exists for this adventure — create one first')
+      throw new NotFoundException(
+        'No template is attached to this adventure. ' +
+        'Attach a template via the adventure settings first, then create NPCs.',
+      )
     }
 
     // Create a full CharacterSheet using the shared service (handles attribute init, skills, etc.)

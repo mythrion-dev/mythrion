@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { TemplateService } from './template.service.js'
 import { TemplateController } from './template.controller.js'
+import { StandaloneTemplateController } from './standalone-template.controller.js'
 import { PrismaService } from '../prisma.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { JwtModule } from '@nestjs/jwt'
@@ -14,7 +15,7 @@ import { CollaborationModule } from '../collaboration/collaboration.module.js'
     }),
     CollaborationModule,
   ],
-  controllers: [TemplateController],
+  controllers: [TemplateController, StandaloneTemplateController],
   providers: [TemplateService, PrismaService, JwtAuthGuard],
   exports: [TemplateService],
 })

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { api, API_URL } from '@/lib/api'
+import { Select } from '@/components/shared/Select'
 
 /* ── Types ── */
 
@@ -195,6 +196,13 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
         sps[sv.skillId] = {}
         for (const pv of sv.profileValues ?? []) {
           sps[sv.skillId][pv.profileId] = pv.optionId
+        }
+        // Auto-select lowest-value option for profiles without saved selection
+        for (const profile of data.template.skillModifierProfiles ?? []) {
+          if (!(profile.id in sps[sv.skillId]) && profile.options.length > 0) {
+            const lowest = profile.options.reduce((a, b) => a.value <= b.value ? a : b)
+            sps[sv.skillId][profile.id] = lowest.id
+          }
         }
       }
       setSkillProfileSelections(sps)
@@ -747,15 +755,14 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
                           <div key={am.id} className="flex items-center justify-between mt-1">
                             <span>{am.attribute.name} mod:</span>
                             {am.allowPlayerSelection ? (
-                              <select
+                              <Select
+                                options={tpl.attributes.map(a => ({ id: a.id, label: a.name }))}
                                 value={selectedId ?? ''}
-                                onChange={e => setAcModifierSelections(prev => ({ ...prev, [am.id]: e.target.value || null }))}
-                                className="input-field py-0.5 text-xs w-auto min-w-[90px]"
-                              >
-                                {tpl.attributes.map(a => (
-                                  <option key={a.id} value={a.id}>{a.name}</option>
-                                ))}
-                              </select>
+                                onChange={val => setAcModifierSelections(prev => ({ ...prev, [am.id]: val || null }))}
+                                disabled={!am.allowPlayerSelection}
+                                size="sm"
+                                className="min-w-[90px] text-xs"
+                              />
                             ) : (
                               <span className="font-medium">{modifierResults[am.attributeId] !== undefined ? (modifierResults[am.attributeId] ?? 0) >= 0 ? '+' : '' : ''}{modifierResults[am.attributeId] ?? '?'}</span>
                             )}
@@ -817,16 +824,17 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
                       {hasAttributeChoice && (
                         <div className="flex items-center gap-2">
                           <label className="text-[10px] text-muted-foreground shrink-0">Attribute:</label>
-                          <select
-                            value={skillAttributeSelections[sv.skillId] ?? skill.defaultAttributeId ?? skill.attributeId ?? ''}
-                            onChange={e => setSkillAttributeSelections(prev => ({ ...prev, [sv.skillId]: e.target.value || null }))}
-                            className="input-field py-0.5 text-xs w-auto min-w-[90px]"
-                          >
-                            {skill.allowedAttributeIds.map(aid => {
+                          <Select
+                            options={skill.allowedAttributeIds.map(aid => {
                               const a = tpl.attributes.find(a => a.id === aid)
-                              return a ? <option key={a.id} value={a.id}>{a.name}</option> : null
-                            })}
-                          </select>
+                              return a ? { id: a.id, label: a.name } : null
+                            }).filter(Boolean) as { id: string; label: string }[]}
+                            value={skillAttributeSelections[sv.skillId] ?? skill.defaultAttributeId ?? skill.attributeId ?? ''}
+                            onChange={val => setSkillAttributeSelections(prev => ({ ...prev, [sv.skillId]: val || null }))}
+                            disabled={!skill.allowedAttributeIds.length}
+                            size="sm"
+                            className="min-w-[90px] text-xs"
+                          />
                         </div>
                       )}
 
@@ -836,19 +844,17 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
                         return (
                           <div key={profile.id} className="flex items-center gap-2">
                             <label className="text-[10px] text-muted-foreground shrink-0">{profile.name}:</label>
-                            <select
-                              value={currentOpt ?? ''}
-                              onChange={e => setSkillProfileSelections(prev => ({
+                            <Select
+                              options={profile.options}
+                              value={currentOpt}
+                              onChange={(id) => setSkillProfileSelections(prev => ({
                                 ...prev,
-                                [sv.skillId]: { ...(prev[sv.skillId] ?? {}), [profile.id]: e.target.value || null },
+                                [sv.skillId]: { ...(prev[sv.skillId] ?? {}), [profile.id]: id },
                               }))}
-                              className="input-field py-0.5 text-xs flex-1"
-                            >
-                              <option value="">— None —</option>
-                              {profile.options.map(o => (
-                                <option key={o.id} value={o.id}>{o.label} ({o.value >= 0 ? '+' : ''}{o.value})</option>
-                              ))}
-                            </select>
+                              showBadge
+                              size="sm"
+                              className="flex-1"
+                            />
                           </div>
                         )
                       })}

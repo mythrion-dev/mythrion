@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import Link from 'next/link'
 import { PageNav } from '@/lib/breadcrumb'
+import { Select } from '@/components/shared/Select'
 
 interface Adventure {
   id: string
@@ -133,18 +134,15 @@ export default function NewCharacterSheetPage() {
             {fetchingAdv ? (
               <div className="skeleton h-10 w-full rounded-lg" />
             ) : (
-              <select
-                className="input-field"
+              <Select
+                options={[
+                  { id: '', label: 'No campaign (standalone)' },
+                  ...adventures.map(a => ({ id: a.id, label: `${a.campaign} — ${a.name}` })),
+                ]}
                 value={selectedAdventureId}
-                onChange={(e) => setSelectedAdventureId(e.target.value)}
-              >
-                <option value="">No campaign (standalone)</option>
-                {adventures.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.campaign} — {a.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setSelectedAdventureId(val)}
+                className="text-sm"
+              />
             )}
           </div>
 
@@ -168,20 +166,15 @@ export default function NewCharacterSheetPage() {
                 <p className="text-xs text-muted">Ask your GM to create one for this adventure.</p>
               </div>
             ) : (
-              <select
-                className="input-field"
+              <Select
+                options={[
+                  { id: '', label: 'Select a template...' },
+                  ...templates.map(t => ({ id: t.id, label: `${t.name}${t.description ? ` — ${t.description}` : ''}` })),
+                ]}
                 value={selectedTemplateId}
-                onChange={(e) => setSelectedTemplateId(e.target.value)}
-                required
-              >
-                <option value="">Select a template...</option>
-                {templates.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}{' '}
-                    {t.description ? `— ${t.description}` : ''}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setSelectedTemplateId(val)}
+                className="text-sm"
+              />
             )}
           </div>
 

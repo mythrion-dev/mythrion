@@ -9,7 +9,7 @@ import { AcCalculationService } from './ac-calculation.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
 import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
-import type { AuthenticatedRequest } from '../auth/jwt-auth.guard.js'
+import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
 
 describe('CharacterSheetController', () => {
   let controller: CharacterSheetController
@@ -45,16 +45,11 @@ describe('CharacterSheetController', () => {
       createAbilityLevel: jest.fn().mockResolvedValue({ id: 'al-2', level: '2' }),
       updateAbilityLevel: jest.fn().mockResolvedValue({ id: 'al-1', level: '2' }),
       deleteAbilityLevel: jest.fn().mockResolvedValue(undefined),
-      addSummonSkill: jest.fn().mockResolvedValue({ id: 'ss-1', skillId: 'skill-1' }),
+      addSummonSkill: jest.fn().mockResolvedValue({ id: 'ss-1', name: 'Bite', manualValue: 5 }),
       removeSummonSkill: jest.fn().mockResolvedValue(undefined),
-      updateSummonSkillAttribute: jest.fn().mockResolvedValue({ success: true }),
-      updateSummonSkillProfile: jest.fn().mockResolvedValue({ success: true }),
       updateSummonAttribute: jest.fn().mockResolvedValue({ success: true }),
       updateSummonAcValue: jest.fn().mockResolvedValue({ success: true }),
-      updateSummonAcAttributeValue: jest.fn().mockResolvedValue({ success: true }),
       updateSummonHealth: jest.fn().mockResolvedValue({ success: true }),
-      updateSummonResistanceValue: jest.fn().mockResolvedValue({ success: true }),
-      updateSummonResistanceComponentValue: jest.fn().mockResolvedValue({ success: true }),
       listInventory: jest.fn().mockResolvedValue([{ id: 'item-1', name: 'Sword' }]),
       createInventoryItem: jest.fn().mockResolvedValue({ id: 'item-2', name: 'Shield' }),
       updateInventoryItem: jest.fn().mockResolvedValue({ id: 'item-1', name: 'Iron Sword' }),
@@ -288,11 +283,11 @@ describe('CharacterSheetController', () => {
 
   // ── Summon Skills ──
   describe('addSummonSkill', () => {
-    it('should delegate to sheetService.addSummonSkill', async () => {
-      // Method extracts @Param('abilityId') and @Body('skillId')
-      const result = await controller.addSummonSkill(mockReq, 'ab-1', 'skill-1')
-      expect(mockSheetService.addSummonSkill).toHaveBeenCalledWith('ab-1', 'skill-1', 'user-1')
-      expect(result).toEqual({ id: 'ss-1', skillId: 'skill-1' })
+    it('should delegate to sheetService.addSummonSkill with name and manualValue', async () => {
+      // Method extracts @Param('abilityId'), @Body('name'), and @Body('manualValue')
+      const result = await controller.addSummonSkill(mockReq, 'ab-1', 'Bite', 5)
+      expect(mockSheetService.addSummonSkill).toHaveBeenCalledWith('ab-1', 'Bite', 5, 'user-1')
+      expect(result).toEqual({ id: 'ss-1', name: 'Bite', manualValue: 5 })
     })
   })
 
@@ -302,24 +297,6 @@ describe('CharacterSheetController', () => {
       const result = await controller.removeSummonSkill(mockReq, 'ss-1')
       expect(mockSheetService.removeSummonSkill).toHaveBeenCalledWith('ss-1', 'user-1')
       expect(result).toBeUndefined()
-    })
-  })
-
-  describe('updateSummonSkillAttribute', () => {
-    it('should delegate to sheetService.updateSummonSkillAttribute', async () => {
-      // Method extracts @Param('summonSkillId') and @Body('attributeId')
-      const result = await controller.updateSummonSkillAttribute(mockReq, 'ss-1', 'attr-1')
-      expect(mockSheetService.updateSummonSkillAttribute).toHaveBeenCalledWith('ss-1', 'attr-1', 'user-1')
-      expect(result).toEqual({ success: true })
-    })
-  })
-
-  describe('updateSummonSkillProfile', () => {
-    it('should delegate to sheetService.updateSummonSkillProfile', async () => {
-      // Method extracts @Param('summonSkillId'), @Param('profileId'), @Body('optionId')
-      const result = await controller.updateSummonSkillProfile(mockReq, 'ss-1', 'profile-1', 'opt-1')
-      expect(mockSheetService.updateSummonSkillProfile).toHaveBeenCalledWith('ss-1', 'profile-1', 'opt-1', 'user-1')
-      expect(result).toEqual({ success: true })
     })
   })
 
@@ -335,19 +312,10 @@ describe('CharacterSheetController', () => {
 
   // ── Summon AC ──
   describe('updateSummonAcValue', () => {
-    it('should delegate to sheetService.updateSummonAcValue', async () => {
-      // Method extracts @Param('abilityId'), @Param('fieldId'), @Body('value')
-      const result = await controller.updateSummonAcValue(mockReq, 'ab-1', 'field-1', '15')
-      expect(mockSheetService.updateSummonAcValue).toHaveBeenCalledWith('ab-1', 'field-1', '15', 'user-1')
-      expect(result).toEqual({ success: true })
-    })
-  })
-
-  describe('updateSummonAcAttributeValue', () => {
-    it('should delegate to sheetService.updateSummonAcAttributeValue', async () => {
-      // Method extracts @Param('abilityId'), @Param('acAttributeModifierId'), @Body('selectedAttributeId')
-      const result = await controller.updateSummonAcAttributeValue(mockReq, 'ab-1', 'mod-1', 'attr-1')
-      expect(mockSheetService.updateSummonAcAttributeValue).toHaveBeenCalledWith('ab-1', 'mod-1', 'attr-1', 'user-1')
+    it('should delegate to sheetService.updateSummonAcValue without fieldId', async () => {
+      // Method extracts @Param('abilityId') and @Body('value') — no fieldId param
+      const result = await controller.updateSummonAcValue(mockReq, 'ab-1', '18')
+      expect(mockSheetService.updateSummonAcValue).toHaveBeenCalledWith('ab-1', '18', 'user-1')
       expect(result).toEqual({ success: true })
     })
   })
@@ -359,25 +327,6 @@ describe('CharacterSheetController', () => {
       // Method extracts @Param('abilityId') and @Body()
       const result = await controller.updateSummonHealth(mockReq, 'ab-1', dto)
       expect(mockSheetService.updateSummonHealth).toHaveBeenCalledWith('ab-1', 'user-1', dto)
-      expect(result).toEqual({ success: true })
-    })
-  })
-
-  // ── Summon Resistances ──
-  describe('updateSummonResistanceValue', () => {
-    it('should delegate to sheetService.updateSummonResistanceValue', async () => {
-      // Method extracts @Param('abilityId'), @Param('resistanceId'), @Body('value')
-      const result = await controller.updateSummonResistanceValue(mockReq, 'ab-1', 'res-1', '5')
-      expect(mockSheetService.updateSummonResistanceValue).toHaveBeenCalledWith('ab-1', 'res-1', '5', 'user-1')
-      expect(result).toEqual({ success: true })
-    })
-  })
-
-  describe('updateSummonResistanceComponentValue', () => {
-    it('should delegate to sheetService.updateSummonResistanceComponentValue', async () => {
-      // Method extracts @Param('abilityId'), @Param('componentId'), @Body('value')
-      const result = await controller.updateSummonResistanceComponentValue(mockReq, 'ab-1', 'comp-1', '3')
-      expect(mockSheetService.updateSummonResistanceComponentValue).toHaveBeenCalledWith('ab-1', 'comp-1', '3', 'user-1')
       expect(result).toEqual({ success: true })
     })
   })

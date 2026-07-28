@@ -1,5 +1,7 @@
 'use client'
 
+import { Select } from '@/components/shared/Select'
+
 interface SkillValue {
   id: string; skillId: string; value: string; selectedAttributeId: string | null
   selectedAttribute: { id: string; key: string; name: string } | null
@@ -55,17 +57,16 @@ export function CollapsibleSkillRow({
           </div>
           <div className="flex items-center gap-2 shrink-0 ml-3" onClick={e => e.stopPropagation()}>
             {hasAttrDropdown && modifiersEnabled !== false ? (
-              <select
-                className="input-field py-0.5 text-xs w-auto min-w-[90px]"
-                value={skill.selectedAttributeId ?? ''}
-                onChange={e => onAttributeChange!(e.target.value || null)}
-              >
-                {skill.skill.allowedAttributeIds.map(attrId => {
+              <Select
+                options={skill.skill.allowedAttributeIds.map(attrId => {
                   const a = templateAttributes!.find(x => x.id === attrId)
-                  if (!a) return null
-                  return <option key={attrId} value={attrId}>{a.name}</option>
-                })}
-              </select>
+                  return a ? { id: attrId, label: a.name } : null
+                }).filter(Boolean) as { id: string; label: string }[]}
+                value={skill.selectedAttributeId ?? ''}
+                onChange={val => onAttributeChange!(val || null)}
+                size="sm"
+                className="w-auto min-w-[90px] text-xs"
+              />
             ) : (
               <span className="text-xs text-muted opacity-40 min-w-[90px] inline-block">
                 {skill.selectedAttribute
@@ -84,21 +85,17 @@ export function CollapsibleSkillRow({
         <div className="px-4 py-3 space-y-2 border-t border-border ml-10">
           {profiles.map(profile => {
             const sid = selections[profile.id]
-            const so = sid ? profile.options.find(o => o.id === sid) : null
             return (
               <div key={profile.id} className="flex items-center gap-2">
                 <span className="text-xs text-muted shrink-0 min-w-[80px]">{profile.name}:</span>
-                <select
-                  className="input-field py-1 text-xs flex-1"
-                  value={sid ?? ''}
-                  onChange={e => { onProfileChange(profile.id, e.target.value || null) }}
-                >
-                  <option value="">— Select —</option>
-                  {profile.options.map(opt => (
-                    <option key={opt.id} value={opt.id}>{opt.label} ({opt.value >= 0 ? '+' : ''}{opt.value})</option>
-                  ))}
-                </select>
-                {so && <span className="text-xs font-mono text-primary shrink-0">{so.value >= 0 ? '+' : ''}{so.value}</span>}
+                <Select
+                  options={profile.options}
+                  value={sid}
+                  onChange={(id) => onProfileChange(profile.id, id)}
+                  showBadge
+                  size="sm"
+                  className="flex-1"
+                />
               </div>
             )
           })}
