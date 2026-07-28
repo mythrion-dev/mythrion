@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common'
 import { PrismaService } from '../prisma.service.js'
+import { DbNull } from '@prisma/client/runtime/client'
 import { MembershipService } from '../membership/membership.service.js'
 import { CreateTemplateDto } from './dto/create-template.dto.js'
 import { UpdateTemplateDto } from './dto/update-template.dto.js'
@@ -1660,7 +1661,7 @@ export class TemplateService {
       where: { id: adventureId },
       data: {
         originalTemplateId: null,
-        templateSnapshot: null,
+        templateSnapshot: DbNull,
       },
     })
 

@@ -6,6 +6,7 @@ jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }))
 import { jest, describe, it, expect, beforeEach } from '@jest/globals'
 import { Test } from '@nestjs/testing'
 import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common'
+import { DbNull } from '@prisma/client/runtime/client'
 import { TemplateService } from './template.service'
 import { PrismaService } from '../prisma.service'
 import { MembershipService } from '../membership/membership.service'
@@ -1538,7 +1539,7 @@ describe('TemplateService', () => {
       expect(prisma.adventure.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: adventureId },
-          data: { originalTemplateId: null, templateSnapshot: null },
+          data: { originalTemplateId: null, templateSnapshot: DbNull },
         }),
       )
       expect(mockRedisService.del).toHaveBeenCalledWith(`templates:adventure:${adventureId}`)
@@ -1554,7 +1555,7 @@ describe('TemplateService', () => {
 
       expect(prisma.adventure.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ originalTemplateId: null, templateSnapshot: null }),
+          data: expect.objectContaining({ originalTemplateId: null, templateSnapshot: DbNull }),
         }),
       )
       expect(result.originalTemplateId).toBeNull()
