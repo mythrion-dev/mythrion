@@ -653,6 +653,7 @@ export type UserUncheckedUpdateWithoutAdventuresInput = {
   googleAccount?: Prisma.GoogleAccountUncheckedUpdateOneWithoutUserNestedInput
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutOwnerNestedInput
+  subscription?: Prisma.UserSubscriptionUncheckedUpdateOneWithoutUserNestedInput
 }
 
 export type UserCreateWithoutJoinRequestsInput = {
@@ -670,6 +671,7 @@ export type UserCreateWithoutJoinRequestsInput = {
   googleAccount?: Prisma.GoogleAccountCreateNestedOneWithoutUserInput
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutOwnerInput
+  subscription?: Prisma.UserSubscriptionCreateNestedOneWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutJoinRequestsInput = {
@@ -687,6 +689,7 @@ export type UserUncheckedCreateWithoutJoinRequestsInput = {
   googleAccount?: Prisma.GoogleAccountUncheckedCreateNestedOneWithoutUserInput
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutOwnerInput
+  subscription?: Prisma.UserSubscriptionUncheckedCreateNestedOneWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutJoinRequestsInput = {
@@ -720,6 +723,7 @@ export type UserUpdateWithoutJoinRequestsInput = {
   googleAccount?: Prisma.GoogleAccountUpdateOneWithoutUserNestedInput
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutOwnerNestedInput
+  subscription?: Prisma.UserSubscriptionUpdateOneWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutJoinRequestsInput = {
@@ -1107,6 +1111,7 @@ export type UserCreateWithoutOwnedTemplatesInput = {
   googleAccount?: Prisma.GoogleAccountCreateNestedOneWithoutUserInput
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutOwnerInput
+  subscription?: Prisma.UserSubscriptionCreateNestedOneWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutOwnedTemplatesInput = {
@@ -1124,6 +1129,7 @@ export type UserUncheckedCreateWithoutOwnedTemplatesInput = {
   googleAccount?: Prisma.GoogleAccountUncheckedCreateNestedOneWithoutUserInput
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutOwnerInput
+  subscription?: Prisma.UserSubscriptionUncheckedCreateNestedOneWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutOwnedTemplatesInput = {
@@ -1157,6 +1163,7 @@ export type UserUpdateWithoutOwnedTemplatesInput = {
   googleAccount?: Prisma.GoogleAccountUpdateOneWithoutUserNestedInput
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutOwnerNestedInput
+  subscription?: Prisma.UserSubscriptionUpdateOneWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutOwnedTemplatesInput = {
@@ -1174,6 +1181,7 @@ export type UserUncheckedUpdateWithoutOwnedTemplatesInput = {
   googleAccount?: Prisma.GoogleAccountUncheckedUpdateOneWithoutUserNestedInput
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutOwnerNestedInput
+  subscription?: Prisma.UserSubscriptionUncheckedUpdateOneWithoutUserNestedInput
 }
 
 export type UserCreateWithoutCharacterSheetsInput = {
@@ -1275,6 +1283,8 @@ export type UserCreateWithoutSubscriptionInput = {
   adventures?: Prisma.AdventureCreateNestedManyWithoutOwnerInput
   memberships?: Prisma.CampaignMemberCreateNestedManyWithoutUserInput
   sentInvitations?: Prisma.CampaignInvitationCreateNestedManyWithoutCreatedByInput
+  joinRequests?: Prisma.JoinRequestCreateNestedManyWithoutUserInput
+  ownedTemplates?: Prisma.TemplateCreateNestedManyWithoutOwnerInput
   googleAccount?: Prisma.GoogleAccountCreateNestedOneWithoutUserInput
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutOwnerInput
@@ -1291,6 +1301,8 @@ export type UserUncheckedCreateWithoutSubscriptionInput = {
   adventures?: Prisma.AdventureUncheckedCreateNestedManyWithoutOwnerInput
   memberships?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutUserInput
   sentInvitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutCreatedByInput
+  joinRequests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutUserInput
+  ownedTemplates?: Prisma.TemplateUncheckedCreateNestedManyWithoutOwnerInput
   googleAccount?: Prisma.GoogleAccountUncheckedCreateNestedOneWithoutUserInput
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutOwnerInput
@@ -1323,6 +1335,8 @@ export type UserUpdateWithoutSubscriptionInput = {
   adventures?: Prisma.AdventureUpdateManyWithoutOwnerNestedInput
   memberships?: Prisma.CampaignMemberUpdateManyWithoutUserNestedInput
   sentInvitations?: Prisma.CampaignInvitationUpdateManyWithoutCreatedByNestedInput
+  joinRequests?: Prisma.JoinRequestUpdateManyWithoutUserNestedInput
+  ownedTemplates?: Prisma.TemplateUpdateManyWithoutOwnerNestedInput
   googleAccount?: Prisma.GoogleAccountUpdateOneWithoutUserNestedInput
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutOwnerNestedInput
@@ -1339,6 +1353,8 @@ export type UserUncheckedUpdateWithoutSubscriptionInput = {
   adventures?: Prisma.AdventureUncheckedUpdateManyWithoutOwnerNestedInput
   memberships?: Prisma.CampaignMemberUncheckedUpdateManyWithoutUserNestedInput
   sentInvitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutCreatedByNestedInput
+  joinRequests?: Prisma.JoinRequestUncheckedUpdateManyWithoutUserNestedInput
+  ownedTemplates?: Prisma.TemplateUncheckedUpdateManyWithoutOwnerNestedInput
   googleAccount?: Prisma.GoogleAccountUncheckedUpdateOneWithoutUserNestedInput
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutOwnerNestedInput

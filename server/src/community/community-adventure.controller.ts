@@ -36,7 +36,6 @@ export class CommunityAdventureController {
       timePeriod: timePeriod as 'morning' | 'afternoon' | 'night' | undefined,
     })
   }
-  }
 
   /**
    * GET /public/adventures/:id

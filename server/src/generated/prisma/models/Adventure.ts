@@ -40,6 +40,9 @@ export type AdventureMinAggregateOutputType = {
   campaign: string | null
   synopsis: string | null
   maxPlayers: number | null
+  sessionWeekday: string | null
+  sessionTime: string | null
+  sessionType: string | null
   ownerId: string | null
   isPublic: boolean | null
   createdAt: Date | null
@@ -52,6 +55,9 @@ export type AdventureMaxAggregateOutputType = {
   campaign: string | null
   synopsis: string | null
   maxPlayers: number | null
+  sessionWeekday: string | null
+  sessionTime: string | null
+  sessionType: string | null
   ownerId: string | null
   isPublic: boolean | null
   createdAt: Date | null
@@ -64,6 +70,9 @@ export type AdventureCountAggregateOutputType = {
   campaign: number
   synopsis: number
   maxPlayers: number
+  sessionWeekday: number
+  sessionTime: number
+  sessionType: number
   ownerId: number
   isPublic: number
   createdAt: number
@@ -86,6 +95,9 @@ export type AdventureMinAggregateInputType = {
   campaign?: true
   synopsis?: true
   maxPlayers?: true
+  sessionWeekday?: true
+  sessionTime?: true
+  sessionType?: true
   ownerId?: true
   isPublic?: true
   createdAt?: true
@@ -98,6 +110,9 @@ export type AdventureMaxAggregateInputType = {
   campaign?: true
   synopsis?: true
   maxPlayers?: true
+  sessionWeekday?: true
+  sessionTime?: true
+  sessionType?: true
   ownerId?: true
   isPublic?: true
   createdAt?: true
@@ -110,6 +125,9 @@ export type AdventureCountAggregateInputType = {
   campaign?: true
   synopsis?: true
   maxPlayers?: true
+  sessionWeekday?: true
+  sessionTime?: true
+  sessionType?: true
   ownerId?: true
   isPublic?: true
   createdAt?: true
@@ -209,6 +227,9 @@ export type AdventureGroupByOutputType = {
   campaign: string
   synopsis: string | null
   maxPlayers: number
+  sessionWeekday: string | null
+  sessionTime: string | null
+  sessionType: string | null
   ownerId: string
   isPublic: boolean
   createdAt: Date
@@ -244,6 +265,9 @@ export type AdventureWhereInput = {
   campaign?: Prisma.StringFilter<"Adventure"> | string
   synopsis?: Prisma.StringNullableFilter<"Adventure"> | string | null
   maxPlayers?: Prisma.IntFilter<"Adventure"> | number
+  sessionWeekday?: Prisma.StringNullableFilter<"Adventure"> | string | null
+  sessionTime?: Prisma.StringNullableFilter<"Adventure"> | string | null
+  sessionType?: Prisma.StringNullableFilter<"Adventure"> | string | null
   ownerId?: Prisma.StringFilter<"Adventure"> | string
   isPublic?: Prisma.BoolFilter<"Adventure"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Adventure"> | Date | string
@@ -263,6 +287,9 @@ export type AdventureOrderByWithRelationInput = {
   campaign?: Prisma.SortOrder
   synopsis?: Prisma.SortOrderInput | Prisma.SortOrder
   maxPlayers?: Prisma.SortOrder
+  sessionWeekday?: Prisma.SortOrderInput | Prisma.SortOrder
+  sessionTime?: Prisma.SortOrderInput | Prisma.SortOrder
+  sessionType?: Prisma.SortOrderInput | Prisma.SortOrder
   ownerId?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -285,6 +312,9 @@ export type AdventureWhereUniqueInput = Prisma.AtLeast<{
   campaign?: Prisma.StringFilter<"Adventure"> | string
   synopsis?: Prisma.StringNullableFilter<"Adventure"> | string | null
   maxPlayers?: Prisma.IntFilter<"Adventure"> | number
+  sessionWeekday?: Prisma.StringNullableFilter<"Adventure"> | string | null
+  sessionTime?: Prisma.StringNullableFilter<"Adventure"> | string | null
+  sessionType?: Prisma.StringNullableFilter<"Adventure"> | string | null
   ownerId?: Prisma.StringFilter<"Adventure"> | string
   isPublic?: Prisma.BoolFilter<"Adventure"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Adventure"> | Date | string
@@ -304,6 +334,9 @@ export type AdventureOrderByWithAggregationInput = {
   campaign?: Prisma.SortOrder
   synopsis?: Prisma.SortOrderInput | Prisma.SortOrder
   maxPlayers?: Prisma.SortOrder
+  sessionWeekday?: Prisma.SortOrderInput | Prisma.SortOrder
+  sessionTime?: Prisma.SortOrderInput | Prisma.SortOrder
+  sessionType?: Prisma.SortOrderInput | Prisma.SortOrder
   ownerId?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -324,6 +357,9 @@ export type AdventureScalarWhereWithAggregatesInput = {
   campaign?: Prisma.StringWithAggregatesFilter<"Adventure"> | string
   synopsis?: Prisma.StringNullableWithAggregatesFilter<"Adventure"> | string | null
   maxPlayers?: Prisma.IntWithAggregatesFilter<"Adventure"> | number
+  sessionWeekday?: Prisma.StringNullableWithAggregatesFilter<"Adventure"> | string | null
+  sessionTime?: Prisma.StringNullableWithAggregatesFilter<"Adventure"> | string | null
+  sessionType?: Prisma.StringNullableWithAggregatesFilter<"Adventure"> | string | null
   ownerId?: Prisma.StringWithAggregatesFilter<"Adventure"> | string
   isPublic?: Prisma.BoolWithAggregatesFilter<"Adventure"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Adventure"> | Date | string
@@ -336,6 +372,9 @@ export type AdventureCreateInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   isPublic?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -354,6 +393,9 @@ export type AdventureUncheckedCreateInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   ownerId: string
   isPublic?: boolean
   createdAt?: Date | string
@@ -372,6 +414,9 @@ export type AdventureUpdateInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -390,6 +435,9 @@ export type AdventureUncheckedUpdateInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -408,6 +456,9 @@ export type AdventureCreateManyInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   ownerId: string
   isPublic?: boolean
   createdAt?: Date | string
@@ -420,6 +471,9 @@ export type AdventureUpdateManyMutationInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -431,6 +485,9 @@ export type AdventureUncheckedUpdateManyInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -453,6 +510,9 @@ export type AdventureCountOrderByAggregateInput = {
   campaign?: Prisma.SortOrder
   synopsis?: Prisma.SortOrder
   maxPlayers?: Prisma.SortOrder
+  sessionWeekday?: Prisma.SortOrder
+  sessionTime?: Prisma.SortOrder
+  sessionType?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -469,6 +529,9 @@ export type AdventureMaxOrderByAggregateInput = {
   campaign?: Prisma.SortOrder
   synopsis?: Prisma.SortOrder
   maxPlayers?: Prisma.SortOrder
+  sessionWeekday?: Prisma.SortOrder
+  sessionTime?: Prisma.SortOrder
+  sessionType?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -481,6 +544,9 @@ export type AdventureMinOrderByAggregateInput = {
   campaign?: Prisma.SortOrder
   synopsis?: Prisma.SortOrder
   maxPlayers?: Prisma.SortOrder
+  sessionWeekday?: Prisma.SortOrder
+  sessionTime?: Prisma.SortOrder
+  sessionType?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -643,6 +709,9 @@ export type AdventureCreateWithoutOwnerInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   isPublic?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -660,6 +729,9 @@ export type AdventureUncheckedCreateWithoutOwnerInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   isPublic?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -706,6 +778,9 @@ export type AdventureScalarWhereInput = {
   campaign?: Prisma.StringFilter<"Adventure"> | string
   synopsis?: Prisma.StringNullableFilter<"Adventure"> | string | null
   maxPlayers?: Prisma.IntFilter<"Adventure"> | number
+  sessionWeekday?: Prisma.StringNullableFilter<"Adventure"> | string | null
+  sessionTime?: Prisma.StringNullableFilter<"Adventure"> | string | null
+  sessionType?: Prisma.StringNullableFilter<"Adventure"> | string | null
   ownerId?: Prisma.StringFilter<"Adventure"> | string
   isPublic?: Prisma.BoolFilter<"Adventure"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Adventure"> | Date | string
@@ -718,6 +793,9 @@ export type AdventureCreateWithoutJoinRequestsInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   isPublic?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -735,6 +813,9 @@ export type AdventureUncheckedCreateWithoutJoinRequestsInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   ownerId: string
   isPublic?: boolean
   createdAt?: Date | string
@@ -768,6 +849,9 @@ export type AdventureUpdateWithoutJoinRequestsInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -785,6 +869,9 @@ export type AdventureUncheckedUpdateWithoutJoinRequestsInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -802,6 +889,9 @@ export type AdventureCreateWithoutBooksInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   isPublic?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -819,6 +909,9 @@ export type AdventureUncheckedCreateWithoutBooksInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   ownerId: string
   isPublic?: boolean
   createdAt?: Date | string
@@ -852,6 +945,9 @@ export type AdventureUpdateWithoutBooksInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -869,6 +965,9 @@ export type AdventureUncheckedUpdateWithoutBooksInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -886,6 +985,9 @@ export type AdventureCreateWithoutMembersInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   isPublic?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -903,6 +1005,9 @@ export type AdventureUncheckedCreateWithoutMembersInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   ownerId: string
   isPublic?: boolean
   createdAt?: Date | string
@@ -936,6 +1041,9 @@ export type AdventureUpdateWithoutMembersInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -953,6 +1061,9 @@ export type AdventureUncheckedUpdateWithoutMembersInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -970,6 +1081,9 @@ export type AdventureCreateWithoutInvitationsInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   isPublic?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -987,6 +1101,9 @@ export type AdventureUncheckedCreateWithoutInvitationsInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   ownerId: string
   isPublic?: boolean
   createdAt?: Date | string
@@ -1020,6 +1137,9 @@ export type AdventureUpdateWithoutInvitationsInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1037,6 +1157,9 @@ export type AdventureUncheckedUpdateWithoutInvitationsInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1054,6 +1177,9 @@ export type AdventureCreateWithoutTemplatesInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   isPublic?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1071,6 +1197,9 @@ export type AdventureUncheckedCreateWithoutTemplatesInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   ownerId: string
   isPublic?: boolean
   createdAt?: Date | string
@@ -1104,6 +1233,9 @@ export type AdventureUpdateWithoutTemplatesInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1121,6 +1253,9 @@ export type AdventureUncheckedUpdateWithoutTemplatesInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1138,6 +1273,9 @@ export type AdventureCreateWithoutCharacterSheetsInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   isPublic?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1155,6 +1293,9 @@ export type AdventureUncheckedCreateWithoutCharacterSheetsInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   ownerId: string
   isPublic?: boolean
   createdAt?: Date | string
@@ -1188,6 +1329,9 @@ export type AdventureUpdateWithoutCharacterSheetsInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1205,6 +1349,9 @@ export type AdventureUncheckedUpdateWithoutCharacterSheetsInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1222,6 +1369,9 @@ export type AdventureCreateManyOwnerInput = {
   campaign: string
   synopsis?: string | null
   maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
   isPublic?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1233,6 +1383,9 @@ export type AdventureUpdateWithoutOwnerInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1250,6 +1403,9 @@ export type AdventureUncheckedUpdateWithoutOwnerInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1267,6 +1423,9 @@ export type AdventureUncheckedUpdateManyWithoutOwnerInput = {
   campaign?: Prisma.StringFieldUpdateOperationsInput | string
   synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1354,6 +1513,9 @@ export type AdventureSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   campaign?: boolean
   synopsis?: boolean
   maxPlayers?: boolean
+  sessionWeekday?: boolean
+  sessionTime?: boolean
+  sessionType?: boolean
   ownerId?: boolean
   isPublic?: boolean
   createdAt?: boolean
@@ -1374,6 +1536,9 @@ export type AdventureSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   campaign?: boolean
   synopsis?: boolean
   maxPlayers?: boolean
+  sessionWeekday?: boolean
+  sessionTime?: boolean
+  sessionType?: boolean
   ownerId?: boolean
   isPublic?: boolean
   createdAt?: boolean
@@ -1387,6 +1552,9 @@ export type AdventureSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   campaign?: boolean
   synopsis?: boolean
   maxPlayers?: boolean
+  sessionWeekday?: boolean
+  sessionTime?: boolean
+  sessionType?: boolean
   ownerId?: boolean
   isPublic?: boolean
   createdAt?: boolean
@@ -1400,13 +1568,16 @@ export type AdventureSelectScalar = {
   campaign?: boolean
   synopsis?: boolean
   maxPlayers?: boolean
+  sessionWeekday?: boolean
+  sessionTime?: boolean
+  sessionType?: boolean
   ownerId?: boolean
   isPublic?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type AdventureOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "campaign" | "synopsis" | "maxPlayers" | "ownerId" | "isPublic" | "createdAt" | "updatedAt", ExtArgs["result"]["adventure"]>
+export type AdventureOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "campaign" | "synopsis" | "maxPlayers" | "sessionWeekday" | "sessionTime" | "sessionType" | "ownerId" | "isPublic" | "createdAt" | "updatedAt", ExtArgs["result"]["adventure"]>
 export type AdventureInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   members?: boolean | Prisma.Adventure$membersArgs<ExtArgs>
@@ -1441,6 +1612,9 @@ export type $AdventurePayload<ExtArgs extends runtime.Types.Extensions.InternalA
     campaign: string
     synopsis: string | null
     maxPlayers: number
+    sessionWeekday: string | null
+    sessionTime: string | null
+    sessionType: string | null
     ownerId: string
     isPublic: boolean
     createdAt: Date
@@ -1880,6 +2054,9 @@ export interface AdventureFieldRefs {
   readonly campaign: Prisma.FieldRef<"Adventure", 'String'>
   readonly synopsis: Prisma.FieldRef<"Adventure", 'String'>
   readonly maxPlayers: Prisma.FieldRef<"Adventure", 'Int'>
+  readonly sessionWeekday: Prisma.FieldRef<"Adventure", 'String'>
+  readonly sessionTime: Prisma.FieldRef<"Adventure", 'String'>
+  readonly sessionType: Prisma.FieldRef<"Adventure", 'String'>
   readonly ownerId: Prisma.FieldRef<"Adventure", 'String'>
   readonly isPublic: Prisma.FieldRef<"Adventure", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"Adventure", 'DateTime'>
