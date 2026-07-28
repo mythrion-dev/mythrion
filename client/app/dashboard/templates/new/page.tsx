@@ -129,7 +129,7 @@ export default function NewTemplatePage() {
   // ── Core Resource handlers ──
 
   const handleAddCoreResource = useCallback(() => {
-    setCoreResources(prev => [...prev, { displayName: '', slug: '', color: '#ffffff', enabled: true, editable: true, showNotes: false }])
+    setCoreResources(prev => [...prev, { displayName: '', slug: '', color: '#ffffff', enabled: true, editableByPlayer: true, showNotes: false }])
   }, [])
   const handleRemoveCoreResource = useCallback((i: number) => {
     setCoreResources(prev => prev.filter((_, idx) => idx !== i))

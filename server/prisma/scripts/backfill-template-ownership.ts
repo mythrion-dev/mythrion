@@ -10,7 +10,7 @@
  *
  * Run: npx ts-node prisma/scripts/backfill-template-ownership.ts
  */
-import { PrismaClient } from '../src/generated/prisma/client.js'
+import { PrismaClient } from '../../src/generated/prisma/client.js'
 import { PrismaPg } from '@prisma/adapter-pg'
 
 // ── Types for snapshot structure ──
@@ -158,7 +158,7 @@ async function main() {
 
   // ── Phase 1: Backfill ownerId ──
   const templatesWithoutOwner = await prisma.template.findMany({
-    where: { ownerId: null },
+    where: { ownerId: null as any },
     include: { adventure: { select: { ownerId: true } } },
   })
   console.log(
@@ -206,7 +206,7 @@ async function main() {
   const adventuresWithTemplates = await prisma.adventure.findMany({
     where: {
       templates: { some: {} },
-      templateSnapshot: null,
+      templateSnapshot: null as any,
     },
     include: {
       templates: {
@@ -381,10 +381,10 @@ async function main() {
   // ── Summary ──
   const totalTemplates = await prisma.template.count()
   const stillOrphaned = await prisma.template.count({
-    where: { ownerId: null },
+    where: { ownerId: null as any },
   })
   const adventuresWithSnapshot = await prisma.adventure.count({
-    where: { templateSnapshot: { not: null } },
+    where: { templateSnapshot: { not: null as any } },
   })
   const adventuresTotal = await prisma.adventure.count()
 

@@ -168,6 +168,7 @@ export default function TemplateDetailPage() {
     setEditResistances((template.resistances ?? []).map((r: any) => ({
       id: r.id,
       name: r.name,
+      calculationType: r.calculationType ?? 'MANUAL',
       enabled: r.enabled ?? true,
       order: r.order ?? 0,
       components: (r.components ?? []).map((c: any) => ({
@@ -383,7 +384,7 @@ export default function TemplateDetailPage() {
   // ── Core resource edit helpers ──
 
   const handleAddEditCoreResource = useCallback(() => {
-    setEditCoreResources(prev => [...prev, { displayName: '', slug: '', color: '#ffffff', enabled: true, editable: true, showNotes: false }])
+    setEditCoreResources(prev => [...prev, { displayName: '', slug: '', color: '#ffffff', enabled: true, editableByPlayer: true, showNotes: false }])
   }, [])
   const handleRemoveEditCoreResource = useCallback((i: number) => {
     setEditCoreResources(prev => prev.filter((_, idx) => idx !== i))
