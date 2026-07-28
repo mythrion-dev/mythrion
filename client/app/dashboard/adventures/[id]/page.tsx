@@ -20,6 +20,8 @@ import { CampaignCreatureSidebar } from '@/components/adventure/CampaignCreature
 import { NpcsMobsSection } from '@/components/adventure/NpcsMobsSection'
 import { BookListPanel } from '@/components/books/BookListPanel'
 import { PdfViewerSidebar } from '@/components/books/PdfViewerSidebar'
+import { VisibilityToggle } from '@/components/adventure/VisibilityToggle'
+import { JoinRequestPanel } from '@/components/adventure/JoinRequestPanel'
 import type { CoreResource, AcConfigDraft, ArmorClassAttributeModifierDraft, ResistanceDef } from '@/components/adventure/types'
 import { emptyAcConfig, slugify } from '@/components/adventure/types'
 
@@ -259,13 +261,34 @@ export default function AdventureDetailPage() {
   const isGM = userRole === 'GM'; const [activeTab, setActiveTab] = useState<'campaign' | 'templates' | 'books'>('campaign')
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null)
 
+  // Public campaigns & join requests
+  const [visibilityLoading, setVisibilityLoading] = useState(false)
+  const [joinRequests, setJoinRequests] = useState<{ id: string; userId: string; userDisplayName: string | null; message: string | null; status: 'pending' | 'accepted' | 'rejected'; createdAt: string }[]>([])
+  const [joinRequestsLoading, setJoinRequestsLoading] = useState(false)
+  const [processingIds, setProcessingIds] = useState<string[]>([])
+
   const fetchAdventure = useCallback(async () => { try { const d = await api.get<Adventure>(`/adventures/${id}`); setAdventure(d); setEditName(d.name); setEditCampaign(d.campaign); setEditSynopsis(d.synopsis ?? ''); setEditMaxPlayers(d.maxPlayers) } catch (e: unknown) { if ((e as { statusCode?: number }).statusCode === 401 || (e as { statusCode?: number }).statusCode === 403) router.replace('/login') } finally { setFetching(false) } }, [id, router])
   const resolveRole = useCallback(async () => { try { const all = await api.get<Array<{ id: string; role: string }>>('/me/adventures'); const e = all.find(a => a.id === id); if (e) setUserRole(e.role) } catch { } }, [id])
   useEffect(() => { fetchAdventure(); resolveRole() }, [fetchAdventure, resolveRole])
   const fetchMembers = useCallback(async () => { try { setMembers(await api.get<Member[]>(`/adventures/${id}/members`)) } catch { } }, [id])
   const fetchInvitations = useCallback(async () => { try { setInvitations(await api.get<Invitation[]>(`/adventures/${id}/invitations`)) } catch { } }, [id])
   const fetchTemplates = useCallback(async () => { try { setTemplates(await api.get<Template[]>(`/adventures/${id}/templates`)) } catch { } }, [id])
+  const fetchJoinRequests = useCallback(async () => {
+    setJoinRequestsLoading(true)
+    try {
+      const data = await api.get<{ id: string; userId: string; user: { id: string; email: string; displayName: string | null }; message: string | null; status: string; createdAt: string }[]>(`/adventures/${id}/join-requests`)
+      setJoinRequests(data.map(r => ({
+        id: r.id,
+        userId: r.userId,
+        userDisplayName: r.user.displayName ?? r.user.email,
+        message: r.message,
+        status: r.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
+        createdAt: r.createdAt,
+      })))
+    } catch { /* ignore */ } finally { setJoinRequestsLoading(false) }
+  }, [id])
   useEffect(() => { if (activeTab === 'templates') fetchTemplates() }, [activeTab, fetchTemplates])
+  useEffect(() => { if (activeTab === 'campaign' && isGM) fetchJoinRequests() }, [activeTab, isGM, fetchJoinRequests])
   const fetchCampaignCharacters = useCallback(async () => { try { setCampaignCharacters(await api.get<CampaignCharacter[]>(`/character-sheets/adventure/${id}`)) } catch { } }, [id])
   const fetchUserSheets = useCallback(async () => { try { const d = await api.get<UserSheet[]>('/character-sheets'); setUserSheets(d.filter(s => s.adventure.id !== id)) } catch { } }, [id])
 
@@ -465,6 +488,30 @@ export default function AdventureDetailPage() {
   async function handleRevokeInvitation(invId: string) { try { await api.post(`/invitations/${invId}/revoke`); fetchInvitations() } catch { } }
   async function handleRemoveMember(uid: string) { try { await api.delete(`/adventures/${id}/members/${uid}`); fetchMembers() } catch { } }
 
+  async function handleVisibilityToggle() {
+    setVisibilityLoading(true)
+    try {
+      const updated = await api.patch<{ isPublic: boolean }>(`/adventures/${id}/visibility`, { isPublic: !(adventure as any).isPublic })
+      setAdventure(prev => prev ? { ...prev, ...updated } : prev)
+    } catch { /* ignore */ } finally { setVisibilityLoading(false) }
+  }
+
+  async function handleAcceptRequest(requestId: string) {
+    setProcessingIds(prev => [...prev, requestId])
+    try {
+      await api.patch(`/adventures/${id}/join-requests/${requestId}`, { status: 'ACCEPTED' })
+      setJoinRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'accepted' as const } : r))
+    } catch { /* ignore */ } finally { setProcessingIds(prev => prev.filter(id => id !== requestId)) }
+  }
+
+  async function handleRejectRequest(requestId: string) {
+    setProcessingIds(prev => [...prev, requestId])
+    try {
+      await api.patch(`/adventures/${id}/join-requests/${requestId}`, { status: 'REJECTED' })
+      setJoinRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'rejected' as const } : r))
+    } catch { /* ignore */ } finally { setProcessingIds(prev => prev.filter(id => id !== requestId)) }
+  }
+
   if (fetching) return <div className="max-w-5xl mx-auto w-full py-10"><LoadingSkeleton variant="page" /></div>
   if (!adventure) return <div className="max-w-5xl mx-auto w-full py-10"><EmptyState icon="🗺️" title="Adventure Not Found" description="This adventure doesn't exist or you don't have access to it." actionLabel="Back to Dashboard" actionHref="/dashboard" /></div>
 
@@ -493,6 +540,27 @@ export default function AdventureDetailPage() {
             <CollapsibleSection title="NPCs &amp; Mobs" accent expanded={showNpcsMobs} onToggle={() => setShowNpcsMobs(!showNpcsMobs)}>
               <NpcsMobsSection adventureId={id} isGM={isGM} refreshKey={npcRefreshKey} />
             </CollapsibleSection>
+          )}
+          {isGM && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Publishing</h3>
+              <VisibilityToggle
+                isPublic={(adventure as any).isPublic ?? false}
+                loading={visibilityLoading}
+                onToggle={handleVisibilityToggle}
+              />
+            </div>
+          )}
+          {isGM && (
+            <div className="space-y-4">
+              <JoinRequestPanel
+                requests={joinRequests}
+                loading={joinRequestsLoading}
+                onAccept={handleAcceptRequest}
+                onReject={handleRejectRequest}
+                processingIds={processingIds}
+              />
+            </div>
           )}
         </div>)}
         {activeTab === 'templates' && (
