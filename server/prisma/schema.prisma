@@ -41,6 +41,7 @@ model Adventure {
   ownerId         String
   owner           User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   isPublic             Boolean              @default(false)
+  templateSource       String?              @map("template_source")
   templateSnapshot     Json?                @map("template_snapshot")
   originalTemplateId   String?
   originalTemplate     Template?            @relation("OriginalTemplateForAdventure", fields: [originalTemplateId], references: [id], onDelete: SetNull)

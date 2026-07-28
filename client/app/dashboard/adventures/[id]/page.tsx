@@ -287,8 +287,9 @@ export default function AdventureDetailPage() {
   const [joinRequests, setJoinRequests] = useState<{ id: string; userId: string; userDisplayName: string | null; message: string | null; status: 'pending' | 'accepted' | 'rejected'; createdAt: string }[]>([])
   const [joinRequestsLoading, setJoinRequestsLoading] = useState(false)
   const [processingIds, setProcessingIds] = useState<string[]>([])
+  const [templateSource, setTemplateSource] = useState<'attached' | 'campaign' | null>(null)
 
-  const fetchAdventure = useCallback(async () => { try { const d = await api.get<Adventure>(`/adventures/${id}`); setAdventure(d); setEditName(d.name); setEditCampaign(d.campaign); setEditSynopsis(d.synopsis ?? ''); setEditMaxPlayers(d.maxPlayers); setEditSessionWeekday((d as any).sessionWeekday ?? ''); setEditSessionTime((d as any).sessionTime ?? ''); setEditSessionType((d as any).sessionType ?? '') } catch (e: unknown) { if ((e as { statusCode?: number }).statusCode === 401 || (e as { statusCode?: number }).statusCode === 403) router.replace('/login') } finally { setFetching(false) } }, [id, router])
+  const fetchAdventure = useCallback(async () => { try { const d = await api.get<Adventure>(`/adventures/${id}`); setAdventure(d); setTemplateSource((d as any).templateSource ?? null); setEditName(d.name); setEditCampaign(d.campaign); setEditSynopsis(d.synopsis ?? ''); setEditMaxPlayers(d.maxPlayers); setEditSessionWeekday((d as any).sessionWeekday ?? ''); setEditSessionTime((d as any).sessionTime ?? ''); setEditSessionType((d as any).sessionType ?? '') } catch (e: unknown) { if ((e as { statusCode?: number }).statusCode === 401 || (e as { statusCode?: number }).statusCode === 403) router.replace('/login') } finally { setFetching(false) } }, [id, router])
   const resolveRole = useCallback(async () => { try { const all = await api.get<Array<{ id: string; role: string }>>('/me/adventures'); const e = all.find(a => a.id === id); if (e) setUserRole(e.role) } catch { } }, [id])
   useEffect(() => { fetchAdventure(); resolveRole() }, [fetchAdventure, resolveRole])
   const fetchMembers = useCallback(async () => { try { setMembers(await api.get<Member[]>(`/adventures/${id}/members`)) } catch { } }, [id])
@@ -515,9 +516,9 @@ export default function AdventureDetailPage() {
     } catch (err) { setEditingTemplateError(err instanceof Error ? err.message : 'Failed to update template') } finally { setTemplateSaving(false) }
   }
 
-  async function handleDeleteTemplate(tid: string) { try { await api.delete(`/adventures/${id}/templates/${tid}`); fetchTemplates() } catch { } }
-  async function handleTemplateAttached() { fetchSnapshot(); fetchTemplates(); setSnapshotKey(k => k + 1) }
-  async function handleTemplateDetached() { setSnapshotData(null); setSnapshotKey(k => k + 1) }
+  async function handleDeleteTemplate(tid: string) { try { await api.delete(`/adventures/${id}/templates/${tid}`); fetchTemplates(); fetchAdventure() } catch { } }
+  async function handleTemplateAttached() { fetchSnapshot(); fetchTemplates(); fetchAdventure(); setSnapshotKey(k => k + 1) }
+  async function handleTemplateDetached() { setSnapshotData(null); setTemplateSource(null); fetchAdventure(); setSnapshotKey(k => k + 1) }
   async function handleCreateCharacter(e: FormEvent) {
     e.preventDefault(); setNewCharError(null); if (!newCharName.trim()) return; setNewCharCreating(true)
     try { const s = await api.post<{ id: string }>('/character-sheets/from-campaign', { characterName: newCharName.trim(), adventureId: id }); router.push(`/dashboard/character-sheets/${s.id}`) } catch (err) { setNewCharError(err instanceof Error ? err.message : 'Failed to create character') } finally { setNewCharCreating(false) }
@@ -634,101 +635,108 @@ export default function AdventureDetailPage() {
         </div>)}
         {activeTab === 'templates' && (
           <div className="space-y-4">
-            {/* Snapshot-based Template Attachment Panel */}
-            {snapshotFetching ? (
-              <div className="card !p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                  <span className="text-xs text-muted">Loading template snapshot...</span>
-                </div>
-              </div>
-            ) : (
-              <TemplateAttachmentPanel
-                adventureId={id}
-                originalTemplateId={snapshotData?.originalTemplateId ?? null}
-                templateSnapshot={snapshotData?.snapshot ? {
-                  name: snapshotData.snapshot.name,
-                  description: snapshotData.snapshot.description,
-                  createdAt: snapshotData.snapshot.createdAt,
-                  attributeCount: snapshotData.snapshot.attributes?.length ?? 0,
-                  skillCount: snapshotData.snapshot.templateSkills?.length ?? 0,
-                  fieldCount: snapshotData.snapshot.templateFields?.length ?? 0,
-                  profileCount: snapshotData.snapshot.skillModifierProfiles?.length ?? 0,
-                  resourceCount: snapshotData.snapshot.coreResources?.length ?? 0,
-                  acCount: snapshotData.snapshot.armorClasses?.length ?? 0,
-                  sectionCount: snapshotData.snapshot.characterSections?.length ?? 0,
-                  resistCount: snapshotData.snapshot.resistances?.length ?? 0,
-                } : null}
-                isGM={isGM}
-                onAttached={handleTemplateAttached}
-                onDetached={handleTemplateDetached}
+            {/* State A (no template) + State B (attached): show TemplateAttachmentPanel */}
+            {(templateSource === null || templateSource === 'attached') && (
+              <>
+                {snapshotFetching ? (
+                  <div className="card !p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                      <span className="text-xs text-muted">Loading template snapshot...</span>
+                    </div>
+                  </div>
+                ) : (
+                  <TemplateAttachmentPanel
+                    adventureId={id}
+                    originalTemplateId={snapshotData?.originalTemplateId ?? null}
+                    templateSnapshot={snapshotData?.snapshot ? {
+                      name: snapshotData.snapshot.name,
+                      description: snapshotData.snapshot.description,
+                      createdAt: snapshotData.snapshot.createdAt,
+                      attributeCount: snapshotData.snapshot.attributes?.length ?? 0,
+                      skillCount: snapshotData.snapshot.templateSkills?.length ?? 0,
+                      fieldCount: snapshotData.snapshot.templateFields?.length ?? 0,
+                      profileCount: snapshotData.snapshot.skillModifierProfiles?.length ?? 0,
+                      resourceCount: snapshotData.snapshot.coreResources?.length ?? 0,
+                      acCount: snapshotData.snapshot.armorClasses?.length ?? 0,
+                      sectionCount: snapshotData.snapshot.characterSections?.length ?? 0,
+                      resistCount: snapshotData.snapshot.resistances?.length ?? 0,
+                    } : null}
+                    isGM={isGM}
+                    onAttached={handleTemplateAttached}
+                    onDetached={handleTemplateDetached}
+                  />
+                )}
+              </>
+            )}
+            {/* State A (no template) + State C (campaign-owned): show TemplatesSection */}
+            {(templateSource === null || templateSource === 'campaign') && (
+              <TemplatesSection templates={templates} isGM={isGM} showNewTemplate={showNewTemplate} editingTemplateId={editingTemplateId}
+                newTemplateName={newTemplateName} newTemplateDescription={newTemplateDescription} newTemplateAttrs={newTemplateAttrs} newAttrModifierFormula={newAttrModifierFormula} newSkillFormula={newSkillFormula} newTemplateFields={newTemplateFields} templateError={templateError} templateCreating={templateCreating}
+                editTemplateName={editTemplateName} editTemplateDescription={editTemplateDescription} editTemplateAttrs={editTemplateAttrs} editAttrModifierFormula={editAttrModifierFormula} editSkillFormula={editSkillFormula} editingTemplateError={editingTemplateError} templateSaving={templateSaving}
+                onNewClick={() => setShowNewTemplate(true)} onCancelNew={resetNewTemplate} onCreateTemplate={handleCreateTemplate}
+                onNameChange={setNewTemplateName} onDescriptionChange={setNewTemplateDescription} onAddAttr={addNewAttrRow} onRemoveAttr={removeNewAttrRow} onUpdateAttr={updateNewAttr}
+                onAddField={addNewFieldRow} onRemoveField={removeNewFieldRow} onUpdateField={updateNewField}
+                newTemplateSkills={newTemplateSkills} onAddSkill={addNewSkillRow} onRemoveSkill={removeNewSkillRow} onUpdateSkill={updateNewSkill} onToggleSkillAllowedAttr={toggleNewSkillAllowedAttr}
+                onStartEdit={startEditTemplate} onCancelEdit={cancelEditTemplate} onUpdateTemplate={handleUpdateTemplate} onDeleteTemplate={handleDeleteTemplate}
+                onEditNameChange={setEditTemplateName} onEditDescriptionChange={setEditTemplateDescription} onAddEditAttr={addEditAttrRow} onRemoveEditAttr={removeEditAttrRow} onUpdateEditAttr={updateEditAttr}
+                editTemplateFields={editTemplateFields} onAddEditField={addEditFieldRow} onRemoveEditField={removeEditFieldRow} onUpdateEditField={updateEditField}
+                editTemplateSkills={editTemplateSkills} onAddEditSkill={addEditSkillRow} onRemoveEditSkill={removeEditSkillRow} onUpdateEditSkill={updateEditSkill} onToggleEditSkillAllowedAttr={toggleEditSkillAllowedAttr}
+                newTemplateProfiles={newTemplateProfiles} editTemplateProfiles={editTemplateProfiles}
+                onAddProfile={addNewProfile} onRemoveProfile={removeNewProfile} onUpdateProfile={updateNewProfile} onAddProfileOption={addNewProfileOption} onRemoveProfileOption={removeNewProfileOption} onUpdateProfileOption={updateNewProfileOption} onUpdateProfileTargetMode={updateNewProfileTargetMode} onToggleProfileSkill={toggleNewProfileSkill}
+                onAddEditProfile={addEditProfile} onRemoveEditProfile={removeEditProfile} onUpdateEditProfile={updateEditProfile} onAddEditProfileOption={addEditProfileOption} onRemoveEditProfileOption={removeEditProfileOption} onUpdateEditProfileOption={updateEditProfileOption} onUpdateEditProfileTargetMode={updateEditProfileTargetMode} onToggleEditProfileSkill={toggleEditProfileSkill}
+                newCoreResources={newCoreResources} editCoreResources={editCoreResources}
+                onAddCoreResource={addNewCoreResource} onRemoveCoreResource={removeNewCoreResource} onUpdateCoreResource={updateNewCoreResource}
+                onUpdateCoreResourceEnabled={updateNewCoreResourceEnabled} onUpdateCoreResourceEditable={updateNewCoreResourceEditable} onUpdateCoreResourceShowNotes={updateNewCoreResourceShowNotes}
+                onAddEditCoreResource={addEditCoreResource} onRemoveEditCoreResource={removeEditCoreResource} onUpdateEditCoreResource={updateEditCoreResource}
+                onUpdateEditCoreResourceEnabled={updateEditCoreResourceEnabled} onUpdateEditCoreResourceEditable={updateEditCoreResourceEditable} onUpdateEditCoreResourceShowNotes={updateEditCoreResourceShowNotes}
+                newAcConfigs={newAcConfigs}
+                onAddNewAcConfig={addNewAcConfig} onRemoveNewAcConfig={removeNewAcConfig} onUpdateNewAcConfig={updateNewAcConfig}
+                onAddNewAcFieldForConfig={addNewAcFieldForConfig} onRemoveNewAcFieldForConfig={removeNewAcFieldForConfig}
+                onUpdateNewAcFieldForConfig={updateNewAcFieldForConfig} onUpdateNewAcFieldEditableForConfig={updateNewAcFieldEditableForConfig}
+                onToggleNewAcAttributeIdForConfig={toggleNewAcAttributeIdForConfig} onUpdateNewAcAttributeModifierForConfig={updateNewAcAttributeModifierForConfig}
+                editAcConfigs={editAcConfigs}
+                onAddEditAcConfig={addEditAcConfig} onRemoveEditAcConfig={removeEditAcConfig} onUpdateEditAcConfig={updateEditAcConfig}
+                onAddEditAcFieldForConfig={addEditAcFieldForConfig} onRemoveEditAcFieldForConfig={removeEditAcFieldForConfig}
+                onUpdateEditAcFieldForConfig={updateEditAcFieldForConfig} onUpdateEditAcFieldEditableForConfig={updateEditAcFieldEditableForConfig}
+                onToggleEditAcAttributeIdForConfig={toggleEditAcAttributeIdForConfig} onUpdateEditAcAttributeModifierForConfig={updateEditAcAttributeModifierForConfig}
+                newAttrModifiersEnabled={newAttrModifiersEnabled}
+                onNewAttrModifiersEnabledChange={setNewAttrModifiersEnabled}
+                onNewAttrModifierFormulaChange={setNewAttrModifierFormula}
+                onNewSkillFormulaChange={setNewSkillFormula}
+                editAttrModifiersEnabled={editAttrModifiersEnabled}
+                onEditAttrModifiersEnabledChange={setEditAttrModifiersEnabled}
+                onEditAttrModifierFormulaChange={setEditAttrModifierFormula}
+                onEditSkillFormulaChange={setEditSkillFormula}
+                newCharacterSections={newCharacterSections}
+                onAddNewCharacterSection={addNewCharacterSection}
+                onRemoveNewCharacterSection={removeNewCharacterSection}
+                onUpdateNewCharacterSection={updateNewCharacterSection}
+                editCharacterSections={editCharacterSections}
+                onAddEditCharacterSection={addEditCharacterSection}
+                onRemoveEditCharacterSection={removeEditCharacterSection}
+                onUpdateEditCharacterSection={updateEditCharacterSection}
+                newResistances={newResistances} editResistances={editResistances}
+                onNewResistancesChange={setNewResistances}
+                onEditResistancesChange={setEditResistances}
+                newTemplateAttrsForResistance={newTemplateAttrs}
+                editTemplateAttrsForResistance={editTemplateAttrs}
+                newFeatureSkills={newFeatureSkills} onNewFeatureSkillsChange={setNewFeatureSkills}
+                newFeatureCustomFields={newFeatureCustomFields} onNewFeatureCustomFieldsChange={setNewFeatureCustomFields}
+                newFeatureCoreResources={newFeatureCoreResources} onNewFeatureCoreResourcesChange={setNewFeatureCoreResources}
+                newFeatureArmorClass={newFeatureArmorClass} onNewFeatureArmorClassChange={setNewFeatureArmorClass}
+                newFeatureCharacterSections={newFeatureCharacterSections} onNewFeatureCharacterSectionsChange={setNewFeatureCharacterSections}
+                newFeatureSkillProfiles={newFeatureSkillProfiles} onNewFeatureSkillProfilesChange={setNewFeatureSkillProfiles}
+                newFeatureResistance={newFeatureResistance} onNewFeatureResistanceChange={setNewFeatureResistance}
+                editFeatureSkills={editFeatureSkills} onEditFeatureSkillsChange={setEditFeatureSkills}
+                editFeatureCustomFields={editFeatureCustomFields} onEditFeatureCustomFieldsChange={setEditFeatureCustomFields}
+                editFeatureCoreResources={editFeatureCoreResources} onEditFeatureCoreResourcesChange={setEditFeatureCoreResources}
+                editFeatureArmorClass={editFeatureArmorClass} onEditFeatureArmorClassChange={setEditFeatureArmorClass}
+                editFeatureCharacterSections={editFeatureCharacterSections} onEditFeatureCharacterSectionsChange={setEditFeatureCharacterSections}
+                editFeatureSkillProfiles={editFeatureSkillProfiles} onEditFeatureSkillProfilesChange={setEditFeatureSkillProfiles}
+                editFeatureResistance={editFeatureResistance} onEditFeatureResistanceChange={setEditFeatureResistance}
               />
             )}
-            <TemplatesSection templates={templates} isGM={isGM} showNewTemplate={showNewTemplate} editingTemplateId={editingTemplateId}
-              newTemplateName={newTemplateName} newTemplateDescription={newTemplateDescription} newTemplateAttrs={newTemplateAttrs} newAttrModifierFormula={newAttrModifierFormula} newSkillFormula={newSkillFormula} newTemplateFields={newTemplateFields} templateError={templateError} templateCreating={templateCreating}
-              editTemplateName={editTemplateName} editTemplateDescription={editTemplateDescription} editTemplateAttrs={editTemplateAttrs} editAttrModifierFormula={editAttrModifierFormula} editSkillFormula={editSkillFormula} editingTemplateError={editingTemplateError} templateSaving={templateSaving}
-              onNewClick={() => setShowNewTemplate(true)} onCancelNew={resetNewTemplate} onCreateTemplate={handleCreateTemplate}
-              onNameChange={setNewTemplateName} onDescriptionChange={setNewTemplateDescription} onAddAttr={addNewAttrRow} onRemoveAttr={removeNewAttrRow} onUpdateAttr={updateNewAttr}
-              onAddField={addNewFieldRow} onRemoveField={removeNewFieldRow} onUpdateField={updateNewField}
-              newTemplateSkills={newTemplateSkills} onAddSkill={addNewSkillRow} onRemoveSkill={removeNewSkillRow} onUpdateSkill={updateNewSkill} onToggleSkillAllowedAttr={toggleNewSkillAllowedAttr}
-              onStartEdit={startEditTemplate} onCancelEdit={cancelEditTemplate} onUpdateTemplate={handleUpdateTemplate} onDeleteTemplate={handleDeleteTemplate}
-              onEditNameChange={setEditTemplateName} onEditDescriptionChange={setEditTemplateDescription} onAddEditAttr={addEditAttrRow} onRemoveEditAttr={removeEditAttrRow} onUpdateEditAttr={updateEditAttr}
-              editTemplateFields={editTemplateFields} onAddEditField={addEditFieldRow} onRemoveEditField={removeEditFieldRow} onUpdateEditField={updateEditField}
-              editTemplateSkills={editTemplateSkills} onAddEditSkill={addEditSkillRow} onRemoveEditSkill={removeEditSkillRow} onUpdateEditSkill={updateEditSkill} onToggleEditSkillAllowedAttr={toggleEditSkillAllowedAttr}
-              newTemplateProfiles={newTemplateProfiles} editTemplateProfiles={editTemplateProfiles}
-              onAddProfile={addNewProfile} onRemoveProfile={removeNewProfile} onUpdateProfile={updateNewProfile} onAddProfileOption={addNewProfileOption} onRemoveProfileOption={removeNewProfileOption} onUpdateProfileOption={updateNewProfileOption} onUpdateProfileTargetMode={updateNewProfileTargetMode} onToggleProfileSkill={toggleNewProfileSkill}
-              onAddEditProfile={addEditProfile} onRemoveEditProfile={removeEditProfile} onUpdateEditProfile={updateEditProfile} onAddEditProfileOption={addEditProfileOption} onRemoveEditProfileOption={removeEditProfileOption} onUpdateEditProfileOption={updateEditProfileOption} onUpdateEditProfileTargetMode={updateEditProfileTargetMode} onToggleEditProfileSkill={toggleEditProfileSkill}
-              newCoreResources={newCoreResources} editCoreResources={editCoreResources}
-              onAddCoreResource={addNewCoreResource} onRemoveCoreResource={removeNewCoreResource} onUpdateCoreResource={updateNewCoreResource}
-              onUpdateCoreResourceEnabled={updateNewCoreResourceEnabled} onUpdateCoreResourceEditable={updateNewCoreResourceEditable} onUpdateCoreResourceShowNotes={updateNewCoreResourceShowNotes}
-              onAddEditCoreResource={addEditCoreResource} onRemoveEditCoreResource={removeEditCoreResource} onUpdateEditCoreResource={updateEditCoreResource}
-              onUpdateEditCoreResourceEnabled={updateEditCoreResourceEnabled} onUpdateEditCoreResourceEditable={updateEditCoreResourceEditable} onUpdateEditCoreResourceShowNotes={updateEditCoreResourceShowNotes}
-              newAcConfigs={newAcConfigs}
-              onAddNewAcConfig={addNewAcConfig} onRemoveNewAcConfig={removeNewAcConfig} onUpdateNewAcConfig={updateNewAcConfig}
-              onAddNewAcFieldForConfig={addNewAcFieldForConfig} onRemoveNewAcFieldForConfig={removeNewAcFieldForConfig}
-              onUpdateNewAcFieldForConfig={updateNewAcFieldForConfig} onUpdateNewAcFieldEditableForConfig={updateNewAcFieldEditableForConfig}
-              onToggleNewAcAttributeIdForConfig={toggleNewAcAttributeIdForConfig} onUpdateNewAcAttributeModifierForConfig={updateNewAcAttributeModifierForConfig}
-              editAcConfigs={editAcConfigs}
-              onAddEditAcConfig={addEditAcConfig} onRemoveEditAcConfig={removeEditAcConfig} onUpdateEditAcConfig={updateEditAcConfig}
-              onAddEditAcFieldForConfig={addEditAcFieldForConfig} onRemoveEditAcFieldForConfig={removeEditAcFieldForConfig}
-              onUpdateEditAcFieldForConfig={updateEditAcFieldForConfig} onUpdateEditAcFieldEditableForConfig={updateEditAcFieldEditableForConfig}
-              onToggleEditAcAttributeIdForConfig={toggleEditAcAttributeIdForConfig} onUpdateEditAcAttributeModifierForConfig={updateEditAcAttributeModifierForConfig}
-              newAttrModifiersEnabled={newAttrModifiersEnabled}
-              onNewAttrModifiersEnabledChange={setNewAttrModifiersEnabled}
-              onNewAttrModifierFormulaChange={setNewAttrModifierFormula}
-              onNewSkillFormulaChange={setNewSkillFormula}
-              editAttrModifiersEnabled={editAttrModifiersEnabled}
-              onEditAttrModifiersEnabledChange={setEditAttrModifiersEnabled}
-              onEditAttrModifierFormulaChange={setEditAttrModifierFormula}
-              onEditSkillFormulaChange={setEditSkillFormula}
-              newCharacterSections={newCharacterSections}
-              onAddNewCharacterSection={addNewCharacterSection}
-              onRemoveNewCharacterSection={removeNewCharacterSection}
-              onUpdateNewCharacterSection={updateNewCharacterSection}
-              editCharacterSections={editCharacterSections}
-              onAddEditCharacterSection={addEditCharacterSection}
-              onRemoveEditCharacterSection={removeEditCharacterSection}
-              onUpdateEditCharacterSection={updateEditCharacterSection}
-              newResistances={newResistances} editResistances={editResistances}
-              onNewResistancesChange={setNewResistances}
-              onEditResistancesChange={setEditResistances}
-              newTemplateAttrsForResistance={newTemplateAttrs}
-              editTemplateAttrsForResistance={editTemplateAttrs}
-              newFeatureSkills={newFeatureSkills} onNewFeatureSkillsChange={setNewFeatureSkills}
-              newFeatureCustomFields={newFeatureCustomFields} onNewFeatureCustomFieldsChange={setNewFeatureCustomFields}
-              newFeatureCoreResources={newFeatureCoreResources} onNewFeatureCoreResourcesChange={setNewFeatureCoreResources}
-              newFeatureArmorClass={newFeatureArmorClass} onNewFeatureArmorClassChange={setNewFeatureArmorClass}
-              newFeatureCharacterSections={newFeatureCharacterSections} onNewFeatureCharacterSectionsChange={setNewFeatureCharacterSections}
-              newFeatureSkillProfiles={newFeatureSkillProfiles} onNewFeatureSkillProfilesChange={setNewFeatureSkillProfiles}
-              newFeatureResistance={newFeatureResistance} onNewFeatureResistanceChange={setNewFeatureResistance}
-              editFeatureSkills={editFeatureSkills} onEditFeatureSkillsChange={setEditFeatureSkills}
-              editFeatureCustomFields={editFeatureCustomFields} onEditFeatureCustomFieldsChange={setEditFeatureCustomFields}
-              editFeatureCoreResources={editFeatureCoreResources} onEditFeatureCoreResourcesChange={setEditFeatureCoreResources}
-              editFeatureArmorClass={editFeatureArmorClass} onEditFeatureArmorClassChange={setEditFeatureArmorClass}
-              editFeatureCharacterSections={editFeatureCharacterSections} onEditFeatureCharacterSectionsChange={setEditFeatureCharacterSections}
-              editFeatureSkillProfiles={editFeatureSkillProfiles} onEditFeatureSkillProfilesChange={setEditFeatureSkillProfiles}
-              editFeatureResistance={editFeatureResistance} onEditFeatureResistanceChange={setEditFeatureResistance}
-            />
           </div>
         )}
         {activeTab === 'books' && (

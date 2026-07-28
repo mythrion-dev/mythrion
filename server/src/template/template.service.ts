@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common'
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, ConflictException, Logger } from '@nestjs/common'
 import { PrismaService } from '../prisma.service.js'
 import { DbNull } from '@prisma/client/runtime/client'
 import { MembershipService } from '../membership/membership.service.js'
@@ -193,6 +193,14 @@ export class TemplateService {
     const adventure = await this.prisma.adventure.findUnique({ where: { id: adventureId } })
     if (!adventure) throw new NotFoundException('Adventure not found')
 
+    // Enforce single template per campaign: reject if an attached template exists
+    if (adventure.originalTemplateId || adventure.templateSnapshot) {
+      throw new ConflictException(
+        'This campaign already has an attached template. ' +
+        'Detach it first before creating a campaign-owned template.',
+      )
+    }
+
     // Create the template with attributes and skills (initially without attribute links)
     const armorClasses = dto.armorClasses ?? []
     const created = await this.prisma.template.create({
@@ -366,6 +374,12 @@ export class TemplateService {
         })
       }
     }
+
+    // Set template source to 'campaign' since a campaign-owned template was created
+    await this.prisma.adventure.update({
+      where: { id: adventureId },
+      data: { templateSource: 'campaign' },
+    })
 
     // Invalidate list cache for this adventure
     await this.invalidateCache(adventureId, created.id)
@@ -1063,6 +1077,19 @@ export class TemplateService {
 
     const result = await this.prisma.template.delete({ where: { id } })
 
+    // If this was a campaign-owned template, update templateSource if no more remain
+    if (template.adventureId) {
+      const remaining = await this.prisma.template.count({
+        where: { adventureId: template.adventureId },
+      })
+      if (remaining === 0) {
+        await this.prisma.adventure.update({
+          where: { id: template.adventureId },
+          data: { templateSource: null },
+        })
+      }
+    }
+
     // Invalidate template caches
     await this.invalidateCache(template.adventureId, id, userId)
 
@@ -1568,6 +1595,17 @@ export class TemplateService {
       )
     }
 
+    // Reject if campaign-owned templates exist
+    const campaignCount = await this.prisma.template.count({
+      where: { adventureId },
+    })
+    if (campaignCount > 0) {
+      throw new ConflictException(
+        'This campaign has campaign-owned templates. ' +
+        'Remove them first before attaching a template.',
+      )
+    }
+
     const template = await this.prisma.template.findUnique({
       where: { id: templateId },
       include: templateInclude,
@@ -1582,6 +1620,7 @@ export class TemplateService {
       data: {
         templateSnapshot: snapshot as any,
         originalTemplateId: templateId,
+        templateSource: 'attached',
       },
     })
 
@@ -1613,6 +1652,17 @@ export class TemplateService {
       select: { originalTemplateId: true },
     })
 
+    // Reject if campaign-owned templates exist
+    const campaignCount = await this.prisma.template.count({
+      where: { adventureId },
+    })
+    if (campaignCount > 0) {
+      throw new ConflictException(
+        'This campaign has campaign-owned templates. ' +
+        'Remove them first before attaching a template.',
+      )
+    }
+
     const template = await this.prisma.template.findUnique({
       where: { id: templateId },
       include: templateInclude,
@@ -1627,6 +1677,7 @@ export class TemplateService {
       data: {
         templateSnapshot: snapshot as any,
         originalTemplateId: templateId,
+        templateSource: 'attached',
       },
     })
 
@@ -1662,6 +1713,7 @@ export class TemplateService {
       data: {
         originalTemplateId: null,
         templateSnapshot: DbNull,
+        templateSource: null,
       },
     })
 
