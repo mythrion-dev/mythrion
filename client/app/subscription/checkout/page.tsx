@@ -192,6 +192,13 @@ function CheckoutContent() {
         securityCode,
       )
 
+      console.log('[checkout] Card token created:', {
+        id: cardToken.id,
+        firstSix: cardToken.first_six_digits,
+        lastFour: cardToken.last_four_digits,
+        status: cardToken.status,
+      })
+
       setStep('creating')
 
       // 2. Create subscription on server with card_token_id
