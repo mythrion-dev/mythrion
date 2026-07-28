@@ -1660,6 +1660,7 @@ export class TemplateService {
       where: { id: adventureId },
       data: {
         originalTemplateId: null,
+        templateSnapshot: null,
       },
     })
 
@@ -1684,7 +1685,10 @@ export class TemplateService {
 
     if (!adventure) throw new NotFoundException('Adventure not found')
     if (!adventure.templateSnapshot) {
-      throw new NotFoundException('No template snapshot found for this adventure')
+      return {
+        snapshot: null,
+        originalTemplateId: null,
+      }
     }
 
     return {

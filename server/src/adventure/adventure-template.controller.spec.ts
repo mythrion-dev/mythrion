@@ -45,6 +45,7 @@ describe('AdventureTemplateController', () => {
       detachFromAdventure: jest.fn().mockResolvedValue({
         id: 'adv-1',
         originalTemplateId: null,
+        templateSnapshot: null,
       }),
       replaceAdventureTemplate: jest.fn().mockResolvedValue({
         id: 'adv-1',
@@ -111,13 +112,16 @@ describe('AdventureTemplateController', () => {
       expect(result.originalTemplateId).toBe('tpl-1')
     })
 
-    it('propagates a NotFoundException when no snapshot exists', async () => {
-      const { NotFoundException } = require('@nestjs/common')
-      mockTemplateService.getTemplateSnapshot.mockRejectedValue(
-        new NotFoundException('No template snapshot found for this adventure'),
-      )
+    it('returns null snapshot when no snapshot exists', async () => {
+      mockTemplateService.getTemplateSnapshot.mockResolvedValue({
+        snapshot: null,
+        originalTemplateId: null,
+      })
 
-      await expect(controller.getSnapshot(mockUserReq, 'adv-1')).rejects.toThrow('No template snapshot found')
+      const result = await controller.getSnapshot(mockUserReq, 'adv-1')
+
+      expect(result.snapshot).toBeNull()
+      expect(result.originalTemplateId).toBeNull()
     })
 
     it('propagates a ForbiddenException when user is not a member', async () => {
@@ -155,11 +159,13 @@ describe('AdventureTemplateController', () => {
       mockTemplateService.detachFromAdventure.mockResolvedValue({
         id: 'adv-1',
         originalTemplateId: null,
+        templateSnapshot: null,
       })
 
       const result = await controller.detach(mockUserReq, 'adv-1')
 
       expect(result.originalTemplateId).toBeNull()
+      expect(result.templateSnapshot).toBeNull()
     })
   })
 

@@ -1527,9 +1527,9 @@ describe('TemplateService', () => {
     const adventureId = 'adv-1'
     const userId = 'user-1'
 
-    it('detaches template link and keeps snapshot', async () => {
+    it('detaches template link and clears snapshot', async () => {
       prisma.adventure.findUnique.mockResolvedValue({ originalTemplateId: 'template-1' })
-      const updatedAdventure = { id: adventureId, originalTemplateId: null }
+      const updatedAdventure = { id: adventureId, originalTemplateId: null, templateSnapshot: null }
       prisma.adventure.update.mockResolvedValue(updatedAdventure)
 
       const result = await service.detachFromAdventure(adventureId, userId)
@@ -1538,7 +1538,7 @@ describe('TemplateService', () => {
       expect(prisma.adventure.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: adventureId },
-          data: { originalTemplateId: null },
+          data: { originalTemplateId: null, templateSnapshot: null },
         }),
       )
       expect(mockRedisService.del).toHaveBeenCalledWith(`templates:adventure:${adventureId}`)
@@ -1547,13 +1547,18 @@ describe('TemplateService', () => {
 
     it('handles already-detached template', async () => {
       prisma.adventure.findUnique.mockResolvedValue({ originalTemplateId: null })
-      const updatedAdventure = { id: adventureId, originalTemplateId: null }
+      const updatedAdventure = { id: adventureId, originalTemplateId: null, templateSnapshot: null }
       prisma.adventure.update.mockResolvedValue(updatedAdventure)
 
       const result = await service.detachFromAdventure(adventureId, userId)
 
-      expect(prisma.adventure.update).toHaveBeenCalled()
+      expect(prisma.adventure.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ originalTemplateId: null, templateSnapshot: null }),
+        }),
+      )
       expect(result.originalTemplateId).toBeNull()
+      expect(result.templateSnapshot).toBeNull()
     })
 
     it('throws ForbiddenException when user is not GM', async () => {
@@ -1595,15 +1600,17 @@ describe('TemplateService', () => {
       await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow('Adventure not found')
     })
 
-    it('throws NotFoundException when no snapshot exists', async () => {
+    it('returns null snapshot when no snapshot exists', async () => {
       mockMembershipService.isMember.mockResolvedValue(true)
       prisma.adventure.findUnique.mockResolvedValue({
         templateSnapshot: null,
         originalTemplateId: null,
       })
 
-      await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow(NotFoundException)
-      await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow('No template snapshot found for this adventure')
+      const result = await service.getTemplateSnapshot(adventureId, userId)
+
+      expect(result.snapshot).toBeNull()
+      expect(result.originalTemplateId).toBeNull()
     })
 
     it('throws ForbiddenException when user is not a member', async () => {
