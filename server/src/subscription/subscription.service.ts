@@ -92,6 +92,12 @@ export class SubscriptionService {
       throw new NotFoundException(`Subscription plan "${planId}" not found`)
     }
 
+    // Fetch user's display name for MP fraud analysis
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { displayName: true },
+    })
+
     // Build the back_url for MP redirect after checkout
     const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000'
     const backUrl = `${frontendUrl}/subscription/success`
@@ -107,6 +113,7 @@ export class SubscriptionService {
       plan.slug,
       plan.name,
       cardTokenId,
+      user?.displayName ?? undefined,
     )
 
     // Upsert the UserSubscription row (create or replace cancelled/expired one)

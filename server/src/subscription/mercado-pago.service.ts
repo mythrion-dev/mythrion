@@ -73,6 +73,7 @@ export class MercadoPagoService {
     planSlug: string,
     planName: string,
     cardTokenId?: string,
+    payerName?: string,
   ): Promise<MercadoPagoSubscriptionResponse> {
     try {
       // In test environment (TEST- access token), MP API test-user emails
@@ -89,6 +90,15 @@ export class MercadoPagoService {
         reason: `Mythrion Premium - ${planName}`,
         payer_email: mpPayerEmail,
         back_url: backUrl,
+      }
+
+      // Include full payer name for MP fraud analysis (helps reduce cc_rejected_high_risk)
+      if (payerName) {
+        const spaceIdx = payerName.indexOf(' ')
+        body.payer = {
+          first_name: spaceIdx >= 0 ? payerName.slice(0, spaceIdx) : payerName,
+          last_name: spaceIdx >= 0 ? payerName.slice(spaceIdx + 1) : '',
+        }
       }
 
       if (cardTokenId) {
