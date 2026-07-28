@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt'
 import { PrismaService } from '../prisma.service.js'
 import { SubscriptionService } from './subscription.service.js'
 import { SubscriptionController } from './subscription.controller.js'
+import { AdminPlansController } from './admin-plans.controller.js'
 import { MercadoPagoService } from './mercado-pago.service.js'
 
 @Module({
@@ -12,7 +13,7 @@ import { MercadoPagoService } from './mercado-pago.service.js'
       signOptions: { expiresIn: '15m' },
     }),
   ],
-  controllers: [SubscriptionController],
+  controllers: [SubscriptionController, AdminPlansController],
   providers: [SubscriptionService, MercadoPagoService, PrismaService],
   exports: [SubscriptionService],
 })

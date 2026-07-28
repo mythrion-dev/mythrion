@@ -175,14 +175,23 @@ describe('MercadoPagoService', () => {
       })
 
       await service.createSubscription(
-        planId, payerEmail, backUrl, planPrice, planSlug, planName, 'card-token-123',
+        planId, payerEmail, backUrl, planPrice, planSlug, planName, 'card-token-123', 'João Silva', '123.456.789-09',
       )
 
       const sentBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
+      expect(sentBody.preapproval_plan_id).toBe(planId)
       expect(sentBody.card_token_id).toBe('card-token-123')
       expect(sentBody.status).toBe('authorized')
       // Should NOT include auto_recurring when card_token_id is present
       expect(sentBody).not.toHaveProperty('auto_recurring')
+      // Should include full payer object
+      expect(sentBody.payer).toBeDefined()
+      expect(sentBody.payer.first_name).toBe('João')
+      expect(sentBody.payer.last_name).toBe('Silva')
+      expect(sentBody.payer.identification).toEqual({
+        type: 'CPF',
+        number: '12345678909',
+      })
     })
 
     it('throws UnprocessableEntityException on MP API error', async () => {
@@ -212,7 +221,7 @@ describe('MercadoPagoService', () => {
       })
 
       await service.createSubscription(
-        planId, payerEmail, backUrl, planPrice, planSlug, planName, undefined, 'João Silva Santos',
+        planId, payerEmail, backUrl, planPrice, planSlug, planName, 'card-tok-payer', 'João Silva Santos',
       )
 
       const sentBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
@@ -228,7 +237,7 @@ describe('MercadoPagoService', () => {
       })
 
       await service.createSubscription(
-        planId, payerEmail, backUrl, planPrice, planSlug, planName, undefined, 'Mononym',
+        planId, payerEmail, backUrl, planPrice, planSlug, planName, 'card-tok-mononym', 'Mononym',
       )
 
       const sentBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
@@ -243,7 +252,7 @@ describe('MercadoPagoService', () => {
       })
 
       await service.createSubscription(
-        planId, payerEmail, backUrl, planPrice, planSlug, planName, undefined, 'Maria Santos', '123.456.789-09',
+        planId, payerEmail, backUrl, planPrice, planSlug, planName, 'card-tok-cpf', 'Maria Santos', '123.456.789-09',
       )
 
       const sentBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)

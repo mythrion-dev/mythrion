@@ -93,12 +93,19 @@ export class MercadoPagoService {
         back_url: backUrl,
       }
 
-      // Include full payer data for MP fraud analysis (helps reduce cc_rejected_high_risk)
-      if (payerName) {
-        const spaceIdx = payerName.indexOf(' ')
-        body.payer = {
-          first_name: spaceIdx >= 0 ? payerName.slice(0, spaceIdx) : payerName,
-          last_name: spaceIdx >= 0 ? payerName.slice(spaceIdx + 1) : '',
+      if (cardTokenId) {
+        // Card token flow: use preapproval_plan_id + card_token_id + status: "authorized"
+        // as documented by MP's subscription API. This triggers 3DS during tokenization
+        // and keeps full payer context, avoiding cc_rejected_high_risk.
+        // Do NOT send auto_recurring — the plan already has frequency/amount configured.
+        body.preapproval_plan_id = planId
+        body.card_token_id = cardTokenId
+        body.status = 'authorized'
+        body.payer = {}
+        if (payerName) {
+          const spaceIdx = payerName.indexOf(' ')
+          body.payer.first_name = spaceIdx >= 0 ? payerName.slice(0, spaceIdx) : payerName
+          body.payer.last_name = spaceIdx >= 0 ? payerName.slice(spaceIdx + 1) : ''
         }
         if (payerDocument) {
           body.payer.identification = {
@@ -106,16 +113,6 @@ export class MercadoPagoService {
             number: payerDocument.replace(/\D/g, ''),
           }
         }
-      }
-
-      if (cardTokenId) {
-        // When a card token is provided, the payer has already authorized
-        // the recurring charges upfront. Matching the MP API cURL example
-        // which uses status: "authorized" with card_token_id.
-        // MP will return status: "pending" regardless, but sending
-        // "authorized" is required for the card token to be accepted.
-        body.card_token_id = cardTokenId
-        body.status = 'authorized'
       } else {
         // Redirect-based Checkout Pro flow — MP collects card details
         // on their hosted checkout page
