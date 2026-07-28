@@ -87,4 +87,77 @@ describe('CampaignCard', () => {
     render(<CampaignCard {...defaultProps} playerCount={undefined} />)
     expect(screen.getByText('0 / 4 players')).toBeDefined()
   })
+
+  // ── Session info tests ──
+
+  it('shows weekday, time, and type when all session fields are provided', () => {
+    render(
+      <CampaignCard
+        {...defaultProps}
+        sessionWeekday="Friday"
+        sessionTime="20:00"
+        sessionType="ONLINE"
+      />,
+    )
+    expect(screen.getByText(/Friday/i)).toBeDefined()
+    expect(screen.getByText(/20:00/)).toBeDefined()
+    expect(screen.getByText(/Online/)).toBeDefined()
+  })
+
+  it('shows type only when weekday and time are not provided', () => {
+    render(
+      <CampaignCard
+        {...defaultProps}
+        sessionWeekday={null}
+        sessionTime={null}
+        sessionType="IN_PERSON"
+      />,
+    )
+    expect(screen.getByText(/In Person/)).toBeDefined()
+    // Should not show a bullet separator without both weekday and time
+    expect(screen.queryByText(/•/)).toBeNull()
+  })
+
+  it('shows weekday only when type and time are not provided', () => {
+    render(
+      <CampaignCard
+        {...defaultProps}
+        sessionWeekday="Wednesday"
+        sessionTime={null}
+        sessionType={null}
+      />,
+    )
+    expect(screen.getByText(/Wednesday/)).toBeDefined()
+  })
+
+  it('renders nothing for session info when all session fields are null', () => {
+    render(
+      <CampaignCard
+        {...defaultProps}
+        sessionWeekday={null}
+        sessionTime={null}
+        sessionType={null}
+      />,
+    )
+    // The session info row should not exist
+    expect(screen.queryByText(/Online/)).toBeNull()
+    expect(screen.queryByText(/In Person/)).toBeNull()
+    // Still renders the card content
+    expect(screen.getByText("The Dragon's Lair")).toBeDefined()
+  })
+
+  it('shows weekday and time with bullet separator when both are provided', () => {
+    render(
+      <CampaignCard
+        {...defaultProps}
+        sessionWeekday="Saturday"
+        sessionTime="14:30"
+        sessionType={null}
+      />,
+    )
+    // The bullet should appear between weekday and time
+    const card = document.querySelector('.card-interactive')
+    expect(card?.textContent).toMatch(/Saturday/)
+    expect(card?.textContent).toMatch(/14:30/)
+  })
 })

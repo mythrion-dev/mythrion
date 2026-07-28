@@ -11,6 +11,9 @@ interface CampaignCardProps {
   ownerDisplayName: string | null
   playerCount?: number
   index?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
 }
 
 export function CampaignCard({
@@ -22,10 +25,15 @@ export function CampaignCard({
   ownerDisplayName,
   playerCount = 0,
   index = 0,
+  sessionWeekday,
+  sessionTime,
+  sessionType,
 }: CampaignCardProps) {
   const truncatedSynopsis = synopsis && synopsis.length > 120
     ? synopsis.slice(0, 120).trimEnd() + '...'
     : synopsis
+
+  const hasSessionInfo = sessionWeekday || sessionTime || sessionType
 
   return (
     <Link
@@ -53,6 +61,23 @@ export function CampaignCard({
         <p className="text-sm text-muted italic mb-4 flex-1">
           No synopsis yet.
         </p>
+      )}
+
+      {/* Session info row */}
+      {hasSessionInfo && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-400">
+          {sessionWeekday && sessionTime && (
+            <span>{sessionWeekday} &bull; {sessionTime}</span>
+          )}
+          {sessionWeekday && !sessionTime && (
+            <span>{sessionWeekday}</span>
+          )}
+          {sessionTime && !sessionWeekday && (
+            <span>{sessionTime}</span>
+          )}
+          {sessionType === 'ONLINE' && <span>&#x1F310; Online</span>}
+          {sessionType === 'IN_PERSON' && <span>&#x1F4CD; In Person</span>}
+        </div>
       )}
 
       <div className="flex items-center justify-between pt-3 border-t border-border">

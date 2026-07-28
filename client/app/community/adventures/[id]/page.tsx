@@ -20,6 +20,9 @@ interface Adventure {
   playerCount?: number
   createdAt: string
   updatedAt: string
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
 }
 
 interface AdventureMember {
@@ -246,6 +249,28 @@ function AdventureDetailContent() {
             {adventure.synopsis || 'No synopsis provided.'}
           </p>
         </div>
+
+        {/* Session Information */}
+        {adventure.sessionWeekday || adventure.sessionTime || adventure.sessionType ? (
+          <div className="card p-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Session Information</h3>
+            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+              {adventure.sessionWeekday && (
+                <><span className="text-muted">Day:</span><span>{adventure.sessionWeekday}</span></>
+              )}
+              {adventure.sessionTime && (
+                <><span className="text-muted">Time:</span><span>{adventure.sessionTime}</span></>
+              )}
+              {adventure.sessionType && (
+                <><span className="text-muted">Format:</span><span>{adventure.sessionType === 'ONLINE' ? '🌐 Online' : '📍 In Person'}</span></>
+              )}
+            </div>
+          </div>
+        ) : (
+          <p className="text-gray-400 italic text-sm mt-2">
+            Session schedule not defined
+          </p>
+        )}
 
         {/* Details grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-border">

@@ -2,17 +2,27 @@
 
 import type { FormEvent } from 'react'
 
+const weekdays = [
+  'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+]
+
 export function EditForm({
   name,
   campaign,
   synopsis,
   maxPlayers,
+  sessionWeekday,
+  sessionTime,
+  sessionType,
   error,
   saving,
   onNameChange,
   onCampaignChange,
   onSynopsisChange,
   onMaxPlayersChange,
+  onSessionWeekdayChange,
+  onSessionTimeChange,
+  onSessionTypeChange,
   onCancel,
   onSubmit,
 }: {
@@ -20,12 +30,18 @@ export function EditForm({
   campaign: string
   synopsis: string
   maxPlayers: number
+  sessionWeekday: string
+  sessionTime: string
+  sessionType: string
   error: string | null
   saving: boolean
   onNameChange: (v: string) => void
   onCampaignChange: (v: string) => void
   onSynopsisChange: (v: string) => void
   onMaxPlayersChange: (v: number) => void
+  onSessionWeekdayChange: (v: string) => void
+  onSessionTimeChange: (v: string) => void
+  onSessionTypeChange: (v: string) => void
   onCancel: () => void
   onSubmit: (e: FormEvent) => void
 }) {
@@ -77,6 +93,54 @@ export function EditForm({
             }}
           />
           <span className="badge badge-gold min-w-[2rem] text-center">{maxPlayers}</span>
+        </div>
+      </div>
+
+      {/* Session Schedule */}
+      <div>
+        <label className="label">Session Schedule</label>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-1.5">
+          <div>
+            <label className="text-xs text-muted mb-1 block">Day</label>
+            <select
+              value={sessionWeekday}
+              onChange={e => onSessionWeekdayChange(e.target.value)}
+              className="input-field"
+            >
+              <option value="">Select day...</option>
+              {weekdays.map((day) => (
+                <option key={day} value={day}>{day}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-muted mb-1 block">Time</label>
+            <input
+              type="time"
+              value={sessionTime}
+              onChange={e => onSessionTimeChange(e.target.value)}
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted mb-1 block">Format</label>
+            <div className="flex gap-1 pt-0.5">
+              <button
+                type="button"
+                onClick={() => onSessionTypeChange('ONLINE')}
+                className={`tab-pill flex-1 ${sessionType === 'ONLINE' ? 'tab-pill-active' : ''}`}
+              >
+                🌐 Online
+              </button>
+              <button
+                type="button"
+                onClick={() => onSessionTypeChange('IN_PERSON')}
+                className={`tab-pill flex-1 ${sessionType === 'IN_PERSON' ? 'tab-pill-active' : ''}`}
+              >
+                📍 In Person
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

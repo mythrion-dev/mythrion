@@ -86,7 +86,7 @@ export default function AdventureDetailPage() {
   const { user } = useAuth()
   const [adventure, setAdventure] = useState<Adventure | null>(null); const [fetching, setFetching] = useState(true)
   const [userRole, setUserRole] = useState<string | null>(null)
-  const [editing, setEditing] = useState(false); const [editName, setEditName] = useState(''); const [editCampaign, setEditCampaign] = useState(''); const [editSynopsis, setEditSynopsis] = useState(''); const [editMaxPlayers, setEditMaxPlayers] = useState(4); const [editError, setEditError] = useState<string | null>(null); const [saving, setSaving] = useState(false)
+  const [editing, setEditing] = useState(false); const [editName, setEditName] = useState(''); const [editCampaign, setEditCampaign] = useState(''); const [editSynopsis, setEditSynopsis] = useState(''); const [editMaxPlayers, setEditMaxPlayers] = useState(4); const [editSessionWeekday, setEditSessionWeekday] = useState(''); const [editSessionTime, setEditSessionTime] = useState(''); const [editSessionType, setEditSessionType] = useState(''); const [editError, setEditError] = useState<string | null>(null); const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false); const [deleting, setDeleting] = useState(false); const [deleteError, setDeleteError] = useState<string | null>(null)
   const [members, setMembers] = useState<Member[]>([]); const [showMembers, setShowMembers] = useState(false)
   const [showInvite, setShowInvite] = useState(false); const [inviteEmail, setInviteEmail] = useState(''); const [inviteRole, setInviteRole] = useState<'PLAYER' | 'GM'>('PLAYER'); const [inviteError, setInviteError] = useState<string | null>(null); const [inviteSending, setInviteSending] = useState(false); const [inviteLink, setInviteLink] = useState<string | null>(null); const [invitations, setInvitations] = useState<Invitation[]>([])
@@ -267,7 +267,7 @@ export default function AdventureDetailPage() {
   const [joinRequestsLoading, setJoinRequestsLoading] = useState(false)
   const [processingIds, setProcessingIds] = useState<string[]>([])
 
-  const fetchAdventure = useCallback(async () => { try { const d = await api.get<Adventure>(`/adventures/${id}`); setAdventure(d); setEditName(d.name); setEditCampaign(d.campaign); setEditSynopsis(d.synopsis ?? ''); setEditMaxPlayers(d.maxPlayers) } catch (e: unknown) { if ((e as { statusCode?: number }).statusCode === 401 || (e as { statusCode?: number }).statusCode === 403) router.replace('/login') } finally { setFetching(false) } }, [id, router])
+  const fetchAdventure = useCallback(async () => { try { const d = await api.get<Adventure>(`/adventures/${id}`); setAdventure(d); setEditName(d.name); setEditCampaign(d.campaign); setEditSynopsis(d.synopsis ?? ''); setEditMaxPlayers(d.maxPlayers); setEditSessionWeekday((d as any).sessionWeekday ?? ''); setEditSessionTime((d as any).sessionTime ?? ''); setEditSessionType((d as any).sessionType ?? '') } catch (e: unknown) { if ((e as { statusCode?: number }).statusCode === 401 || (e as { statusCode?: number }).statusCode === 403) router.replace('/login') } finally { setFetching(false) } }, [id, router])
   const resolveRole = useCallback(async () => { try { const all = await api.get<Array<{ id: string; role: string }>>('/me/adventures'); const e = all.find(a => a.id === id); if (e) setUserRole(e.role) } catch { } }, [id])
   useEffect(() => { fetchAdventure(); resolveRole() }, [fetchAdventure, resolveRole])
   const fetchMembers = useCallback(async () => { try { setMembers(await api.get<Member[]>(`/adventures/${id}/members`)) } catch { } }, [id])
@@ -480,7 +480,7 @@ export default function AdventureDetailPage() {
   async function handleRemoveCharacter(sid: string) { try { await api.post(`/character-sheets/${sid}/unlink`); fetchCampaignCharacters() } catch { } }
   async function handleUpdate(e: FormEvent) {
     e.preventDefault(); setEditError(null); setSaving(true)
-    try { const u = await api.patch<Adventure>(`/adventures/${id}`, { name: editName.trim() || undefined, campaign: editCampaign.trim() || undefined, synopsis: editSynopsis.trim() || undefined, maxPlayers: editMaxPlayers }); setAdventure(u); setEditing(false) } catch (err) { setEditError(err instanceof Error ? err.message : 'Failed to update') } finally { setSaving(false) }
+    try { const u = await api.patch<Adventure>(`/adventures/${id}`, { name: editName.trim() || undefined, campaign: editCampaign.trim() || undefined, synopsis: editSynopsis.trim() || undefined, maxPlayers: editMaxPlayers, sessionWeekday: editSessionWeekday || undefined, sessionTime: editSessionTime || undefined, sessionType: editSessionType || undefined }); setAdventure(u); setEditing(false) } catch (err) { setEditError(err instanceof Error ? err.message : 'Failed to update') } finally { setSaving(false) }
   }
   async function handleDelete() { setDeleteError(null); setDeleting(true); try { await api.delete(`/adventures/${id}`); router.push('/dashboard') } catch (err) { setDeleteError(err instanceof Error ? err.message : 'Failed to delete'); setDeleting(false); setConfirmDelete(false) } }
   async function handleInviteByEmail(e: FormEvent) { e.preventDefault(); setInviteError(null); setInviteSending(true); try { await api.post(`/adventures/${id}/invitations/email`, { email: inviteEmail.trim(), role: inviteRole }); setInviteEmail(''); fetchInvitations() } catch (err) { setInviteError(err instanceof Error ? err.message : 'Failed to send invitation') } finally { setInviteSending(false) } }
@@ -527,6 +527,26 @@ export default function AdventureDetailPage() {
         </div>
         <hr className="divider" />
         {activeTab === 'campaign' && (<div className="space-y-6">
+          {/* Session Information */}
+          {(adventure as any).sessionWeekday || (adventure as any).sessionTime || (adventure as any).sessionType ? (
+            <div className="card p-4">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Session Information</h3>
+              <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+                {(adventure as any).sessionWeekday && (
+                  <><span className="text-muted">Day:</span><span>{(adventure as any).sessionWeekday}</span></>
+                )}
+                {(adventure as any).sessionTime && (
+                  <><span className="text-muted">Time:</span><span>{(adventure as any).sessionTime}</span></>
+                )}
+                {(adventure as any).sessionType && (
+                  <><span className="text-muted">Format:</span><span>{(adventure as any).sessionType === 'ONLINE' ? '🌐 Online' : '📍 In Person'}</span></>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted italic">Session schedule not defined</p>
+          )}
+
           <CollapsibleSection title="Party Members" accent expanded={showMembers} onToggle={() => { setShowMembers(!showMembers); if (!showMembers) { fetchMembers(); if (isGM) fetchInvitations() } }}>
             {members.length === 0 ? <LoadingSkeleton variant="list" /> : <div className="space-y-2">{members.map(m => <MemberRow key={m.id} member={m} isGM={isGM} isSelf={m.user.id === user?.id} onRemove={() => handleRemoveMember(m.user.id)} />)}</div>}
           </CollapsibleSection>
@@ -634,7 +654,7 @@ export default function AdventureDetailPage() {
           <BookListPanel adventureId={id} isGM={isGM} onSelectBook={setSelectedBookId} />
         )}
         {confirmDelete && <DeleteModal name={adventure.name} error={deleteError} loading={deleting} onCancel={() => setConfirmDelete(false)} onConfirm={handleDelete} />}
-      </div>) : (<EditForm name={editName} campaign={editCampaign} synopsis={editSynopsis} maxPlayers={editMaxPlayers} error={editError} saving={saving} onNameChange={setEditName} onCampaignChange={setEditCampaign} onSynopsisChange={setEditSynopsis} onMaxPlayersChange={setEditMaxPlayers} onCancel={() => { setEditing(false); setEditError(null) }} onSubmit={handleUpdate} />)}
+      </div>) : (<EditForm name={editName} campaign={editCampaign} synopsis={editSynopsis} maxPlayers={editMaxPlayers} sessionWeekday={editSessionWeekday} sessionTime={editSessionTime} sessionType={editSessionType} error={editError} saving={saving} onNameChange={setEditName} onCampaignChange={setEditCampaign} onSynopsisChange={setEditSynopsis} onMaxPlayersChange={setEditMaxPlayers} onSessionWeekdayChange={setEditSessionWeekday} onSessionTimeChange={setEditSessionTime} onSessionTypeChange={setEditSessionType} onCancel={() => { setEditing(false); setEditError(null) }} onSubmit={handleUpdate} />)}
 
       {/* NPC/Mob Sidebar — fixed right edge, GM-only */}
       {!editing && activeTab === 'campaign' && (

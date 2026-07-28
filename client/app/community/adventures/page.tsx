@@ -20,6 +20,9 @@ interface Adventure {
   updatedAt: string
   gmDisplayName?: string
   playerCount?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
 }
 
 interface AdventuresResponse {
@@ -36,6 +39,9 @@ function CommunityAdventuresContent() {
 
   const [search, setSearch] = useState(searchParams.get('search') ?? '')
   const [campaign, setCampaign] = useState(searchParams.get('campaign') ?? '')
+  const [sessionWeekday, setSessionWeekday] = useState(searchParams.get('sessionWeekday') ?? '')
+  const [sessionType, setSessionType] = useState(searchParams.get('sessionType') ?? '')
+  const [timePeriod, setTimePeriod] = useState(searchParams.get('timePeriod') ?? '')
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1)
   const [adventures, setAdventures] = useState<Adventure[]>([])
   const [total, setTotal] = useState(0)
@@ -47,10 +53,13 @@ function CommunityAdventuresContent() {
 
   // Sync search params back to URL
   const syncUrl = useCallback(
-    (s: string, c: string, p: number) => {
+    (s: string, c: string, sw: string, st: string, tp: string, p: number) => {
       const params = new URLSearchParams()
       if (s) params.set('search', s)
       if (c) params.set('campaign', c)
+      if (sw) params.set('sessionWeekday', sw)
+      if (st) params.set('sessionType', st)
+      if (tp) params.set('timePeriod', tp)
       if (p > 1) params.set('page', String(p))
       const qs = params.toString()
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
@@ -81,6 +90,9 @@ function CommunityAdventuresContent() {
       const params = new URLSearchParams()
       if (debouncedSearch) params.set('search', debouncedSearch)
       if (campaign) params.set('campaign', campaign)
+      if (sessionWeekday) params.set('sessionWeekday', sessionWeekday)
+      if (sessionType) params.set('sessionType', sessionType)
+      if (timePeriod) params.set('timePeriod', timePeriod)
       params.set('page', String(page))
       params.set('limit', '12')
       const res = await api.get<AdventuresResponse>(
@@ -94,21 +106,25 @@ function CommunityAdventuresContent() {
     } finally {
       setFetching(false)
     }
-  }, [debouncedSearch, campaign, page])
+  }, [debouncedSearch, campaign, sessionWeekday, sessionType, timePeriod, page])
 
   useEffect(() => {
     fetchAdventures()
   }, [fetchAdventures])
 
-  // Sync URL when debouncedSearch, campaign, or page changes
+  // Sync URL when filters or page changes
   useEffect(() => {
-    syncUrl(debouncedSearch, campaign, page)
-  }, [debouncedSearch, campaign, page, syncUrl])
+    syncUrl(debouncedSearch, campaign, sessionWeekday, sessionType, timePeriod, page)
+  }, [debouncedSearch, campaign, sessionWeekday, sessionType, timePeriod, page, syncUrl])
 
   const handleCampaignChange = (value: string) => {
     setCampaign(value)
     setPage(1)
   }
+
+  const weekdays = [
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+  ]
 
   return (
     <>
@@ -193,6 +209,55 @@ function CommunityAdventuresContent() {
         />
       </div>
 
+      {/* Session filters row */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        <select
+          value={sessionWeekday}
+          onChange={(e) => { setSessionWeekday(e.target.value); setPage(1) }}
+          className="input w-full sm:w-44"
+        >
+          <option value="">Any day</option>
+          {weekdays.map((day) => (
+            <option key={day} value={day}>{day}</option>
+          ))}
+        </select>
+
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={() => { setSessionType(''); setPage(1) }}
+            className={`tab-pill ${sessionType === '' ? 'tab-pill-active' : ''}`}
+          >
+            All
+          </button>
+          <button
+            type="button"
+            onClick={() => { setSessionType('ONLINE'); setPage(1) }}
+            className={`tab-pill ${sessionType === 'ONLINE' ? 'tab-pill-active' : ''}`}
+          >
+            &#x1F310; Online
+          </button>
+          <button
+            type="button"
+            onClick={() => { setSessionType('IN_PERSON'); setPage(1) }}
+            className={`tab-pill ${sessionType === 'IN_PERSON' ? 'tab-pill-active' : ''}`}
+          >
+            &#x1F4CD; In Person
+          </button>
+        </div>
+
+        <select
+          value={timePeriod}
+          onChange={(e) => { setTimePeriod(e.target.value); setPage(1) }}
+          className="input w-full sm:w-40"
+        >
+          <option value="">Any time</option>
+          <option value="morning">Morning</option>
+          <option value="afternoon">Afternoon</option>
+          <option value="night">Night</option>
+        </select>
+      </div>
+
       {/* Error state */}
       {error && !fetching && (
         <div className="flex flex-col items-center justify-center py-8 space-y-4">
@@ -222,7 +287,7 @@ function CommunityAdventuresContent() {
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {adventures.map((adventure, i) => (
-              <CampaignCard key={adventure.id} id={adventure.id} name={adventure.name} campaign={adventure.campaign} synopsis={adventure.synopsis} maxPlayers={adventure.maxPlayers} ownerDisplayName={adventure.gmDisplayName ?? null} playerCount={adventure.playerCount} index={i} />
+              <CampaignCard key={adventure.id} id={adventure.id} name={adventure.name} campaign={adventure.campaign} synopsis={adventure.synopsis} maxPlayers={adventure.maxPlayers} ownerDisplayName={adventure.gmDisplayName ?? null} playerCount={adventure.playerCount} index={i} sessionWeekday={adventure.sessionWeekday} sessionTime={adventure.sessionTime} sessionType={adventure.sessionType} />
             ))}
           </div>
 

@@ -13,12 +13,25 @@ export default function NewAdventurePage() {
   const [synopsis, setSynopsis] = useState('')
   const [maxPlayers, setMaxPlayers] = useState(4)
   const [isPublic, setIsPublic] = useState(false)
+  const [sessionWeekday, setSessionWeekday] = useState('')
+  const [sessionTime, setSessionTime] = useState('')
+  const [sessionType, setSessionType] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  const weekdays = [
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+  ]
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
+
+    // Validate session fields
+    if (!sessionWeekday) { setError('Please select a session day.'); setSubmitting(false); return }
+    if (!sessionTime) { setError('Please select a session time.'); setSubmitting(false); return }
+    if (!sessionType) { setError('Please select a session type (Online or In Person).'); setSubmitting(false); return }
+
     setSubmitting(true)
 
     try {
@@ -28,6 +41,9 @@ export default function NewAdventurePage() {
         synopsis: synopsis.trim() || undefined,
         maxPlayers,
         isPublic: isPublic || undefined,
+        sessionWeekday,
+        sessionTime,
+        sessionType,
       })
       router.push(`/dashboard/adventures/${created.id}`)
     } catch (err) {
@@ -157,6 +173,58 @@ export default function NewAdventurePage() {
             </div>
           </div>
 
+          {/* Session Info */}
+          <div>
+            <label className="label">
+              Session Schedule <span className="text-muted font-normal">(required)</span>
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-1.5">
+              <div>
+                <label htmlFor="sessionWeekday" className="text-xs text-muted mb-1 block">Day</label>
+                <select
+                  id="sessionWeekday"
+                  value={sessionWeekday}
+                  onChange={(e) => setSessionWeekday(e.target.value)}
+                  className="input-field"
+                >
+                  <option value="">Select day...</option>
+                  {weekdays.map((day) => (
+                    <option key={day} value={day}>{day}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="sessionTime" className="text-xs text-muted mb-1 block">Time</label>
+                <input
+                  id="sessionTime"
+                  type="time"
+                  value={sessionTime}
+                  onChange={(e) => setSessionTime(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted mb-1 block">Format</label>
+                <div className="flex gap-1 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setSessionType('ONLINE')}
+                    className={`tab-pill flex-1 ${sessionType === 'ONLINE' ? 'tab-pill-active' : ''}`}
+                  >
+                    🌐 Online
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSessionType('IN_PERSON')}
+                    className={`tab-pill flex-1 ${sessionType === 'IN_PERSON' ? 'tab-pill-active' : ''}`}
+                  >
+                    📍 In Person
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Public toggle */}
           <div className="flex items-start gap-3 pt-1">
             <button
@@ -191,7 +259,7 @@ export default function NewAdventurePage() {
             </Link>
             <button
               type="submit"
-              disabled={submitting || name.trim().length === 0 || campaign.trim().length === 0}
+              disabled={submitting || name.trim().length === 0 || campaign.trim().length === 0 || !sessionWeekday || !sessionTime || !sessionType}
               className="btn-primary text-sm"
             >
               {submitting ? (
