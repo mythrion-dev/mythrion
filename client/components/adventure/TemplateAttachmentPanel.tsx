@@ -40,6 +40,8 @@ export function TemplateAttachmentPanel({
   const [detaching, setDetaching] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const hasAttachment = originalTemplateId !== null || templateSnapshot !== null
+
   const handleSelect = useCallback(async (templateId: string, _templateName: string) => {
     if (hasAttachment) {
       if (!confirm('Changing the template will affect only new characters. Existing characters will keep their current template and data. Continue?')) return
@@ -71,8 +73,6 @@ export function TemplateAttachmentPanel({
       setDetaching(false)
     }
   }, [adventureId, onDetached])
-
-  const hasAttachment = originalTemplateId !== null || templateSnapshot !== null
 
   return (
     <div className="card !p-4">
