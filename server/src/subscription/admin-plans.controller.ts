@@ -13,6 +13,13 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common'
+import {
+  IsString,
+  IsOptional,
+  IsInt,
+  Min,
+  IsNotEmpty,
+} from 'class-validator'
 import { PrismaService } from '../prisma.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { AdminGuard } from '../auth/admin.guard.js'
@@ -21,21 +28,41 @@ import { SkipSubscriptionCheck } from '../auth/skip-subscription.decorator.js'
 /* ── DTOs ─────────────────────────────────────────── */
 
 class CreateSubscriptionPlanDto {
+  @IsString() @IsNotEmpty()
   id: string
+
+  @IsString() @IsNotEmpty()
   slug: string
+
+  @IsString() @IsNotEmpty()
   name: string
+
+  @IsOptional() @IsString()
   description?: string
+
   /** Price in cents (BRL) */
+  @IsInt() @Min(1)
   price: number
+
+  @IsString() @IsNotEmpty()
   mpPlanId: string
 }
 
 class UpdateSubscriptionPlanDto {
+  @IsOptional() @IsString() @IsNotEmpty()
   slug?: string
+
+  @IsOptional() @IsString() @IsNotEmpty()
   name?: string
+
+  @IsOptional() @IsString()
   description?: string
+
   /** Price in cents (BRL) */
+  @IsOptional() @IsInt() @Min(1)
   price?: number
+
+  @IsOptional() @IsString() @IsNotEmpty()
   mpPlanId?: string
 }
 
