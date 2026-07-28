@@ -38,4 +38,8 @@ export class CreateAdventureDto {
   @IsOptional()
   @IsIn(['ONLINE', 'IN_PERSON'])
   sessionType?: string
+
+  @IsString()
+  @IsOptional()
+  templateId?: string
 }

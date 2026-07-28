@@ -528,12 +528,10 @@ export type UserCreateNestedOneWithoutOwnedTemplatesInput = {
   connect?: Prisma.UserWhereUniqueInput
 }
 
-export type UserUpdateOneWithoutOwnedTemplatesNestedInput = {
+export type UserUpdateOneRequiredWithoutOwnedTemplatesNestedInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutOwnedTemplatesInput, Prisma.UserUncheckedCreateWithoutOwnedTemplatesInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutOwnedTemplatesInput
   upsert?: Prisma.UserUpsertWithoutOwnedTemplatesInput
-  disconnect?: Prisma.UserWhereInput | boolean
-  delete?: Prisma.UserWhereInput | boolean
   connect?: Prisma.UserWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutOwnedTemplatesInput, Prisma.UserUpdateWithoutOwnedTemplatesInput>, Prisma.UserUncheckedUpdateWithoutOwnedTemplatesInput>
 }

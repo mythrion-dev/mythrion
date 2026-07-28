@@ -7,6 +7,7 @@ import { AdventureService } from './adventure.service'
 import { PrismaService } from '../prisma.service'
 import { MembershipService } from '../membership/membership.service'
 import { CharacterSheetService } from '../character-sheet/character-sheet.service'
+import { TemplateService } from '../template/template.service'
 import { createMockPrismaService } from '../__mocks__/prisma-service.mock'
 
 const mockMembershipService = {
@@ -29,6 +30,19 @@ const mockCharacterSheetService = {
   findOne: jest.fn(),
 }
 
+const mockTemplateService = {
+  attachToAdventure: jest.fn().mockResolvedValue(undefined),
+  detachFromAdventure: jest.fn().mockResolvedValue(undefined),
+  getTemplateSnapshot: jest.fn(),
+  buildSnapshot: jest.fn(),
+  createStandalone: jest.fn(),
+  findAllByUser: jest.fn(),
+  findOne: jest.fn(),
+  update: jest.fn(),
+  remove: jest.fn(),
+  clone: jest.fn(),
+}
+
 describe('AdventureService', () => {
   let service: AdventureService
   let prisma: ReturnType<typeof createMockPrismaService>
@@ -46,6 +60,7 @@ describe('AdventureService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: MembershipService, useValue: mockMembershipService },
         { provide: CharacterSheetService, useValue: mockCharacterSheetService },
+        { provide: TemplateService, useValue: mockTemplateService },
       ],
     }).compile()
 
@@ -762,6 +777,80 @@ describe('AdventureService', () => {
 
         expect(result.hpActual).toBe(15)
         expect(result.hpMax).toBe(20)
+      })
+
+      // ── Snapshot-based createNpc tests ──
+
+      it('prefers originalTemplateId (snapshot) over templates[0]', async () => {
+        prisma.adventure.findUnique.mockResolvedValue({
+          id: 'a1',
+          originalTemplateId: 'snapshot-tpl',
+          templates: [{ id: 'legacy-tpl' }],
+        })
+        mockCharacterSheetService.create.mockResolvedValue({ id: 'sheet-1' })
+        prisma.characterSheet.update.mockResolvedValue({
+          id: 'sheet-1',
+          characterName: 'Snap Orc',
+          isNpc: true,
+          npcType: 'NPC',
+          level: 1,
+          hpActual: 0,
+          hpMax: 0,
+          template: { id: 'snapshot-tpl', name: 'Snapshot Template' },
+          coreResourceValues: [],
+        })
+
+        const result = await service.createNpc('a1', 'u1', { name: 'Snap Orc', type: 'NPC' })
+
+        expect(mockCharacterSheetService.create).toHaveBeenCalledWith(
+          'u1',
+          expect.objectContaining({ templateId: 'snapshot-tpl' }),
+        )
+        expect(result.template.id).toBe('snapshot-tpl')
+      })
+
+      it('falls back to templates[0]?.id when originalTemplateId is null', async () => {
+        prisma.adventure.findUnique.mockResolvedValue({
+          id: 'a1',
+          originalTemplateId: null,
+          templates: [{ id: 'legacy-tpl' }],
+        })
+        mockCharacterSheetService.create.mockResolvedValue({ id: 'sheet-1' })
+        prisma.characterSheet.update.mockResolvedValue({
+          id: 'sheet-1',
+          characterName: 'Legacy Orc',
+          isNpc: true,
+          npcType: 'NPC',
+          level: 1,
+          hpActual: 0,
+          hpMax: 0,
+          template: { id: 'legacy-tpl', name: 'Legacy Template' },
+          coreResourceValues: [],
+        })
+
+        const result = await service.createNpc('a1', 'u1', { name: 'Legacy Orc', type: 'NPC' })
+
+        expect(mockCharacterSheetService.create).toHaveBeenCalledWith(
+          'u1',
+          expect.objectContaining({ templateId: 'legacy-tpl' }),
+        )
+        expect(result.template.id).toBe('legacy-tpl')
+      })
+
+      it('throws NotFoundException when both originalTemplateId and templates are absent', async () => {
+        prisma.adventure.findUnique.mockResolvedValue({
+          id: 'a1',
+          originalTemplateId: null,
+          templates: [],
+        })
+
+        await expect(
+          service.createNpc('a1', 'u1', { name: 'NoTemplate' }),
+        ).rejects.toThrow(NotFoundException)
+
+        await expect(
+          service.createNpc('a1', 'u1', { name: 'NoTemplate' }),
+        ).rejects.toThrow('No template is attached to this adventure')
       })
     })
 

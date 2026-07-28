@@ -142,6 +142,8 @@ export const AdventureScalarFieldEnum = {
   sessionType: 'sessionType',
   ownerId: 'ownerId',
   isPublic: 'isPublic',
+  templateSnapshot: 'templateSnapshot',
+  originalTemplateId: 'originalTemplateId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -237,6 +239,8 @@ export const TemplateScalarFieldEnum = {
   id: 'id',
   adventureId: 'adventureId',
   ownerId: 'ownerId',
+  isPublic: 'isPublic',
+  useCount: 'useCount',
   name: 'name',
   description: 'description',
   attributeModifierFormula: 'attributeModifierFormula',
@@ -803,6 +807,14 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
 export const QueryMode = {
   default: 'default',
   insensitive: 'insensitive'
@@ -817,4 +829,13 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 

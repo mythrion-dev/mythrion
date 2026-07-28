@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import Link from 'next/link'
 import { PageNav } from '@/lib/breadcrumb'
+import { TemplatePickerModal } from '@/components/adventure/TemplatePickerModal'
 
 export default function NewAdventurePage() {
   const router = useRouter()
@@ -18,6 +19,9 @@ export default function NewAdventurePage() {
   const [sessionType, setSessionType] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [templateId, setTemplateId] = useState<string | null>(null)
+  const [templateName, setTemplateName] = useState<string | null>(null)
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
 
   const weekdays = [
     'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
@@ -36,6 +40,7 @@ export default function NewAdventurePage() {
         synopsis: synopsis.trim() || undefined,
         maxPlayers,
         isPublic: isPublic || undefined,
+        ...(templateId && { templateId }),
         ...(sessionWeekday && { sessionWeekday }),
         ...(sessionTime && { sessionTime }),
         ...(sessionType && { sessionType }),
@@ -237,6 +242,44 @@ export default function NewAdventurePage() {
               <span className="text-sm font-medium text-foreground">Public Campaign</span>
               <span className="text-xs text-muted">Anyone can see this campaign in the community explorer</span>
             </div>
+          </div>
+
+          {/* Template selection */}
+          <div className="pt-2">
+            <label className="label">
+              Character Sheet Template{' '}
+              <span className="text-muted font-normal">(optional)</span>
+            </label>
+            <div className="flex items-center gap-2 mt-1.5">
+              {templateName ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="badge text-xs" style={{ background: 'rgba(124,92,231,0.12)', color: '#9070f0', border: '1px solid rgba(124,92,231,0.18)' }}>
+                    {templateName}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setTemplateId(null); setTemplateName(null) }}
+                    className="btn-ghost text-xs !px-2 !py-0.5"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowTemplatePicker(true)}
+                  className="btn-ghost text-xs"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0" />
+                  </svg>
+                  Select Template
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-muted mt-1">
+              Attach a character sheet template to let players create characters.
+            </p>
           </div>
 
           {error && (

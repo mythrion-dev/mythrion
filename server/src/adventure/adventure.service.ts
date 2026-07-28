@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { CharacterSheetService } from '../character-sheet/character-sheet.service.js'
+import { TemplateService } from '../template/template.service.js'
 import { CreateAdventureDto } from './dto/create-adventure.dto.js'
 import { UpdateAdventureDto } from './dto/update-adventure.dto.js'
 
@@ -18,6 +19,7 @@ export class AdventureService {
     private readonly prisma: PrismaService,
     private readonly membership: MembershipService,
     private readonly sheetService: CharacterSheetService,
+    private readonly templateService: TemplateService,
   ) {}
 
   async create(userId: string, dto: CreateAdventureDto) {
@@ -37,6 +39,18 @@ export class AdventureService {
 
     // Auto-create GM membership for the creator
     await this.membership.createMembership(adventure.id, userId, 'GM')
+
+    // If a templateId was provided, attach it to the adventure
+    if (dto.templateId) {
+      try {
+        await this.templateService.attachToAdventure(dto.templateId, adventure.id, userId)
+      } catch (err: any) {
+        this.logger.warn(
+          `Failed to attach template ${dto.templateId} to adventure ${adventure.id}: ${err.message}`,
+        )
+        // Don't fail adventure creation — template attachment is optional
+      }
+    }
 
     return adventure
   }
@@ -343,13 +357,17 @@ export class AdventureService {
 
     const adventure = await this.prisma.adventure.findUnique({
       where: { id: adventureId },
-      include: { templates: { take: 1 } },
+      include: { templates: { take: 1, orderBy: { createdAt: 'asc' } } },
     })
     if (!adventure) throw new NotFoundException('Adventure not found')
 
-    const templateId = adventure.templates[0]?.id
+    // Prefer originalTemplateId (snapshot-based) over legacy templates[0]
+    const templateId = adventure.originalTemplateId ?? adventure.templates[0]?.id
     if (!templateId) {
-      throw new NotFoundException('No template exists for this adventure — create one first')
+      throw new NotFoundException(
+        'No template is attached to this adventure. ' +
+        'Attach a template via the adventure settings first, then create NPCs.',
+      )
     }
 
     // Create a full CharacterSheet using the shared service (handles attribute init, skills, etc.)

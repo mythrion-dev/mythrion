@@ -40,16 +40,20 @@ model Adventure {
   sessionType     String?              // "ONLINE" or "IN_PERSON"
   ownerId         String
   owner           User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  isPublic        Boolean              @default(false)
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  members         CampaignMember[]
-  invitations     CampaignInvitation[]
-  joinRequests    JoinRequest[]
-  templates       Template[]
-  characterSheets CharacterSheet[]
-  books           Book[]
+  isPublic             Boolean              @default(false)
+  templateSnapshot     Json?                @map("template_snapshot")
+  originalTemplateId   String?
+  originalTemplate     Template?            @relation("OriginalTemplateForAdventure", fields: [originalTemplateId], references: [id], onDelete: SetNull)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  members              CampaignMember[]
+  invitations          CampaignInvitation[]
+  joinRequests         JoinRequest[]
+  templates            Template[]
+  characterSheets      CharacterSheet[]
+  books                Book[]
   @@index([ownerId])
+  @@index([originalTemplateId])
 }
 
 enum JoinRequestStatus {
@@ -170,10 +174,12 @@ model RefreshToken {
 
 model Template {
   id                       String                    @id @default(cuid())
-  adventureId              String
-  adventure                Adventure                 @relation(fields: [adventureId], references: [id], onDelete: Cascade)
-  ownerId                  String?
-  owner                    User?                     @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  adventureId              String?
+  adventure                Adventure?                @relation(fields: [adventureId], references: [id], onDelete: SetNull)
+  ownerId                  String
+  owner                    User                      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  isPublic                 Boolean                   @default(false)
+  useCount                 Int                       @default(0)
   name                     String
   description              String?
   attributeModifierFormula String?
@@ -188,11 +194,14 @@ model Template {
   characterSections        TemplateCharacterSection[]
   resistances              TemplateResistance[]
   characterSheets          CharacterSheet[]
+  adventuresUsingAsOriginal Adventure[]               @relation("OriginalTemplateForAdventure")
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
 
   @@index([adventureId])
   @@index([ownerId])
+  @@index([isPublic])
+  @@index([useCount])
 }
 
 // ── Skill Modifier Profiles ──

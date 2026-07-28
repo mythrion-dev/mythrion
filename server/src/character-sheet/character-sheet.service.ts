@@ -14,7 +14,7 @@ import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
 import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
 
 const sheetInclude = {
-  adventure: { select: { id: true, name: true, campaign: true } },
+  adventure: { select: { id: true, name: true, campaign: true, originalTemplateId: true, templateSnapshot: true } },
   template: {
     select: {
       id: true,
@@ -405,6 +405,13 @@ export class CharacterSheetService {
       } catch {
         throw new ForbiddenException('You do not have access to this character sheet')
       }
+    }
+
+    // If the original template was deleted, reconstruct template data from the snapshot
+    if (!sheet.template && (sheet.adventure as any)?.templateSnapshot) {
+      ;(sheet as any).template = this.reconstructTemplateFromSnapshot(
+        (sheet.adventure as any).templateSnapshot,
+      )
     }
 
     // Cache the result
@@ -1293,5 +1300,86 @@ export class CharacterSheetService {
       if (!functions.has(t) && !seen.has(t)) { seen.add(t); vars.push(t) }
     }
     return vars
+  }
+
+  /**
+   * Reconstruct a template-like object from the adventure's templateSnapshot JSON.
+   * This is used as a fallback when the original template has been deleted
+   * (sheet.template is null) but the snapshot still exists on the adventure.
+   * Preserves the same shape that sheetInclude.template would return so the
+   * frontend receives a consistent data structure.
+   */
+  private reconstructTemplateFromSnapshot(snapshot: any): any {
+    if (!snapshot) return null
+
+    // Build a map of attribute ID -> { id, key, name } for resolving references
+    const attrMap = new Map<string, { id: string; key: string; name: string }>()
+    if (snapshot.attributes) {
+      for (const a of snapshot.attributes) {
+        attrMap.set(a.id, { id: a.id, key: a.key, name: a.name })
+      }
+    }
+
+    return {
+      id: snapshot.id,
+      name: snapshot.name,
+      attributeModifierFormula: snapshot.attributeModifierFormula ?? null,
+      attributeModifiersEnabled: snapshot.attributeModifiersEnabled ?? true,
+      skillFormula: snapshot.skillFormula ?? null,
+      attributes: (snapshot.attributes ?? []).map((a: any) => ({
+        ...a,
+        id: a.id, key: a.key, name: a.name, order: a.order,
+      })),
+      templateFields: (snapshot.templateFields ?? []).map((f: any) => ({
+        ...f,
+        id: f.id, key: f.key, label: f.label, order: f.order,
+      })),
+      templateSkills: (snapshot.templateSkills ?? []).map((s: any) => ({
+        ...s,
+        attribute: s.attributeId ? (attrMap.get(s.attributeId) ?? null) : null,
+        defaultAttribute: s.defaultAttributeId ? (attrMap.get(s.defaultAttributeId) ?? null) : null,
+      })),
+      skillModifierProfiles: (snapshot.skillModifierProfiles ?? []).map((p: any) => ({
+        ...p,
+        options: (p.options ?? []).map((o: any) => ({
+          ...o,
+          id: o.id, label: o.label, value: o.value, order: o.order,
+        })),
+      })),
+      coreResources: (snapshot.coreResources ?? []).map((cr: any) => ({
+        ...cr,
+        id: cr.id, slug: cr.slug, displayName: cr.displayName, enabled: cr.enabled,
+        editableByPlayer: cr.editableByPlayer, showNotes: cr.showNotes,
+      })),
+      armorClasses: (snapshot.armorClasses ?? []).map((ac: any) => ({
+        ...ac,
+        id: ac.id, name: ac.name, enabled: ac.enabled,
+        attributeModifiers: (ac.attributeModifiers ?? []).map((am: any) => ({
+          ...am,
+          attribute: am.attributeId ? (attrMap.get(am.attributeId) ?? null) : null,
+          defaultAttribute: am.defaultAttributeId ? (attrMap.get(am.defaultAttributeId) ?? null) : null,
+        })),
+        fields: (ac.fields ?? []).map((f: any) => ({
+          ...f,
+          id: f.id, name: f.name, key: f.key, defaultValue: f.defaultValue,
+          editableByPlayer: f.editableByPlayer, description: f.description, order: f.order,
+        })),
+      })),
+      characterSections: (snapshot.characterSections ?? []).map((cs: any) => ({
+        ...cs,
+        id: cs.id, name: cs.name, order: cs.order,
+      })),
+      resistances: (snapshot.resistances ?? []).map((r: any) => ({
+        ...r,
+        components: (r.components ?? []).map((c: any) => ({
+          ...c,
+          id: c.id, name: c.name, editableByPlayer: c.editableByPlayer, defaultValue: c.defaultValue, order: c.order,
+        })),
+        attributeModifiers: (r.attributeModifiers ?? []).map((am: any) => ({
+          ...am,
+          attribute: am.attributeId ? (attrMap.get(am.attributeId) ?? null) : null,
+        })),
+      })),
+    }
   }
 }
