@@ -5,7 +5,7 @@ jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }))
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals'
 import { Test } from '@nestjs/testing'
-import { NotFoundException, ForbiddenException } from '@nestjs/common'
+import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common'
 import { TemplateService } from './template.service'
 import { PrismaService } from '../prisma.service'
 import { MembershipService } from '../membership/membership.service'
@@ -1392,6 +1392,7 @@ describe('TemplateService', () => {
     })
 
     it('attaches a template and creates snapshot', async () => {
+      prisma.adventure.findUnique.mockResolvedValueOnce(null) // no existing attachment
       prisma.template.findUnique.mockResolvedValue(fullTemplate)
       const updatedAdventure = { id: adventureId, templateSnapshot: {}, originalTemplateId: templateId }
       prisma.adventure.update.mockResolvedValue(updatedAdventure)
@@ -1432,6 +1433,89 @@ describe('TemplateService', () => {
 
       await expect(service.attachToAdventure(templateId, adventureId, 'not-gm')).rejects.toThrow(ForbiddenException)
       expect(prisma.template.findUnique).not.toHaveBeenCalled()
+    })
+
+    it('throws BadRequestException when a template is already attached', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        originalTemplateId: 'existing-tpl',
+        templateSnapshot: { name: 'Existing Snapshot' },
+      })
+
+      await expect(
+        service.attachToAdventure('new-tpl', adventureId, userId),
+      ).rejects.toThrow(BadRequestException)
+      expect(prisma.template.findUnique).not.toHaveBeenCalled()
+      expect(prisma.adventure.update).not.toHaveBeenCalled()
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  replaceAdventureTemplate()
+  // ──────────────────────────────────────────────
+
+  describe('replaceAdventureTemplate', () => {
+    const templateId = 'template-2'
+    const adventureId = 'adv-1'
+    const userId = 'user-1'
+    const fullTemplate = mockTemplateWithInclude({
+      name: 'Replacement Template',
+      attributes: [{ id: 'attr-2', key: 'dex', name: 'Dexterity', templateId, order: 0 }],
+    })
+
+    it('replaces the attached template and creates a new snapshot', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({ originalTemplateId: 'template-1' })
+      prisma.template.findUnique.mockResolvedValue(fullTemplate)
+      const updatedAdventure = { id: adventureId, templateSnapshot: {}, originalTemplateId: templateId }
+      prisma.adventure.update.mockResolvedValue(updatedAdventure)
+
+      const result = await service.replaceAdventureTemplate(templateId, adventureId, userId)
+
+      expect(mockMembershipService.requireRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
+      expect(prisma.template.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: templateId } }),
+      )
+      expect(prisma.adventure.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: adventureId },
+          data: expect.objectContaining({ originalTemplateId: templateId }),
+        }),
+      )
+      // Cache invalidated for current adventure
+      expect(mockRedisService.del).toHaveBeenCalledWith(`templates:adventure:${adventureId}`)
+      // Cache invalidated for both old template ('template-1') and new template ('template-2')
+      expect(mockRedisService.del).toHaveBeenCalledWith(expect.stringContaining('template-1'))
+      expect(result).toEqual(updatedAdventure)
+    })
+
+    it('throws NotFoundException when template not found', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({ originalTemplateId: 'template-1' })
+      prisma.template.findUnique.mockResolvedValue(null)
+
+      await expect(
+        service.replaceAdventureTemplate('nonexistent', adventureId, userId),
+      ).rejects.toThrow(NotFoundException)
+      expect(prisma.adventure.update).not.toHaveBeenCalled()
+    })
+
+    it('throws ForbiddenException when user is not GM', async () => {
+      mockMembershipService.requireRole.mockRejectedValue(new ForbiddenException('Not GM'))
+
+      await expect(
+        service.replaceAdventureTemplate(templateId, adventureId, 'not-gm'),
+      ).rejects.toThrow(ForbiddenException)
+      expect(prisma.template.findUnique).not.toHaveBeenCalled()
+    })
+
+    it('works when no template was previously attached', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({ originalTemplateId: null })
+      prisma.template.findUnique.mockResolvedValue(fullTemplate)
+      const updatedAdventure = { id: adventureId, templateSnapshot: {}, originalTemplateId: templateId }
+      prisma.adventure.update.mockResolvedValue(updatedAdventure)
+
+      const result = await service.replaceAdventureTemplate(templateId, adventureId, userId)
+
+      expect(prisma.adventure.update).toHaveBeenCalled()
+      expect(result.originalTemplateId).toBe(templateId)
     })
   })
 

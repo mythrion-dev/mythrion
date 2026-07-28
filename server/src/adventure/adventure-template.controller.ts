@@ -36,6 +36,20 @@ export class AdventureTemplateController {
   }
 
   /**
+   * POST /adventures/:id/template/replace — Replace the attached template (atomic swap)
+   * Auth: GM only
+   * Body: { templateId: string }
+   */
+  @Post('replace')
+  replace(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') adventureId: string,
+    @Body('templateId') templateId: string,
+  ) {
+    return this.templateService.replaceAdventureTemplate(templateId, adventureId, req.user.sub)
+  }
+
+  /**
    * GET /adventures/:id/template/snapshot — Get the attached template snapshot
    * Auth: MEMBER or higher
    */

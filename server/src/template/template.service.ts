@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common'
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common'
 import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { CreateTemplateDto } from './dto/create-template.dto.js'
@@ -1556,6 +1556,17 @@ export class TemplateService {
     // GM only
     await this.membership.requireRole(adventureId, userId, 'GM')
 
+    // Enforce single template per campaign: reject if one is already attached
+    const existing = await this.prisma.adventure.findUnique({
+      where: { id: adventureId },
+      select: { originalTemplateId: true, templateSnapshot: true },
+    })
+    if (existing?.originalTemplateId || existing?.templateSnapshot) {
+      throw new BadRequestException(
+        'This campaign already has an attached template. Use the replace endpoint to change it.',
+      )
+    }
+
     const template = await this.prisma.template.findUnique({
       where: { id: templateId },
       include: templateInclude,
@@ -1581,6 +1592,52 @@ export class TemplateService {
 
     // Invalidate adventure template list cache
     await this.invalidateCache(adventureId, templateId)
+
+    return adventure
+  }
+
+  /**
+   * Replace the attached template on an adventure (GM only).
+   * Atomically swaps the template snapshot and originalTemplateId.
+   * No pre-check for existing attachment — works like attach when none exists.
+   * Invalidates cache for both old and new templates.
+   */
+  async replaceAdventureTemplate(templateId: string, adventureId: string, userId: string) {
+    // GM only
+    await this.membership.requireRole(adventureId, userId, 'GM')
+
+    // Read existing attachment for old template ID cache invalidation
+    const current = await this.prisma.adventure.findUnique({
+      where: { id: adventureId },
+      select: { originalTemplateId: true },
+    })
+
+    const template = await this.prisma.template.findUnique({
+      where: { id: templateId },
+      include: templateInclude,
+    })
+    if (!template) throw new NotFoundException('Template not found')
+
+    // Build and store the new snapshot
+    const snapshot = await this.buildSnapshot(template)
+
+    const adventure = await this.prisma.adventure.update({
+      where: { id: adventureId },
+      data: {
+        templateSnapshot: snapshot as any,
+        originalTemplateId: templateId,
+      },
+    })
+
+    // Increment new template useCount
+    await this.prisma.template.update({
+      where: { id: templateId },
+      data: { useCount: { increment: 1 } },
+    })
+
+    // Invalidate cache for both old and new template
+    await this.invalidateCache(adventureId, templateId)
+    await this.invalidateCache(adventureId, current?.originalTemplateId ?? undefined)
 
     return adventure
   }

@@ -46,6 +46,11 @@ describe('AdventureTemplateController', () => {
         id: 'adv-1',
         originalTemplateId: null,
       }),
+      replaceAdventureTemplate: jest.fn().mockResolvedValue({
+        id: 'adv-1',
+        templateSnapshot: mockSnapshot,
+        originalTemplateId: 'tpl-2',
+      }),
     }
 
     const module: TestingModule = await Test.createTestingModule({
@@ -155,6 +160,38 @@ describe('AdventureTemplateController', () => {
       const result = await controller.detach(mockUserReq, 'adv-1')
 
       expect(result.originalTemplateId).toBeNull()
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  POST /adventures/:id/template/replace
+  // ──────────────────────────────────────────────
+
+  describe('replace (POST /adventures/:id/template/replace)', () => {
+    it('delegates to templateService.replaceAdventureTemplate with templateId, adventureId, and userId', async () => {
+      const result = await controller.replace(mockUserReq, 'adv-1', 'tpl-2')
+
+      expect(mockTemplateService.replaceAdventureTemplate).toHaveBeenCalledWith('tpl-2', 'adv-1', 'user-1')
+      expect(result.templateSnapshot).toBeDefined()
+      expect(result.originalTemplateId).toBe('tpl-2')
+    })
+
+    it('propagates a NotFoundException when template is not found', async () => {
+      const { NotFoundException } = require('@nestjs/common')
+      mockTemplateService.replaceAdventureTemplate.mockRejectedValue(
+        new NotFoundException('Template not found'),
+      )
+
+      await expect(controller.replace(mockUserReq, 'adv-1', 'nonexistent')).rejects.toThrow('Template not found')
+    })
+
+    it('propagates a ForbiddenException when user is not GM', async () => {
+      const { ForbiddenException } = require('@nestjs/common')
+      mockTemplateService.replaceAdventureTemplate.mockRejectedValue(
+        new ForbiddenException('Only the Game Master can perform this action'),
+      )
+
+      await expect(controller.replace(mockUserReq, 'adv-1', 'tpl-2')).rejects.toThrow('Only the Game Master')
     })
   })
 })

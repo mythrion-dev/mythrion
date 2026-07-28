@@ -43,13 +43,14 @@ export function TemplateAttachmentPanel({
   const hasAttachment = originalTemplateId !== null || templateSnapshot !== null
 
   const handleSelect = useCallback(async (templateId: string, _templateName: string) => {
-    if (hasAttachment) {
-      if (!confirm('Changing the template will affect only new characters. Existing characters will keep their current template and data. Continue?')) return
-    }
     setAttaching(true)
     setError(null)
     try {
-      await api.post(`/adventures/${adventureId}/template/attach`, { templateId })
+      if (hasAttachment) {
+        await api.post(`/adventures/${adventureId}/template/replace`, { templateId })
+      } else {
+        await api.post(`/adventures/${adventureId}/template/attach`, { templateId })
+      }
       setShowPicker(false)
       onAttached?.()
     } catch (err) {
@@ -99,17 +100,25 @@ export function TemplateAttachmentPanel({
                 )}
               </button>
             ) : (
-              <button
-                onClick={handleDetach}
-                disabled={detaching}
-                className="btn-ghost text-xs !px-3 !py-1"
-              >
-                {detaching ? (
-                  <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                ) : (
-                  'Detach'
-                )}
-              </button>
+              <>
+                <button
+                  onClick={() => setShowPicker(true)}
+                  className="btn-secondary text-xs !px-3 !py-1"
+                >
+                  Replace
+                </button>
+                <button
+                  onClick={handleDetach}
+                  disabled={detaching}
+                  className="btn-ghost text-xs !px-3 !py-1"
+                >
+                  {detaching ? (
+                    <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  ) : (
+                    'Detach'
+                  )}
+                </button>
+              </>
             )}
           </div>
         )}
