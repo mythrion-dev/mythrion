@@ -1,29 +1,65 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, useCallback, Suspense, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useSubscription } from '@/lib/subscription-context'
 import { createSubscription, fetchPlans, type Plan } from '@/lib/subscription-api'
+import initMercadoPago, { MercadoPagoInstance } from '@mercadopago/sdk-react/esm/mercadoPago/initMercadoPago'
+import type { TInstanceMercadoPago } from '@mercadopago/sdk-react/esm/mercadoPago/initMercadoPago/type'
 import Link from 'next/link'
 
+/* ---------- helpers ---------- */
+function formatCardNumber(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 16)
+  return digits.replace(/(\d{4})(?=\d)/g, '$1 ')
+}
+
+function formatExpiry(value: string): { month: string; year: string } {
+  const digits = value.replace(/\D/g, '').slice(0, 6)
+  const month = digits.slice(0, 2)
+  const year = digits.slice(2)
+  return { month, year }
+}
+
+function isValidMonth(m: string): boolean {
+  const n = parseInt(m, 10)
+  return !Number.isNaN(n) && n >= 1 && n <= 12
+}
+
+function isValidCvv(len: number): boolean {
+  return len >= 3 && len <= 4
+}
+
+/* ---------- component ---------- */
 function CheckoutContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuth()
   const { refresh } = useSubscription()
+
   const [plan, setPlan] = useState<Plan | null>(null)
   const [planLoading, setPlanLoading] = useState(true)
-  const [step, setStep] = useState<'idle' | 'creating' | 'redirecting' | 'error'>('idle')
+  const [sdkReady, setSdkReady] = useState(false)
+
+  // Form fields
+  const [cardNumber, setCardNumber] = useState('')
+  const [cardholderName, setCardholderName] = useState('')
+  const [expiryDisplay, setExpiryDisplay] = useState('')
+  const [securityCode, setSecurityCode] = useState('')
+
+  // Submission
+  const [step, setStep] = useState<'form' | 'tokenizing' | 'creating' | 'redirecting' | 'error'>('form')
   const [errorMessage, setErrorMessage] = useState('')
+  const mpRef = useRef<TInstanceMercadoPago | undefined>(undefined)
 
   const planId = searchParams.get('planId')
 
-  // ----- Auth check -----
+  // ----- Auth & param check -----
   useEffect(() => {
     if (authLoading) return
     if (!user) {
-      router.replace('/login?redirect=/pricing')
+      router.replace('/login?redirect=/subscription/checkout?planId=' + (planId ?? ''))
       return
     }
     if (!planId) {
@@ -52,58 +88,142 @@ function CheckoutContent() {
       .finally(() => setPlanLoading(false))
   }, [planId])
 
-  // ----- Create subscription automatically when ready -----
+  // ----- Init Mercado Pago SDK -----
   useEffect(() => {
-    if (authLoading || planLoading || step !== 'idle' || !plan || !user) return
+    const key = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY
+    if (!key) {
+      console.warn('[checkout] NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY not set')
+      return
+    }
 
-    setStep('creating')
+    initMercadoPago(key, {
+      locale: 'pt-BR',
+      advancedFraudPrevention: true,
+    })
 
-    createSubscription(plan.id)
-      .then((result) => {
-        setStep('redirecting')
-        refresh()
-
-        if (result.initPoint) {
-          // Small delay so the user sees the "redirecionando" message before navigation
-          setTimeout(() => {
-            window.location.href = result.initPoint
-          }, 500)
-        } else {
-          router.push('/subscription/success')
-        }
+    MercadoPagoInstance.getInstance()
+      .then((instance) => {
+        mpRef.current = instance
+        setSdkReady(true)
       })
-      .catch((err: unknown) => {
-        console.error('[checkout] Error creating subscription:', err)
+      .catch((err) => {
+        console.error('[checkout] Failed to init MP SDK:', err)
         setStep('error')
-        setErrorMessage(
-          err instanceof Error
-            ? err.message
-            : 'Falha ao criar assinatura. Tente novamente.',
-        )
+        setErrorMessage('Erro ao carregar o processador de pagamentos. Recarregue a página.')
       })
-  }, [authLoading, planLoading, step, plan, user, planId, router, refresh])
+  }, [])
 
-  // ----- Loading / creating / redirecting states -----
-  if (step === 'creating' || step === 'redirecting') {
+  // ----- Handle submit -----
+  const handleSubmit = useCallback(async () => {
+    // Front-end validation
+    if (!cardNumber.trim()) {
+      setErrorMessage('Informe o número do cartão.')
+      setStep('error')
+      return
+    }
+    if (!cardholderName.trim()) {
+      setErrorMessage('Informe o nome do titular.')
+      setStep('error')
+      return
+    }
+    if (!expiryDisplay.trim()) {
+      setErrorMessage('Informe a data de validade.')
+      setStep('error')
+      return
+    }
+    if (!securityCode.trim()) {
+      setErrorMessage('Informe o código de segurança (CVV).')
+      setStep('error')
+      return
+    }
+
+    const { month, year } = formatExpiry(expiryDisplay)
+    if (!isValidMonth(month)) {
+      setErrorMessage('Mês de validade inválido (use 01–12).')
+      setStep('error')
+      return
+    }
+    if (year.length < 2) {
+      setErrorMessage('Informe o ano de validade completo.')
+      setStep('error')
+      return
+    }
+    if (!isValidCvv(securityCode.replace(/\D/g, '').length)) {
+      setErrorMessage('CVV inválido (3 ou 4 dígitos).')
+      setStep('error')
+      return
+    }
+
+    const mp = mpRef.current
+    if (!mp) {
+      setErrorMessage('Pagamento não disponível no momento. Recarregue a página.')
+      setStep('error')
+      return
+    }
+
+    setStep('tokenizing')
+    setErrorMessage('')
+
+    try {
+      // 1. Tokenize card – data goes browser → MP API directly, never touches our server
+      const cardToken = await mp.createCardToken({
+        cardNumber: cardNumber.replace(/\s/g, ''),
+        cardholderName: cardholderName.trim(),
+        cardExpirationMonth: month,
+        cardExpirationYear: year.length === 2 ? `20${year}` : year,
+        securityCode: securityCode.trim(),
+      })
+
+      setStep('creating')
+
+      // 2. Create subscription on server with card_token_id
+      const result = await createSubscription(planId!, cardToken.id)
+
+      setStep('redirecting')
+      refresh()
+
+      if (result.initPoint) {
+        // 3. Redirect to Mercado Pago checkout
+        setTimeout(() => {
+          window.location.href = result.initPoint
+        }, 500)
+      } else {
+        router.push('/subscription/success')
+      }
+    } catch (err: unknown) {
+      console.error('[checkout] Error:', err)
+      setStep('form') // go back to form so user can retry
+      setErrorMessage(
+        err instanceof Error ? err.message : 'Falha ao processar pagamento. Tente novamente.',
+      )
+    }
+  }, [cardNumber, cardholderName, expiryDisplay, securityCode, planId, router, refresh])
+
+  // ------ Processing states (tokenizing / creating / redirecting) -----
+  if (step === 'tokenizing' || step === 'creating' || step === 'redirecting') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-screen bg-background bg-pattern">
         <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
         <h2 className="mt-6 text-lg font-semibold text-foreground">
-          {step === 'creating'
-            ? 'Preparando sua assinatura...'
-            : 'Redirecionando para o Mercado Pago...'}
+          {step === 'tokenizing'
+            ? 'Processando cartão...'
+            : step === 'creating'
+              ? 'Criando assinatura...'
+              : 'Redirecionando para o Mercado Pago...'}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground max-w-sm text-center">
-          {step === 'creating'
-            ? 'Aguarde um momento enquanto configuramos o pagamento.'
-            : 'Você será redirecionado para o ambiente seguro do Mercado Pago para finalizar o pagamento.'}
+          {step === 'tokenizing'
+            ? 'Seus dados estão sendo enviados de forma segura para o Mercado Pago.'
+            : step === 'creating'
+              ? 'Aguarde enquanto finalizamos sua assinatura.'
+              : 'Você será redirecionado para o ambiente seguro do Mercado Pago.'}
         </p>
       </div>
     )
   }
 
-  // ----- Error state -----
-  if (step === 'error') {
+  // ----- Error state before any form data is entered -----
+  if (step === 'error' && !cardNumber && !cardholderName && !expiryDisplay && !securityCode) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-screen bg-background bg-pattern">
         <div className="max-w-md text-center px-4">
@@ -116,10 +236,10 @@ function CheckoutContent() {
           <p className="mt-2 text-sm text-muted-foreground">{errorMessage}</p>
           <div className="mt-6 flex gap-3 justify-center">
             <button
-              onClick={() => setStep('idle')}
+              onClick={() => window.location.reload()}
               className="px-6 py-2 rounded-lg bg-primary text-background font-semibold hover:opacity-90 transition-opacity"
             >
-              Tentar novamente
+              Recarregar
             </button>
             <Link
               href="/pricing"
@@ -133,31 +253,138 @@ function CheckoutContent() {
     )
   }
 
-  // ----- Initial state (before subscription creation fires) -----
+  // ----- Card form -----
+  const formattedPlanPrice = plan ? `R$ ${(plan.price / 100).toFixed(2)}` : ''
+  const showError = step === 'error' && errorMessage
+
   return (
-    <div className="flex-1 flex items-center justify-center min-h-screen bg-background bg-pattern px-4 py-12">
-      <div className="w-full max-w-lg text-center">
-        {plan && (
-          <>
-            <h1 className="text-2xl font-bold text-foreground">Finalizar assinatura</h1>
+    <div className="flex-1 flex items-start justify-center bg-background bg-pattern px-4 py-12 min-h-screen">
+      <div className="w-full max-w-md">
+        {/* Plan summary */}
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-bold text-foreground">Finalizar assinatura</h1>
+          {plan && (
             <p className="mt-2 text-sm text-muted-foreground">
               {plan.name} —{' '}
-              <span className="text-primary font-medium">
-                R$ {(plan.price / 100).toFixed(2)}
-              </span>
+              <span className="text-primary font-medium">{formattedPlanPrice}</span>
               {plan.slug === 'monthly' ? '/mês' : '/ano'}
             </p>
-          </>
-        )}
-
-        <div className="mt-8 p-6 bg-surface border border-border rounded-xl">
-          <div className="w-8 h-8 mx-auto border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-          <p className="mt-4 text-sm text-muted-foreground">
-            {planLoading ? 'Carregando dados do plano...' : 'Iniciando processo de assinatura...'}
-          </p>
+          )}
         </div>
 
-        <div className="mt-6">
+        {/* Card form */}
+        <div className="bg-surface border border-border rounded-xl p-6 space-y-5">
+          {/* Card number */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              Número do cartão
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="0000 0000 0000 0000"
+              value={cardNumber}
+              onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+              disabled={step !== 'form'}
+              className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50 text-sm tracking-wider"
+            />
+          </div>
+
+          {/* Cardholder name */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              Nome do titular
+            </label>
+            <input
+              type="text"
+              placeholder="Como está no cartão"
+              value={cardholderName}
+              onChange={(e) => setCardholderName(e.target.value)}
+              disabled={step !== 'form'}
+              className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50 text-sm uppercase"
+            />
+          </div>
+
+          {/* Expiry + CVV row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                Validade (MM/AA)
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="MM/AA"
+                value={expiryDisplay}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, '').slice(0, 4)
+                  if (raw.length >= 3) {
+                    setExpiryDisplay(`${raw.slice(0, 2)}/${raw.slice(2)}`)
+                  } else {
+                    setExpiryDisplay(raw)
+                  }
+                }}
+                disabled={step !== 'form'}
+                className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                CVV
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="123"
+                value={securityCode}
+                onChange={(e) => setSecurityCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                disabled={step !== 'form'}
+                className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50 text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Inline error */}
+          {showError && (
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-500">
+              {errorMessage}
+              <button
+                onClick={() => setStep('form')}
+                className="ml-2 underline hover:no-underline"
+              >
+                OK
+              </button>
+            </div>
+          )}
+
+          {/* Submit button */}
+          <button
+            type="button"
+            onClick={() => {
+              // Reset any prior inline error before submitting
+              setStep('form')
+              requestAnimationFrame(() => handleSubmit())
+            }}
+            disabled={!sdkReady || planLoading || step !== 'form'}
+            className="w-full py-3 rounded-lg bg-primary text-background font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          >
+            {!sdkReady
+              ? 'Preparando pagamento...'
+              : planLoading
+                ? 'Carregando...'
+                : `Assinar ${formattedPlanPrice}${plan?.slug === 'monthly' ? '/mês' : '/ano'}`}
+          </button>
+        </div>
+
+        {/* Security note */}
+        <p className="mt-4 text-xs text-muted-foreground text-center leading-relaxed">
+          Seus dados de cartão são enviados diretamente ao{' '}
+          <span className="text-foreground">Mercado Pago</span> e nunca passam pelos
+          nossos servidores.
+        </p>
+
+        {/* Back link */}
+        <div className="mt-6 text-center">
           <Link
             href="/pricing"
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
