@@ -75,9 +75,19 @@ export class MercadoPagoService {
     cardTokenId?: string,
   ): Promise<MercadoPagoSubscriptionResponse> {
     try {
+      // In test environment (TEST- access token), MP API test-user emails
+      // (test_user_*@testuser.com) fail the payer/collector type check when
+      // back_url is present. The actual payer identity is determined at the
+      // MP hosted checkout page, so we use a placeholder email for test users.
+      // In production (real access token), real user emails work fine.
+      const mpPayerEmail =
+        this.accessToken.startsWith('TEST-') && payerEmail.endsWith('@testuser.com')
+          ? 'payer@mythrion.com'
+          : payerEmail
+
       const body: Record<string, any> = {
         reason: `Mythrion Premium - ${planName}`,
-        payer_email: payerEmail,
+        payer_email: mpPayerEmail,
         back_url: backUrl,
       }
 

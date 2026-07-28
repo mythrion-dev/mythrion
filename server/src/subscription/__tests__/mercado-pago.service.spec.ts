@@ -29,7 +29,7 @@ describe('MercadoPagoService', () => {
     jest.clearAllMocks()
     process.env = {
       ...originalEnv,
-      MERCADO_PAGO_ACCESS_TOKEN: 'test-access-token',
+      MERCADO_PAGO_ACCESS_TOKEN: 'TEST-test-access-token',
       MERCADO_PAGO_WEBHOOK_SECRET: 'test-webhook-secret',
     }
     service = new MercadoPagoService()
@@ -126,6 +126,46 @@ describe('MercadoPagoService', () => {
         transaction_amount: 1200, // planPrice 120000 / 100 = R$ 1.200
         currency_id: 'BRL',
       })
+    })
+
+    it('replaces test user email with placeholder in test mode', async () => {
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ id: 'mp-sub-test', init_point: '...', status: 'pending' }),
+      })
+
+      await service.createSubscription(
+        planId,
+        'test_user_123456@testuser.com',
+        backUrl,
+        planPrice,
+        planSlug,
+        planName,
+      )
+
+      const sentBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
+      // Should NOT send the test user email (fails MP's payer/collector check)
+      expect(sentBody.payer_email).toBe('payer@mythrion.com')
+      expect(sentBody.payer_email).not.toBe('test_user_123456@testuser.com')
+    })
+
+    it('preserves regular email in test mode', async () => {
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ id: 'mp-sub-test', init_point: '...', status: 'pending' }),
+      })
+
+      await service.createSubscription(
+        planId,
+        'realuser@gmail.com',
+        backUrl,
+        planPrice,
+        planSlug,
+        planName,
+      )
+
+      const sentBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
+      expect(sentBody.payer_email).toBe('realuser@gmail.com')
     })
 
     it('includes card_token_id when provided', async () => {
