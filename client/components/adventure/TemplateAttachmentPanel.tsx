@@ -41,6 +41,9 @@ export function TemplateAttachmentPanel({
   const [error, setError] = useState<string | null>(null)
 
   const handleSelect = useCallback(async (templateId: string, _templateName: string) => {
+    if (hasAttachment) {
+      if (!confirm('Changing the template will affect only new characters. Existing characters will keep their current template and data. Continue?')) return
+    }
     setAttaching(true)
     setError(null)
     try {
@@ -52,7 +55,7 @@ export function TemplateAttachmentPanel({
     } finally {
       setAttaching(false)
     }
-  }, [adventureId, onAttached])
+  }, [adventureId, onAttached, hasAttachment])
 
   const handleDetach = useCallback(async () => {
     if (!confirm('Detach the template link? The snapshot will be preserved for existing character sheets, but you won\'t be able to track the original template from this adventure.')) return

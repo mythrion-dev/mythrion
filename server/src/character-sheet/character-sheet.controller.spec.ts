@@ -8,6 +8,7 @@ import { ResistanceCalculationService } from './resistance-calculation.service.j
 import { AcCalculationService } from './ac-calculation.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
+import { CreateCharacterFromCampaignDto } from './dto/create-character-from-campaign.dto.js'
 import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
 import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
 
@@ -67,6 +68,7 @@ describe('CharacterSheetController', () => {
       updateProfessionalSkill: jest.fn().mockResolvedValue({ id: 'ps-1', name: 'Master Crafting' }),
       removeProfessionalSkill: jest.fn().mockResolvedValue(undefined),
       updateProfessionalSkillProfileValue: jest.fn().mockResolvedValue({ success: true }),
+      createFromCampaignSnapshot: jest.fn().mockResolvedValue({ id: 'cs-campaign-1', characterName: 'Campaign Hero' }),
     }
 
     mockResistanceService = {
@@ -109,6 +111,21 @@ describe('CharacterSheetController', () => {
       const result = await controller.create(mockReq, dto)
       expect(mockSheetService.create).toHaveBeenCalledWith('user-1', dto)
       expect(result).toEqual({ id: 'sheet-1', characterName: 'Test Hero' })
+    })
+  })
+
+  describe('createFromCampaign', () => {
+    it('should delegate to sheetService.createFromCampaignSnapshot with userId and dto', async () => {
+      const dto: CreateCharacterFromCampaignDto = { characterName: 'Campaign Hero', adventureId: 'adv-1' }
+      const result = await controller.createFromCampaign(mockReq, dto)
+      expect(mockSheetService.createFromCampaignSnapshot).toHaveBeenCalledWith('user-1', dto)
+      expect(result).toEqual({ id: 'cs-campaign-1', characterName: 'Campaign Hero' })
+    })
+
+    it('should propagate service errors', async () => {
+      mockSheetService.createFromCampaignSnapshot.mockRejectedValueOnce(new Error('Service error'))
+      const dto: CreateCharacterFromCampaignDto = { characterName: 'Hero', adventureId: 'adv-campaign' }
+      await expect(controller.createFromCampaign(mockReq, dto)).rejects.toThrow('Service error')
     })
   })
 

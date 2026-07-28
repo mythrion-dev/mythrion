@@ -274,7 +274,7 @@ export default function AdventureDetailPage() {
   const [snapshotKey, setSnapshotKey] = useState(0)
 
   const [campaignCharacters, setCampaignCharacters] = useState<CampaignCharacter[]>([]); const [showCharacters, setShowCharacters] = useState(false)
-  const [showNewCharForm, setShowNewCharForm] = useState(false); const [newCharName, setNewCharName] = useState(''); const [newCharTemplateId, setNewCharTemplateId] = useState(''); const [newCharError, setNewCharError] = useState<string | null>(null); const [newCharCreating, setNewCharCreating] = useState(false)
+  const [showNewCharForm, setShowNewCharForm] = useState(false); const [newCharName, setNewCharName] = useState(''); const [newCharError, setNewCharError] = useState<string | null>(null); const [newCharCreating, setNewCharCreating] = useState(false)
   const [showLinkCharForm, setShowLinkCharForm] = useState(false); const [userSheets, setUserSheets] = useState<UserSheet[]>([]); const [linkSheetId, setLinkSheetId] = useState(''); const [linkCharError, setLinkCharError] = useState<string | null>(null); const [linkCharLinking, setLinkCharLinking] = useState(false)
   const [showNpcsMobs, setShowNpcsMobs] = useState(false)
 
@@ -519,8 +519,8 @@ export default function AdventureDetailPage() {
   async function handleTemplateAttached() { fetchSnapshot(); fetchTemplates(); setSnapshotKey(k => k + 1) }
   async function handleTemplateDetached() { setSnapshotData(null); setSnapshotKey(k => k + 1) }
   async function handleCreateCharacter(e: FormEvent) {
-    e.preventDefault(); setNewCharError(null); if (!newCharName.trim() || !newCharTemplateId) return; setNewCharCreating(true)
-    try { const s = await api.post<{ id: string }>('/character-sheets', { characterName: newCharName.trim(), templateId: newCharTemplateId }); router.push(`/dashboard/character-sheets/${s.id}`) } catch (err) { setNewCharError(err instanceof Error ? err.message : 'Failed to create character') } finally { setNewCharCreating(false) }
+    e.preventDefault(); setNewCharError(null); if (!newCharName.trim()) return; setNewCharCreating(true)
+    try { const s = await api.post<{ id: string }>('/character-sheets/from-campaign', { characterName: newCharName.trim(), adventureId: id }); router.push(`/dashboard/character-sheets/${s.id}`) } catch (err) { setNewCharError(err instanceof Error ? err.message : 'Failed to create character') } finally { setNewCharCreating(false) }
   }
   async function handleLinkCharacter(e: FormEvent) {
     e.preventDefault(); setLinkCharError(null); if (!linkSheetId) return; setLinkCharLinking(true)
@@ -603,7 +603,7 @@ export default function AdventureDetailPage() {
             <InvitePanel inviteRole={inviteRole} inviteEmail={inviteEmail} inviteLink={inviteLink} inviteError={inviteError} inviteSending={inviteSending} invitations={invitations} onRoleChange={setInviteRole} onEmailChange={setInviteEmail} onInviteByEmail={handleInviteByEmail} onInviteByLink={handleInviteByLink} onRevoke={handleRevokeInvitation} />
           </CollapsibleSection>}
           <CollapsibleSection title="Characters" accent expanded={showCharacters} onToggle={() => { setShowCharacters(!showCharacters); if (!showCharacters) { fetchCampaignCharacters(); fetchUserSheets() } }}>
-            <CharactersSection characters={campaignCharacters} isGM={isGM} userId={user?.id ?? ''} templates={templates} userSheets={userSheets} showNewCharForm={showNewCharForm} showLinkCharForm={showLinkCharForm} newCharName={newCharName} newCharTemplateId={newCharTemplateId} newCharError={newCharError} newCharCreating={newCharCreating} linkSheetId={linkSheetId} linkCharError={linkCharError} linkCharLinking={linkCharLinking} onNewCharClick={() => { setShowNewCharForm(true); setShowLinkCharForm(false); fetchTemplates() }} onLinkCharClick={() => { setShowLinkCharForm(true); setShowNewCharForm(false); fetchUserSheets() }} onCancelNewChar={() => { setShowNewCharForm(false); setNewCharName(''); setNewCharTemplateId(''); setNewCharError(null) }} onCancelLinkChar={() => { setShowLinkCharForm(false); setLinkSheetId(''); setLinkCharError(null) }} onCreateCharacter={handleCreateCharacter} onLinkCharacter={handleLinkCharacter} onNewCharNameChange={setNewCharName} onNewCharTemplateChange={setNewCharTemplateId} onLinkSheetChange={setLinkSheetId} onRemoveCharacter={handleRemoveCharacter} onViewCharacter={sid => router.push(`/dashboard/character-sheets/${sid}`)} />
+            <CharactersSection characters={campaignCharacters} isGM={isGM} userId={user?.id ?? ''} snapshotName={snapshotData?.snapshot?.name ?? null} userSheets={userSheets} showNewCharForm={showNewCharForm} showLinkCharForm={showLinkCharForm} newCharName={newCharName} newCharError={newCharError} newCharCreating={newCharCreating} linkSheetId={linkSheetId} linkCharError={linkCharError} linkCharLinking={linkCharLinking} onNewCharClick={() => { setShowNewCharForm(true); setShowLinkCharForm(false) }} onLinkCharClick={() => { setShowLinkCharForm(true); setShowNewCharForm(false); fetchUserSheets() }} onCancelNewChar={() => { setShowNewCharForm(false); setNewCharName(''); setNewCharError(null) }} onCancelLinkChar={() => { setShowLinkCharForm(false); setLinkSheetId(''); setLinkCharError(null) }} onCreateCharacter={handleCreateCharacter} onLinkCharacter={handleLinkCharacter} onNewCharNameChange={setNewCharName} onLinkSheetChange={setLinkSheetId} onRemoveCharacter={handleRemoveCharacter} onViewCharacter={sid => router.push(`/dashboard/character-sheets/${sid}`)} />
           </CollapsibleSection>
           {isGM && (
             <CollapsibleSection title="NPCs &amp; Mobs" accent expanded={showNpcsMobs} onToggle={() => setShowNpcsMobs(!showNpcsMobs)}>

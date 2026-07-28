@@ -11,6 +11,7 @@ import { MembershipService } from '../membership/membership.service.js'
 import { RedisService } from '../redis/redis.service.js'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
+import { CreateCharacterFromCampaignDto } from './dto/create-character-from-campaign.dto.js'
 import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
 
 const sheetInclude = {
@@ -321,6 +322,140 @@ export class CharacterSheetService {
 
     // Invalidate user's list cache for the new sheet
     await this.invalidateCache(sheet.id, userId, adventureId ?? undefined).catch(() => {})
+
+    return sheet
+  }
+
+  /** Create a character sheet from a campaign's template snapshot. */
+  async createFromCampaignSnapshot(userId: string, dto: CreateCharacterFromCampaignDto) {
+    // 1. Query Adventure for snapshot + originalTemplateId
+    const adventure = await this.prisma.adventure.findUnique({
+      where: { id: dto.adventureId },
+      select: { templateSnapshot: true, originalTemplateId: true },
+    })
+    if (!adventure) throw new NotFoundException('Campaign not found')
+
+    // 2. Validate snapshot exists
+    if (!adventure.templateSnapshot) {
+      throw new BadRequestException(
+        'No template is attached to this campaign. ' +
+        'The GM must attach a template before characters can be created.',
+      )
+    }
+    if (!adventure.originalTemplateId) {
+      throw new BadRequestException(
+        'The template reference is missing. ' +
+        'The GM must re-attach the template to this campaign.',
+      )
+    }
+
+    // 3. Validate membership
+    const isMember = await this.membership.isMember(dto.adventureId, userId)
+    if (!isMember) throw new ForbiddenException('You are not a member of this campaign')
+
+    // 4. Parse snapshot
+    const snapshot = adventure.templateSnapshot as any
+
+    // 5. Build skill profile values from snapshot data
+    const skillProfileValues: Array<{
+      skillId: string; profileId: string; optionId?: string | null
+    }> = []
+    const globalSkillFormula = snapshot.skillFormula as string | undefined
+    if (globalSkillFormula) {
+      const formulaVars = this.extractVariableNames(globalSkillFormula)
+      const profiles: any[] = snapshot.skillModifierProfiles ?? []
+      const skills: any[] = snapshot.templateSkills ?? []
+      for (const skill of skills) {
+        for (const profile of profiles) {
+          if (!formulaVars.includes(profile.name)) continue
+          const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
+          const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
+          if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(skill.name)) {
+            continue
+          }
+          const firstOption: any = (profile.options ?? [])[0]
+          skillProfileValues.push({ skillId: skill.id, profileId: profile.id, optionId: firstOption?.id ?? null })
+        }
+      }
+    }
+
+    // 6. Build armor class and resistance data from snapshot
+    const armorClasses: any[] = (snapshot.armorClasses ?? []).filter((ac: any) => ac.enabled !== false)
+    const resistances: any[] = snapshot.resistances ?? []
+
+    // 7. Create the sheet using snapshot data for all sub-resources
+    const sheet = await this.prisma.characterSheet.create({
+      data: {
+        characterName: dto.characterName,
+        playerName: dto.playerName ?? null,
+        level: dto.level ?? 1,
+        adventureId: dto.adventureId,
+        templateId: adventure.originalTemplateId,
+        ownerId: userId,
+        values: {
+          create: (snapshot.attributes ?? []).map((a: any) => ({ attributeId: a.id, value: '' })),
+        },
+        fieldValues: {
+          create: (snapshot.templateFields ?? []).map((f: any) => ({ templateFieldId: f.id, value: '' })),
+        },
+        skillValues: {
+          create: (snapshot.templateSkills ?? []).map((s: any) => ({
+            skillId: s.id,
+            value: '',
+            selectedAttributeId: (s as any).defaultAttributeId ?? s.attributeId ?? null,
+          })),
+        },
+        skillProfileValues: {
+          create: skillProfileValues.map(spv => ({
+            skillId: spv.skillId,
+            profileId: spv.profileId,
+            optionId: spv.optionId,
+          })),
+        },
+        coreResourceValues: {
+          create: (snapshot.coreResources ?? []).filter((cr: any) => cr.enabled).map((cr: any) => ({
+            coreResourceId: cr.id,
+          })),
+        },
+        acValues: armorClasses.some((ac: any) => (ac.fields ?? []).length > 0)
+          ? {
+              create: armorClasses.flatMap((ac: any) =>
+                (ac.fields ?? []).map((f: any) => ({
+                  fieldId: f.id,
+                  value: f.defaultValue,
+                }))
+              ),
+            }
+          : undefined,
+        acAttributeValues: armorClasses.some((ac: any) => (ac.attributeModifiers ?? []).length > 0)
+          ? {
+              create: armorClasses.flatMap((ac: any) =>
+                (ac.attributeModifiers ?? []).map((am: any) => ({
+                  acAttributeModifierId: am.id,
+                  selectedAttributeId: am.allowPlayerSelection ? (am.defaultAttributeId ?? null) : null,
+                }))
+              ),
+            }
+          : undefined,
+        resistanceValues: {
+          create: resistances.map((r: any) => ({
+            resistanceId: r.id,
+          })),
+        },
+        resistanceComponentValues: {
+          create: resistances.flatMap((r: any) =>
+            (r.components ?? []).map((c: any) => ({
+              componentId: c.id,
+              value: c.defaultValue,
+            })),
+          ),
+        },
+      },
+      include: sheetInclude,
+    })
+
+    // 8. Invalidate cache
+    await this.invalidateCache(sheet.id, userId, dto.adventureId).catch(() => {})
 
     return sheet
   }
@@ -1309,7 +1444,7 @@ export class CharacterSheetService {
    * Preserves the same shape that sheetInclude.template would return so the
    * frontend receives a consistent data structure.
    */
-  private reconstructTemplateFromSnapshot(snapshot: any): any {
+  public reconstructTemplateFromSnapshot(snapshot: any): any {
     if (!snapshot) return null
 
     // Build a map of attribute ID -> { id, key, name } for resolving references
