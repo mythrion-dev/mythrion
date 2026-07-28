@@ -59,38 +59,109 @@ describe('MercadoPagoService', () => {
     const planId = 'mp-plan-123'
     const payerEmail = 'user@example.com'
     const backUrl = 'http://localhost:3000/subscription/success'
+    const planPrice = 12000
+    const planSlug = 'monthly'
+    const planName = 'Plano Mensal'
 
-    it('creates a subscription and returns the response with init_point', async () => {
+    beforeEach(() => {
+      // createSubscription uses fetch() directly
+      jest.spyOn(global, 'fetch').mockImplementation(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({}),
+        } as Response),
+      )
+    })
+
+    afterEach(() => {
+      jest.restoreAllMocks()
+    })
+
+    it('creates a subscription with auto_recurring and returns the response', async () => {
       const mpResponse = {
         id: 'mp-sub-1',
         init_point: 'https://mercadopago.com/checkout/abc',
         status: 'pending',
-        preapproval_plan_id: planId,
         payer_email: payerEmail,
       }
-      mockSubscriptionInstance.create.mockResolvedValue(mpResponse)
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mpResponse),
+      })
 
-      const result = await service.createSubscription(planId, payerEmail, backUrl)
+      const result = await service.createSubscription(
+        planId, payerEmail, backUrl, planPrice, planSlug, planName,
+      )
 
       expect(result).toEqual(mpResponse)
-      expect(mockSubscriptionInstance.create).toHaveBeenCalledWith({
-        body: {
-          preapproval_plan_id: planId,
-          payer_email: payerEmail,
-          back_url: backUrl,
-          status: 'pending',
-          reason: 'Mythrion Premium',
-        },
+
+      const fetchCall = (global.fetch as jest.Mock).mock.calls[0]
+      expect(fetchCall[0]).toBe('https://api.mercadopago.com/preapproval')
+      const sentBody = JSON.parse(fetchCall[1].body)
+      expect(sentBody).not.toHaveProperty('preapproval_plan_id')
+      expect(sentBody.auto_recurring).toEqual({
+        frequency: 1,
+        frequency_type: 'months',
+        transaction_amount: 12000,
+        currency_id: 'BRL',
+      })
+      expect(sentBody.payer_email).toBe(payerEmail)
+      expect(sentBody.back_url).toBe(backUrl)
+      expect(sentBody.status).toBe('pending')
+      expect(sentBody.reason).toBe('Mythrion Premium - Plano Mensal')
+    })
+
+    it('creates an annual subscription with 12 months frequency', async () => {
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ id: 'mp-sub-2', init_point: '...', status: 'pending' }),
+      })
+
+      await service.createSubscription(planId, payerEmail, backUrl, 120000, 'annual', 'Plano Anual')
+
+      const sentBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
+      expect(sentBody.auto_recurring).toEqual({
+        frequency: 12,
+        frequency_type: 'months',
+        transaction_amount: 120000,
+        currency_id: 'BRL',
       })
     })
 
-    it('throws UnprocessableEntityException on MP API error', async () => {
-      mockSubscriptionInstance.create.mockRejectedValue(
-        new Error('MP API error'),
+    it('includes card_token_id when provided', async () => {
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ id: 'mp-sub-3', init_point: null, status: 'authorized' }),
+      })
+
+      await service.createSubscription(
+        planId, payerEmail, backUrl, planPrice, planSlug, planName, 'card-token-123',
       )
 
+      const sentBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
+      expect(sentBody.card_token_id).toBe('card-token-123')
+      expect(sentBody.status).toBe('authorized')
+      // Should NOT include auto_recurring when card_token_id is present
+      expect(sentBody).not.toHaveProperty('auto_recurring')
+    })
+
+    it('throws UnprocessableEntityException on MP API error', async () => {
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({ message: 'card_token_id is required' }),
+      })
+
       await expect(
-        service.createSubscription(planId, payerEmail, backUrl),
+        service.createSubscription(planId, payerEmail, backUrl, planPrice, planSlug, planName),
+      ).rejects.toThrow(UnprocessableEntityException)
+    })
+
+    it('throws UnprocessableEntityException on network error', async () => {
+      ;(global.fetch as jest.Mock).mockRejectedValue(new Error('Network failure'))
+
+      await expect(
+        service.createSubscription(planId, payerEmail, backUrl, planPrice, planSlug, planName),
       ).rejects.toThrow(UnprocessableEntityException)
     })
   })

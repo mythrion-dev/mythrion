@@ -92,8 +92,8 @@ export class MercadoPagoService {
       } else {
         // Redirect-based Checkout Pro flow — MP collects card details
         // on their hosted checkout page
-        const frequency = planSlug === 'annual' ? 1 : 1
-        const frequencyType = planSlug === 'annual' ? 'years' : 'months'
+        const frequency = planSlug === 'annual' ? 12 : 1
+        const frequencyType = 'months'
 
         body.auto_recurring = {
           frequency,
