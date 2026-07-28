@@ -1,25 +1,16 @@
 'use client'
 
-import { useEffect, useState, useCallback, Suspense, useRef } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useSubscription } from '@/lib/subscription-context'
 import { createSubscription, fetchPlans, type Plan } from '@/lib/subscription-api'
-import initMercadoPago, { MercadoPagoInstance } from '@mercadopago/sdk-react/esm/mercadoPago/initMercadoPago'
-import type { TInstanceMercadoPago } from '@mercadopago/sdk-react/esm/mercadoPago/initMercadoPago/type'
 import Link from 'next/link'
 
 /* ---------- helpers ---------- */
 function formatCardNumber(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 16)
   return digits.replace(/(\d{4})(?=\d)/g, '$1 ')
-}
-
-function formatExpiry(value: string): { month: string; year: string } {
-  const digits = value.replace(/\D/g, '').slice(0, 6)
-  const month = digits.slice(0, 2)
-  const year = digits.slice(2)
-  return { month, year }
 }
 
 function isValidMonth(m: string): boolean {
@@ -31,6 +22,64 @@ function isValidCvv(len: number): boolean {
   return len >= 3 && len <= 4
 }
 
+interface MpCardTokenResponse {
+  id: string
+  public_key: string
+  first_six_digits: string
+  last_four_digits: string
+  status: string
+  card_number_length: number
+  expiration_month: number
+  expiration_year: number
+  cardholder: { identification: { number: string; type: string }; name: string }
+}
+
+/**
+ * Create a card token by calling the Mercado Pago REST API directly.
+ * This bypasses the SDK entirely (no iframes, no postMessage, no adblocker
+ * interference from mer cadolibre.com/tracks tracking).
+ *
+ * Card data goes browser → api.mercadopago.com — never touches our server.
+ */
+async function createMpCardToken(
+  publicKey: string,
+  cardNumber: string,
+  cardholderName: string,
+  expMonth: string,
+  expYear: string,
+  securityCode: string,
+): Promise<MpCardTokenResponse> {
+  const res = await fetch(
+    `https://api.mercadopago.com/v1/card_tokens?public_key=${encodeURIComponent(publicKey)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        card_number: cardNumber.replace(/\s/g, ''),
+        cardholder: { name: cardholderName.trim() },
+        security_code: securityCode.trim(),
+        expiration_month: parseInt(expMonth, 10),
+        expiration_year: parseInt(expYear, 10),
+      }),
+    },
+  )
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    const message =
+      data?.message || data?.error || `MP card token error (${res.status})`
+    throw new Error(message)
+  }
+
+  if (!data?.id) {
+    console.error('[checkout] Unexpected card token response:', data)
+    throw new Error('Resposta inesperada do Mercado Pago. Tente novamente.')
+  }
+
+  return data as MpCardTokenResponse
+}
+
 /* ---------- component ---------- */
 function CheckoutContent() {
   const router = useRouter()
@@ -40,18 +89,17 @@ function CheckoutContent() {
 
   const [plan, setPlan] = useState<Plan | null>(null)
   const [planLoading, setPlanLoading] = useState(true)
-  const [sdkReady, setSdkReady] = useState(false)
 
   // Form fields
   const [cardNumber, setCardNumber] = useState('')
   const [cardholderName, setCardholderName] = useState('')
-  const [expiryDisplay, setExpiryDisplay] = useState('')
+  const [expiryMonth, setExpiryMonth] = useState('')
+  const [expiryYear, setExpiryYear] = useState('')
   const [securityCode, setSecurityCode] = useState('')
 
   // Submission
   const [step, setStep] = useState<'form' | 'tokenizing' | 'creating' | 'redirecting' | 'error'>('form')
   const [errorMessage, setErrorMessage] = useState('')
-  const mpRef = useRef<TInstanceMercadoPago | undefined>(undefined)
 
   const planId = searchParams.get('planId')
 
@@ -88,31 +136,6 @@ function CheckoutContent() {
       .finally(() => setPlanLoading(false))
   }, [planId])
 
-  // ----- Init Mercado Pago SDK -----
-  useEffect(() => {
-    const key = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY
-    if (!key) {
-      console.warn('[checkout] NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY not set')
-      return
-    }
-
-    initMercadoPago(key, {
-      locale: 'pt-BR',
-      advancedFraudPrevention: true,
-    })
-
-    MercadoPagoInstance.getInstance()
-      .then((instance) => {
-        mpRef.current = instance
-        setSdkReady(true)
-      })
-      .catch((err) => {
-        console.error('[checkout] Failed to init MP SDK:', err)
-        setStep('error')
-        setErrorMessage('Erro ao carregar o processador de pagamentos. Recarregue a página.')
-      })
-  }, [])
-
   // ----- Handle submit -----
   const handleSubmit = useCallback(async () => {
     // Front-end validation
@@ -126,7 +149,7 @@ function CheckoutContent() {
       setStep('error')
       return
     }
-    if (!expiryDisplay.trim()) {
+    if (!expiryMonth.trim() || !expiryYear.trim()) {
       setErrorMessage('Informe a data de validade.')
       setStep('error')
       return
@@ -137,14 +160,8 @@ function CheckoutContent() {
       return
     }
 
-    const { month, year } = formatExpiry(expiryDisplay)
-    if (!isValidMonth(month)) {
+    if (!isValidMonth(expiryMonth)) {
       setErrorMessage('Mês de validade inválido (use 01–12).')
-      setStep('error')
-      return
-    }
-    if (year.length < 2) {
-      setErrorMessage('Informe o ano de validade completo.')
       setStep('error')
       return
     }
@@ -154,9 +171,9 @@ function CheckoutContent() {
       return
     }
 
-    const mp = mpRef.current
-    if (!mp) {
-      setErrorMessage('Pagamento não disponível no momento. Recarregue a página.')
+    const publicKey = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY
+    if (!publicKey) {
+      setErrorMessage('Chave pública do Mercado Pago não configurada.')
       setStep('error')
       return
     }
@@ -165,14 +182,15 @@ function CheckoutContent() {
     setErrorMessage('')
 
     try {
-      // 1. Tokenize card – data goes browser → MP API directly, never touches our server
-      const cardToken = await mp.createCardToken({
-        cardNumber: cardNumber.replace(/\s/g, ''),
-        cardholderName: cardholderName.trim(),
-        cardExpirationMonth: month,
-        cardExpirationYear: year.length === 2 ? `20${year}` : year,
-        securityCode: securityCode.trim(),
-      })
+      // 1. Tokenize card — direct REST call to MP API, no SDK involved
+      const cardToken = await createMpCardToken(
+        publicKey,
+        cardNumber,
+        cardholderName,
+        expiryMonth,
+        expiryYear.length === 2 ? `20${expiryYear}` : expiryYear,
+        securityCode,
+      )
 
       setStep('creating')
 
@@ -197,7 +215,7 @@ function CheckoutContent() {
         err instanceof Error ? err.message : 'Falha ao processar pagamento. Tente novamente.',
       )
     }
-  }, [cardNumber, cardholderName, expiryDisplay, securityCode, planId, router, refresh])
+  }, [cardNumber, cardholderName, expiryMonth, expiryYear, securityCode, planId, router, refresh])
 
   // ------ Processing states (tokenizing / creating / redirecting) -----
   if (step === 'tokenizing' || step === 'creating' || step === 'redirecting') {
@@ -223,7 +241,7 @@ function CheckoutContent() {
   }
 
   // ----- Error state before any form data is entered -----
-  if (step === 'error' && !cardNumber && !cardholderName && !expiryDisplay && !securityCode) {
+  if (step === 'error' && !cardNumber && !cardholderName && !expiryMonth && !expiryYear && !securityCode) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-screen bg-background bg-pattern">
         <div className="max-w-md text-center px-4">
@@ -305,43 +323,66 @@ function CheckoutContent() {
             />
           </div>
 
-          {/* Expiry + CVV row */}
+          {/* Expiry month + year */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">
-                Validade (MM/AA)
+                Mês
               </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="MM/AA"
-                value={expiryDisplay}
-                onChange={(e) => {
-                  const raw = e.target.value.replace(/\D/g, '').slice(0, 4)
-                  if (raw.length >= 3) {
-                    setExpiryDisplay(`${raw.slice(0, 2)}/${raw.slice(2)}`)
-                  } else {
-                    setExpiryDisplay(raw)
-                  }
-                }}
+              <select
+                value={expiryMonth}
+                onChange={(e) => setExpiryMonth(e.target.value)}
                 disabled={step !== 'form'}
-                className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50 text-sm"
-              />
+                className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50 text-sm"
+              >
+                <option value="">MM</option>
+                {Array.from({ length: 12 }, (_, i) => {
+                  const v = String(i + 1).padStart(2, '0')
+                  return (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  )
+                })}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">
-                CVV
+                Ano
               </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="123"
-                value={securityCode}
-                onChange={(e) => setSecurityCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              <select
+                value={expiryYear}
+                onChange={(e) => setExpiryYear(e.target.value)}
                 disabled={step !== 'form'}
-                className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50 text-sm"
-              />
+                className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50 text-sm"
+              >
+                <option value="">AAAA</option>
+                {Array.from({ length: 15 }, (_, i) => {
+                  const v = String(new Date().getFullYear() + i)
+                  return (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  )
+                })}
+              </select>
             </div>
+          </div>
+
+          {/* CVV */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              CVV
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="123"
+              value={securityCode}
+              onChange={(e) => setSecurityCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              disabled={step !== 'form'}
+              className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50 text-sm"
+            />
           </div>
 
           {/* Inline error */}
@@ -349,7 +390,10 @@ function CheckoutContent() {
             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-500">
               {errorMessage}
               <button
-                onClick={() => setStep('form')}
+                onClick={() => {
+                  setStep('form')
+                  setErrorMessage('')
+                }}
                 className="ml-2 underline hover:no-underline"
               >
                 OK
@@ -361,18 +405,16 @@ function CheckoutContent() {
           <button
             type="button"
             onClick={() => {
-              // Reset any prior inline error before submitting
               setStep('form')
+              setErrorMessage('')
               requestAnimationFrame(() => handleSubmit())
             }}
-            disabled={!sdkReady || planLoading || step !== 'form'}
+            disabled={planLoading || step !== 'form'}
             className="w-full py-3 rounded-lg bg-primary text-background font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
-            {!sdkReady
-              ? 'Preparando pagamento...'
-              : planLoading
-                ? 'Carregando...'
-                : `Assinar ${formattedPlanPrice}${plan?.slug === 'monthly' ? '/mês' : '/ano'}`}
+            {planLoading
+              ? 'Carregando...'
+              : `Assinar ${formattedPlanPrice}${plan?.slug === 'monthly' ? '/mês' : '/ano'}`}
           </button>
         </div>
 
