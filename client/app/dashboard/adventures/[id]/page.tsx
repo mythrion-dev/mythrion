@@ -499,7 +499,7 @@ export default function AdventureDetailPage() {
   async function handleAcceptRequest(requestId: string) {
     setProcessingIds(prev => [...prev, requestId])
     try {
-      await api.patch(`/adventures/${id}/join-requests/${requestId}`, { status: 'ACCEPTED' })
+      await api.patch(`/adventures/${id}/join-requests/${requestId}`, { action: 'accept' })
       setJoinRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'accepted' as const } : r))
     } catch { /* ignore */ } finally { setProcessingIds(prev => prev.filter(id => id !== requestId)) }
   }
@@ -507,7 +507,7 @@ export default function AdventureDetailPage() {
   async function handleRejectRequest(requestId: string) {
     setProcessingIds(prev => [...prev, requestId])
     try {
-      await api.patch(`/adventures/${id}/join-requests/${requestId}`, { status: 'REJECTED' })
+      await api.patch(`/adventures/${id}/join-requests/${requestId}`, { action: 'reject' })
       setJoinRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'rejected' as const } : r))
     } catch { /* ignore */ } finally { setProcessingIds(prev => prev.filter(id => id !== requestId)) }
   }
