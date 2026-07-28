@@ -21,9 +21,12 @@ model User {
   adventures         Adventure[]
   memberships        CampaignMember[]
   sentInvitations    CampaignInvitation[] @relation("SentInvitations")
+  joinRequests       JoinRequest[]
+  ownedTemplates     Template[]
   googleAccount      GoogleAccount?
   refreshTokens      RefreshToken[]
   characterSheets    CharacterSheet[]
+  subscription       UserSubscription?
 }
 
 model Adventure {
@@ -32,16 +35,44 @@ model Adventure {
   campaign        String
   synopsis        String?
   maxPlayers      Int                  @default(5)
+  sessionWeekday  String?              // "Monday", "Tuesday", etc.
+  sessionTime     String?              // "HH:mm" format, e.g. "20:00"
+  sessionType     String?              // "ONLINE" or "IN_PERSON"
   ownerId         String
   owner           User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  isPublic        Boolean              @default(false)
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
   members         CampaignMember[]
   invitations     CampaignInvitation[]
+  joinRequests    JoinRequest[]
   templates       Template[]
   characterSheets CharacterSheet[]
   books           Book[]
   @@index([ownerId])
+}
+
+enum JoinRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model JoinRequest {
+  id          String             @id @default(cuid())
+  adventureId String
+  adventure   Adventure          @relation(fields: [adventureId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      JoinRequestStatus  @default(PENDING)
+  message     String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([adventureId, userId])
+  @@index([adventureId])
+  @@index([userId])
+  @@index([status])
 }
 
 enum MemberRole {
@@ -141,6 +172,8 @@ model Template {
   id                       String                    @id @default(cuid())
   adventureId              String
   adventure                Adventure                 @relation(fields: [adventureId], references: [id], onDelete: Cascade)
+  ownerId                  String?
+  owner                    User?                     @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   name                     String
   description              String?
   attributeModifierFormula String?
@@ -159,6 +192,7 @@ model Template {
   updatedAt                DateTime                  @updatedAt
 
   @@index([adventureId])
+  @@index([ownerId])
 }
 
 // ── Skill Modifier Profiles ──
@@ -173,7 +207,6 @@ model SkillModifierProfile {
   targetSkillIds     String[]
   options            ProfileOption[]
   skillProfileValues CharacterSheetSkillProfileValue[]
-  summonSkillProfileValues SummonSkillProfileValue[]
   professionalSkillProfileValues SheetProfessionalSkillProfileValue[]
   createdAt          DateTime                          @default(now())
   updatedAt          DateTime                          @updatedAt
@@ -190,7 +223,6 @@ model ProfileOption {
   value      Float                             @default(0)
   order      Int                               @default(0)
   selections CharacterSheetSkillProfileValue[]
-  summonSelections SummonSkillProfileValue[]
   professionalSkillProfileValues SheetProfessionalSkillProfileValue[]
   createdAt  DateTime                          @default(now())
   updatedAt  DateTime                          @updatedAt
@@ -230,13 +262,11 @@ model TemplateAttribute {
   skills            TemplateSkill[]                   @relation("SkillDefaultAttribute")
   skillsAllowed     TemplateSkill[]                   @relation("SkillAllowedAttributes")
   skillSelections   CharacterSheetSkillValue[]
-  summonSkillSelections SummonSkill[]
   resistanceModifiers ResistanceAttributeModifier[]
   sheetResistanceModifiers SheetResistanceAttributeModifier[]
   acModifiers       ArmorClassAttributeModifier[]     @relation("AcAttributeModifierAttribute")
   acDefaultModifiers ArmorClassAttributeModifier[]    @relation("AcAttributeModifierDefault")
   acSelections                CharacterSheetArmorClassAttributeValue[]
-  summonAcSelections          SummonArmorClassAttributeValue[]            @relation("SummonAcAttributeSelected")
   professionalSkills          SheetProfessionalSkill[]
   createdAt                   DateTime                          @default(now())
   updatedAt         DateTime                          @updatedAt
@@ -260,7 +290,6 @@ model TemplateSkill {
   order              Int                               @default(0)
   skillValues        CharacterSheetSkillValue[]
   skillProfileValues CharacterSheetSkillProfileValue[]
-  summonSkills       SummonSkill[]
   createdAt          DateTime                          @default(now())
   updatedAt          DateTime                          @updatedAt
 
@@ -430,7 +459,6 @@ model TemplateArmorClass {
   enabled             Boolean                         @default(false)
   attributeModifiers  ArmorClassAttributeModifier[]
   fields              ArmorClassField[]
-  summonAcValues      SummonArmorClassValue[]
   createdAt           DateTime                        @default(now())
   updatedAt           DateTime                        @updatedAt
 
@@ -448,7 +476,6 @@ model ArmorClassField {
   description      String?
   order            Int                             @default(0)
   sheetValues      CharacterSheetArmorClassValue[]
-  summonAcValues   SummonArmorClassValue[]
   createdAt        DateTime                        @default(now())
   updatedAt        DateTime                        @updatedAt
 
@@ -483,7 +510,6 @@ model ArmorClassAttributeModifier {
   defaultAttributeId    String?
   defaultAttribute      TemplateAttribute?                        @relation("AcAttributeModifierDefault", fields: [defaultAttributeId], references: [id], onDelete: SetNull)
   sheetValues           CharacterSheetArmorClassAttributeValue[]
-  summonAcSelections    SummonArmorClassAttributeValue[]
   createdAt             DateTime                                  @default(now())
   updatedAt             DateTime                                  @updatedAt
 
@@ -521,7 +547,6 @@ model TemplateResistance {
   components       ResistanceComponent[]
   attributeModifiers ResistanceAttributeModifier[]
   sheetValues       CharacterSheetResistanceValue[]
-  summonValues      SummonResistanceValue[]
   createdAt         DateTime                      @default(now())
   updatedAt         DateTime                      @updatedAt
 
@@ -537,7 +562,6 @@ model ResistanceComponent {
   defaultValue     String                                        @default("0")
   order            Int                                           @default(0)
   sheetValues      CharacterSheetResistanceComponentValue[]
-  summonValues     SummonResistanceComponentValue[]
   createdAt        DateTime                                      @default(now())
   updatedAt        DateTime                                      @updatedAt
 
@@ -673,27 +697,24 @@ model SheetProfessionalSkillProfileValue {
 // ── Character Abilities & Summons (Player-only) ──
 
 model CharacterAbility {
-  id              String                             @id @default(cuid())
-  sheetId         String
-  sheet           CharacterSheet                     @relation(fields: [sheetId], references: [id], onDelete: Cascade)
-  summonId        String?
-  parentSummon    CharacterAbility?                  @relation("SummonAbilities", fields: [summonId], references: [id], onDelete: Cascade)
-  name            String
-  type            String                             @default("ABILITY") // "ABILITY" | "SUMMON"
-  order           Int                                @default(0)
-  description     String?
-  notes           String?
-  levels          CharacterAbilityLevel[]
-  summonAttributes SummonAttribute[]
-  summonAcValues   SummonArmorClassValue[]
-  summonHealth     SummonHealth?
-  summonSkills                    SummonSkill[]
-  summonAcAttributeValues         SummonArmorClassAttributeValue[]
-  summonResistanceValues          SummonResistanceValue[]
-  summonResistanceComponentValues SummonResistanceComponentValue[]
-  childAbilities                  CharacterAbility[]          @relation("SummonAbilities")
-  createdAt               DateTime                    @default(now())
-  updatedAt       DateTime                           @updatedAt
+  id               String               @id @default(cuid())
+  sheetId          String
+  sheet            CharacterSheet       @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  summonId         String?
+  parentSummon     CharacterAbility?    @relation("SummonAbilities", fields: [summonId], references: [id], onDelete: Cascade)
+  name             String
+  type             String               @default("ABILITY") // "ABILITY" | "SUMMON"
+  order            Int                  @default(0)
+  description      String?
+  notes            String?
+  levels           CharacterAbilityLevel[]
+  summonAttributes  SummonAttribute[]
+  summonAcValues    SummonArmorClassValue[]
+  summonHealth      SummonHealth?
+  summonSkills      SummonSkill[]
+  childAbilities   CharacterAbility[]   @relation("SummonAbilities")
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
 
   @@index([sheetId])
   @@index([summonId])
@@ -719,37 +740,15 @@ model CharacterAbilityLevel {
 // ── Summon Skills (skills selected for a specific summon) ──
 
 model SummonSkill {
-  id                  String           @id @default(cuid())
-  abilityId           String
-  ability             CharacterAbility @relation(fields: [abilityId], references: [id], onDelete: Cascade)
-  skillId             String
-  skill               TemplateSkill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
-  selectedAttributeId String?
-  selectedAttribute   TemplateAttribute? @relation(fields: [selectedAttributeId], references: [id], onDelete: SetNull)
-  profileValues       SummonSkillProfileValue[]
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  id          String           @id @default(cuid())
+  abilityId   String
+  ability     CharacterAbility @relation(fields: [abilityId], references: [id], onDelete: Cascade)
+  name        String
+  manualValue Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
-  @@unique([abilityId, skillId])
   @@index([abilityId])
-  @@index([skillId])
-}
-
-// ── Summon Skill Profile Values ──
-
-model SummonSkillProfileValue {
-  id          String               @id @default(cuid())
-  summonSkillId String
-  summonSkill   SummonSkill        @relation(fields: [summonSkillId], references: [id], onDelete: Cascade)
-  profileId  String
-  profile    SkillModifierProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  optionId   String?
-  option     ProfileOption?       @relation(fields: [optionId], references: [id], onDelete: SetNull)
-  createdAt  DateTime             @default(now())
-  updatedAt  DateTime             @updatedAt
-
-  @@unique([summonSkillId, profileId])
-  @@index([summonSkillId])
 }
 
 // ── Summon Attribute Values (reuses template attributes) ──
@@ -767,42 +766,17 @@ model SummonAttribute {
   @@index([abilityId])
 }
 
-// ── Summon Armor Class Values (reuses template AC fields) ──
+// ── Summon Armor Class (single manual value per summon) ──
 
 model SummonArmorClassValue {
-  id           String              @id @default(cuid())
-  abilityId    String
-  ability      CharacterAbility    @relation(fields: [abilityId], references: [id], onDelete: Cascade)
-  armorClassId String?
-  armorClass   TemplateArmorClass? @relation(fields: [armorClassId], references: [id], onDelete: SetNull)
-  fieldId      String
-  field        ArmorClassField     @relation(fields: [fieldId], references: [id], onDelete: Cascade)
-  value        String              @default("0")
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  id        String           @id @default(cuid())
+  abilityId String           @unique
+  ability   CharacterAbility @relation(fields: [abilityId], references: [id], onDelete: Cascade)
+  value     String           @default("10")
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
-  @@unique([abilityId, fieldId])
   @@index([abilityId])
-  @@index([armorClassId])
-}
-
-// ── Summon Armor Class Attribute Modifier Selection ──
-
-model SummonArmorClassAttributeValue {
-  id                    String                   @id @default(cuid())
-  abilityId             String
-  ability               CharacterAbility         @relation(fields: [abilityId], references: [id], onDelete: Cascade)
-  acAttributeModifierId String
-  acAttributeModifier   ArmorClassAttributeModifier  @relation(fields: [acAttributeModifierId], references: [id], onDelete: Cascade)
-  selectedAttributeId   String?
-  selectedAttribute     TemplateAttribute?            @relation("SummonAcAttributeSelected", fields: [selectedAttributeId], references: [id], onDelete: SetNull)
-  createdAt             DateTime                 @default(now())
-  updatedAt             DateTime                 @updatedAt
-
-  @@unique([abilityId, acAttributeModifierId])
-  @@index([abilityId])
-  @@index([acAttributeModifierId])
-  @@index([selectedAttributeId])
 }
 
 // ── Summon Health ──
@@ -816,38 +790,6 @@ model SummonHealth {
   notes     String?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
-}
-
-// ── Summon Resistance Values (reuses template resistances) ──
-
-model SummonResistanceValue {
-  id           String           @id @default(cuid())
-  abilityId    String
-  ability      CharacterAbility @relation(fields: [abilityId], references: [id], onDelete: Cascade)
-  resistanceId String
-  resistance   TemplateResistance @relation(fields: [resistanceId], references: [id], onDelete: Cascade)
-  manualValue  String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-
-  @@unique([abilityId, resistanceId])
-  @@index([abilityId])
-  @@index([resistanceId])
-}
-
-model SummonResistanceComponentValue {
-  id          String              @id @default(cuid())
-  abilityId   String
-  ability     CharacterAbility    @relation(fields: [abilityId], references: [id], onDelete: Cascade)
-  componentId String
-  component   ResistanceComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
-  value       String              @default("0")
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-
-  @@unique([abilityId, componentId])
-  @@index([abilityId])
-  @@index([componentId])
 }
 
 // ── Character Inventory Items (Player-only) ──
@@ -912,4 +854,64 @@ model CharacterSectionEntry {
 
   @@index([sheetId])
   @@index([sectionId])
+}
+
+// ── Subscription Models ──
+
+enum SubscriptionStatus {
+  PENDING
+  AUTHORIZED
+  ACTIVE
+  GRACE
+  EXPIRED
+  CANCELLED
+}
+
+model SubscriptionPlan {
+  id            String              @id
+  slug          String              @unique
+  name          String
+  description   String?
+  price         Int
+  mpPlanId      String              @unique
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  subscriptions UserSubscription[]
+}
+
+model UserSubscription {
+  id                 String               @id @default(cuid())
+  userId             String               @unique
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId             String
+  plan               SubscriptionPlan     @relation(fields: [planId], references: [id])
+  mpSubscriptionId   String?              @unique
+  status             SubscriptionStatus   @default(PENDING)
+  graceEndsAt        DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelledAt        DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  invoices           SubscriptionInvoice[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model SubscriptionInvoice {
+  id              String             @id @default(cuid())
+  subscriptionId  String
+  subscription    UserSubscription   @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  mpInvoiceId     String?            @unique
+  amount          Int
+  currency        String             @default("BRL")
+  status          String             @default("pending")
+  paidAt          DateTime?
+  dueDate         DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([subscriptionId])
+  @@index([mpInvoiceId])
 }

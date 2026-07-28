@@ -7,7 +7,7 @@ import { AdventureService } from './adventure.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { CreateAdventureDto } from './dto/create-adventure.dto.js'
 import { UpdateAdventureDto } from './dto/update-adventure.dto.js'
-import type { AuthenticatedRequest } from '../auth/jwt-auth.guard.js'
+import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
 
 describe('AdventureController', () => {
   let controller: AdventureController
@@ -34,6 +34,7 @@ describe('AdventureController', () => {
       createNpc: jest.fn().mockResolvedValue({ id: 'npc-2', characterName: 'Orc', isNpc: true }),
       updateNpc: jest.fn().mockResolvedValue({ id: 'npc-1', characterName: 'Goblin King', isNpc: true }),
       deleteNpc: jest.fn().mockResolvedValue({ id: 'npc-1' }),
+      updateVisibility: jest.fn().mockResolvedValue({ id: 'adv-1', name: 'Test Adventure', isPublic: true }),
     }
 
     const module: TestingModule = await Test.createTestingModule({
@@ -90,6 +91,14 @@ describe('AdventureController', () => {
       const result = await controller.remove(mockReq, 'adv-1')
       expect(mockAdventureService.remove).toHaveBeenCalledWith('adv-1', 'user-1')
       expect(result).toEqual({ id: 'adv-1', name: 'Test Adventure' })
+    })
+  })
+
+  describe('updateVisibility', () => {
+    it('should delegate to adventureService.updateVisibility', async () => {
+      const result = await controller.updateVisibility(mockReq, 'adv-1', { isPublic: true })
+      expect(mockAdventureService.updateVisibility).toHaveBeenCalledWith('adv-1', 'user-1', true)
+      expect(result).toEqual({ id: 'adv-1', name: 'Test Adventure', isPublic: true })
     })
   })
 
