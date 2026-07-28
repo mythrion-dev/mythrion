@@ -106,6 +106,9 @@ describe('SubscriptionController', () => {
         'user-1',
         planId,
         'user@test.com',
+        undefined, // cardTokenId
+        undefined, // payerName
+        undefined, // payerDocument
       )
     })
 

@@ -103,6 +103,12 @@ describe('SubscriptionService', () => {
         plan.mpPlanId,
         email,
         expect.stringContaining('/subscription/success'),
+        plan.price,
+        plan.slug,
+        plan.name,
+        undefined, // cardTokenId
+        undefined, // payerName
+        undefined, // payerDocument
       )
       expect(prisma.userSubscription.upsert).toHaveBeenCalled()
     })
@@ -156,7 +162,6 @@ describe('SubscriptionService', () => {
           update: expect.objectContaining({
             planId: plan.id,
             status: 'PENDING',
-            graceEndsAt: null,
             cancelledAt: null,
           }),
           create: expect.objectContaining({

@@ -73,6 +73,8 @@ export class SubscriptionService {
     planId: string,
     email: string,
     cardTokenId?: string,
+    payerName?: string,
+    payerDocument?: string,
   ): Promise<CreateSubscriptionResult> {
     // Check for existing active subscription
     const existing = await this.prisma.userSubscription.findUnique({
@@ -92,12 +94,6 @@ export class SubscriptionService {
       throw new NotFoundException(`Subscription plan "${planId}" not found`)
     }
 
-    // Fetch user's display name for MP fraud analysis
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { displayName: true },
-    })
-
     // Build the back_url for MP redirect after checkout
     const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000'
     const backUrl = `${frontendUrl}/subscription/success`
@@ -113,7 +109,8 @@ export class SubscriptionService {
       plan.slug,
       plan.name,
       cardTokenId,
-      user?.displayName ?? undefined,
+      payerName,
+      payerDocument,
     )
 
     // Upsert the UserSubscription row (create or replace cancelled/expired one)
@@ -136,6 +133,20 @@ export class SubscriptionService {
         status: 'PENDING',
       },
     })
+
+    // Save payer name to user profile for future reference (only if blank)
+    if (payerName) {
+      const existingUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { displayName: true },
+      })
+      if (!existingUser?.displayName) {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { displayName: payerName.trim() },
+        })
+      }
+    }
 
     return {
       initPoint: mpSubscription.init_point ?? '',

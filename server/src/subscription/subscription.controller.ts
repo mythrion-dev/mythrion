@@ -54,7 +54,7 @@ export class SubscriptionController {
   @UseGuards(JwtAuthGuard)
   @SkipSubscriptionCheck()
   async createSubscription(
-    @Body() body: { planId: string; cardTokenId?: string },
+    @Body() body: { planId: string; cardTokenId?: string; payerName?: string; payerDocument?: string },
     @Req() req: AuthenticatedRequest,
   ) {
     if (!body.planId) {
@@ -65,6 +65,8 @@ export class SubscriptionController {
       body.planId,
       req.user.email,
       body.cardTokenId,
+      body.payerName,
+      body.payerDocument,
     )
   }
 

@@ -204,6 +204,68 @@ describe('MercadoPagoService', () => {
         service.createSubscription(planId, payerEmail, backUrl, planPrice, planSlug, planName),
       ).rejects.toThrow(UnprocessableEntityException)
     })
+
+    it('includes payer first_name and last_name when payerName is provided', async () => {
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ id: 'mp-sub-name', init_point: '...', status: 'pending' }),
+      })
+
+      await service.createSubscription(
+        planId, payerEmail, backUrl, planPrice, planSlug, planName, undefined, 'João Silva Santos',
+      )
+
+      const sentBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
+      expect(sentBody.payer).toBeDefined()
+      expect(sentBody.payer.first_name).toBe('João')
+      expect(sentBody.payer.last_name).toBe('Silva Santos')
+    })
+
+    it('sets last_name to empty when payerName has no space', async () => {
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ id: 'mp-sub-mononame', init_point: '...', status: 'pending' }),
+      })
+
+      await service.createSubscription(
+        planId, payerEmail, backUrl, planPrice, planSlug, planName, undefined, 'Mononym',
+      )
+
+      const sentBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
+      expect(sentBody.payer.first_name).toBe('Mononym')
+      expect(sentBody.payer.last_name).toBe('')
+    })
+
+    it('includes payer identification (CPF) when payerDocument is provided', async () => {
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ id: 'mp-sub-cpf', init_point: '...', status: 'pending' }),
+      })
+
+      await service.createSubscription(
+        planId, payerEmail, backUrl, planPrice, planSlug, planName, undefined, 'Maria Santos', '123.456.789-09',
+      )
+
+      const sentBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
+      expect(sentBody.payer.identification).toEqual({
+        type: 'CPF',
+        number: '12345678909',
+      })
+    })
+
+    it('does not add payer block when payerName is not provided', async () => {
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ id: 'mp-sub-nopayer', init_point: '...', status: 'pending' }),
+      })
+
+      await service.createSubscription(
+        planId, payerEmail, backUrl, planPrice, planSlug, planName,
+      )
+
+      const sentBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
+      expect(sentBody).not.toHaveProperty('payer')
+    })
   })
 
   // ─── cancelSubscription ─────────────────────────────────────────────

@@ -74,6 +74,7 @@ export class MercadoPagoService {
     planName: string,
     cardTokenId?: string,
     payerName?: string,
+    payerDocument?: string,
   ): Promise<MercadoPagoSubscriptionResponse> {
     try {
       // In test environment (TEST- access token), MP API test-user emails
@@ -92,12 +93,18 @@ export class MercadoPagoService {
         back_url: backUrl,
       }
 
-      // Include full payer name for MP fraud analysis (helps reduce cc_rejected_high_risk)
+      // Include full payer data for MP fraud analysis (helps reduce cc_rejected_high_risk)
       if (payerName) {
         const spaceIdx = payerName.indexOf(' ')
         body.payer = {
           first_name: spaceIdx >= 0 ? payerName.slice(0, spaceIdx) : payerName,
           last_name: spaceIdx >= 0 ? payerName.slice(spaceIdx + 1) : '',
+        }
+        if (payerDocument) {
+          body.payer.identification = {
+            type: 'CPF',
+            number: payerDocument.replace(/\D/g, ''),
+          }
         }
       }
 

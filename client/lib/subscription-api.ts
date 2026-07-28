@@ -48,10 +48,14 @@ export async function fetchPlans(): Promise<Plan[]> {
 export async function createSubscription(
   planId: string,
   cardTokenId?: string,
+  payerName?: string,
+  payerDocument?: string,
 ): Promise<CreateSubscriptionResponse> {
   return api.post<CreateSubscriptionResponse>('/subscriptions', {
     planId,
     ...(cardTokenId ? { cardTokenId } : {}),
+    ...(payerName ? { payerName } : {}),
+    ...(payerDocument ? { payerDocument } : {}),
   })
 }
 
