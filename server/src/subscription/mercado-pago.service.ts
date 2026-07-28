@@ -72,11 +72,18 @@ export class MercadoPagoService {
         payer_email: payerEmail,
         back_url: backUrl,
         reason: 'Mythrion Premium',
-        status: 'pending',
       }
 
       if (cardTokenId) {
+        // When a card token is provided, the payer has already authorized
+        // the recurring charges upfront. Matching the MP API cURL example
+        // which uses status: "authorized" with card_token_id.
+        // MP will return status: "pending" regardless, but sending
+        // "authorized" is required for the card token to be accepted.
         body.card_token_id = cardTokenId
+        body.status = 'authorized'
+      } else {
+        body.status = 'pending'
       }
 
       const jsonBody = JSON.stringify(body)
