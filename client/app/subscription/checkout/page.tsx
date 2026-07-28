@@ -109,7 +109,10 @@ function CheckoutContent() {
       return
     }
 
-    initMercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' })
+    initMercadoPago(MP_PUBLIC_KEY, {
+      locale: 'pt-BR',
+      trackingDisabled: true,
+    })
 
     // Force-load the CDN script and create the MP instance BEFORE any Secure
     // Fields mount — otherwise the fields load the script themselves.
