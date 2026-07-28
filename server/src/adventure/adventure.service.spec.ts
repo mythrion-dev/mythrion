@@ -68,6 +68,7 @@ describe('AdventureService', () => {
           synopsis: 'Fun!',
           maxPlayers: 4,
           ownerId: 'u1',
+          isPublic: false,
         },
       })
       expect(mockMembershipService.createMembership).toHaveBeenCalledWith('a1', 'u1', 'GM')
@@ -144,6 +145,181 @@ describe('AdventureService', () => {
       expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
       expect(prisma.adventure.delete).toHaveBeenCalledWith({ where: { id: 'a1' } })
       expect(result).toEqual(deleted)
+    })
+  })
+
+  describe('updateVisibility', () => {
+    it('requires GM role and updates isPublic', async () => {
+      const updated = {
+        id: 'a1',
+        name: 'Test',
+        isPublic: true,
+      }
+      prisma.adventure.update.mockResolvedValue(updated)
+
+      const result = await service.updateVisibility('a1', 'u1', true)
+
+      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
+      expect(prisma.adventure.update).toHaveBeenCalledWith({
+        where: { id: 'a1' },
+        data: { isPublic: true },
+      })
+      expect(result).toEqual(updated)
+    })
+  })
+
+  describe('findPublic', () => {
+    it('returns paginated public adventures with metadata', async () => {
+      const adventures = [
+        {
+          id: 'a1',
+          name: 'Public Adv',
+          campaign: 'Camp',
+          synopsis: 'Fun!',
+          maxPlayers: 4,
+          isPublic: true,
+          createdAt: new Date(),
+          owner: { id: 'u1', displayName: 'Owner' },
+          _count: { members: 2 },
+        },
+      ]
+      prisma.$transaction.mockResolvedValue([adventures, 1])
+
+      const result = await service.findPublic({ page: 1, limit: 10 })
+
+      expect(result.data).toEqual(adventures)
+      expect(result.meta.total).toBe(1)
+      expect(result.meta.page).toBe(1)
+      expect(result.meta.totalPages).toBe(1)
+    })
+
+    it('filters by campaign', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublic({ campaign: 'D&D 5e' })
+
+      expect(prisma.adventure.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            isPublic: true,
+            campaign: 'D&D 5e',
+          }),
+        }),
+      )
+    })
+
+    it('filters by search (name or synopsis)', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublic({ search: 'dragon' })
+
+      expect(prisma.adventure.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            isPublic: true,
+            OR: [
+              { name: { contains: 'dragon', mode: 'insensitive' } },
+              { synopsis: { contains: 'dragon', mode: 'insensitive' } },
+            ],
+          }),
+        }),
+      )
+    })
+  })
+
+  describe('findPublicById', () => {
+    it('returns public adventure when found', async () => {
+      const adventure = {
+        id: 'a1',
+        name: 'Public Adv',
+        campaign: 'Camp',
+        synopsis: 'Fun!',
+        maxPlayers: 4,
+        isPublic: true,
+        createdAt: new Date(),
+        owner: { id: 'u1', displayName: 'Owner' },
+        _count: { members: 2 },
+      }
+      prisma.adventure.findFirst.mockResolvedValue(adventure)
+
+      const result = await service.findPublicById('a1')
+
+      expect(prisma.adventure.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'a1', isPublic: true },
+        }),
+      )
+      expect(result).toEqual(adventure)
+    })
+
+    it('throws NotFoundException when adventure is not public', async () => {
+      prisma.adventure.findFirst.mockResolvedValue(null)
+
+      await expect(service.findPublicById('a1')).rejects.toThrow(
+        NotFoundException,
+      )
+    })
+  })
+
+  describe('findOnePublic', () => {
+    it('returns public adventure with limited fields', async () => {
+      const adventure = {
+        id: 'a1',
+        name: 'Public Adv',
+        campaign: 'Camp',
+        synopsis: 'Fun!',
+        maxPlayers: 4,
+        createdAt: new Date(),
+        owner: { id: 'u1', displayName: 'Owner' },
+        _count: { members: 2 },
+      }
+      prisma.adventure.findFirst.mockResolvedValue(adventure)
+
+      const result = await service.findOnePublic('a1')
+
+      expect(prisma.adventure.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'a1', isPublic: true },
+        }),
+      )
+      expect(result).toEqual(adventure)
+    })
+
+    it('throws NotFoundException when adventure not found or not public', async () => {
+      prisma.adventure.findFirst.mockResolvedValue(null)
+
+      await expect(service.findOnePublic('nonexistent')).rejects.toThrow(
+        NotFoundException,
+      )
+    })
+  })
+
+  describe('findOne (public adventure paths)', () => {
+    it('returns limited data for a public adventure when user is not a member', async () => {
+      const adventure = {
+        id: 'a1',
+        name: 'Public Adv',
+        campaign: 'Camp',
+        synopsis: 'Fun!',
+        maxPlayers: 4,
+        isPublic: true,
+        owner: { id: 'u1', displayName: 'Owner' },
+        _count: { members: 2 },
+      }
+      prisma.adventure.findUnique.mockResolvedValue(adventure)
+      mockMembershipService.isMember.mockResolvedValue(false)
+
+      const result = await service.findOne('a1', 'u2')
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'a1',
+          name: 'Public Adv',
+          memberCount: 2,
+          isPublic: true,
+        }),
+      )
+      expect(result.owner).toBeDefined()
     })
   })
 

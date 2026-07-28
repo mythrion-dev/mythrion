@@ -9,6 +9,15 @@
 * 🟢 You can import this file directly.
 */
 
+export const JoinRequestStatus = {
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED'
+} as const
+
+export type JoinRequestStatus = (typeof JoinRequestStatus)[keyof typeof JoinRequestStatus]
+
+
 export const MemberRole = {
   GM: 'GM',
   PLAYER: 'PLAYER'

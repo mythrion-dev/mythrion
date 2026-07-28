@@ -92,11 +92,16 @@ export class TemplateService {
   async create(adventureId: string, userId: string, dto: CreateTemplateDto) {
     await this.membership.requireRole(adventureId, userId, 'GM')
 
+    // Look up the adventure to check if it's public and set ownerId
+    const adventure = await this.prisma.adventure.findUnique({ where: { id: adventureId } })
+    if (!adventure) throw new NotFoundException('Adventure not found')
+
     // Create the template with attributes and skills (initially without attribute links)
     const armorClasses = dto.armorClasses ?? []
     const created = await this.prisma.template.create({
       data: {
         adventureId, name: dto.name, description: dto.description ?? null,
+        ownerId: adventure.isPublic ? userId : null,
         attributeModifiersEnabled: dto.attributeModifiersEnabled ?? true,
         attributeModifierFormula: dto.attributeModifierFormula ?? null,
         skillFormula: dto.skillFormula ?? null,
@@ -926,6 +931,218 @@ export class TemplateService {
     await this.invalidateCache(template.adventureId, id)
 
     return result
+  }
+
+  /**
+   * Clone a template (deep copy) into the same adventure.
+   * GM only. Copies all relations: attributes, fields, skills, profiles, core resources,
+   * armor classes, character sections, and resistances.
+   */
+  async clone(id: string, userId: string, newName?: string) {
+    const original = await this.prisma.template.findUnique({
+      where: { id },
+      include: templateInclude,
+    })
+    if (!original) throw new NotFoundException('Template not found')
+
+    await this.membership.requireRole(original.adventureId, userId, 'GM')
+
+    // Reconstruct the DTO from the existing template data for deep copy
+    const dto: CreateTemplateDto = {
+      name: newName ?? `${original.name} (copy)`,
+      description: original.description ?? undefined,
+      attributeModifiersEnabled: original.attributeModifiersEnabled,
+      attributeModifierFormula: original.attributeModifierFormula ?? undefined,
+      skillFormula: original.skillFormula ?? undefined,
+      attributes: (original.attributes ?? []).map(a => ({ key: a.key, name: a.name })),
+      templateFields: (original.templateFields ?? []).map(f => ({ key: f.key, label: f.label })),
+      skills: (original.templateSkills ?? []).map(s => ({
+        name: s.name,
+        description: s.description ?? undefined,
+        attributeId: s.attributeId ?? undefined,
+        allowedAttributeIds: (s.allowedAttributeIds ?? []) as string[],
+        defaultAttributeId: s.defaultAttributeId ?? undefined,
+      })),
+      skillModifierProfiles: (original.skillModifierProfiles ?? []).map(p => ({
+        name: p.name,
+        targetMode: p.targetMode,
+        targetSkillIds: p.targetSkillIds as string[],
+        options: (p.options ?? []).map(o => ({ label: o.label, value: o.value })),
+      })),
+      coreResources: (original.coreResources ?? []).map(cr => ({
+        slug: cr.slug,
+        displayName: cr.displayName,
+        enabled: cr.enabled,
+        editableByPlayer: cr.editableByPlayer,
+        showNotes: cr.showNotes,
+        color: cr.color ?? undefined,
+      })),
+      armorClasses: (original.armorClasses ?? []).map(ac => ({
+        name: ac.name,
+        enabled: ac.enabled,
+        attributeModifiers: (ac.attributeModifiers ?? []).map(am => ({
+          attributeId: am.attributeId,
+          allowPlayerSelection: am.allowPlayerSelection,
+          defaultAttributeId: am.defaultAttributeId ?? undefined,
+        })),
+        fields: (ac.fields ?? []).map((f: any) => ({
+          name: f.name,
+          key: f.key,
+          defaultValue: f.defaultValue,
+          editableByPlayer: f.editableByPlayer,
+          description: f.description ?? undefined,
+        })),
+      })),
+      characterSections: (original.characterSections ?? []).map(s => ({ name: s.name })),
+      resistances: (original.resistances ?? []).map(r => ({
+        name: r.name,
+        calculationType: r.calculationType,
+        components: (r.components ?? []).map(c => ({
+          name: c.name,
+          editableByPlayer: c.editableByPlayer,
+          defaultValue: c.defaultValue,
+        })),
+      })),
+    }
+
+    return this.create(original.adventureId, userId, dto)
+  }
+
+  /**
+   * Find all public templates (optionally filtered by adventure).
+   * No auth required.
+   */
+  async findPublicAll(params: { page?: number; limit?: number; adventureId?: string; search?: string }) {
+    const page = params.page ?? 1
+    const limit = params.limit ?? 10
+    const skip = (page - 1) * limit
+
+    const where: any = {
+      adventure: { isPublic: true },
+      ownerId: { not: null },
+    }
+
+    if (params.adventureId) {
+      where.adventureId = params.adventureId
+    }
+
+    if (params.search) {
+      where.AND = [
+        {
+          OR: [
+            { name: { contains: params.search, mode: 'insensitive' } },
+            { description: { contains: params.search, mode: 'insensitive' } },
+          ],
+        },
+      ]
+    }
+
+    const [templates, total] = await this.prisma.$transaction([
+      this.prisma.template.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          createdAt: true,
+          adventure: { select: { id: true, name: true, campaign: true } },
+          owner: { select: { id: true, displayName: true } },
+          _count: { select: { characterSheets: true } },
+        },
+      }),
+      this.prisma.template.count({ where }),
+    ])
+
+    return {
+      data: templates,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    }
+  }
+
+  /**
+   * Find a single public template by ID.
+   * The template must belong to a public adventure and have an owner.
+   * No auth required.
+   */
+  async findOnePublic(id: string) {
+    const template = await this.prisma.template.findFirst({
+      where: {
+        id,
+        adventure: { isPublic: true },
+        ownerId: { not: null },
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        attributeModifiersEnabled: true,
+        attributeModifierFormula: true,
+        skillFormula: true,
+        createdAt: true,
+        adventure: { select: { id: true, name: true, campaign: true } },
+        owner: { select: { id: true, displayName: true } },
+        _count: { select: { characterSheets: true } },
+        attributes: { orderBy: { order: 'asc' as const }, select: { id: true, key: true, name: true } },
+        templateFields: { orderBy: { order: 'asc' as const }, select: { id: true, key: true, label: true } },
+        templateSkills: {
+          orderBy: { order: 'asc' as const },
+          select: {
+            id: true, name: true, description: true,
+            attributeId: true,
+            allowedAttributeIds: true,
+            defaultAttributeId: true,
+            attribute: { select: { id: true, key: true, name: true } },
+            defaultAttribute: { select: { id: true, key: true, name: true } },
+          },
+        },
+        skillModifierProfiles: {
+          orderBy: { order: 'asc' as const },
+          select: {
+            id: true, name: true, targetMode: true, targetSkillIds: true,
+            options: { orderBy: { order: 'asc' as const }, select: { id: true, label: true, value: true } },
+          },
+        },
+        coreResources: { orderBy: { order: 'asc' as const }, select: { id: true, slug: true, displayName: true, enabled: true, editableByPlayer: true, showNotes: true, color: true } },
+        armorClasses: {
+          orderBy: { createdAt: 'asc' as const },
+          select: {
+            id: true, name: true, enabled: true,
+            attributeModifiers: {
+              orderBy: { createdAt: 'asc' as const },
+              select: {
+                id: true, attributeId: true, allowPlayerSelection: true, defaultAttributeId: true,
+                attribute: { select: { id: true, key: true, name: true } },
+                defaultAttribute: { select: { id: true, key: true, name: true } },
+              },
+            },
+            fields: { orderBy: { order: 'asc' as const }, select: { id: true, name: true, key: true, defaultValue: true, editableByPlayer: true, description: true } },
+          },
+        },
+        characterSections: { orderBy: { order: 'asc' as const }, select: { id: true, name: true } },
+        resistances: {
+          orderBy: { order: 'asc' as const },
+          select: {
+            id: true, name: true, calculationType: true,
+            components: { orderBy: { order: 'asc' as const }, select: { id: true, name: true, editableByPlayer: true, defaultValue: true } },
+            attributeModifiers: { select: { id: true, attributeId: true, enabled: true } },
+          },
+        },
+      },
+    })
+
+    if (!template) {
+      throw new NotFoundException('Template not found or is not public')
+    }
+
+    return template
   }
 
   private extractVariableNames(formula: string): string[] {
