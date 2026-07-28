@@ -57,21 +57,28 @@ export class MercadoPagoService {
 
   /**
    * Create a Mercado Pago subscription (preapproval) for a given plan.
-   * Uses the raw MP API (not SDK) to avoid SDK-level validation issues.
+   *
+   * IMPORTANT: We do NOT pass preapproval_plan_id — the existing MP plans have
+   * payment_types with empty objects, which forces card_token_id to be required.
+   * Instead, we pass auto_recurring directly, which works identically for the
+   * redirect-based Checkout Pro flow and bypasses any plan misconfiguration.
+   *
    * Returns the subscription object with an `init_point` URL.
    */
   async createSubscription(
     planId: string,
     payerEmail: string,
     backUrl: string,
+    planPrice: number,
+    planSlug: string,
+    planName: string,
     cardTokenId?: string,
   ): Promise<MercadoPagoSubscriptionResponse> {
     try {
       const body: Record<string, any> = {
-        preapproval_plan_id: planId,
+        reason: `Mythrion Premium - ${planName}`,
         payer_email: payerEmail,
         back_url: backUrl,
-        reason: 'Mythrion Premium',
       }
 
       if (cardTokenId) {
@@ -83,6 +90,17 @@ export class MercadoPagoService {
         body.card_token_id = cardTokenId
         body.status = 'authorized'
       } else {
+        // Redirect-based Checkout Pro flow — MP collects card details
+        // on their hosted checkout page
+        const frequency = planSlug === 'annual' ? 1 : 1
+        const frequencyType = planSlug === 'annual' ? 'years' : 'months'
+
+        body.auto_recurring = {
+          frequency,
+          frequency_type: frequencyType,
+          transaction_amount: planPrice,
+          currency_id: 'BRL',
+        }
         body.status = 'pending'
       }
 

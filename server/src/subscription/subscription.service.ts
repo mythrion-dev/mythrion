@@ -97,10 +97,15 @@ export class SubscriptionService {
     const backUrl = `${frontendUrl}/subscription/success`
 
     // Create subscription in Mercado Pago
+    // We pass the plan price/slug/name so MP can build auto_recurring directly
+    // (bypassing preapproval_plan_id which has misconfigured payment_types)
     const mpSubscription = await this.mp.createSubscription(
       plan.mpPlanId,
       email,
       backUrl,
+      plan.price,
+      plan.slug,
+      plan.name,
       cardTokenId,
     )
 
