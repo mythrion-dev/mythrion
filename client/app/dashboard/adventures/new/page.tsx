@@ -27,11 +27,6 @@ export default function NewAdventurePage() {
     e.preventDefault()
     setError(null)
 
-    // Validate session fields
-    if (!sessionWeekday) { setError('Please select a session day.'); setSubmitting(false); return }
-    if (!sessionTime) { setError('Please select a session time.'); setSubmitting(false); return }
-    if (!sessionType) { setError('Please select a session type (Online or In Person).'); setSubmitting(false); return }
-
     setSubmitting(true)
 
     try {
@@ -41,9 +36,9 @@ export default function NewAdventurePage() {
         synopsis: synopsis.trim() || undefined,
         maxPlayers,
         isPublic: isPublic || undefined,
-        sessionWeekday,
-        sessionTime,
-        sessionType,
+        ...(sessionWeekday && { sessionWeekday }),
+        ...(sessionTime && { sessionTime }),
+        ...(sessionType && { sessionType }),
       })
       router.push(`/dashboard/adventures/${created.id}`)
     } catch (err) {
@@ -176,7 +171,7 @@ export default function NewAdventurePage() {
           {/* Session Info */}
           <div>
             <label className="label">
-              Session Schedule <span className="text-muted font-normal">(required)</span>
+              Session Schedule <span className="text-muted font-normal">(optional)</span>
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-1.5">
               <div>
@@ -259,7 +254,7 @@ export default function NewAdventurePage() {
             </Link>
             <button
               type="submit"
-              disabled={submitting || name.trim().length === 0 || campaign.trim().length === 0 || !sessionWeekday || !sessionTime || !sessionType}
+              disabled={submitting || name.trim().length === 0 || campaign.trim().length === 0}
               className="btn-primary text-sm"
             >
               {submitting ? (
