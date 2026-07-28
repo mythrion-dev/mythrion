@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt, Min, Max, MaxLength } from 'class-validator'
+import { IsString, IsOptional, IsInt, IsBoolean, Min, Max, MaxLength } from 'class-validator'
 import { Type } from 'class-transformer'
 
 export class UpdateAdventureDto {
@@ -23,4 +23,8 @@ export class UpdateAdventureDto {
   @IsOptional()
   @Type(() => Number)
   maxPlayers?: number
+
+  @IsBoolean()
+  @IsOptional()
+  isPublic?: boolean
 }

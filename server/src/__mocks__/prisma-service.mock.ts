@@ -95,6 +95,7 @@ export function createMockPrismaService() {
     armorClassAttributeModifier: mockModel(),
     resistanceComponent: mockModel(),
     resistanceAttributeModifier: mockModel(),
+    joinRequest: mockModel(),
     $connect: jest.fn().mockResolvedValue(undefined),
     $disconnect: jest.fn().mockResolvedValue(undefined),
     $queryRawUnsafe: jest.fn().mockResolvedValue([{ 1: 1 }]),
@@ -328,6 +329,7 @@ export function createMockPrismaServiceWithData(
     'armorClassAttributeModifier',
     'resistanceComponent',
     'resistanceAttributeModifier',
+    'joinRequest',
   ] as const;
 
   const service: Record<string, any> = {};

@@ -11,6 +11,8 @@ import { FormulaModule } from './formula/formula.module.js';
 import { ImageModule } from './image/image.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import { BookModule } from './book/book.module.js';
+import { JoinRequestModule } from './join-request/join-request.module.js';
+import { CommunityModule } from './community/community.module.js';
 import { SubscriptionModule } from './subscription/subscription.module.js';
 
 @Module({
@@ -24,6 +26,8 @@ import { SubscriptionModule } from './subscription/subscription.module.js';
     RedisModule,
     BookModule,
     SubscriptionModule,
+    JoinRequestModule,
+    CommunityModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService, PrismaService],

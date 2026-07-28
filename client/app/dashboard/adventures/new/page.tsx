@@ -12,6 +12,7 @@ export default function NewAdventurePage() {
   const [campaign, setCampaign] = useState('')
   const [synopsis, setSynopsis] = useState('')
   const [maxPlayers, setMaxPlayers] = useState(4)
+  const [isPublic, setIsPublic] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -26,6 +27,7 @@ export default function NewAdventurePage() {
         campaign: campaign.trim(),
         synopsis: synopsis.trim() || undefined,
         maxPlayers,
+        isPublic: isPublic || undefined,
       })
       router.push(`/dashboard/adventures/${created.id}`)
     } catch (err) {
@@ -152,6 +154,25 @@ export default function NewAdventurePage() {
             <div className="flex justify-between text-xs text-muted mt-1.5">
               <span>1</span>
               <span>5</span>
+            </div>
+          </div>
+
+          {/* Public toggle */}
+          <div className="flex items-start gap-3 pt-1">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isPublic}
+              onClick={() => setIsPublic(!isPublic)}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isPublic ? 'bg-accent' : 'bg-border'}`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow ring-0 transition duration-200 ease-in-out ${isPublic ? 'translate-x-5' : 'translate-x-0'}`}
+              />
+            </button>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-foreground">Public Campaign</span>
+              <span className="text-xs text-muted">Anyone can see this campaign in the community explorer</span>
             </div>
           </div>
 

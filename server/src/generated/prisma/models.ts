@@ -10,6 +10,7 @@
  */
 export type * from './models/User.js'
 export type * from './models/Adventure.js'
+export type * from './models/JoinRequest.js'
 export type * from './models/Book.js'
 export type * from './models/CampaignMember.js'
 export type * from './models/CampaignInvitation.js'

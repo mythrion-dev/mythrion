@@ -28,6 +28,11 @@ export type User = Prisma.UserModel
  */
 export type Adventure = Prisma.AdventureModel
 /**
+ * Model JoinRequest
+ * 
+ */
+export type JoinRequest = Prisma.JoinRequestModel
+/**
  * Model Book
  * 
  */
