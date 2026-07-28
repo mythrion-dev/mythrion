@@ -29,6 +29,9 @@ export class AdventureService {
         maxPlayers: dto.maxPlayers,
         ownerId: userId,
         isPublic: dto.isPublic ?? false,
+        sessionWeekday: dto.sessionWeekday ?? null,
+        sessionTime: dto.sessionTime ?? null,
+        sessionType: dto.sessionType ?? null,
       },
     })
 
@@ -88,6 +91,9 @@ export class AdventureService {
         ...(dto.synopsis !== undefined && { synopsis: dto.synopsis }),
         ...(dto.maxPlayers !== undefined && { maxPlayers: dto.maxPlayers }),
         ...(dto.isPublic !== undefined && { isPublic: dto.isPublic }),
+        ...(dto.sessionWeekday !== undefined && { sessionWeekday: dto.sessionWeekday }),
+        ...(dto.sessionTime !== undefined && { sessionTime: dto.sessionTime }),
+        ...(dto.sessionType !== undefined && { sessionType: dto.sessionType }),
       },
     })
   }
@@ -109,7 +115,15 @@ export class AdventureService {
    * Find public adventures with pagination and optional filters.
    * No auth required.
    */
-  async findPublic(params: { page?: number; limit?: number; campaign?: string; search?: string }) {
+  async findPublic(params: {
+    page?: number
+    limit?: number
+    campaign?: string
+    search?: string
+    sessionWeekday?: string
+    sessionType?: string
+    timePeriod?: 'morning' | 'afternoon' | 'night'
+  }) {
     const page = params.page ?? 1
     const limit = params.limit ?? 10
     const skip = (page - 1) * limit
@@ -127,6 +141,24 @@ export class AdventureService {
       ]
     }
 
+    if (params.sessionWeekday) {
+      where.sessionWeekday = params.sessionWeekday
+    }
+
+    if (params.sessionType) {
+      where.sessionType = params.sessionType
+    }
+
+    if (params.timePeriod) {
+      const timeFilters: Record<string, { gte: string; lt: string }> = {
+        morning: { gte: '06:00', lt: '12:00' },
+        afternoon: { gte: '12:00', lt: '18:00' },
+        night: { gte: '18:00', lt: '24:00' },
+      }
+      const filter = timeFilters[params.timePeriod]
+      where.sessionTime = { gte: filter.gte, lt: filter.lt }
+    }
+
     const [adventures, total] = await this.prisma.$transaction([
       this.prisma.adventure.findMany({
         where,
@@ -140,6 +172,9 @@ export class AdventureService {
           synopsis: true,
           maxPlayers: true,
           isPublic: true,
+          sessionWeekday: true,
+          sessionTime: true,
+          sessionType: true,
           createdAt: true,
           owner: { select: { id: true, displayName: true } },
           _count: { select: { members: true } },

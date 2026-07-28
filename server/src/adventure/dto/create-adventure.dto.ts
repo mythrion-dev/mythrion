@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt, IsBoolean, Min, Max, MaxLength } from 'class-validator'
+import { IsString, IsOptional, IsInt, IsBoolean, IsIn, Min, Max, MaxLength } from 'class-validator'
 import { Type } from 'class-transformer'
 
 export class CreateAdventureDto {
@@ -24,4 +24,18 @@ export class CreateAdventureDto {
   @IsBoolean()
   @IsOptional()
   isPublic?: boolean
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
+  sessionWeekday?: string
+
+  @IsString()
+  @IsOptional()
+  sessionTime?: string
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['ONLINE', 'IN_PERSON'])
+  sessionType?: string
 }

@@ -51,6 +51,9 @@ describe('CommunityAdventureController', () => {
         limit: 10,
         campaign: undefined,
         search: undefined,
+        sessionWeekday: undefined,
+        sessionType: undefined,
+        timePeriod: undefined,
       })
       expect(result.data).toHaveLength(1)
       expect(result.meta.total).toBe(1)
@@ -64,6 +67,54 @@ describe('CommunityAdventureController', () => {
         limit: 5,
         campaign: 'D&D 5e',
         search: 'dragon',
+        sessionWeekday: undefined,
+        sessionType: undefined,
+        timePeriod: undefined,
+      })
+      expect(result).toBeDefined()
+    })
+
+    it('passes sessionWeekday filter', async () => {
+      const result = await controller.findAll(1, 10, undefined, undefined, 'Friday')
+
+      expect(mockAdventureService.findPublic).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+        campaign: undefined,
+        search: undefined,
+        sessionWeekday: 'Friday',
+        sessionType: undefined,
+        timePeriod: undefined,
+      })
+      expect(result).toBeDefined()
+    })
+
+    it('passes sessionType filter', async () => {
+      const result = await controller.findAll(1, 10, undefined, undefined, undefined, 'ONLINE')
+
+      expect(mockAdventureService.findPublic).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+        campaign: undefined,
+        search: undefined,
+        sessionWeekday: undefined,
+        sessionType: 'ONLINE',
+        timePeriod: undefined,
+      })
+      expect(result).toBeDefined()
+    })
+
+    it('passes timePeriod filter', async () => {
+      const result = await controller.findAll(1, 10, undefined, undefined, undefined, undefined, 'night')
+
+      expect(mockAdventureService.findPublic).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+        campaign: undefined,
+        search: undefined,
+        sessionWeekday: undefined,
+        sessionType: undefined,
+        timePeriod: 'night',
       })
       expect(result).toBeDefined()
     })

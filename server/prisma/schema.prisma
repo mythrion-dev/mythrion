@@ -35,6 +35,9 @@ model Adventure {
   campaign        String
   synopsis        String?
   maxPlayers      Int                  @default(5)
+  sessionWeekday  String?              // "Monday", "Tuesday", etc.
+  sessionTime     String?              // "HH:mm" format, e.g. "20:00"
+  sessionType     String?              // "ONLINE" or "IN_PERSON"
   ownerId         String
   owner           User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   isPublic        Boolean              @default(false)

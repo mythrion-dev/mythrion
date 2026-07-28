@@ -22,8 +22,20 @@ export class CommunityAdventureController {
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
     @Query('campaign') campaign?: string,
     @Query('search') search?: string,
+    @Query('sessionWeekday') sessionWeekday?: string,
+    @Query('sessionType') sessionType?: string,
+    @Query('timePeriod') timePeriod?: string,
   ) {
-    return this.adventureService.findPublic({ page, limit, campaign, search })
+    return this.adventureService.findPublic({
+      page,
+      limit,
+      campaign,
+      search,
+      sessionWeekday,
+      sessionType,
+      timePeriod: timePeriod as 'morning' | 'afternoon' | 'night' | undefined,
+    })
+  }
   }
 
   /**

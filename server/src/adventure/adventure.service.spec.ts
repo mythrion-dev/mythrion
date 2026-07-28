@@ -69,9 +69,44 @@ describe('AdventureService', () => {
           maxPlayers: 4,
           ownerId: 'u1',
           isPublic: false,
+          sessionWeekday: null,
+          sessionTime: null,
+          sessionType: null,
         },
       })
       expect(mockMembershipService.createMembership).toHaveBeenCalledWith('a1', 'u1', 'GM')
+    })
+
+    it('creates adventure with session fields when provided', async () => {
+      const dto = {
+        name: 'Scheduled Adv',
+        campaign: 'My Campaign',
+        synopsis: 'Weekly game!',
+        maxPlayers: 4,
+        sessionWeekday: 'Friday',
+        sessionTime: '20:00',
+        sessionType: 'ONLINE',
+      }
+      const createdAdventure = { id: 'a2', ...dto, ownerId: 'u1' }
+      prisma.adventure.create.mockResolvedValue(createdAdventure)
+
+      const result = await service.create('u1', dto)
+
+      expect(result).toEqual(createdAdventure)
+      expect(prisma.adventure.create).toHaveBeenCalledWith({
+        data: {
+          name: 'Scheduled Adv',
+          campaign: 'My Campaign',
+          synopsis: 'Weekly game!',
+          maxPlayers: 4,
+          ownerId: 'u1',
+          isPublic: false,
+          sessionWeekday: 'Friday',
+          sessionTime: '20:00',
+          sessionType: 'ONLINE',
+        },
+      })
+      expect(mockMembershipService.createMembership).toHaveBeenCalledWith('a2', 'u1', 'GM')
     })
   })
 
@@ -129,6 +164,41 @@ describe('AdventureService', () => {
         data: {
           name: 'Updated Adv',
           synopsis: 'Updated!',
+        },
+      })
+      expect(result).toEqual(updated)
+    })
+
+    it('updates adventure with session fields when provided', async () => {
+      const dto = { sessionWeekday: 'Saturday', sessionTime: '18:00', sessionType: 'IN_PERSON' }
+      const updated = { id: 'a1', name: 'Test', campaign: 'Camp', maxPlayers: 4, isPublic: false, sessionWeekday: 'Saturday', sessionTime: '18:00', sessionType: 'IN_PERSON' }
+      prisma.adventure.update.mockResolvedValue(updated)
+
+      const result = await service.update('a1', 'u1', dto)
+
+      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
+      expect(prisma.adventure.update).toHaveBeenCalledWith({
+        where: { id: 'a1' },
+        data: {
+          sessionWeekday: 'Saturday',
+          sessionTime: '18:00',
+          sessionType: 'IN_PERSON',
+        },
+      })
+      expect(result).toEqual(updated)
+    })
+
+    it('does not include session fields when not provided in update', async () => {
+      const dto = { name: 'Renamed Adv' }
+      const updated = { id: 'a1', name: 'Renamed Adv', campaign: 'Camp', maxPlayers: 4, isPublic: false }
+      prisma.adventure.update.mockResolvedValue(updated)
+
+      const result = await service.update('a1', 'u1', dto)
+
+      expect(prisma.adventure.update).toHaveBeenCalledWith({
+        where: { id: 'a1' },
+        data: {
+          name: 'Renamed Adv',
         },
       })
       expect(result).toEqual(updated)
@@ -221,6 +291,98 @@ describe('AdventureService', () => {
               { name: { contains: 'dragon', mode: 'insensitive' } },
               { synopsis: { contains: 'dragon', mode: 'insensitive' } },
             ],
+          }),
+        }),
+      )
+    })
+
+
+    it('filters by sessionWeekday', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublic({ sessionWeekday: 'Friday' })
+
+      expect(prisma.adventure.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            isPublic: true,
+            sessionWeekday: 'Friday',
+          }),
+        }),
+      )
+    })
+
+    it('filters by sessionType', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublic({ sessionType: 'ONLINE' })
+
+      expect(prisma.adventure.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            isPublic: true,
+            sessionType: 'ONLINE',
+          }),
+        }),
+      )
+    })
+
+    it('filters by timePeriod=morning (06:00-11:59)', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublic({ timePeriod: 'morning' })
+
+      expect(prisma.adventure.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            isPublic: true,
+            sessionTime: { gte: '06:00', lt: '12:00' },
+          }),
+        }),
+      )
+    })
+
+    it('filters by timePeriod=afternoon (12:00-17:59)', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublic({ timePeriod: 'afternoon' })
+
+      expect(prisma.adventure.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            isPublic: true,
+            sessionTime: { gte: '12:00', lt: '18:00' },
+          }),
+        }),
+      )
+    })
+
+    it('filters by timePeriod=night (18:00-23:59)', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublic({ timePeriod: 'night' })
+
+      expect(prisma.adventure.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            isPublic: true,
+            sessionTime: { gte: '18:00', lt: '24:00' },
+          }),
+        }),
+      )
+    })
+
+    it('combines sessionWeekday and sessionType filters', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublic({ sessionWeekday: 'Monday', sessionType: 'IN_PERSON' })
+
+      expect(prisma.adventure.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            isPublic: true,
+            sessionWeekday: 'Monday',
+            sessionType: 'IN_PERSON',
           }),
         }),
       )
