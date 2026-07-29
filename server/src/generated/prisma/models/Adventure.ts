@@ -45,6 +45,7 @@ export type AdventureMinAggregateOutputType = {
   sessionType: string | null
   ownerId: string | null
   isPublic: boolean | null
+  templateSource: string | null
   originalTemplateId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -61,6 +62,7 @@ export type AdventureMaxAggregateOutputType = {
   sessionType: string | null
   ownerId: string | null
   isPublic: boolean | null
+  templateSource: string | null
   originalTemplateId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -77,6 +79,7 @@ export type AdventureCountAggregateOutputType = {
   sessionType: number
   ownerId: number
   isPublic: number
+  templateSource: number
   templateSnapshot: number
   originalTemplateId: number
   createdAt: number
@@ -104,6 +107,7 @@ export type AdventureMinAggregateInputType = {
   sessionType?: true
   ownerId?: true
   isPublic?: true
+  templateSource?: true
   originalTemplateId?: true
   createdAt?: true
   updatedAt?: true
@@ -120,6 +124,7 @@ export type AdventureMaxAggregateInputType = {
   sessionType?: true
   ownerId?: true
   isPublic?: true
+  templateSource?: true
   originalTemplateId?: true
   createdAt?: true
   updatedAt?: true
@@ -136,6 +141,7 @@ export type AdventureCountAggregateInputType = {
   sessionType?: true
   ownerId?: true
   isPublic?: true
+  templateSource?: true
   templateSnapshot?: true
   originalTemplateId?: true
   createdAt?: true
@@ -240,6 +246,7 @@ export type AdventureGroupByOutputType = {
   sessionType: string | null
   ownerId: string
   isPublic: boolean
+  templateSource: string | null
   templateSnapshot: runtime.JsonValue | null
   originalTemplateId: string | null
   createdAt: Date
@@ -280,6 +287,7 @@ export type AdventureWhereInput = {
   sessionType?: Prisma.StringNullableFilter<"Adventure"> | string | null
   ownerId?: Prisma.StringFilter<"Adventure"> | string
   isPublic?: Prisma.BoolFilter<"Adventure"> | boolean
+  templateSource?: Prisma.StringNullableFilter<"Adventure"> | string | null
   templateSnapshot?: Prisma.JsonNullableFilter<"Adventure">
   originalTemplateId?: Prisma.StringNullableFilter<"Adventure"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Adventure"> | Date | string
@@ -305,6 +313,7 @@ export type AdventureOrderByWithRelationInput = {
   sessionType?: Prisma.SortOrderInput | Prisma.SortOrder
   ownerId?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
+  templateSource?: Prisma.SortOrderInput | Prisma.SortOrder
   templateSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
   originalTemplateId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -333,6 +342,7 @@ export type AdventureWhereUniqueInput = Prisma.AtLeast<{
   sessionType?: Prisma.StringNullableFilter<"Adventure"> | string | null
   ownerId?: Prisma.StringFilter<"Adventure"> | string
   isPublic?: Prisma.BoolFilter<"Adventure"> | boolean
+  templateSource?: Prisma.StringNullableFilter<"Adventure"> | string | null
   templateSnapshot?: Prisma.JsonNullableFilter<"Adventure">
   originalTemplateId?: Prisma.StringNullableFilter<"Adventure"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Adventure"> | Date | string
@@ -358,6 +368,7 @@ export type AdventureOrderByWithAggregationInput = {
   sessionType?: Prisma.SortOrderInput | Prisma.SortOrder
   ownerId?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
+  templateSource?: Prisma.SortOrderInput | Prisma.SortOrder
   templateSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
   originalTemplateId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -383,6 +394,7 @@ export type AdventureScalarWhereWithAggregatesInput = {
   sessionType?: Prisma.StringNullableWithAggregatesFilter<"Adventure"> | string | null
   ownerId?: Prisma.StringWithAggregatesFilter<"Adventure"> | string
   isPublic?: Prisma.BoolWithAggregatesFilter<"Adventure"> | boolean
+  templateSource?: Prisma.StringNullableWithAggregatesFilter<"Adventure"> | string | null
   templateSnapshot?: Prisma.JsonNullableWithAggregatesFilter<"Adventure">
   originalTemplateId?: Prisma.StringNullableWithAggregatesFilter<"Adventure"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Adventure"> | Date | string
@@ -399,6 +411,7 @@ export type AdventureCreateInput = {
   sessionTime?: string | null
   sessionType?: string | null
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -423,6 +436,7 @@ export type AdventureUncheckedCreateInput = {
   sessionType?: string | null
   ownerId: string
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: string | null
   createdAt?: Date | string
@@ -445,6 +459,7 @@ export type AdventureUpdateInput = {
   sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -469,6 +484,7 @@ export type AdventureUncheckedUpdateInput = {
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -492,6 +508,7 @@ export type AdventureCreateManyInput = {
   sessionType?: string | null
   ownerId: string
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: string | null
   createdAt?: Date | string
@@ -508,6 +525,7 @@ export type AdventureUpdateManyMutationInput = {
   sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -524,6 +542,7 @@ export type AdventureUncheckedUpdateManyInput = {
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -551,6 +570,7 @@ export type AdventureCountOrderByAggregateInput = {
   sessionType?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
+  templateSource?: Prisma.SortOrder
   templateSnapshot?: Prisma.SortOrder
   originalTemplateId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -572,6 +592,7 @@ export type AdventureMaxOrderByAggregateInput = {
   sessionType?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
+  templateSource?: Prisma.SortOrder
   originalTemplateId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -588,6 +609,7 @@ export type AdventureMinOrderByAggregateInput = {
   sessionType?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
+  templateSource?: Prisma.SortOrder
   originalTemplateId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -797,6 +819,7 @@ export type AdventureCreateWithoutOwnerInput = {
   sessionTime?: string | null
   sessionType?: string | null
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -819,6 +842,7 @@ export type AdventureUncheckedCreateWithoutOwnerInput = {
   sessionTime?: string | null
   sessionType?: string | null
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: string | null
   createdAt?: Date | string
@@ -871,6 +895,7 @@ export type AdventureScalarWhereInput = {
   sessionType?: Prisma.StringNullableFilter<"Adventure"> | string | null
   ownerId?: Prisma.StringFilter<"Adventure"> | string
   isPublic?: Prisma.BoolFilter<"Adventure"> | boolean
+  templateSource?: Prisma.StringNullableFilter<"Adventure"> | string | null
   templateSnapshot?: Prisma.JsonNullableFilter<"Adventure">
   originalTemplateId?: Prisma.StringNullableFilter<"Adventure"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Adventure"> | Date | string
@@ -887,6 +912,7 @@ export type AdventureCreateWithoutJoinRequestsInput = {
   sessionTime?: string | null
   sessionType?: string | null
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -910,6 +936,7 @@ export type AdventureUncheckedCreateWithoutJoinRequestsInput = {
   sessionType?: string | null
   ownerId: string
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: string | null
   createdAt?: Date | string
@@ -947,6 +974,7 @@ export type AdventureUpdateWithoutJoinRequestsInput = {
   sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -970,6 +998,7 @@ export type AdventureUncheckedUpdateWithoutJoinRequestsInput = {
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -991,6 +1020,7 @@ export type AdventureCreateWithoutBooksInput = {
   sessionTime?: string | null
   sessionType?: string | null
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1014,6 +1044,7 @@ export type AdventureUncheckedCreateWithoutBooksInput = {
   sessionType?: string | null
   ownerId: string
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: string | null
   createdAt?: Date | string
@@ -1051,6 +1082,7 @@ export type AdventureUpdateWithoutBooksInput = {
   sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1074,6 +1106,7 @@ export type AdventureUncheckedUpdateWithoutBooksInput = {
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1095,6 +1128,7 @@ export type AdventureCreateWithoutMembersInput = {
   sessionTime?: string | null
   sessionType?: string | null
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1118,6 +1152,7 @@ export type AdventureUncheckedCreateWithoutMembersInput = {
   sessionType?: string | null
   ownerId: string
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: string | null
   createdAt?: Date | string
@@ -1155,6 +1190,7 @@ export type AdventureUpdateWithoutMembersInput = {
   sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1178,6 +1214,7 @@ export type AdventureUncheckedUpdateWithoutMembersInput = {
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1199,6 +1236,7 @@ export type AdventureCreateWithoutInvitationsInput = {
   sessionTime?: string | null
   sessionType?: string | null
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1222,6 +1260,7 @@ export type AdventureUncheckedCreateWithoutInvitationsInput = {
   sessionType?: string | null
   ownerId: string
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: string | null
   createdAt?: Date | string
@@ -1259,6 +1298,7 @@ export type AdventureUpdateWithoutInvitationsInput = {
   sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1282,6 +1322,7 @@ export type AdventureUncheckedUpdateWithoutInvitationsInput = {
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1303,6 +1344,7 @@ export type AdventureCreateWithoutTemplatesInput = {
   sessionTime?: string | null
   sessionType?: string | null
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1326,6 +1368,7 @@ export type AdventureUncheckedCreateWithoutTemplatesInput = {
   sessionType?: string | null
   ownerId: string
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: string | null
   createdAt?: Date | string
@@ -1352,6 +1395,7 @@ export type AdventureCreateWithoutOriginalTemplateInput = {
   sessionTime?: string | null
   sessionType?: string | null
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1375,6 +1419,7 @@ export type AdventureUncheckedCreateWithoutOriginalTemplateInput = {
   sessionType?: string | null
   ownerId: string
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1417,6 +1462,7 @@ export type AdventureUpdateWithoutTemplatesInput = {
   sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1440,6 +1486,7 @@ export type AdventureUncheckedUpdateWithoutTemplatesInput = {
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1477,6 +1524,7 @@ export type AdventureCreateWithoutCharacterSheetsInput = {
   sessionTime?: string | null
   sessionType?: string | null
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1500,6 +1548,7 @@ export type AdventureUncheckedCreateWithoutCharacterSheetsInput = {
   sessionType?: string | null
   ownerId: string
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: string | null
   createdAt?: Date | string
@@ -1537,6 +1586,7 @@ export type AdventureUpdateWithoutCharacterSheetsInput = {
   sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1560,6 +1610,7 @@ export type AdventureUncheckedUpdateWithoutCharacterSheetsInput = {
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1581,6 +1632,7 @@ export type AdventureCreateManyOwnerInput = {
   sessionTime?: string | null
   sessionType?: string | null
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: string | null
   createdAt?: Date | string
@@ -1597,6 +1649,7 @@ export type AdventureUpdateWithoutOwnerInput = {
   sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1619,6 +1672,7 @@ export type AdventureUncheckedUpdateWithoutOwnerInput = {
   sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1641,6 +1695,7 @@ export type AdventureUncheckedUpdateManyWithoutOwnerInput = {
   sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   originalTemplateId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1658,6 +1713,7 @@ export type AdventureCreateManyOriginalTemplateInput = {
   sessionType?: string | null
   ownerId: string
   isPublic?: boolean
+  templateSource?: string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1673,6 +1729,7 @@ export type AdventureUpdateWithoutOriginalTemplateInput = {
   sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1696,6 +1753,7 @@ export type AdventureUncheckedUpdateWithoutOriginalTemplateInput = {
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1718,6 +1776,7 @@ export type AdventureUncheckedUpdateManyWithoutOriginalTemplateInput = {
   sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1810,6 +1869,7 @@ export type AdventureSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   sessionType?: boolean
   ownerId?: boolean
   isPublic?: boolean
+  templateSource?: boolean
   templateSnapshot?: boolean
   originalTemplateId?: boolean
   createdAt?: boolean
@@ -1836,6 +1896,7 @@ export type AdventureSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   sessionType?: boolean
   ownerId?: boolean
   isPublic?: boolean
+  templateSource?: boolean
   templateSnapshot?: boolean
   originalTemplateId?: boolean
   createdAt?: boolean
@@ -1855,6 +1916,7 @@ export type AdventureSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   sessionType?: boolean
   ownerId?: boolean
   isPublic?: boolean
+  templateSource?: boolean
   templateSnapshot?: boolean
   originalTemplateId?: boolean
   createdAt?: boolean
@@ -1874,13 +1936,14 @@ export type AdventureSelectScalar = {
   sessionType?: boolean
   ownerId?: boolean
   isPublic?: boolean
+  templateSource?: boolean
   templateSnapshot?: boolean
   originalTemplateId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type AdventureOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "campaign" | "synopsis" | "maxPlayers" | "sessionWeekday" | "sessionTime" | "sessionType" | "ownerId" | "isPublic" | "templateSnapshot" | "originalTemplateId" | "createdAt" | "updatedAt", ExtArgs["result"]["adventure"]>
+export type AdventureOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "campaign" | "synopsis" | "maxPlayers" | "sessionWeekday" | "sessionTime" | "sessionType" | "ownerId" | "isPublic" | "templateSource" | "templateSnapshot" | "originalTemplateId" | "createdAt" | "updatedAt", ExtArgs["result"]["adventure"]>
 export type AdventureInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   originalTemplate?: boolean | Prisma.Adventure$originalTemplateArgs<ExtArgs>
@@ -1924,6 +1987,7 @@ export type $AdventurePayload<ExtArgs extends runtime.Types.Extensions.InternalA
     sessionType: string | null
     ownerId: string
     isPublic: boolean
+    templateSource: string | null
     templateSnapshot: runtime.JsonValue | null
     originalTemplateId: string | null
     createdAt: Date
@@ -2369,6 +2433,7 @@ export interface AdventureFieldRefs {
   readonly sessionType: Prisma.FieldRef<"Adventure", 'String'>
   readonly ownerId: Prisma.FieldRef<"Adventure", 'String'>
   readonly isPublic: Prisma.FieldRef<"Adventure", 'Boolean'>
+  readonly templateSource: Prisma.FieldRef<"Adventure", 'String'>
   readonly templateSnapshot: Prisma.FieldRef<"Adventure", 'Json'>
   readonly originalTemplateId: Prisma.FieldRef<"Adventure", 'String'>
   readonly createdAt: Prisma.FieldRef<"Adventure", 'DateTime'>

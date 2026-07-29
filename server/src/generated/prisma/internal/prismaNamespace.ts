@@ -4141,6 +4141,7 @@ export const AdventureScalarFieldEnum = {
   sessionType: 'sessionType',
   ownerId: 'ownerId',
   isPublic: 'isPublic',
+  templateSource: 'templateSource',
   templateSnapshot: 'templateSnapshot',
   originalTemplateId: 'originalTemplateId',
   createdAt: 'createdAt',

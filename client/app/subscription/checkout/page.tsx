@@ -29,9 +29,6 @@ function CheckoutContent() {
   const [payerDocument, setPayerDocument] = useState('')
   const [formErrors, setFormErrors] = useState<{ name?: string; document?: string; card?: string }>({})
 
-  // Payment method toggle
-  const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'pix'>('credit_card')
-
   // State: 'form' | 'tokenizing' | 'creating' | 'redirecting' | 'success' | 'error'
   const [state, setState] = useState<'form' | 'tokenizing' | 'creating' | 'redirecting' | 'success' | 'error'>('form')
   const [errorMessage, setErrorMessage] = useState('')
@@ -124,7 +121,7 @@ function CheckoutContent() {
 
     setErrorMessage('')
 
-    if (paymentMethod === 'credit_card' && mpPublicKey) {
+    if (mpPublicKey) {
       // Step 1: Tokenize the card
       setState('tokenizing')
       try {
@@ -157,7 +154,7 @@ function CheckoutContent() {
         setErrorMessage(message)
       }
     } else {
-      // Fallback: redirect-based flow (Pix or no MP key configured)
+      // Fallback: redirect-based flow (no MP key configured)
       setState('creating')
       try {
         const result = await createSubscription(
@@ -181,7 +178,7 @@ function CheckoutContent() {
         setErrorMessage(message)
       }
     }
-  }, [planId, plan, payerName, payerDocument, validate, router, paymentMethod, mpPublicKey])
+  }, [planId, plan, payerName, payerDocument, validate, router, mpPublicKey])
 
   // ----- Tokenizing / Creating / Redirecting states -----
   if (state === 'tokenizing' || state === 'creating' || state === 'redirecting') {
@@ -268,6 +265,30 @@ function CheckoutContent() {
           <h1 className="text-2xl font-bold text-foreground">Finalizar assinatura</h1>
         </div>
 
+        {/* MP iframe styles */}
+        <style>{`
+          .mp-field-wrapper {
+            width: 100%;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            border-radius: 8px;
+            background: hsl(var(--background));
+            border: 1px solid hsl(var(--border));
+          }
+          .mp-field-wrapper iframe {
+            height: 32px !important;
+            min-height: unset !important;
+          }
+          .mp-field-wrapper [data-card-number-wrapper],
+          .mp-field-wrapper [data-expiration-date-wrapper],
+          .mp-field-wrapper [data-security-code-wrapper] {
+            height: 32px;
+            min-height: unset;
+          }
+        `}</style>
+
         {/* Plan summary card */}
         <div className="bg-surface border border-border rounded-xl p-6 mb-6">
           {plan && (
@@ -290,30 +311,6 @@ function CheckoutContent() {
 
         {/* Payer info form */}
         <div className="bg-surface border border-border rounded-xl p-6">
-          {/* Payment method toggle */}
-          <div className="flex gap-2 mb-6">
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('credit_card')}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
-                paymentMethod === 'credit_card'
-                  ? 'bg-primary text-background'
-                  : 'bg-background border border-border text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Cartão de Crédito
-            </button>
-            <button
-              type="button"
-              disabled
-              className="flex-1 py-2 rounded-lg text-sm font-semibold bg-background border border-border text-muted-foreground/50 cursor-not-allowed"
-              title="Disponível em breve"
-            >
-              Pix
-              <span className="block text-[10px] opacity-60">Em breve</span>
-            </button>
-          </div>
-
           <h3 className="text-sm font-semibold text-foreground mb-4">
             Dados do comprador
           </h3>
@@ -368,8 +365,8 @@ function CheckoutContent() {
             )}
           </div>
 
-          {/* Card form — only when credit_card is selected and MP key is available */}
-          {paymentMethod === 'credit_card' && mpPublicKey && (
+          {/* Card form — only when MP key is available */}
+          {mpPublicKey ? (
             <>
               <h3 className="text-sm font-semibold text-foreground mb-4 mt-6 pt-6 border-t border-border">
                 Dados do cartão
@@ -379,8 +376,8 @@ function CheckoutContent() {
                 <label className="block text-sm font-medium text-foreground mb-1">
                   Número do cartão <span className="text-red-500">*</span>
                 </label>
-                <div className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm min-h-[38px] flex items-center">
-                  <CardNumber placeholder="0000 0000 0000 0000" />
+                <div className="mp-field-wrapper">
+                  <CardNumber placeholder="0000 0000 0000 0000" style={{ color: 'hsl(var(--foreground))', 'placeholder-color': 'hsl(var(--muted-foreground))', 'font-family': 'inherit', fontSize: '14px' }} />
                 </div>
               </div>
 
@@ -389,16 +386,16 @@ function CheckoutContent() {
                   <label className="block text-sm font-medium text-foreground mb-1">
                     Validade <span className="text-red-500">*</span>
                   </label>
-                  <div className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm min-h-[38px] flex items-center">
-                    <ExpirationDate placeholder="MM/AA" />
+                  <div className="mp-field-wrapper">
+                    <ExpirationDate placeholder="MM/AA" style={{ color: 'hsl(var(--foreground))', 'placeholder-color': 'hsl(var(--muted-foreground))', 'font-family': 'inherit', fontSize: '14px' }} />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">
                     CVV <span className="text-red-500">*</span>
                   </label>
-                  <div className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm min-h-[38px] flex items-center">
-                    <SecurityCode placeholder="123" />
+                  <div className="mp-field-wrapper">
+                    <SecurityCode placeholder="123" style={{ color: 'hsl(var(--foreground))', 'placeholder-color': 'hsl(var(--muted-foreground))', 'font-family': 'inherit', fontSize: '14px' }} />
                   </div>
                 </div>
               </div>
@@ -407,11 +404,9 @@ function CheckoutContent() {
                 <p className="mb-4 text-xs text-red-500">{formErrors.card}</p>
               )}
             </>
-          )}
-
-          {paymentMethod === 'credit_card' && !mpPublicKey && (
+          ) : (
             <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm text-amber-600 dark:text-amber-400">
-              Pagamento por cartão indisponível no momento. Use a opção de pagamento via Mercado Pago.
+              Pagamento por cartão indisponível no momento. Você será redirecionado para o Mercado Pago.
             </div>
           )}
 
