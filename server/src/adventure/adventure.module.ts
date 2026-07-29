@@ -9,6 +9,7 @@ import { JwtModule } from '@nestjs/jwt'
 import { CollaborationModule } from '../collaboration/collaboration.module.js'
 import { CharacterSheetModule } from '../character-sheet/character-sheet.module.js'
 import { TemplateModule } from '../template/template.module.js'
+import { SubscriptionModule } from '../subscription/subscription.module.js'
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { TemplateModule } from '../template/template.module.js'
       signOptions: { expiresIn: '7d' },
     }),
     forwardRef(() => AuthModule),
+    SubscriptionModule,
     CollaborationModule,
     CharacterSheetModule,
     TemplateModule,

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, forwardRef } from '@nestjs/common'
 import { TemplateService } from './template.service.js'
 import { TemplateController } from './template.controller.js'
 import { StandaloneTemplateController } from './standalone-template.controller.js'
@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { AuthModule } from '../auth/auth.module.js'
 import { JwtModule } from '@nestjs/jwt'
 import { CollaborationModule } from '../collaboration/collaboration.module.js'
+import { SubscriptionModule } from '../subscription/subscription.module.js'
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { CollaborationModule } from '../collaboration/collaboration.module.js'
     }),
     AuthModule,
     CollaborationModule,
+    forwardRef(() => SubscriptionModule),
   ],
   controllers: [TemplateController, StandaloneTemplateController],
   providers: [TemplateService, PrismaService, JwtAuthGuard],
