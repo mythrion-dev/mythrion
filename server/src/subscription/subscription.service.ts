@@ -113,13 +113,25 @@ export class SubscriptionService {
       payerDocument,
     )
 
+    // Determine the effective status from MP's response.
+    // When using a card token, MP returns status: 'authorized' immediately.
+    // When using the redirect flow, MP returns status: 'pending'.
+    const mpStatusLower = mpSubscription.status?.toLowerCase()
+    const effectiveStatus: SubscriptionStatus =
+      mpStatusLower === 'authorized'
+        ? 'AUTHORIZED'
+        : mpStatusLower === 'pending'
+          ? 'PENDING'
+          : 'PENDING'
+
     // Upsert the UserSubscription row (create or replace cancelled/expired one)
     const subscription = await this.prisma.userSubscription.upsert({
       where: { userId },
       update: {
         planId: plan.id,
         mpSubscriptionId: mpSubscription.id,
-        status: 'PENDING' as SubscriptionStatus,
+        status: effectiveStatus,
+        currentPeriodStart: effectiveStatus === 'AUTHORIZED' ? new Date() : undefined,
         // Don't reset period/grace dates here — they are only assigned
         // by webhook handlers when MP provides actual values. Resetting
         // them to null on upsert causes P2011 if a prior migration on
@@ -130,7 +142,8 @@ export class SubscriptionService {
         userId,
         planId: plan.id,
         mpSubscriptionId: mpSubscription.id,
-        status: 'PENDING',
+        status: effectiveStatus,
+        currentPeriodStart: effectiveStatus === 'AUTHORIZED' ? new Date() : undefined,
       },
     })
 
@@ -156,7 +169,7 @@ export class SubscriptionService {
 
   /** Fetch the current user's subscription with plan + recent invoices. */
   async getMySubscription(userId: string): Promise<MySubscriptionResult | null> {
-    const sub = await this.prisma.userSubscription.findUnique({
+    let sub = await this.prisma.userSubscription.findUnique({
       where: { userId },
       include: {
         plan: { select: { slug: true, name: true, price: true } },
@@ -177,6 +190,52 @@ export class SubscriptionService {
     })
 
     if (!sub) return null
+
+    // Auto-repair: if local status is PENDING but we have an mpSubscriptionId,
+    // check MP's actual status. This handles the case where a card-token
+    // subscription was created before the fix that maps MP's "authorized"
+    // response to AUTHORIZED status locally (migration 20260728000004 era).
+    if (sub.status === 'PENDING' && sub.mpSubscriptionId) {
+      try {
+        const mpSub = await this.mp.getSubscription(sub.mpSubscriptionId)
+        if (mpSub.status === 'authorized') {
+          const now = new Date()
+          const nextPayment = mpSub.next_payment_date
+            ? new Date(mpSub.next_payment_date)
+            : null
+          sub = await this.prisma.userSubscription.update({
+            where: { userId },
+            data: {
+              status: 'AUTHORIZED',
+              currentPeriodStart: now,
+              currentPeriodEnd: nextPayment,
+            },
+            include: {
+              plan: { select: { slug: true, name: true, price: true } },
+              invoices: {
+                orderBy: { createdAt: 'desc' },
+                take: 10,
+                select: {
+                  id: true,
+                  amount: true,
+                  currency: true,
+                  status: true,
+                  paidAt: true,
+                  dueDate: true,
+                  createdAt: true,
+                },
+              },
+            },
+          })
+          this.logger.log(`Auto-repaired subscription ${sub.mpSubscriptionId} from PENDING to AUTHORIZED`)
+        }
+      } catch (err) {
+        // MP API failure — just serve stale data, don't block the user
+        this.logger.warn(
+          `Failed to check MP status for subscription ${sub.mpSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
+        )
+      }
+    }
 
     return {
       id: sub.id,

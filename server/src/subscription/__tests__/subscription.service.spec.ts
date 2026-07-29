@@ -84,6 +84,7 @@ describe('SubscriptionService', () => {
       mockMpService.createSubscription.mockResolvedValue({
         id: 'mp-sub-1',
         init_point: 'https://mercadopago.com/checkout/123',
+        status: 'pending',
       })
       prisma.userSubscription.upsert.mockResolvedValue({
         id: 'local-sub-1',
@@ -111,6 +112,31 @@ describe('SubscriptionService', () => {
         undefined, // payerDocument
       )
       expect(prisma.userSubscription.upsert).toHaveBeenCalled()
+    })
+
+    it('saves AUTHORIZED status when MP returns authorized (card token flow)', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue(null)
+      prisma.subscriptionPlan.findUnique.mockResolvedValue(plan)
+      mockMpService.createSubscription.mockResolvedValue({
+        id: 'mp-sub-auth',
+        init_point: null,
+        status: 'authorized',
+      })
+      prisma.userSubscription.upsert.mockResolvedValue({
+        id: 'local-sub-auth',
+        userId,
+        planId,
+        mpSubscriptionId: 'mp-sub-auth',
+        status: 'AUTHORIZED',
+      })
+
+      await service.createSubscription(userId, planId, email, 'card-tok-123', 'João Silva', '12345678909')
+
+      // Verify upsert uses AUTHORIZED status
+      const upsertCall = prisma.userSubscription.upsert.mock.calls[0][0]
+      expect(upsertCall.create.status).toBe('AUTHORIZED')
+      expect(upsertCall.update.status).toBe('AUTHORIZED')
+      expect(upsertCall.create.currentPeriodStart).toBeInstanceOf(Date)
     })
 
     it('throws UnprocessableEntityException when user has an active subscription', async () => {
@@ -144,6 +170,7 @@ describe('SubscriptionService', () => {
       mockMpService.createSubscription.mockResolvedValue({
         id: 'mp-sub-2',
         init_point: 'https://mercadopago.com/checkout/456',
+        status: 'pending',
       })
       prisma.userSubscription.upsert.mockResolvedValue({
         id: 'local-sub-2',
@@ -232,6 +259,135 @@ describe('SubscriptionService', () => {
       const result = await service.getMySubscription('user-1')
 
       expect(result).toBeNull()
+    })
+
+    it('auto-repairs PENDING subscription when MP reports authorized', async () => {
+      const pendingSub = {
+        id: 'sub-stuck',
+        status: 'PENDING',
+        mpSubscriptionId: 'mp-stuck',
+        graceEndsAt: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelledAt: null,
+        createdAt: new Date(),
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        invoices: [],
+      }
+      const repairedSub = {
+        ...pendingSub,
+        status: 'AUTHORIZED',
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date('2026-08-29'),
+      }
+
+      prisma.userSubscription.findUnique.mockResolvedValueOnce(pendingSub)
+      mockMpService.getSubscription.mockResolvedValue({
+        id: 'mp-stuck',
+        status: 'authorized',
+        next_payment_date: '2026-08-29T00:00:00Z',
+      })
+      prisma.userSubscription.update.mockResolvedValue(repairedSub)
+
+      const result = await service.getMySubscription('user-1')
+
+      expect(result?.status).toBe('AUTHORIZED')
+      expect(result?.currentPeriodStart).toBeInstanceOf(Date)
+      expect(result?.currentPeriodEnd).toBeInstanceOf(Date)
+      expect(mockMpService.getSubscription).toHaveBeenCalledWith('mp-stuck')
+    })
+
+    it('does not auto-repair when MP also reports pending', async () => {
+      const pendingSub = {
+        id: 'sub-pending',
+        status: 'PENDING',
+        mpSubscriptionId: 'mp-pending',
+        graceEndsAt: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelledAt: null,
+        createdAt: new Date(),
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        invoices: [],
+      }
+
+      prisma.userSubscription.findUnique.mockResolvedValueOnce(pendingSub)
+      mockMpService.getSubscription.mockResolvedValue({
+        id: 'mp-pending',
+        status: 'pending',
+      })
+
+      const result = await service.getMySubscription('user-1')
+
+      expect(result?.status).toBe('PENDING')
+      expect(prisma.userSubscription.update).not.toHaveBeenCalled()
+    })
+
+    it('does not call MP when local status is not PENDING', async () => {
+      const activeSub = {
+        id: 'sub-active',
+        status: 'ACTIVE',
+        mpSubscriptionId: 'mp-active',
+        graceEndsAt: null,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(),
+        cancelledAt: null,
+        createdAt: new Date(),
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        invoices: [],
+      }
+
+      prisma.userSubscription.findUnique.mockResolvedValueOnce(activeSub)
+
+      const result = await service.getMySubscription('user-1')
+
+      expect(result?.status).toBe('ACTIVE')
+      expect(mockMpService.getSubscription).not.toHaveBeenCalled()
+    })
+
+    it('does not auto-repair when mpSubscriptionId is missing', async () => {
+      const pendingNoMp = {
+        id: 'sub-no-mp',
+        status: 'PENDING',
+        mpSubscriptionId: null,
+        graceEndsAt: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelledAt: null,
+        createdAt: new Date(),
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        invoices: [],
+      }
+
+      prisma.userSubscription.findUnique.mockResolvedValueOnce(pendingNoMp)
+
+      const result = await service.getMySubscription('user-1')
+
+      expect(result?.status).toBe('PENDING')
+      expect(mockMpService.getSubscription).not.toHaveBeenCalled()
+    })
+
+    it('falls back to stale data when MP API call fails during auto-repair', async () => {
+      const pendingSub = {
+        id: 'sub-stuck',
+        status: 'PENDING',
+        mpSubscriptionId: 'mp-stuck',
+        graceEndsAt: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelledAt: null,
+        createdAt: new Date(),
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        invoices: [],
+      }
+
+      prisma.userSubscription.findUnique.mockResolvedValueOnce(pendingSub)
+      mockMpService.getSubscription.mockRejectedValue(new Error('Network error'))
+
+      const result = await service.getMySubscription('user-1')
+
+      expect(result?.status).toBe('PENDING')
+      expect(prisma.userSubscription.update).not.toHaveBeenCalled()
     })
   })
 
