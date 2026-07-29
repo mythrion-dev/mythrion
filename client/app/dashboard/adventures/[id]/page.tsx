@@ -671,7 +671,7 @@ export default function AdventureDetailPage() {
             )}
             {/* State A (no template) + State C (campaign-owned): show TemplatesSection */}
             {(templateSource === null || templateSource === 'campaign') && (
-              <TemplatesSection templates={templates} isGM={isGM} showNewTemplate={showNewTemplate} editingTemplateId={editingTemplateId}
+              <TemplatesSection templates={templates} isGM={isGM} showNewTemplate={showNewTemplate} hideCreateButton={templateSource === 'campaign'} editingTemplateId={editingTemplateId}
                 newTemplateName={newTemplateName} newTemplateDescription={newTemplateDescription} newTemplateAttrs={newTemplateAttrs} newAttrModifierFormula={newAttrModifierFormula} newSkillFormula={newSkillFormula} newTemplateFields={newTemplateFields} templateError={templateError} templateCreating={templateCreating}
                 editTemplateName={editTemplateName} editTemplateDescription={editTemplateDescription} editTemplateAttrs={editTemplateAttrs} editAttrModifierFormula={editAttrModifierFormula} editSkillFormula={editSkillFormula} editingTemplateError={editingTemplateError} templateSaving={templateSaving}
                 onNewClick={() => setShowNewTemplate(true)} onCancelNew={resetNewTemplate} onCreateTemplate={handleCreateTemplate}
