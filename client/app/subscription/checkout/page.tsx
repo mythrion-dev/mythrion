@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, Suspense } from 'react'
+import { useEffect, useState, useCallback, Suspense, useMemo, memo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useSubscription } from '@/lib/subscription-context'
@@ -13,6 +13,60 @@ function formatBRL(cents: number) {
   return `R$ ${(cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
 }
 
+/* ---------- Stable style objects for MP fields ---------- */
+const CARD_STYLES = {
+  color: '#e8e2d9',
+  'placeholder-color': '#4a4060',
+  'font-family': 'inherit',
+  fontSize: '14px',
+} as const
+
+/* ---------- MP card form — isolated in a memo'd component to prevent remount ---------- */
+interface CardFormFieldsProps {
+  planPrice: number
+}
+
+const CardFormFields = memo(function CardFormFields({ planPrice }: CardFormFieldsProps) {
+  // Memoize a stable style reference so MP fields don't re-init on every render
+  const styles = useMemo(() => ({ ...CARD_STYLES }), [])
+
+  return (
+    <>
+      <h3 className="text-sm font-semibold text-foreground mb-4 mt-6 pt-6 border-t border-border">
+        Dados do cartão
+      </h3>
+
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-foreground mb-1">
+          Número do cartão <span className="text-red-500">*</span>
+        </label>
+        <div className="mp-field-wrapper">
+          <CardNumber placeholder="0000 0000 0000 0000" style={styles} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            Validade <span className="text-red-500">*</span>
+          </label>
+          <div className="mp-field-wrapper">
+            <ExpirationDate placeholder="MM/AA" style={styles} />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            CVV <span className="text-red-500">*</span>
+          </label>
+          <div className="mp-field-wrapper">
+            <SecurityCode placeholder="123" style={styles} />
+          </div>
+        </div>
+      </div>
+    </>
+  )
+})
+
 /* ---------- component ---------- */
 function CheckoutContent() {
   const router = useRouter()
@@ -23,6 +77,7 @@ function CheckoutContent() {
   const [plan, setPlan] = useState<Plan | null>(null)
   const [planLoading, setPlanLoading] = useState(true)
   const [mpReady, setMpReady] = useState(false)
+  const [mpInitDone, setMpInitDone] = useState(false)
 
   // Form state
   const [payerName, setPayerName] = useState('')
@@ -36,23 +91,22 @@ function CheckoutContent() {
   const planId = searchParams.get('planId')
   const mpPublicKey = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY
 
-  // ----- Initialize MercadoPago -----
+  // ----- Initialize MercadoPago — only ONCE -----
   useEffect(() => {
+    if (mpInitDone) return
     if (mpPublicKey) {
       try {
         initMercadoPago(mpPublicKey)
       } catch (err) {
         console.error('[checkout] MercadoPago init error:', err)
       }
-      // Either way, mark as ready — card form can proceed if init succeeded,
-      // and fallback redirect is still available if it didn't
       setMpReady(true)
     } else {
-      // No public key configured — card form won't render
       console.warn('[checkout] NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY is not set — card form disabled')
       setMpReady(true)
     }
-  }, [mpPublicKey])
+    setMpInitDone(true)
+  }, [mpPublicKey, mpInitDone])
 
   // ----- CPF mask -----
   const formatCPF = (value: string) => {
@@ -145,7 +199,6 @@ function CheckoutContent() {
         )
 
         setState('success')
-        // Card token flow: skip MP redirect, go directly to success page
         router.push('/subscription/success')
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Falha ao processar pagamento. Tente novamente.'
@@ -372,46 +425,16 @@ function CheckoutContent() {
             )}
           </div>
 
-          {/* Card form — only when MP key is available */}
-          {mpPublicKey ? (
-            <>
-              <h3 className="text-sm font-semibold text-foreground mb-4 mt-6 pt-6 border-t border-border">
-                Dados do cartão
-              </h3>
+          {/* Card form — only when MP key is available; only render when plan is loaded so MP fields mount exactly once */}
+          {mpPublicKey && plan ? (
+            <CardFormFields planPrice={plan.price} />
+          ) : mpPublicKey && !planLoading ? (
+            <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm text-amber-600 dark:text-amber-400">
+              Plano não encontrado.
+            </div>
+          ) : null}
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Número do cartão <span className="text-red-500">*</span>
-                </label>
-                <div className="mp-field-wrapper">
-                  <CardNumber placeholder="0000 0000 0000 0000" style={{ color: '#e8e2d9', 'placeholder-color': '#4a4060', 'font-family': 'inherit', fontSize: '14px' }} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">
-                    Validade <span className="text-red-500">*</span>
-                  </label>
-                  <div className="mp-field-wrapper">
-                    <ExpirationDate placeholder="MM/AA" style={{ color: '#e8e2d9', 'placeholder-color': '#4a4060', 'font-family': 'inherit', fontSize: '14px' }} />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">
-                    CVV <span className="text-red-500">*</span>
-                  </label>
-                  <div className="mp-field-wrapper">
-                    <SecurityCode placeholder="123" style={{ color: '#e8e2d9', 'placeholder-color': '#4a4060', 'font-family': 'inherit', fontSize: '14px' }} />
-                  </div>
-                </div>
-              </div>
-
-              {formErrors.card && (
-                <p className="mb-4 text-xs text-red-500">{formErrors.card}</p>
-              )}
-            </>
-          ) : (
+          {!mpPublicKey && (
             <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm text-amber-600 dark:text-amber-400">
               Pagamento por cartão indisponível no momento. Você será redirecionado para o Mercado Pago.
             </div>
