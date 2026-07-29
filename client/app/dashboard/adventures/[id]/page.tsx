@@ -425,7 +425,7 @@ export default function AdventureDetailPage() {
         characterSections: newFeatureCharacterSections ? newCharacterSections.filter(s => s.name.trim()).map(s => ({ name: s.name.trim() })) : undefined,
         resistances: newFeatureResistance ? buildResistancesPayload(newResistances) : undefined,
       })
-      resetNewTemplate(); fetchTemplates()
+      resetNewTemplate(); fetchTemplates(); fetchAdventure()
     } catch (err) { setTemplateError(err instanceof Error ? err.message : 'Failed to create template') } finally { setTemplateCreating(false) }
   }
 

@@ -193,8 +193,9 @@ export class TemplateService {
     const adventure = await this.prisma.adventure.findUnique({ where: { id: adventureId } })
     if (!adventure) throw new NotFoundException('Adventure not found')
 
-    // Enforce single template per campaign: reject if an attached template exists
-    if (adventure.originalTemplateId || adventure.templateSnapshot) {
+    // Enforce single template per campaign: reject if any template already exists
+    // Check both templateSource (new field) and legacy indicators for backward compatibility
+    if (adventure.templateSource || adventure.originalTemplateId || adventure.templateSnapshot) {
       throw new ConflictException(
         'This campaign already has an attached template. ' +
         'Detach it first before creating a campaign-owned template.',
