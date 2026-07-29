@@ -6,9 +6,33 @@ import { api } from '@/lib/api'
 import Link from 'next/link'
 import { PageNav } from '@/lib/breadcrumb'
 import { TemplatePickerModal } from '@/components/adventure/TemplatePickerModal'
+import { useSubscription } from '@/lib/subscription-context'
 
 export default function NewAdventurePage() {
+  const { hasActiveSubscription } = useSubscription()
   const router = useRouter()
+
+  if (!hasActiveSubscription) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-6">
+          <svg className="w-8 h-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 2.25h.008v.008H12v-.008z" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-semibold text-foreground mb-2">Subscription Required</h2>
+        <p className="text-sm text-muted-foreground max-w-sm mb-8">
+          Creating adventures is a premium feature. Upgrade to a paid plan to create and manage your own adventures.
+        </p>
+        <Link href="/pricing" className="btn-primary">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          View Plans
+        </Link>
+      </div>
+    )
+  }
   const [name, setName] = useState('')
   const [campaign, setCampaign] = useState('')
   const [synopsis, setSynopsis] = useState('')

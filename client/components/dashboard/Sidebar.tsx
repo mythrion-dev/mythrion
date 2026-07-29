@@ -212,6 +212,30 @@ export function Sidebar() {
             </div>
           )}
         </div>
+
+        {/* Upgrade CTA for free users */}
+        {!user?.isAdmin && !hasActiveSubscription && !collapsed && (
+          <Link
+            href="/pricing"
+            className="flex items-center justify-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-medium text-accent hover:bg-accent/15 hover:border-accent/50 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            View Plans
+          </Link>
+        )}
+        {!user?.isAdmin && !hasActiveSubscription && collapsed && (
+          <Link
+            href="/pricing"
+            className="flex items-center justify-center w-8 h-8 rounded-lg border border-accent/30 bg-accent/10 text-accent hover:bg-accent/15 hover:border-accent/50 transition-colors"
+            title="View Plans"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </Link>
+        )}
         <button
           onClick={handleLogout}
           className={`btn-ghost text-xs ${collapsed ? 'w-8 h-8 flex items-center justify-center p-0' : 'w-full justify-start'}`}

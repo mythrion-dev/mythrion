@@ -4,6 +4,7 @@ import { api } from '@/lib/api'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState, useCallback, Suspense, useRef } from 'react'
 import Link from 'next/link'
+import { useSubscription } from '@/lib/subscription-context'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -33,6 +34,7 @@ interface CharacterSheetSummary {
 type Tab = 'adventures' | 'character-sheets'
 
 function DashboardContent() {
+  const { hasActiveSubscription } = useSubscription()
   const searchParams = useSearchParams()
   const tabParam = searchParams.get('tab')
   const [activeTab, setActiveTab] = useState<Tab>(
@@ -100,12 +102,24 @@ function DashboardContent() {
         icon="⚔️"
         actions={
           activeTab === 'adventures' ? (
-            <Link href="/dashboard/adventures/new" className="btn-primary">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              <span className="hidden sm:inline">New Adventure</span>
-            </Link>
+            hasActiveSubscription ? (
+              <Link href="/dashboard/adventures/new" className="btn-primary">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="hidden sm:inline">New Adventure</span>
+              </Link>
+            ) : (
+              <Link
+                href="/pricing"
+                className="btn-ghost text-xs border border-accent/30 bg-accent/10 text-accent hover:bg-accent/15"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span className="hidden sm:inline">Upgrade to Create</span>
+              </Link>
+            )
           ) : (
             <Link href="/dashboard/character-sheets/new" className="btn-primary">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -154,9 +168,9 @@ function DashboardContent() {
             <EmptyState
               icon="🗡️"
               title="No adventures yet"
-              description="Your journey begins with a single step. Create your first adventure and gather your party."
-              actionLabel="Create your first adventure"
-              actionHref="/dashboard/adventures/new"
+              description={hasActiveSubscription ? "Your journey begins with a single step. Create your first adventure and gather your party." : "Upgrade to a paid plan to create your own adventures and invite your party."}
+              actionLabel={hasActiveSubscription ? "Create your first adventure" : "View Plans →"}
+              actionHref={hasActiveSubscription ? "/dashboard/adventures/new" : "/pricing"}
             />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
