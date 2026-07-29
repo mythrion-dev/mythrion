@@ -13,11 +13,21 @@ import { TemplateCard } from '@/components/community/TemplateCard'
 interface Template {
   id: string
   name: string
+  description: string | null
   campaign: string
   adventureName?: string
   adventureId?: string
   createdAt: string
   updatedAt: string
+  useCount: number
+  owner: {
+    id: string
+    displayName: string | null
+  }
+  _count: {
+    attributes: number
+    templateSkills: number
+  }
 }
 
 interface TemplatesResponse {
@@ -267,14 +277,18 @@ function CommunityTemplatesContent() {
                 key={template.id}
                 id={template.id}
                 name={template.name}
-                description={null}
+                description={template.description}
                 campaign={template.campaign}
-                creatorDisplayName={null}
-                copyCount={0}
+                creatorDisplayName={template.owner?.displayName ?? null}
+                copyCount={template.useCount}
+                attributeCount={template._count?.attributes ?? 0}
+                skillCount={template._count?.templateSkills ?? 0}
+                updatedAt={template.updatedAt}
                 index={i}
                 onClone={() => handleClone(template.id)}
                 isCloning={cloningId === template.id}
                 isAuthenticated={!!user}
+                isOwn={user?.id === template.owner?.id}
               />
             ))}
           </div>

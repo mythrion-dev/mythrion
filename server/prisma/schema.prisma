@@ -181,6 +181,9 @@ model Template {
   owner                    User                      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   isPublic                 Boolean                   @default(false)
   useCount                 Int                       @default(0)
+  createdFromTemplateId    String?
+  createdFromTemplate      Template?                 @relation("TemplateClones", fields: [createdFromTemplateId], references: [id])
+  clonedTemplates          Template[]                @relation("TemplateClones")
   name                     String
   description              String?
   attributeModifierFormula String?
@@ -203,6 +206,7 @@ model Template {
   @@index([ownerId])
   @@index([isPublic])
   @@index([useCount])
+  @@index([createdFromTemplateId])
 }
 
 // ── Skill Modifier Profiles ──

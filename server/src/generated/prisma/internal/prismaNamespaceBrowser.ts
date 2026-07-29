@@ -242,6 +242,7 @@ export const TemplateScalarFieldEnum = {
   ownerId: 'ownerId',
   isPublic: 'isPublic',
   useCount: 'useCount',
+  createdFromTemplateId: 'createdFromTemplateId',
   name: 'name',
   description: 'description',
   attributeModifierFormula: 'attributeModifierFormula',

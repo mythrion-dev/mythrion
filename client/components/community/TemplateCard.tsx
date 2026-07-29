@@ -9,6 +9,9 @@ interface TemplateCardProps {
   campaign: string | null
   creatorDisplayName: string | null
   copyCount?: number
+  attributeCount?: number
+  skillCount?: number
+  updatedAt?: string
   index?: number
   onClone?: (id: string) => void
   isCloning?: boolean
@@ -23,6 +26,9 @@ export function TemplateCard({
   campaign,
   creatorDisplayName,
   copyCount = 0,
+  attributeCount = 0,
+  skillCount = 0,
+  updatedAt,
   index = 0,
   onClone,
   isCloning = false,
@@ -63,17 +69,41 @@ export function TemplateCard({
         </p>
       )}
 
+      {/* Feature badges */}
+      {(attributeCount > 0 || skillCount > 0) && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {attributeCount > 0 && (
+            <span className="badge text-[0.6rem]" style={{ background: 'rgba(124,92,231,0.12)', color: '#9070f0', border: '1px solid rgba(124,92,231,0.18)' }}>
+              {attributeCount} attr
+            </span>
+          )}
+          {skillCount > 0 && (
+            <span className="badge text-[0.6rem]" style={{ background: 'rgba(201,164,75,0.12)', color: '#c9a44b', border: '1px solid rgba(201,164,75,0.18)' }}>
+              {skillCount} skills
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center justify-between pt-3 border-t border-border">
         <div className="flex items-center gap-3 min-w-0">
           {creatorDisplayName && (
-            <span className="text-xs text-muted-foreground truncate max-w-[100px]">
+            <span className="text-xs text-muted-foreground truncate max-w-[120px]">
               {creatorDisplayName}
+            </span>
+          )}
+          {updatedAt && (
+            <span className="text-xs text-muted shrink-0 hidden sm:inline">
+              <svg className="w-3 h-3 inline mr-0.5 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {new Date(updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
           )}
           {copyCount > 0 && (
             <span className="text-xs text-muted shrink-0">
               <svg
-                className="w-3.5 h-3.5 inline mr-1 -mt-0.5"
+                className="w-3.5 h-3.5 inline mr-0.5 -mt-0.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

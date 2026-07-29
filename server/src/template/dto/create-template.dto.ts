@@ -274,4 +274,8 @@ export class CreateTemplateDto {
   @IsOptional()
   @Type(() => ResistanceDefDto)
   resistances?: ResistanceDefDto[]
+
+  @IsBoolean()
+  @IsOptional()
+  isPublic?: boolean
 }

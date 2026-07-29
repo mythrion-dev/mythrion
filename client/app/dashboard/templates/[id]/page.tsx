@@ -105,6 +105,7 @@ export default function TemplateDetailPage() {
   const [editFeatureSkillProfiles, setEditFeatureSkillProfiles] = useState(true)
   const [editFeatureResistance, setEditFeatureResistance] = useState(true)
   const [editAttrModifiersEnabled, setEditAttrModifiersEnabled] = useState(true)
+  const [editIsPublic, setEditIsPublic] = useState(false)
 
   const fetchTemplate = useCallback(async () => {
     setFetching(true)
@@ -183,6 +184,7 @@ export default function TemplateDetailPage() {
       })),
     })))
     setEditAttrModifiersEnabled(template.attrModifiersEnabled ?? true)
+    setEditIsPublic(template.isPublic)
     setEditing(true)
     setEditError(null)
   }, [template])
@@ -210,6 +212,7 @@ export default function TemplateDetailPage() {
         attributeModifierFormula: editAttrModifierFormula || null,
         skillFormula: editSkillFormula || null,
         attrModifiersEnabled: editAttrModifiersEnabled,
+        isPublic: editIsPublic,
       }
 
       payload.templateFields = editFields.filter(f => f.key.trim()).map(f => ({
@@ -261,7 +264,7 @@ export default function TemplateDetailPage() {
     } finally {
       setSaving(false)
     }
-  }, [template, editName, editDescription, editAttrs, editAttrModifierFormula, editSkillFormula, editFields, editSkills, editProfiles, editCoreResources, editAcConfigs, editCharacterSections, editResistances, editAttrModifiersEnabled, editFeatureSkills, editFeatureCustomFields, editFeatureCoreResources, editFeatureArmorClass, editFeatureCharacterSections, editFeatureSkillProfiles, editFeatureResistance])
+  }, [template, editName, editDescription, editAttrs, editAttrModifierFormula, editSkillFormula, editFields, editSkills, editProfiles, editCoreResources, editAcConfigs, editCharacterSections, editResistances, editAttrModifiersEnabled, editIsPublic, editFeatureSkills, editFeatureCustomFields, editFeatureCoreResources, editFeatureArmorClass, editFeatureCharacterSections, editFeatureSkillProfiles, editFeatureResistance])
 
   // ── Delete handler ──
 
@@ -532,6 +535,8 @@ export default function TemplateDetailPage() {
           onNewResistancesChange={() => {}}
           attrsForNewResistance={attrsForResistance}
           // Feature toggles
+          newIsPublic={editIsPublic}
+          onNewIsPublicChange={setEditIsPublic}
           newFeatureSkills={editFeatureSkills}
           onNewFeatureSkillsChange={setEditFeatureSkills}
           newFeatureCustomFields={editFeatureCustomFields}

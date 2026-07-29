@@ -11,6 +11,7 @@ interface TemplateCardProps {
   attributeCount: number
   skillCount: number
   useCount: number
+  isPublic?: boolean
   index?: number
 }
 
@@ -23,6 +24,7 @@ export function TemplateCard({
   attributeCount,
   skillCount,
   useCount,
+  isPublic = false,
   index = 0,
 }: TemplateCardProps) {
   const truncatedDescription =
@@ -43,11 +45,18 @@ export function TemplateCard({
         <h3 className="font-semibold text-foreground truncate flex-1">
           {name}
         </h3>
-        {campaign && (
-          <span className="shrink-0 badge badge-gold text-[0.6rem]">
-            {campaign}
-          </span>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isPublic && (
+            <span className="badge text-[0.6rem]" style={{ background: 'rgba(68,207,138,0.12)', color: '#44cf8a', border: '1px solid rgba(68,207,138,0.18)' }}>
+              Public
+            </span>
+          )}
+          {campaign && (
+            <span className="badge badge-gold text-[0.6rem]">
+              {campaign}
+            </span>
+          )}
+        </div>
       </div>
 
       {truncatedDescription ? (

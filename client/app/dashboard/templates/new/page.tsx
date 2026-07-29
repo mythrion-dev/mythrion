@@ -33,6 +33,7 @@ export default function NewTemplatePage() {
   const [attrModifierFormula, setAttrModifierFormula] = useState('')
   const [skillFormula, setSkillFormula] = useState('')
   const [attrModifiersEnabled, setAttrModifiersEnabled] = useState(true)
+  const [isPublic, setIsPublic] = useState(false)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -179,6 +180,7 @@ export default function NewTemplatePage() {
         attributeModifierFormula: attrModifierFormula || null,
         skillFormula: skillFormula || null,
         attrModifiersEnabled,
+        isPublic,
       }
 
       if (featureSkills) {
@@ -270,6 +272,8 @@ export default function NewTemplatePage() {
         newAttrModifiersEnabled={attrModifiersEnabled}
         newCharacterSections={characterSections}
         newResistances={resistances}
+        newIsPublic={isPublic}
+        onNewIsPublicChange={setIsPublic}
         templateError={error}
         templateCreating={creating}
         onNameChange={setName}

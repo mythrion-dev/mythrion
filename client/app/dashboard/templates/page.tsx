@@ -17,6 +17,7 @@ interface TemplateSummary {
   createdAt: string
   updatedAt: string
   useCount: number
+  isPublic: boolean
   _count: {
     attributes: number
     templateSkills: number
@@ -100,6 +101,7 @@ export default function DashboardTemplatesPage() {
               attributeCount={template._count?.attributes ?? 0}
               skillCount={template._count?.templateSkills ?? 0}
               useCount={template.useCount}
+              isPublic={template.isPublic}
               index={i}
             />
           ))}

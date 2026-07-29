@@ -458,6 +458,11 @@ export class TemplateService {
       }
     }
 
+    // Only the owner can change visibility (isPublic)
+    if (dto.isPublic !== undefined && template.ownerId !== userId) {
+      throw new ForbiddenException('Only the template owner can change visibility')
+    }
+
     if (dto.attributes) {
       const existingAttrs = await this.prisma.templateAttribute.findMany({ where: { templateId: id } })
       const newKeys = dto.attributes.map(a => a.key.trim())
@@ -1040,6 +1045,7 @@ export class TemplateService {
         ...(dto.attributeModifiersEnabled !== undefined && { attributeModifiersEnabled: dto.attributeModifiersEnabled }),
         ...(dto.attributeModifierFormula !== undefined && { attributeModifierFormula: dto.attributeModifierFormula || null }),
         ...(dto.skillFormula !== undefined && { skillFormula: dto.skillFormula || null }),
+        ...(dto.isPublic !== undefined && { isPublic: dto.isPublic }),
       },
       include: templateInclude,
     })
@@ -1179,7 +1185,20 @@ export class TemplateService {
       })),
     }
 
-    return this.createStandalone(userId, dto)
+    // Create the clone — track which template it was created from
+    const result = await this.createStandalone(userId, dto, original.id)
+
+    // If cloning a public template, increment useCount on the original for analytics
+    if (original.isPublic) {
+      await this.prisma.template.update({
+        where: { id: original.id },
+        data: { useCount: { increment: 1 } },
+      }).catch(() => {
+        // Non-critical analytics — don't fail the clone if this errors
+      })
+    }
+
+    return result
   }
 
   /**
@@ -1221,9 +1240,11 @@ export class TemplateService {
           name: true,
           description: true,
           createdAt: true,
+          updatedAt: true,
+          useCount: true,
           adventure: { select: { id: true, name: true, campaign: true } },
           owner: { select: { id: true, displayName: true } },
-          _count: { select: { characterSheets: true } },
+          _count: { select: { attributes: true, templateSkills: true } },
         },
       }),
       this.prisma.template.count({ where }),
@@ -1231,12 +1252,10 @@ export class TemplateService {
 
     return {
       data: templates,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     }
   }
 
@@ -1322,13 +1341,14 @@ export class TemplateService {
    * Create a standalone template (no adventure context).
    * The template is owned by the creating user and is not public by default.
    */
-  async createStandalone(userId: string, dto: CreateTemplateDto) {
+  async createStandalone(userId: string, dto: CreateTemplateDto, createdFromTemplateId?: string) {
     const created = await this.prisma.template.create({
       data: {
         adventureId: null,
         ownerId: userId,
-        isPublic: false,
+        isPublic: dto.isPublic ?? false,
         useCount: 0,
+        createdFromTemplateId: createdFromTemplateId ?? null,
         name: dto.name,
         description: dto.description ?? null,
         attributeModifiersEnabled: dto.attributeModifiersEnabled ?? true,

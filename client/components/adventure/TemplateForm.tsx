@@ -54,6 +54,8 @@ export function TemplateForm(props: {
   newFeatureCharacterSections: boolean; onNewFeatureCharacterSectionsChange: (v: boolean) => void
   newFeatureSkillProfiles: boolean; onNewFeatureSkillProfilesChange: (v: boolean) => void
   newFeatureResistance: boolean; onNewFeatureResistanceChange: (v: boolean) => void
+  // Public visibility toggle
+  newIsPublic?: boolean; onNewIsPublicChange?: (v: boolean) => void
 }) {
   const [activeTab, setActiveTab] = useState<string>('attrs')
   const [wizardDone, setWizardDone] = useState(false)
@@ -198,6 +200,33 @@ export function TemplateForm(props: {
             </div>
             <div className="relative flex justify-center">
               <span className="bg-[#15101f] px-3 text-xs font-semibold text-muted uppercase tracking-wider">Choose Features</span>
+            </div>
+          </div>
+
+          {/* Public visibility toggle */}
+          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-background/40 p-4">
+            <div className="flex items-start gap-3">
+              <div className="shrink-0 flex items-center justify-center w-9 h-9 rounded-lg border border-border/40 bg-background/60">
+                <svg className="w-4 h-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-foreground">Make Public</span>
+                <p className="text-xs text-muted mt-0.5 leading-relaxed">
+                  Anyone can view and clone this template. Other users will see it in the community gallery.
+                </p>
+              </div>
+            </div>
+            <div className="shrink-0 pt-1">
+              <div
+                className="relative w-9 h-5 rounded-full transition-colors duration-200 cursor-pointer"
+                style={{ backgroundColor: props.newIsPublic ? '#7c5ce7' : 'rgba(255,255,255,0.1)' }}
+                onClick={() => props.onNewIsPublicChange?.(!props.newIsPublic)}
+              >
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${props.newIsPublic ? 'left-[17px]' : 'left-0.5'}`} />
+              </div>
             </div>
           </div>
 
