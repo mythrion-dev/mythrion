@@ -205,7 +205,6 @@ export default function TemplateDetailPage() {
         name: editName.trim(),
         description: editDescription.trim() || null,
         attributes: editAttrs.filter(a => a.key.trim()).map(a => ({
-          ...(a.id ? { id: a.id } : {}),
           key: a.key.trim(),
           name: a.name.trim(),
         })),
@@ -216,7 +215,6 @@ export default function TemplateDetailPage() {
       }
 
       payload.templateFields = editFields.filter(f => f.key.trim()).map(f => ({
-        ...(f.id ? { id: f.id } : {}),
         key: f.key.trim(),
         label: f.label.trim(),
       }))
@@ -241,19 +239,57 @@ export default function TemplateDetailPage() {
       }
 
       if (editFeatureCoreResources) {
-        payload.coreResources = editCoreResources
+        payload.coreResources = editCoreResources.map(cr => ({
+          displayName: cr.displayName,
+          slug: cr.slug,
+          enabled: cr.enabled,
+          editableByPlayer: cr.editableByPlayer,
+          showNotes: cr.showNotes,
+          color: cr.color,
+        }))
       }
 
       if (editFeatureArmorClass) {
-        payload.armorClasses = editAcConfigs
+        payload.armorClasses = editAcConfigs.map(ac => ({
+          enabled: ac.enabled,
+          name: ac.name,
+          attributeModifiers: (ac.attributeModifiers ?? []).map(am => ({
+            attributeId: am.attributeId,
+            allowPlayerSelection: am.allowPlayerSelection,
+            defaultAttributeId: am.defaultAttributeId,
+          })),
+          fields: (ac.fields ?? []).map(f => ({
+            name: f.name,
+            key: f.key,
+            defaultValue: f.defaultValue,
+            editableByPlayer: f.editableByPlayer,
+            description: f.description,
+          })),
+        }))
       }
 
       if (editFeatureCharacterSections) {
-        payload.characterSections = editCharacterSections
+        payload.characterSections = editCharacterSections.map(s => ({
+          ...(s.id ? { id: s.id } : {}),
+          name: s.name,
+        }))
       }
 
       if (editFeatureResistance) {
-        payload.resistances = editResistances
+        payload.resistances = editResistances.map(r => ({
+          ...(r.id ? { id: r.id } : {}),
+          name: r.name,
+          calculationType: r.calculationType,
+          components: (r.components ?? []).map(c => ({
+            name: c.name,
+            editableByPlayer: c.editableByPlayer,
+            defaultValue: c.defaultValue,
+          })),
+          attributeModifiers: (r.attributeModifiers ?? []).map(am => ({
+            attributeId: am.attributeId,
+            enabled: am.enabled,
+          })),
+        }))
       }
 
       const updated = await api.patch<StandaloneTemplate>(`/templates/${template.id}`, payload)
