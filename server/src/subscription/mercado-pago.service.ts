@@ -256,6 +256,41 @@ export class MercadoPagoService {
   }
 
   /**
+   * Fetch an authorized payment (individual subscription charge) by its MP ID.
+   * Used in webhook processing to determine whether a charge was approved,
+   * rejected, etc. Returns the charge details including status and the
+   * parent subscription (preapproval) ID.
+   */
+  async getAuthorizedPayment(chargeId: string): Promise<{
+    id: string
+    status: string
+    status_detail: string
+    preapproval_id: string
+    transaction_amount: number
+    currency_id: string
+    date_approved: string | null
+    next_payment_date: string | null
+    payment_method_id: string | null
+    date_created: string
+  }> {
+    const response = await fetch(`${this.mpApiBase}/authorized_payments/${chargeId}`, {
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      this.logger.error(
+        `Failed to fetch authorized payment ${chargeId} (${response.status}): ${JSON.stringify(errorData)}`,
+      )
+      throw new Error(`Failed to fetch authorized payment: ${response.status}`)
+    }
+
+    return response.json()
+  }
+
+  /**
    * Fetch a Mercado Pago subscription by its MP ID.
    */
   async getSubscription(

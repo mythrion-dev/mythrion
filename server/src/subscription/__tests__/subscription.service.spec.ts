@@ -15,6 +15,7 @@ const mockMpService = {
   createSubscription: jest.fn(),
   cancelSubscription: jest.fn(),
   getSubscription: jest.fn(),
+  getAuthorizedPayment: jest.fn(),
   validateWebhook: jest.fn(),
 }
 
@@ -394,17 +395,18 @@ describe('SubscriptionService', () => {
   // ─── cancelSubscription ─────────────────────────────────────────────
 
   describe('cancelSubscription', () => {
-    it('cancels subscription via MP and marks as CANCELLED locally', async () => {
+    it('schedules cancellation at period end via MP and sets cancelAtPeriodEnd', async () => {
       prisma.userSubscription.findUnique.mockResolvedValue({
         id: 'sub-1',
         userId: 'user-1',
         status: 'ACTIVE',
         mpSubscriptionId: 'mp-1',
+        cancelAtPeriodEnd: false,
       })
       mockMpService.cancelSubscription.mockResolvedValue(undefined)
       prisma.userSubscription.update.mockResolvedValue({
         id: 'sub-1',
-        status: 'CANCELLED',
+        cancelAtPeriodEnd: true,
       })
 
       await service.cancelSubscription('user-1')
@@ -413,10 +415,10 @@ describe('SubscriptionService', () => {
       expect(prisma.userSubscription.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { userId: 'user-1' },
-          data: expect.objectContaining({
-            status: 'CANCELLED',
+          data: {
+            cancelAtPeriodEnd: true,
             cancelledAt: expect.any(Date),
-          }),
+          },
         }),
       )
     })
@@ -761,79 +763,169 @@ describe('SubscriptionService', () => {
     })
 
     describe('authorized_payment / payment', () => {
-      it('handles invoice paid for GRACE→ACTIVE reactivation', async () => {
-        prisma.subscriptionInvoice.findUnique.mockResolvedValue({
-          id: 'inv-1',
-          mpInvoiceId: 'mp-inv-1',
-          subscription: {
-            id: 'sub-1',
-            status: 'GRACE',
-          },
+      it('handles approved payment for GRACE→ACTIVE reactivation', async () => {
+        mockMpService.getAuthorizedPayment.mockResolvedValue({
+          id: 'mp-charge-1',
+          status: 'approved',
+          status_detail: 'accredited',
+          preapproval_id: 'mp-sub-1',
+          transaction_amount: 120,
+          currency_id: 'BRL',
+          date_approved: '2025-01-15T12:00:00Z',
+          next_payment_date: '2025-02-15T12:00:00Z',
+          payment_method_id: 'visa',
+          date_created: '2025-01-15T11:00:00Z',
+        })
+        prisma.userSubscription.findUnique.mockResolvedValue({
+          id: 'sub-1',
+          status: 'GRACE',
+          planId: 'monthly',
         })
         prisma.userSubscription.update.mockResolvedValue({ id: 'sub-1' })
-        prisma.subscriptionInvoice.update.mockResolvedValue({ id: 'inv-1' })
+        prisma.subscriptionInvoice.upsert.mockResolvedValue({ id: 'inv-1' })
 
         const result = await service.processWebhook({
           type: 'authorized_payment',
-          data: { id: 'mp-inv-1' },
+          data: { id: 'mp-charge-1' },
         })
 
-        expect(result).toBe('invoice_paid')
+        expect(result).toBe('payment_approved')
+        expect(mockMpService.getAuthorizedPayment).toHaveBeenCalledWith('mp-charge-1')
+        expect(prisma.userSubscription.findUnique).toHaveBeenCalledWith({
+          where: { mpSubscriptionId: 'mp-sub-1' },
+          select: { id: true, status: true, planId: true },
+        })
+        // Reactivates from GRACE
         expect(prisma.userSubscription.update).toHaveBeenCalledWith(
           expect.objectContaining({
             where: { id: 'sub-1' },
             data: { status: 'ACTIVE', graceEndsAt: null },
           }),
         )
-        expect(prisma.subscriptionInvoice.update).toHaveBeenCalledWith(
+        // Also extends period end via next_payment_date
+        expect(prisma.userSubscription.update).toHaveBeenCalledWith(
           expect.objectContaining({
-            where: { mpInvoiceId: 'mp-inv-1' },
-            data: { status: 'paid', paidAt: expect.any(Date) },
+            where: { id: 'sub-1' },
+            data: { currentPeriodEnd: new Date('2025-02-15T12:00:00Z') },
+          }),
+        )
+        // Upserts invoice with charge data
+        expect(prisma.subscriptionInvoice.upsert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { mpInvoiceId: 'mp-charge-1' },
+            create: expect.objectContaining({
+              subscriptionId: 'sub-1',
+              amount: 12000, // 120 * 100
+              status: 'paid',
+            }),
           }),
         )
       })
 
-      it('handles invoice paid without a local match (noop)', async () => {
-        prisma.subscriptionInvoice.findUnique.mockResolvedValue(null)
+      it('returns noop when charge has no preapproval_id', async () => {
+        mockMpService.getAuthorizedPayment.mockResolvedValue({
+          id: 'mp-charge-unknown',
+          status: 'approved',
+          status_detail: 'accredited',
+          preapproval_id: null,
+          transaction_amount: 120,
+          currency_id: 'BRL',
+          date_approved: null,
+          next_payment_date: null,
+          payment_method_id: null,
+          date_created: '2025-01-15T11:00:00Z',
+        })
 
         const result = await service.processWebhook({
           type: 'payment',
-          data: { id: 'unknown-invoice' },
+          data: { id: 'mp-charge-unknown' },
         })
 
         expect(result).toBe('noop')
       })
 
-      it('handles invoice paid for non-GRACE subscription', async () => {
-        prisma.subscriptionInvoice.findUnique.mockResolvedValue({
-          id: 'inv-2',
-          mpInvoiceId: 'mp-inv-2',
-          subscription: {
-            id: 'sub-2',
-            status: 'ACTIVE',
-          },
+      it('handles approved payment for non-GRACE subscription', async () => {
+        mockMpService.getAuthorizedPayment.mockResolvedValue({
+          id: 'mp-charge-2',
+          status: 'approved',
+          status_detail: 'accredited',
+          preapproval_id: 'mp-sub-2',
+          transaction_amount: 120,
+          currency_id: 'BRL',
+          date_approved: '2025-01-15T12:00:00Z',
+          next_payment_date: '2025-02-15T12:00:00Z',
+          payment_method_id: 'visa',
+          date_created: '2025-01-15T11:00:00Z',
         })
-        prisma.subscriptionInvoice.update.mockResolvedValue({ id: 'inv-2' })
+        prisma.userSubscription.findUnique.mockResolvedValue({
+          id: 'sub-2',
+          status: 'ACTIVE',
+          planId: 'monthly',
+        })
+        prisma.subscriptionInvoice.upsert.mockResolvedValue({ id: 'inv-2' })
 
         const result = await service.processWebhook({
           type: 'payment',
-          data: { id: 'mp-inv-2' },
+          data: { id: 'mp-charge-2' },
         })
 
-        expect(result).toBe('invoice_paid')
-        // Only updates invoice, not subscription (status isn't GRACE)
-        expect(prisma.userSubscription.update).not.toHaveBeenCalled()
-        expect(prisma.subscriptionInvoice.update).toHaveBeenCalled()
+        expect(result).toBe('payment_approved')
+        // Should NOT reactivate (not in GRACE), only upsert invoice and extend period
+        expect(prisma.subscriptionInvoice.upsert).toHaveBeenCalled()
+        expect(prisma.userSubscription.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: 'sub-2' },
+            data: { currentPeriodEnd: new Date('2025-02-15T12:00:00Z') },
+          }),
+        )
       })
 
-      it('returns error when invoice paid processing fails', async () => {
-        prisma.subscriptionInvoice.findUnique.mockRejectedValue(
-          new Error('DB error'),
+      it('handles rejected payment moving to GRACE', async () => {
+        mockMpService.getAuthorizedPayment.mockResolvedValue({
+          id: 'mp-charge-rejected',
+          status: 'rejected',
+          status_detail: 'cc_rejected',
+          preapproval_id: 'mp-sub-3',
+          transaction_amount: 120,
+          currency_id: 'BRL',
+          date_approved: null,
+          next_payment_date: null,
+          payment_method_id: 'visa',
+          date_created: '2025-01-15T11:00:00Z',
+        })
+        prisma.userSubscription.findUnique.mockResolvedValue({
+          id: 'sub-3',
+          status: 'ACTIVE',
+          planId: 'monthly',
+        })
+        prisma.userSubscription.update.mockResolvedValue({ id: 'sub-3' })
+        prisma.subscriptionInvoice.upsert.mockResolvedValue({ id: 'inv-3' })
+
+        const result = await service.processWebhook({
+          type: 'authorized_payment',
+          data: { id: 'mp-charge-rejected' },
+        })
+
+        expect(result).toBe('payment_rejected')
+        expect(prisma.userSubscription.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: 'sub-3' },
+            data: expect.objectContaining({
+              status: 'GRACE',
+              graceEndsAt: expect.any(Date),
+            }),
+          }),
+        )
+      })
+
+      it('returns error when getAuthorizedPayment fails', async () => {
+        mockMpService.getAuthorizedPayment.mockRejectedValue(
+          new Error('MP API error'),
         )
 
         const result = await service.processWebhook({
           type: 'payment',
-          data: { id: 'mp-inv-3' },
+          data: { id: 'mp-charge-err' },
         })
 
         expect(result).toBe('error')

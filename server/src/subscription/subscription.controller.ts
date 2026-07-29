@@ -132,7 +132,10 @@ export class SubscriptionController {
     @Headers('x-signature') signature: string | undefined,
     @Headers('x-request-id') requestId: string | undefined,
   ) {
-    this.logger.log(`Received webhook: type="${body?.type}", data.id="${body?.data?.id}"`)
+    this.logger.log(
+      `Received webhook: type="${body?.type}" action="${body?.action}" data.id="${body?.data?.id}"`,
+    )
+    this.logger.debug(`Full webhook body: ${JSON.stringify(body)}`)
 
     // Validate HMAC signature
     const isValid = this.mpService.validateWebhook(
@@ -153,8 +156,9 @@ export class SubscriptionController {
       data: body.data,
     })
 
-    // Also check for expired grace-period subscriptions
+    // Sweep for subscriptions past their grace period or cancel-at-period-end date
     await this.subscriptionService.expireGraceSubscriptions()
+    await this.subscriptionService.expireCancelledSubscriptions()
 
     return { received: true, validated: true, action: result }
   }

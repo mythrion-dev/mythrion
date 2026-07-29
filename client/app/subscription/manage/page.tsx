@@ -89,7 +89,10 @@ export default function ManageSubscriptionPage() {
   }
 
   const isActive = ['AUTHORIZED', 'ACTIVE', 'GRACE'].includes(subscription.status)
-  const isCancellable = isActive
+  const isCancellable = isActive && !subscription.cancelAtPeriodEnd
+  const periodEnd = subscription.currentPeriodEnd
+    ? formatDate(subscription.currentPeriodEnd)
+    : 'the end of the current billing period'
 
   return (
     <div className="max-w-2xl mx-auto py-6">
@@ -156,6 +159,15 @@ export default function ManageSubscriptionPage() {
               </p>
             </div>
           )}
+          {subscription.cancelAtPeriodEnd && subscription.currentPeriodEnd && (
+            <div className="col-span-2">
+              <p className="text-xs text-amber-500 font-medium">Cancellation scheduled</p>
+              <p className="mt-0.5 text-sm text-amber-600 dark:text-amber-400">
+                Your subscription will expire on {formatDate(subscription.currentPeriodEnd)}.
+                You have access until this date.
+              </p>
+            </div>
+          )}
           <div>
             <p className="text-xs text-muted-foreground">Created at</p>
             <p className="mt-0.5 font-medium text-foreground">
@@ -190,8 +202,9 @@ export default function ManageSubscriptionPage() {
             ) : (
               <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-4">
                 <p className="text-sm text-red-600 dark:text-red-400">
-                  Are you sure you want to cancel your subscription? You will lose access
-                  to Mythrion Premium at the end of the current billing period.
+                  Are you sure you want to cancel your subscription? Your access to
+                  Mythrion Premium will remain active until {periodEnd}, after which
+                  your subscription will expire. No further charges will be made.
                 </p>
                 {cancelError && (
                   <p className="mt-2 text-xs text-red-500">{cancelError}</p>

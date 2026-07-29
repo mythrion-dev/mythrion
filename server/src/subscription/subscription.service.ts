@@ -31,6 +31,7 @@ export interface MySubscriptionResult {
   currentPeriodStart: Date | null
   currentPeriodEnd: Date | null
   cancelledAt: Date | null
+  cancelAtPeriodEnd: boolean
   createdAt: Date
   invoices: Array<{
     id: string
@@ -246,6 +247,7 @@ export class SubscriptionService {
       currentPeriodStart: sub.currentPeriodStart,
       currentPeriodEnd: sub.currentPeriodEnd,
       cancelledAt: sub.cancelledAt,
+      cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
       createdAt: sub.createdAt,
       invoices: sub.invoices,
     }
@@ -253,7 +255,12 @@ export class SubscriptionService {
 
   /**
    * Cancel the current user's subscription.
-   * Cancels in Mercado Pago and marks local row as CANCELLED.
+   *
+   * Sets cancelAtPeriodEnd to true so the user retains access until the
+   * current billing period ends. The subscription is cancelled in Mercado
+   * Pago to stop future billing, but the local status stays unchanged.
+   * A periodic sweep (expireCancelledSubscriptions) transitions it to
+   * EXPIRED once currentPeriodEnd passes.
    */
   async cancelSubscription(userId: string): Promise<void> {
     const sub = await this.prisma.userSubscription.findUnique({
@@ -267,20 +274,31 @@ export class SubscriptionService {
         `Subscription is already ${sub.status.toLowerCase()}`,
       )
     }
+    if (sub.cancelAtPeriodEnd) {
+      throw new UnprocessableEntityException(
+        'Subscription is already scheduled for cancellation at period end',
+      )
+    }
 
-    // Cancel in MP if we have an MP subscription ID
+    // Mark as pending cancellation FIRST, before cancelling in MP,
+    // so that any subscription_cancelled webhook from MP sees the flag
+    // and keeps the user's status intact.
+    await this.prisma.userSubscription.update({
+      where: { userId },
+      data: {
+        cancelAtPeriodEnd: true,
+        cancelledAt: new Date(),
+      },
+    })
+
+    // Cancel in MP (stops future billing, but MP keeps the subscription
+    // active until the current period ends; MP will send a
+    // subscription_cancelled webhook)
     if (sub.mpSubscriptionId) {
       await this.mp.cancelSubscription(sub.mpSubscriptionId)
     }
 
-    // Mark local row as cancelled
-    await this.prisma.userSubscription.update({
-      where: { userId },
-      data: {
-        status: 'CANCELLED',
-        cancelledAt: new Date(),
-      },
-    })
+    this.logger.log(`Subscription ${sub.id} scheduled for cancellation at period end`)
   }
 
   /**
@@ -345,9 +363,11 @@ export class SubscriptionService {
     action?: string
     data?: { id: string }
   }): Promise<string> {
-    const { type, data } = event
+    const { type, action, data } = event
 
-    this.logger.log(`Processing webhook: type="${type}", data.id="${data?.id}"`)
+    this.logger.log(
+      `Processing webhook: type="${type}" action="${action ?? '?'}" data.id="${data?.id ?? '?'}"`,
+    )
 
     switch (type) {
       case 'subscription_authorized':
@@ -360,7 +380,7 @@ export class SubscriptionService {
         return this.handleSubscriptionUpdated(data?.id)
       case 'authorized_payment':
       case 'payment':
-        return this.handleInvoicePaid(data?.id)
+        return this.handlePaymentEvent(data?.id)
       default:
         this.logger.debug(`Unhandled webhook type: ${type}`)
         return 'noop'
@@ -433,6 +453,22 @@ export class SubscriptionService {
     if (!mpSubscriptionId) return 'noop'
 
     try {
+      // Check if the user initiated this cancellation (cancelAtPeriodEnd was set).
+      // If so, retain the current status — the user keeps access until the
+      // current billing period ends. If not (MP auto-cancelled after retries
+      // exhausted), immediately mark as CANCELLED.
+      const existing = await this.prisma.userSubscription.findUnique({
+        where: { mpSubscriptionId },
+        select: { cancelAtPeriodEnd: true, currentPeriodEnd: true },
+      })
+
+      if (existing?.cancelAtPeriodEnd) {
+        this.logger.log(
+          `Subscription ${mpSubscriptionId} cancelled at period end (user-initiated, keeping status until ${existing.currentPeriodEnd?.toISOString() ?? '?'})`,
+        )
+        return 'cancelled_at_period_end'
+      }
+
       await this.prisma.userSubscription.update({
         where: { mpSubscriptionId },
         data: {
@@ -440,7 +476,7 @@ export class SubscriptionService {
           cancelledAt: new Date(),
         },
       })
-      this.logger.log(`Subscription ${mpSubscriptionId} cancelled`)
+      this.logger.log(`Subscription ${mpSubscriptionId} cancelled (external)`)
       return 'cancelled'
     } catch (err) {
       this.logger.error(
@@ -493,56 +529,182 @@ export class SubscriptionService {
     }
   }
 
-  private async handleInvoicePaid(
-    mpInvoiceId: string | undefined,
+  /** Grace period duration in days for payment failures */
+  private readonly PAYMENT_FAILURE_GRACE_DAYS = 7
+
+  /**
+   * Handle an authorized_payment or payment webhook event.
+   *
+   * Fetches the charge details from MP and acts on the outcome:
+   *   - Approved  → create/update invoice, reactivate from GRACE, extend period
+   *   - Rejected  → transition to GRACE with a payment-failure grace period
+   *   - Refunded  → log but don't change subscription status
+   *   - Other     → log and skip
+   */
+  private async handlePaymentEvent(
+    chargeId: string | undefined,
   ): Promise<string> {
-    if (!mpInvoiceId) return 'noop'
+    if (!chargeId) return 'noop'
 
     try {
-      // Try to find the subscription by linking invoice to subscription
-      // First, record/update the invoice in our database
-      // We need to look up the subscription from MP invoice data
-      // For now, we create a generic invoice record
-      // In production, you'd call MP API to get invoice details
+      // Fetch the charge details from MP to determine actual status
+      const charge = await this.mp.getAuthorizedPayment(chargeId)
+      const chargeStatus = charge.status?.toLowerCase()
+      const preapprovalId = charge.preapproval_id
 
-      // Grace period end — payment received, reactivate
-      const invoiceSub = await this.prisma.subscriptionInvoice.findUnique({
-        where: { mpInvoiceId },
-        include: { subscription: true },
-      })
+      this.logger.log(
+        `Payment event: chargeId=${chargeId} status="${chargeStatus}" preapproval="${preapprovalId}" amount=${charge.transaction_amount}`,
+      )
 
-      if (invoiceSub?.subscription) {
-        const sub = invoiceSub.subscription
-        // Re-activate from grace
-        if (sub.status === 'GRACE') {
-          await this.prisma.userSubscription.update({
-            where: { id: sub.id },
-            data: {
-              status: 'ACTIVE',
-              graceEndsAt: null,
-            },
-          })
-        }
-
-        await this.prisma.subscriptionInvoice.update({
-          where: { mpInvoiceId },
-          data: {
-            status: 'paid',
-            paidAt: new Date(),
-          },
-        })
-        return 'invoice_paid'
+      if (!preapprovalId) {
+        this.logger.warn(`Authorized payment ${chargeId} has no preapproval_id, cannot link to subscription`)
+        return 'noop'
       }
 
-      // If we don't have a matching invoice, just log it
-      this.logger.log(`Invoice ${mpInvoiceId} paid (no local match)`)
-      return 'noop'
+      // Find the local subscription by MP subscription ID
+      const sub = await this.prisma.userSubscription.findUnique({
+        where: { mpSubscriptionId: preapprovalId },
+        select: { id: true, status: true, planId: true },
+      })
+
+      if (!sub) {
+        this.logger.warn(`No local subscription found for MP preapproval ${preapprovalId}`)
+        return 'noop'
+      }
+
+      switch (chargeStatus) {
+        case 'approved': {
+          // Charge was successful — create/update invoice and reactivate
+          const invoiceAmount = Math.round(charge.transaction_amount * 100)
+          const now = new Date()
+
+          // Upsert the invoice
+          await this.prisma.subscriptionInvoice.upsert({
+            where: { mpInvoiceId: chargeId },
+            update: {
+              status: 'paid',
+              amount: invoiceAmount,
+              paidAt: now,
+            },
+            create: {
+              subscriptionId: sub.id,
+              mpInvoiceId: chargeId,
+              amount: invoiceAmount,
+              currency: charge.currency_id ?? 'BRL',
+              status: 'paid',
+              paidAt: now,
+            },
+          })
+
+          // If subscription was in GRACE, reactivate it
+          if (sub.status === 'GRACE') {
+            await this.prisma.userSubscription.update({
+              where: { id: sub.id },
+              data: {
+                status: 'ACTIVE',
+                graceEndsAt: null,
+              },
+            })
+            this.logger.log(`Subscription ${sub.id} reactivated from GRACE after successful payment`)
+          }
+
+          // Extend period end if MP provides a next payment date
+          if (charge.next_payment_date) {
+            await this.prisma.userSubscription.update({
+              where: { id: sub.id },
+              data: {
+                currentPeriodEnd: new Date(charge.next_payment_date),
+              },
+            })
+          }
+
+          this.logger.log(`Payment approved for subscription ${sub.id}: R$${(invoiceAmount / 100).toFixed(2)}`)
+          return 'payment_approved'
+        }
+
+        case 'rejected':
+        case 'cc_rejected':
+        case 'charged_off': {
+          // Payment was rejected — move to GRACE if not already
+          if (sub.status !== 'GRACE' && sub.status !== 'CANCELLED' && sub.status !== 'EXPIRED') {
+            const graceEnd = new Date()
+            graceEnd.setDate(graceEnd.getDate() + this.PAYMENT_FAILURE_GRACE_DAYS)
+
+            await this.prisma.userSubscription.update({
+              where: { id: sub.id },
+              data: {
+                status: 'GRACE',
+                graceEndsAt: graceEnd,
+              },
+            })
+
+            // Create a failed invoice record for audit trail
+            const invoiceAmount = Math.round(charge.transaction_amount * 100)
+            await this.prisma.subscriptionInvoice.upsert({
+              where: { mpInvoiceId: chargeId },
+              update: {
+                status: 'failed',
+                amount: invoiceAmount,
+              },
+              create: {
+                subscriptionId: sub.id,
+                mpInvoiceId: chargeId,
+                amount: invoiceAmount,
+                currency: charge.currency_id ?? 'BRL',
+                status: 'failed',
+              },
+            })
+
+            this.logger.warn(
+              `Payment rejected for subscription ${sub.id}: moving to GRACE until ${graceEnd.toISOString()}`,
+            )
+          }
+          return 'payment_rejected'
+        }
+
+        case 'refunded': {
+          // Payment was refunded — log it
+          this.logger.log(`Payment ${chargeId} was refunded for subscription ${sub.id}`)
+          return 'payment_refunded'
+        }
+
+        default: {
+          // Other statuses (pending, in_process, in_mediation, etc.) — log and skip
+          this.logger.debug(`Unhandled payment status "${chargeStatus}" for charge ${chargeId}`)
+          return 'noop'
+        }
+      }
     } catch (err) {
       this.logger.error(
-        `Failed to process invoice paid for ${mpInvoiceId}: ${err instanceof Error ? err.message : String(err)}`,
+        `Failed to process payment event for charge ${chargeId}: ${err instanceof Error ? err.message : String(err)}`,
       )
       return 'error'
     }
+  }
+
+  // ─── Helper: expire cancel-at-period-end subscriptions ──────────────
+
+  /**
+   * Check for any subscriptions with cancelAtPeriodEnd=true that have
+   * passed their currentPeriodEnd and expire them.
+   * Called from a cron or on webhook. Returns count of expired subs.
+   */
+  async expireCancelledSubscriptions(): Promise<number> {
+    const now = new Date()
+    const expired = await this.prisma.userSubscription.updateMany({
+      where: {
+        cancelAtPeriodEnd: true,
+        currentPeriodEnd: { lte: now },
+        status: { notIn: ['EXPIRED', 'CANCELLED'] },
+      },
+      data: {
+        status: 'EXPIRED',
+      },
+    })
+    if (expired.count > 0) {
+      this.logger.log(`Expired ${expired.count} cancel-at-period-end subscription(s)`)
+    }
+    return expired.count
   }
 
   // ─── Helper: expire grace-period subscriptions ──────────────────────

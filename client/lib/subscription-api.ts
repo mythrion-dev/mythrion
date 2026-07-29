@@ -32,6 +32,7 @@ export interface MySubscription {
   currentPeriodStart: string | null
   currentPeriodEnd: string | null
   cancelledAt: string | null
+  cancelAtPeriodEnd: boolean
   createdAt: string
   invoices: Invoice[]
 }

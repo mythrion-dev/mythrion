@@ -34,6 +34,7 @@ describe('SubscriptionController', () => {
       cancelSubscription: jest.fn(),
       processWebhook: jest.fn(),
       expireGraceSubscriptions: jest.fn(),
+      expireCancelledSubscriptions: jest.fn(),
       hasActiveSubscription: jest.fn(),
     } as unknown as jest.Mocked<SubscriptionService>
 
@@ -191,6 +192,7 @@ describe('SubscriptionController', () => {
       mpService.validateWebhook.mockReturnValue(true)
       subscriptionService.processWebhook.mockResolvedValue('activated')
       subscriptionService.expireGraceSubscriptions.mockResolvedValue(0)
+	      subscriptionService.expireCancelledSubscriptions.mockResolvedValue(0)
 
       const result = await controller.handleWebhook(
         validWebhookBody,
@@ -214,6 +216,7 @@ describe('SubscriptionController', () => {
         data: { id: 'mp-sub-1' },
       })
       expect(subscriptionService.expireGraceSubscriptions).toHaveBeenCalled()
+	      expect(subscriptionService.expireCancelledSubscriptions).toHaveBeenCalled()
     })
 
     it('returns validated:false when HMAC signature is invalid', async () => {
@@ -252,6 +255,7 @@ describe('SubscriptionController', () => {
         mpService.validateWebhook.mockReturnValue(true)
         subscriptionService.processWebhook.mockResolvedValue(event.action)
         subscriptionService.expireGraceSubscriptions.mockResolvedValue(0)
+	        subscriptionService.expireCancelledSubscriptions.mockResolvedValue(0)
 
         const result = await controller.handleWebhook(
           { type: event.type, data: { id: 'mp-sub-1' } },

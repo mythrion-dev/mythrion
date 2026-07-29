@@ -905,6 +905,7 @@ model UserSubscription {
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
   cancelledAt        DateTime?
+  cancelAtPeriodEnd  Boolean              @default(false)
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
   invoices           SubscriptionInvoice[]

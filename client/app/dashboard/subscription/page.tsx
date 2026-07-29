@@ -249,6 +249,14 @@ export default function DashboardSubscriptionPage() {
 
   const isActive = ['AUTHORIZED', 'ACTIVE', 'GRACE'].includes(subscription.status)
   const isUpdatable = ['AUTHORIZED', 'ACTIVE', 'GRACE'].includes(subscription.status)
+  const isCancellable = isUpdatable && !subscription.cancelAtPeriodEnd
+  const periodEnd = subscription.currentPeriodEnd
+    ? new Date(subscription.currentPeriodEnd).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+    : 'ao final do período de faturamento atual'
 
   // ─── MP field styles ──────────────────────────────────────────
   const mpStyles = `
@@ -353,6 +361,15 @@ export default function DashboardSubscriptionPage() {
               <p className="text-xs text-muted-foreground">Cancelada em</p>
               <p className="mt-0.5 font-medium text-foreground">
                 {formatDateTime(subscription.cancelledAt)}
+              </p>
+            </div>
+          )}
+          {subscription.cancelAtPeriodEnd && subscription.currentPeriodEnd && (
+            <div className="sm:col-span-2">
+              <p className="text-xs text-amber-500 font-medium">Cancelamento agendado</p>
+              <p className="mt-0.5 text-sm text-amber-600 dark:text-amber-400">
+                Sua assinatura expirará em {formatDate(subscription.currentPeriodEnd)}.
+                Você mantém acesso até esta data.
               </p>
             </div>
           )}
@@ -470,7 +487,7 @@ export default function DashboardSubscriptionPage() {
         )}
 
         {/* Cancel subscription */}
-        {isUpdatable && !showCancelConfirm && (
+        {isCancellable && !showCancelConfirm && (
           <button
             onClick={() => setShowCancelConfirm(true)}
             className="w-full py-2.5 rounded-lg border border-red-500/20 text-sm font-medium text-red-500 hover:bg-red-500/5 transition-colors"
@@ -479,11 +496,12 @@ export default function DashboardSubscriptionPage() {
           </button>
         )}
 
-        {isUpdatable && showCancelConfirm && (
+        {isCancellable && showCancelConfirm && (
           <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-4">
             <p className="text-sm text-red-600 dark:text-red-400">
-              Tem certeza que deseja cancelar sua assinatura? Você perderá acesso ao Mythrion Premium
-              ao final do período de faturamento atual.
+              Tem certeza que deseja cancelar sua assinatura? Seu acesso ao Mythrion Premium
+              permanecerá ativo até {periodEnd}, quando a assinatura expirará.
+              Nenhuma nova cobrança será feita.
             </p>
             {cancelError && (
               <p className="mt-2 text-xs text-red-500">{cancelError}</p>

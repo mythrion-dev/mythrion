@@ -46,6 +46,7 @@ function activeSub(status: string) {
     currentPeriodStart: '2025-01-01',
     currentPeriodEnd: '2025-02-01',
     cancelledAt: null,
+    cancelAtPeriodEnd: false,
     createdAt: '2025-01-01',
     plan: { slug: 'monthly', name: 'Monthly', price: 12000 },
     invoices: [],
