@@ -778,6 +778,7 @@ export const UserSubscriptionScalarFieldEnum = {
   currentPeriodStart: 'currentPeriodStart',
   currentPeriodEnd: 'currentPeriodEnd',
   cancelledAt: 'cancelledAt',
+  cancelAtPeriodEnd: 'cancelAtPeriodEnd',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
