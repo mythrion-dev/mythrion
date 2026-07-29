@@ -122,7 +122,7 @@ export function TemplateCard({
 
         <div className="shrink-0 ml-2 flex items-center gap-2">
           <Link
-            href={`/community/templates/${id}/preview`}
+            href={`/dashboard/public-templates/${id}/preview`}
             onClick={(e) => e.stopPropagation()}
             className="btn-ghost text-xs !px-2.5 !py-1"
           >

@@ -134,6 +134,6 @@ describe('TemplateCard', () => {
   it('Preview link points to /community/templates/{id}/preview', () => {
     render(<TemplateCard {...defaultProps} id="tpl-42" />)
     const previewLink = screen.getByText('Preview')
-    expect(previewLink.getAttribute('href')).toBe('/community/templates/tpl-42/preview')
+    expect(previewLink.getAttribute('href')).toBe('/dashboard/public-templates/tpl-42/preview')
   })
 })

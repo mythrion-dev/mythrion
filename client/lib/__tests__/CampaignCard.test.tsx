@@ -75,7 +75,7 @@ describe('CampaignCard', () => {
   it('renders link to adventure detail page', () => {
     render(<CampaignCard {...defaultProps} />)
     const link = screen.getByRole('link')
-    expect(link.getAttribute('href')).toBe('/community/adventures/adv-1')
+    expect(link.getAttribute('href')).toBe('/dashboard/explore-campaigns/adv-1')
   })
 
   it('does not render owner name when null', () => {

@@ -49,14 +49,14 @@ describe('PreviewBanner', () => {
     render(<PreviewBanner {...defaultProps} />)
     const cloneLink = screen.getByText('Clone this Template')
     expect(cloneLink).toBeDefined()
-    expect(cloneLink.getAttribute('href')).toBe('/community/templates/tpl-1')
+    expect(cloneLink.getAttribute('href')).toBe('/dashboard/public-templates/tpl-1/preview')
   })
 
   it('renders "Exit Preview" link with correct href', () => {
     render(<PreviewBanner {...defaultProps} />)
     const exitLink = screen.getByText('Exit Preview')
     expect(exitLink).toBeDefined()
-    expect(exitLink.getAttribute('href')).toBe('/community/templates')
+    expect(exitLink.getAttribute('href')).toBe('/dashboard/public-templates')
   })
 
   it('renders "Previewing:" label for screen reader / visual context', () => {
@@ -68,6 +68,6 @@ describe('PreviewBanner', () => {
     render(<PreviewBanner templateName="Mage Sheet" templateId="tpl-42" />)
     expect(screen.getByText('Mage Sheet')).toBeDefined()
     const cloneLink = screen.getByText('Clone this Template')
-    expect(cloneLink.getAttribute('href')).toBe('/community/templates/tpl-42')
+    expect(cloneLink.getAttribute('href')).toBe('/dashboard/public-templates/tpl-42/preview')
   })
 })

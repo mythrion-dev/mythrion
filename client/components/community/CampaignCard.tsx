@@ -37,7 +37,7 @@ export function CampaignCard({
 
   return (
     <Link
-      href={`/community/adventures/${id}`}
+      href={`/dashboard/explore-campaigns/${id}`}
       className="card-interactive group flex flex-col"
       style={{ animationDelay: `${index * 80}ms` }}
     >
