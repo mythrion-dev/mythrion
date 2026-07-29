@@ -179,11 +179,16 @@ describe('MercadoPagoService', () => {
       )
 
       const sentBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
-      expect(sentBody.preapproval_plan_id).toBe(planId)
       expect(sentBody.card_token_id).toBe('card-token-123')
       expect(sentBody.status).toBe('authorized')
-      // Should NOT include auto_recurring when card_token_id is present
-      expect(sentBody).not.toHaveProperty('auto_recurring')
+      // Should NOT include preapproval_plan_id — we use auto_recurring inline
+      expect(sentBody).not.toHaveProperty('preapproval_plan_id')
+      // Should include auto_recurring inline (bypasses misconfigured MP plans)
+      expect(sentBody.auto_recurring).toBeDefined()
+      expect(sentBody.auto_recurring.frequency).toBe(1)
+      expect(sentBody.auto_recurring.frequency_type).toBe('months')
+      expect(sentBody.auto_recurring.transaction_amount).toBe(planPrice / 100)
+      expect(sentBody.auto_recurring.currency_id).toBe('BRL')
       // Should include full payer object
       expect(sentBody.payer).toBeDefined()
       expect(sentBody.payer.first_name).toBe('João')

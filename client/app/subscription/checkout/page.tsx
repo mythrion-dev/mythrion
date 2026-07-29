@@ -265,26 +265,33 @@ function CheckoutContent() {
           <h1 className="text-2xl font-bold text-foreground">Finalizar assinatura</h1>
         </div>
 
-        {/* MP iframe styles */}
+        {/* MP iframe styles — using app's design tokens explicitly */}
         <style>{`
           .mp-field-wrapper {
             width: 100%;
-            height: 40px;
+            min-width: 0;
+            padding: 0.625rem 1rem;
+            border-radius: 0.75rem;
+            background: #0d0a14;
+            border: 1px solid #2a2240;
+            outline: none;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.04);
             display: flex;
             align-items: center;
-            padding: 0 12px;
-            border-radius: 8px;
-            background: hsl(var(--background));
-            border: 1px solid hsl(var(--border));
+          }
+          .mp-field-wrapper:focus-within {
+            border-color: rgba(201, 164, 75, 0.5);
+            box-shadow: 0 0 0 3px rgba(201, 164, 75, 0.08);
           }
           .mp-field-wrapper iframe {
-            height: 32px !important;
+            height: 20px !important;
             min-height: unset !important;
           }
           .mp-field-wrapper [data-card-number-wrapper],
           .mp-field-wrapper [data-expiration-date-wrapper],
           .mp-field-wrapper [data-security-code-wrapper] {
-            height: 32px;
+            height: 20px;
             min-height: unset;
           }
         `}</style>
@@ -377,7 +384,7 @@ function CheckoutContent() {
                   Número do cartão <span className="text-red-500">*</span>
                 </label>
                 <div className="mp-field-wrapper">
-                  <CardNumber placeholder="0000 0000 0000 0000" style={{ color: 'hsl(var(--foreground))', 'placeholder-color': 'hsl(var(--muted-foreground))', 'font-family': 'inherit', fontSize: '14px' }} />
+                  <CardNumber placeholder="0000 0000 0000 0000" style={{ color: '#e8e2d9', 'placeholder-color': '#4a4060', 'font-family': 'inherit', fontSize: '14px' }} />
                 </div>
               </div>
 
@@ -387,7 +394,7 @@ function CheckoutContent() {
                     Validade <span className="text-red-500">*</span>
                   </label>
                   <div className="mp-field-wrapper">
-                    <ExpirationDate placeholder="MM/AA" style={{ color: 'hsl(var(--foreground))', 'placeholder-color': 'hsl(var(--muted-foreground))', 'font-family': 'inherit', fontSize: '14px' }} />
+                    <ExpirationDate placeholder="MM/AA" style={{ color: '#e8e2d9', 'placeholder-color': '#4a4060', 'font-family': 'inherit', fontSize: '14px' }} />
                   </div>
                 </div>
                 <div>
@@ -395,7 +402,7 @@ function CheckoutContent() {
                     CVV <span className="text-red-500">*</span>
                   </label>
                   <div className="mp-field-wrapper">
-                    <SecurityCode placeholder="123" style={{ color: 'hsl(var(--foreground))', 'placeholder-color': 'hsl(var(--muted-foreground))', 'font-family': 'inherit', fontSize: '14px' }} />
+                    <SecurityCode placeholder="123" style={{ color: '#e8e2d9', 'placeholder-color': '#4a4060', 'font-family': 'inherit', fontSize: '14px' }} />
                   </div>
                 </div>
               </div>

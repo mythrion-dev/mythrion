@@ -94,11 +94,19 @@ export class MercadoPagoService {
       }
 
       if (cardTokenId) {
-        // Card token flow: use preapproval_plan_id + card_token_id + status: "authorized"
-        // as documented by MP's subscription API. This triggers 3DS during tokenization
-        // and keeps full payer context, avoiding cc_rejected_high_risk.
-        // Do NOT send auto_recurring — the plan already has frequency/amount configured.
-        body.preapproval_plan_id = planId
+        // Card token flow: use auto_recurring + card_token_id + status: "authorized"
+        // We use auto_recurring (same as redirect flow) instead of preapproval_plan_id
+        // because the existing MP plans have misconfigured payment_types that cause
+        // card_token_id errors. By defining auto_recurring inline we bypass the plan
+        // entirely while still triggering 3DS during tokenization and keeping full
+        // payer context — avoiding cc_rejected_high_risk.
+        const frequency = planSlug === 'annual' ? 12 : 1
+        body.auto_recurring = {
+          frequency,
+          frequency_type: 'months',
+          transaction_amount: planPrice / 100,
+          currency_id: 'BRL',
+        }
         body.card_token_id = cardTokenId
         body.status = 'authorized'
         body.payer = {}
@@ -117,11 +125,10 @@ export class MercadoPagoService {
         // Redirect-based Checkout Pro flow — MP collects card details
         // on their hosted checkout page
         const frequency = planSlug === 'annual' ? 12 : 1
-        const frequencyType = 'months'
 
         body.auto_recurring = {
           frequency,
-          frequency_type: frequencyType,
+          frequency_type: 'months',
           transaction_amount: planPrice / 100,
           currency_id: 'BRL',
         }
