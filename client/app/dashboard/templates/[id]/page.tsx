@@ -9,6 +9,7 @@ import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { TemplateForm } from '@/components/adventure/TemplateForm'
 import type { CoreResource, AcConfigDraft, ArmorClassAttributeModifierDraft, ResistanceDef } from '@/components/adventure/types'
+import { emptyAcConfig, slugify } from '@/components/adventure/types'
 
 interface TemplateAttribute {
   id: string
@@ -441,6 +442,81 @@ export default function TemplateDetailPage() {
     setEditCoreResources(prev => prev.map((cr, idx) => idx === i ? { ...cr, showNotes: v } : cr))
   }, [])
 
+  // ── AC Config edit handlers ──
+
+  const handleAddEditAcConfig = useCallback(() => {
+    setEditAcConfigs(prev => [...prev, emptyAcConfig()])
+  }, [])
+  const handleRemoveEditAcConfig = useCallback((i: number) => {
+    setEditAcConfigs(prev => prev.filter((_, idx) => idx !== i))
+  }, [])
+  const handleUpdateEditAcConfig = useCallback((i: number, patch: Partial<AcConfigDraft>) => {
+    setEditAcConfigs(prev => prev.map((ac, idx) => idx === i ? { ...ac, ...patch } : ac))
+  }, [])
+  const handleAddEditAcFieldForConfig = useCallback((configIdx: number) => {
+    setEditAcConfigs(prev => prev.map((ac, i) => i === configIdx
+      ? { ...ac, fields: [...ac.fields, { name: '', key: '', defaultValue: '0', editableByPlayer: false, description: '' }] }
+      : ac))
+  }, [])
+  const handleRemoveEditAcFieldForConfig = useCallback((configIdx: number, fieldIdx: number) => {
+    setEditAcConfigs(prev => prev.map((ac, i) => i === configIdx
+      ? { ...ac, fields: ac.fields.filter((_, j) => j !== fieldIdx) }
+      : ac))
+  }, [])
+  const handleUpdateEditAcFieldForConfig = useCallback((configIdx: number, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string) => {
+    setEditAcConfigs(prev => prev.map((ac, i) => {
+      if (i !== configIdx) return ac
+      return {
+        ...ac, fields: ac.fields.map((field, j) => {
+          if (j !== fieldIdx) return field
+          const updated = { ...field, [f]: v }
+          if (f === 'name' && v.trim() && !field.key.trim()) updated.key = slugify(v.trim())
+          return updated
+        })
+      }
+    }))
+  }, [])
+  const handleUpdateEditAcFieldEditableForConfig = useCallback((configIdx: number, fieldIdx: number, v: boolean) => {
+    setEditAcConfigs(prev => prev.map((ac, i) => i === configIdx
+      ? { ...ac, fields: ac.fields.map((field, j) => j === fieldIdx ? { ...field, editableByPlayer: v } : field) }
+      : ac))
+  }, [])
+  const handleToggleEditAcAttributeIdForConfig = useCallback((configIdx: number, attrId: string) => {
+    setEditAcConfigs(prev => prev.map((ac, i) => {
+      if (i !== configIdx) return ac
+      const exists = ac.attributeModifiers.some(am => am.attributeId === attrId)
+      return {
+        ...ac,
+        attributeModifiers: exists
+          ? ac.attributeModifiers.filter(am => am.attributeId !== attrId)
+          : [...ac.attributeModifiers, { attributeId: attrId, allowPlayerSelection: false, defaultAttributeId: attrId }],
+      }
+    }))
+  }, [])
+  const handleUpdateEditAcAttributeModifierForConfig = useCallback((configIdx: number, attrId: string, patch: Partial<ArmorClassAttributeModifierDraft>) => {
+    setEditAcConfigs(prev => prev.map((ac, i) => i === configIdx
+      ? { ...ac, attributeModifiers: ac.attributeModifiers.map(am => am.attributeId === attrId ? { ...am, ...patch } : am) }
+      : ac))
+  }, [])
+
+  // ── Character section edit handlers ──
+
+  const handleAddEditCharacterSection = useCallback(() => {
+    setEditCharacterSections(prev => [...prev, { name: '' }])
+  }, [])
+  const handleRemoveEditCharacterSection = useCallback((i: number) => {
+    setEditCharacterSections(prev => prev.filter((_, idx) => idx !== i))
+  }, [])
+  const handleUpdateEditCharacterSection = useCallback((i: number, v: string) => {
+    setEditCharacterSections(prev => prev.map((s, idx) => idx === i ? { ...s, name: v } : s))
+  }, [])
+
+  // ── Resistance edit handler ──
+
+  const handleEditResistancesChange = useCallback((v: ResistanceDef[]) => {
+    setEditResistances(v)
+  }, [])
+
   // ── Loading / Error states ──
 
   if (fetching) {
@@ -554,21 +630,21 @@ export default function TemplateDetailPage() {
           onNewSkillFormulaChange={setEditSkillFormula}
           // AC config
           newAttrsForAc={editAttrs.filter(a => a.key.trim() && a.name.trim()).map(a => ({ key: a.key.trim(), name: a.name.trim() }))}
-          onAddNewAcConfig={() => {}}
-          onRemoveNewAcConfig={() => {}}
-          onUpdateNewAcConfig={() => {}}
-          onAddNewAcFieldForConfig={() => {}}
-          onRemoveNewAcFieldForConfig={() => {}}
-          onUpdateNewAcFieldForConfig={() => {}}
-          onUpdateNewAcFieldEditableForConfig={() => {}}
-          onToggleNewAcAttributeIdForConfig={() => {}}
-          onUpdateNewAcAttributeModifierForConfig={() => {}}
+          onAddNewAcConfig={handleAddEditAcConfig}
+          onRemoveNewAcConfig={handleRemoveEditAcConfig}
+          onUpdateNewAcConfig={handleUpdateEditAcConfig}
+          onAddNewAcFieldForConfig={handleAddEditAcFieldForConfig}
+          onRemoveNewAcFieldForConfig={handleRemoveEditAcFieldForConfig}
+          onUpdateNewAcFieldForConfig={handleUpdateEditAcFieldForConfig}
+          onUpdateNewAcFieldEditableForConfig={handleUpdateEditAcFieldEditableForConfig}
+          onToggleNewAcAttributeIdForConfig={handleToggleEditAcAttributeIdForConfig}
+          onUpdateNewAcAttributeModifierForConfig={handleUpdateEditAcAttributeModifierForConfig}
           // Character sections
-          onAddNewCharacterSection={() => {}}
-          onRemoveNewCharacterSection={() => {}}
-          onUpdateNewCharacterSection={() => {}}
+          onAddNewCharacterSection={handleAddEditCharacterSection}
+          onRemoveNewCharacterSection={handleRemoveEditCharacterSection}
+          onUpdateNewCharacterSection={handleUpdateEditCharacterSection}
           // Resistances
-          onNewResistancesChange={() => {}}
+          onNewResistancesChange={handleEditResistancesChange}
           attrsForNewResistance={attrsForResistance}
           // Feature toggles
           newIsPublic={editIsPublic}

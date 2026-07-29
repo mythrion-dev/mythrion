@@ -129,6 +129,7 @@ export default function AdventureDetailPage() {
   const [editFeatureSkillProfiles, setEditFeatureSkillProfiles] = useState(true)
   const [newFeatureResistance, setNewFeatureResistance] = useState(true)
   const [editFeatureResistance, setEditFeatureResistance] = useState(true)
+  const [newIsPublic, setNewIsPublic] = useState(false)
 
   function addNewCharacterSection() { setNewCharacterSections(p => [...p, { name: '' }]) }
   function removeNewCharacterSection(i: number) { setNewCharacterSections(p => p.filter((_, j) => j !== i)) }
@@ -361,7 +362,7 @@ export default function AdventureDetailPage() {
       }))
   }
 
-  function resetNewTemplate() { setShowNewTemplate(false); setNewTemplateName(''); setNewTemplateDescription(''); setNewTemplateAttrs([]); setNewAttrModifierFormula(''); setNewSkillFormula(''); setNewTemplateFields([]); setNewTemplateSkills([]); setNewTemplateProfiles([]); setNewCoreResources([]); setNewAcConfigs([]); setNewResistances([]); setNewFeatureSkills(true); setNewFeatureCustomFields(true); setNewFeatureCoreResources(true); setNewFeatureArmorClass(true); setNewFeatureCharacterSections(true); setNewFeatureSkillProfiles(true); setNewFeatureResistance(true); setTemplateError(null) }
+  function resetNewTemplate() { setShowNewTemplate(false); setNewTemplateName(''); setNewTemplateDescription(''); setNewTemplateAttrs([]); setNewAttrModifierFormula(''); setNewSkillFormula(''); setNewTemplateFields([]); setNewTemplateSkills([]); setNewTemplateProfiles([]); setNewCoreResources([]); setNewAcConfigs([]); setNewResistances([]); setNewIsPublic(false); setNewFeatureSkills(true); setNewFeatureCustomFields(true); setNewFeatureCoreResources(true); setNewFeatureArmorClass(true); setNewFeatureCharacterSections(true); setNewFeatureSkillProfiles(true); setNewFeatureResistance(true); setTemplateError(null) }
   function addNewAttrRow() { setNewTemplateAttrs(p => [...p, { key: '', name: '' }]) }; function removeNewAttrRow(i: number) { setNewTemplateAttrs(p => p.filter((_, j) => j !== i)) }; function updateNewAttr(i: number, f: 'key' | 'name', v: string) { setNewTemplateAttrs(p => p.map((a, j) => j === i ? { ...a, [f]: v } : a)) }
   function addNewFieldRow() { setNewTemplateFields(p => [...p, { key: '', label: '' }]) }; function removeNewFieldRow(i: number) { setNewTemplateFields(p => p.filter((_, j) => j !== i)) }; function updateNewField(i: number, f: 'key' | 'label', v: string) { setNewTemplateFields(p => p.map((a, j) => j === i ? { ...a, [f]: v } : a)) }
   function addEditAttrRow() { setEditTemplateAttrs(p => [...p, { key: '', name: '' }]) }; function removeEditAttrRow(i: number) { setEditTemplateAttrs(p => p.filter((_, j) => j !== i)) }; function updateEditAttr(i: number, f: 'key' | 'name', v: string) { setEditTemplateAttrs(p => p.map((a, j) => j === i ? { ...a, [f]: v } : a)) }
@@ -413,6 +414,7 @@ export default function AdventureDetailPage() {
     try {
       await api.post(`/adventures/${id}/templates`, {
         name: newTemplateName.trim(), description: newTemplateDescription.trim() || undefined,
+        isPublic: newIsPublic,
         attributeModifiersEnabled: newAttrModifiersEnabled,
         attributeModifierFormula: newAttrModifierFormula.trim() || undefined,
         skillFormula: newSkillFormula.trim() || undefined,
@@ -719,6 +721,8 @@ export default function AdventureDetailPage() {
                 newResistances={newResistances} editResistances={editResistances}
                 onNewResistancesChange={setNewResistances}
                 onEditResistancesChange={setEditResistances}
+                newIsPublic={newIsPublic}
+                onNewIsPublicChange={setNewIsPublic}
                 newTemplateAttrsForResistance={newTemplateAttrs}
                 editTemplateAttrsForResistance={editTemplateAttrs}
                 newFeatureSkills={newFeatureSkills} onNewFeatureSkillsChange={setNewFeatureSkills}

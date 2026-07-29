@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import { TemplateForm } from '@/components/adventure/TemplateForm'
 import type { CoreResource, AcConfigDraft, ArmorClassAttributeModifierDraft, ResistanceDef } from '@/components/adventure/types'
+import { emptyAcConfig, slugify } from '@/components/adventure/types'
 
 export default function NewTemplatePage() {
   const router = useRouter()
@@ -148,7 +149,62 @@ export default function NewTemplatePage() {
     setCoreResources(prev => prev.map((cr, idx) => idx === i ? { ...cr, showNotes: v } : cr))
   }, [])
 
-  // ── AC Config handlers (no-op stubs for creation — added when features are expanded) ──
+  // ── AC Config handlers ──
+
+  const handleAddNewAcConfig = useCallback(() => {
+    setAcConfigs(prev => [...prev, emptyAcConfig()])
+  }, [])
+  const handleRemoveNewAcConfig = useCallback((i: number) => {
+    setAcConfigs(prev => prev.filter((_, idx) => idx !== i))
+  }, [])
+  const handleUpdateNewAcConfig = useCallback((i: number, patch: Partial<AcConfigDraft>) => {
+    setAcConfigs(prev => prev.map((ac, idx) => idx === i ? { ...ac, ...patch } : ac))
+  }, [])
+  const handleAddNewAcFieldForConfig = useCallback((configIdx: number) => {
+    setAcConfigs(prev => prev.map((ac, i) => i === configIdx
+      ? { ...ac, fields: [...ac.fields, { name: '', key: '', defaultValue: '0', editableByPlayer: false, description: '' }] }
+      : ac))
+  }, [])
+  const handleRemoveNewAcFieldForConfig = useCallback((configIdx: number, fieldIdx: number) => {
+    setAcConfigs(prev => prev.map((ac, i) => i === configIdx
+      ? { ...ac, fields: ac.fields.filter((_, j) => j !== fieldIdx) }
+      : ac))
+  }, [])
+  const handleUpdateNewAcFieldForConfig = useCallback((configIdx: number, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string) => {
+    setAcConfigs(prev => prev.map((ac, i) => {
+      if (i !== configIdx) return ac
+      return {
+        ...ac, fields: ac.fields.map((field, j) => {
+          if (j !== fieldIdx) return field
+          const updated = { ...field, [f]: v }
+          if (f === 'name' && v.trim() && !field.key.trim()) updated.key = slugify(v.trim())
+          return updated
+        })
+      }
+    }))
+  }, [])
+  const handleUpdateNewAcFieldEditableForConfig = useCallback((configIdx: number, fieldIdx: number, v: boolean) => {
+    setAcConfigs(prev => prev.map((ac, i) => i === configIdx
+      ? { ...ac, fields: ac.fields.map((field, j) => j === fieldIdx ? { ...field, editableByPlayer: v } : field) }
+      : ac))
+  }, [])
+  const handleToggleNewAcAttributeIdForConfig = useCallback((configIdx: number, attrId: string) => {
+    setAcConfigs(prev => prev.map((ac, i) => {
+      if (i !== configIdx) return ac
+      const exists = ac.attributeModifiers.some(am => am.attributeId === attrId)
+      return {
+        ...ac,
+        attributeModifiers: exists
+          ? ac.attributeModifiers.filter(am => am.attributeId !== attrId)
+          : [...ac.attributeModifiers, { attributeId: attrId, allowPlayerSelection: false, defaultAttributeId: attrId }],
+      }
+    }))
+  }, [])
+  const handleUpdateNewAcAttributeModifierForConfig = useCallback((configIdx: number, attrId: string, patch: Partial<ArmorClassAttributeModifierDraft>) => {
+    setAcConfigs(prev => prev.map((ac, i) => i === configIdx
+      ? { ...ac, attributeModifiers: ac.attributeModifiers.map(am => am.attributeId === attrId ? { ...am, ...patch } : am) }
+      : ac))
+  }, [])
 
   // ── Character Section handlers ──
 
@@ -214,7 +270,22 @@ export default function NewTemplatePage() {
       }
 
       if (featureArmorClass) {
-        payload.armorClasses = acConfigs
+        payload.armorClasses = acConfigs.map(ac => ({
+          enabled: ac.enabled,
+          name: ac.name,
+          attributeModifiers: (ac.attributeModifiers ?? []).map(am => ({
+            attributeId: am.attributeId,
+            allowPlayerSelection: am.allowPlayerSelection,
+            defaultAttributeId: am.defaultAttributeId,
+          })),
+          fields: (ac.fields ?? []).map(f => ({
+            name: f.name,
+            key: f.key,
+            defaultValue: f.defaultValue,
+            editableByPlayer: f.editableByPlayer,
+            description: f.description,
+          })),
+        }))
       }
 
       if (featureCharacterSections) {
@@ -307,17 +378,17 @@ export default function NewTemplatePage() {
         onNewAttrModifiersEnabledChange={setAttrModifiersEnabled}
         onNewAttrModifierFormulaChange={setAttrModifierFormula}
         onNewSkillFormulaChange={setSkillFormula}
-        // AC config — no-op stubs for creation (can be expanded later)
+        // AC config
         newAttrsForAc={attrs.filter(a => a.key.trim() && a.name.trim()).map(a => ({ key: a.key.trim(), name: a.name.trim() }))}
-        onAddNewAcConfig={() => {}}
-        onRemoveNewAcConfig={() => {}}
-        onUpdateNewAcConfig={() => {}}
-        onAddNewAcFieldForConfig={() => {}}
-        onRemoveNewAcFieldForConfig={() => {}}
-        onUpdateNewAcFieldForConfig={() => {}}
-        onUpdateNewAcFieldEditableForConfig={() => {}}
-        onToggleNewAcAttributeIdForConfig={() => {}}
-        onUpdateNewAcAttributeModifierForConfig={() => {}}
+        onAddNewAcConfig={handleAddNewAcConfig}
+        onRemoveNewAcConfig={handleRemoveNewAcConfig}
+        onUpdateNewAcConfig={handleUpdateNewAcConfig}
+        onAddNewAcFieldForConfig={handleAddNewAcFieldForConfig}
+        onRemoveNewAcFieldForConfig={handleRemoveNewAcFieldForConfig}
+        onUpdateNewAcFieldForConfig={handleUpdateNewAcFieldForConfig}
+        onUpdateNewAcFieldEditableForConfig={handleUpdateNewAcFieldEditableForConfig}
+        onToggleNewAcAttributeIdForConfig={handleToggleNewAcAttributeIdForConfig}
+        onUpdateNewAcAttributeModifierForConfig={handleUpdateNewAcAttributeModifierForConfig}
         // Character sections
         onAddNewCharacterSection={handleAddCharacterSection}
         onRemoveNewCharacterSection={handleRemoveCharacterSection}
