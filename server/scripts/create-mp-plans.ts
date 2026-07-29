@@ -71,7 +71,7 @@ async function createPlan(config: PlanConfig) {
         auto_recurring: {
           frequency: config.frequency,
           frequency_type: config.frequencyType,
-          transaction_amount: config.price,
+          transaction_amount: config.price / 100,  // MP expects reais, not cents
           currency_id: config.currencyId,
         },
         status: 'active',

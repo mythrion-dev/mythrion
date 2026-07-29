@@ -152,12 +152,18 @@ export class MercadoPagoService {
       if (!response.ok) {
         const mpError = JSON.stringify(data)
         this.logger.error(
-          `MP API error (${response.status}): ${mpError}`,
+          `MP API error creating preapproval (${response.status}): ${mpError}`,
         )
         throw new UnprocessableEntityException(
           `Mercado Pago error: ${mpError}`,
         )
       }
+
+      this.logger.log(
+        `MP preapproval created - id: ${(data as any)?.id}, ` +
+        `status: ${(data as any)?.status}, ` +
+        `init_point: ${(data as any)?.init_point?.substring(0, 80)}`,
+      )
 
       return data as MercadoPagoSubscriptionResponse
     } catch (err: any) {

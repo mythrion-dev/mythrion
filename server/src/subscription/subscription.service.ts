@@ -95,6 +95,11 @@ export class SubscriptionService {
       throw new NotFoundException(`Subscription plan "${planId}" not found`)
     }
 
+    this.logger.log(
+      `Creating subscription - plan: ${plan.slug}, price (cents): ${plan.price}, ` +
+      `transaction_amount (reais): ${plan.price / 100}`,
+    )
+
     // Build the back_url for MP redirect after checkout
     const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000'
     const backUrl = `${frontendUrl}/subscription/success`
@@ -123,7 +128,16 @@ export class SubscriptionService {
         ? 'AUTHORIZED'
         : mpStatusLower === 'pending'
           ? 'PENDING'
-          : 'PENDING'
+          : mpStatusLower === 'cancelled'
+            ? 'CANCELLED'
+            : 'PENDING'
+
+    this.logger.log(
+      `MP subscription created - id: ${mpSubscription.id}, ` +
+      `status: ${mpSubscription.status}, ` +
+      `effectiveStatus: ${effectiveStatus}, ` +
+      `transaction_amount: ${plan.price / 100}`,
+    )
 
     // Upsert the UserSubscription row (create or replace cancelled/expired one)
     const subscription = await this.prisma.userSubscription.upsert({
