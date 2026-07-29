@@ -66,3 +66,15 @@ export async function fetchMySubscription(): Promise<MySubscription | null> {
 export async function cancelSubscription(): Promise<void> {
   await api.post<void>('/subscriptions/cancel')
 }
+
+export async function updatePaymentMethod(
+  cardTokenId: string,
+  payerName?: string,
+  payerDocument?: string,
+): Promise<void> {
+  await api.post<void>('/subscriptions/update-payment-method', {
+    cardTokenId,
+    ...(payerName ? { payerName } : {}),
+    ...(payerDocument ? { payerDocument } : {}),
+  })
+}

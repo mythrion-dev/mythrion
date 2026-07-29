@@ -297,6 +297,43 @@ export class SubscriptionService {
     return ['AUTHORIZED', 'ACTIVE', 'GRACE'].includes(sub.status)
   }
 
+  /**
+   * Update the payment method (card) for the current user's subscription.
+   * Tokenizes the new card client-side and sends the token to MP.
+   */
+  async updatePaymentMethod(
+    userId: string,
+    cardTokenId: string,
+    payerName?: string,
+    payerDocument?: string,
+  ): Promise<void> {
+    const sub = await this.prisma.userSubscription.findUnique({
+      where: { userId },
+    })
+    if (!sub) {
+      throw new NotFoundException('No subscription found')
+    }
+    if (sub.status === 'CANCELLED' || sub.status === 'EXPIRED') {
+      throw new UnprocessableEntityException(
+        `Cannot update payment method on a ${sub.status.toLowerCase()} subscription.`,
+      )
+    }
+    if (!sub.mpSubscriptionId) {
+      throw new UnprocessableEntityException(
+        'Subscription has no Mercado Pago reference — cannot update payment method.',
+      )
+    }
+
+    await this.mp.updatePaymentMethod(
+      sub.mpSubscriptionId,
+      cardTokenId,
+      payerName,
+      payerDocument,
+    )
+
+    this.logger.log(`Updated payment method for subscription ${sub.id} (MP: ${sub.mpSubscriptionId})`)
+  }
+
   // ─── Webhook processing ──────────────────────────────────────────────
 
   /**

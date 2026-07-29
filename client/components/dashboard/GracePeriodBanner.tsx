@@ -68,7 +68,7 @@ export function GracePeriodBanner() {
           </p>
           <div className="mt-2 flex gap-3">
             <Link
-              href="/subscription/manage"
+              href="/dashboard/subscription"
               className="text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline underline-offset-2"
             >
               Update payment method

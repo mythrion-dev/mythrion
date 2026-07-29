@@ -195,6 +195,67 @@ export class MercadoPagoService {
   }
 
   /**
+   * Update the card token on an existing Mercado Pago subscription.
+   * Called when a user wants to change their payment method.
+   * Uses PUT /preapproval/{id} with the new card_token_id.
+   */
+  async updatePaymentMethod(
+    mpSubscriptionId: string,
+    cardTokenId: string,
+    payerName?: string,
+    payerDocument?: string,
+  ): Promise<void> {
+    try {
+      const body: Record<string, any> = {
+        card_token_id: cardTokenId,
+      }
+
+      if (payerName || payerDocument) {
+        body.payer = {}
+        if (payerName) {
+          const spaceIdx = payerName.indexOf(' ')
+          body.payer.first_name = spaceIdx >= 0 ? payerName.slice(0, spaceIdx) : payerName
+          body.payer.last_name = spaceIdx >= 0 ? payerName.slice(spaceIdx + 1) : ''
+        }
+        if (payerDocument) {
+          body.payer.identification = {
+            type: 'CPF',
+            number: payerDocument.replace(/\D/g, ''),
+          }
+        }
+      }
+
+      const response = await fetch(`${this.mpApiBase}/preapproval/${mpSubscriptionId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        const mpError = JSON.stringify(errorData)
+        this.logger.error(`MP API error updating payment method (${response.status}): ${mpError}`)
+        throw new UnprocessableEntityException(
+          `Failed to update payment method: ${mpError}`,
+        )
+      }
+
+      this.logger.log(`Updated payment method for MP subscription ${mpSubscriptionId}`)
+    } catch (err: any) {
+      if (err instanceof UnprocessableEntityException) throw err
+
+      const mpError = err?.message || JSON.stringify(err)
+      this.logger.error(`Failed to update MP subscription payment method: ${mpError}`)
+      throw new UnprocessableEntityException(
+        `Failed to update payment method: ${mpError}`,
+      )
+    }
+  }
+
+  /**
    * Fetch a Mercado Pago subscription by its MP ID.
    */
   async getSubscription(

@@ -94,6 +94,32 @@ export class SubscriptionController {
   }
 
   /**
+   * POST /api/subscriptions/update-payment-method
+   * Authenticated — update the card on the current user's subscription.
+   * Body: { cardTokenId: string; payerName?: string; payerDocument?: string }
+   * The card must be tokenized client-side via MercadoPago.js.
+   */
+  @Post('update-payment-method')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @SkipSubscriptionCheck()
+  async updatePaymentMethod(
+    @Body() body: { cardTokenId: string; payerName?: string; payerDocument?: string },
+    @Req() req: AuthenticatedRequest,
+  ) {
+    if (!body.cardTokenId) {
+      throw new UnprocessableEntityException('cardTokenId is required')
+    }
+    await this.subscriptionService.updatePaymentMethod(
+      req.user.sub,
+      body.cardTokenId,
+      body.payerName,
+      body.payerDocument,
+    )
+    return { message: 'Payment method updated successfully' }
+  }
+
+  /**
    * POST /api/subscriptions/webhook
    * Public — Mercado Pago webhook receiver.
    * Validates HMAC signature, processes subscription lifecycle events.
