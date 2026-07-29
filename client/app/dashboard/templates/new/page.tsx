@@ -179,12 +179,12 @@ export default function NewTemplatePage() {
         })),
         attributeModifierFormula: attrModifierFormula || null,
         skillFormula: skillFormula || null,
-        attrModifiersEnabled,
+        attributeModifiersEnabled: attrModifiersEnabled,
         isPublic,
       }
 
       if (featureSkills) {
-        payload.templateSkills = skills.map(s => ({
+        payload.skills = skills.map(s => ({
           name: s.name,
           description: s.description || null,
           attributeId: s.attributeId || null,
