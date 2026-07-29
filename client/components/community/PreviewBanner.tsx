@@ -1,6 +1,9 @@
 'use client'
 
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { api } from '@/lib/api'
 
 interface PreviewBannerProps {
   templateName: string
@@ -8,6 +11,22 @@ interface PreviewBannerProps {
 }
 
 export function PreviewBanner({ templateName, templateId }: PreviewBannerProps) {
+  const router = useRouter()
+  const [cloning, setCloning] = useState(false)
+  const [cloneError, setCloneError] = useState<string | null>(null)
+
+  const handleClone = async () => {
+    setCloning(true)
+    setCloneError(null)
+    try {
+      const cloned = await api.post<{ id: string }>(`/templates/${templateId}/clone`, {})
+      router.push(`/dashboard/templates/${cloned.id}`)
+    } catch (err) {
+      setCloneError(err instanceof Error ? err.message : 'Failed to clone template')
+      setCloning(false)
+    }
+  }
+
   return (
     <div className="sticky top-0 z-50 w-full bg-amber-500/10 border-b border-amber-500/20 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
@@ -36,13 +55,20 @@ export function PreviewBanner({ templateName, templateId }: PreviewBannerProps) 
 
         {/* Right: Actions */}
         <div className="flex items-center gap-3 shrink-0">
-          <Link
-            href={`/dashboard/public-templates/${templateId}/preview`}
-            className="btn-ghost text-xs !px-2.5 !py-1 text-amber-300/80 hover:text-amber-200"
-            onClick={(e) => e.stopPropagation()}
+          <button
+            onClick={handleClone}
+            disabled={cloning}
+            className="btn-ghost text-xs !px-2.5 !py-1 text-amber-300/80 hover:text-amber-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Clone this Template
-          </Link>
+            {cloning ? (
+              <>
+                <div className="w-3 h-3 border-2 border-amber-300/30 border-t-amber-300 rounded-full animate-spin mr-1" />
+                Cloning...
+              </>
+            ) : (
+              'Clone this Template'
+            )}
+          </button>
           <Link
             href="/dashboard/public-templates"
             className="btn-ghost text-xs !px-2.5 !py-1 text-amber-300/80 hover:text-amber-200"
@@ -64,6 +90,12 @@ export function PreviewBanner({ templateName, templateId }: PreviewBannerProps) 
           </Link>
         </div>
       </div>
+
+      {cloneError && (
+        <div className="max-w-7xl mx-auto px-4 pb-2">
+          <p className="text-xs text-red-400">{cloneError}</p>
+        </div>
+      )}
     </div>
   )
 }

@@ -21,6 +21,18 @@ vi.mock('next/link', () => ({
   ),
 }))
 
+const mockPush = vi.fn()
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush, replace: vi.fn() }),
+}))
+
+vi.mock('@/lib/api', () => ({
+  api: {
+    post: vi.fn(),
+  },
+}))
+
 // ════════════════════════════════════════════════════════════════
 // PreviewBanner
 // ════════════════════════════════════════════════════════════════
@@ -45,11 +57,11 @@ describe('PreviewBanner', () => {
     expect(screen.getByText('Sandbox Mode')).toBeDefined()
   })
 
-  it('renders "Clone this Template" link with correct href', () => {
+  it('renders "Clone this Template" button', () => {
     render(<PreviewBanner {...defaultProps} />)
-    const cloneLink = screen.getByText('Clone this Template')
-    expect(cloneLink).toBeDefined()
-    expect(cloneLink.getAttribute('href')).toBe('/dashboard/public-templates/tpl-1/preview')
+    const cloneBtn = screen.getByText('Clone this Template')
+    expect(cloneBtn).toBeDefined()
+    expect(cloneBtn.tagName).toBe('BUTTON')
   })
 
   it('renders "Exit Preview" link with correct href', () => {
@@ -67,7 +79,6 @@ describe('PreviewBanner', () => {
   it('renders with different template name and id', () => {
     render(<PreviewBanner templateName="Mage Sheet" templateId="tpl-42" />)
     expect(screen.getByText('Mage Sheet')).toBeDefined()
-    const cloneLink = screen.getByText('Clone this Template')
-    expect(cloneLink.getAttribute('href')).toBe('/dashboard/public-templates/tpl-42/preview')
+    expect(screen.getByText('Clone this Template')).toBeDefined()
   })
 })

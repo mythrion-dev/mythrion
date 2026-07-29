@@ -198,21 +198,25 @@ export default function TemplatePreviewPage() {
       const s = stateRef.current
       if (!s) return
 
-      // Compute modifiers
-      const mods = await computeModifiers(s)
-      setModifierResults(mods)
+      try {
+        // Compute modifiers
+        const mods = await computeModifiers(s)
+        setModifierResults(mods)
 
-      // Compute skills (depends on modifiers)
-      const skills = await computeSkills(s, mods)
-      setSkillResults(skills)
+        // Compute skills (depends on modifiers)
+        const skills = await computeSkills(s, mods)
+        setSkillResults(skills)
 
-      // Compute AC (depends on modifiers) — synchronous
-      const ac = computeAC(s, mods)
-      setAcResults(ac)
+        // Compute AC (depends on modifiers) — synchronous
+        const ac = computeAC(s, mods)
+        setAcResults(ac)
 
-      // Compute resistances — synchronous
-      const res = computeResistances(s, mods)
-      setResistances(res)
+        // Compute resistances — synchronous
+        const res = computeResistances(s, mods)
+        setResistances(res)
+      } catch (err) {
+        console.error('[Preview] Computation error:', err)
+      }
     }, 300)
 
     return () => {
