@@ -49,7 +49,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const activeStatuses = ['AUTHORIZED', 'ACTIVE', 'GRACE']
   const hasActiveSubscription =
-    subscription !== null && activeStatuses.includes(subscription.status)
+    (subscription !== null && activeStatuses.includes(subscription.status)) ||
+    user?.isAdmin === true
 
   return (
     <SubscriptionContext.Provider
