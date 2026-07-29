@@ -24,7 +24,7 @@ interface Adventure {
 interface CharacterSheetSummary {
   id: string
   characterName: string
-  adventure: { id: string; name: string; campaign: string }
+  adventure: { id: string; name: string; campaign: string } | null
   template: { id: string; name: string }
   createdAt: string
 }
@@ -301,12 +301,21 @@ function CharacterSheetCard({
         </span>
       </div>
 
-      <p className="text-sm text-muted-foreground mb-2">
-        {sheet.adventure.campaign}
-      </p>
-      <p className="text-xs text-muted italic mb-4 flex-1">
-        {sheet.adventure.name}
-      </p>
+      {sheet.adventure ? (
+        <>
+          <p className="text-sm text-muted-foreground mb-2">
+            {sheet.adventure.campaign}
+          </p>
+          <p className="text-xs text-muted italic mb-4 flex-1">
+            {sheet.adventure.name}
+          </p>
+        </>
+      ) : (
+        <div className="flex items-center gap-1.5 mb-4 flex-1">
+          <span className="badge badge-ghost text-[0.6rem]">Standalone</span>
+          <span className="text-xs text-muted italic">No campaign</span>
+        </div>
+      )}
 
       <div className="flex items-center justify-between pt-3 border-t border-border">
         <span className="text-xs text-muted">

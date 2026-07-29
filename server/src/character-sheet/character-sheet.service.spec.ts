@@ -238,6 +238,33 @@ describe('CharacterSheetService', () => {
         expect(result).toEqual(mockSheet)
       })
 
+      it('should create a sheet with optional playerName and level', async () => {
+        const extendedDto = { ...dto, playerName: 'Player One', level: 3 }
+        const expectedSheet = {
+          ...mockSheet,
+          playerName: 'Player One',
+          level: 3,
+        }
+        prisma.characterSheet.create.mockResolvedValue(expectedSheet)
+
+        const result = await service.create(userId, extendedDto)
+
+        expect(prisma.characterSheet.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              characterName: 'Test Character',
+              playerName: 'Player One',
+              level: 3,
+              adventureId: null,
+              templateId: 'template-1',
+              ownerId: userId,
+            }),
+          }),
+        )
+        expect(result.playerName).toBe('Player One')
+        expect(result.level).toBe(3)
+      })
+
       it('should throw NotFoundException when template is not found', async () => {
         prisma.template.findUnique.mockResolvedValue(null)
 

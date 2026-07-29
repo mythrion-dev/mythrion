@@ -45,6 +45,12 @@ interface CharacterTabProps {
   setExpandedSkillId: React.Dispatch<React.SetStateAction<string | null>>
   skillResults: Record<string, number | null>
   sheetId: string
+  /** When true, ProfessionalSkillsSection operates in local mode (no API calls). */
+  localMode?: boolean
+  /** Professional skills state for local mode (required when localMode is true). */
+  localSkills?: import('./types').ProfessionalSkill[]
+  /** Called when professional skills change in local mode. */
+  onLocalSkillsChange?: (skills: import('./types').ProfessionalSkill[]) => void
 }
 
 export function CharacterTab(props: CharacterTabProps) {
@@ -59,6 +65,9 @@ export function CharacterTab(props: CharacterTabProps) {
     handleSkillAttributeChange, expandedSkillId, setExpandedSkillId,
     skillResults,
     sheetId,
+    localMode,
+    localSkills,
+    onLocalSkillsChange,
   } = props
   const { canEditCharacter, canEditResources, canEditSkills } = permissions
 
@@ -429,6 +438,9 @@ export function CharacterTab(props: CharacterTabProps) {
         modifierResults={modifierResults}
         templateAttributes={sheet.template.attributes}
         allProfiles={allProfiles}
+        localMode={localMode}
+        localSkills={localSkills}
+        onLocalSkillsChange={onLocalSkillsChange}
       />
 
     </div>

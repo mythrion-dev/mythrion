@@ -13,6 +13,12 @@ interface Props {
   modifierResults: Record<string, number | null>
   templateAttributes: { id: string; key: string; name: string }[]
   allProfiles: SkillModifierProfile[]
+  /** When true, all CRUD operations operate on localSkills state instead of API calls. */
+  localMode?: boolean
+  /** Skills state used in localMode (required when localMode is true). */
+  localSkills?: ProfessionalSkill[]
+  /** Called when skills change in localMode. */
+  onLocalSkillsChange?: (skills: ProfessionalSkill[]) => void
 }
 
 // ── Helpers ──
@@ -66,6 +72,9 @@ export function ProfessionalSkillsSection({
   modifierResults,
   templateAttributes,
   allProfiles,
+  localMode = false,
+  localSkills,
+  onLocalSkillsChange,
 }: Props) {
   const canEdit = permissions.canEditProfessionalSkills
   const [skills, setSkills] = useState<ProfessionalSkill[]>([])
@@ -83,8 +92,13 @@ export function ProfessionalSkillsSection({
   // ── Fetch skills on mount ──
 
   useEffect(() => {
+    if (localMode) {
+      setSkills(localSkills ?? [])
+      setLoading(false)
+      return
+    }
     fetchSkills()
-  }, [sheetId])
+  }, [sheetId, localMode, localSkills])
 
   async function fetchSkills() {
     setLoading(true)
@@ -112,6 +126,34 @@ export function ProfessionalSkillsSection({
   // On failure, refetches skills to restore server state.
 
   async function handleProfileChange(skillId: string, profileId: string, optionId: string | null) {
+    if (localMode) {
+      const updated = skills.map(s => {
+        if (s.id !== skillId) return s
+        const existing = s.profileValues ?? []
+        const idx = existing.findIndex(pv => pv.profileId === profileId)
+        const profile = allProfiles.find(p => p.id === profileId)
+        const option = profile?.options.find(o => o.id === optionId) ?? null
+        const newPv = idx >= 0
+          ? { ...existing[idx], optionId, option: option ? { id: option.id, label: option.label, value: option.value } : null }
+          : {
+              id: `local_${profileId}`,
+              profileId,
+              optionId,
+              profile: { id: profileId, name: profile?.name ?? '' },
+              option: option ? { id: option.id, label: option.label, value: option.value } : null,
+            }
+        return {
+          ...s,
+          profileValues: idx >= 0
+            ? existing.map((pv, i) => i === idx ? newPv : pv)
+            : [...existing, newPv],
+        }
+      })
+      setSkills(updated)
+      onLocalSkillsChange?.(updated)
+      return
+    }
+
     // Optimistic update: update profileValues in local state
     const prevSkills = skills
     setSkills(prev =>
@@ -173,6 +215,37 @@ export function ProfessionalSkillsSection({
     if (!createName.trim()) return
     setSaving(true)
     setError(null)
+
+    if (localMode) {
+      const profileValues = Object.entries(createProfileSelections)
+        .filter(([, optionId]) => optionId !== null && optionId !== '')
+        .map(([profileId, optionId]) => {
+          const profile = allProfiles.find(p => p.id === profileId)
+          const option = profile?.options.find(o => o.id === optionId) ?? null
+          return {
+            id: `local_pv_${Date.now()}_${profileId}`,
+            profileId,
+            optionId,
+            profile: { id: profileId, name: profile?.name ?? '' },
+            option: option ? { id: option.id, label: option.label, value: option.value } : null,
+          }
+        })
+      const newSkill: ProfessionalSkill = {
+        id: `local_skill_${Date.now()}`,
+        name: createName.trim(),
+        attributeId: createAttributeId || null,
+        attribute: templateAttributes.find(a => a.id === createAttributeId) ?? null,
+        order: skills.length,
+        profileValues,
+      }
+      const updated = [...skills, newSkill]
+      setSkills(updated)
+      onLocalSkillsChange?.(updated)
+      setShowCreateModal(false)
+      setSaving(false)
+      return
+    }
+
     try {
       const skill = await api.post<ProfessionalSkill>(`/character-sheets/${sheetId}/professional-skills`, {
         name: createName.trim(),
@@ -214,6 +287,23 @@ export function ProfessionalSkillsSection({
   async function handleUpdate(skillId: string) {
     if (!editName.trim()) return
     setError(null)
+
+    if (localMode) {
+      const updated = skills.map(s => {
+        if (s.id !== skillId) return s
+        return {
+          ...s,
+          name: editName.trim(),
+          attributeId: editAttributeId || null,
+          attribute: templateAttributes.find(a => a.id === editAttributeId) ?? null,
+        }
+      })
+      setSkills(updated)
+      onLocalSkillsChange?.(updated)
+      setEditingId(null)
+      return
+    }
+
     try {
       const updated = await api.patch<ProfessionalSkill>(`/character-sheets/${sheetId}/professional-skills/${skillId}`, {
         name: editName.trim(),
@@ -234,6 +324,12 @@ export function ProfessionalSkillsSection({
   // ── Delete ──
 
   async function handleDelete(skillId: string) {
+    if (localMode) {
+      const updated = skills.filter(s => s.id !== skillId)
+      setSkills(updated)
+      onLocalSkillsChange?.(updated)
+      return
+    }
     try {
       await api.delete(`/character-sheets/${sheetId}/professional-skills/${skillId}`)
       setSkills(p => p.filter(s => s.id !== skillId))
