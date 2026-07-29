@@ -211,7 +211,7 @@ export default function TemplateDetailPage() {
         })),
         attributeModifierFormula: editAttrModifierFormula || null,
         skillFormula: editSkillFormula || null,
-        attrModifiersEnabled: editAttrModifiersEnabled,
+        attributeModifiersEnabled: editAttrModifiersEnabled,
         isPublic: editIsPublic,
       }
 
@@ -222,7 +222,7 @@ export default function TemplateDetailPage() {
       }))
 
       if (editFeatureSkills) {
-        payload.templateSkills = editSkills.map(s => ({
+        payload.skills = editSkills.map(s => ({
           name: s.name,
           description: s.description || null,
           attributeId: s.attributeId || null,
