@@ -13,6 +13,7 @@ import { TemplateService } from './template.service.js'
 import { CreateTemplateDto } from './dto/create-template.dto.js'
 import { UpdateTemplateDto } from './dto/update-template.dto.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
+import { SubscriptionGuard } from '../auth/subscription.guard.js'
 import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
 
 /**
@@ -26,8 +27,10 @@ export class StandaloneTemplateController {
 
   /**
    * POST /templates — Create a standalone template owned by the user
+   * Requires an active subscription (free tier cannot create templates).
    */
   @Post()
+  @UseGuards(SubscriptionGuard)
   create(
     @Req() req: AuthenticatedRequest,
     @Body() dto: CreateTemplateDto,

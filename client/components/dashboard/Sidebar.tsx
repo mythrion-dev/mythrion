@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
+import { useSubscription } from '@/lib/subscription-context'
 
 function getInitials(name: string | null): string {
   if (!name) return '?'
@@ -18,6 +19,7 @@ export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, logout } = useAuth()
+  const { subscription, hasActiveSubscription } = useSubscription()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const searchParams = useSearchParams()
@@ -189,11 +191,21 @@ export function Sidebar() {
               <p className="text-sm font-medium text-foreground truncate">
                 {user?.displayName ?? 'User'}
               </p>
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <p className="text-xs text-muted truncate">{user?.email}</p>
                 {user?.isAdmin && (
                   <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
                     Admin
+                  </span>
+                )}
+                {!user?.isAdmin && hasActiveSubscription && subscription?.plan?.name && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                    {subscription.plan.name}
+                  </span>
+                )}
+                {!user?.isAdmin && !hasActiveSubscription && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-muted text-muted-foreground border border-border shrink-0">
+                    Free
                   </span>
                 )}
               </div>
