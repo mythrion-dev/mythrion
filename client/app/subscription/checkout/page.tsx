@@ -84,8 +84,10 @@ function CheckoutContent() {
   const [payerDocument, setPayerDocument] = useState('')
   const [formErrors, setFormErrors] = useState<{ name?: string; document?: string; card?: string }>({})
 
-  // State: 'form' | 'tokenizing' | 'creating' | 'redirecting' | 'success' | 'error'
-  const [state, setState] = useState<'form' | 'tokenizing' | 'creating' | 'redirecting' | 'success' | 'error'>('form')
+  // State: 'form' | 'creating' | 'redirecting' | 'success' | 'error'
+  // Note: 'tokenizing' is intentionally not a state — we don't call setState()
+  // before createCardToken() because that would unmount MP iframe fields mid-tokenization.
+  const [state, setState] = useState<'form' | 'creating' | 'redirecting' | 'success' | 'error'>('form')
   const [errorMessage, setErrorMessage] = useState('')
 
   const planId = searchParams.get('planId')
@@ -177,7 +179,9 @@ function CheckoutContent() {
 
     if (mpPublicKey) {
       // Step 1: Tokenize the card
-      setState('tokenizing')
+      // IMPORTANT: Do NOT call setState() before createCardToken() — doing so would
+      // unmount the MP iframe fields (via the loading-screen render), which corrupts
+      // the in-flight tokenization. Tokenize first, only then set state.
       try {
         const cardToken = await createCardToken({
           cardholderName: payerName.trim(),
@@ -191,7 +195,7 @@ function CheckoutContent() {
 
         // Step 2: Create subscription with the card token
         setState('creating')
-        const result = await createSubscription(
+        await createSubscription(
           planId,
           (cardToken as any).id,
           payerName.trim(),
@@ -201,8 +205,17 @@ function CheckoutContent() {
         setState('success')
         router.push('/subscription/success')
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Falha ao processar pagamento. Tente novamente.'
-        console.error('[checkout] Error:', message)
+        // Log the FULL error to debug what MP actually throws
+        console.error('[checkout] Full error:', err)
+        const message =
+          err instanceof Error
+            ? err.message
+            : typeof err === 'string'
+              ? err
+              : err && typeof err === 'object' && 'message' in (err as any)
+                ? (err as any).message
+                : 'Falha ao processar pagamento. Tente novamente.'
+        console.error('[checkout] Error message:', message)
         setState('error')
         setErrorMessage(message)
       }
@@ -225,21 +238,26 @@ function CheckoutContent() {
           router.push('/subscription/success')
         }
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Falha ao criar assinatura. Tente novamente.'
-        console.error('[checkout] Error:', message)
+        // Log the FULL error to debug
+        console.error('[checkout] Full error:', err)
+        const message =
+          err instanceof Error
+            ? err.message
+            : typeof err === 'string'
+              ? err
+              : err && typeof err === 'object' && 'message' in (err as any)
+                ? (err as any).message
+                : 'Falha ao criar assinatura. Tente novamente.'
+        console.error('[checkout] Error message:', message)
         setState('error')
         setErrorMessage(message)
       }
     }
   }, [planId, plan, payerName, payerDocument, validate, router, mpPublicKey])
 
-  // ----- Tokenizing / Creating / Redirecting states -----
-  if (state === 'tokenizing' || state === 'creating' || state === 'redirecting') {
+  // ----- Creating / Redirecting states -----
+  if (state === 'creating' || state === 'redirecting') {
     const messages: Record<string, { title: string; desc: string }> = {
-      tokenizing: {
-        title: 'Validando cartão...',
-        desc: 'Aguarde enquanto validamos os dados do seu cartão de forma segura.',
-      },
       creating: {
         title: 'Preparando assinatura...',
         desc: 'Aguarde enquanto configuramos sua assinatura.',
@@ -249,7 +267,7 @@ function CheckoutContent() {
         desc: 'Você será redirecionado para o ambiente seguro do Mercado Pago para autorizar o pagamento.',
       },
     }
-    const msg = messages[state] ?? messages.creating
+    const msg = messages[state]!
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-screen bg-background bg-pattern">
         <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
