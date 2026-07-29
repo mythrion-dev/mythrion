@@ -95,7 +95,7 @@ export function Sidebar() {
       ),
     },
     {
-      href: '/community/adventures',
+      href: '/dashboard/explore-campaigns',
       label: 'Explore Campaigns',
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -104,7 +104,7 @@ export function Sidebar() {
       ),
     },
     {
-      href: '/community/templates',
+      href: '/dashboard/public-templates',
       label: 'Public Templates',
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
