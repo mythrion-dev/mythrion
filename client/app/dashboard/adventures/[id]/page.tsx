@@ -635,10 +635,12 @@ export default function AdventureDetailPage() {
             </div>
           )}
         </div>)}
-        {activeTab === 'templates' && (
+        {activeTab === 'templates' && (() => {
+          const hasCampaignTemplate = templateSource !== null
+          return (
           <div className="space-y-4">
-            {/* State A (no template) + State B (attached): show TemplateAttachmentPanel */}
-            {(templateSource === null || templateSource === 'attached') && (
+            {/* CASE 1 (no template) + CASE 3 (attached): show TemplateAttachmentPanel */}
+            {(!hasCampaignTemplate || templateSource === 'attached') && (
               <>
                 {snapshotFetching ? (
                   <div className="card !p-4">
@@ -671,8 +673,8 @@ export default function AdventureDetailPage() {
                 )}
               </>
             )}
-            {/* State A (no template) + State C (campaign-owned): show TemplatesSection */}
-            {(templateSource === null || templateSource === 'campaign') && (
+            {/* CASE 1 (no template) + CASE 2 (campaign-owned): show TemplatesSection */}
+            {(!hasCampaignTemplate || templateSource === 'campaign') && (
               <TemplatesSection templates={templates} isGM={isGM} showNewTemplate={showNewTemplate} hideCreateButton={templateSource === 'campaign'} editingTemplateId={editingTemplateId}
                 newTemplateName={newTemplateName} newTemplateDescription={newTemplateDescription} newTemplateAttrs={newTemplateAttrs} newAttrModifierFormula={newAttrModifierFormula} newSkillFormula={newSkillFormula} newTemplateFields={newTemplateFields} templateError={templateError} templateCreating={templateCreating}
                 editTemplateName={editTemplateName} editTemplateDescription={editTemplateDescription} editTemplateAttrs={editTemplateAttrs} editAttrModifierFormula={editAttrModifierFormula} editSkillFormula={editSkillFormula} editingTemplateError={editingTemplateError} templateSaving={templateSaving}
@@ -742,7 +744,8 @@ export default function AdventureDetailPage() {
               />
             )}
           </div>
-        )}
+          )
+        })()}
         {activeTab === 'books' && (
           <BookListPanel adventureId={id} isGM={isGM} onSelectBook={setSelectedBookId} />
         )}

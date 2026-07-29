@@ -5,7 +5,7 @@ jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }))
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals'
 import { Test } from '@nestjs/testing'
-import { NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common'
+import { NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common'
 import { DbNull } from '@prisma/client/runtime/client'
 import { TemplateService } from './template.service'
 import { PrismaService } from '../prisma.service'
@@ -1488,7 +1488,7 @@ describe('TemplateService', () => {
       expect(prisma.template.findUnique).not.toHaveBeenCalled()
     })
 
-    it('throws BadRequestException when a template is already attached', async () => {
+    it('throws ConflictException when a template is already attached', async () => {
       prisma.adventure.findUnique.mockResolvedValue({
         originalTemplateId: 'existing-tpl',
         templateSnapshot: { name: 'Existing Snapshot' },
@@ -1496,7 +1496,7 @@ describe('TemplateService', () => {
 
       await expect(
         service.attachToAdventure('new-tpl', adventureId, userId),
-      ).rejects.toThrow(BadRequestException)
+      ).rejects.toThrow(ConflictException)
       expect(prisma.template.findUnique).not.toHaveBeenCalled()
       expect(prisma.adventure.update).not.toHaveBeenCalled()
     })

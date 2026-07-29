@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException, ConflictException, Logger } from '@nestjs/common'
+import { Injectable, NotFoundException, ForbiddenException, ConflictException, Logger } from '@nestjs/common'
 import { PrismaService } from '../prisma.service.js'
 import { DbNull } from '@prisma/client/runtime/client'
 import { MembershipService } from '../membership/membership.service.js'
@@ -1611,7 +1611,7 @@ export class TemplateService {
       select: { originalTemplateId: true, templateSnapshot: true },
     })
     if (existing?.originalTemplateId || existing?.templateSnapshot) {
-      throw new BadRequestException(
+      throw new ConflictException(
         'This campaign already has an attached template. Use the replace endpoint to change it.',
       )
     }
