@@ -51,12 +51,14 @@ export async function createSubscription(
   cardTokenId?: string,
   payerName?: string,
   payerDocument?: string,
+  deviceId?: string,
 ): Promise<CreateSubscriptionResponse> {
   return api.post<CreateSubscriptionResponse>('/subscriptions', {
     planId,
     ...(cardTokenId ? { cardTokenId } : {}),
     ...(payerName ? { payerName } : {}),
     ...(payerDocument ? { payerDocument } : {}),
+    ...(deviceId ? { deviceId } : {}),
   })
 }
 

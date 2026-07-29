@@ -90,6 +90,11 @@ function CheckoutContent() {
   const [state, setState] = useState<'form' | 'creating' | 'redirecting' | 'success' | 'error'>('form')
   const [errorMessage, setErrorMessage] = useState('')
 
+  // Device ID (MP_DEVICE_SESSION_ID) — collected by MP's security.js which is
+  // loaded automatically by the SDK. We forward this to the backend so it can
+  // pass it as X-meli-session-id when calling MP's API, improving approval rates.
+  const [deviceId, setDeviceId] = useState<string | undefined>(undefined)
+
   const planId = searchParams.get('planId')
   const mpPublicKey = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY
 
@@ -109,6 +114,25 @@ function CheckoutContent() {
     }
     setMpInitDone(true)
   }, [mpPublicKey, mpInitDone])
+
+  // ----- Collect MP Device ID for approval rate optimization -----
+  useEffect(() => {
+    if (!mpReady) return
+    // The MP SDK's security.js creates a global variable MP_DEVICE_SESSION_ID.
+    // It may take a moment after SDK init, so poll briefly.
+    let attempts = 0
+    const interval = setInterval(() => {
+      const id = (window as any).MP_DEVICE_SESSION_ID
+      if (id) {
+        setDeviceId(id)
+        clearInterval(interval)
+      } else if (attempts > 10) {
+        clearInterval(interval) // give up after ~5s
+      }
+      attempts++
+    }, 500)
+    return () => clearInterval(interval)
+  }, [mpReady])
 
   // ----- CPF mask -----
   const formatCPF = (value: string) => {
@@ -200,6 +224,7 @@ function CheckoutContent() {
           (cardToken as any).id,
           payerName.trim(),
           payerDocument.replace(/\D/g, ''),
+          deviceId,
         )
 
         setState('success')
@@ -228,6 +253,7 @@ function CheckoutContent() {
           undefined,
           payerName.trim(),
           payerDocument.replace(/\D/g, ''),
+          deviceId,
         )
 
         setState('redirecting')

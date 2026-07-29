@@ -58,15 +58,19 @@ export class MercadoPagoService {
   /**
    * Create a Mercado Pago subscription (preapproval) for a given plan.
    *
-   * IMPORTANT: We do NOT pass preapproval_plan_id — the existing MP plans have
-   * payment_types with empty objects, which forces card_token_id to be required.
-   * Instead, we pass auto_recurring directly, which works identically for the
-   * redirect-based Checkout Pro flow and bypasses any plan misconfiguration.
+   * When using a card token (cardTokenId provided), we pass the
+   * preapproval_plan_id to link the subscription to an existing MP plan
+   * so it appears in the MP dashboard under that plan. The plan's
+   * payment_methods_allowed: { payment_types: [{}] } is the correct MP
+   * configuration (it means "allow all payment types") — NOT a misconfiguration.
+   *
+   * When no card token is provided (redirect-based Checkout Pro flow),
+   * we create a standalone subscription without a plan association.
    *
    * Returns the subscription object with an `init_point` URL.
    */
   async createSubscription(
-    planId: string,
+    mpPlanId: string,
     payerEmail: string,
     backUrl: string,
     planPrice: number,
@@ -75,6 +79,8 @@ export class MercadoPagoService {
     cardTokenId?: string,
     payerName?: string,
     payerDocument?: string,
+    externalReference?: string,
+    deviceId?: string,
   ): Promise<MercadoPagoSubscriptionResponse> {
     try {
       // In test environment (TEST- access token), MP API test-user emails
@@ -94,12 +100,16 @@ export class MercadoPagoService {
       }
 
       if (cardTokenId) {
-        // Card token flow: use auto_recurring + card_token_id + status: "authorized"
-        // We use auto_recurring (same as redirect flow) instead of preapproval_plan_id
-        // because the existing MP plans have misconfigured payment_types that cause
-        // card_token_id errors. By defining auto_recurring inline we bypass the plan
-        // entirely while still triggering 3DS during tokenization and keeping full
-        // payer context — avoiding cc_rejected_high_risk.
+        // Card token flow: pass preapproval_plan_id + card_token_id + status: "authorized"
+        // The preapproval_plan_id links the subscription to the MP plan so it appears
+        // in the MP dashboard under that plan's subscriptions.
+        body.preapproval_plan_id = mpPlanId
+        if (externalReference) {
+          body.external_reference = externalReference
+        }
+
+        // We still pass auto_recurring inline — this allows us to override the plan's
+        // values (e.g., amount) while still maintaining the plan association.
         const frequency = planSlug === 'annual' ? 12 : 1
         body.auto_recurring = {
           frequency,
@@ -138,12 +148,20 @@ export class MercadoPagoService {
       const jsonBody = JSON.stringify(body)
       this.logger.log(`Creating MP preapproval with body: ${jsonBody}`)
 
+      const headers: Record<string, string> = {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+      }
+
+      // Forward the device ID to MP for fraud prevention / approval rate optimization
+      if (deviceId) {
+        headers['X-meli-session-id'] = deviceId
+        this.logger.log(`Forwarding device ID to MP: ${deviceId.slice(0, 20)}...`)
+      }
+
       const response = await fetch(`${this.mpApiBase}/preapproval`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: jsonBody,
       })
 

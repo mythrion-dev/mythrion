@@ -62,8 +62,12 @@ async function createPlan(config: PlanConfig) {
   console.log(`\nCreating "${config.name}" (${config.slug})...`)
 
   // Mercado Pago PreApprovalPlan.create expects a body with:
-  //   reason, auto_recurring, back_url, status
+  //   reason, auto_recurring, payment_methods_allowed, back_url, status
   // See: https://www.mercadopago.com.br/developers/en/reference/subscriptions/_preapproval_plan/post
+  //
+  // NOTE: payment_methods_allowed with empty arrays { payment_types: [{}] }
+  // is the correct MP configuration that allows ALL payment types — not a
+  // misconfiguration. The empty object means "no filter / allow all."
   try {
     const response = await planApi.create({
       body: {
@@ -74,6 +78,11 @@ async function createPlan(config: PlanConfig) {
           transaction_amount: config.price / 100,  // MP expects reais, not cents
           currency_id: config.currencyId,
         },
+        payment_methods_allowed: {
+          payment_types: [{}],
+          payment_methods: [{}],
+        },
+        back_url: 'https://mythrion-dev.vercel.app/subscription/success',
         status: 'active',
       },
     })

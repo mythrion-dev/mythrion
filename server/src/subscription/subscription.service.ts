@@ -76,6 +76,7 @@ export class SubscriptionService {
     cardTokenId?: string,
     payerName?: string,
     payerDocument?: string,
+    deviceId?: string,
   ): Promise<CreateSubscriptionResult> {
     // Check for existing active subscription
     const existing = await this.prisma.userSubscription.findUnique({
@@ -105,8 +106,8 @@ export class SubscriptionService {
     const backUrl = `${frontendUrl}/subscription/success`
 
     // Create subscription in Mercado Pago
-    // We pass the plan price/slug/name so MP can build auto_recurring directly
-    // (bypassing preapproval_plan_id which has misconfigured payment_types)
+    // We pass preapproval_plan_id (from plan.mpPlanId) to link the subscription
+    // to the MP plan, and external_reference with the user ID for traceability.
     const mpSubscription = await this.mp.createSubscription(
       plan.mpPlanId,
       email,
@@ -117,6 +118,8 @@ export class SubscriptionService {
       cardTokenId,
       payerName,
       payerDocument,
+      userId, // external_reference — allows looking up by user in MP dashboard
+      deviceId, // X-meli-session-id — improves approval rates
     )
 
     // Determine the effective status from MP's response.
