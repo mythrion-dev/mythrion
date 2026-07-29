@@ -118,4 +118,22 @@ describe('TemplateCard', () => {
     // The count text '0' should not appear (only rendered when > 0)
     expect(screen.queryByText(/^0$/)).toBeNull()
   })
+
+  // ── Preview link ──
+
+  it('shows Preview link for authenticated users', () => {
+    render(<TemplateCard {...defaultProps} />)
+    expect(screen.getByText('Preview')).toBeDefined()
+  })
+
+  it('shows Preview link for unauthenticated users', () => {
+    render(<TemplateCard {...defaultProps} isAuthenticated={false} />)
+    expect(screen.getByText('Preview')).toBeDefined()
+  })
+
+  it('Preview link points to /community/templates/{id}/preview', () => {
+    render(<TemplateCard {...defaultProps} id="tpl-42" />)
+    const previewLink = screen.getByText('Preview')
+    expect(previewLink.getAttribute('href')).toBe('/community/templates/tpl-42/preview')
+  })
 })
