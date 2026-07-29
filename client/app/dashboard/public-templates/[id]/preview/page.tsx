@@ -14,8 +14,16 @@ import {
 } from '@/components/character-sheet'
 import { previewReducer } from '@/lib/preview-reducer'
 import { buildPreviewSheet } from '@/lib/build-preview-sheet'
-import { computeModifiers, computeSkills, computeAC, computeResistances } from '@/lib/preview-computations'
-import { buildAdapter } from '@/lib/preview-adapter'
+import {
+  computeModifiers as engineComputeModifiers,
+  computeSkills as engineComputeSkills,
+  computeAC as engineComputeAC,
+  computeSummonModifiers as engineComputeSummonModifiers,
+  computeSummonAC as engineComputeSummonAC,
+  type FormulaEvaluator,
+} from '@/lib/character-sheet-engine'
+import { computeResistances } from '@/lib/preview-computations'
+import { buildAdapter, buildPreviewSheetAsCharacterSheet } from '@/lib/preview-adapter'
 import type { PreviewTemplateSnapshot, PreviewSheetState, SkillResult, AcResultMap } from '@/lib/preview-types'
 import type { CalculatedResistance } from '@/lib/preview-computations'
 import type {
@@ -180,15 +188,30 @@ export default function TemplatePreviewPage() {
     return () => { cancelled = true }
   }, [templateId])
 
-  // ── Refs for latest computed results ──
+  // ── Formula evaluator for the shared engine ──
 
-  const modifierResultsRef = useRef(modifierResults)
-  modifierResultsRef.current = modifierResults
+  const evaluateFormula = useCallback<FormulaEvaluator>(async (formula, variables) => {
+    const res = await fetch(`${API_URL}/public/formula/evaluate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ formula, variables }),
+    })
+    if (!res.ok) throw new Error('Formula evaluation failed')
+    const data = await res.json()
+    return data.result as number
+  }, [])
+
+  // ── Build CharacterSheet once (shared by engine and adapter) ──
+
+  const previewSheet = useMemo(() => {
+    if (!state) return null
+    return buildPreviewSheetAsCharacterSheet(state)
+  }, [state])
 
   // ── Debounced computation effect ──
 
   useEffect(() => {
-    if (!state) return
+    if (!state || !previewSheet) return
 
     if (computeTimerRef.current) {
       clearTimeout(computeTimerRef.current)
@@ -199,21 +222,72 @@ export default function TemplatePreviewPage() {
       if (!s) return
 
       try {
-        // Compute modifiers
-        const mods = await computeModifiers(s)
-        setModifierResults(mods)
+        // Compute modifiers (from shared engine)
+        const mods = await engineComputeModifiers(previewSheet, evaluateFormula)
+        const modsNoNull: Record<string, number> = Object.fromEntries(
+          Object.entries(mods).map(([k, v]) => [k, v ?? 0]),
+        )
+        setModifierResults(modsNoNull)
 
-        // Compute skills (depends on modifiers)
-        const skills = await computeSkills(s, mods)
-        setSkillResults(skills)
+        // Compute skills (from shared engine, depends on modifiers)
+        const skills = await engineComputeSkills(
+          previewSheet,
+          mods,
+          s.profileSelections,
+          s.othersValues,
+          evaluateFormula,
+        )
 
-        // Compute AC (depends on modifiers) — synchronous
-        const ac = computeAC(s, mods)
+        // Build SkillResult map from flat skills results + state
+        const skillResultsMap: Record<string, SkillResult> = {}
+        for (const skill of s.template.templateSkills ?? []) {
+          const total = skills[skill.id]
+          const selectedAttributeId = s.skillAttributes[skill.id] ?? null
+          const selectedAttribute = selectedAttributeId
+            ? s.template.attributes.find(a => a.id === selectedAttributeId)
+            : null
+          skillResultsMap[skill.id] = {
+            total: total ?? 0,
+            name: skill.name,
+            selectedAttribute: selectedAttributeId,
+            selectedAttributeName: selectedAttribute?.name ?? null,
+            attributeValue: selectedAttributeId ? (modsNoNull[selectedAttributeId] ?? null) : null,
+            selectedProfileValue: null,
+          }
+        }
+        setSkillResults(skillResultsMap)
+
+        // Compute AC (from shared engine, depends on modifiers) — synchronous
+        const ac = engineComputeAC(previewSheet, mods)
         setAcResults(ac)
 
-        // Compute resistances — synchronous
-        const res = computeResistances(s, mods)
+        // Compute resistances (stays from preview-computations) — synchronous
+        const res = computeResistances(s, modsNoNull)
         setResistances(res)
+
+        // Compute summon modifiers & AC (from shared engine)
+        const newSummonModResults: Record<string, Record<string, number | null>> = {}
+        const newSummonAcResults: Record<string, number | null> = {}
+        for (const ability of s.abilities ?? []) {
+          if (ability.type === 'SUMMON') {
+            if (ability.summonAttributes?.length) {
+              const sm = await engineComputeSummonModifiers(ability, previewSheet, evaluateFormula)
+              if (Object.keys(sm).length > 0) {
+                newSummonModResults[ability.id] = sm
+              }
+            }
+            const sac = engineComputeSummonAC(ability)
+            if (sac !== null) {
+              newSummonAcResults[ability.id] = sac
+            }
+          }
+        }
+        if (Object.keys(newSummonModResults).length > 0) {
+          setSummonModifierResults(prev => ({ ...prev, ...newSummonModResults }))
+        }
+        if (Object.keys(newSummonAcResults).length > 0) {
+          setSummonAcResults(prev => ({ ...prev, ...newSummonAcResults }))
+        }
       } catch (err) {
         console.error('[Preview] Computation error:', err)
       }
@@ -224,7 +298,7 @@ export default function TemplatePreviewPage() {
         clearTimeout(computeTimerRef.current)
       }
     }
-  }, [state])
+  }, [state, previewSheet, evaluateFormula])
 
   // ── Adapter: transform state + computed results into tab props ──
 

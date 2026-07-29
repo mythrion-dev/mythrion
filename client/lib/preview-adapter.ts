@@ -120,21 +120,14 @@ export interface PreviewAdapterResult {
   }[]
 }
 
-// ── Main adapter function ──
+// ── Build CharacterSheet from PreviewSheetState ──
 
-export function buildAdapter(
-  state: PreviewSheetState,
-  modifierResults: Record<string, number>,
-  skillResults: Record<string, SkillResult>,
-  acResults: AcResultMap,
-  resistances: CalculatedResistance[],
-  dispatch: React.Dispatch<any>,
-): PreviewAdapterResult {
-  // Reset synthetic ID counter for each full rebuild
-  _pid = 0
-
-  // ── Build synthetic CharacterSheet ──
-
+/**
+ * Builds a synthetic CharacterSheet from the preview state.
+ * Extracted as a standalone function so both the adapter layer
+ * and the computation engine can share one source of truth.
+ */
+export function buildPreviewSheetAsCharacterSheet(state: PreviewSheetState): CharacterSheet {
   const values: SheetAttribute[] = state.template.attributes.map(attr => ({
     id: pid('val'),
     attributeId: attr.id,
@@ -238,7 +231,7 @@ export function buildAdapter(
     resistances: state.template.resistances as CharacterSheet['template']['resistances'],
   }
 
-  const sheet: CharacterSheet = {
+  return {
     id: 'preview',
     characterName: state.characterName,
     playerName: state.playerName || null,
@@ -265,6 +258,24 @@ export function buildAdapter(
     adventureId: null,
     createdAt: new Date().toISOString(),
   }
+}
+
+// ── Main adapter function ──
+
+export function buildAdapter(
+  state: PreviewSheetState,
+  modifierResults: Record<string, number>,
+  skillResults: Record<string, SkillResult>,
+  acResults: AcResultMap,
+  resistances: CalculatedResistance[],
+  dispatch: React.Dispatch<any>,
+): PreviewAdapterResult {
+  // Reset synthetic ID counter for each full rebuild
+  _pid = 0
+
+  // ── Build synthetic CharacterSheet via standalone function ──
+
+  const sheet = buildPreviewSheetAsCharacterSheet(state)
 
   // ── Skill results as flat number | null map ──
 

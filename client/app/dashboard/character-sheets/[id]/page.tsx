@@ -9,6 +9,14 @@ import { StoryTab, CharacterTab, InventoryTab, PersonalAbilitiesTab, AbilitiesTa
 import { PageNav } from '@/lib/breadcrumb'
 import { PdfViewerSidebar } from '@/components/books/PdfViewerSidebar'
 import type { SkillModifierProfile, ArmorClassAttributeModifierDef, SectionEntry, SummonSkillData, Ability, AbilityLevel, InventoryItem, Story, CharacterSheet, Tab, AcResultMap, SheetPermissions } from '@/components/character-sheet/types'
+import {
+  computeModifiers as engineComputeModifiers,
+  computeSkills as engineComputeSkills,
+  computeAC as engineComputeAC,
+  computeSummonModifiers as engineComputeSummonModifiers,
+  computeSummonAC as engineComputeSummonAC,
+  type FormulaEvaluator,
+} from '@/lib/character-sheet-engine'
 
 
 export default function CharacterSheetDetailPage() {
@@ -29,6 +37,8 @@ export default function CharacterSheetDetailPage() {
   const [othersValues, setOthersValues] = useState<Record<string, number>>({})
   const othersValuesRef = useRef(othersValues)
   othersValuesRef.current = othersValues
+  const modifierResultsRef = useRef(modifierResults)
+  modifierResultsRef.current = modifierResults
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('character')
   const isOwner = sheet?.ownerId === user?.id || (sheet?.isNpc === true)
@@ -130,196 +140,36 @@ export default function CharacterSheetDetailPage() {
     return updated
   }, [sheet])
 
-  const computeSummonModifiers = useCallback(async (ability: Ability, sd: CharacterSheet) => {
-    const results: Record<string, number | null> = {}
-    const globalFormula = sd.template.attributeModifierFormula
-    if (!globalFormula?.trim() || !ability.summonAttributes?.length) return results
-    for (const sa of ability.summonAttributes) {
-      const attr = sd.template.attributes.find(a => a.id === sa.attributeId)
-      if (!attr) continue
-      try {
-        const vars: Record<string, number> = {}
-        ability.summonAttributes.forEach(a => {
-          const ta = sd.template.attributes.find(x => x.id === a.attributeId)
-          if (ta) { const v = parseFloat(a.value || '0'); vars[ta.key] = isNaN(v) ? 0 : v }
-        })
-        vars['value'] = parseFloat(sa.value || '0') || 0
-        const res = await api.post<{ result: number }>('/formula/evaluate', { formula: globalFormula, variables: vars })
-        results[attr.id] = res.result
-      } catch { results[attr.id] = null }
-    }
-    return results
+  const evaluateFormula = useCallback<FormulaEvaluator>(async (formula, variables) => {
+    const res = await api.post<{ result: number }>('/formula/evaluate', { formula, variables })
+    return res.result
   }, [])
+
+  const computeSummonModifiers = useCallback(async (ability: Ability, sd: CharacterSheet) => {
+    return engineComputeSummonModifiers(ability, sd, evaluateFormula)
+  }, [evaluateFormula])
 
   const computeSummonAC = useCallback((ability: Ability, _sd: CharacterSheet, _mods: Record<string, number | null>) => {
-    // Summon AC is now a single manual value — just parse it
-    const acv = ability.summonAcValues?.[0]
-    if (!acv) return null
-    const v = parseFloat(acv.value)
-    return isNaN(v) ? null : v
-  }, [])
-
-  const computeSkillFormula = useCallback(async (
-    sd: CharacterSheet,
-    attributeValues: Record<string, string>,
-    summonModifierResultsLocal: Record<string, number | null>,
-    fieldValuesLocal: { key: string; value: string }[],
-    skillFormulaRaw: string | undefined | null,
-    level: number | null | undefined,
-  ): Promise<Record<string, number>> => {
-    const results: Record<string, number> = {}
-    if (!skillFormulaRaw?.trim()) return results
-
-    // Compute modifier vars
-    const modifierVars: Record<string, number> = {}
-    const globalFormula = sd.template.attributeModifierFormula
-    if (globalFormula?.trim()) {
-      for (const attr of sd.template.attributes) {
-        try {
-          const modVars: Record<string, number> = {}
-          sd.template.attributes.forEach(a => {
-            const v = parseFloat(attributeValues[a.id] ?? '0')
-            modVars[a.key] = isNaN(v) ? 0 : v
-          })
-          modVars['value'] = parseFloat(attributeValues[attr.id] ?? '0') || 0
-          const mr = await api.post<{ result: number }>('/formula/evaluate', { formula: globalFormula, variables: modVars })
-          modifierVars[`${attr.key}_mod`] = mr.result
-        } catch { modifierVars[`${attr.key}_mod`] = 0 }
-      }
-    } else {
-      // Use provided summon modifier results directly
-      for (const attr of sd.template.attributes) {
-        modifierVars[`${attr.key}_mod`] = summonModifierResultsLocal[attr.id] ?? 0
-      }
-    }
-
-    let skillConfig: { useAttributeModifier?: boolean; customFieldKeys?: string[] } | null = null
-    try {
-      const parsed = JSON.parse(skillFormulaRaw)
-      if (parsed && typeof parsed === 'object' && typeof parsed.useAttributeModifier === 'boolean') {
-        skillConfig = parsed
-      }
-    } catch { /* not JSON */ }
-
-    const skillFormulaFn = async (variables: Record<string, number>) => {
-      const res = await api.post<{ result: number }>('/formula/evaluate', { formula: skillFormulaRaw!, variables })
-      return res.result
-    }
-
-    return { modifierVars, skillConfig: skillConfig as any, evaluateFn: skillFormulaFn } as any
+    return engineComputeSummonAC(ability)
   }, [])
 
   const computeAC = useCallback((sd: CharacterSheet, mods: Record<string, number | null>) => {
-    const acs = sd.template.armorClasses?.filter(ac => ac.enabled) ?? []
-    if (acs.length === 0) { setAcResults({}); return }
-    const selectedByModifierId = new Map(sd.acAttributeValues.map(v => [v.acAttributeModifierId, v.selectedAttributeId]))
-    const results: AcResultMap = {}
-    for (const ac of acs) {
-      let total = 0
-      const acFields = sd.acValues.filter(acv => ac.fields.some(f => f.id === acv.fieldId))
-      acFields.forEach(acv => {
-        const v = parseFloat(acv.value)
-        if (!isNaN(v)) total += v
-      })
-      const acMods = ac.attributeModifiers ?? []
-      for (const am of acMods) {
-        const effectiveAttributeId = am.allowPlayerSelection
-          ? (selectedByModifierId.get(am.id) ?? am.defaultAttributeId ?? am.attributeId)
-          : am.attributeId
-        const modResult = mods[effectiveAttributeId]
-        if (modResult !== null && modResult !== undefined && !isNaN(modResult)) {
-          total += Math.max(0, modResult)
-        }
-      }
-      results[ac.id] = { total, name: (ac as any).name ?? 'Armor Class' }
-    }
+    const results = engineComputeAC(sd, mods)
     setAcResults(results)
   }, [])
 
   const computeModifiers = useCallback(async (sd: CharacterSheet) => {
-    const results: Record<string, number | null> = {}
-    const modifiersEnabled = (sd.template as any).attributeModifiersEnabled !== false
-    const globalFormula = sd.template.attributeModifierFormula
-    if (!modifiersEnabled || !globalFormula?.trim()) { setModifierResults(results); return results }
-    for (const attr of sd.template.attributes) {
-      try {
-        const vars: Record<string, number> = {}
-        sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv => sv.attributeId === a.id)?.value || '0'); vars[a.key] = isNaN(v) ? 0 : v })
-        vars['value'] = parseFloat(sd.values.find(sv => sv.attributeId === attr.id)?.value || '0') || 0
-        const res = await api.post<{ result: number }>('/formula/evaluate', { formula: globalFormula, variables: vars })
-        results[attr.id] = res.result
-      } catch { results[attr.id] = null }
-    }
+    const results = await engineComputeModifiers(sd, evaluateFormula)
     setModifierResults(results)
     return results
-  }, [])
+  }, [evaluateFormula])
 
   const computeSkills = useCallback(async (sd: CharacterSheet, selections?: Record<string, Record<string, string | null>>, othersOverrides?: Record<string, number>) => {
-    const results: Record<string, number | null> = {}; const selMap = selections || profileSelectionsRef.current; const effOthers = othersOverrides ?? othersValuesRef.current
-    const modifierVars: Record<string, number> = {}
-    const globalFormula = sd.template.attributeModifierFormula
-    if (globalFormula?.trim()) {
-      for (const attr of sd.template.attributes) {
-        try {
-          const modVars: Record<string, number> = {}
-          sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv => sv.attributeId === a.id)?.value || '0'); modVars[a.key] = isNaN(v) ? 0 : v })
-          modVars['value'] = parseFloat(sd.values.find(sv => sv.attributeId === attr.id)?.value || '0') || 0
-          const mr = await api.post<{ result: number }>('/formula/evaluate', { formula: globalFormula, variables: modVars })
-          modifierVars[`${attr.key}_mod`] = mr.result
-        } catch { modifierVars[`${attr.key}_mod`] = 0 }
-      }
-    }
-    const skillFormulaRaw = sd.template.skillFormula?.trim()
-    if (!skillFormulaRaw) { setSkillResults({}); return }
-
-    let skillConfig: { useAttributeModifier?: boolean; customFieldKeys?: string[] } | null = null
-    try {
-      const parsed = JSON.parse(skillFormulaRaw)
-      if (parsed && typeof parsed === 'object' && typeof parsed.useAttributeModifier === 'boolean') {
-        skillConfig = parsed
-      }
-    } catch { /* not JSON */ }
-
-    for (const sv of sd.skillValues) {
-      try {
-        let finalResult = 0
-        if (skillConfig) {
-          if (skillConfig.useAttributeModifier) {
-            const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
-            if (selectedAttr) finalResult += modifierVars[`${selectedAttr.key}_mod`] ?? 0
-          }
-          const customKeys = skillConfig.customFieldKeys || []
-          for (const key of customKeys) {
-            const fv = sd.fieldValues.find(f => f.templateField.key === key)
-            if (fv) { const v = parseFloat(fv.value); if (!isNaN(v)) finalResult += v }
-          }
-        } else {
-          const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
-          const skillAttrValue = selectedAttr ? parseFloat(sd.values.find(sv2 => sv2.attributeId === selectedAttr.id)?.value || '0') : 0
-          const variables: Record<string, number> = { ...modifierVars }
-          variables['value'] = isNaN(skillAttrValue) ? 0 : skillAttrValue
-          if (selectedAttr) variables['value_mod'] = modifierVars[`${selectedAttr.key}_mod`] ?? 0
-          sd.template.attributes.forEach(a => { const v = parseFloat(sd.values.find(sv2 => sv2.attributeId === a.id)?.value || '0'); variables[a.key] = isNaN(v) ? 0 : v })
-          sd.fieldValues.forEach(fv => { const v = parseFloat(fv.value); variables[fv.templateField.key] = isNaN(v) ? 0 : v })
-          variables['level'] = sd.level ?? 1
-          const res = await api.post<{ result: number }>('/formula/evaluate', { formula: skillFormulaRaw, variables })
-          finalResult = res.result
-        }
-        finalResult += (effOthers[sv.skillId] ?? 0)
-        const skillSelections = selMap[sv.skillId] || {}
-        for (const profile of sd.template.skillModifierProfiles) {
-          const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
-          const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
-          if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(sv.skill.name)) continue
-          const selId = skillSelections[profile.id]
-          if (selId) { const opt = profile.options.find(o => o.id === selId); if (opt) finalResult += opt.value }
-          else { const stored = sd.skillProfileValues.find(spv => spv.skillId === sv.skillId && spv.profileId === profile.id); if (stored?.option?.value !== undefined) finalResult += stored.option.value }
-        }
-        results[sv.skillId] = finalResult
-      } catch { results[sv.skillId] = null }
-    }
+    const selMap = selections || profileSelectionsRef.current
+    const effOthers = othersOverrides ?? othersValuesRef.current
+    const results = await engineComputeSkills(sd, modifierResultsRef.current, selMap, effOthers, evaluateFormula)
     setSkillResults(results)
-  }, [])
+  }, [evaluateFormula])
 
   const fetchSheet = useCallback(async () => {
     try {
@@ -369,7 +219,7 @@ export default function CharacterSheetDetailPage() {
       } catch { /* no avatar */ }
     } catch (e: unknown) { if ((e as { statusCode?: number }).statusCode === 401 || (e as { statusCode?: number }).statusCode === 403) router.replace('/login') }
     finally { setFetching(false) }
-  }, [id, router, computeModifiers, computeSkills, computeAC, computeSummonModifiers, computeSummonAC])
+  }, [id, router, computeModifiers, computeSkills, computeAC, computeSummonModifiers, computeSummonAC, evaluateFormula])
 
   useEffect(() => { fetchSheet() }, [fetchSheet])
 
