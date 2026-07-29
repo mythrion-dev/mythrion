@@ -37,14 +37,14 @@ export function PreviewBanner({ templateName, templateId }: PreviewBannerProps) 
         {/* Right: Actions */}
         <div className="flex items-center gap-3 shrink-0">
           <Link
-            href={`/community/templates/${templateId}`}
+            href={`/dashboard/public-templates/${templateId}/preview`}
             className="btn-ghost text-xs !px-2.5 !py-1 text-amber-300/80 hover:text-amber-200"
             onClick={(e) => e.stopPropagation()}
           >
             Clone this Template
           </Link>
           <Link
-            href="/community/templates"
+            href="/dashboard/public-templates"
             className="btn-ghost text-xs !px-2.5 !py-1 text-amber-300/80 hover:text-amber-200"
           >
             <svg
