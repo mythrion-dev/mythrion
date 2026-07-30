@@ -114,7 +114,8 @@ describe('PagBankService', () => {
         { area: '11', country: '55', number: '999999999' },
       ])
       expect(reqBody.payment_method[0].type).toBe('CREDIT_CARD')
-      expect(reqBody.payment_method[0].card.encrypted).toBe('encrypted-card-data')
+      // payment_method only has security_code — card.encrypted goes in billing_info
+      expect(reqBody.payment_method[0].card.encrypted).toBeUndefined()
       expect(reqBody.payment_method[0].card.security_code).toBe(123)
       expect(reqBody.amount).toEqual({ value: 12000, currency: 'BRL' })
     })
@@ -251,7 +252,7 @@ describe('PagBankService', () => {
       ).rejects.toThrow(UnprocessableEntityException)
     })
 
-    it('uses card.token when cardTokenId is provided', async () => {
+    it('uses cardTokenId in billing_info.card.id', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(validResponse),
@@ -274,17 +275,17 @@ describe('PagBankService', () => {
         mockFetch.mock.calls[0][1]?.body as string,
       )
 
-      // payment_method should use card.token (not card.encrypted)
-      expect(reqBody.payment_method[0].card.token).toBe(
-        'CARD_8286F604-2D44-4B30-A80D-0E749A555566',
-      )
+      // payment_method should only have security_code — card token goes in billing_info
+      expect(reqBody.payment_method[0].card.token).toBeUndefined()
       expect(reqBody.payment_method[0].card.encrypted).toBeUndefined()
       expect(reqBody.payment_method[0].card.security_code).toBe(123)
 
-      // billing_info should still use card.encrypted for recurring payments
-      expect(reqBody.customer.billing_info[0].card.encrypted).toBe(
-        'encrypted-card-data',
+      // billing_info uses card.id for CARD_UUID pre-defined tokens
+      // (cardTokenId takes priority over cardToken — encrypted is not set)
+      expect(reqBody.customer.billing_info[0].card.id).toBe(
+        'CARD_8286F604-2D44-4B30-A80D-0E749A555566',
       )
+      expect(reqBody.customer.billing_info[0].card.encrypted).toBeUndefined()
     })
   })
 

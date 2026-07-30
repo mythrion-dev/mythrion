@@ -39,22 +39,31 @@ export class PagBankService implements PaymentGateway {
     params: CreateSubscriptionParams,
   ): Promise<CreateSubscriptionResult> {
     try {
-      // Build payment_method card object.
-      // PagBank Assinaturas expects a pre-tokenized card reference (card.token) in
-      // payment_method for the initial charge. The encrypted card string (card.encrypted)
-      // goes in billing_info to store for future recurring payments.
-      // Sandbox pre-defined tokens: https://developer.pagbank.com.br/reference/testar-sua-integracao-pagamentos-recorrentes
+      // Build the subscription request body.
+      //
+      // PagBank Assinaturas API expects at subscription creation:
+      //   - payment_method[0].card: only the security_code (CVV), because the card
+      //     was "previamente tokenizado" (pre-tokenized).
+      //   - customer.billing_info[0].card: the full card reference — either
+      //     card.encrypted (encrypted card string from PagSeguro JS SDK) or
+      //     card.id (CARD_UUID pre-defined sandbox token for test cards).
+      //
+      // Sandbox pre-defined tokens:
+      //   https://developer.pagbank.com.br/reference/testar-sua-integracao-pagamentos-recorrentes
+      //
+      // Docs quote: "no momento de criação da assinatura você irá informar apenas
+      // o código de segurança (security_code) do cartão, uma vez que ele foi
+      // previamente tokenizado. Os dados complementares do cartão serão fornecidos
+      // no objeto customer.billing_info."
+
       const paymentCard: Record<string, any> = {}
-      if (params.cardTokenId) {
-        // Pre-tokenized card reference — use card.token for payment_method
-        paymentCard.token = params.cardTokenId
-      } else if (params.cardToken) {
-        // Encrypted card string — use card.encrypted for payment_method (fallback)
-        paymentCard.encrypted = params.cardToken
-      }
       if (params.securityCode) {
         paymentCard.security_code = Number(params.securityCode)
       }
+      // NOTE: Do NOT send card.token or card.encrypted in payment_method —
+      // payment_method.card.token expects TOKE_UUID format, not CARD_UUID.
+      // Only security_code goes in payment_method; the card reference goes
+      // in billing_info below.
 
       const body: Record<string, any> = {
         reference_id: params.externalReference,
@@ -67,20 +76,31 @@ export class PagBankService implements PaymentGateway {
         }],
       }
 
-      // When encrypted card data is provided, attach it as billing_info for future
-      // recurring payments (PagBank stores this for subsequent charges).
-      if (params.cardToken) {
+      // Build billing_info card reference — used by PagBank for both the initial
+      // charge and subsequent recurring payments.
+      const billingCard: Record<string, any> = {}
+      if (params.cardTokenId) {
+        // Pre-defined sandbox card token (CARD_UUID format) — use as card.id
+        // in billing_info. CARD_UUID is a stored card reference (card ID),
+        // distinct from TOKE_UUID which is a one-time card token.
+        billingCard.id = params.cardTokenId
+      } else if (params.cardToken) {
+        // Encrypted card string from PagSeguro JS SDK — use as card.encrypted
+        billingCard.encrypted = params.cardToken
+      }
+
+      if (Object.keys(billingCard).length > 0) {
         body.customer.billing_info = [
           {
             type: 'CREDIT_CARD',
-            card: { encrypted: params.cardToken },
+            card: billingCard,
           },
         ]
       }
 
       const jsonBody = JSON.stringify(body)
       this.logger.log(
-        `Creating PagBank subscription with body: ${jsonBody.slice(0, 500)}...`,
+        `Creating PagBank subscription with payload: ${jsonBody}`,
       )
 
       const response = await fetch(`${this.apiBase}/subscriptions`, {
