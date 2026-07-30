@@ -121,6 +121,57 @@ describe('SubscriptionController', () => {
         undefined, // payerDocument
         undefined, // deviceId
         undefined, // cardTokenId
+        undefined, // installments
+      )
+    })
+
+    it('passes installments when provided (annual plan)', async () => {
+      subscriptionService.createSubscription.mockResolvedValue({
+        initPoint: '',
+        subscriptionId: 'sub-annual-install',
+      })
+
+      await controller.createSubscription(
+        { planId: 'annual', cardToken: 'encrypted-card', installments: 12 },
+        createRequest(),
+      )
+
+      expect(subscriptionService.createSubscription).toHaveBeenCalledWith(
+        'user-1',
+        'annual',
+        'user@test.com',
+        'encrypted-card',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        12,
+      )
+    })
+
+    it('omits installments for monthly plan', async () => {
+      subscriptionService.createSubscription.mockResolvedValue({
+        initPoint: '',
+        subscriptionId: 'sub-monthly',
+      })
+
+      await controller.createSubscription(
+        { planId: 'monthly', cardToken: 'encrypted-card' },
+        createRequest(),
+      )
+
+      expect(subscriptionService.createSubscription).toHaveBeenCalledWith(
+        'user-1',
+        'monthly',
+        'user@test.com',
+        'encrypted-card',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined, // installments
       )
     })
 
@@ -145,6 +196,7 @@ describe('SubscriptionController', () => {
         undefined,
         undefined,
         undefined, // cardTokenId
+        undefined, // installments
       )
     })
 

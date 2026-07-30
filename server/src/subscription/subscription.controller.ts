@@ -61,6 +61,7 @@ export class SubscriptionController {
       payerName?: string
       payerDocument?: string
       deviceId?: string
+      installments?: number
     },
     @Req() req: AuthenticatedRequest,
   ) {
@@ -77,6 +78,7 @@ export class SubscriptionController {
       body.payerDocument,
       body.deviceId,
       body.cardTokenId,
+      body.installments,
     )
   }
 

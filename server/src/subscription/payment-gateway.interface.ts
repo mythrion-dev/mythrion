@@ -17,6 +17,11 @@ export interface CreateSubscriptionParams {
   payerDocument?: string // CPF digits only
   externalReference?: string
   deviceId?: string
+  /** Number of installments for the initial charge (1-12).
+   *  Best-effort: PagBank subscriptions API does not document this field
+   *  on payment_method, but it may be forwarded to the acquirer.
+   *  Always 1 for monthly plans; configurable 1-12 for annual. */
+  installments?: number
 }
 
 export interface CreateSubscriptionResult {
