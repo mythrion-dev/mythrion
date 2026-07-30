@@ -334,7 +334,7 @@ export default function AdventureDetailPage() {
         userId: r.userId,
         userDisplayName: r.user.displayName ?? r.user.email,
         message: r.message,
-        status: r.status.toLowerCase() as 'pending' | 'accepted' | 'rejected',
+        status: 'pending' as const,
         createdAt: r.createdAt,
       })))
     } catch { /* ignore */ } finally { setJoinRequestsLoading(false) }
@@ -555,7 +555,7 @@ export default function AdventureDetailPage() {
     setProcessingIds(prev => [...prev, requestId])
     try {
       await api.patch(`/adventures/${id}/join-requests/${requestId}`, { action: 'accept' })
-      setJoinRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'accepted' as const } : r))
+      setJoinRequests(prev => prev.filter(r => r.id !== requestId))
     } catch { /* ignore */ } finally { setProcessingIds(prev => prev.filter(id => id !== requestId)) }
   }
 
@@ -563,7 +563,7 @@ export default function AdventureDetailPage() {
     setProcessingIds(prev => [...prev, requestId])
     try {
       await api.patch(`/adventures/${id}/join-requests/${requestId}`, { action: 'reject' })
-      setJoinRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'rejected' as const } : r))
+      setJoinRequests(prev => prev.filter(r => r.id !== requestId))
     } catch { /* ignore */ } finally { setProcessingIds(prev => prev.filter(id => id !== requestId)) }
   }
 

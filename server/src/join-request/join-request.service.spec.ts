@@ -184,7 +184,7 @@ describe('JoinRequestService', () => {
       expect(result).toEqual(requests)
       expect(prisma.joinRequest.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { adventureId: 'adv-1' },
+          where: { adventureId: 'adv-1', status: 'PENDING' },
         }),
       )
     })
