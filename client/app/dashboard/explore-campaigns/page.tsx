@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, Suspense, useRef } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
@@ -8,6 +8,8 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { CampaignCard } from '@/components/community/CampaignCard'
+import { SearchFilterSection } from '@/components/community/SearchFilterSection'
+import type { ActiveFilter, SortOption } from '@/components/community/SearchFilterSection'
 
 interface Adventure {
   id: string
@@ -32,6 +34,24 @@ interface AdventuresResponse {
   totalPages: number
 }
 
+const SORT_OPTIONS: SortOption[] = [
+  { id: 'popular', label: 'Most Popular' },
+  { id: 'recent', label: 'Recently Published' },
+  { id: 'players', label: 'Most Players' },
+  { id: 'newest', label: 'Newest' },
+  { id: 'alpha', label: 'Alphabetical' },
+]
+
+const WEEKDAYS = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+]
+
 function DashboardExploreCampaignsContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -39,9 +59,18 @@ function DashboardExploreCampaignsContent() {
 
   const [search, setSearch] = useState(searchParams.get('search') ?? '')
   const [campaign, setCampaign] = useState(searchParams.get('campaign') ?? '')
-  const [sessionWeekday, setSessionWeekday] = useState(searchParams.get('sessionWeekday') ?? '')
-  const [sessionType, setSessionType] = useState(searchParams.get('sessionType') ?? '')
-  const [timePeriod, setTimePeriod] = useState(searchParams.get('timePeriod') ?? '')
+  const [sessionWeekday, setSessionWeekday] = useState(
+    searchParams.get('sessionWeekday') ?? '',
+  )
+  const [sessionType, setSessionType] = useState(
+    searchParams.get('sessionType') ?? '',
+  )
+  const [timePeriod, setTimePeriod] = useState(
+    searchParams.get('timePeriod') ?? '',
+  )
+  const [sortValue, setSortValue] = useState(
+    searchParams.get('sort') ?? 'popular',
+  )
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1)
   const [adventures, setAdventures] = useState<Adventure[]>([])
   const [total, setTotal] = useState(0)
@@ -49,17 +78,30 @@ function DashboardExploreCampaignsContent() {
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const activeTab = pathname.startsWith('/dashboard/public-templates') ? 'templates' : 'adventures'
+  const activeTab =
+    pathname.startsWith('/dashboard/public-templates')
+      ? 'templates'
+      : 'adventures'
 
-  // Sync search params back to URL
+  // ── Sync search params back to URL ──
+
   const syncUrl = useCallback(
-    (s: string, c: string, sw: string, st: string, tp: string, p: number) => {
+    (
+      s: string,
+      c: string,
+      sw: string,
+      st: string,
+      tp: string,
+      sort: string,
+      p: number,
+    ) => {
       const params = new URLSearchParams()
       if (s) params.set('search', s)
       if (c) params.set('campaign', c)
       if (sw) params.set('sessionWeekday', sw)
       if (st) params.set('sessionType', st)
       if (tp) params.set('timePeriod', tp)
+      if (sort && sort !== 'popular') params.set('sort', sort)
       if (p > 1) params.set('page', String(p))
       const qs = params.toString()
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
@@ -67,7 +109,8 @@ function DashboardExploreCampaignsContent() {
     [router, pathname],
   )
 
-  // Debounced search
+  // ── Debounced search ──
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [debouncedSearch, setDebouncedSearch] = useState(search)
 
@@ -82,7 +125,8 @@ function DashboardExploreCampaignsContent() {
     }
   }, [search])
 
-  // Fetch adventures
+  // ── Fetch adventures ──
+
   const fetchAdventures = useCallback(async () => {
     setFetching(true)
     setError(null)
@@ -102,7 +146,9 @@ function DashboardExploreCampaignsContent() {
       setTotal(res.total)
       setTotalPages(res.totalPages)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load adventures')
+      setError(
+        err instanceof Error ? err.message : 'Failed to load adventures',
+      )
     } finally {
       setFetching(false)
     }
@@ -112,19 +158,123 @@ function DashboardExploreCampaignsContent() {
     fetchAdventures()
   }, [fetchAdventures])
 
-  // Sync URL when filters or page changes
+  // ── Sync URL when filters or page changes ──
+
   useEffect(() => {
-    syncUrl(debouncedSearch, campaign, sessionWeekday, sessionType, timePeriod, page)
-  }, [debouncedSearch, campaign, sessionWeekday, sessionType, timePeriod, page, syncUrl])
+    syncUrl(
+      debouncedSearch,
+      campaign,
+      sessionWeekday,
+      sessionType,
+      timePeriod,
+      sortValue,
+      page,
+    )
+  }, [
+    debouncedSearch,
+    campaign,
+    sessionWeekday,
+    sessionType,
+    timePeriod,
+    sortValue,
+    page,
+    syncUrl,
+  ])
+
+  // ── Client-side sorting ──
+
+  const sortedAdventures = useMemo(() => {
+    const list = [...adventures]
+    switch (sortValue) {
+      case 'popular':
+        return list.sort(
+          (a, b) => (b.playerCount ?? 0) - (a.playerCount ?? 0),
+        )
+      case 'recent':
+        return list.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        )
+      case 'players':
+        return list.sort((a, b) => b.maxPlayers - a.maxPlayers)
+      case 'newest':
+        return list.sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        )
+      case 'alpha':
+        return list.sort((a, b) => a.name.localeCompare(b.name))
+      default:
+        return list
+    }
+  }, [adventures, sortValue])
+
+  // ── Filter change handlers ──
 
   const handleCampaignChange = (value: string) => {
     setCampaign(value)
     setPage(1)
   }
 
-  const weekdays = [
-    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
-  ]
+  const handleSessionTypeChange = (value: string) => {
+    setSessionType(value)
+    setPage(1)
+  }
+
+  // ── Active filters ──
+
+  const activeFilters: ActiveFilter[] = useMemo(() => {
+    const filters: ActiveFilter[] = []
+    if (debouncedSearch)
+      filters.push({ id: 'search', label: `Search: ${debouncedSearch}` })
+    if (campaign) filters.push({ id: 'campaign', label: campaign })
+    if (sessionWeekday) filters.push({ id: 'sessionWeekday', label: sessionWeekday })
+    if (sessionType)
+      filters.push({
+        id: 'sessionType',
+        label: sessionType === 'ONLINE' ? 'Online' : 'In Person',
+      })
+    if (timePeriod)
+      filters.push({
+        id: 'timePeriod',
+        label:
+          timePeriod.charAt(0).toUpperCase() + timePeriod.slice(1),
+      })
+    return filters
+  }, [debouncedSearch, campaign, sessionWeekday, sessionType, timePeriod])
+
+  const handleRemoveFilter = useCallback(
+    (id: string) => {
+      switch (id) {
+        case 'search':
+          setSearch('')
+          break
+        case 'campaign':
+          setCampaign('')
+          break
+        case 'sessionWeekday':
+          setSessionWeekday('')
+          break
+        case 'sessionType':
+          setSessionType('')
+          break
+        case 'timePeriod':
+          setTimePeriod('')
+          break
+      }
+      setPage(1)
+    },
+    [],
+  )
+
+  const handleRemoveAll = useCallback(() => {
+    setSearch('')
+    setCampaign('')
+    setSessionWeekday('')
+    setSessionType('')
+    setTimePeriod('')
+    setPage(1)
+  }, [])
 
   return (
     <>
@@ -138,7 +288,9 @@ function DashboardExploreCampaignsContent() {
       <nav className="flex gap-1 mb-6">
         <Link
           href="/dashboard/explore-campaigns"
-          className={`tab-pill ${activeTab === 'adventures' ? 'tab-pill-active' : ''}`}
+          className={`tab-pill ${
+            activeTab === 'adventures' ? 'tab-pill-active' : ''
+          }`}
         >
           <svg
             className="w-4 h-4"
@@ -157,7 +309,9 @@ function DashboardExploreCampaignsContent() {
         </Link>
         <Link
           href="/dashboard/public-templates"
-          className={`tab-pill ${activeTab === 'templates' ? 'tab-pill-active' : ''}`}
+          className={`tab-pill ${
+            activeTab === 'templates' ? 'tab-pill-active' : ''
+          }`}
         >
           <svg
             className="w-4 h-4"
@@ -176,89 +330,106 @@ function DashboardExploreCampaignsContent() {
         </Link>
       </nav>
 
-      {/* Search & Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
+      {/* ── Search & Filters ── */}
+      <SearchFilterSection
+        placeholder="Search campaigns by name, GM or description..."
+        search={search}
+        onSearchChange={(v) => {
+          setSearch(v)
+        }}
+        activeFilters={activeFilters}
+        onRemoveFilter={handleRemoveFilter}
+        onRemoveAll={handleRemoveAll}
+        sortOptions={SORT_OPTIONS}
+        sortValue={sortValue}
+        onSortChange={setSortValue}
+      >
+        {/* Campaign/System filter */}
+        <div className="flex flex-col gap-1.5 min-w-[160px]">
+          <label className="label !mb-0">Campaign / System</label>
           <input
             type="text"
-            placeholder="Search adventures by name or synopsis..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input pl-10 w-full"
+            placeholder="e.g. D&D 5e, Tormenta..."
+            value={campaign}
+            onChange={(e) => handleCampaignChange(e.target.value)}
+            className="input-field py-2 px-3 text-sm"
           />
         </div>
-        <input
-          type="text"
-          placeholder="Filter by campaign/system..."
-          value={campaign}
-          onChange={(e) => handleCampaignChange(e.target.value)}
-          className="input w-full sm:w-64"
-        />
-      </div>
 
-      {/* Session filters row */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <select
-          value={sessionWeekday}
-          onChange={(e) => { setSessionWeekday(e.target.value); setPage(1) }}
-          className="input w-full sm:w-44"
-        >
-          <option value="">Any day</option>
-          {weekdays.map((day) => (
-            <option key={day} value={day}>{day}</option>
-          ))}
-        </select>
-
-        <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={() => { setSessionType(''); setPage(1) }}
-            className={`tab-pill ${sessionType === '' ? 'tab-pill-active' : ''}`}
+        {/* Weekday filter */}
+        <div className="flex flex-col gap-1.5 min-w-[160px]">
+          <label className="label !mb-0">Day</label>
+          <select
+            value={sessionWeekday}
+            onChange={(e) => {
+              setSessionWeekday(e.target.value)
+              setPage(1)
+            }}
+            className="input-field py-2 pr-8 pl-3 text-sm"
           >
-            All
-          </button>
-          <button
-            type="button"
-            onClick={() => { setSessionType('ONLINE'); setPage(1) }}
-            className={`tab-pill ${sessionType === 'ONLINE' ? 'tab-pill-active' : ''}`}
-          >
-            &#x1F310; Online
-          </button>
-          <button
-            type="button"
-            onClick={() => { setSessionType('IN_PERSON'); setPage(1) }}
-            className={`tab-pill ${sessionType === 'IN_PERSON' ? 'tab-pill-active' : ''}`}
-          >
-            &#x1F4CD; In Person
-          </button>
+            <option value="">Any day</option>
+            {WEEKDAYS.map((day) => (
+              <option key={day} value={day}>
+                {day}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <select
-          value={timePeriod}
-          onChange={(e) => { setTimePeriod(e.target.value); setPage(1) }}
-          className="input w-full sm:w-40"
-        >
-          <option value="">Any time</option>
-          <option value="morning">Morning</option>
-          <option value="afternoon">Afternoon</option>
-          <option value="night">Night</option>
-        </select>
-      </div>
+        {/* Session type filter */}
+        <div className="flex flex-col gap-1.5">
+          <label className="label !mb-0">Type</label>
+          <div className="flex gap-1 h-full items-end pb-[1px]">
+            <button
+              type="button"
+              onClick={() => handleSessionTypeChange('')}
+              className={`tab-pill text-xs !px-3 !py-1.5 ${
+                sessionType === '' ? 'tab-pill-active' : ''
+              }`}
+            >
+              Any
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSessionTypeChange('ONLINE')}
+              className={`tab-pill text-xs !px-3 !py-1.5 ${
+                sessionType === 'ONLINE' ? 'tab-pill-active' : ''
+              }`}
+            >
+              Online
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSessionTypeChange('IN_PERSON')}
+              className={`tab-pill text-xs !px-3 !py-1.5 ${
+                sessionType === 'IN_PERSON' ? 'tab-pill-active' : ''
+              }`}
+            >
+              In Person
+            </button>
+          </div>
+        </div>
 
-      {/* Error state */}
+        {/* Time period filter */}
+        <div className="flex flex-col gap-1.5 min-w-[140px]">
+          <label className="label !mb-0">Schedule</label>
+          <select
+            value={timePeriod}
+            onChange={(e) => {
+              setTimePeriod(e.target.value)
+              setPage(1)
+            }}
+            className="input-field py-2 pr-8 pl-3 text-sm"
+          >
+            <option value="">Any time</option>
+            <option value="morning">Morning</option>
+            <option value="afternoon">Afternoon</option>
+            <option value="night">Night</option>
+          </select>
+        </div>
+      </SearchFilterSection>
+
+      {/* ── Error state ── */}
       {error && !fetching && (
         <div className="flex flex-col items-center justify-center py-8 space-y-4">
           <p className="text-sm text-red-400">{error}</p>
@@ -268,30 +439,41 @@ function DashboardExploreCampaignsContent() {
         </div>
       )}
 
-      {/* Loading state */}
-      {fetching && (
-        <LoadingSkeleton variant="card" count={6} />
-      )}
+      {/* ── Loading state ── */}
+      {fetching && <LoadingSkeleton variant="card" count={6} />}
 
-      {/* Empty state */}
-      {!fetching && !error && adventures.length === 0 && (
+      {/* ── Empty state ── */}
+      {!fetching && !error && sortedAdventures.length === 0 && (
         <EmptyState
           icon="🔍"
-          title="No public campaigns found"
-          description="Check back later or try different search terms."
+          title="No campaigns match your search"
+          description="Try changing your filters or check back later."
         />
       )}
 
-      {/* Grid */}
-      {!fetching && !error && adventures.length > 0 && (
+      {/* ── Results grid ── */}
+      {!fetching && !error && sortedAdventures.length > 0 && (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {adventures.map((adventure, i) => (
-              <CampaignCard key={adventure.id} id={adventure.id} name={adventure.name} campaign={adventure.campaign} synopsis={adventure.synopsis} maxPlayers={adventure.maxPlayers} ownerDisplayName={adventure.gmDisplayName ?? null} playerCount={adventure.playerCount} index={i} sessionWeekday={adventure.sessionWeekday} sessionTime={adventure.sessionTime} sessionType={adventure.sessionType} />
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {sortedAdventures.map((adventure, i) => (
+              <CampaignCard
+                key={adventure.id}
+                id={adventure.id}
+                name={adventure.name}
+                campaign={adventure.campaign}
+                synopsis={adventure.synopsis}
+                maxPlayers={adventure.maxPlayers}
+                ownerDisplayName={adventure.gmDisplayName ?? null}
+                playerCount={adventure.playerCount}
+                index={i}
+                sessionWeekday={adventure.sessionWeekday}
+                sessionTime={adventure.sessionTime}
+                sessionType={adventure.sessionType}
+              />
             ))}
           </div>
 
-          {/* Pagination */}
+          {/* ── Pagination ── */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-4 mt-8">
               <button
