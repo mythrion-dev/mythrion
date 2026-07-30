@@ -17,6 +17,9 @@ import Placeholder from '@tiptap/extension-placeholder'
 import { useCallback, useEffect, useState, useRef } from 'react'
 import type { Editor } from '@tiptap/react'
 
+// Import ProseMirror table CSS for base table styling (borders, resize handles, selected cell overlay)
+import 'prosemirror-tables/style/tables.css'
+
 /* ── Types ── */
 
 interface RichTextEditorProps {
@@ -66,12 +69,15 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
   const editorRef = useRef<Editor | null>(null)
 
   const editor = useEditor({
+    shouldRerenderOnTransaction: true,
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
         codeBlock: false,
         blockquote: false,
         horizontalRule: false,
+        link: false,
+        underline: false,
       }),
       Underline,
       Link.configure({
@@ -214,6 +220,111 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
         <ToolbarButton onClick={handleInsertTable} label="Insert table">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
         </ToolbarButton>
+
+        {/* ── Table operations (visible only when cursor is inside a table) ── */}
+        {editor.isActive('table') && (
+          <>
+            <ToolbarSeparator />
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().addRowBefore().run()}
+              label="Add row above"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M3 20h18M3 8h18v8H3V8z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 8v-4" />
+              </svg>
+            </ToolbarButton>
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().addRowAfter().run()}
+              label="Add row below"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M3 20h18M3 8h18v8H3V8z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 20v-4" />
+              </svg>
+            </ToolbarButton>
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().addColumnBefore().run()}
+              label="Add column before"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 3v18M20 3v18M8 3v18h8V3H8z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H4" />
+              </svg>
+            </ToolbarButton>
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().addColumnAfter().run()}
+              label="Add column after"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 3v18M20 3v18M8 3v18h8V3H8z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7h4" />
+              </svg>
+            </ToolbarButton>
+
+            <ToolbarSeparator />
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().deleteRow().run()}
+              label="Delete row"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M3 20h18M3 8h18v8H3V8z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12h12" />
+              </svg>
+            </ToolbarButton>
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().deleteColumn().run()}
+              label="Delete column"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 3v18M20 3v18M8 3v18h8V3H8z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12" />
+              </svg>
+            </ToolbarButton>
+
+            <ToolbarSeparator />
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().mergeCells().run()}
+              label="Merge cells"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6v12" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 10h4" />
+              </svg>
+            </ToolbarButton>
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().splitCell().run()}
+              label="Split cell"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6v12" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14 6v12" />
+              </svg>
+            </ToolbarButton>
+
+            <ToolbarSeparator />
+
+            <ToolbarButton
+              onClick={() => editor.chain().focus().deleteTable().run()}
+              label="Delete table"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18 4l-4 4m0-4l4 4" />
+              </svg>
+            </ToolbarButton>
+          </>
+        )}
       </div>
 
       {/* ── Link dialog ── */}

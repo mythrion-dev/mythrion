@@ -478,6 +478,65 @@
     color: var(--color-muted);
   }
 
+  /* ── ProseMirror editor tables ── */
+  .ProseMirror .tableWrapper {
+    overflow-x: auto;
+    border-radius: 0.5rem;
+    margin: 0.75rem 0;
+  }
+  .ProseMirror table {
+    border-collapse: collapse;
+    table-layout: fixed;
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+  }
+  .ProseMirror th,
+  .ProseMirror td {
+    border: 1px solid var(--color-border);
+    padding: 0.5rem 0.75rem;
+    vertical-align: top;
+    min-width: 80px;
+    box-sizing: border-box;
+    position: relative;
+  }
+  .ProseMirror th {
+    background: var(--color-surface-raised);
+    font-weight: 600;
+    text-align: left;
+  }
+  .ProseMirror tr {
+    height: 1em;
+  }
+  .ProseMirror .selectedCell:after {
+    z-index: 2;
+    position: absolute;
+    content: '';
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: rgba(124, 92, 231, 0.12);
+    pointer-events: none;
+  }
+  .ProseMirror .column-resize-handle {
+    position: absolute;
+    right: -2px;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    z-index: 20;
+    background-color: var(--color-accent);
+    pointer-events: none;
+  }
+  .ProseMirror.resize-cursor {
+    cursor: col-resize;
+  }
+  .ProseMirror .tableColRow-selected {
+    background: rgba(124, 92, 231, 0.06);
+  }
+
   /* ── Tab pill ── */
   .tab-pill {
     display: inline-flex;
