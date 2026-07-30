@@ -280,10 +280,11 @@ describe('PagBankService', () => {
       expect(reqBody.payment_method[0].card.encrypted).toBeUndefined()
       expect(reqBody.payment_method[0].card.security_code).toBe(123)
 
-      // billing_info uses card.id for CARD_UUID pre-defined tokens
+      // billing_info uses card.token for CARD_UUID pre-defined tokens
       // (cardTokenId takes priority over cardToken — encrypted is not set)
-      expect(reqBody.customer.billing_info[0].card.id).toBe(
+      expect(reqBody.customer.billing_info[0].card.token).toBe(
         'CARD_8286F604-2D44-4B30-A80D-0E749A555566',
+      expect(reqBody.customer.billing_info[0].card.id).toBeUndefined()
       )
       expect(reqBody.customer.billing_info[0].card.encrypted).toBeUndefined()
     })

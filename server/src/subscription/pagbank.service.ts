@@ -80,10 +80,10 @@ export class PagBankService implements PaymentGateway {
       // charge and subsequent recurring payments.
       const billingCard: Record<string, any> = {}
       if (params.cardTokenId) {
-        // Pre-defined sandbox card token (CARD_UUID format) — use as card.id
+	        // Pre-defined sandbox card token (CARD_UUID format) - use as card.token
         // in billing_info. CARD_UUID is a stored card reference (card ID),
         // distinct from TOKE_UUID which is a one-time card token.
-        billingCard.id = params.cardTokenId
+        billingCard.token = params.cardTokenId
       } else if (params.cardToken) {
         // Encrypted card string from PagSeguro JS SDK — use as card.encrypted
         billingCard.encrypted = params.cardToken
