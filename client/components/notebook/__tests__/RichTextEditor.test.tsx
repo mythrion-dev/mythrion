@@ -840,3 +840,333 @@ describe('Theme compatibility and responsive rendering', () => {
     })
   })
 })
+
+// ════════════════════════════════════════════════════════════════
+// Heading Functionality Tests
+// ════════════════════════════════════════════════════════════════
+
+describe('Heading functionality', () => {
+  const mockOnChange = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  /* ── Toolbar toggling: heading elements in DOM ── */
+
+  it('toggles current paragraph to H1 via toolbar', async () => {
+    const user = userEvent.setup()
+    const { container } = render(
+      <RichTextEditor content="<p>Heading One</p>" onChange={mockOnChange} />,
+    )
+    await screen.findByLabelText('Heading 1')
+
+    const h1Btn = screen.getByLabelText('Heading 1')
+    await user.click(h1Btn)
+
+    await waitFor(() => {
+      const heading = container.querySelector('.ProseMirror h1')
+      expect(heading).not.toBeNull()
+      expect(heading!.textContent).toBe('Heading One')
+    })
+  })
+
+  it('toggles current paragraph to H2 via toolbar', async () => {
+    const user = userEvent.setup()
+    const { container } = render(
+      <RichTextEditor content="<p>Heading Two</p>" onChange={mockOnChange} />,
+    )
+    await screen.findByLabelText('Heading 2')
+
+    const h2Btn = screen.getByLabelText('Heading 2')
+    await user.click(h2Btn)
+
+    await waitFor(() => {
+      const heading = container.querySelector('.ProseMirror h2')
+      expect(heading).not.toBeNull()
+      expect(heading!.textContent).toBe('Heading Two')
+    })
+  })
+
+  it('toggles current paragraph to H3 via toolbar', async () => {
+    const user = userEvent.setup()
+    const { container } = render(
+      <RichTextEditor content="<p>Heading Three</p>" onChange={mockOnChange} />,
+    )
+    await screen.findByLabelText('Heading 3')
+
+    const h3Btn = screen.getByLabelText('Heading 3')
+    await user.click(h3Btn)
+
+    await waitFor(() => {
+      const heading = container.querySelector('.ProseMirror h3')
+      expect(heading).not.toBeNull()
+      expect(heading!.textContent).toBe('Heading Three')
+    })
+  })
+
+  it('toggles heading back to paragraph via repeated click', async () => {
+    const user = userEvent.setup()
+    const { container } = render(
+      <RichTextEditor content="<p>Toggle Me</p>" onChange={mockOnChange} />,
+    )
+    await screen.findByLabelText('Heading 1')
+
+    const h1Btn = screen.getByLabelText('Heading 1')
+    await user.click(h1Btn)
+
+    // H1 should be present
+    await waitFor(() => {
+      expect(container.querySelector('.ProseMirror h1')).not.toBeNull()
+    })
+
+    // Click H1 again to toggle back to paragraph
+    await user.click(h1Btn)
+
+    await waitFor(() => {
+      expect(container.querySelector('.ProseMirror h1')).toBeNull()
+    })
+  })
+
+  it('switches between heading levels', async () => {
+    const user = userEvent.setup()
+    const { container } = render(
+      <RichTextEditor content="<p>Switch Level</p>" onChange={mockOnChange} />,
+    )
+    await screen.findByLabelText('Heading 1')
+
+    // Apply H1
+    const h1Btn = screen.getByLabelText('Heading 1')
+    await user.click(h1Btn)
+
+    await waitFor(() => {
+      expect(container.querySelector('.ProseMirror h1')).not.toBeNull()
+    })
+
+    // Switch to H2 (should remove H1, add H2)
+    const h2Btn = screen.getByLabelText('Heading 2')
+    await user.click(h2Btn)
+
+    await waitFor(() => {
+      expect(container.querySelector('.ProseMirror h2')).not.toBeNull()
+      expect(container.querySelector('.ProseMirror h1')).toBeNull()
+    })
+
+    // Switch to H3
+    const h3Btn = screen.getByLabelText('Heading 3')
+    await user.click(h3Btn)
+
+    await waitFor(() => {
+      expect(container.querySelector('.ProseMirror h3')).not.toBeNull()
+      expect(container.querySelector('.ProseMirror h2')).toBeNull()
+    })
+  })
+
+  /* ── Serialization / deserialization ── */
+
+  it('serializes heading to correct HTML (programmatic)', () => {
+    const editor = createTestEditor()
+    editor.commands.setContent('<p>Serialized Title</p>')
+    editor.commands.toggleHeading({ level: 1 })
+    const html = editor.getHTML()
+
+    expect(html).toContain('<h1>')
+    expect(html).toContain('Serialized Title')
+    // ProseMirror keeps a trailing empty paragraph for cursor placement
+    expect(html).not.toContain('<p>Serialized Title')
+
+    // H2
+    editor.commands.toggleHeading({ level: 2 })
+    const htmlH2 = editor.getHTML()
+    expect(htmlH2).toContain('<h2>')
+    expect(htmlH2).not.toContain('<h1>')
+
+    // H3
+    editor.commands.toggleHeading({ level: 3 })
+    const htmlH3 = editor.getHTML()
+    expect(htmlH3).toContain('<h3>')
+    expect(htmlH3).not.toContain('<h2>')
+
+    editor.destroy()
+  })
+
+  it('deserializes heading content from HTML', async () => {
+    const { container } = render(
+      <RichTextEditor
+        content="<h1>Restored Title</h1>"
+        onChange={mockOnChange}
+      />,
+    )
+    await screen.findByLabelText('Bold')
+
+    await waitFor(() => {
+      const heading = container.querySelector('.ProseMirror h1')
+      expect(heading).not.toBeNull()
+      expect(heading!.textContent).toContain('Restored Title')
+    })
+  })
+
+  it('renders multiple headings in one document', async () => {
+    const content = '<h1>Chapter 1</h1><p>Intro text.</p><h2>Section 1.1</h2><p>Details.</p><h3>Note</h3>'
+    const { container } = render(
+      <RichTextEditor content={content} onChange={mockOnChange} />,
+    )
+    await screen.findByLabelText('Bold')
+
+    await waitFor(() => {
+      const proseMirror = container.querySelector('.ProseMirror')
+      expect(proseMirror).not.toBeNull()
+      expect(proseMirror!.querySelector('h1')?.textContent).toContain('Chapter 1')
+      expect(proseMirror!.querySelector('h2')?.textContent).toContain('Section 1.1')
+      expect(proseMirror!.querySelector('h3')?.textContent).toContain('Note')
+    })
+  })
+
+  /* ── onChange callback ── */
+
+  it('calls onChange when heading is applied', async () => {
+    const onChange = vi.fn()
+    const user = userEvent.setup()
+    render(<RichTextEditor content="<p>Trigger</p>" onChange={onChange} />)
+    await screen.findByLabelText('Heading 1')
+
+    const h1Btn = screen.getByLabelText('Heading 1')
+    await user.click(h1Btn)
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled()
+    })
+  })
+
+  /* ── Undo / redo ── */
+
+  it('undo reverts heading change (programmatic)', () => {
+    const editor = createTestEditor()
+    editor.commands.setContent('<p>Undo Test</p>')
+    editor.commands.toggleHeading({ level: 1 })
+
+    expect(editor.getHTML()).toContain('<h1>')
+
+    editor.commands.undo()
+    expect(editor.getHTML()).not.toContain('<h1>')
+    expect(editor.getHTML()).toContain('<p>')
+
+    editor.destroy()
+  })
+
+  it('redo reapplies heading after undo (programmatic)', () => {
+    const editor = createTestEditor()
+    editor.commands.setContent('<p>Redo Test</p>')
+    editor.commands.toggleHeading({ level: 1 })
+    editor.commands.undo()
+
+    // Verify undone
+    expect(editor.getHTML()).not.toContain('<h1>')
+
+    // Redo
+    editor.commands.redo()
+    expect(editor.getHTML()).toContain('<h1>')
+
+    editor.destroy()
+  })
+
+  /* ── Heading content roundtrip ── */
+
+  it('heading content roundtrips through setContent (programmatic)', () => {
+    const editor = createTestEditor()
+    editor.commands.setContent('<h1>Roundtrip Title</h1>')
+    const html = editor.getHTML()
+
+    // setContent with the serialized output preserves the heading
+    editor.commands.setContent(html)
+    const html2 = editor.getHTML()
+    expect(html2).toContain('<h1>')
+    expect(html2).toContain('Roundtrip Title')
+
+    editor.destroy()
+  })
+
+  /* ── Active state ── */
+
+  it('does not show active state on heading buttons when paragraph', async () => {
+    render(<RichTextEditor content="<p>Plain text</p>" onChange={mockOnChange} />)
+    await screen.findByLabelText('Heading 1')
+
+    const h1Btn = screen.getByLabelText('Heading 1')
+    const h2Btn = screen.getByLabelText('Heading 2')
+    const h3Btn = screen.getByLabelText('Heading 3')
+
+    // None should have the active class
+    expect(h1Btn.className).not.toContain('bg-accent')
+    expect(h2Btn.className).not.toContain('bg-accent')
+    expect(h3Btn.className).not.toContain('bg-accent')
+  })
+
+  it('shows active state on H1 button when H1 is active', async () => {
+    const user = userEvent.setup()
+    render(<RichTextEditor content="<p>Active H1</p>" onChange={mockOnChange} />)
+    await screen.findByLabelText('Heading 1')
+
+    const h1Btn = screen.getByLabelText('Heading 1')
+    const h2Btn = screen.getByLabelText('Heading 2')
+    const h3Btn = screen.getByLabelText('Heading 3')
+
+    await user.click(h1Btn)
+
+    await waitFor(() => {
+      expect(h1Btn.className).toContain('bg-accent')
+      expect(h2Btn.className).not.toContain('bg-accent')
+      expect(h3Btn.className).not.toContain('bg-accent')
+    })
+  })
+
+  it('shows active state on H2 button when H2 is active', async () => {
+    const user = userEvent.setup()
+    render(<RichTextEditor content="<p>Active H2</p>" onChange={mockOnChange} />)
+    await screen.findByLabelText('Heading 2')
+
+    const h1Btn = screen.getByLabelText('Heading 1')
+    const h2Btn = screen.getByLabelText('Heading 2')
+    const h3Btn = screen.getByLabelText('Heading 3')
+
+    await user.click(h2Btn)
+
+    await waitFor(() => {
+      expect(h2Btn.className).toContain('bg-accent')
+      expect(h1Btn.className).not.toContain('bg-accent')
+      expect(h3Btn.className).not.toContain('bg-accent')
+    })
+  })
+
+  it('shows active state on H3 button when H3 is active', async () => {
+    const user = userEvent.setup()
+    render(<RichTextEditor content="<p>Active H3</p>" onChange={mockOnChange} />)
+    await screen.findByLabelText('Heading 3')
+
+    const h1Btn = screen.getByLabelText('Heading 1')
+    const h2Btn = screen.getByLabelText('Heading 2')
+    const h3Btn = screen.getByLabelText('Heading 3')
+
+    await user.click(h3Btn)
+
+    await waitFor(() => {
+      expect(h3Btn.className).toContain('bg-accent')
+      expect(h1Btn.className).not.toContain('bg-accent')
+      expect(h2Btn.className).not.toContain('bg-accent')
+    })
+  })
+
+  /* ── Regression: heading toggle via existing regression test ── */
+
+  it('regression: existing heading toggle test still passes', async () => {
+    // This mirrors the existing regression test at line 651
+    const user = userEvent.setup()
+    render(<RichTextEditor content="<p>test</p>" onChange={mockOnChange} />)
+    await screen.findByLabelText('Heading 1')
+
+    const h1Btn = screen.getByLabelText('Heading 1')
+    await user.click(h1Btn)
+
+    expect(h1Btn.className).toContain('bg-accent')
+  })
+})
