@@ -272,10 +272,15 @@ describe('AdventureService', () => {
 
       const result = await service.findPublic({ page: 1, limit: 10 })
 
-      expect(result.data).toEqual(adventures)
-      expect(result.meta.total).toBe(1)
-      expect(result.meta.page).toBe(1)
-      expect(result.meta.totalPages).toBe(1)
+      expect(result.data).toHaveLength(1)
+      expect(result.data[0].gmDisplayName).toBe('Owner')
+      expect(result.data[0].playerCount).toBe(2)
+      expect(result.data[0].ownerId).toBe('u1')
+      expect(result.data[0]).not.toHaveProperty('owner')
+      expect(result.data[0]).not.toHaveProperty('_count')
+      expect(result.total).toBe(1)
+      expect(result.page).toBe(1)
+      expect(result.totalPages).toBe(1)
     })
 
     it('filters by campaign', async () => {
@@ -426,7 +431,11 @@ describe('AdventureService', () => {
           where: { id: 'a1', isPublic: true },
         }),
       )
-      expect(result).toEqual(adventure)
+      expect(result.gmDisplayName).toBe('Owner')
+      expect(result.playerCount).toBe(2)
+      expect(result.ownerId).toBe('u1')
+      expect(result).not.toHaveProperty('owner')
+      expect(result).not.toHaveProperty('_count')
     })
 
     it('throws NotFoundException when adventure is not public', async () => {
@@ -446,7 +455,12 @@ describe('AdventureService', () => {
         campaign: 'Camp',
         synopsis: 'Fun!',
         maxPlayers: 4,
+        isPublic: true,
         createdAt: new Date(),
+        updatedAt: new Date(),
+        sessionWeekday: null,
+        sessionTime: null,
+        sessionType: null,
         owner: { id: 'u1', displayName: 'Owner' },
         _count: { members: 2 },
       }
@@ -459,7 +473,12 @@ describe('AdventureService', () => {
           where: { id: 'a1', isPublic: true },
         }),
       )
-      expect(result).toEqual(adventure)
+      expect(result.gmDisplayName).toBe('Owner')
+      expect(result.playerCount).toBe(2)
+      expect(result.ownerId).toBe('u1')
+      expect(result.isPublic).toBe(true)
+      expect(result).not.toHaveProperty('owner')
+      expect(result).not.toHaveProperty('_count')
     })
 
     it('throws NotFoundException when adventure not found or not public', async () => {

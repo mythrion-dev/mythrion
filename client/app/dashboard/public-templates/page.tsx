@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, Suspense, useRef } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
@@ -9,6 +9,8 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { TemplateCard } from '@/components/community/TemplateCard'
+import { SearchFilterSection } from '@/components/community/SearchFilterSection'
+import type { ActiveFilter, SortOption } from '@/components/community/SearchFilterSection'
 
 interface Template {
   id: string
@@ -37,6 +39,13 @@ interface TemplatesResponse {
   totalPages: number
 }
 
+const SORT_OPTIONS: SortOption[] = [
+  { id: 'popular', label: 'Most Popular' },
+  { id: 'newest', label: 'Newest' },
+  { id: 'updated', label: 'Recently Updated' },
+  { id: 'alpha', label: 'Alphabetical' },
+]
+
 function DashboardPublicTemplatesContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -45,6 +54,9 @@ function DashboardPublicTemplatesContent() {
 
   const [search, setSearch] = useState(searchParams.get('search') ?? '')
   const [campaign, setCampaign] = useState(searchParams.get('campaign') ?? '')
+  const [sortValue, setSortValue] = useState(
+    searchParams.get('sort') ?? 'popular',
+  )
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1)
   const [templates, setTemplates] = useState<Template[]>([])
   const [total, setTotal] = useState(0)
@@ -57,14 +69,19 @@ function DashboardPublicTemplatesContent() {
   const [cloneSuccess, setCloneSuccess] = useState<string | null>(null)
   const [showSignInPrompt, setShowSignInPrompt] = useState(false)
 
-  const activeTab = pathname.startsWith('/dashboard/public-templates') ? 'templates' : 'adventures'
+  const activeTab =
+    pathname.startsWith('/dashboard/public-templates')
+      ? 'templates'
+      : 'adventures'
 
-  // Sync search params back to URL
+  // ── Sync search params back to URL ──
+
   const syncUrl = useCallback(
-    (s: string, c: string, p: number) => {
+    (s: string, c: string, sort: string, p: number) => {
       const params = new URLSearchParams()
       if (s) params.set('search', s)
       if (c) params.set('campaign', c)
+      if (sort && sort !== 'popular') params.set('sort', sort)
       if (p > 1) params.set('page', String(p))
       const qs = params.toString()
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
@@ -72,7 +89,8 @@ function DashboardPublicTemplatesContent() {
     [router, pathname],
   )
 
-  // Debounced search
+  // ── Debounced search ──
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [debouncedSearch, setDebouncedSearch] = useState(search)
 
@@ -87,7 +105,8 @@ function DashboardPublicTemplatesContent() {
     }
   }, [search])
 
-  // Fetch templates
+  // ── Fetch templates ──
+
   const fetchTemplates = useCallback(async () => {
     setFetching(true)
     setError(null)
@@ -104,7 +123,9 @@ function DashboardPublicTemplatesContent() {
       setTotal(res.total)
       setTotalPages(res.totalPages)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load templates')
+      setError(
+        err instanceof Error ? err.message : 'Failed to load templates',
+      )
     } finally {
       setFetching(false)
     }
@@ -114,15 +135,70 @@ function DashboardPublicTemplatesContent() {
     fetchTemplates()
   }, [fetchTemplates])
 
-  // Sync URL when debouncedSearch, campaign, or page changes
+  // ── Sync URL when debouncedSearch, campaign, or page changes ──
+
   useEffect(() => {
-    syncUrl(debouncedSearch, campaign, page)
-  }, [debouncedSearch, campaign, page, syncUrl])
+    syncUrl(debouncedSearch, campaign, sortValue, page)
+  }, [debouncedSearch, campaign, sortValue, page, syncUrl])
+
+  // ── Client-side sorting ──
+
+  const sortedTemplates = useMemo(() => {
+    const list = [...templates]
+    switch (sortValue) {
+      case 'popular':
+        return list.sort((a, b) => b.useCount - a.useCount)
+      case 'newest':
+        return list.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() -
+            new Date(a.createdAt).getTime(),
+        )
+      case 'updated':
+        return list.sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() -
+            new Date(a.updatedAt).getTime(),
+        )
+      case 'alpha':
+        return list.sort((a, b) => a.name.localeCompare(b.name))
+      default:
+        return list
+    }
+  }, [templates, sortValue])
 
   const handleCampaignChange = (value: string) => {
     setCampaign(value)
     setPage(1)
   }
+
+  // ── Active filters ──
+
+  const activeFilters: ActiveFilter[] = useMemo(() => {
+    const filters: ActiveFilter[] = []
+    if (debouncedSearch)
+      filters.push({ id: 'search', label: `Search: ${debouncedSearch}` })
+    if (campaign) filters.push({ id: 'campaign', label: campaign })
+    return filters
+  }, [debouncedSearch, campaign])
+
+  const handleRemoveFilter = useCallback((id: string) => {
+    switch (id) {
+      case 'search':
+        setSearch('')
+        break
+      case 'campaign':
+        setCampaign('')
+        break
+    }
+    setPage(1)
+  }, [])
+
+  const handleRemoveAll = useCallback(() => {
+    setSearch('')
+    setCampaign('')
+    setPage(1)
+  }, [])
 
   const handleClone = async (templateId: string) => {
     if (!user) {
@@ -136,7 +212,9 @@ function DashboardPublicTemplatesContent() {
       await api.post(`/templates/${templateId}/clone`)
       setCloneSuccess(templateId)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to clone template')
+      setError(
+        err instanceof Error ? err.message : 'Failed to clone template',
+      )
     } finally {
       setCloningId(null)
     }
@@ -150,11 +228,13 @@ function DashboardPublicTemplatesContent() {
         subtitle="Browse and clone character sheet templates from the community"
       />
 
-      {/* Tab Navigation */}
+      {/* ── Tab Navigation ── */}
       <nav className="flex gap-1 mb-6">
         <Link
           href="/dashboard/explore-campaigns"
-          className={`tab-pill ${activeTab === 'adventures' ? 'tab-pill-active' : ''}`}
+          className={`tab-pill ${
+            activeTab === 'adventures' ? 'tab-pill-active' : ''
+          }`}
         >
           <svg
             className="w-4 h-4"
@@ -173,7 +253,9 @@ function DashboardPublicTemplatesContent() {
         </Link>
         <Link
           href="/dashboard/public-templates"
-          className={`tab-pill ${activeTab === 'templates' ? 'tab-pill-active' : ''}`}
+          className={`tab-pill ${
+            activeTab === 'templates' ? 'tab-pill-active' : ''
+          }`}
         >
           <svg
             className="w-4 h-4"
@@ -192,45 +274,15 @@ function DashboardPublicTemplatesContent() {
         </Link>
       </nav>
 
-      {/* Search & Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search templates by name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input pl-10 w-full"
-          />
-        </div>
-        <input
-          type="text"
-          placeholder="Filter by campaign/system..."
-          value={campaign}
-          onChange={(e) => handleCampaignChange(e.target.value)}
-          className="input w-full sm:w-64"
-        />
-      </div>
-
-      {/* Sign-in prompt */}
+      {/* ── Sign-in prompt ── */}
       {showSignInPrompt && (
         <div className="mb-4 p-3 rounded-lg bg-surface border border-border text-sm">
           <span className="text-muted-foreground">
             Please{' '}
-            <Link href="/login" className="text-accent hover:text-accent-hover underline">
+            <Link
+              href="/login"
+              className="text-accent hover:text-accent-hover underline"
+            >
               sign in
             </Link>{' '}
             to clone templates.
@@ -244,7 +296,34 @@ function DashboardPublicTemplatesContent() {
         </div>
       )}
 
-      {/* Error state */}
+      {/* ── Search & Filters ── */}
+      <SearchFilterSection
+        placeholder="Search templates by name, creator or system..."
+        search={search}
+        onSearchChange={(v) => {
+          setSearch(v)
+        }}
+        activeFilters={activeFilters}
+        onRemoveFilter={handleRemoveFilter}
+        onRemoveAll={handleRemoveAll}
+        sortOptions={SORT_OPTIONS}
+        sortValue={sortValue}
+        onSortChange={setSortValue}
+      >
+        {/* Campaign/System filter */}
+        <div className="flex flex-col gap-1.5 min-w-[200px]">
+          <label className="label !mb-0">Campaign / System</label>
+          <input
+            type="text"
+            placeholder="e.g. D&D 5e, Tormenta..."
+            value={campaign}
+            onChange={(e) => handleCampaignChange(e.target.value)}
+            className="input-field py-2 px-3 text-sm"
+          />
+        </div>
+      </SearchFilterSection>
+
+      {/* ── Error state ── */}
       {error && !fetching && (
         <div className="flex flex-col items-center justify-center py-8 space-y-4">
           <p className="text-sm text-red-400">{error}</p>
@@ -254,25 +333,23 @@ function DashboardPublicTemplatesContent() {
         </div>
       )}
 
-      {/* Loading state */}
-      {fetching && (
-        <LoadingSkeleton variant="card" count={6} />
-      )}
+      {/* ── Loading state ── */}
+      {fetching && <LoadingSkeleton variant="card" count={6} />}
 
-      {/* Empty state */}
-      {!fetching && !error && templates.length === 0 && (
+      {/* ── Empty state ── */}
+      {!fetching && !error && sortedTemplates.length === 0 && (
         <EmptyState
           icon="📄"
-          title="No public templates found"
-          description="Check back later or try different search terms."
+          title="No templates match your search"
+          description="Try changing your filters or check back later."
         />
       )}
 
-      {/* Grid */}
-      {!fetching && !error && templates.length > 0 && (
+      {/* ── Results grid ── */}
+      {!fetching && !error && sortedTemplates.length > 0 && (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {templates.map((template, i) => (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {sortedTemplates.map((template, i) => (
               <TemplateCard
                 key={template.id}
                 id={template.id}
@@ -293,7 +370,7 @@ function DashboardPublicTemplatesContent() {
             ))}
           </div>
 
-          {/* Pagination */}
+          {/* ── Pagination ── */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-4 mt-8">
               <button
