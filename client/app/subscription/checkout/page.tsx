@@ -76,9 +76,6 @@ function CheckoutContent() {
   const [state, setState] = useState<'form' | 'creating' | 'success' | 'error'>('form')
   const [errorMessage, setErrorMessage] = useState('')
 
-  // Installment state (default 1 = full payment, only relevant for annual plan)
-  const [installments, setInstallments] = useState(1)
-
   const planId = searchParams.get('planId')
 
   // ----- CPF mask -----
@@ -233,7 +230,6 @@ function CheckoutContent() {
         payerDocument.replace(/\D/g, ''),
         undefined, // deviceId removed (no longer needed without MP)
         cardTokenId, // pre-defined token for test cards
-        installments, // installment count (1-12, only relevant for annual plan)
       )
 
       setState('success')
@@ -334,43 +330,9 @@ function CheckoutContent() {
                   {plan.slug === 'monthly' ? '/mês' : '/ano'}
                 </span>
               </p>
-              {plan.slug === 'annual' && (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {installments}x de {formatBRL(Math.round(plan.price / installments))}
-                </p>
-              )}
             </div>
           )}
         </div>
-
-        {/* Installment selector — only for annual plan */}
-        {plan && plan.slug === 'annual' && (
-          <div className="bg-surface border border-border rounded-xl p-6 mb-6">
-            <h3 className="text-sm font-semibold text-foreground mb-3">
-              Número de parcelas
-            </h3>
-            <div className="grid grid-cols-4 gap-2">
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setInstallments(n)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    installments === n
-                      ? 'bg-primary text-background'
-                      : 'bg-background border border-border text-foreground hover:border-primary/50'
-                  }`}
-                >
-                  {n}x
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground text-center">
-              {installments}x de {formatBRL(Math.round(plan.price / installments))}
-              {' '}— Total: {formatBRL(plan.price)}
-            </p>
-          </div>
-        )}
 
         {/* Payer info form */}
         <div className="bg-surface border border-border rounded-xl p-6">
@@ -527,8 +489,6 @@ function CheckoutContent() {
               ? 'Carregando...'
               : !pgReady
               ? 'Preparando...'
-              : plan?.slug === 'annual' && installments > 1
-              ? `Assinar ${installments}x ${formatBRL(Math.round(plan.price / installments))}`
               : `Assinar ${formattedPlanPrice}${plan?.slug === 'monthly' ? '/mês' : '/ano'}`}
           </button>
         </div>

@@ -160,55 +160,6 @@ describe('SubscriptionService', () => {
       ).rejects.toThrow(NotFoundException)
     })
 
-    it('passes installments to gateway when provided', async () => {
-      prisma.userSubscription.findUnique.mockResolvedValue(null)
-      prisma.subscriptionPlan.findUnique.mockResolvedValue(plan)
-      mockGateway.createSubscription.mockResolvedValue({
-        id: 'SUB-install',
-        initPoint: '',
-        status: 'PENDING',
-      })
-      prisma.userSubscription.upsert.mockResolvedValue({
-        id: 'local-sub-install',
-        userId,
-        planId,
-        pgSubscriptionId: 'SUB-install',
-        status: 'PENDING',
-      })
-
-      await service.createSubscription(
-        userId, planId, email, 'encrypted-card', undefined, undefined, undefined, undefined, undefined, 12,
-      )
-
-      expect(mockGateway.createSubscription).toHaveBeenCalledWith(
-        expect.objectContaining({ installments: 12 }),
-      )
-    })
-
-    it('omits installments from gateway call when not provided', async () => {
-      prisma.userSubscription.findUnique.mockResolvedValue(null)
-      prisma.subscriptionPlan.findUnique.mockResolvedValue(plan)
-      mockGateway.createSubscription.mockResolvedValue({
-        id: 'SUB-no-install',
-        initPoint: '',
-        status: 'PENDING',
-      })
-      prisma.userSubscription.upsert.mockResolvedValue({
-        id: 'local-sub-no-install',
-        userId,
-        planId,
-        pgSubscriptionId: 'SUB-no-install',
-        status: 'PENDING',
-      })
-
-      await service.createSubscription(userId, planId, email)
-
-      const callArg = mockGateway.createSubscription.mock.calls[0][0]
-      // When installments is not provided (undefined), `?? undefined` in the
-      // service code ensures the property is omitted entirely from the object.
-      expect(callArg).not.toHaveProperty('installments')
-    })
-
     it('allows creating a new subscription when existing is CANCELLED (upserts)', async () => {
       prisma.userSubscription.findUnique.mockResolvedValue({
         id: 'existing',

@@ -106,7 +106,6 @@ export class SubscriptionService {
     payerDocument?: string,
     deviceId?: string,
     cardTokenId?: string,
-    installments?: number,
   ): Promise<CreateSubscriptionResult> {
     // Check for existing active subscription
     const existing = await this.prisma.userSubscription.findUnique({
@@ -152,7 +151,6 @@ export class SubscriptionService {
       payerDocument,
       externalReference: userId,
       deviceId,
-      ...(installments !== undefined ? { installments } : {}),
     })
 
     // Map gateway status to internal status

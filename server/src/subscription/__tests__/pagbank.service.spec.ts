@@ -288,25 +288,6 @@ describe('PagBankService', () => {
       expect(reqBody.customer.billing_info[0].card.encrypted).toBeUndefined()
     })
 
-    it('sends installments when provided (encrypted card flow)', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: jest.fn().mockResolvedValueOnce(validResponse),
-      })
-
-      await service.createSubscription({
-        ...params,
-        cardToken: 'encrypted-card-data',
-        securityCode: '123',
-        installments: 12,
-      })
-
-      const reqBody = JSON.parse(
-        mockFetch.mock.calls[0][1]?.body as string,
-      )
-      expect(reqBody.payment_method[0].installments).toBe(12)
-    })
-
     it('omits installments from body when installments is undefined', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -325,7 +306,7 @@ describe('PagBankService', () => {
       expect(reqBody.payment_method[0].installments).toBeUndefined()
     })
 
-    it('sends installments when using cardTokenId (CARD_UUID flow)', async () => {
+    it('omits installments from payment_method when not provided', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(validResponse),
@@ -334,13 +315,12 @@ describe('PagBankService', () => {
       await service.createSubscription({
         ...params,
         cardTokenId: 'CARD_8286F604-2D44-4B30-A80D-0E749A555566',
-        installments: 12,
       })
 
       const reqBody = JSON.parse(
         mockFetch.mock.calls[0][1]?.body as string,
       )
-      expect(reqBody.payment_method[0].installments).toBe(12)
+      expect(reqBody.payment_method[0].installments).toBeUndefined()
     })
   })
 

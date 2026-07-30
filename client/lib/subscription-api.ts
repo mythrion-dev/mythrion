@@ -54,7 +54,6 @@ export async function createSubscription(
   payerDocument?: string,
   deviceId?: string,
   cardTokenId?: string,
-  installments?: number,
 ): Promise<CreateSubscriptionResponse> {
   return api.post<CreateSubscriptionResponse>('/subscriptions', {
     planId,
@@ -64,7 +63,6 @@ export async function createSubscription(
     ...(payerName ? { payerName } : {}),
     ...(payerDocument ? { payerDocument } : {}),
     ...(deviceId ? { deviceId } : {}),
-    ...(installments ? { installments } : {}),
   })
 }
 
