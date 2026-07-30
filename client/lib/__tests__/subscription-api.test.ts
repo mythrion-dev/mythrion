@@ -51,7 +51,7 @@ describe('subscription-api', () => {
   describe('createSubscription', () => {
     it('calls api.post with planId and returns initPoint and subscriptionId', async () => {
       const response = {
-        initPoint: 'https://mercadopago.com/checkout/123',
+        initPoint: '', // PagBank card flow is direct — no redirect
         subscriptionId: 'sub-1',
       }
       vi.mocked(api.post).mockResolvedValue(response)

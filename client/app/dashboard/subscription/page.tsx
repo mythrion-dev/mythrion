@@ -62,6 +62,50 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
+/* ─── PagBank encryption script loader ─────────────────────────── */
+
+function usePagBankEncryption(): boolean {
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    const publicKey = process.env.NEXT_PUBLIC_PAGBANK_PUBLIC_KEY
+    if (!publicKey) {
+      setReady(true) // No encryption configured — proceed without it
+      return
+    }
+
+    // Check if already loaded
+    if ((window as any).PagBank?.encryptCard) {
+      setReady(true)
+      return
+    }
+
+    // Load PagBank encryption SDK from CDN
+    const script = document.createElement('script')
+    script.src = 'https://assets.pagseguro.com.br/pagbank-encrypt/2.0.3/pagbank-encrypt.js'
+    script.async = true
+    script.onload = () => {
+      try {
+        ;(window as any).PagBank?.setPublicKey?.(publicKey)
+      } catch (err) {
+        console.error('[dashboard] PagBank setPublicKey error:', err)
+      }
+      setReady(true)
+    }
+    script.onerror = () => {
+      console.error('[dashboard] Failed to load PagBank encryption SDK')
+      setReady(true) // Proceed without — error will be caught at submit time
+    }
+    document.head.appendChild(script)
+
+    return () => {
+      // No cleanup needed — script stays in DOM
+    }
+  }, [])
+
+  return ready
+}
+
 /* ─── main page ────────────────────────────────────────────────── */
 
 export default function DashboardSubscriptionPage() {
@@ -77,6 +121,9 @@ export default function DashboardSubscriptionPage() {
   const [updatingCard, setUpdatingCard] = useState(false)
   const [updateError, setUpdateError] = useState('')
   const [updateSuccess, setUpdateSuccess] = useState(false)
+  const [formErrors, setFormErrors] = useState<{ name?: string; document?: string; card?: string }>({})
+  const pgReady = usePagBankEncryption()
+  const pgPublicKey = process.env.NEXT_PUBLIC_PAGBANK_PUBLIC_KEY
 
   // Cancel state
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
@@ -99,19 +146,68 @@ export default function DashboardSubscriptionPage() {
     return `${digits.slice(0, 2)}/${digits.slice(2)}`
   }
 
+  // ─── form validation ───────────────────────────────────────────
+  const validate = useCallback((): boolean => {
+    const errors: { name?: string; document?: string; card?: string } = {}
+
+    if (!payerName.trim() || payerName.trim().length < 3) {
+      errors.name = 'Digite o nome completo do titular.'
+    }
+
+    const digits = payerDocument.replace(/\D/g, '')
+    if (digits.length !== 11) {
+      errors.document = 'Digite um CPF válido (11 dígitos).'
+    }
+
+    if (pgPublicKey) {
+      if (cardNumber.replace(/\D/g, '').length < 13) {
+        errors.card = 'Número do cartão inválido.'
+      }
+      if (cardExpiry.replace(/\D/g, '').length < 4) {
+        errors.card = 'Data de validade inválida.'
+      }
+      if (cardCvv.replace(/\D/g, '').length < 3) {
+        errors.card = 'CVV inválido.'
+      }
+    }
+
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }, [payerName, payerDocument, pgPublicKey, cardNumber, cardExpiry, cardCvv])
+
   // ─── handle card update ───────────────────────────────────────
   const handleUpdateCard = useCallback(async () => {
     if (!subscription?.pgSubscriptionId) return
+    if (!validate()) return
 
     setUpdatingCard(true)
     setUpdateError('')
     setUpdateSuccess(false)
 
     try {
-      // In PagBank flow, we send raw card data — the backend encrypts it server-side
-      // or we use a PagBank encrypted card string from client-side JS
-      // For now, send cardToken as a simulated encrypted payload
-      const cardToken = `enc_card_${cardNumber.replace(/\s/g, '')}_${cardExpiry.replace('/', '')}_${cardCvv}`
+      let cardToken: string
+
+      if (pgPublicKey) {
+        // Encrypt card with PagBank
+        const pg = (window as any).PagBank
+        if (!pg?.encryptCard) {
+          throw new Error('SDK de criptografia PagBank não carregado. Tente novamente.')
+        }
+
+        const [expMonth, expYear] = cardExpiry.split('/')
+        const cardData = {
+          cardNumber: cardNumber.replace(/\s/g, ''),
+          cardExpirationMonth: expMonth || '',
+          cardExpirationYear: expYear ? `20${expYear}` : '',
+          cardSecurityCode: cardCvv,
+          cardholderName: payerName.trim(),
+        }
+
+        cardToken = pg.encryptCard(cardData)
+      } else {
+        // No encryption configured — should not reach this in production
+        cardToken = `unencrypted_${cardNumber.replace(/\s/g, '')}_${cardExpiry.replace('/', '')}_${cardCvv}`
+      }
 
       await updatePaymentMethod(
         cardToken,
@@ -121,6 +217,7 @@ export default function DashboardSubscriptionPage() {
 
       setUpdateSuccess(true)
       setShowCardForm(false)
+      setFormErrors({})
       setPayerName('')
       setPayerDocument('')
       setCardNumber('')
@@ -136,7 +233,7 @@ export default function DashboardSubscriptionPage() {
     } finally {
       setUpdatingCard(false)
     }
-  }, [subscription, payerName, payerDocument, cardNumber, cardExpiry, cardCvv])
+  }, [subscription, payerName, payerDocument, cardNumber, cardExpiry, cardCvv, pgPublicKey, validate])
 
   // ─── handle cancel ────────────────────────────────────────────
   const handleCancel = useCallback(async () => {
@@ -329,11 +426,19 @@ export default function DashboardSubscriptionPage() {
                 id="cardPayerName"
                 type="text"
                 value={payerName}
-                onChange={(e) => setPayerName(e.target.value)}
+                onChange={(e) => {
+                  setPayerName(e.target.value)
+                  if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: undefined }))
+                }}
                 placeholder="Como no seu cartão"
-                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className={`w-full px-3 py-2 rounded-lg bg-background border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                  formErrors.name ? 'border-red-500' : 'border-border'
+                }`}
                 autoComplete="name"
               />
+              {formErrors.name && (
+                <p className="mt-1 text-xs text-red-500">{formErrors.name}</p>
+              )}
             </div>
 
             {/* CPF */}
@@ -345,13 +450,21 @@ export default function DashboardSubscriptionPage() {
                 id="cardDocument"
                 type="text"
                 value={payerDocument}
-                onChange={(e) => setPayerDocument(formatCPF(e.target.value))}
+                onChange={(e) => {
+                  setPayerDocument(formatCPF(e.target.value))
+                  if (formErrors.document) setFormErrors((prev) => ({ ...prev, document: undefined }))
+                }}
                 placeholder="000.000.000-00"
                 maxLength={14}
-                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className={`w-full px-3 py-2 rounded-lg bg-background border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                  formErrors.document ? 'border-red-500' : 'border-border'
+                }`}
                 autoComplete="off"
                 inputMode="numeric"
               />
+              {formErrors.document && (
+                <p className="mt-1 text-xs text-red-500">{formErrors.document}</p>
+              )}
             </div>
 
             {/* Card number */}
@@ -363,10 +476,17 @@ export default function DashboardSubscriptionPage() {
                 id="cardNumber"
                 type="text"
                 value={cardNumber}
-                onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, '').slice(0, 16)
+                  const formatted = raw.replace(/(.{4})/g, '$1 ').trim()
+                  setCardNumber(formatted)
+                  if (formErrors.card) setFormErrors((prev) => ({ ...prev, card: undefined }))
+                }}
                 placeholder="0000 0000 0000 0000"
-                maxLength={16}
-                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                maxLength={19}
+                className={`w-full px-3 py-2 rounded-lg bg-background border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                  formErrors.card ? 'border-red-500' : 'border-border'
+                }`}
                 autoComplete="cc-number"
                 inputMode="numeric"
               />
@@ -382,10 +502,15 @@ export default function DashboardSubscriptionPage() {
                   id="cardExpiry"
                   type="text"
                   value={cardExpiry}
-                  onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
+                  onChange={(e) => {
+                    setCardExpiry(formatExpiry(e.target.value))
+                    if (formErrors.card) setFormErrors((prev) => ({ ...prev, card: undefined }))
+                  }}
                   placeholder="MM/AA"
                   maxLength={5}
-                  className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className={`w-full px-3 py-2 rounded-lg bg-background border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                    formErrors.card ? 'border-red-500' : 'border-border'
+                  }`}
                   autoComplete="cc-exp"
                 />
               </div>
@@ -397,13 +522,21 @@ export default function DashboardSubscriptionPage() {
                   id="cardCvv"
                   type="text"
                   value={cardCvv}
-                  onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  onChange={(e) => {
+                    setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))
+                    if (formErrors.card) setFormErrors((prev) => ({ ...prev, card: undefined }))
+                  }}
                   placeholder="123"
                   maxLength={4}
-                  className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className={`w-full px-3 py-2 rounded-lg bg-background border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                    formErrors.card ? 'border-red-500' : 'border-border'
+                  }`}
                   autoComplete="cc-csc"
                   inputMode="numeric"
                 />
+                {formErrors.card && (
+                  <p className="mt-1 text-xs text-red-500">{formErrors.card}</p>
+                )}
               </div>
             </div>
 
@@ -421,6 +554,7 @@ export default function DashboardSubscriptionPage() {
                   setShowCardForm(false)
                   setUpdateError('')
                   setUpdateSuccess(false)
+                  setFormErrors({})
                 }}
                 className="flex-1 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground transition-colors"
                 disabled={updatingCard}
@@ -429,10 +563,10 @@ export default function DashboardSubscriptionPage() {
               </button>
               <button
                 onClick={handleUpdateCard}
-                disabled={updatingCard}
+                disabled={updatingCard || !pgReady}
                 className="flex-1 py-2 rounded-lg bg-primary text-background text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {updatingCard ? 'Atualizando...' : 'Atualizar cartão'}
+                {updatingCard ? 'Atualizando...' : !pgReady ? 'Preparando...' : 'Atualizar cartão'}
               </button>
             </div>
           </div>

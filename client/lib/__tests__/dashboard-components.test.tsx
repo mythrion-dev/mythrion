@@ -43,6 +43,18 @@ vi.mock('@/lib/auth-context', () => ({
   }),
 }))
 
+// ── Subscription context mock (Sidebar now uses useSubscription) ──
+
+vi.mock('@/lib/subscription-context', () => ({
+  useSubscription: () => ({
+    subscription: null,
+    hasActiveSubscription: false,
+    loading: false,
+    refresh: vi.fn(),
+    hasEverHadSubscription: false,
+  }),
+}))
+
 // ════════════════════════════════════════════════════════════
 // Sidebar — rendering
 // ════════════════════════════════════════════════════════════
