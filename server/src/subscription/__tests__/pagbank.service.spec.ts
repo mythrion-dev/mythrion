@@ -110,6 +110,9 @@ describe('PagBankService', () => {
       expect(reqBody.customer.name).toBe('João Silva')
       expect(reqBody.customer.tax_id).toBe('12345678909')
       expect(reqBody.customer.billing_info[0].card.encrypted).toBe('encrypted-card-data')
+      expect(reqBody.customer.phones).toEqual([
+        { area: '11', country: '55', number: '999999999' },
+      ])
       expect(reqBody.payment_method[0].type).toBe('CREDIT_CARD')
       expect(reqBody.payment_method[0].card.security_code).toBe(123)
       expect(reqBody.amount).toEqual({ value: 12000, currency: 'BRL' })
@@ -130,6 +133,9 @@ describe('PagBankService', () => {
         mockFetch.mock.calls[0][1]?.body as string,
       )
       expect(reqBody.customer.billing_info).toBeUndefined()
+      expect(reqBody.customer.phones).toEqual([
+        { area: '11', country: '55', number: '999999999' },
+      ])
       expect(reqBody.reference_id).toBeUndefined()
       expect(reqBody.amount).toEqual({ value: 12000, currency: 'BRL' })
     })
@@ -163,6 +169,9 @@ describe('PagBankService', () => {
         mockFetch.mock.calls[0][1]?.body as string,
       )
       expect(reqBody.customer.name).toBe('user')
+      expect(reqBody.customer.phones).toEqual([
+        { area: '11', country: '55', number: '999999999' },
+      ])
     })
 
     it('cleans document to digits only', async () => {
@@ -180,6 +189,9 @@ describe('PagBankService', () => {
         mockFetch.mock.calls[0][1]?.body as string,
       )
       expect(reqBody.customer.tax_id).toBe('12345678909')
+      expect(reqBody.customer.phones).toEqual([
+        { area: '11', country: '55', number: '999999999' },
+      ])
     })
 
     it('handles response without customer field', async () => {

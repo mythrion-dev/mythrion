@@ -312,6 +312,16 @@ export class PagBankService implements PaymentGateway {
       name: params.payerName || params.payerEmail.split('@')[0],
       email: params.payerEmail,
       tax_id: (params.payerDocument || '').replace(/\D/g, ''),
+      // PagBank requires at least one phone entry. We don't collect phone on the
+      // checkout form, so we send a placeholder. The phone is not used for
+      // communication; it's a mandatory schema field on the customer object.
+      phones: [
+        {
+          area: '11',
+          country: '55',
+          number: '999999999',
+        },
+      ],
     }
 
     return customer
