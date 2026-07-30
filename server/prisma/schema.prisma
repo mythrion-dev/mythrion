@@ -27,6 +27,7 @@ model User {
   refreshTokens      RefreshToken[]
   characterSheets    CharacterSheet[]
   subscription       UserSubscription?
+  notebooks          Notebook[]
 }
 
 model Adventure {
@@ -53,6 +54,7 @@ model Adventure {
   templates            Template[]
   characterSheets      CharacterSheet[]
   books                Book[]
+  notebooks            Notebook[]
   @@index([ownerId])
   @@index([originalTemplateId])
 }
@@ -109,6 +111,51 @@ model Book {
   updatedAt     DateTime       @updatedAt
 
   @@index([adventureId])
+}
+
+model Notebook {
+  id          String           @id @default(cuid())
+  adventureId String
+  adventure   Adventure        @relation(fields: [adventureId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folders     NotebookFolder[]
+  pages       NotebookPage[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([adventureId, userId])
+  @@index([adventureId])
+  @@index([userId])
+}
+
+model NotebookFolder {
+  id          String           @id @default(cuid())
+  notebookId  String
+  notebook    Notebook         @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  name        String
+  pages       NotebookPage[]
+  sortOrder   Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([notebookId])
+}
+
+model NotebookPage {
+  id        String          @id @default(cuid())
+  notebookId String
+  notebook  Notebook        @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  folderId  String?
+  folder    NotebookFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  title     String
+  content   String          @default("")
+  sortOrder Int             @default(0)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([notebookId])
+  @@index([folderId])
 }
 
 model CampaignMember {

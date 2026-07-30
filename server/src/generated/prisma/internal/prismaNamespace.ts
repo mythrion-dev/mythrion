@@ -388,6 +388,9 @@ export const ModelName = {
   Adventure: 'Adventure',
   JoinRequest: 'JoinRequest',
   Book: 'Book',
+  Notebook: 'Notebook',
+  NotebookFolder: 'NotebookFolder',
+  NotebookPage: 'NotebookPage',
   CampaignMember: 'CampaignMember',
   CampaignInvitation: 'CampaignInvitation',
   GoogleAccount: 'GoogleAccount',
@@ -448,7 +451,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adventure" | "joinRequest" | "book" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateCoreResource" | "characterSheetCoreResourceValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "armorClassAttributeModifier" | "characterSheetArmorClassAttributeValue" | "templateResistance" | "resistanceComponent" | "resistanceAttributeModifier" | "characterSheetResistanceValue" | "characterSheetResistanceComponentValue" | "sheetResistance" | "sheetResistanceComponent" | "sheetResistanceAttributeModifier" | "sheetProfessionalSkill" | "sheetProfessionalSkillProfileValue" | "characterAbility" | "characterAbilityLevel" | "summonSkill" | "summonAttribute" | "summonArmorClassValue" | "summonHealth" | "characterInventoryItem" | "characterStory" | "templateCharacterSection" | "characterSectionEntry" | "subscriptionPlan" | "userSubscription" | "subscriptionInvoice"
+    modelProps: "user" | "adventure" | "joinRequest" | "book" | "notebook" | "notebookFolder" | "notebookPage" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateCoreResource" | "characterSheetCoreResourceValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "armorClassAttributeModifier" | "characterSheetArmorClassAttributeValue" | "templateResistance" | "resistanceComponent" | "resistanceAttributeModifier" | "characterSheetResistanceValue" | "characterSheetResistanceComponentValue" | "sheetResistance" | "sheetResistanceComponent" | "sheetResistanceAttributeModifier" | "sheetProfessionalSkill" | "sheetProfessionalSkillProfileValue" | "characterAbility" | "characterAbilityLevel" | "summonSkill" | "summonAttribute" | "summonArmorClassValue" | "summonHealth" | "characterInventoryItem" | "characterStory" | "templateCharacterSection" | "characterSectionEntry" | "subscriptionPlan" | "userSubscription" | "subscriptionInvoice"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -745,6 +748,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.BookCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.BookCountAggregateOutputType> | number
+        }
+      }
+    }
+    Notebook: {
+      payload: Prisma.$NotebookPayload<ExtArgs>
+      fields: Prisma.NotebookFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NotebookFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NotebookFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPayload>
+        }
+        findFirst: {
+          args: Prisma.NotebookFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NotebookFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPayload>
+        }
+        findMany: {
+          args: Prisma.NotebookFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPayload>[]
+        }
+        create: {
+          args: Prisma.NotebookCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPayload>
+        }
+        createMany: {
+          args: Prisma.NotebookCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NotebookCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPayload>[]
+        }
+        delete: {
+          args: Prisma.NotebookDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPayload>
+        }
+        update: {
+          args: Prisma.NotebookUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPayload>
+        }
+        deleteMany: {
+          args: Prisma.NotebookDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NotebookUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NotebookUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPayload>[]
+        }
+        upsert: {
+          args: Prisma.NotebookUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPayload>
+        }
+        aggregate: {
+          args: Prisma.NotebookAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNotebook>
+        }
+        groupBy: {
+          args: Prisma.NotebookGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NotebookGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NotebookCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NotebookCountAggregateOutputType> | number
+        }
+      }
+    }
+    NotebookFolder: {
+      payload: Prisma.$NotebookFolderPayload<ExtArgs>
+      fields: Prisma.NotebookFolderFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NotebookFolderFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookFolderPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NotebookFolderFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookFolderPayload>
+        }
+        findFirst: {
+          args: Prisma.NotebookFolderFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookFolderPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NotebookFolderFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookFolderPayload>
+        }
+        findMany: {
+          args: Prisma.NotebookFolderFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookFolderPayload>[]
+        }
+        create: {
+          args: Prisma.NotebookFolderCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookFolderPayload>
+        }
+        createMany: {
+          args: Prisma.NotebookFolderCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NotebookFolderCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookFolderPayload>[]
+        }
+        delete: {
+          args: Prisma.NotebookFolderDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookFolderPayload>
+        }
+        update: {
+          args: Prisma.NotebookFolderUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookFolderPayload>
+        }
+        deleteMany: {
+          args: Prisma.NotebookFolderDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NotebookFolderUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NotebookFolderUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookFolderPayload>[]
+        }
+        upsert: {
+          args: Prisma.NotebookFolderUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookFolderPayload>
+        }
+        aggregate: {
+          args: Prisma.NotebookFolderAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNotebookFolder>
+        }
+        groupBy: {
+          args: Prisma.NotebookFolderGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NotebookFolderGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NotebookFolderCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NotebookFolderCountAggregateOutputType> | number
+        }
+      }
+    }
+    NotebookPage: {
+      payload: Prisma.$NotebookPagePayload<ExtArgs>
+      fields: Prisma.NotebookPageFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NotebookPageFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPagePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NotebookPageFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPagePayload>
+        }
+        findFirst: {
+          args: Prisma.NotebookPageFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPagePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NotebookPageFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPagePayload>
+        }
+        findMany: {
+          args: Prisma.NotebookPageFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPagePayload>[]
+        }
+        create: {
+          args: Prisma.NotebookPageCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPagePayload>
+        }
+        createMany: {
+          args: Prisma.NotebookPageCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NotebookPageCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPagePayload>[]
+        }
+        delete: {
+          args: Prisma.NotebookPageDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPagePayload>
+        }
+        update: {
+          args: Prisma.NotebookPageUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPagePayload>
+        }
+        deleteMany: {
+          args: Prisma.NotebookPageDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NotebookPageUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NotebookPageUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPagePayload>[]
+        }
+        upsert: {
+          args: Prisma.NotebookPageUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotebookPagePayload>
+        }
+        aggregate: {
+          args: Prisma.NotebookPageAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNotebookPage>
+        }
+        groupBy: {
+          args: Prisma.NotebookPageGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NotebookPageGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NotebookPageCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NotebookPageCountAggregateOutputType> | number
         }
       }
     }
@@ -4178,6 +4403,43 @@ export const BookScalarFieldEnum = {
 export type BookScalarFieldEnum = (typeof BookScalarFieldEnum)[keyof typeof BookScalarFieldEnum]
 
 
+export const NotebookScalarFieldEnum = {
+  id: 'id',
+  adventureId: 'adventureId',
+  userId: 'userId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotebookScalarFieldEnum = (typeof NotebookScalarFieldEnum)[keyof typeof NotebookScalarFieldEnum]
+
+
+export const NotebookFolderScalarFieldEnum = {
+  id: 'id',
+  notebookId: 'notebookId',
+  name: 'name',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotebookFolderScalarFieldEnum = (typeof NotebookFolderScalarFieldEnum)[keyof typeof NotebookFolderScalarFieldEnum]
+
+
+export const NotebookPageScalarFieldEnum = {
+  id: 'id',
+  notebookId: 'notebookId',
+  folderId: 'folderId',
+  title: 'title',
+  content: 'content',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotebookPageScalarFieldEnum = (typeof NotebookPageScalarFieldEnum)[keyof typeof NotebookPageScalarFieldEnum]
+
+
 export const CampaignMemberScalarFieldEnum = {
   id: 'id',
   adventureId: 'adventureId',
@@ -5108,6 +5370,9 @@ export type GlobalOmitConfig = {
   adventure?: Prisma.AdventureOmit
   joinRequest?: Prisma.JoinRequestOmit
   book?: Prisma.BookOmit
+  notebook?: Prisma.NotebookOmit
+  notebookFolder?: Prisma.NotebookFolderOmit
+  notebookPage?: Prisma.NotebookPageOmit
   campaignMember?: Prisma.CampaignMemberOmit
   campaignInvitation?: Prisma.CampaignInvitationOmit
   googleAccount?: Prisma.GoogleAccountOmit
