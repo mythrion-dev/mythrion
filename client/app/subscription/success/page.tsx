@@ -23,25 +23,28 @@ export default function SuccessPage() {
     }
   }, [authLoading, user, router])
 
-  // Poll for subscription status
+  // Poll for subscription status (stops on timeout or active status)
   useEffect(() => {
-    if (authLoading || !user) return
+    if (authLoading || !user || timedOut) return
 
     // Poll every 3 seconds
     intervalRef.current = setInterval(async () => {
-      await refresh()
+      if (subscription?.status !== 'ACTIVE' && subscription?.status !== 'AUTHORIZED') {
+        await refresh()
+      }
     }, 3000)
 
     // Timeout after 30 seconds
     timeoutRef.current = setTimeout(() => {
       setTimedOut(true)
+      if (intervalRef.current) clearInterval(intervalRef.current)
     }, 30000)
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
-  }, [authLoading, user, refresh])
+  }, [authLoading, user, refresh, timedOut, subscription?.status])
 
   // Track elapsed time for the message
   useEffect(() => {

@@ -46,9 +46,10 @@ export class PagBankService implements PaymentGateway {
         customer: this.buildCustomer(params),
         payment_method: [{
           type: 'CREDIT_CARD',
-          card: params.securityCode
-            ? { security_code: Number(params.securityCode) }
-            : {},
+          card: {
+            ...(params.cardToken ? { encrypted: params.cardToken } : {}),
+            ...(params.securityCode ? { security_code: Number(params.securityCode) } : {}),
+          },
         }],
       }
 

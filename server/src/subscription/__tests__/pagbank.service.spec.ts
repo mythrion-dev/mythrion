@@ -114,6 +114,7 @@ describe('PagBankService', () => {
         { area: '11', country: '55', number: '999999999' },
       ])
       expect(reqBody.payment_method[0].type).toBe('CREDIT_CARD')
+      expect(reqBody.payment_method[0].card.encrypted).toBe('encrypted-card-data')
       expect(reqBody.payment_method[0].card.security_code).toBe(123)
       expect(reqBody.amount).toEqual({ value: 12000, currency: 'BRL' })
     })
