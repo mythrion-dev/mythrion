@@ -108,7 +108,7 @@ describe('PagBankService', () => {
       expect(reqBody.plan.id).toBe('pg-plan-monthly')
       expect(reqBody.customer.email).toBe('user@example.com')
       expect(reqBody.customer.name).toBe('João Silva')
-      expect(reqBody.customer.tax_id).toEqual({ type: 'BR:CPF', value: '12345678909' })
+      expect(reqBody.customer.tax_id).toBe('12345678909')
       expect(reqBody.customer.billing_info[0].card.encrypted).toBe('encrypted-card-data')
       expect(reqBody.customer.phones).toEqual([
         { area: '11', country: '55', number: '999999999' },
@@ -189,7 +189,7 @@ describe('PagBankService', () => {
       const reqBody = JSON.parse(
         mockFetch.mock.calls[0][1]?.body as string,
       )
-      expect(reqBody.customer.tax_id).toEqual({ type: 'BR:CPF', value: '12345678909' })
+      expect(reqBody.customer.tax_id).toBe('12345678909')
       expect(reqBody.customer.phones).toEqual([
         { area: '11', country: '55', number: '999999999' },
       ])

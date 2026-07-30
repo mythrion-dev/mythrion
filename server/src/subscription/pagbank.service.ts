@@ -313,10 +313,7 @@ export class PagBankService implements PaymentGateway {
     const customer: Record<string, any> = {
       name: params.payerName || params.payerEmail.split('@')[0],
       email: params.payerEmail,
-      tax_id: {
-        type: 'BR:CPF',
-        value: taxIdDigits,
-      },
+      tax_id: taxIdDigits,
       // PagBank requires at least one phone entry. We don't collect phone on the
       // checkout form, so we send a placeholder. The phone is not used for
       // communication; it's a mandatory schema field on the customer object.
