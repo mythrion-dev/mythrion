@@ -65,7 +65,7 @@ export class AdventureService {
       where: { id },
       include: {
         owner: { select: { id: true, displayName: true } },
-        _count: { select: { members: true } },
+        _count: { select: { members: { where: { role: 'PLAYER' } } } },
       },
     })
     if (!adventure) {
@@ -191,7 +191,7 @@ export class AdventureService {
           sessionType: true,
           createdAt: true,
           owner: { select: { id: true, displayName: true } },
-          _count: { select: { members: true } },
+          _count: { select: { members: { where: { role: 'PLAYER' } } } },
         },
       }),
       this.prisma.adventure.count({ where }),
@@ -241,7 +241,7 @@ export class AdventureService {
         sessionTime: true,
         sessionType: true,
         owner: { select: { id: true, displayName: true } },
-        _count: { select: { members: true } },
+        _count: { select: { members: { where: { role: 'PLAYER' } } } },
       },
     })
 
@@ -278,7 +278,7 @@ export class AdventureService {
         sessionTime: true,
         sessionType: true,
         owner: { select: { id: true, displayName: true } },
-        _count: { select: { members: true } },
+        _count: { select: { members: { where: { role: 'PLAYER' } } } },
       },
     })
 
