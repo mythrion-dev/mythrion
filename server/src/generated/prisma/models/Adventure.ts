@@ -300,6 +300,7 @@ export type AdventureWhereInput = {
   templates?: Prisma.TemplateListRelationFilter
   characterSheets?: Prisma.CharacterSheetListRelationFilter
   books?: Prisma.BookListRelationFilter
+  notebooks?: Prisma.NotebookListRelationFilter
 }
 
 export type AdventureOrderByWithRelationInput = {
@@ -326,6 +327,7 @@ export type AdventureOrderByWithRelationInput = {
   templates?: Prisma.TemplateOrderByRelationAggregateInput
   characterSheets?: Prisma.CharacterSheetOrderByRelationAggregateInput
   books?: Prisma.BookOrderByRelationAggregateInput
+  notebooks?: Prisma.NotebookOrderByRelationAggregateInput
 }
 
 export type AdventureWhereUniqueInput = Prisma.AtLeast<{
@@ -355,6 +357,7 @@ export type AdventureWhereUniqueInput = Prisma.AtLeast<{
   templates?: Prisma.TemplateListRelationFilter
   characterSheets?: Prisma.CharacterSheetListRelationFilter
   books?: Prisma.BookListRelationFilter
+  notebooks?: Prisma.NotebookListRelationFilter
 }, "id">
 
 export type AdventureOrderByWithAggregationInput = {
@@ -423,6 +426,7 @@ export type AdventureCreateInput = {
   templates?: Prisma.TemplateCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAdventureInput
   books?: Prisma.BookCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateInput = {
@@ -447,6 +451,7 @@ export type AdventureUncheckedCreateInput = {
   templates?: Prisma.TemplateUncheckedCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAdventureInput
   books?: Prisma.BookUncheckedCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUpdateInput = {
@@ -471,6 +476,7 @@ export type AdventureUpdateInput = {
   templates?: Prisma.TemplateUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutAdventureNestedInput
   books?: Prisma.BookUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateInput = {
@@ -495,6 +501,7 @@ export type AdventureUncheckedUpdateInput = {
   templates?: Prisma.TemplateUncheckedUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAdventureNestedInput
   books?: Prisma.BookUncheckedUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureCreateManyInput = {
@@ -707,6 +714,20 @@ export type AdventureUpdateOneRequiredWithoutBooksNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.AdventureUpdateToOneWithWhereWithoutBooksInput, Prisma.AdventureUpdateWithoutBooksInput>, Prisma.AdventureUncheckedUpdateWithoutBooksInput>
 }
 
+export type AdventureCreateNestedOneWithoutNotebooksInput = {
+  create?: Prisma.XOR<Prisma.AdventureCreateWithoutNotebooksInput, Prisma.AdventureUncheckedCreateWithoutNotebooksInput>
+  connectOrCreate?: Prisma.AdventureCreateOrConnectWithoutNotebooksInput
+  connect?: Prisma.AdventureWhereUniqueInput
+}
+
+export type AdventureUpdateOneRequiredWithoutNotebooksNestedInput = {
+  create?: Prisma.XOR<Prisma.AdventureCreateWithoutNotebooksInput, Prisma.AdventureUncheckedCreateWithoutNotebooksInput>
+  connectOrCreate?: Prisma.AdventureCreateOrConnectWithoutNotebooksInput
+  upsert?: Prisma.AdventureUpsertWithoutNotebooksInput
+  connect?: Prisma.AdventureWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AdventureUpdateToOneWithWhereWithoutNotebooksInput, Prisma.AdventureUpdateWithoutNotebooksInput>, Prisma.AdventureUncheckedUpdateWithoutNotebooksInput>
+}
+
 export type AdventureCreateNestedOneWithoutMembersInput = {
   create?: Prisma.XOR<Prisma.AdventureCreateWithoutMembersInput, Prisma.AdventureUncheckedCreateWithoutMembersInput>
   connectOrCreate?: Prisma.AdventureCreateOrConnectWithoutMembersInput
@@ -830,6 +851,7 @@ export type AdventureCreateWithoutOwnerInput = {
   templates?: Prisma.TemplateCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAdventureInput
   books?: Prisma.BookCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateWithoutOwnerInput = {
@@ -853,6 +875,7 @@ export type AdventureUncheckedCreateWithoutOwnerInput = {
   templates?: Prisma.TemplateUncheckedCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAdventureInput
   books?: Prisma.BookUncheckedCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureCreateOrConnectWithoutOwnerInput = {
@@ -923,6 +946,7 @@ export type AdventureCreateWithoutJoinRequestsInput = {
   templates?: Prisma.TemplateCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAdventureInput
   books?: Prisma.BookCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateWithoutJoinRequestsInput = {
@@ -946,6 +970,7 @@ export type AdventureUncheckedCreateWithoutJoinRequestsInput = {
   templates?: Prisma.TemplateUncheckedCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAdventureInput
   books?: Prisma.BookUncheckedCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureCreateOrConnectWithoutJoinRequestsInput = {
@@ -985,6 +1010,7 @@ export type AdventureUpdateWithoutJoinRequestsInput = {
   templates?: Prisma.TemplateUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutAdventureNestedInput
   books?: Prisma.BookUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateWithoutJoinRequestsInput = {
@@ -1008,6 +1034,7 @@ export type AdventureUncheckedUpdateWithoutJoinRequestsInput = {
   templates?: Prisma.TemplateUncheckedUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAdventureNestedInput
   books?: Prisma.BookUncheckedUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureCreateWithoutBooksInput = {
@@ -1031,6 +1058,7 @@ export type AdventureCreateWithoutBooksInput = {
   joinRequests?: Prisma.JoinRequestCreateNestedManyWithoutAdventureInput
   templates?: Prisma.TemplateCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateWithoutBooksInput = {
@@ -1054,6 +1082,7 @@ export type AdventureUncheckedCreateWithoutBooksInput = {
   joinRequests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutAdventureInput
   templates?: Prisma.TemplateUncheckedCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureCreateOrConnectWithoutBooksInput = {
@@ -1093,6 +1122,7 @@ export type AdventureUpdateWithoutBooksInput = {
   joinRequests?: Prisma.JoinRequestUpdateManyWithoutAdventureNestedInput
   templates?: Prisma.TemplateUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateWithoutBooksInput = {
@@ -1116,6 +1146,119 @@ export type AdventureUncheckedUpdateWithoutBooksInput = {
   joinRequests?: Prisma.JoinRequestUncheckedUpdateManyWithoutAdventureNestedInput
   templates?: Prisma.TemplateUncheckedUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutAdventureNestedInput
+}
+
+export type AdventureCreateWithoutNotebooksInput = {
+  id?: string
+  name: string
+  campaign: string
+  synopsis?: string | null
+  maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
+  isPublic?: boolean
+  templateSource?: string | null
+  templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  owner: Prisma.UserCreateNestedOneWithoutAdventuresInput
+  originalTemplate?: Prisma.TemplateCreateNestedOneWithoutAdventuresUsingAsOriginalInput
+  members?: Prisma.CampaignMemberCreateNestedManyWithoutAdventureInput
+  invitations?: Prisma.CampaignInvitationCreateNestedManyWithoutAdventureInput
+  joinRequests?: Prisma.JoinRequestCreateNestedManyWithoutAdventureInput
+  templates?: Prisma.TemplateCreateNestedManyWithoutAdventureInput
+  characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAdventureInput
+  books?: Prisma.BookCreateNestedManyWithoutAdventureInput
+}
+
+export type AdventureUncheckedCreateWithoutNotebooksInput = {
+  id?: string
+  name: string
+  campaign: string
+  synopsis?: string | null
+  maxPlayers?: number
+  sessionWeekday?: string | null
+  sessionTime?: string | null
+  sessionType?: string | null
+  ownerId: string
+  isPublic?: boolean
+  templateSource?: string | null
+  templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  originalTemplateId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  members?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutAdventureInput
+  invitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutAdventureInput
+  joinRequests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutAdventureInput
+  templates?: Prisma.TemplateUncheckedCreateNestedManyWithoutAdventureInput
+  characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAdventureInput
+  books?: Prisma.BookUncheckedCreateNestedManyWithoutAdventureInput
+}
+
+export type AdventureCreateOrConnectWithoutNotebooksInput = {
+  where: Prisma.AdventureWhereUniqueInput
+  create: Prisma.XOR<Prisma.AdventureCreateWithoutNotebooksInput, Prisma.AdventureUncheckedCreateWithoutNotebooksInput>
+}
+
+export type AdventureUpsertWithoutNotebooksInput = {
+  update: Prisma.XOR<Prisma.AdventureUpdateWithoutNotebooksInput, Prisma.AdventureUncheckedUpdateWithoutNotebooksInput>
+  create: Prisma.XOR<Prisma.AdventureCreateWithoutNotebooksInput, Prisma.AdventureUncheckedCreateWithoutNotebooksInput>
+  where?: Prisma.AdventureWhereInput
+}
+
+export type AdventureUpdateToOneWithWhereWithoutNotebooksInput = {
+  where?: Prisma.AdventureWhereInput
+  data: Prisma.XOR<Prisma.AdventureUpdateWithoutNotebooksInput, Prisma.AdventureUncheckedUpdateWithoutNotebooksInput>
+}
+
+export type AdventureUpdateWithoutNotebooksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  campaign?: Prisma.StringFieldUpdateOperationsInput | string
+  synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.UserUpdateOneRequiredWithoutAdventuresNestedInput
+  originalTemplate?: Prisma.TemplateUpdateOneWithoutAdventuresUsingAsOriginalNestedInput
+  members?: Prisma.CampaignMemberUpdateManyWithoutAdventureNestedInput
+  invitations?: Prisma.CampaignInvitationUpdateManyWithoutAdventureNestedInput
+  joinRequests?: Prisma.JoinRequestUpdateManyWithoutAdventureNestedInput
+  templates?: Prisma.TemplateUpdateManyWithoutAdventureNestedInput
+  characterSheets?: Prisma.CharacterSheetUpdateManyWithoutAdventureNestedInput
+  books?: Prisma.BookUpdateManyWithoutAdventureNestedInput
+}
+
+export type AdventureUncheckedUpdateWithoutNotebooksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  campaign?: Prisma.StringFieldUpdateOperationsInput | string
+  synopsis?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  maxPlayers?: Prisma.IntFieldUpdateOperationsInput | number
+  sessionWeekday?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionTime?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ownerId?: Prisma.StringFieldUpdateOperationsInput | string
+  isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  templateSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  originalTemplateId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  members?: Prisma.CampaignMemberUncheckedUpdateManyWithoutAdventureNestedInput
+  invitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutAdventureNestedInput
+  joinRequests?: Prisma.JoinRequestUncheckedUpdateManyWithoutAdventureNestedInput
+  templates?: Prisma.TemplateUncheckedUpdateManyWithoutAdventureNestedInput
+  characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAdventureNestedInput
+  books?: Prisma.BookUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureCreateWithoutMembersInput = {
@@ -1139,6 +1282,7 @@ export type AdventureCreateWithoutMembersInput = {
   templates?: Prisma.TemplateCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAdventureInput
   books?: Prisma.BookCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateWithoutMembersInput = {
@@ -1162,6 +1306,7 @@ export type AdventureUncheckedCreateWithoutMembersInput = {
   templates?: Prisma.TemplateUncheckedCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAdventureInput
   books?: Prisma.BookUncheckedCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureCreateOrConnectWithoutMembersInput = {
@@ -1201,6 +1346,7 @@ export type AdventureUpdateWithoutMembersInput = {
   templates?: Prisma.TemplateUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutAdventureNestedInput
   books?: Prisma.BookUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateWithoutMembersInput = {
@@ -1224,6 +1370,7 @@ export type AdventureUncheckedUpdateWithoutMembersInput = {
   templates?: Prisma.TemplateUncheckedUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAdventureNestedInput
   books?: Prisma.BookUncheckedUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureCreateWithoutInvitationsInput = {
@@ -1247,6 +1394,7 @@ export type AdventureCreateWithoutInvitationsInput = {
   templates?: Prisma.TemplateCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAdventureInput
   books?: Prisma.BookCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateWithoutInvitationsInput = {
@@ -1270,6 +1418,7 @@ export type AdventureUncheckedCreateWithoutInvitationsInput = {
   templates?: Prisma.TemplateUncheckedCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAdventureInput
   books?: Prisma.BookUncheckedCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureCreateOrConnectWithoutInvitationsInput = {
@@ -1309,6 +1458,7 @@ export type AdventureUpdateWithoutInvitationsInput = {
   templates?: Prisma.TemplateUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutAdventureNestedInput
   books?: Prisma.BookUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateWithoutInvitationsInput = {
@@ -1332,6 +1482,7 @@ export type AdventureUncheckedUpdateWithoutInvitationsInput = {
   templates?: Prisma.TemplateUncheckedUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAdventureNestedInput
   books?: Prisma.BookUncheckedUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureCreateWithoutTemplatesInput = {
@@ -1355,6 +1506,7 @@ export type AdventureCreateWithoutTemplatesInput = {
   joinRequests?: Prisma.JoinRequestCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAdventureInput
   books?: Prisma.BookCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateWithoutTemplatesInput = {
@@ -1378,6 +1530,7 @@ export type AdventureUncheckedCreateWithoutTemplatesInput = {
   joinRequests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAdventureInput
   books?: Prisma.BookUncheckedCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureCreateOrConnectWithoutTemplatesInput = {
@@ -1406,6 +1559,7 @@ export type AdventureCreateWithoutOriginalTemplateInput = {
   templates?: Prisma.TemplateCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAdventureInput
   books?: Prisma.BookCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateWithoutOriginalTemplateInput = {
@@ -1429,6 +1583,7 @@ export type AdventureUncheckedCreateWithoutOriginalTemplateInput = {
   templates?: Prisma.TemplateUncheckedCreateNestedManyWithoutAdventureInput
   characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAdventureInput
   books?: Prisma.BookUncheckedCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureCreateOrConnectWithoutOriginalTemplateInput = {
@@ -1473,6 +1628,7 @@ export type AdventureUpdateWithoutTemplatesInput = {
   joinRequests?: Prisma.JoinRequestUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutAdventureNestedInput
   books?: Prisma.BookUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateWithoutTemplatesInput = {
@@ -1496,6 +1652,7 @@ export type AdventureUncheckedUpdateWithoutTemplatesInput = {
   joinRequests?: Prisma.JoinRequestUncheckedUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAdventureNestedInput
   books?: Prisma.BookUncheckedUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUpsertWithWhereUniqueWithoutOriginalTemplateInput = {
@@ -1535,6 +1692,7 @@ export type AdventureCreateWithoutCharacterSheetsInput = {
   joinRequests?: Prisma.JoinRequestCreateNestedManyWithoutAdventureInput
   templates?: Prisma.TemplateCreateNestedManyWithoutAdventureInput
   books?: Prisma.BookCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureUncheckedCreateWithoutCharacterSheetsInput = {
@@ -1558,6 +1716,7 @@ export type AdventureUncheckedCreateWithoutCharacterSheetsInput = {
   joinRequests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutAdventureInput
   templates?: Prisma.TemplateUncheckedCreateNestedManyWithoutAdventureInput
   books?: Prisma.BookUncheckedCreateNestedManyWithoutAdventureInput
+  notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutAdventureInput
 }
 
 export type AdventureCreateOrConnectWithoutCharacterSheetsInput = {
@@ -1597,6 +1756,7 @@ export type AdventureUpdateWithoutCharacterSheetsInput = {
   joinRequests?: Prisma.JoinRequestUpdateManyWithoutAdventureNestedInput
   templates?: Prisma.TemplateUpdateManyWithoutAdventureNestedInput
   books?: Prisma.BookUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateWithoutCharacterSheetsInput = {
@@ -1620,6 +1780,7 @@ export type AdventureUncheckedUpdateWithoutCharacterSheetsInput = {
   joinRequests?: Prisma.JoinRequestUncheckedUpdateManyWithoutAdventureNestedInput
   templates?: Prisma.TemplateUncheckedUpdateManyWithoutAdventureNestedInput
   books?: Prisma.BookUncheckedUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureCreateManyOwnerInput = {
@@ -1660,6 +1821,7 @@ export type AdventureUpdateWithoutOwnerInput = {
   templates?: Prisma.TemplateUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutAdventureNestedInput
   books?: Prisma.BookUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateWithoutOwnerInput = {
@@ -1683,6 +1845,7 @@ export type AdventureUncheckedUpdateWithoutOwnerInput = {
   templates?: Prisma.TemplateUncheckedUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAdventureNestedInput
   books?: Prisma.BookUncheckedUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateManyWithoutOwnerInput = {
@@ -1740,6 +1903,7 @@ export type AdventureUpdateWithoutOriginalTemplateInput = {
   templates?: Prisma.TemplateUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUpdateManyWithoutAdventureNestedInput
   books?: Prisma.BookUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateWithoutOriginalTemplateInput = {
@@ -1763,6 +1927,7 @@ export type AdventureUncheckedUpdateWithoutOriginalTemplateInput = {
   templates?: Prisma.TemplateUncheckedUpdateManyWithoutAdventureNestedInput
   characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAdventureNestedInput
   books?: Prisma.BookUncheckedUpdateManyWithoutAdventureNestedInput
+  notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutAdventureNestedInput
 }
 
 export type AdventureUncheckedUpdateManyWithoutOriginalTemplateInput = {
@@ -1794,6 +1959,7 @@ export type AdventureCountOutputType = {
   templates: number
   characterSheets: number
   books: number
+  notebooks: number
 }
 
 export type AdventureCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1803,6 +1969,7 @@ export type AdventureCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensi
   templates?: boolean | AdventureCountOutputTypeCountTemplatesArgs
   characterSheets?: boolean | AdventureCountOutputTypeCountCharacterSheetsArgs
   books?: boolean | AdventureCountOutputTypeCountBooksArgs
+  notebooks?: boolean | AdventureCountOutputTypeCountNotebooksArgs
 }
 
 /**
@@ -1857,6 +2024,13 @@ export type AdventureCountOutputTypeCountBooksArgs<ExtArgs extends runtime.Types
   where?: Prisma.BookWhereInput
 }
 
+/**
+ * AdventureCountOutputType without action
+ */
+export type AdventureCountOutputTypeCountNotebooksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NotebookWhereInput
+}
+
 
 export type AdventureSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1882,6 +2056,7 @@ export type AdventureSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   templates?: boolean | Prisma.Adventure$templatesArgs<ExtArgs>
   characterSheets?: boolean | Prisma.Adventure$characterSheetsArgs<ExtArgs>
   books?: boolean | Prisma.Adventure$booksArgs<ExtArgs>
+  notebooks?: boolean | Prisma.Adventure$notebooksArgs<ExtArgs>
   _count?: boolean | Prisma.AdventureCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["adventure"]>
 
@@ -1953,6 +2128,7 @@ export type AdventureInclude<ExtArgs extends runtime.Types.Extensions.InternalAr
   templates?: boolean | Prisma.Adventure$templatesArgs<ExtArgs>
   characterSheets?: boolean | Prisma.Adventure$characterSheetsArgs<ExtArgs>
   books?: boolean | Prisma.Adventure$booksArgs<ExtArgs>
+  notebooks?: boolean | Prisma.Adventure$notebooksArgs<ExtArgs>
   _count?: boolean | Prisma.AdventureCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type AdventureIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1975,6 +2151,7 @@ export type $AdventurePayload<ExtArgs extends runtime.Types.Extensions.InternalA
     templates: Prisma.$TemplatePayload<ExtArgs>[]
     characterSheets: Prisma.$CharacterSheetPayload<ExtArgs>[]
     books: Prisma.$BookPayload<ExtArgs>[]
+    notebooks: Prisma.$NotebookPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2394,6 +2571,7 @@ export interface Prisma__AdventureClient<T, Null = never, ExtArgs extends runtim
   templates<T extends Prisma.Adventure$templatesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Adventure$templatesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TemplatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   characterSheets<T extends Prisma.Adventure$characterSheetsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Adventure$characterSheetsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   books<T extends Prisma.Adventure$booksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Adventure$booksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  notebooks<T extends Prisma.Adventure$notebooksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Adventure$notebooksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotebookPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2999,6 +3177,30 @@ export type Adventure$booksArgs<ExtArgs extends runtime.Types.Extensions.Interna
   take?: number
   skip?: number
   distinct?: Prisma.BookScalarFieldEnum | Prisma.BookScalarFieldEnum[]
+}
+
+/**
+ * Adventure.notebooks
+ */
+export type Adventure$notebooksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Notebook
+   */
+  select?: Prisma.NotebookSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Notebook
+   */
+  omit?: Prisma.NotebookOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NotebookInclude<ExtArgs> | null
+  where?: Prisma.NotebookWhereInput
+  orderBy?: Prisma.NotebookOrderByWithRelationInput | Prisma.NotebookOrderByWithRelationInput[]
+  cursor?: Prisma.NotebookWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NotebookScalarFieldEnum | Prisma.NotebookScalarFieldEnum[]
 }
 
 /**

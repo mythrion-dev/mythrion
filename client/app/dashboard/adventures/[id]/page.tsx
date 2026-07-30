@@ -21,6 +21,7 @@ import { CampaignCreatureSidebar } from '@/components/adventure/CampaignCreature
 import { NpcsMobsSection } from '@/components/adventure/NpcsMobsSection'
 import { BookListPanel } from '@/components/books/BookListPanel'
 import { PdfViewerSidebar } from '@/components/books/PdfViewerSidebar'
+import { NotebookSidebar } from '@/components/notebook/NotebookSidebar'
 import { VisibilityToggle } from '@/components/adventure/VisibilityToggle'
 import { JoinRequestPanel } from '@/components/adventure/JoinRequestPanel'
 import type { CoreResource, AcConfigDraft, ArmorClassAttributeModifierDraft, ResistanceDef } from '@/components/adventure/types'
@@ -282,6 +283,8 @@ export default function AdventureDetailPage() {
   const [npcRefreshKey, setNpcRefreshKey] = useState(0)
   const isGM = userRole === 'GM'; const [activeTab, setActiveTab] = useState<'campaign' | 'templates' | 'books'>('campaign')
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null)
+  const [notebookOpen, setNotebookOpen] = useState(false)
+  const [showNotebook, setShowNotebook] = useState(false)
 
   // Public campaigns & join requests
   const [visibilityLoading, setVisibilityLoading] = useState(false)
@@ -614,6 +617,23 @@ export default function AdventureDetailPage() {
             </CollapsibleSection>
           )}
           {isGM && (
+            <CollapsibleSection title="Campaign Notebook" accent expanded={showNotebook} onToggle={() => setShowNotebook(!showNotebook)}>
+              <p className="text-sm text-muted-foreground mb-3">
+                Your private notebook for this campaign. Players cannot see this.
+              </p>
+              <button
+                type="button"
+                onClick={() => setNotebookOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Open Notebook
+              </button>
+            </CollapsibleSection>
+          )}
+          {isGM && (
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Publishing</h3>
               <VisibilityToggle
@@ -767,6 +787,15 @@ export default function AdventureDetailPage() {
         isGM={isGM}
         bookId={selectedBookId}
         onClose={() => setSelectedBookId(null)}
+        hideToggle
+      />
+
+      {/* Notebook Sidebar — private notes per user per campaign */}
+      <NotebookSidebar
+        adventureId={id}
+        isGM={isGM}
+        forceOpen={notebookOpen}
+        onClose={() => setNotebookOpen(false)}
         hideToggle
       />
     </div>

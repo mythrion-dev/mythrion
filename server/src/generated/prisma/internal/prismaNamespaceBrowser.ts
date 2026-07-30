@@ -55,6 +55,9 @@ export const ModelName = {
   Adventure: 'Adventure',
   JoinRequest: 'JoinRequest',
   Book: 'Book',
+  Notebook: 'Notebook',
+  NotebookFolder: 'NotebookFolder',
+  NotebookPage: 'NotebookPage',
   CampaignMember: 'CampaignMember',
   CampaignInvitation: 'CampaignInvitation',
   GoogleAccount: 'GoogleAccount',
@@ -177,6 +180,43 @@ export const BookScalarFieldEnum = {
 } as const
 
 export type BookScalarFieldEnum = (typeof BookScalarFieldEnum)[keyof typeof BookScalarFieldEnum]
+
+
+export const NotebookScalarFieldEnum = {
+  id: 'id',
+  adventureId: 'adventureId',
+  userId: 'userId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotebookScalarFieldEnum = (typeof NotebookScalarFieldEnum)[keyof typeof NotebookScalarFieldEnum]
+
+
+export const NotebookFolderScalarFieldEnum = {
+  id: 'id',
+  notebookId: 'notebookId',
+  name: 'name',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotebookFolderScalarFieldEnum = (typeof NotebookFolderScalarFieldEnum)[keyof typeof NotebookFolderScalarFieldEnum]
+
+
+export const NotebookPageScalarFieldEnum = {
+  id: 'id',
+  notebookId: 'notebookId',
+  folderId: 'folderId',
+  title: 'title',
+  content: 'content',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotebookPageScalarFieldEnum = (typeof NotebookPageScalarFieldEnum)[keyof typeof NotebookPageScalarFieldEnum]
 
 
 export const CampaignMemberScalarFieldEnum = {
