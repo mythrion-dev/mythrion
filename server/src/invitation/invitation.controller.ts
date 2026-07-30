@@ -10,21 +10,14 @@ import {
 import { InvitationService } from './invitation.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
-import { IsEmail, IsEnum } from 'class-validator'
-
-const MemberRoleEnum = { GM: 'GM' as const, PLAYER: 'PLAYER' as const }
+import { IsEmail } from 'class-validator'
 
 class InviteByEmailDto {
   @IsEmail()
   email!: string
-
-  @IsEnum(MemberRoleEnum)
-  role!: 'GM' | 'PLAYER'
 }
 
 class InviteByLinkDto {
-  @IsEnum(MemberRoleEnum)
-  role!: 'GM' | 'PLAYER'
 }
 
 @Controller()
@@ -42,7 +35,6 @@ export class InvitationController {
     return this.invitationService.inviteByEmail({
       adventureId,
       invitedEmail: dto.email,
-      role: dto.role,
       createdById: req.user.sub,
     })
   }
@@ -57,7 +49,6 @@ export class InvitationController {
   ) {
     return this.invitationService.inviteByLink({
       adventureId,
-      role: dto.role,
       createdById: req.user.sub,
     })
   }

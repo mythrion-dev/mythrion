@@ -14,25 +14,21 @@ interface Invitation {
 }
 
 export function InvitePanel({
-  inviteRole,
   inviteEmail,
   inviteLink,
   inviteError,
   inviteSending,
   invitations,
-  onRoleChange,
   onEmailChange,
   onInviteByEmail,
   onInviteByLink,
   onRevoke,
 }: {
-  inviteRole: string
   inviteEmail: string
   inviteLink: string | null
   inviteError: string | null
   inviteSending: boolean
   invitations: Invitation[]
-  onRoleChange: (r: 'PLAYER' | 'GM') => void
   onEmailChange: (e: string) => void
   onInviteByEmail: (e: FormEvent) => void
   onInviteByLink: () => void
@@ -40,24 +36,6 @@ export function InvitePanel({
 }) {
   return (
     <div className="space-y-4">
-      {/* Role selector */}
-      <div>
-        <label className="label">Role</label>
-        <div className="flex gap-2">
-          {(['PLAYER', 'GM'] as const).map(r => (
-            <button
-              key={r}
-              onClick={() => onRoleChange(r)}
-              className={`btn-ghost text-sm ${
-                inviteRole === r ? '!border-primary/40 !text-primary' : ''
-              }`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Invite by email */}
       <form onSubmit={onInviteByEmail} className="space-y-3">
         <div>

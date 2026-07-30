@@ -197,7 +197,7 @@ export class AdventureService {
       this.prisma.adventure.count({ where }),
     ])
 
-    const data = adventures.map((a) => ({
+    let data = adventures.map((a) => ({
       id: a.id,
       name: a.name,
       campaign: a.campaign,
@@ -213,11 +213,16 @@ export class AdventureService {
       playerCount: a._count.members,
     }))
 
+    // Exclude campaigns that have reached maximum player capacity
+    const filteredCount = data.length
+    data = data.filter((a) => a.playerCount < a.maxPlayers)
+    const removedCount = filteredCount - data.length
+
     return {
       data,
-      total,
+      total: Math.max(0, total - removedCount),
       page,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.max(1, Math.ceil((total - removedCount) / limit)),
     }
   }
 
@@ -246,6 +251,11 @@ export class AdventureService {
     })
 
     if (!adventure) {
+      throw new NotFoundException('Adventure not found or is not public')
+    }
+
+    // Hide campaigns that have reached maximum player capacity
+    if (adventure._count.members >= adventure.maxPlayers) {
       throw new NotFoundException('Adventure not found or is not public')
     }
 
@@ -283,6 +293,11 @@ export class AdventureService {
     })
 
     if (!adventure) {
+      throw new NotFoundException('Adventure not found or is not public')
+    }
+
+    // Hide campaigns that have reached maximum player capacity
+    if (adventure._count.members >= adventure.maxPlayers) {
       throw new NotFoundException('Adventure not found or is not public')
     }
 

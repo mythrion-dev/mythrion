@@ -13,11 +13,11 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
 import { IsEnum } from 'class-validator'
 
-const MemberRoleEnum = { GM: 'GM' as const, PLAYER: 'PLAYER' as const }
+const MemberRoleEnum = { PLAYER: 'PLAYER' as const }
 
 class UpdateRoleDto {
   @IsEnum(MemberRoleEnum)
-  role!: 'GM' | 'PLAYER'
+  role!: 'PLAYER'
 }
 
 @Controller()
