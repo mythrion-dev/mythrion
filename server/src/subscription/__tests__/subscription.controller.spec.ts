@@ -116,6 +116,7 @@ describe('SubscriptionController', () => {
         planId,
         'user@test.com',
         undefined, // cardToken
+        undefined, // securityCode
         undefined, // payerName
         undefined, // payerDocument
         undefined, // deviceId
@@ -138,6 +139,7 @@ describe('SubscriptionController', () => {
         'monthly',
         'user@test.com',
         'encrypted-card-abc',
+        undefined,
         undefined,
         undefined,
         undefined,

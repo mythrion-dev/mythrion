@@ -205,6 +205,7 @@ function CheckoutContent() {
       await createSubscription(
         planId,
         cardToken,
+        cardCvv.replace(/\D/g, ''), // securityCode — raw CVV for PagBank
         payerName.trim(),
         payerDocument.replace(/\D/g, ''),
         undefined, // deviceId removed (no longer needed without MP)
@@ -223,7 +224,7 @@ function CheckoutContent() {
       setState('error')
       setErrorMessage(message)
     }
-  }, [planId, plan, payerName, payerDocument, validate, router, pgPublicKey, encryptCard])
+  }, [planId, plan, payerName, payerDocument, cardCvv, validate, router, pgPublicKey, encryptCard])
 
   // ----- Creating state -----
   if (state === 'creating') {

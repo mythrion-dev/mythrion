@@ -49,6 +49,7 @@ export async function fetchPlans(): Promise<Plan[]> {
 export async function createSubscription(
   planId: string,
   cardToken?: string,
+  securityCode?: string,
   payerName?: string,
   payerDocument?: string,
   deviceId?: string,
@@ -56,6 +57,7 @@ export async function createSubscription(
   return api.post<CreateSubscriptionResponse>('/subscriptions', {
     planId,
     ...(cardToken ? { cardToken } : {}),
+    ...(securityCode ? { securityCode } : {}),
     ...(payerName ? { payerName } : {}),
     ...(payerDocument ? { payerDocument } : {}),
     ...(deviceId ? { deviceId } : {}),
