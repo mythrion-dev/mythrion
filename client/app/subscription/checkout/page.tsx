@@ -187,12 +187,13 @@ function CheckoutContent() {
   }, [pgPublicKey, cardNumber, cardExpiry, cardCvv, payerName])
 
   // ----- Pre-defined sandbox card tokens for PagBank test cards -----
-  // PagBank fornece tokens pré-definidos para cartões de teste em sandbox.
-  // Apenas o MasterCard 5555666677778884 tem "Autorização com sucesso" para
-  // pagamento inicial de assinatura.
-  // Docs: https://developer.pagbank.com.br/reference/testar-sua-integracao-pagamentos-recorrentes
+  // PagBank fornece tokens pre-definidos (CARD_UUID) para cartoes de teste em sandbox.
+  // Cartoes com "Autorizacao bem-sucedida" para pagamento inicial:
+  //   MasterCard 5555666677778884  (CVV: 123, validade: 12/2026)
+  //   Visa       5322397237653563  (CVV: 123, validade: 12/2026)
   const TEST_CARD_TOKENS: Record<string, string> = {
     '5555666677778884': 'CARD_8286F604-2D44-4B30-A80D-0E749A555566',
+    '5322397237653563': 'CARD_8286F604-2D44-4B30-A80D-0E749A532239',
   }
 
   // ----- Handle subscribe -----
