@@ -186,6 +186,15 @@ function CheckoutContent() {
     return result.encryptedCard
   }, [pgPublicKey, cardNumber, cardExpiry, cardCvv, payerName])
 
+  // ----- Pre-defined sandbox card tokens for PagBank test cards -----
+  // PagBank fornece tokens pré-definidos para cartões de teste em sandbox.
+  // Apenas o MasterCard 5555666677778884 tem "Autorização com sucesso" para
+  // pagamento inicial de assinatura.
+  // Docs: https://developer.pagbank.com.br/reference/testar-sua-integracao-pagamentos-recorrentes
+  const TEST_CARD_TOKENS: Record<string, string> = {
+    '5555666677778884': 'CARD_8286F604-2D44-4B30-A80D-0E749A555566',
+  }
+
   // ----- Handle subscribe -----
   const handleSubscribe = useCallback(async () => {
     if (!validate()) return
@@ -195,20 +204,31 @@ function CheckoutContent() {
     setState('creating')
 
     try {
-      let cardToken: string | undefined
+      const rawCardNumber = cardNumber.replace(/\D/g, '')
+      const rawCvv = cardCvv.replace(/\D/g, '')
 
-      if (pgPublicKey) {
-        // Encrypt card with PagSeguro
+      // Check if this is a known test card with a pre-defined PagBank token
+      const preDefinedToken = TEST_CARD_TOKENS[rawCardNumber]
+
+      let cardToken: string | undefined
+      let cardTokenId: string | undefined
+
+      if (preDefinedToken) {
+        // Sandbox test card — use the pre-defined token instead of encrypting
+        cardTokenId = preDefinedToken
+      } else if (pgPublicKey) {
+        // Production card — encrypt with PagSeguro SDK
         cardToken = encryptCard()
       }
 
       await createSubscription(
         planId,
-        cardToken,
-        cardCvv.replace(/\D/g, ''), // securityCode — raw CVV for PagBank
+        cardToken, // encrypted card string (for billing_info)
+        rawCvv, // securityCode — raw CVV for PagBank
         payerName.trim(),
         payerDocument.replace(/\D/g, ''),
         undefined, // deviceId removed (no longer needed without MP)
+        cardTokenId, // pre-defined token for test cards
       )
 
       setState('success')
@@ -224,7 +244,7 @@ function CheckoutContent() {
       setState('error')
       setErrorMessage(message)
     }
-  }, [planId, plan, payerName, payerDocument, cardCvv, validate, router, pgPublicKey, encryptCard])
+  }, [planId, plan, payerName, payerDocument, cardCvv, cardNumber, validate, router, pgPublicKey, encryptCard])
 
   // ----- Creating state -----
   if (state === 'creating') {

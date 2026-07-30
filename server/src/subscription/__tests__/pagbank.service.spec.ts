@@ -250,6 +250,42 @@ describe('PagBankService', () => {
         service.createSubscription(params),
       ).rejects.toThrow(UnprocessableEntityException)
     })
+
+    it('uses card.token when cardTokenId is provided', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValueOnce(validResponse),
+      })
+
+      const result = await service.createSubscription({
+        ...params,
+        cardToken: 'encrypted-card-data',
+        cardTokenId: 'CARD_8286F604-2D44-4B30-A80D-0E749A555566',
+        securityCode: '123',
+        payerName: 'João Silva',
+        payerDocument: '12345678909',
+      })
+
+      expect(result.id).toBe('SUB-12345')
+      expect(result.status).toBe('ACTIVE')
+      expect(result.customerId).toBe('CUST-67890')
+
+      const reqBody = JSON.parse(
+        mockFetch.mock.calls[0][1]?.body as string,
+      )
+
+      // payment_method should use card.token (not card.encrypted)
+      expect(reqBody.payment_method[0].card.token).toBe(
+        'CARD_8286F604-2D44-4B30-A80D-0E749A555566',
+      )
+      expect(reqBody.payment_method[0].card.encrypted).toBeUndefined()
+      expect(reqBody.payment_method[0].card.security_code).toBe(123)
+
+      // billing_info should still use card.encrypted for recurring payments
+      expect(reqBody.customer.billing_info[0].card.encrypted).toBe(
+        'encrypted-card-data',
+      )
+    })
   })
 
   // ─── cancelSubscription ─────────────────────────────────────────────

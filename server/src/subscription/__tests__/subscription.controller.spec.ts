@@ -120,6 +120,7 @@ describe('SubscriptionController', () => {
         undefined, // payerName
         undefined, // payerDocument
         undefined, // deviceId
+        undefined, // cardTokenId
       )
     })
 
@@ -143,6 +144,7 @@ describe('SubscriptionController', () => {
         undefined,
         undefined,
         undefined,
+        undefined, // cardTokenId
       )
     })
 

@@ -56,6 +56,7 @@ export class SubscriptionController {
     body: {
       planId: string
       cardToken?: string
+      cardTokenId?: string
       securityCode?: string
       payerName?: string
       payerDocument?: string
@@ -75,6 +76,7 @@ export class SubscriptionController {
       body.payerName,
       body.payerDocument,
       body.deviceId,
+      body.cardTokenId,
     )
   }
 

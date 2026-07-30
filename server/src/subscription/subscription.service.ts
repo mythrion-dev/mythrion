@@ -105,6 +105,7 @@ export class SubscriptionService {
     payerName?: string,
     payerDocument?: string,
     deviceId?: string,
+    cardTokenId?: string,
   ): Promise<CreateSubscriptionResult> {
     // Check for existing active subscription
     const existing = await this.prisma.userSubscription.findUnique({
@@ -144,6 +145,7 @@ export class SubscriptionService {
       payerEmail: email,
       backUrl,
       cardToken,
+      cardTokenId,
       securityCode,
       payerName,
       payerDocument,
@@ -234,9 +236,13 @@ export class SubscriptionService {
 
     if (!sub) return null
 
-    // Auto-repair: if local status is PENDING but we have a pgSubscriptionId,
-    // check PagBank's actual status.
-    if (sub.status === 'PENDING' && sub.pgSubscriptionId) {
+    // Auto-repair: if local status is PENDING or GRACE but we have a pgSubscriptionId,
+    // check PagBank's actual status (the gateway may have advanced the subscription
+    // via webhook or recurring payment).
+    if (
+      (sub.status === 'PENDING' || sub.status === 'GRACE') &&
+      sub.pgSubscriptionId
+    ) {
       try {
         const gatewaySub = await this.gateway.getSubscription(
           sub.pgSubscriptionId,

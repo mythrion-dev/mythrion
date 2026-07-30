@@ -39,6 +39,23 @@ export class PagBankService implements PaymentGateway {
     params: CreateSubscriptionParams,
   ): Promise<CreateSubscriptionResult> {
     try {
+      // Build payment_method card object.
+      // PagBank Assinaturas expects a pre-tokenized card reference (card.token) in
+      // payment_method for the initial charge. The encrypted card string (card.encrypted)
+      // goes in billing_info to store for future recurring payments.
+      // Sandbox pre-defined tokens: https://developer.pagbank.com.br/reference/testar-sua-integracao-pagamentos-recorrentes
+      const paymentCard: Record<string, any> = {}
+      if (params.cardTokenId) {
+        // Pre-tokenized card reference — use card.token for payment_method
+        paymentCard.token = params.cardTokenId
+      } else if (params.cardToken) {
+        // Encrypted card string — use card.encrypted for payment_method (fallback)
+        paymentCard.encrypted = params.cardToken
+      }
+      if (params.securityCode) {
+        paymentCard.security_code = Number(params.securityCode)
+      }
+
       const body: Record<string, any> = {
         reference_id: params.externalReference,
         plan: { id: params.planId },
@@ -46,17 +63,12 @@ export class PagBankService implements PaymentGateway {
         customer: this.buildCustomer(params),
         payment_method: [{
           type: 'CREDIT_CARD',
-          card: {
-            ...(params.cardToken ? { encrypted: params.cardToken } : {}),
-            ...(params.securityCode ? { security_code: Number(params.securityCode) } : {}),
-          },
+          card: paymentCard,
         }],
       }
 
-      // When an encrypted card token is provided, attach it as billing_info.
-      // PagBank also requires the raw CVV in payment_method[0].card.security_code
-      // even though the full card data (including CVV) is inside the encrypted
-      // string — we pass both to satisfy the API validation.
+      // When encrypted card data is provided, attach it as billing_info for future
+      // recurring payments (PagBank stores this for subsequent charges).
       if (params.cardToken) {
         body.customer.billing_info = [
           {

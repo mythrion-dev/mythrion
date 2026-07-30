@@ -5,8 +5,14 @@ export interface CreateSubscriptionParams {
   planName: string
   payerEmail: string
   backUrl: string
-  cardToken?: string // PagBank encrypted card string
-  securityCode?: string // Raw CVV — required by PagBank alongside the encrypted card
+  /** PagBank encrypted card string (from client-side PagSeguro SDK) — used in billing_info.encrypted */
+  cardToken?: string
+  /** Pre-defined PagBank card token (CARD_* or TOKE_* format) — used in payment_method.card.token.
+   *  For sandbox, use the pre-defined tokens from PagBank test docs (e.g. CARD_8286F604-... for MasterCard 5555666677778884).
+   *  When provided, takes precedence for payment_method; cardToken is still used for billing_info. */
+  cardTokenId?: string
+  /** Raw CVV — required by PagBank alongside the card data */
+  securityCode?: string
   payerName?: string
   payerDocument?: string // CPF digits only
   externalReference?: string

@@ -53,10 +53,12 @@ export async function createSubscription(
   payerName?: string,
   payerDocument?: string,
   deviceId?: string,
+  cardTokenId?: string,
 ): Promise<CreateSubscriptionResponse> {
   return api.post<CreateSubscriptionResponse>('/subscriptions', {
     planId,
     ...(cardToken ? { cardToken } : {}),
+    ...(cardTokenId ? { cardTokenId } : {}),
     ...(securityCode ? { securityCode } : {}),
     ...(payerName ? { payerName } : {}),
     ...(payerDocument ? { payerDocument } : {}),
