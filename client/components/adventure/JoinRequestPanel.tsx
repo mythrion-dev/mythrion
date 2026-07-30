@@ -29,7 +29,17 @@ export function JoinRequestPanel({
   processingIds,
 }: JoinRequestPanelProps) {
   const [expanded, setExpanded] = useState(true)
-  const pendingCount = requests.filter(r => r.status === 'pending').length
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const filteredRequests = searchTerm.trim()
+    ? requests.filter(r =>
+        (r.userDisplayName ?? '')
+          .toLowerCase()
+          .includes(searchTerm.trim().toLowerCase()),
+      )
+    : requests
+
+  const pendingCount = requests.length
 
   return (
     <div className="card !p-5 space-y-4">
@@ -73,20 +83,51 @@ export function JoinRequestPanel({
       </button>
 
       {expanded && (
-        <div>
+        <div className="space-y-4">
+          {/* Search bar */}
+          {!loading && requests.length > 0 && (
+            <div className="relative">
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"
+                />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-background border border-border/60 placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          )}
+
           {loading ? (
             <LoadingSkeleton count={2} />
           ) : requests.length === 0 ? (
             <EmptyState
               icon="📋"
-              title="No Requests"
-              description="No one has requested to join this campaign yet."
+              title="No Pending Requests"
+              description="No pending join requests."
+            />
+          ) : filteredRequests.length === 0 ? (
+            <EmptyState
+              icon="🔍"
+              title="No Results"
+              description="No join requests match your search."
             />
           ) : (
             <div className="space-y-3">
-              {requests.map(req => {
+              {filteredRequests.map(req => {
                 const isProcessing = processingIds.includes(req.id)
-                const isPending = req.status === 'pending'
 
                 return (
                   <div
@@ -111,28 +152,6 @@ export function JoinRequestPanel({
                           })}
                         </p>
                       </div>
-
-                      {/* Status badge */}
-                      {!isPending && (
-                        <span
-                          className="badge text-[0.6rem] shrink-0"
-                          style={
-                            req.status === 'accepted'
-                              ? {
-                                  background: 'rgba(34, 197, 94, 0.15)',
-                                  color: '#22c55e',
-                                  border: '1px solid rgba(34, 197, 94, 0.2)',
-                                }
-                              : {
-                                  background: 'rgba(239, 68, 68, 0.15)',
-                                  color: '#ef4444',
-                                  border: '1px solid rgba(239, 68, 68, 0.2)',
-                                }
-                          }
-                        >
-                          {req.status === 'accepted' ? 'Accepted' : 'Rejected'}
-                        </span>
-                      )}
                     </div>
 
                     {/* Message */}
@@ -143,33 +162,31 @@ export function JoinRequestPanel({
                     )}
 
                     {/* Action buttons */}
-                    {isPending && (
-                      <div className="flex gap-2 pl-10">
-                        <button
-                          onClick={() => onAccept(req.id)}
-                          disabled={isProcessing}
-                          className={`btn-primary text-xs px-3 py-1 ${
-                            isProcessing ? '!opacity-50 !cursor-not-allowed' : ''
-                          }`}
-                        >
-                          {isProcessing ? (
-                            <>
-                              <div className="w-3 h-3 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                              Accepting...
-                            </>
-                          ) : (
-                            'Accept'
-                          )}
-                        </button>
-                        <button
-                          onClick={() => onReject(req.id)}
-                          disabled={isProcessing}
-                          className="btn-ghost text-xs px-3 py-1"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex gap-2 pl-10">
+                      <button
+                        onClick={() => onAccept(req.id)}
+                        disabled={isProcessing}
+                        className={`btn-primary text-xs px-3 py-1 ${
+                          isProcessing ? '!opacity-50 !cursor-not-allowed' : ''
+                        }`}
+                      >
+                        {isProcessing ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                            Accepting...
+                          </>
+                        ) : (
+                          'Accept'
+                        )}
+                      </button>
+                      <button
+                        onClick={() => onReject(req.id)}
+                        disabled={isProcessing}
+                        className="btn-ghost text-xs px-3 py-1"
+                      >
+                        Reject
+                      </button>
+                    </div>
                   </div>
                 )
               })}

@@ -50,7 +50,7 @@ describe('MembershipController', () => {
         id: 'm2',
         adventureId: 'adv-1',
         userId: 'user-2',
-        role: 'GM',
+        role: 'PLAYER',
       }),
       requireRole: jest.fn().mockResolvedValue(undefined),
       removeMember: jest.fn().mockResolvedValue({
@@ -108,10 +108,10 @@ describe('MembershipController', () => {
         id: 'm2',
         adventureId: 'adv-1',
         userId: 'user-2',
-        role: 'GM',
+        role: 'PLAYER',
       })
 
-      const dto = { role: 'GM' as const }
+      const dto = { role: 'PLAYER' as const }
       const result = await controller.updateRole(
         mockUserReq,
         'adv-1',
@@ -127,13 +127,13 @@ describe('MembershipController', () => {
       expect(mockMembershipService.updateRole).toHaveBeenCalledWith(
         'adv-1',
         'user-2',
-        'GM',
+        'PLAYER',
       )
       expect(result).toEqual({
         id: 'm2',
         adventureId: 'adv-1',
         userId: 'user-2',
-        role: 'GM',
+        role: 'PLAYER',
       })
     })
 
@@ -144,7 +144,7 @@ describe('MembershipController', () => {
         ),
       )
 
-      const dto = { role: 'GM' as const }
+      const dto = { role: 'PLAYER' as const }
       await expect(
         controller.updateRole(mockUserReq, 'adv-1', 'user-2', dto),
       ).rejects.toThrow(ForbiddenException)

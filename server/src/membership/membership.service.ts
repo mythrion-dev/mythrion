@@ -77,6 +77,10 @@ export class MembershipService {
     userId: string,
     role: MemberRole,
   ) {
+    // Prevent promoting any member to GM — a campaign can only have one GM
+    if (role === 'GM') {
+      throw new ForbiddenException('Cannot promote a member to Game Master. A campaign can only have one GM.')
+    }
     return this.prisma.campaignMember.update({
       where: {
         adventureId_userId: { adventureId, userId },
