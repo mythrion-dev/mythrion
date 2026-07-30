@@ -46,6 +46,17 @@ interface NotebookSidebarProps {
   hideToggle?: boolean
 }
 
+interface ContextMenuState {
+  pageId: string
+  x: number
+  y: number
+}
+
+interface FolderDeleteDialogState {
+  folderId: string
+  moveToFolderId: string | null
+}
+
 /* ── Persistence helpers ── */
 
 const LS_PREFIX = 'notebook'
@@ -101,9 +112,21 @@ export function NotebookSidebar({
   const [creatingFolder, setCreatingFolder] = useState(false)
   const [creatingPage, setCreatingPage] = useState(false)
 
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
+
+  // Folder deletion dialog state
+  const [folderDeleteDialog, setFolderDeleteDialog] = useState<FolderDeleteDialogState | null>(null)
+
+  // Drag-over tracking
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
+  const [dragOverRoot, setDragOverRoot] = useState(false)
+
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const retryCountRef = useRef(0)
   const pendingContentRef = useRef<string | null>(null)
+  const contextMenuRef = useRef<HTMLDivElement>(null)
+  const deleteDialogRef = useRef<HTMLDivElement>(null)
 
   /* ── Extract userId from JWT ── */
   useEffect(() => {
@@ -197,6 +220,35 @@ export function NotebookSidebar({
         return titleMatch || folderMatch || contentMatch
       })
     : []
+
+  /* ── Close context menu on outside click ── */
+  useEffect(() => {
+    if (!contextMenu) return
+    const handleClick = (e: MouseEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+        setContextMenu(null)
+      }
+    }
+    const handleScroll = () => setContextMenu(null)
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('scroll', handleScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('scroll', handleScroll, true)
+    }
+  }, [contextMenu])
+
+  /* ── Close delete dialog on outside click ── */
+  useEffect(() => {
+    if (!folderDeleteDialog) return
+    const handleClick = (e: MouseEvent) => {
+      if (deleteDialogRef.current && !deleteDialogRef.current.contains(e.target as Node)) {
+        setFolderDeleteDialog(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [folderDeleteDialog])
 
   /* ── Auto-save ── */
   const queueSave = useCallback(
@@ -354,6 +406,70 @@ export function NotebookSidebar({
     [adventureId, activePageId],
   )
 
+  /* ── Move page to a folder (or root) ── */
+  const handleMovePage = useCallback(
+    async (pageId: string, targetFolderId: string | null) => {
+      try {
+        await api.patch(`/adventures/${adventureId}/notebook/pages/${pageId}`, {
+          folderId: targetFolderId,
+        })
+
+        // Optimistic update: remove from old location, add to new location
+        setNotebook((prev) => {
+          if (!prev) return prev
+
+          // Find the page in current state
+          let movedPage: Page | null = null
+
+          // Remove from its current location
+          const updatedFolders = prev.folders.map((f) => {
+            const page = f.pages.find((p) => p.id === pageId)
+            if (page) movedPage = page
+            return {
+              ...f,
+              pages: f.pages.filter((p) => p.id !== pageId),
+            }
+          })
+
+          if (!movedPage) {
+            const page = prev.pages.find((p) => p.id === pageId)
+            if (page) movedPage = page
+          }
+
+          if (!movedPage) return prev
+
+          const updatedPage = { ...movedPage, folderId: targetFolderId }
+
+          if (targetFolderId) {
+            return {
+              ...prev,
+              pages: prev.pages.filter((p) => p.id !== pageId),
+              folders: updatedFolders.map((f) =>
+                f.id === targetFolderId ? { ...f, pages: [...f.pages, updatedPage] } : f,
+              ),
+            }
+          } else {
+            return {
+              ...prev,
+              pages: [...prev.pages.filter((p) => p.id !== pageId), updatedPage],
+              folders: updatedFolders,
+            }
+          }
+        })
+      } catch {
+        setError('Failed to move page')
+      }
+    },
+    [adventureId],
+  )
+
+  /* ── Context menu handler (right-click on page) ── */
+  const handlePageContextMenu = useCallback((pageId: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setContextMenu({ pageId, x: e.clientX, y: e.clientY })
+  }, [])
+
   /* ── Create folder ── */
   const handleCreateFolder = useCallback(async () => {
     if (creatingFolder) return
@@ -397,33 +513,107 @@ export function NotebookSidebar({
     [adventureId],
   )
 
-  /* ── Delete folder ── */
-  const handleDeleteFolder = useCallback(
-    async (folderId: string) => {
-      try {
-        // Find pages that will be orphaned
-        const folder = notebook?.folders.find((f) => f.id === folderId)
-        const orphanedPageIds = folder?.pages.map((p) => p.id) ?? []
+  /* ── Open folder deletion dialog ── */
+  const handleDeleteFolderRequest = useCallback((folderId: string) => {
+    setFolderDeleteDialog({ folderId, moveToFolderId: null })
+  }, [])
 
-        await api.delete(`/adventures/${adventureId}/notebook/folders/${folderId}`)
+  /* ── Confirm folder deletion with move option ── */
+  const handleConfirmDeleteFolder = useCallback(async () => {
+    if (!folderDeleteDialog) return
 
-        setNotebook((prev) => {
-          if (!prev) return prev
-          const deletedFolder = prev.folders.find((f) => f.id === folderId)
+    const { folderId, moveToFolderId } = folderDeleteDialog
+
+    try {
+      // Find pages that need moving
+      const folder = notebook?.folders.find((f) => f.id === folderId)
+      const orphanedPages = folder?.pages ?? []
+
+      // If moving to another folder, move each page first
+      if (moveToFolderId) {
+        for (const page of orphanedPages) {
+          await api.patch(`/adventures/${adventureId}/notebook/pages/${page.id}`, {
+            folderId: moveToFolderId,
+          })
+        }
+      }
+
+      // Delete the folder (server moves remaining pages to root)
+      await api.delete(`/adventures/${adventureId}/notebook/folders/${folderId}`)
+
+      setNotebook((prev) => {
+        if (!prev) return prev
+        const deletedFolder = prev.folders.find((f) => f.id === folderId)
+        if (!deletedFolder) return prev
+
+        const movedPages = deletedFolder.pages.map((p) => ({
+          ...p,
+          folderId: moveToFolderId ?? null,
+        }))
+
+        // Remove folder
+        const remainingFolders = prev.folders.filter((f) => f.id !== folderId)
+
+        if (moveToFolderId) {
+          // Add pages to target folder
           return {
             ...prev,
-            folders: prev.folders.filter((f) => f.id !== folderId),
-            pages: [
-              ...prev.pages,
-              ...(deletedFolder?.pages.map((p) => ({ ...p, folderId: null })) ?? []),
-            ],
+            folders: remainingFolders.map((f) =>
+              f.id === moveToFolderId
+                ? { ...f, pages: [...f.pages, ...movedPages] }
+                : f,
+            ),
           }
-        })
-      } catch {
-        setError('Failed to delete folder')
+        } else {
+          // Add pages to root
+          return {
+            ...prev,
+            pages: [...prev.pages, ...movedPages],
+            folders: remainingFolders,
+          }
+        }
+      })
+
+      setFolderDeleteDialog(null)
+    } catch {
+      setError('Failed to delete folder')
+    }
+  }, [adventureId, folderDeleteDialog, notebook])
+
+  /* ── Drag & Drop handlers ── */
+
+  const handlePageDragStart = useCallback((_pageId: string, _e: React.DragEvent) => {
+    // Nothing special to do — pageId is in dataTransfer
+  }, [])
+
+  const handleDropOnFolder = useCallback(
+    (folderId: string, pageId: string) => {
+      handleMovePage(pageId, folderId)
+    },
+    [handleMovePage],
+  )
+
+  const handleDragOverRoot = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverRoot(true)
+  }, [])
+
+  const handleDragLeaveRoot = useCallback((e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return
+    setDragOverRoot(false)
+  }, [])
+
+  const handleDropOnRoot = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      setDragOverRoot(false)
+      const pageId = e.dataTransfer.getData('text/plain')
+      if (pageId) {
+        handleMovePage(pageId, null)
       }
     },
-    [adventureId, notebook],
+    [handleMovePage],
   )
 
   /* ── Refresh notebook ── */
@@ -465,6 +655,18 @@ export function NotebookSidebar({
       )}
     </button>
   )
+
+  // Current page's folder (for context menu — exclude from move targets)
+  const contextPageFolderId = contextMenu
+    ? notebook?.pages.find((p) => p.id === contextMenu.pageId)?.folderId
+      ?? notebook?.folders.find((f) => f.pages.some((p) => p.id === contextMenu.pageId))?.id
+    : undefined
+
+  const otherFoldersForContext =
+    notebook?.folders.filter((f) => f.id !== contextPageFolderId) ?? []
+
+  const otherFoldersForDelete =
+    notebook?.folders.filter((f) => f.id !== folderDeleteDialog?.folderId) ?? []
 
   /* ── Render ── */
   return (
@@ -602,19 +804,25 @@ export function NotebookSidebar({
                         No pages found
                       </p>
                     ) : (
-                      filteredPages.map((page) => (
-                        <NotebookPageItem
-                          key={page.id}
-                          id={page.id}
-                          title={page.title}
-                          isActive={false}
-                          onClick={(id) => {
-                            setActivePageId(id)
-                            setSearchQuery('')
-                          }}
-                          onDelete={handleDeletePage}
-                        />
-                      ))
+                      filteredPages.map((page) => {
+                        const folder = notebook.folders.find((f) => f.id === page.folderId)
+                        return (
+                          <NotebookPageItem
+                            key={page.id}
+                            id={page.id}
+                            title={page.title}
+                            isActive={false}
+                            folderName={folder?.name ?? null}
+                            onClick={(id) => {
+                              setActivePageId(id)
+                              setSearchQuery('')
+                            }}
+                            onDelete={handleDeletePage}
+                            onContextMenu={handlePageContextMenu}
+                            onDragStart={handlePageDragStart}
+                          />
+                        )
+                      })
                     )}
                   </div>
                 </div>
@@ -637,34 +845,60 @@ export function NotebookSidebar({
                         onPageClick={setActivePageId}
                         onDeletePage={handleDeletePage}
                         onRename={handleRenameFolder}
-                        onDelete={handleDeleteFolder}
+                        onDeleteFolderRequest={handleDeleteFolderRequest}
+                        onCreatePage={handleCreatePage}
+                        onPageContextMenu={handlePageContextMenu}
+                        onDropOnFolder={handleDropOnFolder}
+                        onDragOverFolder={setDragOverFolderId}
                       />
                     ))}
                 </div>
               )}
 
-              {/* ── Uncategorized pages ── */}
-              {!searchQuery.trim() && notebook.pages.length > 0 && (
-                <div>
-                  {notebook.folders.length > 0 && (
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 px-1 font-medium">
-                      Uncategorized
+              {/* ── Uncategorized pages (root drop zone) ── */}
+              {!searchQuery.trim() && (
+                <div
+                  className={`rounded-md transition-colors ${
+                    dragOverRoot
+                      ? 'bg-accent/5 ring-1 ring-accent/30 py-2'
+                      : ''
+                  }`}
+                  onDragOver={handleDragOverRoot}
+                  onDragLeave={handleDragLeaveRoot}
+                  onDrop={handleDropOnRoot}
+                >
+                  {notebook.pages.length > 0 && (
+                    <>
+                      {notebook.folders.length > 0 && (
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 px-1 font-medium">
+                          Uncategorized
+                        </p>
+                      )}
+                      <div className="space-y-0.5">
+                        {notebook.pages
+                          .sort((a, b) => a.sortOrder - b.sortOrder)
+                          .map((page) => (
+                            <NotebookPageItem
+                              key={page.id}
+                              id={page.id}
+                              title={page.title}
+                              isActive={activePageId === page.id}
+                              onClick={setActivePageId}
+                              onDelete={handleDeletePage}
+                              onContextMenu={handlePageContextMenu}
+                              onDragStart={handlePageDragStart}
+                            />
+                          ))}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Drop indicator when empty but dragging */}
+                  {notebook.pages.length === 0 && notebook.folders.length > 0 && dragOverRoot && (
+                    <p className="text-xs text-accent italic px-3 py-2">
+                      Drop here to move to Root
                     </p>
                   )}
-                  <div className="space-y-0.5">
-                    {notebook.pages
-                      .sort((a, b) => a.sortOrder - b.sortOrder)
-                      .map((page) => (
-                        <NotebookPageItem
-                          key={page.id}
-                          id={page.id}
-                          title={page.title}
-                          isActive={activePageId === page.id}
-                          onClick={setActivePageId}
-                          onDelete={handleDeletePage}
-                        />
-                      ))}
-                  </div>
                 </div>
               )}
 
@@ -815,6 +1049,170 @@ export function NotebookSidebar({
           )}
         </div>
       </aside>
+
+      {/* ── Context Menu (right-click on page) ── */}
+      {contextMenu && (
+        <>
+          {/* Backdrop to close menu */}
+          <div
+            className="fixed inset-0 z-[60]"
+            onClick={() => setContextMenu(null)}
+            aria-hidden="true"
+          />
+          <div
+            ref={contextMenuRef}
+            className="fixed z-[70] min-w-[180px] bg-surface border border-border rounded-lg shadow-xl py-1"
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+          >
+            <div className="px-3 py-1 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+              Move to...
+            </div>
+
+            {/* Root option */}
+            <button
+              type="button"
+              onClick={() => {
+                handleMovePage(contextMenu.pageId, null)
+                setContextMenu(null)
+              }}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-secondary-foreground hover:bg-hover hover:text-foreground text-left"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+              Root (uncategorized)
+            </button>
+
+            <div className="h-px bg-border my-1" />
+
+            {/* Folder options */}
+            {otherFoldersForContext.length === 0 && (
+              <p className="px-3 py-1.5 text-xs text-muted-foreground italic">
+                No other folders
+              </p>
+            )}
+            {otherFoldersForContext.map((folder) => (
+              <button
+                key={folder.id}
+                type="button"
+                onClick={() => {
+                  handleMovePage(contextMenu.pageId, folder.id)
+                  setContextMenu(null)
+                }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-secondary-foreground hover:bg-hover hover:text-foreground text-left"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                {folder.name}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* ── Folder Deletion Dialog ── */}
+      {folderDeleteDialog && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-[60] bg-black/40"
+            onClick={() => setFolderDeleteDialog(null)}
+            aria-hidden="true"
+          />
+          <div
+            ref={deleteDialogRef}
+            className="fixed z-[70] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-surface border border-border rounded-xl shadow-2xl p-5"
+          >
+            <h3 className="text-sm font-semibold text-foreground mb-1">Delete Folder</h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Folder pages will NOT be deleted. Choose where to move them:
+            </p>
+
+            {/* Move to Root */}
+            <label className="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-hover transition-colors mb-1">
+              <input
+                type="radio"
+                name="delete-move-option"
+                checked={folderDeleteDialog.moveToFolderId === null}
+                onChange={() =>
+                  setFolderDeleteDialog({ ...folderDeleteDialog, moveToFolderId: null })
+                }
+                className="mt-0.5 accent-accent"
+              />
+              <div>
+                <span className="text-sm text-secondary-foreground font-medium">Move pages to Root</span>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Pages become uncategorized in the root list
+                </p>
+              </div>
+            </label>
+
+            {/* Move to another folder */}
+            <label className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-hover transition-colors mb-3 ${
+              otherFoldersForDelete.length === 0 ? 'opacity-50' : ''
+            }`}>
+              <input
+                type="radio"
+                name="delete-move-option"
+                checked={folderDeleteDialog.moveToFolderId !== null}
+                disabled={otherFoldersForDelete.length === 0}
+                onChange={() => {
+                  const firstOther = otherFoldersForDelete[0]
+                  setFolderDeleteDialog({
+                    ...folderDeleteDialog,
+                    moveToFolderId: firstOther?.id ?? null,
+                  })
+                }}
+                className="mt-0.5 accent-accent"
+              />
+              <div className="flex-1">
+                <span className="text-sm text-secondary-foreground font-medium">Move to another folder</span>
+                {folderDeleteDialog.moveToFolderId !== null && otherFoldersForDelete.length > 0 && (
+                  <select
+                    value={folderDeleteDialog.moveToFolderId ?? ''}
+                    onChange={(e) =>
+                      setFolderDeleteDialog({
+                        ...folderDeleteDialog,
+                        moveToFolderId: e.target.value || null,
+                      })
+                    }
+                    className="w-full mt-1.5 px-2 py-1 text-sm rounded-lg bg-input border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-accent/50"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {otherFoldersForDelete.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.name}
+                        </option>
+                      ))}
+                  </select>
+                )}
+                {otherFoldersForDelete.length === 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">No other folders available</p>
+                )}
+              </div>
+            </label>
+
+            {/* Buttons */}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setFolderDeleteDialog(null)}
+                className="px-3 py-1.5 text-xs rounded-md btn-ghost"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteFolder}
+                className="px-3 py-1.5 text-xs rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+              >
+                Delete Folder
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </>
   )
 }
