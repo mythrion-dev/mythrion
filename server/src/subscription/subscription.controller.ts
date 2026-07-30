@@ -56,6 +56,7 @@ export class SubscriptionController {
     body: {
       planId: string
       cardToken?: string
+      securityCode?: string
       payerName?: string
       payerDocument?: string
       deviceId?: string
@@ -70,6 +71,7 @@ export class SubscriptionController {
       body.planId,
       req.user.email,
       body.cardToken,
+      body.securityCode,
       body.payerName,
       body.payerDocument,
       body.deviceId,

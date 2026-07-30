@@ -88,6 +88,7 @@ describe('PagBankService', () => {
       const result = await service.createSubscription({
         ...params,
         cardToken: 'encrypted-card-data',
+        securityCode: '123',
         payerName: 'João Silva',
         payerDocument: '12345678909',
       })
@@ -110,7 +111,7 @@ describe('PagBankService', () => {
       expect(reqBody.customer.tax_id).toBe('12345678909')
       expect(reqBody.customer.billing_info[0].card.encrypted).toBe('encrypted-card-data')
       expect(reqBody.payment_method[0].type).toBe('CREDIT_CARD')
-      expect(reqBody.payment_method[0].card).toBeDefined()
+      expect(reqBody.payment_method[0].card.security_code).toBe(123)
       expect(reqBody.amount).toEqual({ value: 12000, currency: 'BRL' })
     })
 

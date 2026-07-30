@@ -6,6 +6,7 @@ export interface CreateSubscriptionParams {
   payerEmail: string
   backUrl: string
   cardToken?: string // PagBank encrypted card string
+  securityCode?: string // Raw CVV — required by PagBank alongside the encrypted card
   payerName?: string
   payerDocument?: string // CPF digits only
   externalReference?: string
