@@ -44,12 +44,13 @@ export class PagBankService implements PaymentGateway {
         plan: { id: params.planId },
         amount: { value: params.planPrice, currency: 'BRL' },
         customer: this.buildCustomer(params),
-        payment_method: [{ type: 'CREDIT_CARD' }],
+        payment_method: [{ type: 'CREDIT_CARD', card: {} }],
       }
 
       // When an encrypted card token is provided, attach it as billing_info.
-      // The CVV is already inside the encrypted card data, so no separate
-      // security_code is needed.
+      // The full card data including CVV is already inside the encrypted
+      // string (PagSeguro.encryptCard), so payment_method[0].card is
+      // provided empty — PagBank resolves the card details from billing_info.
       if (params.cardToken) {
         body.customer.billing_info = [
           {
