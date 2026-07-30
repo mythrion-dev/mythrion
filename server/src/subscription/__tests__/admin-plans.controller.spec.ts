@@ -1,3 +1,6 @@
+jest.mock("../../generated/prisma/client", () => ({ PrismaClient: class {} }))
+jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
+jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
 import { Test } from '@nestjs/testing'
 import { UnprocessableEntityException, NotFoundException } from '@nestjs/common'
 import { AdminPlansController } from '../admin-plans.controller'
@@ -15,7 +18,7 @@ describe('AdminPlansController', () => {
     name: 'Plano Mensal',
     description: 'Acesso mensal',
     price: 12000,
-    mpPlanId: 'mp-plan-monthly',
+    pgPlanId: 'pg-plan-monthly',
     createdAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01'),
   }
@@ -26,7 +29,7 @@ describe('AdminPlansController', () => {
     name: 'Plano Anual',
     description: 'Acesso anual',
     price: 120000,
-    mpPlanId: 'mp-plan-annual',
+    pgPlanId: 'pg-plan-annual',
     createdAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01'),
   }
@@ -95,12 +98,12 @@ describe('AdminPlansController', () => {
       name: 'Plano Premium',
       description: 'Acesso premium',
       price: 24000,
-      mpPlanId: 'mp-plan-premium',
+      pgPlanId: 'pg-plan-premium',
     }
 
     it('creates a new plan successfully', async () => {
       prisma.subscriptionPlan.findFirst.mockResolvedValue(null)
-      const created = { ...mockPlan, id: 'premium', slug: 'premium', name: 'Plano Premium', price: 24000, mpPlanId: 'mp-plan-premium' }
+      const created = { ...mockPlan, id: 'premium', slug: 'premium', name: 'Plano Premium', price: 24000, pgPlanId: 'pg-plan-premium' }
       prisma.subscriptionPlan.create.mockResolvedValue(created)
 
       const result = await controller.create(createPayload)
@@ -113,14 +116,14 @@ describe('AdminPlansController', () => {
           name: 'Plano Premium',
           description: 'Acesso premium',
           price: 24000,
-          mpPlanId: 'mp-plan-premium',
+          pgPlanId: 'pg-plan-premium',
         },
       })
     })
 
     it('throws on missing required fields', async () => {
       await expect(
-        controller.create({ id: '', slug: '', name: '', price: 0, mpPlanId: '' }),
+        controller.create({ id: '', slug: '', name: '', price: 0, pgPlanId: '' }),
       ).rejects.toThrow(UnprocessableEntityException)
     })
 
@@ -144,11 +147,11 @@ describe('AdminPlansController', () => {
       ).rejects.toThrow(UnprocessableEntityException)
     })
 
-    it('throws on conflicting mpPlanId', async () => {
+    it('throws on conflicting pgPlanId', async () => {
       prisma.subscriptionPlan.findFirst.mockResolvedValue({
         ...mockPlan,
         slug: 'different-slug',
-        mpPlanId: createPayload.mpPlanId,
+        pgPlanId: createPayload.pgPlanId,
       })
 
       await expect(
@@ -190,7 +193,6 @@ describe('AdminPlansController', () => {
     })
 
     it('throws on slug conflict', async () => {
-      prisma.subscriptionPlan.findUnique.mockResolvedValue(mockPlan)
       prisma.subscriptionPlan.findUnique
         .mockResolvedValueOnce(mockPlan)   // first call: find the plan
         .mockResolvedValueOnce(mockPlan2)  // second call: check slug conflict
@@ -200,12 +202,12 @@ describe('AdminPlansController', () => {
       ).rejects.toThrow(UnprocessableEntityException)
     })
 
-    it('throws on mpPlanId conflict', async () => {
+    it('throws on pgPlanId conflict', async () => {
       prisma.subscriptionPlan.findUnique.mockResolvedValue(mockPlan)
       prisma.subscriptionPlan.findFirst.mockResolvedValue(mockPlan2)
 
       await expect(
-        controller.update('monthly', { mpPlanId: 'mp-plan-annual' }),
+        controller.update('monthly', { pgPlanId: 'pg-plan-annual' }),
       ).rejects.toThrow(UnprocessableEntityException)
     })
 

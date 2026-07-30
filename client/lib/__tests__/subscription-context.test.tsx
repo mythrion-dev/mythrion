@@ -40,7 +40,7 @@ function activeSub(status: string) {
     id: 'sub-1',
     userId: 'user-1',
     planId: 'monthly',
-    mpSubscriptionId: 'mp-1',
+    pgSubscriptionId: 'SUB-1',
     status,
     graceEndsAt: null,
     currentPeriodStart: '2025-01-01',

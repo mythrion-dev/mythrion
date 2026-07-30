@@ -40,7 +40,7 @@ export type SubscriptionPlanMinAggregateOutputType = {
   name: string | null
   description: string | null
   price: number | null
-  mpPlanId: string | null
+  pgPlanId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -51,7 +51,7 @@ export type SubscriptionPlanMaxAggregateOutputType = {
   name: string | null
   description: string | null
   price: number | null
-  mpPlanId: string | null
+  pgPlanId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -62,7 +62,7 @@ export type SubscriptionPlanCountAggregateOutputType = {
   name: number
   description: number
   price: number
-  mpPlanId: number
+  pgPlanId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -83,7 +83,7 @@ export type SubscriptionPlanMinAggregateInputType = {
   name?: true
   description?: true
   price?: true
-  mpPlanId?: true
+  pgPlanId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -94,7 +94,7 @@ export type SubscriptionPlanMaxAggregateInputType = {
   name?: true
   description?: true
   price?: true
-  mpPlanId?: true
+  pgPlanId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -105,7 +105,7 @@ export type SubscriptionPlanCountAggregateInputType = {
   name?: true
   description?: true
   price?: true
-  mpPlanId?: true
+  pgPlanId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -203,7 +203,7 @@ export type SubscriptionPlanGroupByOutputType = {
   name: string
   description: string | null
   price: number
-  mpPlanId: string
+  pgPlanId: string
   createdAt: Date
   updatedAt: Date
   _count: SubscriptionPlanCountAggregateOutputType | null
@@ -237,7 +237,7 @@ export type SubscriptionPlanWhereInput = {
   name?: Prisma.StringFilter<"SubscriptionPlan"> | string
   description?: Prisma.StringNullableFilter<"SubscriptionPlan"> | string | null
   price?: Prisma.IntFilter<"SubscriptionPlan"> | number
-  mpPlanId?: Prisma.StringFilter<"SubscriptionPlan"> | string
+  pgPlanId?: Prisma.StringFilter<"SubscriptionPlan"> | string
   createdAt?: Prisma.DateTimeFilter<"SubscriptionPlan"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SubscriptionPlan"> | Date | string
   subscriptions?: Prisma.UserSubscriptionListRelationFilter
@@ -249,7 +249,7 @@ export type SubscriptionPlanOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   price?: Prisma.SortOrder
-  mpPlanId?: Prisma.SortOrder
+  pgPlanId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   subscriptions?: Prisma.UserSubscriptionOrderByRelationAggregateInput
@@ -258,7 +258,7 @@ export type SubscriptionPlanOrderByWithRelationInput = {
 export type SubscriptionPlanWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   slug?: string
-  mpPlanId?: string
+  pgPlanId?: string
   AND?: Prisma.SubscriptionPlanWhereInput | Prisma.SubscriptionPlanWhereInput[]
   OR?: Prisma.SubscriptionPlanWhereInput[]
   NOT?: Prisma.SubscriptionPlanWhereInput | Prisma.SubscriptionPlanWhereInput[]
@@ -268,7 +268,7 @@ export type SubscriptionPlanWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"SubscriptionPlan"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SubscriptionPlan"> | Date | string
   subscriptions?: Prisma.UserSubscriptionListRelationFilter
-}, "id" | "slug" | "mpPlanId">
+}, "id" | "slug" | "pgPlanId">
 
 export type SubscriptionPlanOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -276,7 +276,7 @@ export type SubscriptionPlanOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   price?: Prisma.SortOrder
-  mpPlanId?: Prisma.SortOrder
+  pgPlanId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.SubscriptionPlanCountOrderByAggregateInput
@@ -295,7 +295,7 @@ export type SubscriptionPlanScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"SubscriptionPlan"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"SubscriptionPlan"> | string | null
   price?: Prisma.IntWithAggregatesFilter<"SubscriptionPlan"> | number
-  mpPlanId?: Prisma.StringWithAggregatesFilter<"SubscriptionPlan"> | string
+  pgPlanId?: Prisma.StringWithAggregatesFilter<"SubscriptionPlan"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SubscriptionPlan"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"SubscriptionPlan"> | Date | string
 }
@@ -306,7 +306,7 @@ export type SubscriptionPlanCreateInput = {
   name: string
   description?: string | null
   price: number
-  mpPlanId: string
+  pgPlanId: string
   createdAt?: Date | string
   updatedAt?: Date | string
   subscriptions?: Prisma.UserSubscriptionCreateNestedManyWithoutPlanInput
@@ -318,7 +318,7 @@ export type SubscriptionPlanUncheckedCreateInput = {
   name: string
   description?: string | null
   price: number
-  mpPlanId: string
+  pgPlanId: string
   createdAt?: Date | string
   updatedAt?: Date | string
   subscriptions?: Prisma.UserSubscriptionUncheckedCreateNestedManyWithoutPlanInput
@@ -330,7 +330,7 @@ export type SubscriptionPlanUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.IntFieldUpdateOperationsInput | number
-  mpPlanId?: Prisma.StringFieldUpdateOperationsInput | string
+  pgPlanId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subscriptions?: Prisma.UserSubscriptionUpdateManyWithoutPlanNestedInput
@@ -342,7 +342,7 @@ export type SubscriptionPlanUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.IntFieldUpdateOperationsInput | number
-  mpPlanId?: Prisma.StringFieldUpdateOperationsInput | string
+  pgPlanId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subscriptions?: Prisma.UserSubscriptionUncheckedUpdateManyWithoutPlanNestedInput
@@ -354,7 +354,7 @@ export type SubscriptionPlanCreateManyInput = {
   name: string
   description?: string | null
   price: number
-  mpPlanId: string
+  pgPlanId: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -365,7 +365,7 @@ export type SubscriptionPlanUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.IntFieldUpdateOperationsInput | number
-  mpPlanId?: Prisma.StringFieldUpdateOperationsInput | string
+  pgPlanId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -376,7 +376,7 @@ export type SubscriptionPlanUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.IntFieldUpdateOperationsInput | number
-  mpPlanId?: Prisma.StringFieldUpdateOperationsInput | string
+  pgPlanId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -387,7 +387,7 @@ export type SubscriptionPlanCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   description?: Prisma.SortOrder
   price?: Prisma.SortOrder
-  mpPlanId?: Prisma.SortOrder
+  pgPlanId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -402,7 +402,7 @@ export type SubscriptionPlanMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   description?: Prisma.SortOrder
   price?: Prisma.SortOrder
-  mpPlanId?: Prisma.SortOrder
+  pgPlanId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -413,7 +413,7 @@ export type SubscriptionPlanMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   description?: Prisma.SortOrder
   price?: Prisma.SortOrder
-  mpPlanId?: Prisma.SortOrder
+  pgPlanId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -447,7 +447,7 @@ export type SubscriptionPlanCreateWithoutSubscriptionsInput = {
   name: string
   description?: string | null
   price: number
-  mpPlanId: string
+  pgPlanId: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -458,7 +458,7 @@ export type SubscriptionPlanUncheckedCreateWithoutSubscriptionsInput = {
   name: string
   description?: string | null
   price: number
-  mpPlanId: string
+  pgPlanId: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -485,7 +485,7 @@ export type SubscriptionPlanUpdateWithoutSubscriptionsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.IntFieldUpdateOperationsInput | number
-  mpPlanId?: Prisma.StringFieldUpdateOperationsInput | string
+  pgPlanId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -496,7 +496,7 @@ export type SubscriptionPlanUncheckedUpdateWithoutSubscriptionsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.IntFieldUpdateOperationsInput | number
-  mpPlanId?: Prisma.StringFieldUpdateOperationsInput | string
+  pgPlanId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -538,7 +538,7 @@ export type SubscriptionPlanSelect<ExtArgs extends runtime.Types.Extensions.Inte
   name?: boolean
   description?: boolean
   price?: boolean
-  mpPlanId?: boolean
+  pgPlanId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   subscriptions?: boolean | Prisma.SubscriptionPlan$subscriptionsArgs<ExtArgs>
@@ -551,7 +551,7 @@ export type SubscriptionPlanSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   name?: boolean
   description?: boolean
   price?: boolean
-  mpPlanId?: boolean
+  pgPlanId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["subscriptionPlan"]>
@@ -562,7 +562,7 @@ export type SubscriptionPlanSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   name?: boolean
   description?: boolean
   price?: boolean
-  mpPlanId?: boolean
+  pgPlanId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["subscriptionPlan"]>
@@ -573,12 +573,12 @@ export type SubscriptionPlanSelectScalar = {
   name?: boolean
   description?: boolean
   price?: boolean
-  mpPlanId?: boolean
+  pgPlanId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type SubscriptionPlanOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "description" | "price" | "mpPlanId" | "createdAt" | "updatedAt", ExtArgs["result"]["subscriptionPlan"]>
+export type SubscriptionPlanOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "description" | "price" | "pgPlanId" | "createdAt" | "updatedAt", ExtArgs["result"]["subscriptionPlan"]>
 export type SubscriptionPlanInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   subscriptions?: boolean | Prisma.SubscriptionPlan$subscriptionsArgs<ExtArgs>
   _count?: boolean | Prisma.SubscriptionPlanCountOutputTypeDefaultArgs<ExtArgs>
@@ -597,7 +597,7 @@ export type $SubscriptionPlanPayload<ExtArgs extends runtime.Types.Extensions.In
     name: string
     description: string | null
     price: number
-    mpPlanId: string
+    pgPlanId: string
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["subscriptionPlan"]>
@@ -1029,7 +1029,7 @@ export interface SubscriptionPlanFieldRefs {
   readonly name: Prisma.FieldRef<"SubscriptionPlan", 'String'>
   readonly description: Prisma.FieldRef<"SubscriptionPlan", 'String'>
   readonly price: Prisma.FieldRef<"SubscriptionPlan", 'Int'>
-  readonly mpPlanId: Prisma.FieldRef<"SubscriptionPlan", 'String'>
+  readonly pgPlanId: Prisma.FieldRef<"SubscriptionPlan", 'String'>
   readonly createdAt: Prisma.FieldRef<"SubscriptionPlan", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"SubscriptionPlan", 'DateTime'>
 }

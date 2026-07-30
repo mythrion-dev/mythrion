@@ -8,14 +8,14 @@ async function main() {
   console.log('Seeding subscription plans...')
 
   // Monthly plan — R$120,00
-  const monthlyId = process.env.MERCADO_PAGO_MONTHLY_PLAN_ID
+  const monthlyId = process.env.PAGBANK_MONTHLY_PLAN_ID
   if (!monthlyId) {
-    console.warn('MERCADO_PAGO_MONTHLY_PLAN_ID is not set — skipping monthly plan')
+    console.warn('PAGBANK_MONTHLY_PLAN_ID is not set — skipping monthly plan')
   } else {
     await prisma.subscriptionPlan.upsert({
       where: { slug: 'monthly' },
       update: {
-        mpPlanId: monthlyId,
+        pgPlanId: monthlyId,
         name: 'Plano Mensal',
         price: 12000,
         description: 'Acesso completo à plataforma Mythrion com renovação mensal.',
@@ -26,21 +26,21 @@ async function main() {
         name: 'Plano Mensal',
         description: 'Acesso completo à plataforma Mythrion com renovação mensal.',
         price: 12000,
-        mpPlanId: monthlyId,
+        pgPlanId: monthlyId,
       },
     })
-    console.log(`  ✓ Monthly plan (R$120,00) — MP ID: ${monthlyId}`)
+    console.log(`  ✓ Monthly plan (R$120,00) — PagBank ID: ${monthlyId}`)
   }
 
   // Annual plan — R$1.200,00
-  const annualId = process.env.MERCADO_PAGO_ANNUAL_PLAN_ID
+  const annualId = process.env.PAGBANK_ANNUAL_PLAN_ID
   if (!annualId) {
-    console.warn('MERCADO_PAGO_ANNUAL_PLAN_ID is not set — skipping annual plan')
+    console.warn('PAGBANK_ANNUAL_PLAN_ID is not set — skipping annual plan')
   } else {
     await prisma.subscriptionPlan.upsert({
       where: { slug: 'annual' },
       update: {
-        mpPlanId: annualId,
+        pgPlanId: annualId,
         name: 'Plano Anual',
         price: 120000,
         description: 'Acesso completo à plataforma Mythrion com o melhor custo-benefício (equivalente a R$100/mês).',
@@ -51,10 +51,10 @@ async function main() {
         name: 'Plano Anual',
         description: 'Acesso completo à plataforma Mythrion com o melhor custo-benefício (equivalente a R$100/mês).',
         price: 120000,
-        mpPlanId: annualId,
+        pgPlanId: annualId,
       },
     })
-    console.log(`  ✓ Annual plan (R$1.200,00) — MP ID: ${annualId}`)
+    console.log(`  ✓ Annual plan (R$1.200,00) — PagBank ID: ${annualId}`)
   }
 
   console.log('Seed complete!')

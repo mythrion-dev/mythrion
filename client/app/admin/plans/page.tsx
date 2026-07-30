@@ -39,7 +39,7 @@ interface PlanFormData {
   name: string
   description: string
   price: string // BRL string, e.g. "120,00"
-  mpPlanId: string
+  pgPlanId: string
 }
 
 const emptyForm = (): PlanFormData => ({
@@ -48,7 +48,7 @@ const emptyForm = (): PlanFormData => ({
   name: '',
   description: '',
   price: '',
-  mpPlanId: '',
+  pgPlanId: '',
 })
 
 function formFromPlan(plan: Plan): PlanFormData {
@@ -58,7 +58,7 @@ function formFromPlan(plan: Plan): PlanFormData {
     name: plan.name,
     description: plan.description ?? '',
     price: formatCentsToBRLInput(plan.price),
-    mpPlanId: plan.mpPlanId,
+    pgPlanId: plan.pgPlanId,
   }
 }
 
@@ -99,7 +99,7 @@ export default function AdminPlansPage() {
     loadPlans()
   }, [loadPlans])
 
-  // ----- Copy mpPlanId -----
+  // ----- Copy pgPlanId -----
   const handleCopy = useCallback(async (text: string) => {
     try {
       await navigator.clipboard.writeText(text)
@@ -141,7 +141,7 @@ export default function AdminPlansPage() {
     }
     if (!form.name.trim()) { setFormError('Nome é obrigatório'); return }
     if (!form.price.trim()) { setFormError('Preço é obrigatório'); return }
-    if (!form.mpPlanId.trim()) { setFormError('ID do plano no MP é obrigatório'); return }
+    if (!form.pgPlanId.trim()) { setFormError('ID do plano no PagBank é obrigatório'); return }
 
     const price = parseBRLtoCents(form.price)
     if (price <= 0) { setFormError('Preço deve ser maior que zero'); return }
@@ -155,7 +155,7 @@ export default function AdminPlansPage() {
           name: form.name.trim(),
           description: form.description.trim() || undefined,
           price,
-          mpPlanId: form.mpPlanId.trim(),
+          pgPlanId: form.pgPlanId.trim(),
         })
         setPlans((prev) => [...prev, created].sort((a, b) => a.price - b.price))
       } else {
@@ -164,7 +164,7 @@ export default function AdminPlansPage() {
         if (form.name.trim()) payload.name = form.name.trim()
         if (form.description.trim()) payload.description = form.description.trim()
         payload.price = price
-        if (form.mpPlanId.trim()) payload.mpPlanId = form.mpPlanId.trim()
+        if (form.pgPlanId.trim()) payload.pgPlanId = form.pgPlanId.trim()
 
         const updated = await adminUpdatePlan(editingId!, payload)
         setPlans((prev) =>
@@ -303,12 +303,12 @@ export default function AdminPlansPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">ID do Plano (MP) *</label>
+              <label className="block text-sm font-medium text-foreground mb-1">ID do Plano (PagBank) *</label>
               <input
                 type="text"
-                value={form.mpPlanId}
-                onChange={(e) => setForm((f) => ({ ...f, mpPlanId: e.target.value }))}
-                placeholder="ID do preapproval_plan no Mercado Pago"
+                value={form.pgPlanId}
+                onChange={(e) => setForm((f) => ({ ...f, pgPlanId: e.target.value }))}
+                placeholder="ID do plano no PagBank"
                 className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
@@ -357,7 +357,7 @@ export default function AdminPlansPage() {
                 <th className="text-left py-3 px-2 text-muted-foreground font-medium">Slug</th>
                 <th className="text-left py-3 px-2 text-muted-foreground font-medium">Nome</th>
                 <th className="text-right py-3 px-2 text-muted-foreground font-medium">Preço</th>
-                <th className="text-left py-3 px-2 text-muted-foreground font-medium">MP Plan ID</th>
+                <th className="text-left py-3 px-2 text-muted-foreground font-medium">PagBank Plan ID</th>
                 <th className="text-right py-3 px-2 text-muted-foreground font-medium">Ações</th>
               </tr>
             </thead>
@@ -370,13 +370,13 @@ export default function AdminPlansPage() {
                   <td className="py-3 px-2 text-foreground text-right">{formatBRL(plan.price)}</td>
                   <td className="py-3 px-2">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-xs text-foreground">{truncateId(plan.mpPlanId)}</span>
+                      <span className="font-mono text-xs text-foreground">{truncateId(plan.pgPlanId)}</span>
                       <button
-                        onClick={() => handleCopy(plan.mpPlanId)}
+                        onClick={() => handleCopy(plan.pgPlanId)}
                         className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
-                        title="Copiar MP Plan ID"
+                        title="Copiar PagBank Plan ID"
                       >
-                        {copiedId === plan.mpPlanId ? (
+                        {copiedId === plan.pgPlanId ? (
                           <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>

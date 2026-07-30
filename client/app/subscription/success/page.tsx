@@ -110,7 +110,7 @@ export default function SuccessPage() {
             </div>
             <h2 className="text-lg font-semibold text-foreground">Still waiting for confirmation</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Your payment is being processed by Mercado Pago. This may take a few minutes.
+              Your payment is being processed by PagBank. This may take a few minutes.
             </p>
             <div className="mt-6 flex gap-3 justify-center">
               <button

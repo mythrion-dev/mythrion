@@ -8,7 +8,7 @@ export interface CreatePlanPayload {
   description?: string
   /** Price in cents (BRL) */
   price: number
-  mpPlanId: string
+  pgPlanId: string
 }
 
 export interface UpdatePlanPayload {
@@ -17,7 +17,7 @@ export interface UpdatePlanPayload {
   description?: string
   /** Price in cents (BRL) */
   price?: number
-  mpPlanId?: string
+  pgPlanId?: string
 }
 
 export async function adminFetchPlans(): Promise<Plan[]> {

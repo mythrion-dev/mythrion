@@ -45,7 +45,7 @@ class CreateSubscriptionPlanDto {
   price: number
 
   @IsString() @IsNotEmpty()
-  mpPlanId: string
+  pgPlanId: string
 }
 
 class UpdateSubscriptionPlanDto {
@@ -63,7 +63,7 @@ class UpdateSubscriptionPlanDto {
   price?: number
 
   @IsOptional() @IsString() @IsNotEmpty()
-  mpPlanId?: string
+  pgPlanId?: string
 }
 
 /* ── Controller ───────────────────────────────────── */
@@ -94,9 +94,9 @@ export class AdminPlansController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() body: CreateSubscriptionPlanDto) {
-    if (!body.id || !body.slug || !body.name || body.price == null || !body.mpPlanId) {
+    if (!body.id || !body.slug || !body.name || body.price == null || !body.pgPlanId) {
       throw new UnprocessableEntityException(
-        'Missing required fields: id, slug, name, price, mpPlanId',
+        'Missing required fields: id, slug, name, price, pgPlanId',
       )
     }
 
@@ -105,18 +105,18 @@ export class AdminPlansController {
       throw new UnprocessableEntityException('Price must be a positive integer (cents)')
     }
 
-    // Check for conflicting slug or mpPlanId
+    // Check for conflicting slug or pgPlanId
     const existing = await this.prisma.subscriptionPlan.findFirst({
       where: {
         OR: [
           { slug: body.slug },
-          { mpPlanId: body.mpPlanId },
+          { pgPlanId: body.pgPlanId },
         ],
       },
     })
 
     if (existing) {
-      const field = existing.slug === body.slug ? 'slug' : 'mpPlanId'
+      const field = existing.slug === body.slug ? 'slug' : 'pgPlanId'
       throw new UnprocessableEntityException(`A plan with this ${field} already exists`)
     }
 
@@ -127,7 +127,7 @@ export class AdminPlansController {
         name: body.name,
         description: body.description ?? null,
         price: body.price,
-        mpPlanId: body.mpPlanId,
+        pgPlanId: body.pgPlanId,
       },
     })
   }
@@ -158,13 +158,13 @@ export class AdminPlansController {
       }
     }
 
-    // Check mpPlanId uniqueness if changing
-    if (body.mpPlanId && body.mpPlanId !== plan.mpPlanId) {
+    // Check pgPlanId uniqueness if changing
+    if (body.pgPlanId && body.pgPlanId !== plan.pgPlanId) {
       const mpPlanConflict = await this.prisma.subscriptionPlan.findFirst({
-        where: { mpPlanId: body.mpPlanId },
+        where: { pgPlanId: body.pgPlanId },
       })
       if (mpPlanConflict) {
-        throw new UnprocessableEntityException(`mpPlanId "${body.mpPlanId}" is already in use`)
+        throw new UnprocessableEntityException(`pgPlanId "${body.pgPlanId}" is already in use`)
       }
     }
 
@@ -180,7 +180,7 @@ export class AdminPlansController {
         ...(body.name !== undefined && { name: body.name }),
         ...(body.description !== undefined && { description: body.description }),
         ...(body.price !== undefined && { price: body.price }),
-        ...(body.mpPlanId !== undefined && { mpPlanId: body.mpPlanId }),
+        ...(body.pgPlanId !== undefined && { pgPlanId: body.pgPlanId }),
       },
     })
   }

@@ -3,16 +3,26 @@ import {
   Logger,
   NotFoundException,
   UnprocessableEntityException,
-  ForbiddenException,
+  Inject,
 } from '@nestjs/common'
 import { PrismaService } from '../prisma.service.js'
-import { MercadoPagoService } from './mercado-pago.service.js'
 import { createHash, randomBytes } from 'crypto'
+import type {
+  PaymentGateway,
+  CreateSubscriptionResult as GatewayCreateResult,
+} from './payment-gateway.interface.js'
+import { PAYMENT_GATEWAY } from './payment-gateway.interface.js'
 
-type SubscriptionStatus = 'PENDING' | 'AUTHORIZED' | 'ACTIVE' | 'GRACE' | 'EXPIRED' | 'CANCELLED'
+type SubscriptionStatus =
+  | 'PENDING'
+  | 'AUTHORIZED'
+  | 'ACTIVE'
+  | 'GRACE'
+  | 'EXPIRED'
+  | 'CANCELLED'
 
 export interface CreateSubscriptionResult {
-  /** The Mercado Pago Checkout Pro redirect URL */
+  /** The payment gateway redirect URL (empty for card flow) */
   initPoint: string
   /** Our internal subscription ID */
   subscriptionId: string
@@ -26,7 +36,7 @@ export interface MySubscriptionResult {
     price: number
   }
   status: string
-  mpSubscriptionId: string | null
+  pgSubscriptionId: string | null
   graceEndsAt: Date | null
   currentPeriodStart: Date | null
   currentPeriodEnd: Date | null
@@ -44,13 +54,30 @@ export interface MySubscriptionResult {
   }>
 }
 
+/** Internal mapping: PagBank status → internal SubscriptionStatus */
+const GATEWAY_STATUS_MAP: Record<string, SubscriptionStatus> = {
+  ACTIVE: 'ACTIVE',
+  PENDING: 'PENDING',
+  OVERDUE: 'GRACE',
+  PENDING_ACTION: 'PENDING',
+  SUSPENDED: 'GRACE',
+  CANCELED: 'CANCELLED',
+  EXPIRED: 'EXPIRED',
+  TRIAL: 'ACTIVE',
+}
+
+function mapGatewayStatus(gatewayStatus: string): SubscriptionStatus {
+  return GATEWAY_STATUS_MAP[gatewayStatus] ?? 'PENDING'
+}
+
 @Injectable()
 export class SubscriptionService {
   private readonly logger = new Logger(SubscriptionService.name)
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly mp: MercadoPagoService,
+    @Inject(PAYMENT_GATEWAY)
+    private readonly gateway: PaymentGateway,
   ) {}
 
   /** Return all subscription plans (sorted by price ascending). */
@@ -65,15 +92,15 @@ export class SubscriptionService {
    * Steps:
    *   1. Verify user doesn't already have an active subscription
    *   2. Look up the plan
-   *   3. Create the subscription in Mercado Pago
+   *   3. Create the subscription in PagBank
    *   4. Store the UserSubscription row locally
-   *   5. Return the MP checkout URL
+   *   5. Return the result
    */
   async createSubscription(
     userId: string,
     planId: string,
     email: string,
-    cardTokenId?: string,
+    cardToken?: string,
     payerName?: string,
     payerDocument?: string,
     deviceId?: string,
@@ -82,7 +109,10 @@ export class SubscriptionService {
     const existing = await this.prisma.userSubscription.findUnique({
       where: { userId },
     })
-    if (existing && ['AUTHORIZED', 'ACTIVE', 'GRACE'].includes(existing.status)) {
+    if (
+      existing &&
+      ['AUTHORIZED', 'ACTIVE', 'GRACE'].includes(existing.status)
+    ) {
       throw new UnprocessableEntityException(
         'You already have an active subscription. Cancel it first before creating a new one.',
       )
@@ -97,49 +127,36 @@ export class SubscriptionService {
     }
 
     this.logger.log(
-      `Creating subscription - plan: ${plan.slug}, price (cents): ${plan.price}, ` +
-      `transaction_amount (reais): ${plan.price / 100}`,
+      `Creating subscription - plan: ${plan.slug}, price (cents): ${plan.price}`,
     )
 
-    // Build the back_url for MP redirect after checkout
+    // Build the back_url for PagBank redirect after checkout
     const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000'
     const backUrl = `${frontendUrl}/subscription/success`
 
-    // Create subscription in Mercado Pago
-    // We pass preapproval_plan_id (from plan.mpPlanId) to link the subscription
-    // to the MP plan, and external_reference with the user ID for traceability.
-    const mpSubscription = await this.mp.createSubscription(
-      plan.mpPlanId,
-      email,
+    // Create subscription in PagBank via the payment gateway
+    const result = await this.gateway.createSubscription({
+      planId: plan.pgPlanId,
+      planPrice: plan.price,
+      planSlug: plan.slug,
+      planName: plan.name,
+      payerEmail: email,
       backUrl,
-      plan.price,
-      plan.slug,
-      plan.name,
-      cardTokenId,
+      cardToken,
       payerName,
       payerDocument,
-      userId, // external_reference — allows looking up by user in MP dashboard
-      deviceId, // X-meli-session-id — improves approval rates
-    )
+      externalReference: userId,
+      deviceId,
+    })
 
-    // Determine the effective status from MP's response.
-    // When using a card token, MP returns status: 'authorized' immediately.
-    // When using the redirect flow, MP returns status: 'pending'.
-    const mpStatusLower = mpSubscription.status?.toLowerCase()
-    const effectiveStatus: SubscriptionStatus =
-      mpStatusLower === 'authorized'
-        ? 'AUTHORIZED'
-        : mpStatusLower === 'pending'
-          ? 'PENDING'
-          : mpStatusLower === 'cancelled'
-            ? 'CANCELLED'
-            : 'PENDING'
+    // Map gateway status to internal status
+    const effectiveStatus = mapGatewayStatus(result.status)
 
     this.logger.log(
-      `MP subscription created - id: ${mpSubscription.id}, ` +
-      `status: ${mpSubscription.status}, ` +
-      `effectiveStatus: ${effectiveStatus}, ` +
-      `transaction_amount: ${plan.price / 100}`,
+      `Gateway subscription created - id: ${result.id}, ` +
+        `status: ${result.status}, ` +
+        `effectiveStatus: ${effectiveStatus}` +
+        (result.customerId ? `, customerId: ${result.customerId}` : ''),
     )
 
     // Upsert the UserSubscription row (create or replace cancelled/expired one)
@@ -147,21 +164,25 @@ export class SubscriptionService {
       where: { userId },
       update: {
         planId: plan.id,
-        mpSubscriptionId: mpSubscription.id,
+        pgSubscriptionId: result.id,
+        pgCustomerId: result.customerId ?? null,
         status: effectiveStatus,
-        currentPeriodStart: effectiveStatus === 'AUTHORIZED' ? new Date() : undefined,
-        // Don't reset period/grace dates here — they are only assigned
-        // by webhook handlers when MP provides actual values. Resetting
-        // them to null on upsert causes P2011 if a prior migration on
-        // the target database lacks the NOT NULL → nullable change.
+        currentPeriodStart:
+          effectiveStatus === 'AUTHORIZED' || effectiveStatus === 'ACTIVE'
+            ? new Date()
+            : undefined,
         cancelledAt: null,
       },
       create: {
         userId,
         planId: plan.id,
-        mpSubscriptionId: mpSubscription.id,
+        pgSubscriptionId: result.id,
+        pgCustomerId: result.customerId ?? null,
         status: effectiveStatus,
-        currentPeriodStart: effectiveStatus === 'AUTHORIZED' ? new Date() : undefined,
+        currentPeriodStart:
+          effectiveStatus === 'AUTHORIZED' || effectiveStatus === 'ACTIVE'
+            ? new Date()
+            : undefined,
       },
     })
 
@@ -180,13 +201,15 @@ export class SubscriptionService {
     }
 
     return {
-      initPoint: mpSubscription.init_point ?? '',
+      initPoint: result.initPoint,
       subscriptionId: subscription.id,
     }
   }
 
   /** Fetch the current user's subscription with plan + recent invoices. */
-  async getMySubscription(userId: string): Promise<MySubscriptionResult | null> {
+  async getMySubscription(
+    userId: string,
+  ): Promise<MySubscriptionResult | null> {
     let sub = await this.prisma.userSubscription.findUnique({
       where: { userId },
       include: {
@@ -209,24 +232,26 @@ export class SubscriptionService {
 
     if (!sub) return null
 
-    // Auto-repair: if local status is PENDING but we have an mpSubscriptionId,
-    // check MP's actual status. This handles the case where a card-token
-    // subscription was created before the fix that maps MP's "authorized"
-    // response to AUTHORIZED status locally (migration 20260728000004 era).
-    if (sub.status === 'PENDING' && sub.mpSubscriptionId) {
+    // Auto-repair: if local status is PENDING but we have a pgSubscriptionId,
+    // check PagBank's actual status.
+    if (sub.status === 'PENDING' && sub.pgSubscriptionId) {
       try {
-        const mpSub = await this.mp.getSubscription(sub.mpSubscriptionId)
-        if (mpSub.status === 'authorized') {
+        const gatewaySub = await this.gateway.getSubscription(
+          sub.pgSubscriptionId,
+        )
+        const mappedStatus = mapGatewayStatus(gatewaySub.status)
+        if (mappedStatus !== 'PENDING') {
           const now = new Date()
-          const nextPayment = mpSub.next_payment_date
-            ? new Date(mpSub.next_payment_date)
+          const nextPayment = gatewaySub.nextPaymentDate
+            ? new Date(gatewaySub.nextPaymentDate)
             : null
           sub = await this.prisma.userSubscription.update({
             where: { userId },
             data: {
-              status: 'AUTHORIZED',
+              status: mappedStatus,
               currentPeriodStart: now,
               currentPeriodEnd: nextPayment,
+              pgCustomerId: gatewaySub.customerId ?? sub.pgCustomerId,
             },
             include: {
               plan: { select: { slug: true, name: true, price: true } },
@@ -245,12 +270,14 @@ export class SubscriptionService {
               },
             },
           })
-          this.logger.log(`Auto-repaired subscription ${sub.mpSubscriptionId} from PENDING to AUTHORIZED`)
+          this.logger.log(
+            `Auto-repaired subscription ${sub.pgSubscriptionId} from PENDING to ${mappedStatus}`,
+          )
         }
       } catch (err) {
-        // MP API failure — just serve stale data, don't block the user
+        // Gateway API failure — just serve stale data, don't block the user
         this.logger.warn(
-          `Failed to check MP status for subscription ${sub.mpSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
+          `Failed to check gateway status for subscription ${sub.pgSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
         )
       }
     }
@@ -259,7 +286,7 @@ export class SubscriptionService {
       id: sub.id,
       plan: sub.plan,
       status: sub.status,
-      mpSubscriptionId: sub.mpSubscriptionId,
+      pgSubscriptionId: sub.pgSubscriptionId,
       graceEndsAt: sub.graceEndsAt,
       currentPeriodStart: sub.currentPeriodStart,
       currentPeriodEnd: sub.currentPeriodEnd,
@@ -274,8 +301,8 @@ export class SubscriptionService {
    * Cancel the current user's subscription.
    *
    * Sets cancelAtPeriodEnd to true so the user retains access until the
-   * current billing period ends. The subscription is cancelled in Mercado
-   * Pago to stop future billing, but the local status stays unchanged.
+   * current billing period ends. The subscription is cancelled in PagBank
+   * to stop future billing, but the local status stays unchanged.
    * A periodic sweep (expireCancelledSubscriptions) transitions it to
    * EXPIRED once currentPeriodEnd passes.
    */
@@ -297,8 +324,8 @@ export class SubscriptionService {
       )
     }
 
-    // Mark as pending cancellation FIRST, before cancelling in MP,
-    // so that any subscription_cancelled webhook from MP sees the flag
+    // Mark as pending cancellation FIRST, before cancelling in PagBank,
+    // so that any subscription.canceled webhook from PagBank sees the flag
     // and keeps the user's status intact.
     await this.prisma.userSubscription.update({
       where: { userId },
@@ -308,14 +335,14 @@ export class SubscriptionService {
       },
     })
 
-    // Cancel in MP (stops future billing, but MP keeps the subscription
-    // active until the current period ends; MP will send a
-    // subscription_cancelled webhook)
-    if (sub.mpSubscriptionId) {
-      await this.mp.cancelSubscription(sub.mpSubscriptionId)
+    // Cancel in PagBank (stops future billing)
+    if (sub.pgSubscriptionId) {
+      await this.gateway.cancelSubscription(sub.pgSubscriptionId)
     }
 
-    this.logger.log(`Subscription ${sub.id} scheduled for cancellation at period end`)
+    this.logger.log(
+      `Subscription ${sub.id} scheduled for cancellation at period end`,
+    )
   }
 
   /**
@@ -334,11 +361,11 @@ export class SubscriptionService {
 
   /**
    * Update the payment method (card) for the current user's subscription.
-   * Tokenizes the new card client-side and sends the token to MP.
+   * Requires the user to have a valid pgCustomerId stored from subscription creation.
    */
   async updatePaymentMethod(
     userId: string,
-    cardTokenId: string,
+    cardToken: string,
     payerName?: string,
     payerDocument?: string,
   ): Promise<void> {
@@ -353,33 +380,55 @@ export class SubscriptionService {
         `Cannot update payment method on a ${sub.status.toLowerCase()} subscription.`,
       )
     }
-    if (!sub.mpSubscriptionId) {
+    if (!sub.pgSubscriptionId) {
       throw new UnprocessableEntityException(
-        'Subscription has no Mercado Pago reference — cannot update payment method.',
+        'Subscription has no PagBank reference — cannot update payment method.',
+      )
+    }
+    if (!sub.pgCustomerId) {
+      throw new UnprocessableEntityException(
+        'Subscription has no PagBank customer ID — cannot update payment method.',
       )
     }
 
-    await this.mp.updatePaymentMethod(
-      sub.mpSubscriptionId,
-      cardTokenId,
-      payerName,
-      payerDocument,
+    await this.gateway.updatePaymentMethod(
+      sub.pgSubscriptionId,
+      sub.pgCustomerId,
+      cardToken,
     )
 
-    this.logger.log(`Updated payment method for subscription ${sub.id} (MP: ${sub.mpSubscriptionId})`)
+    this.logger.log(
+      `Updated payment method for subscription ${sub.id} (PG: ${sub.pgSubscriptionId})`,
+    )
   }
 
   // ─── Webhook processing ──────────────────────────────────────────────
 
   /**
-   * Process an incoming Mercado Pago webhook event.
+   * Validate and process an incoming PagBank webhook event.
    * Returns the action taken (or 'noop' if nothing changed).
+   *
+   * Accepts raw body for signature validation and authenticity token.
    */
-  async processWebhook(event: {
-    type: string
-    action?: string
-    data?: { id: string }
-  }): Promise<string> {
+  async processWebhook(
+    rawBody: string,
+    authenticityToken: string | undefined,
+    event: {
+      type: string
+      action?: string
+      data?: { id: string }
+    },
+  ): Promise<string> {
+    // Validate HMAC signature
+    const isValid = this.gateway.validateWebhook(rawBody, authenticityToken)
+
+    if (!isValid) {
+      this.logger.warn(
+        'Webhook signature validation failed — returning 200 to prevent retries',
+      )
+      return 'invalid_signature'
+    }
+
     const { type, action, data } = event
 
     this.logger.log(
@@ -387,152 +436,193 @@ export class SubscriptionService {
     )
 
     switch (type) {
-      case 'subscription_authorized':
-        return this.handleSubscriptionAuthorized(data?.id)
-      case 'subscription_activated':
+      case 'subscription.activated':
         return this.handleSubscriptionActivated(data?.id)
-      case 'subscription_cancelled':
+      case 'subscription.canceled':
         return this.handleSubscriptionCancelled(data?.id)
-      case 'subscription_updated':
+      case 'subscription.recurrence':
+        return this.handleSubscriptionRecurrence(data?.id)
+      case 'subscription.updated':
         return this.handleSubscriptionUpdated(data?.id)
-      case 'authorized_payment':
-      case 'payment':
+      case 'charge.created':
+        this.logger.debug(`Charge created event for ${data?.id} — no action needed`)
+        return 'noop'
+      case 'charge.paid':
         return this.handlePaymentEvent(data?.id)
+      case 'charge.failed':
+        return this.handlePaymentEvent(data?.id)
+      case 'charge.refunded':
+        this.logger.log(`Charge refunded: ${data?.id}`)
+        return 'payment_refunded'
       default:
         this.logger.debug(`Unhandled webhook type: ${type}`)
         return 'noop'
     }
   }
 
-  private async handleSubscriptionAuthorized(
-    mpSubscriptionId: string | undefined,
-  ): Promise<string> {
-    if (!mpSubscriptionId) return 'noop'
-
-    try {
-      // Fetch the subscription from MP to get status details
-      const mpSub = await this.mp.getSubscription(mpSubscriptionId)
-      const now = new Date()
-      const nextPayment = mpSub.next_payment_date
-        ? new Date(mpSub.next_payment_date)
-        : null
-
-      await this.prisma.userSubscription.update({
-        where: { mpSubscriptionId },
-        data: {
-          status: 'AUTHORIZED',
-          currentPeriodStart: now,
-          currentPeriodEnd: nextPayment,
-        },
-      })
-      this.logger.log(`Subscription ${mpSubscriptionId} authorized`)
-      return 'authorized'
-    } catch (err) {
-      this.logger.error(
-        `Failed to process subscription_authorized for ${mpSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
-      )
-      return 'error'
-    }
-  }
-
   private async handleSubscriptionActivated(
-    mpSubscriptionId: string | undefined,
+    pgSubscriptionId: string | undefined,
   ): Promise<string> {
-    if (!mpSubscriptionId) return 'noop'
+    if (!pgSubscriptionId) return 'noop'
 
     try {
-      const mpSub = await this.mp.getSubscription(mpSubscriptionId)
-      const nextPayment = mpSub.next_payment_date
-        ? new Date(mpSub.next_payment_date)
+      const gatewaySub =
+        await this.gateway.getSubscription(pgSubscriptionId)
+      const nextPayment = gatewaySub.nextPaymentDate
+        ? new Date(gatewaySub.nextPaymentDate)
         : null
 
       await this.prisma.userSubscription.update({
-        where: { mpSubscriptionId },
+        where: { pgSubscriptionId },
         data: {
           status: 'ACTIVE',
           graceEndsAt: null,
           currentPeriodEnd: nextPayment,
+          pgCustomerId: gatewaySub.customerId ?? undefined,
         },
       })
-      this.logger.log(`Subscription ${mpSubscriptionId} activated`)
+      this.logger.log(`Subscription ${pgSubscriptionId} activated`)
       return 'activated'
     } catch (err) {
       this.logger.error(
-        `Failed to process subscription_activated for ${mpSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
+        `Failed to process subscription.activated for ${pgSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
       )
       return 'error'
     }
   }
 
   private async handleSubscriptionCancelled(
-    mpSubscriptionId: string | undefined,
+    pgSubscriptionId: string | undefined,
   ): Promise<string> {
-    if (!mpSubscriptionId) return 'noop'
+    if (!pgSubscriptionId) return 'noop'
 
     try {
       // Check if the user initiated this cancellation (cancelAtPeriodEnd was set).
       // If so, retain the current status — the user keeps access until the
-      // current billing period ends. If not (MP auto-cancelled after retries
+      // current billing period ends. If not (PagBank auto-cancelled after retries
       // exhausted), immediately mark as CANCELLED.
       const existing = await this.prisma.userSubscription.findUnique({
-        where: { mpSubscriptionId },
+        where: { pgSubscriptionId },
         select: { cancelAtPeriodEnd: true, currentPeriodEnd: true },
       })
 
       if (existing?.cancelAtPeriodEnd) {
         this.logger.log(
-          `Subscription ${mpSubscriptionId} cancelled at period end (user-initiated, keeping status until ${existing.currentPeriodEnd?.toISOString() ?? '?'})`,
+          `Subscription ${pgSubscriptionId} cancelled at period end (user-initiated, keeping status until ${existing.currentPeriodEnd?.toISOString() ?? '?'})`,
         )
         return 'cancelled_at_period_end'
       }
 
       await this.prisma.userSubscription.update({
-        where: { mpSubscriptionId },
+        where: { pgSubscriptionId },
         data: {
           status: 'CANCELLED',
           cancelledAt: new Date(),
         },
       })
-      this.logger.log(`Subscription ${mpSubscriptionId} cancelled (external)`)
+      this.logger.log(
+        `Subscription ${pgSubscriptionId} cancelled (external)`,
+      )
       return 'cancelled'
     } catch (err) {
       this.logger.error(
-        `Failed to process subscription_cancelled for ${mpSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
+        `Failed to process subscription.canceled for ${pgSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
+      )
+      return 'error'
+    }
+  }
+
+  /**
+   * Handle subscription.recurrence event (recurring payment processed).
+   * Creates an invoice and reactivates from GRACE if applicable.
+   */
+  private async handleSubscriptionRecurrence(
+    pgSubscriptionId: string | undefined,
+  ): Promise<string> {
+    if (!pgSubscriptionId) return 'noop'
+
+    try {
+      const gatewaySub =
+        await this.gateway.getSubscription(pgSubscriptionId)
+      const nextPayment = gatewaySub.nextPaymentDate
+        ? new Date(gatewaySub.nextPaymentDate)
+        : null
+
+      // Reactivate from GRACE if applicable
+      const updateData: Record<string, any> = {
+        status: 'ACTIVE',
+        graceEndsAt: null,
+      }
+      if (nextPayment) {
+        updateData.currentPeriodEnd = nextPayment
+      }
+
+      await this.prisma.userSubscription.update({
+        where: { pgSubscriptionId },
+        data: updateData,
+      })
+      this.logger.log(
+        `Subscription ${pgSubscriptionId} recurred (reactivated from GRACE if applicable)`,
+      )
+      return 'recurrence_processed'
+    } catch (err) {
+      this.logger.error(
+        `Failed to process subscription.recurrence for ${pgSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
       )
       return 'error'
     }
   }
 
   private async handleSubscriptionUpdated(
-    mpSubscriptionId: string | undefined,
+    pgSubscriptionId: string | undefined,
   ): Promise<string> {
-    if (!mpSubscriptionId) return 'noop'
+    if (!pgSubscriptionId) return 'noop'
 
     try {
-      const mpSub = await this.mp.getSubscription(mpSubscriptionId)
+      const gatewaySub =
+        await this.gateway.getSubscription(pgSubscriptionId)
 
-      // If MP status is 'cancelled', mirror locally
-      if (mpSub.status === 'cancelled') {
-        return this.handleSubscriptionCancelled(mpSubscriptionId)
+      // If PagBank status is CANCELED, mirror locally
+      if (gatewaySub.status === 'CANCELED') {
+        return this.handleSubscriptionCancelled(pgSubscriptionId)
       }
 
-      // If MP status is 'authorized' but local is still PENDING, advance
-      // (catches cases where the authorized webhook was missed)
+      // Sync customer ID if not yet stored
+      if (gatewaySub.customerId) {
+        await this.prisma.userSubscription.update({
+          where: { pgSubscriptionId },
+          data: { pgCustomerId: gatewaySub.customerId },
+        })
+      }
+
+      const mappedStatus = mapGatewayStatus(gatewaySub.status)
       const localSub = await this.prisma.userSubscription.findUnique({
-        where: { mpSubscriptionId },
+        where: { pgSubscriptionId },
         select: { status: true },
       })
 
-      if (localSub && localSub.status === 'PENDING' && mpSub.status === 'authorized') {
-        return this.handleSubscriptionAuthorized(mpSubscriptionId)
+      if (localSub && localSub.status === 'PENDING' && mappedStatus !== 'PENDING') {
+        // Advance from PENDING
+        const nextPayment = gatewaySub.nextPaymentDate
+          ? new Date(gatewaySub.nextPaymentDate)
+          : null
+        await this.prisma.userSubscription.update({
+          where: { pgSubscriptionId },
+          data: {
+            status: mappedStatus,
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: nextPayment ?? undefined,
+          },
+        })
+        return 'advanced'
       }
 
-      const nextPayment = mpSub.next_payment_date
-        ? new Date(mpSub.next_payment_date)
+      const nextPayment = gatewaySub.nextPaymentDate
+        ? new Date(gatewaySub.nextPaymentDate)
         : null
       if (nextPayment) {
         await this.prisma.userSubscription.update({
-          where: { mpSubscriptionId },
+          where: { pgSubscriptionId },
           data: { currentPeriodEnd: nextPayment },
         })
       }
@@ -540,7 +630,7 @@ export class SubscriptionService {
       return 'updated'
     } catch (err) {
       this.logger.error(
-        `Failed to process subscription_updated for ${mpSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
+        `Failed to process subscription.updated for ${pgSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
       )
       return 'error'
     }
@@ -550,12 +640,11 @@ export class SubscriptionService {
   private readonly PAYMENT_FAILURE_GRACE_DAYS = 7
 
   /**
-   * Handle an authorized_payment or payment webhook event.
+   * Handle a charge.paid or charge.failed webhook event.
    *
-   * Fetches the charge details from MP and acts on the outcome:
+   * Fetches the charge details from PagBank and acts on the outcome:
    *   - Approved  → create/update invoice, reactivate from GRACE, extend period
    *   - Rejected  → transition to GRACE with a payment-failure grace period
-   *   - Refunded  → log but don't change subscription status
    *   - Other     → log and skip
    */
   private async handlePaymentEvent(
@@ -564,40 +653,45 @@ export class SubscriptionService {
     if (!chargeId) return 'noop'
 
     try {
-      // Fetch the charge details from MP to determine actual status
-      const charge = await this.mp.getAuthorizedPayment(chargeId)
+      const charge = await this.gateway.getPaymentCharge(chargeId)
       const chargeStatus = charge.status?.toLowerCase()
-      const preapprovalId = charge.preapproval_id
+      const pgSubscriptionId = charge.subscriptionId
 
       this.logger.log(
-        `Payment event: chargeId=${chargeId} status="${chargeStatus}" preapproval="${preapprovalId}" amount=${charge.transaction_amount}`,
+        `Payment event: chargeId=${chargeId} status="${chargeStatus}" subscription="${pgSubscriptionId}" amount=${charge.transactionAmount}`,
       )
 
-      if (!preapprovalId) {
-        this.logger.warn(`Authorized payment ${chargeId} has no preapproval_id, cannot link to subscription`)
+      if (!pgSubscriptionId) {
+        this.logger.warn(
+          `Payment charge ${chargeId} has no subscription_id, cannot link to subscription`,
+        )
         return 'noop'
       }
 
-      // Find the local subscription by MP subscription ID
+      // Find the local subscription by PagBank subscription ID
       const sub = await this.prisma.userSubscription.findUnique({
-        where: { mpSubscriptionId: preapprovalId },
+        where: { pgSubscriptionId },
         select: { id: true, status: true, planId: true },
       })
 
       if (!sub) {
-        this.logger.warn(`No local subscription found for MP preapproval ${preapprovalId}`)
+        this.logger.warn(
+          `No local subscription found for PagBank subscription ${pgSubscriptionId}`,
+        )
         return 'noop'
       }
 
       switch (chargeStatus) {
+        case 'paid':
+        case 'authorized':
         case 'approved': {
           // Charge was successful — create/update invoice and reactivate
-          const invoiceAmount = Math.round(charge.transaction_amount * 100)
+          const invoiceAmount = charge.transactionAmount
           const now = new Date()
 
           // Upsert the invoice
           await this.prisma.subscriptionInvoice.upsert({
-            where: { mpInvoiceId: chargeId },
+            where: { pgInvoiceId: chargeId },
             update: {
               status: 'paid',
               amount: invoiceAmount,
@@ -605,9 +699,9 @@ export class SubscriptionService {
             },
             create: {
               subscriptionId: sub.id,
-              mpInvoiceId: chargeId,
+              pgInvoiceId: chargeId,
               amount: invoiceAmount,
-              currency: charge.currency_id ?? 'BRL',
+              currency: charge.currencyId ?? 'BRL',
               status: 'paid',
               paidAt: now,
             },
@@ -622,30 +716,41 @@ export class SubscriptionService {
                 graceEndsAt: null,
               },
             })
-            this.logger.log(`Subscription ${sub.id} reactivated from GRACE after successful payment`)
+            this.logger.log(
+              `Subscription ${sub.id} reactivated from GRACE after successful payment`,
+            )
           }
 
-          // Extend period end if MP provides a next payment date
-          if (charge.next_payment_date) {
+          // Extend period end if PagBank provides a next payment date
+          if (charge.nextPaymentDate) {
             await this.prisma.userSubscription.update({
               where: { id: sub.id },
               data: {
-                currentPeriodEnd: new Date(charge.next_payment_date),
+                currentPeriodEnd: new Date(charge.nextPaymentDate),
               },
             })
           }
 
-          this.logger.log(`Payment approved for subscription ${sub.id}: R$${(invoiceAmount / 100).toFixed(2)}`)
+          this.logger.log(
+            `Payment approved for subscription ${sub.id}: R$${(invoiceAmount / 100).toFixed(2)}`,
+          )
           return 'payment_approved'
         }
 
+        case 'refused':
         case 'rejected':
-        case 'cc_rejected':
-        case 'charged_off': {
+        case 'failed':
+        case 'chargedback': {
           // Payment was rejected — move to GRACE if not already
-          if (sub.status !== 'GRACE' && sub.status !== 'CANCELLED' && sub.status !== 'EXPIRED') {
+          if (
+            sub.status !== 'GRACE' &&
+            sub.status !== 'CANCELLED' &&
+            sub.status !== 'EXPIRED'
+          ) {
             const graceEnd = new Date()
-            graceEnd.setDate(graceEnd.getDate() + this.PAYMENT_FAILURE_GRACE_DAYS)
+            graceEnd.setDate(
+              graceEnd.getDate() + this.PAYMENT_FAILURE_GRACE_DAYS,
+            )
 
             await this.prisma.userSubscription.update({
               where: { id: sub.id },
@@ -656,18 +761,18 @@ export class SubscriptionService {
             })
 
             // Create a failed invoice record for audit trail
-            const invoiceAmount = Math.round(charge.transaction_amount * 100)
+            const invoiceAmount = charge.transactionAmount
             await this.prisma.subscriptionInvoice.upsert({
-              where: { mpInvoiceId: chargeId },
+              where: { pgInvoiceId: chargeId },
               update: {
                 status: 'failed',
                 amount: invoiceAmount,
               },
               create: {
                 subscriptionId: sub.id,
-                mpInvoiceId: chargeId,
+                pgInvoiceId: chargeId,
                 amount: invoiceAmount,
-                currency: charge.currency_id ?? 'BRL',
+                currency: charge.currencyId ?? 'BRL',
                 status: 'failed',
               },
             })
@@ -679,15 +784,11 @@ export class SubscriptionService {
           return 'payment_rejected'
         }
 
-        case 'refunded': {
-          // Payment was refunded — log it
-          this.logger.log(`Payment ${chargeId} was refunded for subscription ${sub.id}`)
-          return 'payment_refunded'
-        }
-
         default: {
-          // Other statuses (pending, in_process, in_mediation, etc.) — log and skip
-          this.logger.debug(`Unhandled payment status "${chargeStatus}" for charge ${chargeId}`)
+          // Other statuses (pending, in_process, etc.) — log and skip
+          this.logger.debug(
+            `Unhandled payment status "${chargeStatus}" for charge ${chargeId}`,
+          )
           return 'noop'
         }
       }
@@ -719,7 +820,9 @@ export class SubscriptionService {
       },
     })
     if (expired.count > 0) {
-      this.logger.log(`Expired ${expired.count} cancel-at-period-end subscription(s)`)
+      this.logger.log(
+        `Expired ${expired.count} cancel-at-period-end subscription(s)`,
+      )
     }
     return expired.count
   }
@@ -743,7 +846,9 @@ export class SubscriptionService {
       },
     })
     if (expired.count > 0) {
-      this.logger.log(`Expired ${expired.count} grace-period subscription(s)`)
+      this.logger.log(
+        `Expired ${expired.count} grace-period subscription(s)`,
+      )
     }
     return expired.count
   }

@@ -28,7 +28,7 @@ describe('subscription-admin-api', () => {
     name: 'Plano Mensal',
     description: 'Acesso mensal',
     price: 12000,
-    mpPlanId: 'mp-plan-monthly',
+    pgPlanId: 'pg-plan-monthly',
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   }
@@ -69,7 +69,7 @@ describe('subscription-admin-api', () => {
       name: 'Plano Premium',
       description: 'Acesso premium',
       price: 24000,
-      mpPlanId: 'mp-plan-premium',
+      pgPlanId: 'pg-plan-premium',
     }
 
     it('calls api.post with correct path and data', async () => {

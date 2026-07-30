@@ -33,7 +33,7 @@ export default function PricingPage() {
             name: 'Plano Mensal',
             description: 'Acesso completo à plataforma Mythrion com renovação mensal.',
             price: 12000,
-            mpPlanId: '',
+            pgPlanId: '',
           },
           {
             id: 'annual',
@@ -42,7 +42,7 @@ export default function PricingPage() {
             description:
               'Acesso completo à plataforma Mythrion com o melhor custo-benefício (equivalente a R$100/mês).',
             price: 120000,
-            mpPlanId: '',
+            pgPlanId: '',
           },
         ])
       })

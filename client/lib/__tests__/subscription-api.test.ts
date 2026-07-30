@@ -79,7 +79,7 @@ describe('subscription-api', () => {
         invoices: [
           { id: 'inv-1', amount: 12000, currency: 'BRL', status: 'paid', paidAt: '2025-01-01', dueDate: null, createdAt: '2025-01-01' },
         ],
-        mpSubscriptionId: 'mp-1',
+        pgSubscriptionId: 'SUB-1',
         graceEndsAt: null,
         currentPeriodStart: '2025-01-01',
         currentPeriodEnd: '2025-02-01',

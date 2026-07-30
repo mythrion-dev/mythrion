@@ -1,6 +1,6 @@
 # Railway Environment Variables — Production Setup
 
-This document lists every environment variable required to run Mythrion in production (Railway) and explains how to obtain the Mercado Pago credentials.
+This document lists every environment variable required to run Mythrion in production (Railway) and explains how to obtain the PagBank credentials.
 
 ---
 
@@ -46,52 +46,58 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ---
 
-### 4. Mercado Pago — API Credentials
+### 4. PagBank — API Credentials
 
-These come from your Mercado Pago [credentials dashboard](https://www.mercadopago.com.br/settings/credentials).
+These come from your PagBank [dashboard](https://pagseguro.uol.com.br/referencia) or sandbox environment.
 
 | Variable | How to Get |
 |---|---|
-| `MERCADO_PAGO_ACCESS_TOKEN` | Mercado Pago → Settings → Credentials → **Access Token** (production or test) |
-| `MERCADO_PAGO_WEBHOOK_SECRET` | Set in the MP dashboard when configuring the webhook endpoint URL. Enter a secret string of your choice → MP includes it in the HMAC signature header. |
-| `NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY` | Mercado Pago → Settings → Credentials → **Public Key** (same page as the access token) |
+| `PAGBANK_TOKEN` | PagBank Dashboard → Credenciais → API Token (sandbox or production) |
+| `PAGBANK_WEBHOOK_SECRET` | PagBank → Notificações → Token de segurança — configure your own secret string |
+| `NEXT_PUBLIC_PAGBANK_PUBLIC_KEY` | PagBank → Encryption → Public Key (used for client-side card encryption) |
+| `PAGBANK_API_URL` | `https://sandbox.api.assinaturas.pagseguro.com` (sandbox) or `https://api.assinaturas.pagseguro.com` (production) |
+| `PAGBANK_CLIENT_ID` | PagBank → Credenciais → Client ID (for OAuth client_credentials grant, if needed) |
+| `PAGBANK_CLIENT_SECRET` | PagBank → Credenciais → Client Secret |
 
-**Production vs Test:**
+**Sandbox vs Production:**
 
-- **Test mode (development):** Use test credentials from the MP dashboard. Test cards are listed in the [MP documentation](https://www.mercadopago.com.br/developers/en/docs/checkout-pro/additional-content/test-cards).
-- **Production mode:** Use live credentials. You must submit your app for MP certification first.
+- **Sandbox (development):** Use sandbox credentials. Test with test card numbers from the [PagBank documentation](https://dev.pagseguro.uol.com.br/reference/test-cards).
+- **Production:** Use live credentials from your PagBank production account.
 
 Example:
 
 ```env
-MERCADO_PAGO_ACCESS_TOKEN=APP_USR-1234567890abcdef1234567890abcdef-123456
-MERCADO_PAGO_WEBHOOK_SECRET=my-webhook-secret
-NEXT_PUBLIC_MERCADO_PAGO_PUB_KEY=TEST-abcdef12-3456-7890-abcd-ef1234567890
+PAGBANK_TOKEN=a1b2c3d4-e5f6-7890-abcd-ef1234567890
+PAGBANK_WEBHOOK_SECRET=my-webhook-secret
+NEXT_PUBLIC_PAGBANK_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+PAGBANK_API_URL=https://sandbox.api.assinaturas.pagseguro.com
 ```
 
 ---
 
-### 5. Mercado Pago — Plan IDs
+### 5. PagBank — Plan IDs
 
-The pre-created subscription plan IDs from the MP dashboard.
+The pre-created subscription plan IDs from PagBank.
 
-| Variable | Value |
+| Variable | Description |
 |---|---|
-| `MERCADO_PAGO_MONTHLY_PLAN_ID` | `a0269d359ecf475b916af407edb3501d` |
-| `MERCADO_PAGO_ANNUAL_PLAN_ID` | `16c79d6d27194e20a176caa9ec0b9faf` |
+| `PAGBANK_MONTHLY_PLAN_ID` | PagBank plan ID for the monthly plan (e.g. `PLAN_12345678`) |
+| `PAGBANK_ANNUAL_PLAN_ID` | PagBank plan ID for the annual plan (e.g. `PLAN_87654321`) |
 
-If you ever need to recreate the plans, run the script at `server/scripts/create-mp-plans.ts`:
+To create the plans in your PagBank account, run the script at `server/scripts/create-pagbank-plans.ts`:
 
 ```bash
 cd server
-npx ts-node scripts/create-mp-plans.ts
+npx ts-node scripts/create-pagbank-plans.ts
 ```
+
+This will output the plan IDs to add to your environment.
 
 ---
 
 ### 6. `FRONTEND_URL`
 
-Base URL of the Next.js frontend. Used for Mercado Pago `back_url` redirects after payment.
+Base URL of the Next.js frontend. Used for CORS and any redirects.
 
 ```env
 # Local development
@@ -119,23 +125,23 @@ If the auth system uses Google OAuth, you may also need:
 
 ### Per-Environment Configuration
 
-Railway supports multiple environments (production, preview, development). Each environment should have its own set of Mercado Pago credentials so you can use test credentials in preview/development while reserving live credentials for production.
+Railway supports multiple environments (production, preview, development). Each environment should have its own set of PagBank credentials so you can use sandbox credentials in preview/development while reserving live credentials for production.
 
-1. **Production environment** — Use Mercado Pago **live** credentials.
-2. **Preview / Development environments** — Use Mercado Pago **test** credentials and test cards.
+1. **Production environment** — Use PagBank **live** credentials.
+2. **Preview / Development environments** — Use PagBank **sandbox** credentials and test cards.
 
 ### Steps
 
 1. Go to your Railway project dashboard.
 2. Select the service → **Variables** tab.
 3. Add each variable from the tables above.
-4. For the webhook URL, configure it in the MP dashboard to point to:
+4. For the webhook URL, configure it in the PagBank dashboard → Notificações to point to:
 
 ```
 https://<your-railway-domain>/api/subscriptions/webhook
 ```
 
-5. In the MP webhook settings, check **Subscription** events (subscription_authorized, subscription_activated, subscription_cancelled, subscription_updated).
+5. In the PagBank webhook settings, select **Assinaturas** events (subscription.activated, subscription.canceled, subscription.recurrence, charge.created, charge.paid, charge.failed).
 
 ### Post-Deploy Verification
 

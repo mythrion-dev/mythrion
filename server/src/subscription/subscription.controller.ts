@@ -12,7 +12,6 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common'
 import { SubscriptionService } from './subscription.service.js'
-import { MercadoPagoService } from './mercado-pago.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { SkipSubscriptionCheck } from '../auth/skip-subscription.decorator.js'
 import type { Request } from 'express'
@@ -31,7 +30,6 @@ export class SubscriptionController {
 
   constructor(
     private readonly subscriptionService: SubscriptionService,
-    private readonly mpService: MercadoPagoService,
   ) {}
 
   /**
@@ -47,14 +45,21 @@ export class SubscriptionController {
   /**
    * POST /api/subscriptions
    * Authenticated — create a new subscription.
-   * Body: { planId: string }
-   * Returns the Mercado Pago Checkout Pro redirect URL.
+   * Body: { planId: string, cardToken?: string, payerName?: string, payerDocument?: string, deviceId?: string }
+   * Returns the checkout result.
    */
   @Post()
   @UseGuards(JwtAuthGuard)
   @SkipSubscriptionCheck()
   async createSubscription(
-    @Body() body: { planId: string; cardTokenId?: string; payerName?: string; payerDocument?: string; deviceId?: string },
+    @Body()
+    body: {
+      planId: string
+      cardToken?: string
+      payerName?: string
+      payerDocument?: string
+      deviceId?: string
+    },
     @Req() req: AuthenticatedRequest,
   ) {
     if (!body.planId) {
@@ -64,7 +69,7 @@ export class SubscriptionController {
       req.user.sub,
       body.planId,
       req.user.email,
-      body.cardTokenId,
+      body.cardToken,
       body.payerName,
       body.payerDocument,
       body.deviceId,
@@ -97,23 +102,24 @@ export class SubscriptionController {
   /**
    * POST /api/subscriptions/update-payment-method
    * Authenticated — update the card on the current user's subscription.
-   * Body: { cardTokenId: string; payerName?: string; payerDocument?: string }
-   * The card must be tokenized client-side via MercadoPago.js.
+   * Body: { cardToken: string; payerName?: string; payerDocument?: string }
+   * The card must be encrypted client-side via PagBank's public key.
    */
   @Post('update-payment-method')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @SkipSubscriptionCheck()
   async updatePaymentMethod(
-    @Body() body: { cardTokenId: string; payerName?: string; payerDocument?: string },
+    @Body()
+    body: { cardToken: string; payerName?: string; payerDocument?: string },
     @Req() req: AuthenticatedRequest,
   ) {
-    if (!body.cardTokenId) {
-      throw new UnprocessableEntityException('cardTokenId is required')
+    if (!body.cardToken) {
+      throw new UnprocessableEntityException('cardToken is required')
     }
     await this.subscriptionService.updatePaymentMethod(
       req.user.sub,
-      body.cardTokenId,
+      body.cardToken,
       body.payerName,
       body.payerDocument,
     )
@@ -122,45 +128,39 @@ export class SubscriptionController {
 
   /**
    * POST /api/subscriptions/webhook
-   * Public — Mercado Pago webhook receiver.
-   * Validates HMAC signature, processes subscription lifecycle events.
+   * Public — PagBank webhook receiver.
+   * Validates SHA-256 signature via x-authenticity-token header,
+   * processes subscription lifecycle events.
    */
   @Post('webhook')
   @SkipSubscriptionCheck()
   @HttpCode(HttpStatus.OK)
   async handleWebhook(
     @Body() body: any,
-    @Headers('x-signature') signature: string | undefined,
-    @Headers('x-request-id') requestId: string | undefined,
+    @Headers('x-authenticity-token') authenticityToken: string | undefined,
+    @Headers('x-request-id') _requestId: string | undefined,
+    @Req() _req: Request,
   ) {
     this.logger.log(
       `Received webhook: type="${body?.type}" action="${body?.action}" data.id="${body?.data?.id}"`,
     )
     this.logger.debug(`Full webhook body: ${JSON.stringify(body)}`)
 
-    // Validate HMAC signature
-    const isValid = this.mpService.validateWebhook(
-      signature,
-      body?.data?.id,
-      requestId,
+    // Process the webhook event (validation happens inside the service)
+    const result = await this.subscriptionService.processWebhook(
+      JSON.stringify(body),
+      authenticityToken,
+      {
+        type: body.type,
+        action: body.action,
+        data: body.data,
+      },
     )
-
-    if (!isValid) {
-      this.logger.warn('Webhook signature validation failed — returning 200 to prevent retries')
-      return { received: true, validated: false }
-    }
-
-    // Process the webhook event
-    const result = await this.subscriptionService.processWebhook({
-      type: body.type,
-      action: body.action,
-      data: body.data,
-    })
 
     // Sweep for subscriptions past their grace period or cancel-at-period-end date
     await this.subscriptionService.expireGraceSubscriptions()
     await this.subscriptionService.expireCancelledSubscriptions()
 
-    return { received: true, validated: true, action: result }
+    return { received: true, action: result }
   }
 }

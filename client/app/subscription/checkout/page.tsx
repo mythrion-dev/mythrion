@@ -1,71 +1,59 @@
 'use client'
 
-import { useEffect, useState, useCallback, Suspense, useMemo, memo } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useSubscription } from '@/lib/subscription-context'
 import { createSubscription, fetchPlans, type Plan } from '@/lib/subscription-api'
 import Link from 'next/link'
-import { initMercadoPago, CardNumber, ExpirationDate, SecurityCode, createCardToken } from '@mercadopago/sdk-react'
 
 /* ---------- helper: price display ---------- */
 function formatBRL(cents: number) {
   return `R$ ${(cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
 }
 
-/* ---------- Stable style objects for MP fields ---------- */
-const CARD_STYLES = {
-  color: '#e8e2d9',
-  'placeholder-color': '#4a4060',
-  'font-family': 'inherit',
-  fontSize: '14px',
-} as const
+/* ---------- PagBank encryption script loader ---------- */
+function usePagBankEncryption(): boolean {
+  const [ready, setReady] = useState(false)
 
-/* ---------- MP card form — isolated in a memo'd component to prevent remount ---------- */
-interface CardFormFieldsProps {
-  planPrice: number
+  useEffect(() => {
+    const publicKey = process.env.NEXT_PUBLIC_PAGBANK_PUBLIC_KEY
+    if (!publicKey) {
+      setReady(true) // No encryption configured — proceed without it
+      return
+    }
+
+    // Check if already loaded
+    if ((window as any).PagBank?.encryptCard) {
+      setReady(true)
+      return
+    }
+
+    // Load PagBank encryption SDK from CDN
+    const script = document.createElement('script')
+    script.src = 'https://assets.pagseguro.com.br/pagbank-encrypt/2.0.3/pagbank-encrypt.js'
+    script.async = true
+    script.onload = () => {
+      try {
+        ;(window as any).PagBank?.setPublicKey?.(publicKey)
+      } catch (err) {
+        console.error('[checkout] PagBank setPublicKey error:', err)
+      }
+      setReady(true)
+    }
+    script.onerror = () => {
+      console.error('[checkout] Failed to load PagBank encryption SDK')
+      setReady(true) // Proceed without — error will be caught at submit time
+    }
+    document.head.appendChild(script)
+
+    return () => {
+      // No cleanup needed — script stays in DOM
+    }
+  }, [])
+
+  return ready
 }
-
-const CardFormFields = memo(function CardFormFields({ planPrice }: CardFormFieldsProps) {
-  // Memoize a stable style reference so MP fields don't re-init on every render
-  const styles = useMemo(() => ({ ...CARD_STYLES }), [])
-
-  return (
-    <>
-      <h3 className="text-sm font-semibold text-foreground mb-4 mt-6 pt-6 border-t border-border">
-        Dados do cartão
-      </h3>
-
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-foreground mb-1">
-          Número do cartão <span className="text-red-500">*</span>
-        </label>
-        <div className="mp-field-wrapper">
-          <CardNumber placeholder="0000 0000 0000 0000" style={styles} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-1">
-            Validade <span className="text-red-500">*</span>
-          </label>
-          <div className="mp-field-wrapper">
-            <ExpirationDate placeholder="MM/AA" style={styles} />
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-1">
-            CVV <span className="text-red-500">*</span>
-          </label>
-          <div className="mp-field-wrapper">
-            <SecurityCode placeholder="123" style={styles} />
-          </div>
-        </div>
-      </div>
-    </>
-  )
-})
 
 /* ---------- component ---------- */
 function CheckoutContent() {
@@ -76,63 +64,24 @@ function CheckoutContent() {
 
   const [plan, setPlan] = useState<Plan | null>(null)
   const [planLoading, setPlanLoading] = useState(true)
-  const [mpReady, setMpReady] = useState(false)
-  const [mpInitDone, setMpInitDone] = useState(false)
 
-  // Form state
+  // Card form state
   const [payerName, setPayerName] = useState('')
   const [payerDocument, setPayerDocument] = useState('')
+  const [cardNumber, setCardNumber] = useState('')
+  const [cardExpiry, setCardExpiry] = useState('')
+  const [cardCvv, setCardCvv] = useState('')
   const [formErrors, setFormErrors] = useState<{ name?: string; document?: string; card?: string }>({})
 
-  // State: 'form' | 'creating' | 'redirecting' | 'success' | 'error'
-  // Note: 'tokenizing' is intentionally not a state — we don't call setState()
-  // before createCardToken() because that would unmount MP iframe fields mid-tokenization.
-  const [state, setState] = useState<'form' | 'creating' | 'redirecting' | 'success' | 'error'>('form')
+  // PagBank encryption
+  const pgReady = usePagBankEncryption()
+  const pgPublicKey = process.env.NEXT_PUBLIC_PAGBANK_PUBLIC_KEY
+
+  // State: 'form' | 'creating' | 'success' | 'error'
+  const [state, setState] = useState<'form' | 'creating' | 'success' | 'error'>('form')
   const [errorMessage, setErrorMessage] = useState('')
 
-  // Device ID (MP_DEVICE_SESSION_ID) — collected by MP's security.js which is
-  // loaded automatically by the SDK. We forward this to the backend so it can
-  // pass it as X-meli-session-id when calling MP's API, improving approval rates.
-  const [deviceId, setDeviceId] = useState<string | undefined>(undefined)
-
   const planId = searchParams.get('planId')
-  const mpPublicKey = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY
-
-  // ----- Initialize MercadoPago — only ONCE -----
-  useEffect(() => {
-    if (mpInitDone) return
-    if (mpPublicKey) {
-      try {
-        initMercadoPago(mpPublicKey)
-      } catch (err) {
-        console.error('[checkout] MercadoPago init error:', err)
-      }
-      setMpReady(true)
-    } else {
-      console.warn('[checkout] NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY is not set — card form disabled')
-      setMpReady(true)
-    }
-    setMpInitDone(true)
-  }, [mpPublicKey, mpInitDone])
-
-  // ----- Collect MP Device ID for approval rate optimization -----
-  useEffect(() => {
-    if (!mpReady) return
-    // The MP SDK's security.js creates a global variable MP_DEVICE_SESSION_ID.
-    // It may take a moment after SDK init, so poll briefly.
-    let attempts = 0
-    const interval = setInterval(() => {
-      const id = (window as any).MP_DEVICE_SESSION_ID
-      if (id) {
-        setDeviceId(id)
-        clearInterval(interval)
-      } else if (attempts > 10) {
-        clearInterval(interval) // give up after ~5s
-      }
-      attempts++
-    }, 500)
-    return () => clearInterval(interval)
-  }, [mpReady])
 
   // ----- CPF mask -----
   const formatCPF = (value: string) => {
@@ -141,6 +90,13 @@ function CheckoutContent() {
     if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`
     if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
     return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
+  }
+
+  // Card expiry mask
+  const formatExpiry = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 4)
+    if (digits.length <= 2) return digits
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`
   }
 
   // ----- Auth & param check -----
@@ -190,9 +146,50 @@ function CheckoutContent() {
       errors.document = 'Digite um CPF válido (11 dígitos).'
     }
 
+    if (pgPublicKey) {
+      if (cardNumber.replace(/\D/g, '').length < 13) {
+        errors.card = 'Número do cartão inválido.'
+      }
+      if (cardExpiry.replace(/\D/g, '').length < 4) {
+        errors.card = 'Data de validade inválida.'
+      }
+      if (cardCvv.replace(/\D/g, '').length < 3) {
+        errors.card = 'CVV inválido.'
+      }
+    }
+
     setFormErrors(errors)
     return Object.keys(errors).length === 0
-  }, [payerName, payerDocument])
+  }, [payerName, payerDocument, pgPublicKey, cardNumber, cardExpiry, cardCvv])
+
+  // ----- Encrypt card using PagBank -----
+  const encryptCard = useCallback(async (): Promise<string> => {
+    if (!pgPublicKey) {
+      throw new Error('PagBank public key not configured')
+    }
+
+    const pg = (window as any).PagBank
+    if (!pg?.encryptCard) {
+      throw new Error('PagBank encryption SDK not loaded. Tente novamente.')
+    }
+
+    const [expMonth, expYear] = cardExpiry.split('/')
+    const cardData = {
+      cardNumber: cardNumber.replace(/\s/g, ''),
+      cardExpirationMonth: expMonth || '',
+      cardExpirationYear: expYear ? `20${expYear}` : '',
+      cardSecurityCode: cardCvv,
+      cardholderName: payerName.trim(),
+    }
+
+    try {
+      const result = pg.encryptCard(cardData)
+      return result
+    } catch (err: unknown) {
+      console.error('[checkout] PagBank encrypt error:', err)
+      throw new Error('Falha ao criptografar dados do cartão. Verifique os dados e tente novamente.')
+    }
+  }, [pgPublicKey, cardNumber, cardExpiry, cardCvv, payerName])
 
   // ----- Handle subscribe -----
   const handleSubscribe = useCallback(async () => {
@@ -200,105 +197,48 @@ function CheckoutContent() {
     if (!planId || !plan) return
 
     setErrorMessage('')
+    setState('creating')
 
-    if (mpPublicKey) {
-      // Step 1: Tokenize the card
-      // IMPORTANT: Do NOT call setState() before createCardToken() — doing so would
-      // unmount the MP iframe fields (via the loading-screen render), which corrupts
-      // the in-flight tokenization. Tokenize first, only then set state.
-      try {
-        const cardToken = await createCardToken({
-          cardholderName: payerName.trim(),
-          identificationType: 'CPF',
-          identificationNumber: payerDocument.replace(/\D/g, ''),
-        })
+    try {
+      let cardToken: string | undefined
 
-        if (!cardToken || !(cardToken as any)?.id) {
-          throw new Error('Falha ao tokenizar o cartão. Verifique os dados e tente novamente.')
-        }
-
-        // Step 2: Create subscription with the card token
-        setState('creating')
-        await createSubscription(
-          planId,
-          (cardToken as any).id,
-          payerName.trim(),
-          payerDocument.replace(/\D/g, ''),
-          deviceId,
-        )
-
-        setState('success')
-        router.push('/subscription/success')
-      } catch (err: unknown) {
-        // Log the FULL error to debug what MP actually throws
-        console.error('[checkout] Full error:', err)
-        const message =
-          err instanceof Error
-            ? err.message
-            : typeof err === 'string'
-              ? err
-              : err && typeof err === 'object' && 'message' in (err as any)
-                ? (err as any).message
-                : 'Falha ao processar pagamento. Tente novamente.'
-        console.error('[checkout] Error message:', message)
-        setState('error')
-        setErrorMessage(message)
+      if (pgPublicKey) {
+        // Encrypt card with PagBank
+        cardToken = await encryptCard()
       }
-    } else {
-      // Fallback: redirect-based flow (no MP key configured)
-      setState('creating')
-      try {
-        const result = await createSubscription(
-          planId,
-          undefined,
-          payerName.trim(),
-          payerDocument.replace(/\D/g, ''),
-          deviceId,
-        )
 
-        setState('redirecting')
+      await createSubscription(
+        planId,
+        cardToken,
+        payerName.trim(),
+        payerDocument.replace(/\D/g, ''),
+        undefined, // deviceId removed (no longer needed without MP)
+      )
 
-        if (result.initPoint) {
-          window.location.href = result.initPoint
-        } else {
-          router.push('/subscription/success')
-        }
-      } catch (err: unknown) {
-        // Log the FULL error to debug
-        console.error('[checkout] Full error:', err)
-        const message =
-          err instanceof Error
-            ? err.message
-            : typeof err === 'string'
-              ? err
-              : err && typeof err === 'object' && 'message' in (err as any)
-                ? (err as any).message
-                : 'Falha ao criar assinatura. Tente novamente.'
-        console.error('[checkout] Error message:', message)
-        setState('error')
-        setErrorMessage(message)
-      }
+      setState('success')
+      router.push('/subscription/success')
+    } catch (err: unknown) {
+      console.error('[checkout] Full error:', err)
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'string'
+            ? err
+            : 'Falha ao criar assinatura. Tente novamente.'
+      setState('error')
+      setErrorMessage(message)
     }
-  }, [planId, plan, payerName, payerDocument, validate, router, mpPublicKey])
+  }, [planId, plan, payerName, payerDocument, validate, router, pgPublicKey, encryptCard])
 
-  // ----- Creating / Redirecting states -----
-  if (state === 'creating' || state === 'redirecting') {
-    const messages: Record<string, { title: string; desc: string }> = {
-      creating: {
-        title: 'Preparando assinatura...',
-        desc: 'Aguarde enquanto configuramos sua assinatura.',
-      },
-      redirecting: {
-        title: 'Redirecionando para o Mercado Pago...',
-        desc: 'Você será redirecionado para o ambiente seguro do Mercado Pago para autorizar o pagamento.',
-      },
-    }
-    const msg = messages[state]!
+  // ----- Creating state -----
+  if (state === 'creating') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-screen bg-background bg-pattern">
         <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-        <h2 className="mt-6 text-lg font-semibold text-foreground">{msg.title}</h2>
-        <p className="mt-2 text-sm text-muted-foreground max-w-sm text-center">{msg.desc}</p>
+        <h2 className="mt-6 text-lg font-semibold text-foreground">Preparando assinatura...</h2>
+        <p className="mt-2 text-sm text-muted-foreground max-w-sm text-center">
+          Aguarde enquanto configuramos sua assinatura.
+        </p>
       </div>
     )
   }
@@ -361,37 +301,6 @@ function CheckoutContent() {
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-foreground">Finalizar assinatura</h1>
         </div>
-
-        {/* MP iframe styles — using app's design tokens explicitly */}
-        <style>{`
-          .mp-field-wrapper {
-            width: 100%;
-            min-width: 0;
-            padding: 0.625rem 1rem;
-            border-radius: 0.75rem;
-            background: #0d0a14;
-            border: 1px solid #2a2240;
-            outline: none;
-            transition: all 0.2s ease;
-            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.04);
-            display: flex;
-            align-items: center;
-          }
-          .mp-field-wrapper:focus-within {
-            border-color: rgba(201, 164, 75, 0.5);
-            box-shadow: 0 0 0 3px rgba(201, 164, 75, 0.08);
-          }
-          .mp-field-wrapper iframe {
-            height: 20px !important;
-            min-height: unset !important;
-          }
-          .mp-field-wrapper [data-card-number-wrapper],
-          .mp-field-wrapper [data-expiration-date-wrapper],
-          .mp-field-wrapper [data-security-code-wrapper] {
-            height: 20px;
-            min-height: unset;
-          }
-        `}</style>
 
         {/* Plan summary card */}
         <div className="bg-surface border border-border rounded-xl p-6 mb-6">
@@ -469,18 +378,91 @@ function CheckoutContent() {
             )}
           </div>
 
-          {/* Card form — only when MP key is available; only render when plan is loaded so MP fields mount exactly once */}
-          {mpPublicKey && plan ? (
-            <CardFormFields planPrice={plan.price} />
-          ) : mpPublicKey && !planLoading ? (
-            <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm text-amber-600 dark:text-amber-400">
-              Plano não encontrado.
-            </div>
-          ) : null}
+          {/* Card form */}
+          {pgPublicKey && plan && (
+            <>
+              <h3 className="text-sm font-semibold text-foreground mb-4 mt-6 pt-6 border-t border-border">
+                Dados do cartão
+              </h3>
 
-          {!mpPublicKey && (
+              {/* Card number */}
+              <div className="mb-4">
+                <label htmlFor="cardNumber" className="block text-sm font-medium text-foreground mb-1">
+                  Número do cartão <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="cardNumber"
+                  type="text"
+                  value={cardNumber}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\D/g, '').slice(0, 16)
+                    const formatted = raw.replace(/(.{4})/g, '$1 ').trim()
+                    setCardNumber(formatted)
+                    if (formErrors.card) setFormErrors((prev) => ({ ...prev, card: undefined }))
+                  }}
+                  placeholder="0000 0000 0000 0000"
+                  maxLength={19}
+                  className={`w-full px-3 py-2 rounded-lg bg-background border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                    formErrors.card ? 'border-red-500' : 'border-border'
+                  }`}
+                  autoComplete="cc-number"
+                  inputMode="numeric"
+                />
+              </div>
+
+              {/* Expiry + CVV */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label htmlFor="cardExpiry" className="block text-sm font-medium text-foreground mb-1">
+                    Validade <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="cardExpiry"
+                    type="text"
+                    value={cardExpiry}
+                    onChange={(e) => {
+                      setCardExpiry(formatExpiry(e.target.value))
+                      if (formErrors.card) setFormErrors((prev) => ({ ...prev, card: undefined }))
+                    }}
+                    placeholder="MM/AA"
+                    maxLength={5}
+                    className={`w-full px-3 py-2 rounded-lg bg-background border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                      formErrors.card ? 'border-red-500' : 'border-border'
+                    }`}
+                    autoComplete="cc-exp"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="cardCvv" className="block text-sm font-medium text-foreground mb-1">
+                    CVV <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="cardCvv"
+                    type="text"
+                    value={cardCvv}
+                    onChange={(e) => {
+                      setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))
+                      if (formErrors.card) setFormErrors((prev) => ({ ...prev, card: undefined }))
+                    }}
+                    placeholder="123"
+                    maxLength={4}
+                    className={`w-full px-3 py-2 rounded-lg bg-background border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                      formErrors.card ? 'border-red-500' : 'border-border'
+                    }`}
+                    autoComplete="cc-csc"
+                    inputMode="numeric"
+                  />
+                  {formErrors.card && (
+                    <p className="mt-1 text-xs text-red-500">{formErrors.card}</p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {!pgPublicKey && (
             <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm text-amber-600 dark:text-amber-400">
-              Pagamento por cartão indisponível no momento. Você será redirecionado para o Mercado Pago.
+              Pagamento por cartão indisponível no momento.
             </div>
           )}
 
@@ -488,12 +470,12 @@ function CheckoutContent() {
           <button
             type="button"
             onClick={handleSubscribe}
-            disabled={planLoading || !mpReady}
+            disabled={planLoading || !pgReady}
             className="w-full mt-6 py-3 rounded-lg bg-primary text-background font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             {planLoading
               ? 'Carregando...'
-              : !mpReady
+              : !pgReady
               ? 'Preparando...'
               : `Assinar ${formattedPlanPrice}${plan?.slug === 'monthly' ? '/mês' : '/ano'}`}
           </button>
@@ -502,8 +484,8 @@ function CheckoutContent() {
         {/* Security note */}
         <p className="mt-4 text-xs text-muted-foreground text-center leading-relaxed">
           Pagamento processado de forma segura pelo{' '}
-          <span className="text-foreground">Mercado Pago</span>.
-          Os dados do seu cartão são enviados diretamente para eles.
+          <span className="text-foreground">PagBank</span>.
+          Os dados do seu cartão são criptografados antes do envio.
         </p>
 
         {/* Back link */}

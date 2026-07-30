@@ -21,7 +21,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "configure-plans": "npx ts-node scripts/configure-mp-plans.ts"
+    "create-plans": "npx ts-node scripts/create-pagbank-plans.ts"
   },
   "prisma": {
     "seed": "npx ts-node prisma/seed.ts"
@@ -43,7 +43,6 @@
     "geoip-lite": "^2.0.2",
     "ioredis": "^5.11.1",
     "mathjs": "^15.2.0",
-    "mercadopago": "^3.2.1",
     "mongodb": "^7.5.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
@@ -112,9 +111,27 @@
     ],
     "coverageDirectory": "../coverage",
     "coverageThreshold": {
-      "global": {
+      "./src/subscription/pagbank.service.ts": {
+        "statements": 90,
+        "branches": 85,
+        "functions": 80,
+        "lines": 90
+      },
+      "./src/subscription/subscription.service.ts": {
         "statements": 80,
-        "branches": 75,
+        "branches": 80,
+        "functions": 80,
+        "lines": 80
+      },
+      "./src/subscription/subscription.controller.ts": {
+        "statements": 80,
+        "branches": 80,
+        "functions": 80,
+        "lines": 80
+      },
+      "./src/subscription/admin-plans.controller.ts": {
+        "statements": 80,
+        "branches": 80,
         "functions": 80,
         "lines": 80
       }

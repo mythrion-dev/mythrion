@@ -760,7 +760,7 @@ export const SubscriptionPlanScalarFieldEnum = {
   name: 'name',
   description: 'description',
   price: 'price',
-  mpPlanId: 'mpPlanId',
+  pgPlanId: 'pgPlanId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -772,13 +772,14 @@ export const UserSubscriptionScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   planId: 'planId',
-  mpSubscriptionId: 'mpSubscriptionId',
+  pgSubscriptionId: 'pgSubscriptionId',
   status: 'status',
   graceEndsAt: 'graceEndsAt',
   currentPeriodStart: 'currentPeriodStart',
   currentPeriodEnd: 'currentPeriodEnd',
   cancelledAt: 'cancelledAt',
   cancelAtPeriodEnd: 'cancelAtPeriodEnd',
+  pgCustomerId: 'pgCustomerId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -789,7 +790,7 @@ export type UserSubscriptionScalarFieldEnum = (typeof UserSubscriptionScalarFiel
 export const SubscriptionInvoiceScalarFieldEnum = {
   id: 'id',
   subscriptionId: 'subscriptionId',
-  mpInvoiceId: 'mpInvoiceId',
+  pgInvoiceId: 'pgInvoiceId',
   amount: 'amount',
   currency: 'currency',
   status: 'status',
