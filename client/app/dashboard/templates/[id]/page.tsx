@@ -778,22 +778,6 @@ export default function TemplateDetailPage() {
           <FeatureSummaryCard label="Resistances" count={resistCount} iconKey="resistances" />
         </div>
 
-        {(template.attributeModifierFormula || template.skillFormula) && (
-          <div className="mt-4 pt-4 border-t border-border space-y-2">
-            {template.attributeModifierFormula && (
-              <p className="text-sm text-muted">
-                <span className="text-foreground font-medium">Attribute Formula:</span>{' '}
-                <code className="text-xs bg-surface px-2 py-0.5 rounded border border-border">{template.attributeModifierFormula}</code>
-              </p>
-            )}
-            {template.skillFormula && (
-              <p className="text-sm text-muted">
-                <span className="text-foreground font-medium">Skill Formula:</span>{' '}
-                <code className="text-xs bg-surface px-2 py-0.5 rounded border border-border">{template.skillFormula}</code>
-              </p>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Delete confirmation modal */}
