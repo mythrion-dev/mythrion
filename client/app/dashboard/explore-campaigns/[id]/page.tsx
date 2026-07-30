@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth-context'
 import { PageNav } from '@/lib/breadcrumb'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { JoinRequestModal } from '@/components/community/JoinRequestModal'
 
 interface Adventure {
   id: string
@@ -186,45 +187,12 @@ function AdventureDetailContent() {
               </span>
             ) : user ? (
               <div className="space-y-2">
-                {!showJoinForm ? (
-                  <button
-                    onClick={() => setShowJoinForm(true)}
-                    className="btn-primary"
-                  >
-                    Request to Join
-                  </button>
-                ) : (
-                  <div className="space-y-2">
-                    <textarea
-                      placeholder="Optional message to the GM..."
-                      value={joinMessage}
-                      onChange={(e) => setJoinMessage(e.target.value)}
-                      className="input w-64 h-24 resize-none"
-                    />
-                    <div className="flex gap-2 justify-end">
-                      <button
-                        onClick={() => {
-                          setShowJoinForm(false)
-                          setJoinMessage('')
-                          setJoinError(null)
-                        }}
-                        className="btn-secondary text-sm"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleJoinRequest}
-                        disabled={submittingJoin}
-                        className="btn-primary text-sm"
-                      >
-                        {submittingJoin ? 'Sending...' : 'Confirm'}
-                      </button>
-                    </div>
-                    {joinError && (
-                      <p className="text-sm text-red-400">{joinError}</p>
-                    )}
-                  </div>
-                )}
+                <button
+                  onClick={() => setShowJoinForm(true)}
+                  className="btn-primary"
+                >
+                  Request to Join
+                </button>
               </div>
             ) : (
               <Link href="/login" className="btn-primary">
@@ -302,6 +270,20 @@ function AdventureDetailContent() {
           </div>
         </div>
       </div>
+
+      <JoinRequestModal
+        open={showJoinForm}
+        message={joinMessage}
+        onMessageChange={setJoinMessage}
+        onCancel={() => {
+          setShowJoinForm(false)
+          setJoinMessage('')
+          setJoinError(null)
+        }}
+        onConfirm={handleJoinRequest}
+        loading={submittingJoin}
+        error={joinError}
+      />
     </>
   )
 }

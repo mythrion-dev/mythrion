@@ -197,14 +197,27 @@ export class AdventureService {
       this.prisma.adventure.count({ where }),
     ])
 
+    const data = adventures.map((a) => ({
+      id: a.id,
+      name: a.name,
+      campaign: a.campaign,
+      synopsis: a.synopsis,
+      maxPlayers: a.maxPlayers,
+      isPublic: a.isPublic,
+      sessionWeekday: a.sessionWeekday,
+      sessionTime: a.sessionTime,
+      sessionType: a.sessionType,
+      createdAt: a.createdAt,
+      ownerId: a.owner.id,
+      gmDisplayName: a.owner.displayName,
+      playerCount: a._count.members,
+    }))
+
     return {
-      data: adventures,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      data,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
     }
   }
 
@@ -223,6 +236,10 @@ export class AdventureService {
         maxPlayers: true,
         isPublic: true,
         createdAt: true,
+        updatedAt: true,
+        sessionWeekday: true,
+        sessionTime: true,
+        sessionType: true,
         owner: { select: { id: true, displayName: true } },
         _count: { select: { members: true } },
       },
@@ -232,7 +249,13 @@ export class AdventureService {
       throw new NotFoundException('Adventure not found or is not public')
     }
 
-    return adventure
+    const { owner, _count, ...rest } = adventure
+    return {
+      ...rest,
+      ownerId: owner.id,
+      gmDisplayName: owner.displayName,
+      playerCount: _count.members,
+    }
   }
 
   /**
@@ -248,7 +271,12 @@ export class AdventureService {
         campaign: true,
         synopsis: true,
         maxPlayers: true,
+        isPublic: true,
         createdAt: true,
+        updatedAt: true,
+        sessionWeekday: true,
+        sessionTime: true,
+        sessionType: true,
         owner: { select: { id: true, displayName: true } },
         _count: { select: { members: true } },
       },
@@ -258,7 +286,13 @@ export class AdventureService {
       throw new NotFoundException('Adventure not found or is not public')
     }
 
-    return adventure
+    const { owner, _count, ...rest } = adventure
+    return {
+      ...rest,
+      ownerId: owner.id,
+      gmDisplayName: owner.displayName,
+      playerCount: _count.members,
+    }
   }
 
   async remove(id: string, userId: string) {
