@@ -19,7 +19,7 @@ interface PagBankPlanConfig {
   name: string
   description: string
   price: number          // in BRL cents (e.g. 12000 = R$120.00)
-  interval: 'MONTHLY' | 'YEARLY'
+  interval: { unit: 'MONTH' | 'YEAR'; length: number }
 }
 
 const PLANS: PagBankPlanConfig[] = [
@@ -28,14 +28,14 @@ const PLANS: PagBankPlanConfig[] = [
     name: 'Mythrion Premium - Mensal',
     description: 'Acesso completo à plataforma Mythrion com renovação mensal.',
     price: 12000,         // R$ 120,00
-    interval: 'MONTHLY',
+    interval: { unit: 'MONTH', length: 1 },
   },
   {
     slug: 'annual',
     name: 'Mythrion Premium - Anual',
     description: 'Acesso completo à plataforma Mythrion com o melhor custo-benefício.',
     price: 120000,        // R$ 1.200,00
-    interval: 'YEARLY',
+    interval: { unit: 'YEAR', length: 1 },
   },
 ]
 

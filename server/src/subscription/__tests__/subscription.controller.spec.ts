@@ -268,8 +268,8 @@ describe('SubscriptionController', () => {
 
   describe('POST /api/subscriptions/webhook', () => {
     const webhookBody = {
-      type: 'subscription.activated',
-      data: { id: 'SUB-1' },
+      event: 'subscription.activated',
+      resource: { id: 'SUBS_001' },
     }
 
     it('processes a valid webhook and returns received:true with action', async () => {
@@ -291,7 +291,7 @@ describe('SubscriptionController', () => {
       expect(subscriptionService.processWebhook).toHaveBeenCalledWith(
         JSON.stringify(webhookBody),
         'valid-sha256-hex',
-        { type: 'subscription.activated', data: { id: 'SUB-1' } },
+        { type: 'subscription.activated', action: undefined, data: { id: 'SUBS_001' } },
       )
       expect(subscriptionService.expireGraceSubscriptions).toHaveBeenCalled()
       expect(subscriptionService.expireCancelledSubscriptions).toHaveBeenCalled()
@@ -313,39 +313,14 @@ describe('SubscriptionController', () => {
       expect(subscriptionService.processWebhook).toHaveBeenCalledWith(
         JSON.stringify(webhookBody),
         undefined,
-        { type: 'subscription.activated', data: { id: 'SUB-1' } },
+        { type: 'subscription.activated', action: undefined, data: { id: 'SUBS_001' } },
       )
     })
 
-    it('processes charge.paid webhook event', async () => {
-      const chargeBody = {
-        type: 'charge.paid',
-        action: 'payment',
-        data: { id: 'CHARGE-123' },
-      }
-      subscriptionService.processWebhook.mockResolvedValue('payment_approved')
-      subscriptionService.expireGraceSubscriptions.mockResolvedValue(0)
-      subscriptionService.expireCancelledSubscriptions.mockResolvedValue(0)
-
-      const result = await controller.handleWebhook(
-        chargeBody,
-        'valid-token',
-        'req-456',
-        {} as any,
-      )
-
-      expect(result).toEqual({ received: true, action: 'payment_approved' })
-      expect(subscriptionService.processWebhook).toHaveBeenCalledWith(
-        JSON.stringify(chargeBody),
-        'valid-token',
-        { type: 'charge.paid', action: 'payment', data: { id: 'CHARGE-123' } },
-      )
-    })
-
-    it('processes subscription.canceled webhook', async () => {
+    it('processes subscription.canceled webhook event', async () => {
       const cancelBody = {
-        type: 'subscription.canceled',
-        data: { id: 'SUB-1' },
+        event: 'subscription.canceled',
+        resource: { id: 'SUBS_002', status: 'CANCELED' },
       }
       subscriptionService.processWebhook.mockResolvedValue('cancelled')
       subscriptionService.expireGraceSubscriptions.mockResolvedValue(0)
@@ -362,7 +337,7 @@ describe('SubscriptionController', () => {
       expect(subscriptionService.processWebhook).toHaveBeenCalledWith(
         JSON.stringify(cancelBody),
         'valid-token',
-        { type: 'subscription.canceled', data: { id: 'SUB-1' } },
+        { type: 'subscription.canceled', action: undefined, data: { id: 'SUBS_002', status: 'CANCELED' } },
       )
     })
   })

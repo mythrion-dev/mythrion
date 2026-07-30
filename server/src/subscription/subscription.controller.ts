@@ -142,18 +142,19 @@ export class SubscriptionController {
     @Req() _req: Request,
   ) {
     this.logger.log(
-      `Received webhook: type="${body?.type}" action="${body?.action}" data.id="${body?.data?.id}"`,
+      `Received webhook: event="${body?.event}" resource.id="${body?.resource?.id}"`,
     )
     this.logger.debug(`Full webhook body: ${JSON.stringify(body)}`)
 
     // Process the webhook event (validation happens inside the service)
+    // Assinaturas API sends: { event: "subscription.activated", resource: { id: "SUBS_...", ... } }
     const result = await this.subscriptionService.processWebhook(
       JSON.stringify(body),
       authenticityToken,
       {
-        type: body.type,
+        type: body.event,
         action: body.action,
-        data: body.data,
+        data: body.resource,
       },
     )
 
