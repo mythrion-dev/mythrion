@@ -107,9 +107,10 @@ describe('PagBankService', () => {
       expect(reqBody.plan.id).toBe('pg-plan-monthly')
       expect(reqBody.customer.email).toBe('user@example.com')
       expect(reqBody.customer.name).toBe('João Silva')
-      expect(reqBody.customer.tax_id.value).toBe('12345678909')
+      expect(reqBody.customer.tax_id).toBe('12345678909')
       expect(reqBody.customer.billing_info[0].card.encrypted).toBe('encrypted-card-data')
       expect(reqBody.payment_method[0].type).toBe('CREDIT_CARD')
+      expect(reqBody.amount).toEqual({ value: 12000, currency: 'BRL' })
     })
 
     it('creates a subscription without card token', async () => {
@@ -128,6 +129,7 @@ describe('PagBankService', () => {
       )
       expect(reqBody.customer.billing_info).toBeUndefined()
       expect(reqBody.reference_id).toBeUndefined()
+      expect(reqBody.amount).toEqual({ value: 12000, currency: 'BRL' })
     })
 
     it('uses externalReference when provided', async () => {
@@ -175,7 +177,7 @@ describe('PagBankService', () => {
       const reqBody = JSON.parse(
         mockFetch.mock.calls[0][1]?.body as string,
       )
-      expect(reqBody.customer.tax_id.value).toBe('12345678909')
+      expect(reqBody.customer.tax_id).toBe('12345678909')
     })
 
     it('handles response without customer field', async () => {

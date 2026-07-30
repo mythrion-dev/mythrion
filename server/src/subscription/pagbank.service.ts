@@ -42,19 +42,19 @@ export class PagBankService implements PaymentGateway {
       const body: Record<string, any> = {
         reference_id: params.externalReference,
         plan: { id: params.planId },
+        amount: { value: params.planPrice, currency: 'BRL' },
         customer: this.buildCustomer(params),
-        payment_method: [{ type: 'CREDIT_CARD', card: { security_code: 123 } }],
+        payment_method: [{ type: 'CREDIT_CARD' }],
       }
 
-      // When an encrypted card token is provided, attach it as billing_info
+      // When an encrypted card token is provided, attach it as billing_info.
+      // The CVV is already inside the encrypted card data, so no separate
+      // security_code is needed.
       if (params.cardToken) {
         body.customer.billing_info = [
           {
             type: 'CREDIT_CARD',
-            card: {
-              encrypted: params.cardToken,
-              security_code: 123,
-            },
+            card: { encrypted: params.cardToken },
           },
         ]
       }
@@ -305,18 +305,7 @@ export class PagBankService implements PaymentGateway {
     const customer: Record<string, any> = {
       name: params.payerName || params.payerEmail.split('@')[0],
       email: params.payerEmail,
-      tax_id: {
-        type: 'BR:CPF',
-        value: (params.payerDocument || '').replace(/\D/g, ''),
-      },
-      phones: [
-        {
-          type: 'MOBILE',
-          country: '55',
-          area: '',
-          number: '',
-        },
-      ],
+      tax_id: (params.payerDocument || '').replace(/\D/g, ''),
     }
 
     return customer
