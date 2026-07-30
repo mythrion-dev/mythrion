@@ -89,10 +89,10 @@ export class PagBankService implements PaymentGateway {
         ]
       }
 
-      // Add installments to payment_method ONLY for the encrypted flow.
+      // Add installments to payment_method for both card flows.
       // PagBank subscriptions API does not document this field, but it
       // may be forwarded to the acquirer for the initial charge.
-      if (params.installments && !params.cardTokenId) {
+      if (params.installments) {
         body.payment_method[0].installments = params.installments
       }
 

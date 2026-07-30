@@ -325,7 +325,7 @@ describe('PagBankService', () => {
       expect(reqBody.payment_method[0].installments).toBeUndefined()
     })
 
-    it('omits installments when using cardTokenId (CARD_UUID flow)', async () => {
+    it('sends installments when using cardTokenId (CARD_UUID flow)', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(validResponse),
@@ -340,7 +340,7 @@ describe('PagBankService', () => {
       const reqBody = JSON.parse(
         mockFetch.mock.calls[0][1]?.body as string,
       )
-      expect(reqBody.payment_method[0].installments).toBeUndefined()
+      expect(reqBody.payment_method[0].installments).toBe(12)
     })
   })
 
