@@ -252,7 +252,7 @@ describe('PagBankService', () => {
       ).rejects.toThrow(UnprocessableEntityException)
     })
 
-    it('uses cardTokenId in billing_info.card.id', async () => {
+    it('uses cardTokenId in billing_info.card.token, omits payment_method.card', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(validResponse),
@@ -275,16 +275,15 @@ describe('PagBankService', () => {
         mockFetch.mock.calls[0][1]?.body as string,
       )
 
-      // payment_method should only have security_code — card token goes in billing_info
-      expect(reqBody.payment_method[0].card.token).toBeUndefined()
-      expect(reqBody.payment_method[0].card.encrypted).toBeUndefined()
-      expect(reqBody.payment_method[0].card.security_code).toBe(123)
+      // When cardTokenId is set, payment_method.card must be omitted entirely
+      // (PagBank rejects: "The 'payment_method.card' value should not be entered
+      //  when the billing_info_card_token is sent")
+      expect(reqBody.payment_method[0].card).toBeUndefined()
 
       // billing_info uses card.token for CARD_UUID pre-defined tokens
       // (cardTokenId takes priority over cardToken — encrypted is not set)
       expect(reqBody.customer.billing_info[0].card.token).toBe(
         'CARD_8286F604-2D44-4B30-A80D-0E749A555566',
-      expect(reqBody.customer.billing_info[0].card.id).toBeUndefined()
       )
       expect(reqBody.customer.billing_info[0].card.encrypted).toBeUndefined()
     })
