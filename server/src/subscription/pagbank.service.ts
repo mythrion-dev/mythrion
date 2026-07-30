@@ -287,6 +287,12 @@ export class PagBankService implements PaymentGateway {
 
       const data = (await response.json()) as any
 
+      if (process.env.NODE_ENV !== 'production') {
+        this.logger.debug(
+          `PagBank charge response for ${chargeId}: ${JSON.stringify(data)}`,
+        )
+      }
+
       return {
         id: data.id,
         status: data.status,
@@ -295,6 +301,7 @@ export class PagBankService implements PaymentGateway {
         currencyId: data.amount?.currency ?? 'BRL',
         nextPaymentDate: data.next_payment_date ?? null,
         dateApproved: data.payment_date ?? null,
+        installments: data.installments ?? data.installment_count ?? undefined,
       }
     } catch (err: any) {
       if (err instanceof Error) throw err

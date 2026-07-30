@@ -46,6 +46,8 @@ export interface PaymentCharge {
   currencyId: string
   nextPaymentDate?: string | null
   dateApproved?: string | null
+  /** Set by PagBank when the charge is processed with installments (parcelamento) */
+  installments?: number
 }
 
 export const PAYMENT_GATEWAY = 'PAYMENT_GATEWAY'
