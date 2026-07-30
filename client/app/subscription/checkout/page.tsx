@@ -12,7 +12,7 @@ function formatBRL(cents: number) {
   return `R$ ${(cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
 }
 
-/* ---------- PagBank encryption script loader ---------- */
+/* ---------- PagSeguro encryption script loader ---------- */
 function usePagBankEncryption(): boolean {
   const [ready, setReady] = useState(false)
 
@@ -24,25 +24,20 @@ function usePagBankEncryption(): boolean {
     }
 
     // Check if already loaded
-    if ((window as any).PagBank?.encryptCard) {
+    if ((window as any).PagSeguro?.encryptCard) {
       setReady(true)
       return
     }
 
-    // Load PagBank encryption SDK from CDN
+    // Load PagSeguro encryption SDK from CDN
     const script = document.createElement('script')
-    script.src = 'https://assets.pagseguro.com.br/pagbank-encrypt/2.0.3/pagbank-encrypt.js'
+    script.src = 'https://assets.pagseguro.com.br/checkout-sdk-js/rc/dist/browser/pagseguro.min.js'
     script.async = true
     script.onload = () => {
-      try {
-        ;(window as any).PagBank?.setPublicKey?.(publicKey)
-      } catch (err) {
-        console.error('[checkout] PagBank setPublicKey error:', err)
-      }
       setReady(true)
     }
     script.onerror = () => {
-      console.error('[checkout] Failed to load PagBank encryption SDK')
+      console.error('[checkout] Failed to load PagSeguro encryption SDK')
       setReady(true) // Proceed without — error will be caught at submit time
     }
     document.head.appendChild(script)
@@ -162,33 +157,33 @@ function CheckoutContent() {
     return Object.keys(errors).length === 0
   }, [payerName, payerDocument, pgPublicKey, cardNumber, cardExpiry, cardCvv])
 
-  // ----- Encrypt card using PagBank -----
-  const encryptCard = useCallback(async (): Promise<string> => {
+  // ----- Encrypt card using PagSeguro -----
+  const encryptCard = useCallback((): string => {
     if (!pgPublicKey) {
       throw new Error('PagBank public key not configured')
     }
 
-    const pg = (window as any).PagBank
+    const pg = (window as any).PagSeguro
     if (!pg?.encryptCard) {
-      throw new Error('PagBank encryption SDK not loaded. Tente novamente.')
+      throw new Error('SDK de criptografia PagBank não carregado. Tente novamente.')
     }
 
     const [expMonth, expYear] = cardExpiry.split('/')
-    const cardData = {
-      cardNumber: cardNumber.replace(/\s/g, ''),
-      cardExpirationMonth: expMonth || '',
-      cardExpirationYear: expYear ? `20${expYear}` : '',
-      cardSecurityCode: cardCvv,
-      cardholderName: payerName.trim(),
+    const result = pg.encryptCard({
+      publicKey: pgPublicKey,
+      holder: payerName.trim(),
+      number: cardNumber.replace(/\s/g, ''),
+      expMonth: expMonth || '',
+      expYear: expYear ? `20${expYear}` : '',
+      securityCode: cardCvv,
+    })
+
+    if (result.hasErrors) {
+      const msgs = (result.errors || []).map((e: { message: string }) => e.message).join(' ')
+      throw new Error(`Erro na criptografia: ${msgs || 'Dados inválidos do cartão.'}`)
     }
 
-    try {
-      const result = pg.encryptCard(cardData)
-      return result
-    } catch (err: unknown) {
-      console.error('[checkout] PagBank encrypt error:', err)
-      throw new Error('Falha ao criptografar dados do cartão. Verifique os dados e tente novamente.')
-    }
+    return result.encryptedCard
   }, [pgPublicKey, cardNumber, cardExpiry, cardCvv, payerName])
 
   // ----- Handle subscribe -----
@@ -203,8 +198,8 @@ function CheckoutContent() {
       let cardToken: string | undefined
 
       if (pgPublicKey) {
-        // Encrypt card with PagBank
-        cardToken = await encryptCard()
+        // Encrypt card with PagSeguro
+        cardToken = encryptCard()
       }
 
       await createSubscription(
