@@ -467,9 +467,10 @@ describe('ResistanceTab', () => {
     const compValInput = screen.getByPlaceholderText('0')
     await user.type(compValInput, '5')
 
-    // Add attribute modifier via select
+    // Add attribute modifier via the custom headless Select (combobox → click option)
     const select = screen.getByRole('combobox')
-    await user.selectOptions(select, 'a1::con::Constitution')
+    await user.click(select)
+    await user.click(screen.getByRole('option', { name: 'Constitution' }))
 
     await user.click(screen.getByText('Create Resistance'))
 
@@ -591,18 +592,21 @@ describe('ResistanceTab', () => {
     await user.click(screen.getByText('Calculated'))
 
     const select = screen.getByRole('combobox')
-    await user.selectOptions(select, 'a1::con::Constitution')
+    await user.click(select)
+    await user.click(screen.getByRole('option', { name: 'Constitution' }))
     expect(screen.getByText('Constitution')).toBeInTheDocument()
 
     // Add another
-    await user.selectOptions(select, 'a2::str::Strength')
+    await user.click(select)
+    await user.click(screen.getByRole('option', { name: 'Strength' }))
     expect(screen.getByText('Strength')).toBeInTheDocument()
 
     // Remove the first one
     const removeBtns = screen.getAllByText('×')
     await user.click(removeBtns[0])
-    // The badge is removed, but the select option for Constitution still exists
-    expect(screen.getAllByText('Constitution').length).toBe(1)
+    // The badge is removed — reopen the select and confirm Constitution is an available option again
+    await user.click(select)
+    expect(screen.getByRole('option', { name: 'Constitution' })).toBeInTheDocument()
   })
 
   it('does not add duplicate attribute modifier', async () => {
@@ -619,7 +623,8 @@ describe('ResistanceTab', () => {
     await user.click(screen.getByText('Calculated'))
 
     const select = screen.getByRole('combobox')
-    await user.selectOptions(select, 'a1::con::Constitution')
+    await user.click(select)
+    await user.click(screen.getByRole('option', { name: 'Constitution' }))
     // Only one "Constitution" badge
     expect(screen.getAllByText('Constitution').length).toBe(1)
   })

@@ -445,10 +445,8 @@ describe('CharacterTab', () => {
   describe('armor class variants', () => {
     it('shows AC attribute modifier with select when allowPlayerSelection', () => {
       render(<CharacterTab {...props} isOwner={true} />)
-      const selects = screen.getAllByRole('combobox')
-      // There should be at least one select for AC attribute modifier
-      const acSelect = selects.find(s => s.tagName === 'SELECT')
-      expect(acSelect).toBeInTheDocument()
+      // Custom Select renders a button[role="combobox"] trigger (not a native <select>)
+      expect(screen.getAllByRole('combobox').length).toBeGreaterThanOrEqual(1)
     })
 
     it('shows AC attribute modifier as text when not owner', () => {
@@ -918,12 +916,15 @@ describe('CollapsibleSkillRow', () => {
   })
 
   describe('attribute dropdown', () => {
-    it('renders attribute dropdown when allowedAttributeIds exist', () => {
+    it('renders attribute dropdown when allowedAttributeIds exist', async () => {
+      const user = userEvent.setup()
       render(<CollapsibleSkillRow {...defaultRowProps} />)
-      // The <select> shows option names ("Strength") not attribute IDs ("attr-str") as display value
-      const select = screen.getByDisplayValue('Strength')
-      expect(select).toBeInTheDocument()
-      expect(select).toHaveValue('attr-str')
+      // Custom Select trigger shows the selected attribute name
+      expect(screen.getByText('Strength')).toBeInTheDocument()
+      // Open the attribute dropdown (first combobox in DOM) and confirm the allowed attributes
+      await user.click(screen.getAllByRole('combobox')[0])
+      expect(screen.getByRole('option', { name: 'Strength' })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: 'Dexterity' })).toBeInTheDocument()
     })
 
     it('renders attribute text when no dropdown needed', () => {
@@ -991,8 +992,8 @@ describe('CollapsibleSkillRow', () => {
     it('calls onAttributeChange when selecting a different attribute', async () => {
       const user = userEvent.setup()
       render(<CollapsibleSkillRow {...defaultRowProps} />)
-      const select = screen.getByDisplayValue('Strength')
-      await user.selectOptions(select, 'attr-dex')
+      await user.click(screen.getAllByRole('combobox')[0])
+      await user.click(screen.getByRole('option', { name: 'Dexterity' }))
       expect(defaultRowProps.onAttributeChange).toHaveBeenCalledWith('attr-dex')
     })
   })

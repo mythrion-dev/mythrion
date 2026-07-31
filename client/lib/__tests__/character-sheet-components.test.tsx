@@ -320,7 +320,8 @@ describe('ProfessionalSkillsSection', () => {
     const nameInput = screen.getByRole('textbox')
     await userEvent.type(nameInput, 'Mining')
     const attrSelect = screen.getByRole('combobox')
-    await userEvent.selectOptions(attrSelect, 'attr-2')
+    await userEvent.click(attrSelect)
+    await userEvent.click(screen.getByRole('option', { name: 'Dexterity' }))
     await userEvent.click(screen.getByRole('button', { name: 'Add' }))
 
     expect(mockPost).toHaveBeenCalledWith(
@@ -458,9 +459,10 @@ describe('ProfessionalSkillsSection', () => {
     // Change the name input
     const nameInput = screen.getByDisplayValue('Blacksmith')
     fireEvent.change(nameInput, { target: { value: 'Master Blacksmith' } })
-    // Change the select — find the select by role and select a different option
+    // Change the select — open the custom combobox and click the Dexterity option
     const select = screen.getByRole('combobox')
-    await userEvent.selectOptions(select, 'attr-2')
+    await userEvent.click(select)
+    await userEvent.click(screen.getByRole('option', { name: 'Dexterity' }))
 
     await userEvent.click(screen.getByText('Save'))
 

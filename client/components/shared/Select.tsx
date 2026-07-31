@@ -113,7 +113,7 @@ export function Select({
     if (!open || highlightIndex < 0 || !listRef.current) return
     const items = listRef.current.querySelectorAll<HTMLButtonElement>('[role="option"]')
     const item = items[highlightIndex]
-    if (item) {
+    if (item && typeof item.scrollIntoView === 'function') {
       item.scrollIntoView({ block: 'nearest' })
     }
   }, [open, highlightIndex])
