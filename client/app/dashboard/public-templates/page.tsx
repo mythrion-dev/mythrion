@@ -314,7 +314,7 @@ function DashboardPublicTemplatesContent() {
         onSortChange={setSortValue}
       >
         {/* Campaign/System filter */}
-        <div className="flex flex-col gap-1.5 min-w-[200px]">
+        {/* <div className="flex flex-col gap-1.5 min-w-[200px]">
           <label className="label !mb-0">Campaign / System</label>
           <input
             type="text"
@@ -323,7 +323,7 @@ function DashboardPublicTemplatesContent() {
             onChange={(e) => handleCampaignChange(e.target.value)}
             className="input-field py-2 px-3 text-sm"
           />
-        </div>
+        </div> */}
       </SearchFilterSection>
 
       {/* ── Error state ── */}

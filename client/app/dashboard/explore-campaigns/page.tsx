@@ -348,7 +348,7 @@ function DashboardExploreCampaignsContent() {
         onSortChange={setSortValue}
       >
         {/* Campaign/System filter */}
-        <div className="flex flex-col gap-1.5 min-w-[160px]">
+        {/* <div className="flex flex-col gap-1.5 min-w-[160px]">
           <label className="label !mb-0">Campaign / System</label>
           <input
             type="text"
@@ -357,7 +357,7 @@ function DashboardExploreCampaignsContent() {
             onChange={(e) => handleCampaignChange(e.target.value)}
             className="input-field py-2 px-3 text-sm"
           />
-        </div>
+        </div> */}
 
         {/* Weekday filter */}
         <div className="flex flex-col gap-1.5 min-w-[160px]">
