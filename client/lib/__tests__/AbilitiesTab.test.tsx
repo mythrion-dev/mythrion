@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 
 // ── Mock API ──
 
@@ -85,7 +86,7 @@ vi.mock('@/components/shared/NumericInput', () => ({
 
 vi.mock('@/components/character-sheet/SummonResourceCard', () => ({
   SummonResourceCard: ({ ability, attributeDisplays, acResult, permissions }: {
-    ability: { id: string; name: string }
+    ability: { id: string; name: string; description?: string | null; notes?: string | null }
     attributeDisplays: Array<{ key: string; name: string; value: string; modifier: number | null; attributeId: string }>
     acResult: number | null
     permissions: { canEditAbilities: boolean }
@@ -101,6 +102,12 @@ vi.mock('@/components/character-sheet/SummonResourceCard', () => ({
         </div>
       ))}
       <div data-testid="resource-card-can-edit">{String(permissions.canEditAbilities)}</div>
+      {ability.description?.trim() && (
+        <div data-testid="resource-card-description">{ability.description}</div>
+      )}
+      {ability.notes?.trim() && (
+        <div data-testid="resource-card-notes">{ability.notes}</div>
+      )}
     </div>
   ),
 }))
@@ -351,16 +358,20 @@ describe('AbilitiesTab', () => {
   })
 
   it('shows level badge for ability with level', () => {
-    renderAbilitiesTab({ abilities: [makeAbility()] })
-    expect(screen.getByText('Level 1')).toBeInTheDocument()
+    renderAbilitiesTab({
+      abilities: [makeAbility()],
+      selectedLevels: { 'abil-1': 'lvl-1' },
+    })
+    // Badge + Select trigger both display "Level 1"
+    expect(screen.getAllByText('Level 1').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders level select dropdown for abilities with levels', () => {
+  it('renders level select dropdown for abilities with levels', async () => {
+    const user = userEvent.setup()
     renderAbilitiesTab({ abilities: [makeAbility()] })
-    const level1s = screen.getAllByText('Level 1')
-    expect(level1s.length).toBeGreaterThanOrEqual(1)
-    const level2s = screen.getAllByText('Level 2')
-    expect(level2s.length).toBeGreaterThanOrEqual(1)
+    await user.click(screen.getAllByRole('combobox')[0])
+    expect(screen.getByRole('option', { name: 'Level 1' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Level 2' })).toBeInTheDocument()
   })
 
   // ── Expand/collapse ──
@@ -855,15 +866,19 @@ describe('AbilitiesTab', () => {
 
   // ── Level select ──
 
-  it('changes selected level when level select changes', () => {
+  it('changes selected level when level select changes', async () => {
     const setLevels = vi.fn()
     renderAbilitiesTab({
       abilities: [makeAbility()],
       setSelectedLevels: setLevels,
     })
-    const selects = screen.getAllByRole('combobox')
-    fireEvent.change(selects[0], { target: { value: 'lvl-2' } })
+    const user = userEvent.setup()
+    await user.click(screen.getAllByRole('combobox')[0])
+    await user.click(screen.getByRole('option', { name: 'Level 2' }))
+    // Component uses a functional updater: setSelectedLevels(prev => ({ ...prev, [a.id]: val }))
     expect(setLevels).toHaveBeenCalled()
+    const updater = setLevels.mock.calls[0][0]
+    expect(updater({ 'abil-1': 'lvl-1' })).toEqual({ 'abil-1': 'lvl-2' })
   })
 
   it('selects last level by default when no selection exists', () => {

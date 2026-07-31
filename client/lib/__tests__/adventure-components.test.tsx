@@ -289,14 +289,10 @@ describe('CollapsibleSkillCard', () => {
       <CollapsibleSkillCard index={0} skill={{ ...baseSkill, allowedAttributeIds: ['dex'] }} attributes={attributes} />,
     )
     fireEvent.click(screen.getByText('Stealth'))
-    // Label text appears both in checkbox labels and the select option;
-    // use getAllByText and verify at least two occurrences (label + option)
-    const strengthMatches = screen.getAllByText('Strength')
-    expect(strengthMatches.length).toBeGreaterThanOrEqual(1)
-    const dexMatches = screen.getAllByText('Dexterity')
-    expect(dexMatches.length).toBeGreaterThanOrEqual(2) // checkbox label + select option
-    const conMatches = screen.getAllByText('Constitution')
-    expect(conMatches.length).toBeGreaterThanOrEqual(1)
+    // Each attribute renders a checkbox label (the custom Select is closed, so no option text)
+    expect(screen.getByRole('checkbox', { name: 'Strength' })).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Dexterity' })).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Constitution' })).toBeInTheDocument()
   })
 
   it('checks the checkbox for an allowed attribute', () => {
@@ -331,7 +327,9 @@ describe('CollapsibleSkillCard', () => {
     fireEvent.click(screen.getByText('Stealth'))
     const select = screen.getByRole('combobox')
     expect(select).toBeInTheDocument()
-    expect(select).toHaveValue('dex')
+    // The custom Select trigger shows the current value; open it and check the selected option
+    fireEvent.click(select)
+    expect(screen.getByRole('option', { name: 'Dexterity' })).toHaveAttribute('aria-selected', 'true')
   })
 
   it('calls onUpdateDefaultAttr when default attribute changes', () => {
@@ -346,7 +344,8 @@ describe('CollapsibleSkillCard', () => {
     )
     fireEvent.click(screen.getByText('Stealth'))
     const select = screen.getByRole('combobox')
-    fireEvent.change(select, { target: { value: 'str' } })
+    fireEvent.click(select) // open the custom Select
+    fireEvent.click(screen.getByRole('option', { name: 'Strength' }))
     expect(onUpdateDefaultAttr).toHaveBeenCalledWith(0, 'str')
   })
 
@@ -362,7 +361,8 @@ describe('CollapsibleSkillCard', () => {
     )
     fireEvent.click(screen.getByText('Stealth'))
     const select = screen.getByRole('combobox')
-    fireEvent.change(select, { target: { value: 'str' } })
+    fireEvent.click(select) // open the custom Select
+    fireEvent.click(screen.getByRole('option', { name: 'Strength' }))
     expect(onUpdateSkill).toHaveBeenCalledWith(0, 'defaultAttributeId', 'str')
   })
 
@@ -375,6 +375,8 @@ describe('CollapsibleSkillCard', () => {
       />,
     )
     fireEvent.click(screen.getByText('Stealth'))
+    // The placeholder option only exists when the custom Select dropdown is open
+    fireEvent.click(screen.getByRole('combobox'))
     expect(screen.getByRole('option', { name: '— Select Default —' })).toBeInTheDocument()
   })
 

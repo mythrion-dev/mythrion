@@ -15,7 +15,7 @@ vi.mock('@/lib/api', () => ({
   removeRefreshToken: vi.fn(),
   getInvitationToken: vi.fn(),
   removeInvitationToken: vi.fn(),
-  decodeJwtPayload: vi.fn(() => null),
+  decodeJwtPayload: vi.fn(() => ({ role: 'user' })),
   refreshAccessToken: vi.fn(),
   isAccessTokenExpiringSoon: vi.fn(() => false),
   onAuthFailure: vi.fn(() => () => {}),
