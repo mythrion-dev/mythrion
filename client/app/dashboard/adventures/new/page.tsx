@@ -12,6 +12,20 @@ export default function NewAdventurePage() {
   const { hasActiveSubscription } = useSubscription()
   const router = useRouter()
 
+  const [name, setName] = useState('')
+  const [campaign, setCampaign] = useState('')
+  const [synopsis, setSynopsis] = useState('')
+  const [maxPlayers, setMaxPlayers] = useState(4)
+  const [isPublic, setIsPublic] = useState(false)
+  const [sessionWeekday, setSessionWeekday] = useState('')
+  const [sessionTime, setSessionTime] = useState('')
+  const [sessionType, setSessionType] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [templateId, setTemplateId] = useState<string | null>(null)
+  const [templateName, setTemplateName] = useState<string | null>(null)
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
+
   if (!hasActiveSubscription) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -33,19 +47,6 @@ export default function NewAdventurePage() {
       </div>
     )
   }
-  const [name, setName] = useState('')
-  const [campaign, setCampaign] = useState('')
-  const [synopsis, setSynopsis] = useState('')
-  const [maxPlayers, setMaxPlayers] = useState(4)
-  const [isPublic, setIsPublic] = useState(false)
-  const [sessionWeekday, setSessionWeekday] = useState('')
-  const [sessionTime, setSessionTime] = useState('')
-  const [sessionType, setSessionType] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-  const [templateId, setTemplateId] = useState<string | null>(null)
-  const [templateName, setTemplateName] = useState<string | null>(null)
-  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
 
   const weekdays = [
     'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
@@ -199,9 +200,9 @@ export default function NewAdventurePage() {
 
           {/* Session Info */}
           <div>
-            <label className="label">
+            <div className="label">
               Session Schedule <span className="text-muted font-normal">(optional)</span>
-            </label>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-1.5">
               <div>
                 <label htmlFor="sessionWeekday" className="text-xs text-muted mb-1 block">Day</label>
@@ -228,7 +229,7 @@ export default function NewAdventurePage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-muted mb-1 block">Format</label>
+                <div className="text-xs text-muted mb-1 block">Format</div>
                 <div className="flex gap-1 pt-0.5">
                   <button
                     type="button"

@@ -27,7 +27,7 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
     // Fallback: build from path segments
     const segments = pathname.split('/').filter(Boolean)
     return segments.map((seg, i) => ({
-      label: seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, ' '),
+      label: seg.charAt(0).toUpperCase() + seg.slice(1).replaceAll('-', ' '),
       href: i < segments.length - 1 ? '/' + segments.slice(0, i + 1).join('/') : undefined,
     }))
   }, [pathname])

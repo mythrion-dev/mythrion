@@ -361,7 +361,7 @@ function DashboardExploreCampaignsContent() {
 
         {/* Weekday filter */}
         <div className="flex flex-col gap-1.5 min-w-[160px]">
-          <label className="label !mb-0">Day</label>
+          <div className="label !mb-0">Day</div>
           <select
             value={sessionWeekday}
             onChange={(e) => {
@@ -381,7 +381,7 @@ function DashboardExploreCampaignsContent() {
 
         {/* Session type filter */}
         <div className="flex flex-col gap-1.5">
-          <label className="label !mb-0">Type</label>
+          <div className="label !mb-0">Type</div>
           <div className="flex gap-1 h-full items-end pb-[1px]">
             <button
               type="button"
@@ -415,7 +415,7 @@ function DashboardExploreCampaignsContent() {
 
         {/* Time period filter */}
         <div className="flex flex-col gap-1.5 min-w-[140px]">
-          <label className="label !mb-0">Schedule</label>
+          <div className="label !mb-0">Schedule</div>
           <select
             value={timePeriod}
             onChange={(e) => {

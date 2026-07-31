@@ -395,8 +395,8 @@ export default function TemplatePreviewPage() {
         ability.summonHealth = {
           id: `preview-sh-${now}`,
           abilityId: newId,
-          current: newAbility.hpCurrent.trim() ? parseInt(newAbility.hpCurrent, 10) : null,
-          maximum: newAbility.hpMax.trim() ? parseInt(newAbility.hpMax, 10) : null,
+          current: newAbility.hpCurrent.trim() ? Number.parseInt(newAbility.hpCurrent, 10) : null,
+          maximum: newAbility.hpMax.trim() ? Number.parseInt(newAbility.hpMax, 10) : null,
           notes: null,
         }
       }
@@ -407,7 +407,7 @@ export default function TemplatePreviewPage() {
           id: `preview-level-${now}`,
           abilityId: newId,
           level: newAbility.level.trim(),
-          manaCost: newAbility.manaCost.trim() ? parseInt(newAbility.manaCost, 10) : null,
+          manaCost: newAbility.manaCost.trim() ? Number.parseInt(newAbility.manaCost, 10) : null,
           range: newAbility.range.trim() || null,
           description: null,
           notes: null,
@@ -439,7 +439,7 @@ export default function TemplatePreviewPage() {
         if (l.id !== levelId) return l
         const body: Record<string, unknown> = {}
         if (field === 'description') body.description = value.trim() || null
-        else if (field === 'manaCost') body.manaCost = value.trim() ? parseInt(value, 10) : null
+        else if (field === 'manaCost') body.manaCost = value.trim() ? Number.parseInt(value, 10) : null
         else if (field === 'range') body.range = value.trim() || null
         else if (field === 'notes') body.notes = value.trim() || null
         else if (field === 'damage') body.damage = value.trim() || null
@@ -471,8 +471,8 @@ export default function TemplatePreviewPage() {
       }
     })
     dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
-    const parsed = parseFloat(value)
-    setSummonAcResults(prev => ({ ...prev, [abilityId]: isNaN(parsed) ? null : parsed }))
+    const parsed = Number.parseFloat(value)
+    setSummonAcResults(prev => ({ ...prev, [abilityId]: Number.isNaN(parsed) ? null : parsed }))
   }, [dispatch])
 
   const saveSummonHealth = useCallback(async (abilityId: string, field: 'current' | 'maximum', value: number | null) => {
@@ -571,7 +571,7 @@ export default function TemplatePreviewPage() {
       const item: InventoryItem = {
         id: `preview-item-${Date.now()}`,
         name: newItem.name.trim(),
-        weight: newItem.weight.trim() ? parseFloat(newItem.weight) : null,
+        weight: newItem.weight.trim() ? Number.parseFloat(newItem.weight) : null,
         cost: newItem.cost.trim() || null,
         description: newItem.description.trim() || null,
         order: 0,
@@ -596,7 +596,7 @@ export default function TemplatePreviewPage() {
       if (i.id !== itemId) return i
       const body: Partial<InventoryItem> = {}
       if (field === 'name') body.name = value.trim()
-      else if (field === 'weight') body.weight = value.trim() ? parseFloat(value) : undefined
+      else if (field === 'weight') body.weight = value.trim() ? Number.parseFloat(value) : undefined
       else if (field === 'cost') body.cost = value.trim() || undefined
       else if (field === 'description') body.description = value.trim() || undefined
       return { ...i, ...body }
