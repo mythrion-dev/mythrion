@@ -93,15 +93,59 @@ describe('TokenService', () => {
       })
     })
 
-    it('should revoke ALL existing refresh tokens first', async () => {
+    it('should clear any Redis logout blacklist for the user', async () => {
       ;(bcrypt.hash as jest.Mock).mockResolvedValue('hashed-refresh-token')
       mockPrisma.refreshToken.create.mockResolvedValue({ id: 'rt-1' })
+      // A prior logout left a blacklist marker; re-authentication must clear it
+      // so the first refresh after access-token expiry is not rejected.
+      mockRedis.del.mockResolvedValue(undefined)
 
       await service.generateTokens('user-1', 'test@test.com')
 
-      expect(mockPrisma.refreshToken.updateMany).toHaveBeenCalledWith({
+      expect(mockRedis.del).toHaveBeenCalledWith('token_blacklist:user-1')
+    })
+
+    it('should NOT revoke sibling refresh tokens on issue', async () => {
+      ;(bcrypt.hash as jest.Mock).mockResolvedValue('hashed-refresh-token')
+      mockPrisma.refreshToken.create.mockResolvedValue({ id: 'rt-1' })
+      mockPrisma.refreshToken.findMany.mockResolvedValue([])
+
+      await service.generateTokens('user-1', 'test@test.com')
+
+      // Logging in / refreshing must not log the user out of other devices.
+      expect(mockPrisma.refreshToken.updateMany).not.toHaveBeenCalledWith({
         where: { userId: 'user-1', revoked: false },
         data: { revoked: true },
+      })
+    })
+
+    it('should cap the number of live refresh tokens per user (drop oldest)', async () => {
+      ;(bcrypt.hash as jest.Mock).mockResolvedValue('hashed-refresh-token')
+      mockPrisma.refreshToken.create.mockResolvedValue({ id: 'rt-new' })
+      // 5 live tokens already exist (the cap) — the newest 5 are kept.
+      mockPrisma.refreshToken.findMany.mockResolvedValue([
+        { id: 'rt-new' },
+        { id: 'rt-5' },
+        { id: 'rt-4' },
+        { id: 'rt-3' },
+        { id: 'rt-2' },
+      ])
+
+      await service.generateTokens('user-1', 'test@test.com')
+
+      expect(mockPrisma.refreshToken.findMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', revoked: false },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true },
+        take: 5,
+      })
+      // Any live token outside the newest 5 is deleted, not revoked.
+      expect(mockPrisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+        where: {
+          userId: 'user-1',
+          revoked: false,
+          id: { notIn: ['rt-new', 'rt-5', 'rt-4', 'rt-3', 'rt-2'] },
+        },
       })
     })
 
@@ -159,7 +203,7 @@ describe('TokenService', () => {
       expect(mockPrisma.refreshToken.findMany).not.toHaveBeenCalled()
     })
 
-    it('should revoke ALL tokens when bcrypt compare fails for all (theft detection)', async () => {
+    it('should reject a non-matching token WITHOUT revoking other sessions', async () => {
       const encodedToken = buildEncodedToken('user-1', 'bad-token')
 
       mockRedis.get.mockResolvedValue(null)
@@ -173,7 +217,8 @@ describe('TokenService', () => {
         service.rotateRefreshToken(encodedToken),
       ).rejects.toThrow(UnauthorizedException)
 
-      expect(mockPrisma.refreshToken.updateMany).toHaveBeenCalledWith({
+      // A stale/expired token must not cascade-log-out the user's other devices.
+      expect(mockPrisma.refreshToken.updateMany).not.toHaveBeenCalledWith({
         where: { userId: 'user-1', revoked: false },
         data: { revoked: true },
       })

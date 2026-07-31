@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { api, API_URL } from '@/lib/api'
+import { api, API_URL, authFetch } from '@/lib/api'
 import { Select } from '@/components/shared/Select'
 
 /* ── Types ── */
@@ -99,10 +99,8 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: BookListPanel
       formData.append('name', uploadName.trim())
       formData.append('visibility', uploadVisibility)
 
-      const token = localStorage.getItem('accessToken')
-      const res = await fetch(`${API_URL}/adventures/${adventureId}/books`, {
+      const res = await authFetch(`${API_URL}/adventures/${adventureId}/books`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       })
 
@@ -159,12 +157,10 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: BookListPanel
       const formData = new FormData()
       formData.append('file', file)
 
-      const token = localStorage.getItem('accessToken')
-      const res = await fetch(
+      const res = await authFetch(
         `${API_URL}/adventures/${adventureId}/books/${bookId}/replace`,
         {
           method: 'POST',
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
           body: formData,
         },
       )

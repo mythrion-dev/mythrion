@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { api, API_URL } from '@/lib/api'
+import { api, API_URL, authFetch } from '@/lib/api'
 import { NpcEditDrawer } from './NpcEditDrawer'
 
 /* ── Types ── */
@@ -103,10 +103,8 @@ export function CampaignCreatureSidebar({
     const formData = new FormData()
     formData.append('avatar', file)
     try {
-      const token = localStorage.getItem('accessToken')
-      await fetch(`${API_URL}/images/character-sheets/${npcId}/avatar`, {
+      await authFetch(`${API_URL}/images/character-sheets/${npcId}/avatar`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       })
       await fetchNpcs()

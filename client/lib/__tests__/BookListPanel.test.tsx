@@ -7,6 +7,7 @@ import { api } from '@/lib/api'
 vi.mock('@/lib/api', () => ({
   api: { get: vi.fn(), patch: vi.fn(), delete: vi.fn() },
   API_URL: 'http://localhost:3001/api',
+  authFetch: (input: any, init?: any) => fetch(input, init),
 }))
 
 /* ── Mock fetch ── */

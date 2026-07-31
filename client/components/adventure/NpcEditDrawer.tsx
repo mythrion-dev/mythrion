@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { api, API_URL } from '@/lib/api'
+import { api, API_URL, authFetch } from '@/lib/api'
 import { Select } from '@/components/shared/Select'
 
 /* ── Types ── */
@@ -222,7 +222,7 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
 
       // Check if avatar exists (cache-bust to avoid stale 204s)
       try {
-        const avatarRes = await fetch(`${API_URL}/images/character-sheets/${npcId}/avatar?t=${Date.now()}`, { method: 'HEAD', cache: 'no-store' })
+        const avatarRes = await authFetch(`${API_URL}/images/character-sheets/${npcId}/avatar?t=${Date.now()}`, { method: 'HEAD', cache: 'no-store' })
         if (avatarRes.ok && avatarRes.status !== 204) setAvatarUrl(`${API_URL}/images/character-sheets/${npcId}/avatar?t=${Date.now()}`)
       } catch { /* no avatar */ }
     } catch {
@@ -379,10 +379,8 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
     const formData = new FormData()
     formData.append('avatar', file)
     try {
-      const token = localStorage.getItem('accessToken')
-      const res = await fetch(`${API_URL}/images/character-sheets/${npcId}/avatar`, {
+      const res = await authFetch(`${API_URL}/images/character-sheets/${npcId}/avatar`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       })
       if (res.ok) {
