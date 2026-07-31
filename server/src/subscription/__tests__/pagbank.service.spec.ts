@@ -435,11 +435,12 @@ describe('PagBankService', () => {
       )
       expect(fetchCall[1]?.method).toBe('PUT')
 
-      // PagBank requires RAW_BODY to be a direct ARRAY of { type, card } objects
-      // (not a JSON string, not wrapped in a billing_info key). Sending the wrong
-      // shape returns invalid_payload_format / "Invalid JSON format."
+      // PagBank requires the card ARRAY as the raw request body — the `RAW_BODY`
+      // wrapper in the docs is a docs-generator artifact. Sending any
+      // { "RAW_BODY": ... } wrapper returns invalid_payload_format /
+      // "Invalid JSON format." (verified live against the sandbox).
       const reqBody = JSON.parse(fetchCall[1]?.body as string)
-      expect(reqBody.RAW_BODY).toEqual([
+      expect(reqBody).toEqual([
         { type: 'CREDIT_CARD', card: { encrypted: 'encrypted-card' } },
       ])
     })

@@ -194,19 +194,18 @@ export class PagBankService implements PaymentGateway {
     }
 
     try {
-      // PagBank requires the card array wrapped in RAW_BODY (see docs:
-      // "Alterar Dados de Pagamento do Assinante"). RAW_BODY must be an ARRAY
-      // of { type, card } objects — NOT a JSON string and NOT nested under a
-      // billing_info key. Sending the wrong shape returns
+      // PagBank requires the card array as the RAW REQUEST BODY (see docs:
+      // "Alterar Dados de Pagamento do Assinante"). The `RAW_BODY` key shown in
+      // the docs is a docs-generator artifact — verified live against the
+      // sandbox that the endpoint parses the array directly and rejects any
+      // `{ "RAW_BODY": ... }` wrapper (array, object, or JSON string) with
       // invalid_payload_format / "Invalid JSON format."
-      const body = {
-        RAW_BODY: [
-          {
-            type: 'CREDIT_CARD',
-            card: { encrypted: cardToken },
-          },
-        ],
-      }
+      const body = [
+        {
+          type: 'CREDIT_CARD',
+          card: { encrypted: cardToken },
+        },
+      ]
 
       const response = await fetch(
         `${this.apiBase}/customers/${customerId}/billing_info`,
