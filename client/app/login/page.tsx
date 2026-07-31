@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState, type FormEvent } from 'react'
+import { Suspense, useState, type FormEvent, type MouseEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { API_URL, setInvitationToken } from '@/lib/api'
@@ -26,13 +26,18 @@ function LoginForm() {
   })
   const [submitting, setSubmitting] = useState(false)
 
-  const handleOAuthClick = () => {
+  const handleOAuthClick = (e: MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
     if (redirect.startsWith('/invite/')) {
       const token = redirect.split('/invite/')[1]
       if (token) {
         setInvitationToken(token)
       }
     }
+    // Thread the current frontend origin through the OAuth `state` param so the
+    // API redirects the user back to this domain after Google auth.
+    const state = window.location.origin
+    window.location.href = `${API_URL}/auth/google?state=${encodeURIComponent(state)}`
   }
 
   async function handleSubmit(e: FormEvent) {

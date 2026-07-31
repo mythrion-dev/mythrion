@@ -35,7 +35,6 @@ export class InvitationService {
   async inviteByEmail(params: {
     adventureId: string
     invitedEmail: string
-    role: MemberRole
     createdById: string
   }) {
     // Verify creator is GM
@@ -50,10 +49,8 @@ export class InvitationService {
     })
     if (!adventure) throw new NotFoundException('Adventure not found')
 
-    // Check player capacity for PLAYER invites
-    if (params.role === 'PLAYER') {
-      await this.membership.assertPlayerCapacity(params.adventureId)
-    }
+    // Always check player capacity — all invitations create PLAYER members
+    await this.membership.assertPlayerCapacity(params.adventureId)
 
     const token = this.generateToken()
 
@@ -62,7 +59,7 @@ export class InvitationService {
         adventureId: params.adventureId,
         invitedEmail: params.invitedEmail,
         token,
-        role: params.role,
+        role: 'PLAYER',
         status: 'PENDING',
         expiresAt: this.buildExpiryDate(),
         createdById: params.createdById,
@@ -74,14 +71,24 @@ export class InvitationService {
       where: { id: params.createdById },
     })
 
-    await this.email.sendInvitation({
-      to: params.invitedEmail,
-      campaignName: adventure.name,
-      inviterName: inviter?.displayName ?? inviter?.email ?? 'Someone',
-      role: params.role,
-      inviteUrl: `${APP_URL}/invite/${token}`,
-      expiresAt: invitation.expiresAt,
-    })
+    try {
+      await this.email.sendInvitation({
+        to: params.invitedEmail,
+        campaignName: adventure.name,
+        inviterName: inviter?.displayName ?? inviter?.email ?? 'Someone',
+        role: 'PLAYER',
+        inviteUrl: `${APP_URL}/invite/${token}`,
+        expiresAt: invitation.expiresAt,
+      })
+    } catch (err) {
+      // The invitation is useless if the email can't be delivered — roll it back
+      // and surface the failure so the GM sees exactly what went wrong.
+      await this.prisma.campaignInvitation
+        .delete({ where: { id: invitation.id } })
+        .catch(() => undefined)
+      const message = err instanceof Error ? err.message : String(err)
+      throw new BadRequestException(`Failed to send invitation email: ${message}`)
+    }
 
     return { success: true, invitationId: invitation.id }
   }
@@ -89,7 +96,6 @@ export class InvitationService {
   /** Create a shareable-link invitation */
   async inviteByLink(params: {
     adventureId: string
-    role: MemberRole
     createdById: string
   }) {
     await this.membership.requireRole(
@@ -98,10 +104,8 @@ export class InvitationService {
       'GM',
     )
 
-    // Check player capacity for PLAYER invites
-    if (params.role === 'PLAYER') {
-      await this.membership.assertPlayerCapacity(params.adventureId)
-    }
+    // Always check player capacity — all invitations create PLAYER members
+    await this.membership.assertPlayerCapacity(params.adventureId)
 
     const token = this.generateToken()
 
@@ -109,7 +113,7 @@ export class InvitationService {
       data: {
         adventureId: params.adventureId,
         token,
-        role: params.role,
+        role: 'PLAYER',
         status: 'PENDING',
         expiresAt: this.buildExpiryDate(),
         createdById: params.createdById,
@@ -221,15 +225,12 @@ export class InvitationService {
       }
     }
 
-    // Check player capacity when accepting a PLAYER invitation
-    if (invitation.role === 'PLAYER') {
-      // Only count this invitation itself (not the user yet, they're not a member)
-      const adventure = await this.prisma.adventure.findUnique({ where: { id: invitation.adventureId } })
-      if (adventure) {
-        const currentPlayers = await this.membership.countPlayers(invitation.adventureId)
-        if (currentPlayers + 1 > adventure.maxPlayers) {
-          throw new BadRequestException('Adventure is at maximum player capacity')
-        }
+    // Check player capacity — all invitations create PLAYER members
+    const adventure = await this.prisma.adventure.findUnique({ where: { id: invitation.adventureId } })
+    if (adventure) {
+      const currentPlayers = await this.membership.countPlayers(invitation.adventureId)
+      if (currentPlayers + 1 > adventure.maxPlayers) {
+        throw new BadRequestException('Adventure is at maximum player capacity')
       }
     }
 
@@ -244,10 +245,6 @@ export class InvitationService {
     await this.prisma.campaignInvitation.update({
       where: { id: invitation.id },
       data: { status: 'ACCEPTED', acceptedAt: new Date() },
-    })
-
-    const adventure = await this.prisma.adventure.findUnique({
-      where: { id: invitation.adventureId },
     })
 
     return {

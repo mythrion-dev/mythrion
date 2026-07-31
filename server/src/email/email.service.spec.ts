@@ -1,78 +1,132 @@
-jest.mock("../generated/prisma/client", () => ({ PrismaClient: class {} }))
-jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
-jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
+jest.mock("nodemailer", () => {
+  const mock = { createTransport: jest.fn() }
+  // Provide both a default and named export so the mock works regardless of
+  // how the module interop compiles the `import nodemailer` (CJS vs ESM).
+  return { __esModule: true, ...mock, default: mock }
+})
 import { Test } from '@nestjs/testing'
+import nodemailer from 'nodemailer'
 import { EmailService } from './email.service'
+
+const mockCreateTransport = nodemailer.createTransport as jest.Mock
+const mockSendMail = jest.fn()
+
+const SMTP_VARS = [
+  'SMTP_HOST',
+  'SMTP_PORT',
+  'SMTP_SECURE',
+  'SMTP_USER',
+  'SMTP_PASS',
+  'EMAIL_FROM',
+]
+
+async function buildService() {
+  const module = await Test.createTestingModule({
+    providers: [EmailService],
+  }).compile()
+  return module.get<EmailService>(EmailService)
+}
 
 describe('EmailService', () => {
   let service: EmailService
-  const OLD_ENV = process.env.RESEND_API_KEY
+  const savedEnv: Record<string, string | undefined> = {}
+
+  const baseParams = {
+    to: 'player@test.com',
+    campaignName: 'Test Campaign',
+    inviterName: 'Mighty GM',
+    role: 'PLAYER',
+    inviteUrl: 'http://localhost:3001/invite/abc',
+    expiresAt: new Date('2025-06-15'),
+  }
+
+  beforeAll(() => {
+    for (const v of SMTP_VARS) savedEnv[v] = process.env[v]
+  })
 
   afterAll(() => {
-    process.env.RESEND_API_KEY = OLD_ENV
+    for (const v of SMTP_VARS) {
+      if (savedEnv[v] === undefined) delete process.env[v]
+      else process.env[v] = savedEnv[v]
+    }
   })
 
   beforeEach(() => {
     jest.clearAllMocks()
+    for (const v of SMTP_VARS) delete process.env[v]
+    mockCreateTransport.mockReturnValue({ sendMail: mockSendMail })
+    mockSendMail.mockResolvedValue({ messageId: 'm1' })
   })
 
-  describe('when RESEND_API_KEY is not set', () => {
-    beforeEach(() => {
-      delete process.env.RESEND_API_KEY
-    })
-
+  describe('when SMTP_HOST is not set', () => {
     it('sends nothing and logs [DEV] message (does not throw)', async () => {
-      const module = await Test.createTestingModule({
-        providers: [EmailService],
-      }).compile()
+      service = await buildService()
 
-      service = module.get<EmailService>(EmailService)
+      await expect(service.sendInvitation(baseParams)).resolves.toBeUndefined()
 
-      await expect(
-        service.sendInvitation({
-          to: 'player@test.com',
-          campaignName: 'Test Adventure',
-          inviterName: 'GM',
-          role: 'PLAYER',
-          inviteUrl: 'http://localhost:3001/invite/abc',
-          expiresAt: new Date('2025-01-01'),
-        }),
-      ).resolves.toBeUndefined()
+      expect(mockCreateTransport).not.toHaveBeenCalled()
+      expect(mockSendMail).not.toHaveBeenCalled()
     })
   })
 
-  describe('when RESEND_API_KEY is set', () => {
-    const mockSend = jest.fn().mockResolvedValue({ data: { id: 'email-1' }, error: null })
-    const mockResend = { emails: { send: mockSend } }
-
+  describe('when SMTP_HOST is set', () => {
     beforeEach(() => {
-      process.env.RESEND_API_KEY = 're_test_key'
+      process.env.SMTP_HOST = 'smtp.example.com'
     })
 
-    it('calls resend.emails.send with correct params', async () => {
-      // We need to test that the internal resend instance is used.
-      // Since Resend is instantiated in the constructor, we create a new instance
-      // and verify behavior by checking that no error is thrown and the method completes.
-      const module = await Test.createTestingModule({
-        providers: [EmailService],
-      }).compile()
+    it('creates a transporter with host, port 587, no TLS, and auth', async () => {
+      process.env.SMTP_USER = 'apikey'
+      process.env.SMTP_PASS = 'secret'
 
-      service = module.get<EmailService>(EmailService)
+      service = await buildService()
+      await service.sendInvitation(baseParams)
 
-      // Accessing private resend for test verification
-      const resend = (service as any).resend
-      resend.emails.send = mockSend
-
-      await service.sendInvitation({
-        to: 'player@test.com',
-        campaignName: 'Test Campaign',
-        inviterName: 'Mighty GM',
-        role: 'PLAYER',
-        inviteUrl: 'http://localhost:3001/invite/abc',
-        expiresAt: new Date('2025-06-15'),
+      expect(mockCreateTransport).toHaveBeenCalledWith({
+        host: 'smtp.example.com',
+        port: 587,
+        secure: false,
+        auth: { user: 'apikey', pass: 'secret' },
       })
+    })
 
-      expect(mockSend).toHaveBeenCalledWith(
+    it('omits auth when SMTP_USER or SMTP_PASS is missing', async () => {
+      service = await buildService()
+      await service.sendInvitation(baseParams)
+
+      expect(mockCreateTransport).toHaveBeenCalledWith(
+        expect.objectContaining({ auth: undefined }),
+      )
+    })
+
+    it('enables implicit TLS on port 465 when SMTP_SECURE is unset', async () => {
+      process.env.SMTP_PORT = '465'
+
+      service = await buildService()
+      await service.sendInvitation(baseParams)
+
+      expect(mockCreateTransport).toHaveBeenCalledWith(
+        expect.objectContaining({ port: 465, secure: true }),
+      )
+    })
+
+    it('honours SMTP_SECURE=true on a STARTTLS port', async () => {
+      process.env.SMTP_SECURE = 'true'
+
+      service = await buildService()
+      await service.sendInvitation(baseParams)
+
+      expect(mockCreateTransport).toHaveBeenCalledWith(
+        expect.objectContaining({ secure: true }),
+      )
+    })
+
+    it('calls sendMail with default from, subject and template', async () => {
+      mockSendMail.mockResolvedValue({ messageId: 'm1' })
+
+      service = await buildService()
+      await service.sendInvitation(baseParams)
+
+      expect(mockSendMail).toHaveBeenCalledWith(
         expect.objectContaining({
           from: 'Mythrion <noreply@mythrion.com>',
           to: 'player@test.com',
@@ -82,17 +136,21 @@ describe('EmailService', () => {
       )
     })
 
+    it('uses EMAIL_FROM when set', async () => {
+      process.env.EMAIL_FROM = 'No-Reply <no-reply@mythrion.com.br>'
+
+      service = await buildService()
+      await service.sendInvitation(baseParams)
+
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({ from: 'No-Reply <no-reply@mythrion.com.br>' }),
+      )
+    })
+
     it('builds HTML template with invitation details', async () => {
-      const module = await Test.createTestingModule({
-        providers: [EmailService],
-      }).compile()
-
-      service = module.get<EmailService>(EmailService)
-      const resend = (service as any).resend
-      resend.emails.send = mockSend
-
+      service = await buildService()
       await service.sendInvitation({
-        to: 'player@test.com',
+        ...baseParams,
         campaignName: 'My Campaign',
         inviterName: 'Alice',
         role: 'GM',
@@ -100,7 +158,7 @@ describe('EmailService', () => {
         expiresAt: new Date('2025-07-01T12:00:00Z'),
       })
 
-      const callArg = mockSend.mock.calls[0][0]
+      const callArg = mockSendMail.mock.calls[0][0]
       expect(callArg.html).toContain('Alice invited you')
       expect(callArg.html).toContain('My Campaign')
       expect(callArg.html).toContain('GM')
@@ -108,25 +166,14 @@ describe('EmailService', () => {
       expect(callArg.html).toContain('July')
     })
 
-    it('handles errors gracefully without throwing', async () => {
-      const module = await Test.createTestingModule({
-        providers: [EmailService],
-      }).compile()
+    it('rejects when sendMail fails', async () => {
+      mockSendMail.mockRejectedValue(new Error('SMTP refused connection'))
 
-      service = module.get<EmailService>(EmailService)
-      const resend = (service as any).resend
-      resend.emails.send = jest.fn().mockRejectedValue(new Error('API error'))
+      service = await buildService()
 
-      await expect(
-        service.sendInvitation({
-          to: 'player@test.com',
-          campaignName: 'Test',
-          inviterName: 'GM',
-          role: 'PLAYER',
-          inviteUrl: 'http://localhost:3001/invite/t',
-          expiresAt: new Date('2025-01-01'),
-        }),
-      ).resolves.toBeUndefined()
+      await expect(service.sendInvitation(baseParams)).rejects.toThrow(
+        'SMTP refused connection',
+      )
     })
   })
 })

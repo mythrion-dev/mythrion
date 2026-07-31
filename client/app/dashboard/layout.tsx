@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { Sidebar } from '@/components/dashboard/Sidebar'
+import { Sidebar, GracePeriodBanner } from '@/components/dashboard'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -55,11 +55,12 @@ export default function DashboardLayout({
   return (
     <AuthGuard>
       <div className="flex min-h-screen bg-background">
-        {/* Sidebar — 240px */}
+        {/* Sidebar */}
         <Sidebar />
 
         {/* Main content area */}
         <main className="flex-1 min-h-screen bg-pattern overflow-auto">
+          <GracePeriodBanner />
           <div className="px-8 py-6 w-full animate-fade-in">
             {children}
           </div>

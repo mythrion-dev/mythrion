@@ -9,87 +9,27 @@ import { NumericInput } from '@/components/shared/NumericInput'
 interface TemplateAttribute {
   id: string; key: string; name: string
 }
-interface ArmorClassField {
-  id: string; name: string; key: string; defaultValue: string; editableByPlayer: boolean; description: string | null
-}
-interface ArmorClassAttributeModifier {
-  id: string; attributeId: string; allowPlayerSelection: boolean; defaultAttributeId: string | null
-  attribute: { id: string; key: string; name: string }
-  defaultAttribute: { id: string; key: string; name: string } | null
-}
-interface TemplateArmorClass {
-  id: string; name: string; enabled: boolean
-  fields: ArmorClassField[]
-  attributeModifiers: ArmorClassAttributeModifier[]
-}
-interface TemplateSkill {
-  id: string; name: string; description: string | null; attributeId: string | null
-  allowedAttributeIds: string[]; defaultAttributeId: string | null
-  attribute: { id: string; key: string; name: string } | null
-  defaultAttribute: { id: string; key: string; name: string } | null
-}
-interface SkillModifierProfile {
-  id: string; name: string; targetMode: string; targetSkillIds: string[]
-  options: { id: string; label: string; value: number }[]
-}
-interface ResistanceComponent {
-  id: string; name: string; editableByPlayer: boolean; defaultValue: string
-}
-interface ResistanceAttributeModifier {
-  id: string; attributeId: string; enabled: boolean
-  attribute: { id: string; key: string; name: string }
-}
-interface TemplateResistance {
-  id: string; name: string; calculationType: string; order: number
-  components: ResistanceComponent[]
-  attributeModifiers: ResistanceAttributeModifier[]
-}
 interface Template {
   id: string; name: string; description: string | null
-  attributeModifierFormula: string | null; skillFormula: string | null
+  attributeModifierFormula: string | null
   attributes: TemplateAttribute[]
   templateFields: { id: string; key: string; label: string }[]
-  templateSkills: TemplateSkill[]
-  skillModifierProfiles: SkillModifierProfile[]
-  coreResources: { id: string; slug: string; displayName: string }[]
-  armorClasses: TemplateArmorClass[]
   characterSections: { id: string; name: string }[]
-  resistances: TemplateResistance[]
 }
 
 interface SummonAttribute {
   id: string; abilityId: string; attributeId: string; value: string
 }
-interface SummonSkillProfileValue {
-  profileId: string; optionId: string | null
-  profile: { id: string; name: string; targetMode: string; targetSkillIds: string[] }
-  option: { id: string; label: string; value: number } | null
-}
 interface SummonSkill {
-  id: string; skillId: string; selectedAttributeId: string | null
-  skill: {
-    id: string; name: string; description: string | null; attributeId: string | null
-    allowedAttributeIds: string[]; defaultAttributeId: string | null
-    attribute: { id: string; key: string; name: string } | null
-    defaultAttribute: { id: string; key: string; name: string } | null
-  }
-  selectedAttribute: { id: string; key: string; name: string } | null
-  profileValues: SummonSkillProfileValue[]
-}
-interface SummonAcAttributeValue {
-  id: string; acAttributeModifierId: string; selectedAttributeId: string | null
-  selectedAttribute: { id: string; key: string; name: string } | null
+  id: string; name: string; manualValue: number
 }
 
 interface CreatureAbility {
   id: string; name: string; type: string; description: string | null; notes: string | null
   sheetId: string
   summonAttributes: SummonAttribute[]
-  summonAcValues: { id: string; abilityId: string; fieldId: string; value: string }[]
-  summonAcAttributeValues: SummonAcAttributeValue[]
+  summonAcValues: { id: string; abilityId: string; value: string }[]
   summonHealth: { id: string; abilityId: string; current: number | null; maximum: number | null; notes: string | null } | null
-  summonResistanceValues: { id: string; resistanceId: string; manualValue: string | null }[]
-  summonResistanceComponentValues: { id: string; componentId: string; value: string }[]
   summonSkills: SummonSkill[]
   childAbilities: CreatureAbility[]
   levels: { id: string; level: string; description: string | null; manaCost: number | null; range: string | null; notes: string | null; damage: string | null }[]
@@ -128,17 +68,10 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
   const [hpMax, setHpMax] = useState<number | null>(null)
   const [hpNotes, setHpNotes] = useState('')
   const [attrValues, setAttrValues] = useState<Record<string, string>>({})
-  const [acValues, setAcValues] = useState<Record<string, string>>({})
-  const [resistValues, setResistValues] = useState<Record<string, string | null>>({})
-  const [resistComponentValues, setResistComponentValues] = useState<Record<string, string>>({})
+  const [acValue, setAcValue] = useState('10')
 
   /* ── Computed / derived state ── */
   const [modifierResults, setModifierResults] = useState<Record<string, number | null>>({})
-  const [acTotals, setAcTotals] = useState<Record<string, number | null>>({})
-  const [skillResults, setSkillResults] = useState<Record<string, number | null>>({})
-  const [resistanceData, setResistanceData] = useState<
-    Array<{ resistanceId: string; name: string; calculationType: string; total: number }>
-  >([])
 
   /* ── Child ability management ── */
   const [childAbilities, setChildAbilities] = useState<ChildAbility[]>([])
@@ -164,15 +97,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
     const av: Record<string, string> = {}
     for (const sa of ability.summonAttributes) av[sa.attributeId] = sa.value
     setAttrValues(av)
-    const acv: Record<string, string> = {}
-    for (const sa of ability.summonAcValues) acv[sa.fieldId] = sa.value
-    setAcValues(acv)
-    const rv: Record<string, string | null> = {}
-    for (const sr of ability.summonResistanceValues) rv[sr.resistanceId] = sr.manualValue
-    setResistValues(rv)
-    const rcv: Record<string, string> = {}
-    for (const sc of ability.summonResistanceComponentValues) rcv[sc.componentId] = sc.value
-    setResistComponentValues(rcv)
+    setAcValue(ability.summonAcValues?.[0]?.value ?? '10')
     /* Copy child abilities */
     setChildAbilities(ability.childAbilities?.map(c => ({
       id: c.id,
@@ -183,9 +108,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
     })) ?? [])
     /* Reset computed state */
     setModifierResults({})
-    setAcTotals({})
-    setSkillResults({})
-    setResistanceData([])
     setShowNewChildAbility(false)
   }, [ability])
 
@@ -206,7 +128,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
           setTemplate(tpl)
           // Kick off initial computations
           computeModifiers(tpl, ability!.summonAttributes)
-          fetchResistances(sheetId!)
         }
       })
       .catch(() => {
@@ -238,107 +159,13 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
     return results
   }, [])
 
-  const computeAC = useCallback((attrs: Record<string, string>, mods: Record<string, number | null>, abilityData: CreatureAbility) => {
-    if (!template) { setAcTotals({}); return }
-    const acs = template.armorClasses?.filter(ac => ac.enabled) ?? []
-    const totals: Record<string, number | null> = {}
-    for (const ac of acs) {
-      let total = 0
-      ac.fields.forEach(f => {
-        const v = parseFloat(attrs[f.id] ?? f.defaultValue)
-        if (!isNaN(v)) total += v
-      })
-      const selectedByModifierId = new Map(
-        (abilityData.summonAcAttributeValues ?? []).map(v => [v.acAttributeModifierId, v.selectedAttributeId])
-      )
-      for (const am of ac.attributeModifiers) {
-        const effectiveAttributeId = am.allowPlayerSelection
-          ? (selectedByModifierId.get(am.id) ?? am.defaultAttributeId ?? am.attributeId)
-          : am.attributeId
-        const modResult = mods[effectiveAttributeId]
-        if (modResult !== null && modResult !== undefined && !isNaN(modResult)) {
-          total += Math.max(0, modResult)
-        }
-      }
-      totals[ac.id] = total
-    }
-    setAcTotals(totals)
-  }, [template])
-
-  const computeSkills = useCallback(async (tpl: Template, attributes: SummonAttribute[]) => {
-    const formula = tpl.skillFormula
-    if (!formula?.trim() || !ability) { setSkillResults({}); return }
-    const results: Record<string, number | null> = {}
-    // Compute modifier vars
-    const modifierVars: Record<string, number> = {}
-    const globalFormula = tpl.attributeModifierFormula
-    if (globalFormula?.trim()) {
-      for (const attr of tpl.attributes) {
-        try {
-          const modVars: Record<string, number> = {}
-          tpl.attributes.forEach(a => {
-            const v = parseFloat(attributes.find(s => s.attributeId === a.id)?.value ?? '0')
-            modVars[a.key] = isNaN(v) ? 0 : v
-          })
-          modVars['value'] = parseFloat(attributes.find(s => s.attributeId === attr.id)?.value ?? '0') || 0
-          const mr = await api.post<{ result: number }>('/formula/evaluate', { formula: globalFormula, variables: modVars })
-          modifierVars[`${attr.key}_mod`] = mr.result
-        } catch { modifierVars[`${attr.key}_mod`] = 0 }
-      }
-    }
-    for (const ss of ability!.summonSkills) {
-      try {
-        let finalResult = 0
-        const selectedAttr = ss.selectedAttribute || ss.skill.defaultAttribute || ss.skill.attribute
-        const skillAttrValue = selectedAttr
-          ? parseFloat(attributes.find(sa => sa.attributeId === selectedAttr.id)?.value ?? '0')
-          : 0
-        const variables: Record<string, number> = { ...modifierVars }
-        variables['value'] = isNaN(skillAttrValue) ? 0 : skillAttrValue
-        if (selectedAttr) variables['value_mod'] = modifierVars[`${selectedAttr.key}_mod`] ?? 0
-        tpl.attributes.forEach(a => {
-          const v = parseFloat(attributes.find(s => s.attributeId === a.id)?.value ?? '0')
-          variables[a.key] = isNaN(v) ? 0 : v
-        })
-        variables['level'] = 1
-        const res = await api.post<{ result: number }>('/formula/evaluate', { formula, variables })
-        finalResult = res.result
-        // Add profile values
-        for (const spv of ss.profileValues ?? []) {
-          if (spv.option) finalResult += spv.option.value
-        }
-        results[ss.id] = finalResult
-      } catch { results[ss.id] = null }
-    }
-    setSkillResults(results)
-  }, [ability])
-
-  const fetchResistances = useCallback(async (sid: string) => {
-    try {
-      const data = await api.get<Array<{ resistanceId: string; name: string; calculationType: string; total: number }>>(
-        `/character-sheets/${sid}/resistances`
-      )
-      setResistanceData(data)
-    } catch {
-      /* probably no NPC sheet yet */
-    }
-  }, [])
-
-  /* Re-compute when attrValues or ability changes */
+  /* Re-compute modifiers when attrValues or template changes */
   useEffect(() => {
     if (!template || !ability) return
     computeModifiers(template, ability!.summonAttributes.map(sa => ({
       ...sa,
       value: attrValues[sa.attributeId] ?? sa.value,
-    }))).then(mods => {
-      if (mods) {
-        computeAC(attrValues, mods, ability!)
-        computeSkills(template, ability!.summonAttributes.map(sa => ({
-          ...sa,
-          value: attrValues[sa.attributeId] ?? sa.value,
-        })))
-      }
-    })
+    })))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attrValues, template])
 
@@ -371,22 +198,14 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
       for (const [attributeId, value] of Object.entries(attrValues)) {
         await api.patch(`/character-sheets/${sheetId}/abilities/${ability.id}/summon-attributes/${attributeId}`, { value })
       }
-      for (const [fieldId, value] of Object.entries(acValues)) {
-        await api.patch(`/character-sheets/${sheetId}/abilities/${ability.id}/summon-ac/${fieldId}`, { value })
-      }
-      for (const [componentId, value] of Object.entries(resistComponentValues)) {
-        await api.patch(`/character-sheets/${sheetId}/abilities/${ability.id}/summon-resistance-components/${componentId}`, { value })
-      }
-      for (const [resistanceId, value] of Object.entries(resistValues)) {
-        await api.patch(`/character-sheets/${sheetId}/abilities/${ability.id}/summon-resistances/${resistanceId}`, { value })
-      }
+      await api.patch(`/character-sheets/${sheetId}/abilities/${ability.id}/summon-ac`, { value: acValue })
       onUpdate()
     } catch {
       /* silently fail */
     } finally {
       setSaving(false)
     }
-  }, [ability, sheetId, saveAbilityMetadata, saveHealth, attrValues, acValues, resistValues, resistComponentValues, onUpdate])
+  }, [ability, sheetId, saveAbilityMetadata, saveHealth, attrValues, acValue, onUpdate])
 
   /* ── Avatar upload ── */
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -543,14 +362,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
 
   function findAttr(id: string): TemplateAttribute | undefined {
     return template?.attributes.find(a => a.id === id)
-  }
-
-  function findResistanceComponent(id: string) {
-    for (const r of template?.resistances ?? []) {
-      const c = r.components.find(c => c.id === id)
-      if (c) return { ...c, resistanceName: r.name }
-    }
-    return null
   }
 
   /* ── Render ── */
@@ -725,120 +536,29 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
             </section>
           )}
 
-          {/* ── Armor Class (with computed total) ── */}
-          {template && template.armorClasses.filter(ac => ac.enabled).length > 0 && (
-            <section>
-              <h3 className="header-accent mb-3">Armor Class</h3>
-              {template.armorClasses.filter(ac => ac.enabled).map(ac => {
-                const acTotal = acTotals[ac.id]
-                return (
-                  <div key={ac.id} className="card !p-4 mb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-semibold text-foreground">{ac.name}</h4>
-                      {acTotal !== null && acTotal !== undefined && (
-                        <span className="text-lg font-bold text-gradient">{acTotal}</span>
-                      )}
-                    </div>
-                    <div className="flex gap-3 flex-wrap">
-                      {ac.attributeModifiers.map(mod => {
-                        const selected = ability.summonAcAttributeValues.find(v => v.acAttributeModifierId === mod.id)
-                        const attrName = selected?.selectedAttribute?.name ?? mod.attribute.name
-                        const modResult = modifierResults[
-                          selected?.selectedAttributeId ?? mod.defaultAttributeId ?? mod.attributeId
-                        ]
-                        const modDisplay = modResult !== null && modResult !== undefined && modResult >= 0
-                          ? `+${modResult}`
-                          : '—'
-                        return (
-                          <div key={mod.id} className="flex flex-col items-center gap-1 min-w-[70px]">
-                            <span className="text-xs text-muted-foreground">{attrName}</span>
-                            <span className={`w-12 text-center rounded bg-surface border border-border px-2 py-1.5 text-xs font-mono ${modResult !== null && modResult !== undefined ? 'text-green-500' : 'text-foreground'}`}>
-                              {modDisplay}
-                            </span>
-                          </div>
-                        )
-                      })}
-                      {ac.fields.map(field => (
-                        <div key={field.id} className="flex flex-col items-center gap-1 min-w-[80px]">
-                          <span className="text-xs text-muted-foreground">{field.name}</span>
-                          <input type="text" value={acValues[field.id] ?? field.defaultValue}
-                            onChange={e => setAcValues(p => ({ ...p, [field.id]: e.target.value }))}
-                            className="w-16 text-center rounded-lg bg-input border border-border px-2 py-1.5 text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </section>
-          )}
+          {/* ── Armor Class (single manual value) ── */}
+          <section>
+            <h3 className="header-accent mb-3">Armor Class</h3>
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-muted-foreground">AC</label>
+              <input type="text" value={acValue}
+                onChange={e => setAcValue(e.target.value)}
+                className="w-20 text-center rounded-lg bg-input border border-border px-3 py-2 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50" />
+            </div>
+          </section>
 
-          {/* ── Resistances (with computed totals) ── */}
-          {template && template.resistances.length > 0 && (
-            <section>
-              <h3 className="header-accent mb-3">Resistances</h3>
-              <div className="space-y-2">
-                {template.resistances.map(r => {
-                  const computed = resistanceData.find(rd => rd.resistanceId === r.id)
-                  const total = computed?.total
-                  return (
-                    <div key={r.id} className="card !p-3">
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm font-medium text-foreground min-w-[100px]">{r.name}</span>
-                        {total !== null && total !== undefined && (
-                          <span className="text-lg font-bold text-gradient">{total}</span>
-                        )}
-                        <div className="flex items-center gap-2 ml-auto flex-wrap">
-                          {r.components.map(c => (
-                            <div key={c.id} className="flex items-center gap-1.5">
-                              <span className="text-xs text-muted-foreground">{c.name}:</span>
-                              <input type="text" value={resistComponentValues[c.id] ?? c.defaultValue}
-                                onChange={e => setResistComponentValues(p => ({ ...p, [c.id]: e.target.value }))}
-                                className="w-14 text-center rounded bg-input border border-border px-1.5 py-1 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-accent/50" />
-                            </div>
-                          ))}
-                          {r.calculationType === 'MANUAL' && (
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs text-muted-foreground">Manual:</span>
-                              <input type="text" value={resistValues[r.id] ?? ''}
-                                onChange={e => setResistValues(p => ({ ...p, [r.id]: e.target.value || null }))}
-                                className="w-14 text-center rounded bg-input border border-border px-1.5 py-1 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-accent/50" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </section>
-          )}
-
-          {/* ── Skills (with computed totals) ── */}
-          {template && template.templateSkills.length > 0 && (
+          {/* ── Skills (manual name + value) ── */}
+          {ability.summonSkills.length > 0 && (
             <section>
               <h3 className="header-accent mb-3">Skills</h3>
-              {template.templateSkills.map(skill => {
-                const summonSkill = ability.summonSkills.find(s => s.skillId === skill.id)
-                const selectedAttr = summonSkill?.selectedAttribute
-                const skillTotal = summonSkill ? skillResults[summonSkill.id] : null
-                const skillTotalDisplay = skillTotal !== null && skillTotal !== undefined
-                  ? (skillTotal >= 0 ? `+${skillTotal}` : String(skillTotal))
-                  : '—'
-                return (
-                  <div key={skill.id} className="data-row">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-sm font-medium text-foreground">{skill.name}</span>
-                      {selectedAttr && (
-                        <span className="text-xs text-muted-foreground">({selectedAttr.name})</span>
-                      )}
-                    </div>
-                    <span className={`text-sm font-mono font-bold text-right ${skillTotal !== null && skillTotal !== undefined ? 'text-green-500' : 'text-muted-foreground'}`}>
-                      {skillTotalDisplay}
-                    </span>
-                  </div>
-                )
-              })}
+              {ability.summonSkills.map(skill => (
+                <div key={skill.id} className="data-row">
+                  <span className="text-sm font-medium text-foreground">{skill.name}</span>
+                  <span className="text-sm font-mono font-bold text-right text-foreground">
+                    {skill.manualValue >= 0 ? `+${skill.manualValue}` : String(skill.manualValue)}
+                  </span>
+                </div>
+              ))}
             </section>
           )}
 

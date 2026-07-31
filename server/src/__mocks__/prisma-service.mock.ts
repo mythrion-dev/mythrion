@@ -60,6 +60,9 @@ export function createMockPrismaService() {
     templateCharacterSection: mockModel(),
     skillModifierProfile: mockModel(),
     profileOption: mockModel(),
+    subscriptionPlan: mockModel(),
+    userSubscription: mockModel(),
+    subscriptionInvoice: mockModel(),
     characterSheet: mockModel(),
     characterSheetValue: mockModel(),
     characterSheetFieldValue: mockModel(),
@@ -92,9 +95,11 @@ export function createMockPrismaService() {
     armorClassAttributeModifier: mockModel(),
     resistanceComponent: mockModel(),
     resistanceAttributeModifier: mockModel(),
+    joinRequest: mockModel(),
     $connect: jest.fn().mockResolvedValue(undefined),
     $disconnect: jest.fn().mockResolvedValue(undefined),
     $queryRawUnsafe: jest.fn().mockResolvedValue([{ 1: 1 }]),
+    $queryRaw: jest.fn().mockResolvedValue([{ total: 0, ids: [] }]),
     $transaction: jest.fn().mockImplementation((cb: any) =>
       typeof cb === 'function' ? cb(undefined) : Promise.resolve([]),
     ),
@@ -290,6 +295,9 @@ export function createMockPrismaServiceWithData(
     'templateCharacterSection',
     'skillModifierProfile',
     'profileOption',
+    'subscriptionPlan',
+    'userSubscription',
+    'subscriptionInvoice',
     'characterSheet',
     'characterSheetValue',
     'characterSheetFieldValue',
@@ -322,6 +330,7 @@ export function createMockPrismaServiceWithData(
     'armorClassAttributeModifier',
     'resistanceComponent',
     'resistanceAttributeModifier',
+    'joinRequest',
   ] as const;
 
   const service: Record<string, any> = {};
@@ -333,6 +342,7 @@ export function createMockPrismaServiceWithData(
   service.$connect = jest.fn().mockResolvedValue(undefined);
   service.$disconnect = jest.fn().mockResolvedValue(undefined);
   service.$queryRawUnsafe = jest.fn().mockResolvedValue([{ 1: 1 }]);
+  service.$queryRaw = jest.fn().mockResolvedValue([{ total: 0, ids: [] }]);
   service.$transaction = jest.fn().mockImplementation((cb: any) =>
     typeof cb === 'function' ? cb(undefined) : Promise.resolve([]),
   );

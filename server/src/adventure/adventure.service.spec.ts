@@ -1,4 +1,13 @@
-jest.mock("../generated/prisma/client", () => ({ PrismaClient: class {} }))
+jest.mock("../generated/prisma/client", () => ({
+  PrismaClient: class {},
+  Prisma: {
+    sql: jest.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({ strings, values })),
+    join: jest.fn((parts: unknown[], sep?: string) => ({ parts, sep })),
+    empty: {},
+    raw: jest.fn((s: string) => s),
+    Sql: class {},
+  },
+}))
 jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
 jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
 import { Test } from '@nestjs/testing'
@@ -7,6 +16,7 @@ import { AdventureService } from './adventure.service'
 import { PrismaService } from '../prisma.service'
 import { MembershipService } from '../membership/membership.service'
 import { CharacterSheetService } from '../character-sheet/character-sheet.service'
+import { TemplateService } from '../template/template.service'
 import { createMockPrismaService } from '../__mocks__/prisma-service.mock'
 
 const mockMembershipService = {
@@ -29,6 +39,19 @@ const mockCharacterSheetService = {
   findOne: jest.fn(),
 }
 
+const mockTemplateService = {
+  attachToAdventure: jest.fn().mockResolvedValue(undefined),
+  detachFromAdventure: jest.fn().mockResolvedValue(undefined),
+  getTemplateSnapshot: jest.fn(),
+  buildSnapshot: jest.fn(),
+  createStandalone: jest.fn(),
+  findAllByUser: jest.fn(),
+  findOne: jest.fn(),
+  update: jest.fn(),
+  remove: jest.fn(),
+  clone: jest.fn(),
+}
+
 describe('AdventureService', () => {
   let service: AdventureService
   let prisma: ReturnType<typeof createMockPrismaService>
@@ -46,6 +69,7 @@ describe('AdventureService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: MembershipService, useValue: mockMembershipService },
         { provide: CharacterSheetService, useValue: mockCharacterSheetService },
+        { provide: TemplateService, useValue: mockTemplateService },
       ],
     }).compile()
 
@@ -68,9 +92,45 @@ describe('AdventureService', () => {
           synopsis: 'Fun!',
           maxPlayers: 4,
           ownerId: 'u1',
+          isPublic: false,
+          sessionWeekday: null,
+          sessionTime: null,
+          sessionType: null,
         },
       })
       expect(mockMembershipService.createMembership).toHaveBeenCalledWith('a1', 'u1', 'GM')
+    })
+
+    it('creates adventure with session fields when provided', async () => {
+      const dto = {
+        name: 'Scheduled Adv',
+        campaign: 'My Campaign',
+        synopsis: 'Weekly game!',
+        maxPlayers: 4,
+        sessionWeekday: 'Friday',
+        sessionTime: '20:00',
+        sessionType: 'ONLINE',
+      }
+      const createdAdventure = { id: 'a2', ...dto, ownerId: 'u1' }
+      prisma.adventure.create.mockResolvedValue(createdAdventure)
+
+      const result = await service.create('u1', dto)
+
+      expect(result).toEqual(createdAdventure)
+      expect(prisma.adventure.create).toHaveBeenCalledWith({
+        data: {
+          name: 'Scheduled Adv',
+          campaign: 'My Campaign',
+          synopsis: 'Weekly game!',
+          maxPlayers: 4,
+          ownerId: 'u1',
+          isPublic: false,
+          sessionWeekday: 'Friday',
+          sessionTime: '20:00',
+          sessionType: 'ONLINE',
+        },
+      })
+      expect(mockMembershipService.createMembership).toHaveBeenCalledWith('a2', 'u1', 'GM')
     })
   })
 
@@ -132,6 +192,41 @@ describe('AdventureService', () => {
       })
       expect(result).toEqual(updated)
     })
+
+    it('updates adventure with session fields when provided', async () => {
+      const dto = { sessionWeekday: 'Saturday', sessionTime: '18:00', sessionType: 'IN_PERSON' }
+      const updated = { id: 'a1', name: 'Test', campaign: 'Camp', maxPlayers: 4, isPublic: false, sessionWeekday: 'Saturday', sessionTime: '18:00', sessionType: 'IN_PERSON' }
+      prisma.adventure.update.mockResolvedValue(updated)
+
+      const result = await service.update('a1', 'u1', dto)
+
+      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
+      expect(prisma.adventure.update).toHaveBeenCalledWith({
+        where: { id: 'a1' },
+        data: {
+          sessionWeekday: 'Saturday',
+          sessionTime: '18:00',
+          sessionType: 'IN_PERSON',
+        },
+      })
+      expect(result).toEqual(updated)
+    })
+
+    it('does not include session fields when not provided in update', async () => {
+      const dto = { name: 'Renamed Adv' }
+      const updated = { id: 'a1', name: 'Renamed Adv', campaign: 'Camp', maxPlayers: 4, isPublic: false }
+      prisma.adventure.update.mockResolvedValue(updated)
+
+      const result = await service.update('a1', 'u1', dto)
+
+      expect(prisma.adventure.update).toHaveBeenCalledWith({
+        where: { id: 'a1' },
+        data: {
+          name: 'Renamed Adv',
+        },
+      })
+      expect(result).toEqual(updated)
+    })
   })
 
   describe('remove', () => {
@@ -144,6 +239,330 @@ describe('AdventureService', () => {
       expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
       expect(prisma.adventure.delete).toHaveBeenCalledWith({ where: { id: 'a1' } })
       expect(result).toEqual(deleted)
+    })
+  })
+
+  describe('updateVisibility', () => {
+    it('requires GM role and updates isPublic', async () => {
+      const updated = {
+        id: 'a1',
+        name: 'Test',
+        isPublic: true,
+      }
+      prisma.adventure.update.mockResolvedValue(updated)
+
+      const result = await service.updateVisibility('a1', 'u1', true)
+
+      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
+      expect(prisma.adventure.update).toHaveBeenCalledWith({
+        where: { id: 'a1' },
+        data: { isPublic: true },
+      })
+      expect(result).toEqual(updated)
+    })
+  })
+
+  describe('findPublic', () => {
+    it('returns paginated public adventures with metadata', async () => {
+      const adventures = [
+        {
+          id: 'a1',
+          name: 'Public Adv',
+          campaign: 'Camp',
+          synopsis: 'Fun!',
+          maxPlayers: 4,
+          isPublic: true,
+          createdAt: new Date(),
+          owner: { id: 'u1', displayName: 'Owner' },
+          _count: { members: 2 },
+        },
+      ]
+      prisma.$transaction.mockResolvedValue([adventures, 1])
+
+      const result = await service.findPublic({ page: 1, limit: 10 })
+
+      expect(result.data).toHaveLength(1)
+      expect(result.data[0].gmDisplayName).toBe('Owner')
+      expect(result.data[0].playerCount).toBe(2)
+      expect(result.data[0].ownerId).toBe('u1')
+      expect(result.data[0]).not.toHaveProperty('owner')
+      expect(result.data[0]).not.toHaveProperty('_count')
+      expect(result.total).toBe(1)
+      expect(result.page).toBe(1)
+      expect(result.totalPages).toBe(1)
+    })
+
+    it('filters by campaign', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublic({ campaign: 'D&D 5e' })
+
+      expect(prisma.adventure.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            isPublic: true,
+            campaign: 'D&D 5e',
+          }),
+        }),
+      )
+    })
+
+    it('filters by search through the ranked SQL path and hydrates results', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ total: 1, ids: ['a1'] }])
+      prisma.adventure.findMany.mockResolvedValue([
+        {
+          id: 'a1',
+          name: 'Dragon Hoard',
+          campaign: 'D&D 5e',
+          synopsis: 'A dragon adventure',
+          maxPlayers: 4,
+          isPublic: true,
+          sessionWeekday: null,
+          sessionTime: null,
+          sessionType: null,
+          createdAt: new Date('2025-01-01'),
+          owner: { id: 'u1', displayName: 'DragonGM' },
+          _count: { members: 2 },
+        },
+      ])
+
+      const result = await service.findPublic({ search: 'dragon', limit: 10 })
+
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
+      expect(prisma.adventure.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: { in: ['a1'] } },
+        }),
+      )
+      expect(result.data).toHaveLength(1)
+      expect(result.data[0].id).toBe('a1')
+      expect(result.data[0].name).toBe('Dragon Hoard')
+      expect(result.data[0].gmDisplayName).toBe('DragonGM')
+      expect(result.data[0].playerCount).toBe(2)
+      expect(result.data[0].ownerId).toBe('u1')
+      expect(result.total).toBe(1)
+      expect(result.totalPages).toBe(1)
+    })
+
+    it('returns empty results when search matches nothing', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ total: 0, ids: [] }])
+
+      const result = await service.findPublic({ search: 'zzzznope', limit: 10 })
+
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
+      expect(prisma.adventure.findMany).not.toHaveBeenCalled()
+      expect(result.data).toHaveLength(0)
+      expect(result.total).toBe(0)
+    })
+
+    it('combines search with campaign filter on the ranked path', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ total: 0, ids: [] }])
+
+      await service.findPublic({ search: 'dragon', campaign: 'D&D 5e' })
+
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
+      expect(prisma.adventure.findMany).not.toHaveBeenCalled()
+    })
+
+    it('filters by sessionWeekday', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublic({ sessionWeekday: 'Friday' })
+
+      expect(prisma.adventure.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            isPublic: true,
+            sessionWeekday: 'Friday',
+          }),
+        }),
+      )
+    })
+
+    it('filters by sessionType', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublic({ sessionType: 'ONLINE' })
+
+      expect(prisma.adventure.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            isPublic: true,
+            sessionType: 'ONLINE',
+          }),
+        }),
+      )
+    })
+
+    it('filters by timePeriod=morning (06:00-11:59)', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublic({ timePeriod: 'morning' })
+
+      expect(prisma.adventure.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            isPublic: true,
+            sessionTime: { gte: '06:00', lt: '12:00' },
+          }),
+        }),
+      )
+    })
+
+    it('filters by timePeriod=afternoon (12:00-17:59)', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublic({ timePeriod: 'afternoon' })
+
+      expect(prisma.adventure.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            isPublic: true,
+            sessionTime: { gte: '12:00', lt: '18:00' },
+          }),
+        }),
+      )
+    })
+
+    it('filters by timePeriod=night (18:00-23:59)', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublic({ timePeriod: 'night' })
+
+      expect(prisma.adventure.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            isPublic: true,
+            sessionTime: { gte: '18:00', lt: '24:00' },
+          }),
+        }),
+      )
+    })
+
+    it('combines sessionWeekday and sessionType filters', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublic({ sessionWeekday: 'Monday', sessionType: 'IN_PERSON' })
+
+      expect(prisma.adventure.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            isPublic: true,
+            sessionWeekday: 'Monday',
+            sessionType: 'IN_PERSON',
+          }),
+        }),
+      )
+    })
+  })
+
+  describe('findPublicById', () => {
+    it('returns public adventure when found', async () => {
+      const adventure = {
+        id: 'a1',
+        name: 'Public Adv',
+        campaign: 'Camp',
+        synopsis: 'Fun!',
+        maxPlayers: 4,
+        isPublic: true,
+        createdAt: new Date(),
+        owner: { id: 'u1', displayName: 'Owner' },
+        _count: { members: 2 },
+      }
+      prisma.adventure.findFirst.mockResolvedValue(adventure)
+
+      const result = await service.findPublicById('a1')
+
+      expect(prisma.adventure.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'a1', isPublic: true },
+        }),
+      )
+      expect(result.gmDisplayName).toBe('Owner')
+      expect(result.playerCount).toBe(2)
+      expect(result.ownerId).toBe('u1')
+      expect(result).not.toHaveProperty('owner')
+      expect(result).not.toHaveProperty('_count')
+    })
+
+    it('throws NotFoundException when adventure is not public', async () => {
+      prisma.adventure.findFirst.mockResolvedValue(null)
+
+      await expect(service.findPublicById('a1')).rejects.toThrow(
+        NotFoundException,
+      )
+    })
+  })
+
+  describe('findOnePublic', () => {
+    it('returns public adventure with limited fields', async () => {
+      const adventure = {
+        id: 'a1',
+        name: 'Public Adv',
+        campaign: 'Camp',
+        synopsis: 'Fun!',
+        maxPlayers: 4,
+        isPublic: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        sessionWeekday: null,
+        sessionTime: null,
+        sessionType: null,
+        owner: { id: 'u1', displayName: 'Owner' },
+        _count: { members: 2 },
+      }
+      prisma.adventure.findFirst.mockResolvedValue(adventure)
+
+      const result = await service.findOnePublic('a1')
+
+      expect(prisma.adventure.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'a1', isPublic: true },
+        }),
+      )
+      expect(result.gmDisplayName).toBe('Owner')
+      expect(result.playerCount).toBe(2)
+      expect(result.ownerId).toBe('u1')
+      expect(result.isPublic).toBe(true)
+      expect(result).not.toHaveProperty('owner')
+      expect(result).not.toHaveProperty('_count')
+    })
+
+    it('throws NotFoundException when adventure not found or not public', async () => {
+      prisma.adventure.findFirst.mockResolvedValue(null)
+
+      await expect(service.findOnePublic('nonexistent')).rejects.toThrow(
+        NotFoundException,
+      )
+    })
+  })
+
+  describe('findOne (public adventure paths)', () => {
+    it('returns limited data for a public adventure when user is not a member', async () => {
+      const adventure = {
+        id: 'a1',
+        name: 'Public Adv',
+        campaign: 'Camp',
+        synopsis: 'Fun!',
+        maxPlayers: 4,
+        isPublic: true,
+        owner: { id: 'u1', displayName: 'Owner' },
+        _count: { members: 2 },
+      }
+      prisma.adventure.findUnique.mockResolvedValue(adventure)
+      mockMembershipService.isMember.mockResolvedValue(false)
+
+      const result = await service.findOne('a1', 'u2')
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'a1',
+          name: 'Public Adv',
+          memberCount: 2,
+          isPublic: true,
+        }),
+      )
+      expect(result.owner).toBeDefined()
     })
   })
 
@@ -424,6 +843,80 @@ describe('AdventureService', () => {
 
         expect(result.hpActual).toBe(15)
         expect(result.hpMax).toBe(20)
+      })
+
+      // ── Snapshot-based createNpc tests ──
+
+      it('prefers originalTemplateId (snapshot) over templates[0]', async () => {
+        prisma.adventure.findUnique.mockResolvedValue({
+          id: 'a1',
+          originalTemplateId: 'snapshot-tpl',
+          templates: [{ id: 'legacy-tpl' }],
+        })
+        mockCharacterSheetService.create.mockResolvedValue({ id: 'sheet-1' })
+        prisma.characterSheet.update.mockResolvedValue({
+          id: 'sheet-1',
+          characterName: 'Snap Orc',
+          isNpc: true,
+          npcType: 'NPC',
+          level: 1,
+          hpActual: 0,
+          hpMax: 0,
+          template: { id: 'snapshot-tpl', name: 'Snapshot Template' },
+          coreResourceValues: [],
+        })
+
+        const result = await service.createNpc('a1', 'u1', { name: 'Snap Orc', type: 'NPC' })
+
+        expect(mockCharacterSheetService.create).toHaveBeenCalledWith(
+          'u1',
+          expect.objectContaining({ templateId: 'snapshot-tpl' }),
+        )
+        expect(result.template.id).toBe('snapshot-tpl')
+      })
+
+      it('falls back to templates[0]?.id when originalTemplateId is null', async () => {
+        prisma.adventure.findUnique.mockResolvedValue({
+          id: 'a1',
+          originalTemplateId: null,
+          templates: [{ id: 'legacy-tpl' }],
+        })
+        mockCharacterSheetService.create.mockResolvedValue({ id: 'sheet-1' })
+        prisma.characterSheet.update.mockResolvedValue({
+          id: 'sheet-1',
+          characterName: 'Legacy Orc',
+          isNpc: true,
+          npcType: 'NPC',
+          level: 1,
+          hpActual: 0,
+          hpMax: 0,
+          template: { id: 'legacy-tpl', name: 'Legacy Template' },
+          coreResourceValues: [],
+        })
+
+        const result = await service.createNpc('a1', 'u1', { name: 'Legacy Orc', type: 'NPC' })
+
+        expect(mockCharacterSheetService.create).toHaveBeenCalledWith(
+          'u1',
+          expect.objectContaining({ templateId: 'legacy-tpl' }),
+        )
+        expect(result.template.id).toBe('legacy-tpl')
+      })
+
+      it('throws NotFoundException when both originalTemplateId and templates are absent', async () => {
+        prisma.adventure.findUnique.mockResolvedValue({
+          id: 'a1',
+          originalTemplateId: null,
+          templates: [],
+        })
+
+        await expect(
+          service.createNpc('a1', 'u1', { name: 'NoTemplate' }),
+        ).rejects.toThrow(NotFoundException)
+
+        await expect(
+          service.createNpc('a1', 'u1', { name: 'NoTemplate' }),
+        ).rejects.toThrow('No template is attached to this adventure')
       })
     })
 

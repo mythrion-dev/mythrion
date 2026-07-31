@@ -151,14 +151,32 @@ describe('AuthController', () => {
       )
     })
 
-    it('should redirect with tokens and state when state is provided', async () => {
+    it('should redirect to the state origin when a valid origin is provided', async () => {
       const mockReq = { user: { accessToken: 'google-access', refreshToken: 'google-refresh' } }
       const mockRes = { redirect: jest.fn() } as unknown as Response
 
+      // localhost:3001 is always allow-listed, so `state` resolves as the
+      // origin to redirect back to (multi-domain OAuth).
+      await controller.googleCallback(mockReq as any, mockRes, 'http://localhost:3001')
+
+      expect(mockRes.redirect).toHaveBeenCalledWith(
+        'http://localhost:3001/auth/google/callback?token=google-access&refreshToken=google-refresh',
+      )
+    })
+
+    it('should fall back to FRONTEND_URL when state is not a valid origin', async () => {
+      const mockReq = { user: { accessToken: 'google-access', refreshToken: 'google-refresh' } }
+      const mockRes = { redirect: jest.fn() } as unknown as Response
+
+      // `state` carries an origin, not an echoed nonce — non-origin values are
+      // rejected so an attacker cannot set the redirect target.
       await controller.googleCallback(mockReq as any, mockRes, 'some-state')
 
       expect(mockRes.redirect).toHaveBeenCalledWith(
-        expect.stringContaining('state=some-state'),
+        expect.stringContaining('/auth/google/callback?token=google-access'),
+      )
+      expect(mockRes.redirect).toHaveBeenCalledWith(
+        expect.not.stringContaining('state='),
       )
     })
   })

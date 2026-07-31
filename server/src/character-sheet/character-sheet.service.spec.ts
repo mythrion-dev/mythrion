@@ -5,6 +5,7 @@ jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }))
 import { Test } from '@nestjs/testing'
 import {
   NotFoundException,
+  BadRequestException,
   ForbiddenException,
   ConflictException,
 } from '@nestjs/common'
@@ -135,11 +136,8 @@ describe('CharacterSheetService', () => {
       skillValues: [],
       skillProfileValues: [],
       acValues: [],
-      acAttributeValues: [],
       coreResourceValues: [],
       abilities: [],
-      resistanceValues: [],
-      resistanceComponentValues: [],
       inventoryItems: [],
       sectionEntries: [],
       story: null,
@@ -153,11 +151,8 @@ describe('CharacterSheetService', () => {
       skillValues: expect.anything(),
       skillProfileValues: expect.anything(),
       acValues: expect.anything(),
-      acAttributeValues: expect.anything(),
       coreResourceValues: expect.anything(),
       abilities: expect.anything(),
-      resistanceValues: expect.anything(),
-      resistanceComponentValues: expect.anything(),
       inventoryItems: expect.anything(),
       sectionEntries: expect.anything(),
       story: expect.anything(),
@@ -207,9 +202,6 @@ describe('CharacterSheetService', () => {
       prisma.characterSheetSkillProfileValue.upsert.mockResolvedValue({})
       prisma.characterSheetCoreResourceValue.upsert.mockResolvedValue({})
       prisma.characterSheetArmorClassValue.upsert.mockResolvedValue({})
-      prisma.characterSheetArmorClassAttributeValue.upsert.mockResolvedValue({})
-      prisma.characterSheetResistanceValue.upsert.mockResolvedValue({})
-      prisma.characterSheetResistanceComponentValue.upsert.mockResolvedValue({})
     })
 
     // Restore mocks to original defaults after core CRUD tests
@@ -244,6 +236,33 @@ describe('CharacterSheetService', () => {
           }),
         )
         expect(result).toEqual(mockSheet)
+      })
+
+      it('should create a sheet with optional playerName and level', async () => {
+        const extendedDto = { ...dto, playerName: 'Player One', level: 3 }
+        const expectedSheet = {
+          ...mockSheet,
+          playerName: 'Player One',
+          level: 3,
+        }
+        prisma.characterSheet.create.mockResolvedValue(expectedSheet)
+
+        const result = await service.create(userId, extendedDto)
+
+        expect(prisma.characterSheet.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              characterName: 'Test Character',
+              playerName: 'Player One',
+              level: 3,
+              adventureId: null,
+              templateId: 'template-1',
+              ownerId: userId,
+            }),
+          }),
+        )
+        expect(result.playerName).toBe('Player One')
+        expect(result.level).toBe(3)
       })
 
       it('should throw NotFoundException when template is not found', async () => {
@@ -588,9 +607,6 @@ describe('CharacterSheetService', () => {
         skillProfileValues: [{ skillId: 'skill-1', profileId: 'prof-1', optionId: 'opt-1' }],
         coreResourceValues: [{ coreResourceId: 'cr-1', current: 50, maximum: 100, notes: 'Half' }],
         acValues: [{ fieldId: 'ac-field-1', value: '15' }],
-        acAttributeValues: [{ acAttributeModifierId: 'ac-mod-1', selectedAttributeId: 'attr-2' }],
-        resistanceValues: [{ resistanceId: 'res-1', manualValue: '10' }],
-        resistanceComponentValues: [{ componentId: 'res-comp-1', value: '5' }],
       }
 
       it('should throw NotFoundException when sheet does not exist', async () => {
@@ -692,76 +708,6 @@ describe('CharacterSheetService', () => {
           where: { sheetId_fieldId: { sheetId, fieldId: 'ac-field-1' } },
           create: { sheetId, fieldId: 'ac-field-1', value: '15' },
           update: { value: '15' },
-        })
-      })
-
-      it('should upsert AC attribute values', async () => {
-        await service.update(sheetId, userId, { acAttributeValues: [{ acAttributeModifierId: 'ac-mod-1', selectedAttributeId: 'attr-2' }] })
-
-        expect(prisma.characterSheetArmorClassAttributeValue.upsert).toHaveBeenCalledWith({
-          where: { sheetId_acAttributeModifierId: { sheetId, acAttributeModifierId: 'ac-mod-1' } },
-          create: { sheetId, acAttributeModifierId: 'ac-mod-1', selectedAttributeId: 'attr-2' },
-          update: { selectedAttributeId: 'attr-2' },
-        })
-      })
-
-      it('should handle sheet-specific resistance values by updating existing component', async () => {
-        prisma.sheetResistance.findUnique.mockResolvedValue({ id: 'sheet-res-1', calculationType: 'MANUAL' })
-        prisma.sheetResistanceComponent.findFirst.mockResolvedValue({
-          id: 'sheet-res-comp-1', sheetResistanceId: 'sheet-res-1', name: 'Value', value: '0', order: 0,
-        })
-
-        await service.update(sheetId, userId, { resistanceValues: [{ resistanceId: 'sheet-res-1', manualValue: '15' }] })
-
-        expect(prisma.sheetResistanceComponent.update).toHaveBeenCalledWith({
-          where: { id: 'sheet-res-comp-1' },
-          data: { value: '15' },
-        })
-      })
-
-      it('should handle sheet-specific resistance values by creating component when none exists', async () => {
-        prisma.sheetResistance.findUnique.mockResolvedValue({ id: 'sheet-res-1', calculationType: 'MANUAL' })
-        prisma.sheetResistanceComponent.findFirst.mockResolvedValue(null)
-
-        await service.update(sheetId, userId, { resistanceValues: [{ resistanceId: 'sheet-res-1', manualValue: '15' }] })
-
-        expect(prisma.sheetResistanceComponent.create).toHaveBeenCalledWith({
-          data: { sheetResistanceId: 'sheet-res-1', name: 'Value', value: '15', order: 0 },
-        })
-      })
-
-      it('should handle template resistance values via upsert', async () => {
-        prisma.sheetResistance.findUnique.mockResolvedValue(null)
-
-        await service.update(sheetId, userId, { resistanceValues: [{ resistanceId: 'res-1', manualValue: '10' }] })
-
-        expect(prisma.characterSheetResistanceValue.upsert).toHaveBeenCalledWith({
-          where: { sheetId_resistanceId: { sheetId, resistanceId: 'res-1' } },
-          create: { sheetId, resistanceId: 'res-1', manualValue: '10' },
-          update: { manualValue: '10' },
-        })
-      })
-
-      it('should handle sheet-specific resistance component values by updating directly', async () => {
-        prisma.sheetResistanceComponent.findUnique.mockResolvedValue({ id: 'sheet-res-comp-1' })
-
-        await service.update(sheetId, userId, { resistanceComponentValues: [{ componentId: 'sheet-res-comp-1', value: '7' }] })
-
-        expect(prisma.sheetResistanceComponent.update).toHaveBeenCalledWith({
-          where: { id: 'sheet-res-comp-1' },
-          data: { value: '7' },
-        })
-      })
-
-      it('should handle template resistance component values via upsert', async () => {
-        prisma.sheetResistanceComponent.findUnique.mockResolvedValue(null)
-
-        await service.update(sheetId, userId, { resistanceComponentValues: [{ componentId: 'res-comp-1', value: '5' }] })
-
-        expect(prisma.characterSheetResistanceComponentValue.upsert).toHaveBeenCalledWith({
-          where: { sheetId_componentId: { sheetId, componentId: 'res-comp-1' } },
-          create: { sheetId, componentId: 'res-comp-1', value: '5' },
-          update: { value: '5' },
         })
       })
 
@@ -979,6 +925,417 @@ describe('CharacterSheetService', () => {
         expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:user:${userId}`)
         expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}`)
       })
+    })
+  })
+
+  // ── createFromCampaignSnapshot ─────────────────────────────────
+
+  describe('createFromCampaignSnapshot', () => {
+    const userId = 'campaign-user'
+    const adventureId = 'campaign-adv-1'
+
+    const mockSnapshot = {
+      id: 'snapshot-id',
+      name: 'Fantasy Template',
+      skillFormula: '#{level} + #{prof1} + 5',
+      attributes: [
+        { id: 'snap-attr-1', key: 'str', name: 'Strength', order: 0 },
+        { id: 'snap-attr-2', key: 'dex', name: 'Dexterity', order: 1 },
+      ],
+      templateFields: [
+        { id: 'snap-field-1', key: 'height', label: 'Height', order: 0 },
+      ],
+      templateSkills: [
+        { id: 'snap-skill-1', name: 'Athletics', description: '', templateId: 'snapshot-id', order: 0, attributeId: 'snap-attr-1', defaultAttributeId: 'snap-attr-1', allowedAttributeIds: ['snap-attr-1'] },
+        { id: 'snap-skill-2', name: 'Stealth', description: '', templateId: 'snapshot-id', order: 1, attributeId: 'snap-attr-2', defaultAttributeId: null, allowedAttributeIds: ['snap-attr-1', 'snap-attr-2'] },
+      ],
+      skillModifierProfiles: [
+        { id: 'snap-prof-1', name: 'prof1', order: 0, targetMode: 'ALL_SKILLS', targetSkillIds: [], options: [{ id: 'opt-1', label: 'Half', value: '0.5', order: 0 }, { id: 'opt-2', label: 'Full', value: '1', order: 1 }] },
+        { id: 'snap-prof-2', name: 'nonexistent', order: 1, targetMode: 'ALL_SKILLS', targetSkillIds: [], options: [{ id: 'opt-3', label: 'No', value: '0', order: 0 }] },
+      ],
+      coreResources: [
+        { id: 'snap-cr-1', displayName: 'HP', slug: 'hp', enabled: true, editableByPlayer: true, showNotes: false },
+        { id: 'snap-cr-2', displayName: 'MP', slug: 'mp', enabled: false, editableByPlayer: true, showNotes: false },
+      ],
+      armorClasses: [
+        {
+          id: 'snap-ac-1', name: 'Armor Class', enabled: true,
+          fields: [
+            { id: 'snap-ac-field-1', name: 'Base', key: 'base', defaultValue: '10', editableByPlayer: true, description: '', order: 0 },
+          ],
+          attributeModifiers: [
+            { id: 'snap-ac-mod-1', attributeId: 'snap-attr-2', defaultAttributeId: 'snap-attr-2', allowPlayerSelection: true, enabled: true },
+          ],
+        },
+        {
+          id: 'snap-ac-2', name: 'Magic AC', enabled: false,
+          fields: [],
+          attributeModifiers: [],
+        },
+      ],
+      resistances: [
+        {
+          id: 'snap-res-1', name: 'Fire', order: 0,
+          components: [
+            { id: 'snap-res-comp-1', name: 'Base', order: 0, editableByPlayer: true, defaultValue: '0' },
+          ],
+          attributeModifiers: [],
+        },
+      ],
+      characterSections: [
+        { id: 'snap-sec-1', name: 'Background', order: 0 },
+      ],
+    }
+
+    const mockAdventure = {
+      templateSnapshot: mockSnapshot,
+      originalTemplateId: 'original-template-id',
+    }
+
+    const mockCreatedSheet = {
+      id: 'cs-campaign-1',
+      characterName: 'Campaign Hero',
+      playerName: null,
+      level: 1,
+      ownerId: userId,
+      adventureId,
+      templateId: 'original-template-id',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+
+    beforeEach(() => {
+      jest.clearAllMocks()
+      prisma.adventure.findUnique.mockResolvedValue(mockAdventure)
+      mockMembershipService.isMember.mockResolvedValue(true)
+      mockRedisService.del.mockResolvedValue(undefined)
+      prisma.characterSheet.create.mockResolvedValue(mockCreatedSheet)
+    })
+
+    it('creates a sheet from snapshot with all sub-resources', async () => {
+      const result = await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Campaign Hero',
+        adventureId,
+      })
+
+      expect(prisma.adventure.findUnique).toHaveBeenCalledWith({
+        where: { id: adventureId },
+        select: { templateSnapshot: true, originalTemplateId: true },
+      })
+
+      expect(prisma.characterSheet.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            characterName: 'Campaign Hero',
+            playerName: null,
+            level: 1,
+            adventureId,
+            templateId: 'original-template-id',
+            ownerId: userId,
+          }),
+        }),
+      )
+      expect(result).toEqual(mockCreatedSheet)
+    })
+
+    it('creates attribute values from snapshot attributes', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.values).toEqual({
+        create: [
+          { attributeId: 'snap-attr-1', value: '' },
+          { attributeId: 'snap-attr-2', value: '' },
+        ],
+      })
+    })
+
+    it('creates field values from snapshot templateFields', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.fieldValues).toEqual({
+        create: [
+          { templateFieldId: 'snap-field-1', value: '' },
+        ],
+      })
+    })
+
+    it('creates skill values with default attribute from snapshot', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.skillValues).toEqual({
+        create: [
+          { skillId: 'snap-skill-1', value: '', selectedAttributeId: 'snap-attr-1' },
+          { skillId: 'snap-skill-2', value: '', selectedAttributeId: 'snap-attr-2' },
+        ],
+      })
+    })
+
+    it('creates skill profile values from snapshot skillFormula and profiles', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      // prof1 is in the formula (extractVariableNames will find it from '#{level} + #{prof1} + 5')
+      // nonexistent is NOT in 'level, prof1' variables, so it should be skipped
+      expect(callData.skillProfileValues).toEqual({
+        create: expect.arrayContaining([
+          expect.objectContaining({
+            skillId: 'snap-skill-1',
+            profileId: 'snap-prof-1',
+            optionId: 'opt-1',
+          }),
+          expect.objectContaining({
+            skillId: 'snap-skill-2',
+            profileId: 'snap-prof-1',
+            optionId: 'opt-1',
+          }),
+        ]),
+      })
+      // Only prof1 matches, not 'nonexistent'
+      expect(callData.skillProfileValues.create).toHaveLength(2)
+    })
+
+    it('creates core resource values for enabled resources only', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.coreResourceValues).toEqual({
+        create: [
+          { coreResourceId: 'snap-cr-1' },
+        ],
+      })
+    })
+
+    it('creates AC field values and attribute values from snapshot', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.acValues).toEqual({
+        create: [
+          { fieldId: 'snap-ac-field-1', value: '10' },
+        ],
+      })
+      expect(callData.acAttributeValues).toEqual({
+        create: [
+          { acAttributeModifierId: 'snap-ac-mod-1', selectedAttributeId: 'snap-attr-2' },
+        ],
+      })
+    })
+
+    it('creates resistance values with component values from snapshot', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.resistanceValues).toEqual({
+        create: [
+          { resistanceId: 'snap-res-1' },
+        ],
+      })
+      expect(callData.resistanceComponentValues).toEqual({
+        create: [
+          { componentId: 'snap-res-comp-1', value: '0' },
+        ],
+      })
+    })
+
+    it('sets templateId from adventure.originalTemplateId', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.templateId).toBe('original-template-id')
+    })
+
+    it('invalidates Redis cache after creation', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:${mockCreatedSheet.id}`)
+      expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:user:${userId}`)
+      expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}`)
+    })
+
+    it('handles cache invalidation failure gracefully', async () => {
+      mockRedisService.del.mockRejectedValue(new Error('Redis down'))
+
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId,
+        }),
+      ).resolves.toEqual(mockCreatedSheet)
+    })
+
+    it('accepts optional playerName and level', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Custom Hero',
+        adventureId,
+        playerName: 'Player One',
+        level: 3,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.playerName).toBe('Player One')
+      expect(callData.level).toBe(3)
+    })
+
+    it('skips acValues and acAttributeValues when armor classes have no fields/attributeModifiers', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        ...mockAdventure,
+        templateSnapshot: {
+          ...mockSnapshot,
+          armorClasses: [
+            { id: 'ac-empty', name: 'Empty AC', enabled: true, fields: [], attributeModifiers: [] },
+          ],
+        },
+      })
+
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.acValues).toBeUndefined()
+      expect(callData.acAttributeValues).toBeUndefined()
+    })
+
+    // ── Error cases ──
+
+    it('throws NotFoundException when adventure does not exist', async () => {
+      prisma.adventure.findUnique.mockResolvedValue(null)
+
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId: 'nonexistent',
+        }),
+      ).rejects.toThrow(NotFoundException)
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId: 'nonexistent',
+        }),
+      ).rejects.toThrow('Campaign not found')
+    })
+
+    it('throws BadRequestException when templateSnapshot is null', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        templateSnapshot: null,
+        originalTemplateId: 'original-template-id',
+      })
+
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId,
+        }),
+      ).rejects.toThrow(BadRequestException)
+    })
+
+    it('throws BadRequestException when originalTemplateId is null', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        templateSnapshot: mockSnapshot,
+        originalTemplateId: null,
+      })
+
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId,
+        }),
+      ).rejects.toThrow(BadRequestException)
+    })
+
+    it('throws ForbiddenException when user is not a campaign member', async () => {
+      mockMembershipService.isMember.mockResolvedValue(false)
+
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId,
+        }),
+      ).rejects.toThrow(ForbiddenException)
+    })
+
+    it('handles snapshot with empty sub-arrays gracefully', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        templateSnapshot: {
+          id: 'empty-snapshot',
+          name: 'Empty Template',
+          skillFormula: null,
+          attributes: [],
+          templateFields: [],
+          templateSkills: [],
+          skillModifierProfiles: [],
+          coreResources: [],
+          armorClasses: [],
+          resistances: [],
+          characterSections: [],
+        },
+        originalTemplateId: 'empty-original',
+      })
+
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Empty Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.values).toEqual({ create: [] })
+      expect(callData.fieldValues).toEqual({ create: [] })
+      expect(callData.skillValues).toEqual({ create: [] })
+      expect(callData.skillProfileValues).toEqual({ create: [] })
+      expect(callData.coreResourceValues).toEqual({ create: [] })
+      expect(callData.acValues).toBeUndefined()
+      expect(callData.acAttributeValues).toBeUndefined()
+      expect(callData.resistanceValues).toEqual({ create: [] })
+      expect(callData.resistanceComponentValues).toEqual({ create: [] })
+    })
+
+    it('skips profile values when skillFormula is null', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        ...mockAdventure,
+        templateSnapshot: {
+          ...mockSnapshot,
+          skillFormula: null,
+        },
+      })
+
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.skillProfileValues).toEqual({ create: [] })
     })
   })
 
@@ -1820,28 +2177,42 @@ describe('CharacterSheetService', () => {
     })
 
     describe('addSummonSkill', () => {
-      it('adds a skill to a summon', async () => {
-        prisma.templateSkill.findUnique.mockResolvedValue({
-          id: 'tsk-1', name: 'Bite', templateId: 'tpl-1', defaultAttributeId: 'attr-str',
-        })
+      it('creates a free-form skill with name and manualValue', async () => {
+        prisma.characterAbility.findUnique.mockResolvedValue({ id: abilityId, sheetId, type: 'SUMMON' })
         prisma.summonSkill.create.mockResolvedValue({
-          id: 'ss-1', skillId: 'tsk-1', abilityId, selectedAttributeId: 'attr-str',
+          id: 'ss-1', name: 'Bite', manualValue: 5, abilityId,
         })
 
-        const result = await service.addSummonSkill(abilityId, 'tsk-1', userId)
+        const result = await service.addSummonSkill(abilityId, 'Bite', 5, userId)
 
-        expect(result.skillId).toBe('tsk-1')
+        expect(result.name).toBe('Bite')
+        expect(result.manualValue).toBe(5)
         expect(prisma.summonSkill.create).toHaveBeenCalledWith(
           expect.objectContaining({
-            data: expect.objectContaining({ selectedAttributeId: 'attr-str' }),
+            data: expect.objectContaining({
+              name: 'Bite',
+              manualValue: 5,
+              abilityId,
+            }),
           }),
         )
+      })
+
+      it('defaults manualValue to 0 when not provided', async () => {
+        prisma.characterAbility.findUnique.mockResolvedValue({ id: abilityId, sheetId, type: 'SUMMON' })
+        prisma.summonSkill.create.mockResolvedValue({
+          id: 'ss-2', name: 'Claw', manualValue: 0, abilityId,
+        })
+
+        const result = await service.addSummonSkill(abilityId, 'Claw', 0, userId)
+
+        expect(result.manualValue).toBe(0)
       })
 
       it('throws ForbiddenException when parent is not SUMMON type', async () => {
         prisma.characterAbility.findUnique.mockResolvedValue({ id: abilityId, sheetId: sheetId, type: 'CLASS' })
 
-        await expect(service.addSummonSkill(abilityId, 'tsk-1', userId))
+        await expect(service.addSummonSkill(abilityId, 'Bite', 5, userId))
           .rejects.toThrow('Skills can only be added to summons')
       })
     })
@@ -1865,42 +2236,11 @@ describe('CharacterSheetService', () => {
           .rejects.toThrow('not found')
       })
     })
-
-    describe('updateSummonSkillAttribute', () => {
-      it('updates the attribute of a summon skill', async () => {
-        prisma.summonSkill.findUnique.mockResolvedValue({
-          id: 'ss-1', abilityId, ability: { sheetId: sheetId },
-          skill: { allowedAttributeIds: ['attr-1', 'attr-dex'] },
-        })
-        prisma.summonSkill.update.mockResolvedValue({
-          id: 'ss-1', attributeId: 'attr-dex',
-        })
-
-        const result = await service.updateSummonSkillAttribute('ss-1', 'attr-dex', userId)
-
-        expect(result.attributeId).toBe('attr-dex')
-      })
-    })
-
-    describe('updateSummonSkillProfile', () => {
-      it('upserts a skill profile value for a summon', async () => {
-        prisma.summonSkill.findUnique.mockResolvedValue({
-          id: 'ss-1', abilityId, ability: { sheetId: sheetId },
-        })
-        prisma.summonSkillProfileValue.upsert.mockResolvedValue({
-          id: 'sspv-1', skillId: 'ss-1', profileId: 'prof-1', optionId: 'opt-1',
-        })
-
-        const result = await service.updateSummonSkillProfile('ss-1', 'prof-1', 'opt-1', userId)
-
-        expect(result.optionId).toBe('opt-1')
-      })
-    })
   })
 
   // ── Summon values ─────────────────────────────────────────────
 
-  describe('summon values (attribute, AC, health, resistances)', () => {
+  describe('summon values (attribute, AC, health)', () => {
     const userId = 'u1'
     const abilityId = 'ab-summon'
     const sheetId = 'sheet-sum'
@@ -1922,24 +2262,19 @@ describe('CharacterSheetService', () => {
     })
 
     describe('updateSummonAcValue', () => {
-      it('upserts a summon AC value', async () => {
-        prisma.summonArmorClassValue.upsert.mockResolvedValue({ id: 'sac-1', fieldId: 'ac-field-1', value: '12' })
+      it('upserts a summon AC value by abilityId', async () => {
+        prisma.summonArmorClassValue.upsert.mockResolvedValue({ id: 'sac-1', abilityId, value: '18' })
 
-        const result = await service.updateSummonAcValue(abilityId, 'ac-field-1', '12', userId)
+        const result = await service.updateSummonAcValue(abilityId, '18', userId)
 
-        expect(result.value).toBe('12')
-      })
-    })
-
-    describe('updateSummonAcAttributeValue', () => {
-      it('upserts a summon AC attribute value', async () => {
-        prisma.summonArmorClassAttributeValue.upsert.mockResolvedValue({
-          id: 'sacav-1', acAttributeModifierId: 'am-1', selectedAttributeId: 'attr-dex',
-        })
-
-        const result = await service.updateSummonAcAttributeValue(abilityId, 'am-1', 'attr-dex', userId)
-
-        expect(result.selectedAttributeId).toBe('attr-dex')
+        expect(result.value).toBe('18')
+        expect(prisma.summonArmorClassValue.upsert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { abilityId },
+            create: expect.objectContaining({ abilityId, value: '18' }),
+            update: expect.objectContaining({ value: '18' }),
+          }),
+        )
       })
     })
 
@@ -1950,26 +2285,6 @@ describe('CharacterSheetService', () => {
         const result = await service.updateSummonHealth(abilityId, userId, { current: 50, maximum: 50 })
 
         expect(result.current).toBe(50)
-      })
-    })
-
-    describe('updateSummonResistanceValue', () => {
-      it('upserts a summon resistance value', async () => {
-        prisma.summonResistanceValue.upsert.mockResolvedValue({ id: 'srv-1', resistanceId: 'res-1', manualValue: '12' })
-
-        const result = await service.updateSummonResistanceValue(abilityId, 'res-1', '12', userId)
-
-        expect(result.manualValue).toBe('12')
-      })
-    })
-
-    describe('updateSummonResistanceComponentValue', () => {
-      it('upserts a summon resistance component value', async () => {
-        prisma.summonResistanceComponentValue.upsert.mockResolvedValue({ id: 'srcv-1', componentId: 'comp-1', value: '5' })
-
-        const result = await service.updateSummonResistanceComponentValue(abilityId, 'comp-1', '5', userId)
-
-        expect(result.value).toBe('5')
       })
     })
   })

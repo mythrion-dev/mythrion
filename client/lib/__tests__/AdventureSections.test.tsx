@@ -448,7 +448,6 @@ describe('CharactersSection', () => {
     onCreateCharacter: vi.fn<(e: { preventDefault: () => void }) => void>(),
     onLinkCharacter: vi.fn<(e: { preventDefault: () => void }) => void>(),
     onNewCharNameChange: vi.fn(),
-    onNewCharTemplateChange: vi.fn(),
     onLinkSheetChange: vi.fn(),
     onRemoveCharacter: vi.fn(),
     onViewCharacter: vi.fn(),
@@ -458,12 +457,11 @@ describe('CharactersSection', () => {
     characters: [] as any[],
     isGM: false,
     userId: 'user-1',
-    templates: [] as any[],
+    snapshotName: null as string | null,
     userSheets: [] as any[],
     showNewCharForm: false,
     showLinkCharForm: false,
     newCharName: '',
-    newCharTemplateId: '',
     newCharError: null as string | null,
     newCharCreating: false,
     linkSheetId: '',
@@ -641,27 +639,21 @@ describe('CharactersSection', () => {
     expect(screen.getByText('Create')).toBeInTheDocument()
   })
 
-  it('shows no templates message when templates list is empty', () => {
-    render(<CharactersSection {...baseProps} showNewCharForm={true} templates={[]} />)
+  it('shows no template message when no snapshot is attached', () => {
+    render(<CharactersSection {...baseProps} showNewCharForm={true} snapshotName={null} />)
     expect(
-      screen.getByText('No templates available. Ask your GM to create one.'),
+      screen.getByText('No template is attached to this campaign. Ask the GM to attach one before creating a character.'),
     ).toBeInTheDocument()
     // No select should be shown
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
   })
 
-  it('renders template select when templates exist', () => {
-    const templates = [
-      { id: 't1', name: 'Warrior', description: null },
-      { id: 't2', name: 'Mage', description: null },
-    ]
+  it('renders snapshot template name when one is attached', () => {
     render(
-      <CharactersSection {...baseProps} showNewCharForm={true} templates={templates} />,
+      <CharactersSection {...baseProps} showNewCharForm={true} snapshotName='Warrior' />,
     )
-    const select = screen.getByRole('combobox')
-    expect(select).toBeInTheDocument()
     expect(screen.getByText('Warrior')).toBeInTheDocument()
-    expect(screen.getByText('Mage')).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
   })
 
   it('calls name change handler on input', async () => {
@@ -670,20 +662,6 @@ describe('CharactersSection', () => {
     await userEvent.type(input, 'Bilbo')
     expect(handlers.onNewCharNameChange).toHaveBeenCalledWith('B')
     expect(handlers.onNewCharNameChange).toHaveBeenCalledWith('i')
-  })
-
-  it('calls template change handler on select', async () => {
-    const templates = [{ id: 't1', name: 'Warrior', description: null }]
-    render(
-      <CharactersSection
-        {...baseProps}
-        showNewCharForm={true}
-        templates={templates}
-      />,
-    )
-    const select = screen.getByRole('combobox')
-    await userEvent.selectOptions(select, 't1')
-    expect(handlers.onNewCharTemplateChange).toHaveBeenCalledWith('t1')
   })
 
   it('shows error message when newCharError is set', () => {
@@ -700,7 +678,7 @@ describe('CharactersSection', () => {
         showNewCharForm={true}
         newCharCreating={true}
         newCharName='Test'
-        newCharTemplateId='t1'
+        snapshotName='Fighter'
       />,
     )
     expect(screen.getByText('Creating...')).toBeInTheDocument()
@@ -714,7 +692,7 @@ describe('CharactersSection', () => {
         {...baseProps}
         showNewCharForm={true}
         newCharName=''
-        newCharTemplateId=''
+        snapshotName={null}
       />,
     )
     expect(screen.getByText('Create')).toBeDisabled()
@@ -725,7 +703,7 @@ describe('CharactersSection', () => {
         {...baseProps}
         showNewCharForm={true}
         newCharName='Aragorn'
-        newCharTemplateId=''
+        snapshotName={null}
       />,
     )
     expect(screen.getByText('Create')).toBeDisabled()
@@ -737,7 +715,7 @@ describe('CharactersSection', () => {
         {...baseProps}
         showNewCharForm={true}
         newCharName='Aragorn'
-        newCharTemplateId='t1'
+        snapshotName='Fighter'
         newCharCreating={false}
       />,
     )
@@ -763,7 +741,7 @@ describe('CharactersSection', () => {
         {...baseProps}
         showNewCharForm={true}
         newCharName='Frodo'
-        newCharTemplateId='t1'
+        snapshotName='Fighter'
       />,
     )
     fireEvent.submit(screen.getByText('Create New Character').closest('form')!)
@@ -895,14 +873,12 @@ describe('CharactersSection', () => {
 
 describe('InvitePanel', () => {
   const handlers = {
-    onRoleChange: vi.fn(),
     onEmailChange: vi.fn(),
     onInviteByEmail: vi.fn<(e: { preventDefault: () => void }) => void>(),
     onInviteByLink: vi.fn(),
     onRevoke: vi.fn(),
   }
   const baseProps = {
-    inviteRole: 'PLAYER',
     inviteEmail: '',
     inviteLink: null as string | null,
     inviteError: null as string | null,
@@ -913,25 +889,6 @@ describe('InvitePanel', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-  })
-
-  /* ── Role selector ── */
-  it('renders PLAYER and GM role buttons', () => {
-    render(<InvitePanel {...baseProps} />)
-    expect(screen.getByText('PLAYER')).toBeInTheDocument()
-    expect(screen.getByText('GM')).toBeInTheDocument()
-  })
-
-  it('highlights active role', () => {
-    render(<InvitePanel {...baseProps} inviteRole='PLAYER' />)
-    const playerBtn = screen.getByText('PLAYER')
-    expect(playerBtn.className).toContain('!text-primary')
-  })
-
-  it('calls onRoleChange when clicking a role', async () => {
-    render(<InvitePanel {...baseProps} />)
-    await userEvent.click(screen.getByText('GM'))
-    expect(handlers.onRoleChange).toHaveBeenCalledWith('GM')
   })
 
   /* ── Invite by email ── */

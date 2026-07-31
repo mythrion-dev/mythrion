@@ -88,13 +88,11 @@ describe('InvitationController', () => {
     it('should delegate to invitationService.inviteByEmail with correct args', async () => {
       const result = await controller.inviteByEmail(mockUserReq, 'adv-1', {
         email: 'player@test.com',
-        role: 'PLAYER',
       })
 
       expect(mockInvitationService.inviteByEmail).toHaveBeenCalledWith({
         adventureId: 'adv-1',
         invitedEmail: 'player@test.com',
-        role: 'PLAYER',
         createdById: 'user-1',
       })
       expect(result).toEqual({ success: true, invitationId: 'inv-123' })
@@ -108,14 +106,12 @@ describe('InvitationController', () => {
       await expect(
         controller.inviteByEmail(mockUserReq, 'adv-1', {
           email: '',
-          role: 'PLAYER',
         }),
       ).rejects.toThrow(BadRequestException)
 
       expect(mockInvitationService.inviteByEmail).toHaveBeenCalledWith({
         adventureId: 'adv-1',
         invitedEmail: '',
-        role: 'PLAYER',
         createdById: 'user-1',
       })
     })
@@ -128,7 +124,6 @@ describe('InvitationController', () => {
       await expect(
         controller.inviteByEmail(mockUserReq, 'adv-1', {
           email: 'player@test.com',
-          role: 'PLAYER',
         }),
       ).rejects.toThrow(ForbiddenException)
     })
@@ -140,13 +135,10 @@ describe('InvitationController', () => {
 
   describe('inviteByLink', () => {
     it('should delegate to invitationService.inviteByLink with correct args', async () => {
-      const result = await controller.inviteByLink(mockUserReq, 'adv-1', {
-        role: 'GM',
-      })
+      const result = await controller.inviteByLink(mockUserReq, 'adv-1', {})
 
       expect(mockInvitationService.inviteByLink).toHaveBeenCalledWith({
         adventureId: 'adv-1',
-        role: 'GM',
         createdById: 'user-1',
       })
       expect(result).toEqual({
@@ -160,9 +152,7 @@ describe('InvitationController', () => {
       )
 
       await expect(
-        controller.inviteByLink(mockUserReq, 'nonexistent-adv', {
-          role: 'PLAYER',
-        }),
+        controller.inviteByLink(mockUserReq, 'nonexistent-adv', {}),
       ).rejects.toThrow(NotFoundException)
     })
 
@@ -172,7 +162,7 @@ describe('InvitationController', () => {
       )
 
       await expect(
-        controller.inviteByLink(mockUserReq, 'adv-1', { role: 'PLAYER' }),
+        controller.inviteByLink(mockUserReq, 'adv-1', {}),
       ).rejects.toThrow(BadRequestException)
     })
   })
@@ -368,26 +358,4 @@ describe('InvitationController', () => {
     })
   })
 
-  /* ------------------------------------------------------------------ */
-  /*  Property-based test with jest-each                                 */
-  /* ------------------------------------------------------------------ */
-
-  describe.each([
-    { role: 'GM' as const, label: 'GM' },
-    { role: 'PLAYER' as const, label: 'PLAYER' },
-  ])('inviteByEmail with role=$label', ({ role }) => {
-    it('should delegate to invitationService.inviteByEmail with the correct role', async () => {
-      await controller.inviteByEmail(mockUserReq, 'adv-1', {
-        email: 'player@test.com',
-        role,
-      })
-
-      expect(mockInvitationService.inviteByEmail).toHaveBeenCalledWith({
-        adventureId: 'adv-1',
-        invitedEmail: 'player@test.com',
-        role,
-        createdById: 'user-1',
-      })
-    })
-  })
 })

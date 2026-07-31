@@ -15,6 +15,8 @@ vi.mock('@/lib/api', () => ({
   removeRefreshToken: vi.fn(),
   getInvitationToken: vi.fn(),
   removeInvitationToken: vi.fn(),
+  decodeJwtPayload: vi.fn(() => ({ role: 'user' })),
+  refreshAccessToken: vi.fn(),
 }))
 
 // Re-import after mocking so the mock is picked up

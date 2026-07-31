@@ -1,14 +1,50 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { Resend } from 'resend'
+import nodemailer, { type Transporter } from 'nodemailer'
+
+const DEFAULT_FROM = 'Mythrion <noreply@mythrion.com>'
+const DEFAULT_PORT = 587
+
+/** Parse SMTP_PORT env var, falling back to 587 for non-numeric values. */
+function parsePort(raw: string | undefined): number {
+  const port = Number.parseInt(raw ?? '', 10)
+  return Number.isFinite(port) && port > 0 ? port : DEFAULT_PORT
+}
+
+/**
+ * SMTP_SECURE decides whether to use TLS. When unset we infer it from the
+ * port — 465 is the implicit-TLS SMTPS port, everything else (587, 25) is
+ * plain/STARTTLS.
+ */
+function parseSecure(raw: string | undefined, port: number): boolean {
+  if (raw === undefined || raw === '') return port === 465
+  return raw === 'true' || raw === '1'
+}
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name)
-  private readonly resend: Resend | null
+  private readonly transporter: Transporter | null
 
   constructor() {
-    const apiKey = process.env.RESEND_API_KEY
-    this.resend = apiKey ? new Resend(apiKey) : null
+    const host = process.env.SMTP_HOST
+    if (!host) {
+      this.logger.warn(
+        'SMTP_HOST is not set — email sending is disabled. Invitation emails will not be delivered.',
+      )
+      this.transporter = null
+      return
+    }
+
+    const port = parsePort(process.env.SMTP_PORT)
+    this.transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: parseSecure(process.env.SMTP_SECURE, port),
+      auth:
+        process.env.SMTP_USER && process.env.SMTP_PASS
+          ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+          : undefined,
+    })
   }
 
   async sendInvitation(params: {
@@ -19,7 +55,7 @@ export class EmailService {
     inviteUrl: string
     expiresAt: Date
   }) {
-    if (!this.resend) {
+    if (!this.transporter) {
       this.logger.log(
         `[DEV] Invitation email would be sent to ${params.to} - ${params.inviteUrl}`,
       )
@@ -29,17 +65,18 @@ export class EmailService {
     const html = this.buildInviteTemplate(params)
 
     try {
-      const result = await this.resend.emails.send({
-        from: 'Mythrion <noreply@mythrion.com>',
+      const info = await this.transporter.sendMail({
+        from: process.env.EMAIL_FROM ?? DEFAULT_FROM,
         to: params.to,
         subject: `${params.inviterName} invited you to ${params.campaignName}`,
         html,
       })
-      this.logger.log(`Invitation email sent to ${params.to}: ${result.data?.id}`)
+      this.logger.log(`Invitation email sent to ${params.to}: ${info.messageId}`)
     } catch (err) {
-      this.logger.error(
-        `Failed to send invitation email: ${err instanceof Error ? err.message : String(err)}`,
-      )
+      const message = err instanceof Error ? err.message : String(err)
+      this.logger.error(`Failed to send invitation email to ${params.to}: ${message}`)
+      // Rethrow so the caller can surface the failure (and roll back the invitation).
+      throw err
     }
   }
 

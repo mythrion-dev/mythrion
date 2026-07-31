@@ -11,10 +11,11 @@ import { MembershipService } from '../membership/membership.service.js'
 import { RedisService } from '../redis/redis.service.js'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
+import { CreateCharacterFromCampaignDto } from './dto/create-character-from-campaign.dto.js'
 import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
 
 const sheetInclude = {
-  adventure: { select: { id: true, name: true, campaign: true } },
+  adventure: { select: { id: true, name: true, campaign: true, originalTemplateId: true, templateSnapshot: true } },
   template: {
     select: {
       id: true,
@@ -116,27 +117,10 @@ const sheetInclude = {
     include: {
       levels: { orderBy: { level: 'asc' as const } },
       summonAttributes: { orderBy: { createdAt: 'asc' as const } },
-      summonAcValues: { orderBy: { createdAt: 'asc' as const } },
-      summonAcAttributeValues: {
-        include: {
-          selectedAttribute: { select: { id: true, key: true, name: true } },
-        },
-      },
+      summonAcValues: true,
       summonHealth: true,
-      summonResistanceValues: true,
-      summonResistanceComponentValues: true,
       summonSkills: {
         orderBy: { createdAt: 'asc' as const },
-        include: {
-          skill: { select: { id: true, name: true, description: true, attributeId: true, allowedAttributeIds: true, defaultAttributeId: true, attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } } },
-          selectedAttribute: { select: { id: true, key: true, name: true } },
-          profileValues: {
-            include: {
-              profile: { select: { id: true, name: true, targetMode: true, targetSkillIds: true } },
-              option: { select: { id: true, label: true, value: true } },
-            },
-          },
-        },
       },
       childAbilities: {
         orderBy: { order: 'asc' as const },
@@ -342,6 +326,140 @@ export class CharacterSheetService {
     return sheet
   }
 
+  /** Create a character sheet from a campaign's template snapshot. */
+  async createFromCampaignSnapshot(userId: string, dto: CreateCharacterFromCampaignDto) {
+    // 1. Query Adventure for snapshot + originalTemplateId
+    const adventure = await this.prisma.adventure.findUnique({
+      where: { id: dto.adventureId },
+      select: { templateSnapshot: true, originalTemplateId: true },
+    })
+    if (!adventure) throw new NotFoundException('Campaign not found')
+
+    // 2. Validate snapshot exists
+    if (!adventure.templateSnapshot) {
+      throw new BadRequestException(
+        'No template is attached to this campaign. ' +
+        'The GM must attach a template before characters can be created.',
+      )
+    }
+    if (!adventure.originalTemplateId) {
+      throw new BadRequestException(
+        'The template reference is missing. ' +
+        'The GM must re-attach the template to this campaign.',
+      )
+    }
+
+    // 3. Validate membership
+    const isMember = await this.membership.isMember(dto.adventureId, userId)
+    if (!isMember) throw new ForbiddenException('You are not a member of this campaign')
+
+    // 4. Parse snapshot
+    const snapshot = adventure.templateSnapshot as any
+
+    // 5. Build skill profile values from snapshot data
+    const skillProfileValues: Array<{
+      skillId: string; profileId: string; optionId?: string | null
+    }> = []
+    const globalSkillFormula = snapshot.skillFormula as string | undefined
+    if (globalSkillFormula) {
+      const formulaVars = this.extractVariableNames(globalSkillFormula)
+      const profiles: any[] = snapshot.skillModifierProfiles ?? []
+      const skills: any[] = snapshot.templateSkills ?? []
+      for (const skill of skills) {
+        for (const profile of profiles) {
+          if (!formulaVars.includes(profile.name)) continue
+          const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
+          const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
+          if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(skill.name)) {
+            continue
+          }
+          const firstOption: any = (profile.options ?? [])[0]
+          skillProfileValues.push({ skillId: skill.id, profileId: profile.id, optionId: firstOption?.id ?? null })
+        }
+      }
+    }
+
+    // 6. Build armor class and resistance data from snapshot
+    const armorClasses: any[] = (snapshot.armorClasses ?? []).filter((ac: any) => ac.enabled !== false)
+    const resistances: any[] = snapshot.resistances ?? []
+
+    // 7. Create the sheet using snapshot data for all sub-resources
+    const sheet = await this.prisma.characterSheet.create({
+      data: {
+        characterName: dto.characterName,
+        playerName: dto.playerName ?? null,
+        level: dto.level ?? 1,
+        adventureId: dto.adventureId,
+        templateId: adventure.originalTemplateId,
+        ownerId: userId,
+        values: {
+          create: (snapshot.attributes ?? []).map((a: any) => ({ attributeId: a.id, value: '' })),
+        },
+        fieldValues: {
+          create: (snapshot.templateFields ?? []).map((f: any) => ({ templateFieldId: f.id, value: '' })),
+        },
+        skillValues: {
+          create: (snapshot.templateSkills ?? []).map((s: any) => ({
+            skillId: s.id,
+            value: '',
+            selectedAttributeId: (s as any).defaultAttributeId ?? s.attributeId ?? null,
+          })),
+        },
+        skillProfileValues: {
+          create: skillProfileValues.map(spv => ({
+            skillId: spv.skillId,
+            profileId: spv.profileId,
+            optionId: spv.optionId,
+          })),
+        },
+        coreResourceValues: {
+          create: (snapshot.coreResources ?? []).filter((cr: any) => cr.enabled).map((cr: any) => ({
+            coreResourceId: cr.id,
+          })),
+        },
+        acValues: armorClasses.some((ac: any) => (ac.fields ?? []).length > 0)
+          ? {
+              create: armorClasses.flatMap((ac: any) =>
+                (ac.fields ?? []).map((f: any) => ({
+                  fieldId: f.id,
+                  value: f.defaultValue,
+                }))
+              ),
+            }
+          : undefined,
+        acAttributeValues: armorClasses.some((ac: any) => (ac.attributeModifiers ?? []).length > 0)
+          ? {
+              create: armorClasses.flatMap((ac: any) =>
+                (ac.attributeModifiers ?? []).map((am: any) => ({
+                  acAttributeModifierId: am.id,
+                  selectedAttributeId: am.allowPlayerSelection ? (am.defaultAttributeId ?? null) : null,
+                }))
+              ),
+            }
+          : undefined,
+        resistanceValues: {
+          create: resistances.map((r: any) => ({
+            resistanceId: r.id,
+          })),
+        },
+        resistanceComponentValues: {
+          create: resistances.flatMap((r: any) =>
+            (r.components ?? []).map((c: any) => ({
+              componentId: c.id,
+              value: c.defaultValue,
+            })),
+          ),
+        },
+      },
+      include: sheetInclude,
+    })
+
+    // 8. Invalidate cache
+    await this.invalidateCache(sheet.id, userId, dto.adventureId).catch(() => {})
+
+    return sheet
+  }
+
   async findAllByUser(userId: string) {
     // Try cache first
     const cached = await this.redis.cacheGet<any[]>(this.userListCacheKey(userId))
@@ -422,6 +540,13 @@ export class CharacterSheetService {
       } catch {
         throw new ForbiddenException('You do not have access to this character sheet')
       }
+    }
+
+    // If the original template was deleted, reconstruct template data from the snapshot
+    if (!sheet.template && (sheet.adventure as any)?.templateSnapshot) {
+      ;(sheet as any).template = this.reconstructTemplateFromSnapshot(
+        (sheet.adventure as any).templateSnapshot,
+      )
     }
 
     // Cache the result
@@ -677,27 +802,10 @@ export class CharacterSheetService {
   private abilityInclude = {
     levels: { orderBy: { level: 'asc' as const } },
     summonAttributes: { orderBy: { createdAt: 'asc' as const } },
-    summonAcValues: { orderBy: { createdAt: 'asc' as const } },
-    summonAcAttributeValues: {
-      include: {
-        selectedAttribute: { select: { id: true, key: true, name: true } },
-      },
-    },
+    summonAcValues: true,
     summonHealth: true,
-    summonResistanceValues: true,
-    summonResistanceComponentValues: true,
     summonSkills: {
       orderBy: { createdAt: 'asc' as const },
-      include: {
-        skill: { select: { id: true, name: true, description: true, attributeId: true, allowedAttributeIds: true, defaultAttributeId: true, attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } } },
-        selectedAttribute: { select: { id: true, key: true, name: true } },
-        profileValues: {
-          include: {
-            profile: { select: { id: true, name: true, targetMode: true, targetSkillIds: true } },
-            option: { select: { id: true, label: true, value: true } },
-          },
-        },
-      },
     },
     childAbilities: {
       orderBy: { order: 'asc' as const },
@@ -730,20 +838,18 @@ export class CharacterSheetService {
     const abilityType = dto.type ?? 'ABILITY'
 
     if (abilityType === 'SUMMON') {
-      // Fetch template attributes & AC fields to create summon data
+      // Fetch template attributes to create summon attribute data
       const sheet = await this.prisma.characterSheet.findUnique({
         where: { id: sheetId },
         select: {
           template: {
             select: {
               attributes: true,
-              armorClasses: { include: { fields: true } },
             },
           },
         },
       })
       const templateAttrs = sheet?.template?.attributes ?? []
-      const acFields = sheet?.template?.armorClasses?.flatMap(ac => ac.fields) ?? []
 
       const summonAttrData = dto.summonAttributeValues ?? templateAttrs.map(a => ({ attributeId: a.id, value: '' }))
 
@@ -758,9 +864,7 @@ export class CharacterSheetService {
           summonAttributes: summonAttrData.length > 0
             ? { create: summonAttrData.map(sa => ({ attributeId: sa.attributeId, value: sa.value })) }
             : undefined,
-          summonAcValues: acFields.length > 0
-            ? { create: acFields.map(f => ({ fieldId: f.id, value: f.defaultValue })) }
-            : undefined,
+          summonAcValues: { create: [{ value: '10' }] },
           summonHealth: (dto.summonHealthCurrent !== undefined || dto.summonHealthMax !== undefined)
             ? { create: { current: dto.summonHealthCurrent ?? null, maximum: dto.summonHealthMax ?? null } }
             : undefined,
@@ -953,34 +1057,38 @@ export class CharacterSheetService {
 
   // ── Summon Skills ──
 
-  async addSummonSkill(abilityId: string, skillId: string, userId: string) {
+  async addSummonSkill(abilityId: string, name: string, manualValue: number, userId: string) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
     if (!ability) throw new NotFoundException('Summon not found')
     if (ability.type !== 'SUMMON') throw new ForbiddenException('Skills can only be added to summons')
     await this.requireOwnership(ability.sheetId, userId)
 
-    // Default the selected attribute to the skill's default
-    const skill = await this.prisma.templateSkill.findUnique({ where: { id: skillId } })
-    const defaultAttrId = skill?.defaultAttributeId ?? skill?.attributeId ?? null
-
     const result = await this.prisma.summonSkill.create({
       data: {
         abilityId,
-        skillId,
-        selectedAttributeId: defaultAttrId ?? null,
-      },
-      include: {
-        skill: { select: { id: true, name: true, description: true, attributeId: true, allowedAttributeIds: true, defaultAttributeId: true, attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } } },
-        selectedAttribute: { select: { id: true, key: true, name: true } },
-        profileValues: {
-          include: {
-            profile: { select: { id: true, name: true } },
-            option: { select: { id: true, label: true, value: true } },
-          },
-        },
+        name,
+        manualValue,
       },
     })
     await this.invalidateCache(ability.sheetId).catch(() => {})
+    return result
+  }
+
+  async updateSummonSkill(summonSkillId: string, userId: string, dto: { name?: string; manualValue?: number }) {
+    const ss = await this.prisma.summonSkill.findUnique({
+      where: { id: summonSkillId },
+      include: { ability: true },
+    })
+    if (!ss) throw new NotFoundException('Summon skill not found')
+    await this.requireOwnership(ss.ability.sheetId, userId)
+    const result = await this.prisma.summonSkill.update({
+      where: { id: summonSkillId },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.manualValue !== undefined ? { manualValue: dto.manualValue } : {}),
+      },
+    })
+    await this.invalidateCache(ss.ability.sheetId).catch(() => {})
     return result
   }
 
@@ -992,56 +1100,6 @@ export class CharacterSheetService {
     if (!ss) throw new NotFoundException('Summon skill not found')
     await this.requireOwnership(ss.ability.sheetId, userId)
     const result = await this.prisma.summonSkill.delete({ where: { id: summonSkillId } })
-    await this.invalidateCache(ss.ability.sheetId).catch(() => {})
-    return result
-  }
-
-  async updateSummonSkillAttribute(summonSkillId: string, attributeId: string | null, userId: string) {
-    const ss = await this.prisma.summonSkill.findUnique({
-      where: { id: summonSkillId },
-      include: { ability: true, skill: { select: { allowedAttributeIds: true } } },
-    })
-    if (!ss) throw new NotFoundException('Summon skill not found')
-    await this.requireOwnership(ss.ability.sheetId, userId)
-
-    // Validate that the attribute change is allowed
-    if (ss.skill.allowedAttributeIds.length === 0) {
-      throw new BadRequestException('This skill has a fixed attribute and cannot be changed')
-    }
-    if (attributeId !== null && !ss.skill.allowedAttributeIds.includes(attributeId)) {
-      throw new BadRequestException('The selected attribute is not allowed for this skill')
-    }
-
-    const result = await this.prisma.summonSkill.update({
-      where: { id: summonSkillId },
-      data: { selectedAttributeId: attributeId },
-      include: {
-        skill: { select: { id: true, name: true, description: true, attributeId: true, allowedAttributeIds: true, defaultAttributeId: true, attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } } },
-        selectedAttribute: { select: { id: true, key: true, name: true } },
-        profileValues: {
-          include: {
-            profile: { select: { id: true, name: true } },
-            option: { select: { id: true, label: true, value: true } },
-          },
-        },
-      },
-    })
-    await this.invalidateCache(ss.ability.sheetId).catch(() => {})
-    return result
-  }
-
-  async updateSummonSkillProfile(summonSkillId: string, profileId: string, optionId: string | null, userId: string) {
-    const ss = await this.prisma.summonSkill.findUnique({
-      where: { id: summonSkillId },
-      include: { ability: true },
-    })
-    if (!ss) throw new NotFoundException('Summon skill not found')
-    await this.requireOwnership(ss.ability.sheetId, userId)
-    const result = await this.prisma.summonSkillProfileValue.upsert({
-      where: { summonSkillId_profileId: { summonSkillId, profileId } },
-      create: { summonSkillId, profileId, optionId },
-      update: { optionId },
-    })
     await this.invalidateCache(ss.ability.sheetId).catch(() => {})
     return result
   }
@@ -1063,29 +1121,14 @@ export class CharacterSheetService {
 
   // ── Summon AC Values ──
 
-  async updateSummonAcValue(abilityId: string, fieldId: string, value: string, userId: string) {
+  async updateSummonAcValue(abilityId: string, value: string, userId: string) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
     if (!ability) throw new NotFoundException('Ability not found')
     await this.requireOwnership(ability.sheetId, userId)
     const result = await this.prisma.summonArmorClassValue.upsert({
-      where: { abilityId_fieldId: { abilityId, fieldId } },
-      create: { abilityId, fieldId, value },
+      where: { abilityId },
+      create: { abilityId, value },
       update: { value },
-    })
-    await this.invalidateCache(ability.sheetId).catch(() => {})
-    return result
-  }
-
-  // ── Summon AC Attribute Modifier Selection ──
-
-  async updateSummonAcAttributeValue(abilityId: string, acAttributeModifierId: string, selectedAttributeId: string | null, userId: string) {
-    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
-    await this.requireOwnership(ability.sheetId, userId)
-    const result = await this.prisma.summonArmorClassAttributeValue.upsert({
-      where: { abilityId_acAttributeModifierId: { abilityId, acAttributeModifierId } },
-      create: { abilityId, acAttributeModifierId, selectedAttributeId },
-      update: { selectedAttributeId },
     })
     await this.invalidateCache(ability.sheetId).catch(() => {})
     return result
@@ -1101,34 +1144,6 @@ export class CharacterSheetService {
       where: { abilityId },
       create: { abilityId, current: dto.current ?? null, maximum: dto.maximum ?? null, notes: dto.notes ?? null },
       update: { current: dto.current, maximum: dto.maximum, notes: dto.notes },
-    })
-    await this.invalidateCache(ability.sheetId).catch(() => {})
-    return result
-  }
-
-  // ── Summon Resistance Values ──
-
-  async updateSummonResistanceValue(abilityId: string, resistanceId: string, value: string | null, userId: string) {
-    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
-    await this.requireOwnership(ability.sheetId, userId)
-    const result = await this.prisma.summonResistanceValue.upsert({
-      where: { abilityId_resistanceId: { abilityId, resistanceId } },
-      create: { abilityId, resistanceId, manualValue: value },
-      update: { manualValue: value },
-    })
-    await this.invalidateCache(ability.sheetId).catch(() => {})
-    return result
-  }
-
-  async updateSummonResistanceComponentValue(abilityId: string, componentId: string, value: string, userId: string) {
-    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
-    await this.requireOwnership(ability.sheetId, userId)
-    const result = await this.prisma.summonResistanceComponentValue.upsert({
-      where: { abilityId_componentId: { abilityId, componentId } },
-      create: { abilityId, componentId, value },
-      update: { value },
     })
     await this.invalidateCache(ability.sheetId).catch(() => {})
     return result
@@ -1420,5 +1435,86 @@ export class CharacterSheetService {
       if (!functions.has(t) && !seen.has(t)) { seen.add(t); vars.push(t) }
     }
     return vars
+  }
+
+  /**
+   * Reconstruct a template-like object from the adventure's templateSnapshot JSON.
+   * This is used as a fallback when the original template has been deleted
+   * (sheet.template is null) but the snapshot still exists on the adventure.
+   * Preserves the same shape that sheetInclude.template would return so the
+   * frontend receives a consistent data structure.
+   */
+  public reconstructTemplateFromSnapshot(snapshot: any): any {
+    if (!snapshot) return null
+
+    // Build a map of attribute ID -> { id, key, name } for resolving references
+    const attrMap = new Map<string, { id: string; key: string; name: string }>()
+    if (snapshot.attributes) {
+      for (const a of snapshot.attributes) {
+        attrMap.set(a.id, { id: a.id, key: a.key, name: a.name })
+      }
+    }
+
+    return {
+      id: snapshot.id,
+      name: snapshot.name,
+      attributeModifierFormula: snapshot.attributeModifierFormula ?? null,
+      attributeModifiersEnabled: snapshot.attributeModifiersEnabled ?? true,
+      skillFormula: snapshot.skillFormula ?? null,
+      attributes: (snapshot.attributes ?? []).map((a: any) => ({
+        ...a,
+        id: a.id, key: a.key, name: a.name, order: a.order,
+      })),
+      templateFields: (snapshot.templateFields ?? []).map((f: any) => ({
+        ...f,
+        id: f.id, key: f.key, label: f.label, order: f.order,
+      })),
+      templateSkills: (snapshot.templateSkills ?? []).map((s: any) => ({
+        ...s,
+        attribute: s.attributeId ? (attrMap.get(s.attributeId) ?? null) : null,
+        defaultAttribute: s.defaultAttributeId ? (attrMap.get(s.defaultAttributeId) ?? null) : null,
+      })),
+      skillModifierProfiles: (snapshot.skillModifierProfiles ?? []).map((p: any) => ({
+        ...p,
+        options: (p.options ?? []).map((o: any) => ({
+          ...o,
+          id: o.id, label: o.label, value: o.value, order: o.order,
+        })),
+      })),
+      coreResources: (snapshot.coreResources ?? []).map((cr: any) => ({
+        ...cr,
+        id: cr.id, slug: cr.slug, displayName: cr.displayName, enabled: cr.enabled,
+        editableByPlayer: cr.editableByPlayer, showNotes: cr.showNotes,
+      })),
+      armorClasses: (snapshot.armorClasses ?? []).map((ac: any) => ({
+        ...ac,
+        id: ac.id, name: ac.name, enabled: ac.enabled,
+        attributeModifiers: (ac.attributeModifiers ?? []).map((am: any) => ({
+          ...am,
+          attribute: am.attributeId ? (attrMap.get(am.attributeId) ?? null) : null,
+          defaultAttribute: am.defaultAttributeId ? (attrMap.get(am.defaultAttributeId) ?? null) : null,
+        })),
+        fields: (ac.fields ?? []).map((f: any) => ({
+          ...f,
+          id: f.id, name: f.name, key: f.key, defaultValue: f.defaultValue,
+          editableByPlayer: f.editableByPlayer, description: f.description, order: f.order,
+        })),
+      })),
+      characterSections: (snapshot.characterSections ?? []).map((cs: any) => ({
+        ...cs,
+        id: cs.id, name: cs.name, order: cs.order,
+      })),
+      resistances: (snapshot.resistances ?? []).map((r: any) => ({
+        ...r,
+        components: (r.components ?? []).map((c: any) => ({
+          ...c,
+          id: c.id, name: c.name, editableByPlayer: c.editableByPlayer, defaultValue: c.defaultValue, order: c.order,
+        })),
+        attributeModifiers: (r.attributeModifiers ?? []).map((am: any) => ({
+          ...am,
+          attribute: am.attributeId ? (attrMap.get(am.attributeId) ?? null) : null,
+        })),
+      })),
+    }
   }
 }

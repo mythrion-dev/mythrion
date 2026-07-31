@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+
+// scrollIntoView is not available in jsdom
+Element.prototype.scrollIntoView = vi.fn()
 import { NpcEditDrawer } from '@/components/adventure/NpcEditDrawer'
 import { CampaignCreatureSidebar } from '@/components/adventure/CampaignCreatureSidebar'
 
@@ -484,9 +487,8 @@ describe('NpcEditDrawer', () => {
       await waitFor(() => {
         expect(screen.getByText('Proficiency:')).toBeInTheDocument()
       })
-      // There can be multiple elements matching "None" (placeholder + option)
-      const noneEls = screen.getAllByText(/None/)
-      expect(noneEls.length).toBeGreaterThanOrEqual(1)
+      // Custom Select component is rendered as a button with role="combobox"
+      expect(screen.getAllByRole('combobox').length).toBeGreaterThanOrEqual(1)
     })
 
     it('back button calls onClose', async () => {
@@ -637,21 +639,17 @@ describe('NpcEditDrawer', () => {
     it('updates skill profile selections', async () => {
       render(<NpcEditDrawer {...defaultProps} />)
 
+      // Wait for the sheet to load and the skills section to render
       await waitFor(() => {
-        expect(screen.getAllByText(/None/).length).toBeGreaterThanOrEqual(1)
+        expect(screen.getByText('Proficiency:')).toBeInTheDocument()
       })
-
-      const profileSelect = screen.getAllByRole('combobox').find(
-        el => {
-          const parent = el.closest('div')
-          return parent?.querySelector('label')?.textContent?.includes('Proficiency:')
-        }
-      )
-
-      if (profileSelect) {
-        fireEvent.change(profileSelect, { target: { value: 'opt-expert' } })
-        expect((profileSelect as HTMLSelectElement).value).toBe('opt-expert')
-      }
+      // Find the Proficiency profile Select by its label
+      const profRow = screen.getByText('Proficiency:').closest('.flex')!
+      const trigger = within(profRow).getByRole('combobox')
+      fireEvent.click(trigger)
+      fireEvent.click(screen.getByRole('option', { name: /Expert/ }))
+      // Verify the trigger now shows the selected option label
+      expect(within(profRow).getByText('Expert')).toBeInTheDocument()
     })
 
     it('updates AC modifier selection', async () => {

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, forwardRef } from '@nestjs/common'
 import { JwtModule } from '@nestjs/jwt'
 import { PassportModule } from '@nestjs/passport'
 import { AuthService } from './auth.service.js'
@@ -7,8 +7,13 @@ import { JwtAuthGuard } from './jwt-auth.guard.js'
 import { PrismaService } from '../prisma.service.js'
 import { GoogleService } from './google.service.js'
 import { GoogleStrategy } from './google.strategy.js'
+import { GoogleAuthGuard } from './google-auth.guard.js'
 import { TokenService } from './token.service.js'
 import { RateLimitGuard } from './rate-limit.guard.js'
+import { AdminService } from './admin.service.js'
+import { SubscriptionGuard } from './subscription.guard.js'
+import { AdminGuard } from './admin.guard.js'
+import { SubscriptionModule } from '../subscription/subscription.module.js'
 
 @Module({
   imports: [
@@ -17,6 +22,7 @@ import { RateLimitGuard } from './rate-limit.guard.js'
       signOptions: { expiresIn: '15m' },
     }),
     PassportModule,
+    forwardRef(() => SubscriptionModule),
   ],
   controllers: [AuthController],
   providers: [
@@ -25,9 +31,23 @@ import { RateLimitGuard } from './rate-limit.guard.js'
     PrismaService,
     GoogleService,
     GoogleStrategy,
+    GoogleAuthGuard,
     TokenService,
     RateLimitGuard,
+    AdminService,
+    SubscriptionGuard,
+    AdminGuard,
   ],
-  exports: [JwtAuthGuard, JwtModule, AuthService, GoogleService, TokenService, RateLimitGuard],
+  exports: [
+    JwtAuthGuard,
+    JwtModule,
+    AuthService,
+    GoogleService,
+    TokenService,
+    RateLimitGuard,
+    AdminService,
+    SubscriptionGuard,
+    AdminGuard,
+  ],
 })
 export class AuthModule {}

@@ -212,18 +212,24 @@ describe('MembershipService', () => {
   })
 
   describe('updateRole', () => {
-    it('calls prisma.campaignMember.update with new role', async () => {
-      const expected = { id: 'm1', adventureId: 'a1', userId: 'u2', role: 'GM' }
+    it('throws ForbiddenException when trying to promote to GM', async () => {
+      await expect(service.updateRole('a1', 'u2', 'GM')).rejects.toThrow(
+        'Cannot promote a member to Game Master',
+      )
+    })
+
+    it('calls prisma.campaignMember.update with non-GM role', async () => {
+      const expected = { id: 'm1', adventureId: 'a1', userId: 'u2', role: 'PLAYER' }
       prisma.campaignMember.update.mockResolvedValue(expected)
 
-      const result = await service.updateRole('a1', 'u2', 'GM')
+      const result = await service.updateRole('a1', 'u2', 'PLAYER')
 
       expect(result).toEqual(expected)
       expect(prisma.campaignMember.update).toHaveBeenCalledWith({
         where: {
           adventureId_userId: { adventureId: 'a1', userId: 'u2' },
         },
-        data: { role: 'GM' },
+        data: { role: 'PLAYER' },
       })
     })
   })

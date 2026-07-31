@@ -20,15 +20,25 @@ export type SummonSkillModel = runtime.Types.Result.DefaultSelection<Prisma.$Sum
 
 export type AggregateSummonSkill = {
   _count: SummonSkillCountAggregateOutputType | null
+  _avg: SummonSkillAvgAggregateOutputType | null
+  _sum: SummonSkillSumAggregateOutputType | null
   _min: SummonSkillMinAggregateOutputType | null
   _max: SummonSkillMaxAggregateOutputType | null
+}
+
+export type SummonSkillAvgAggregateOutputType = {
+  manualValue: number | null
+}
+
+export type SummonSkillSumAggregateOutputType = {
+  manualValue: number | null
 }
 
 export type SummonSkillMinAggregateOutputType = {
   id: string | null
   abilityId: string | null
-  skillId: string | null
-  selectedAttributeId: string | null
+  name: string | null
+  manualValue: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -36,8 +46,8 @@ export type SummonSkillMinAggregateOutputType = {
 export type SummonSkillMaxAggregateOutputType = {
   id: string | null
   abilityId: string | null
-  skillId: string | null
-  selectedAttributeId: string | null
+  name: string | null
+  manualValue: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -45,19 +55,27 @@ export type SummonSkillMaxAggregateOutputType = {
 export type SummonSkillCountAggregateOutputType = {
   id: number
   abilityId: number
-  skillId: number
-  selectedAttributeId: number
+  name: number
+  manualValue: number
   createdAt: number
   updatedAt: number
   _all: number
 }
 
 
+export type SummonSkillAvgAggregateInputType = {
+  manualValue?: true
+}
+
+export type SummonSkillSumAggregateInputType = {
+  manualValue?: true
+}
+
 export type SummonSkillMinAggregateInputType = {
   id?: true
   abilityId?: true
-  skillId?: true
-  selectedAttributeId?: true
+  name?: true
+  manualValue?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -65,8 +83,8 @@ export type SummonSkillMinAggregateInputType = {
 export type SummonSkillMaxAggregateInputType = {
   id?: true
   abilityId?: true
-  skillId?: true
-  selectedAttributeId?: true
+  name?: true
+  manualValue?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -74,8 +92,8 @@ export type SummonSkillMaxAggregateInputType = {
 export type SummonSkillCountAggregateInputType = {
   id?: true
   abilityId?: true
-  skillId?: true
-  selectedAttributeId?: true
+  name?: true
+  manualValue?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -119,6 +137,18 @@ export type SummonSkillAggregateArgs<ExtArgs extends runtime.Types.Extensions.In
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: SummonSkillAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: SummonSkillSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: SummonSkillMinAggregateInputType
@@ -149,6 +179,8 @@ export type SummonSkillGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   _count?: SummonSkillCountAggregateInputType | true
+  _avg?: SummonSkillAvgAggregateInputType
+  _sum?: SummonSkillSumAggregateInputType
   _min?: SummonSkillMinAggregateInputType
   _max?: SummonSkillMaxAggregateInputType
 }
@@ -156,11 +188,13 @@ export type SummonSkillGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inte
 export type SummonSkillGroupByOutputType = {
   id: string
   abilityId: string
-  skillId: string
-  selectedAttributeId: string | null
+  name: string
+  manualValue: number
   createdAt: Date
   updatedAt: Date
   _count: SummonSkillCountAggregateOutputType | null
+  _avg: SummonSkillAvgAggregateOutputType | null
+  _sum: SummonSkillSumAggregateOutputType | null
   _min: SummonSkillMinAggregateOutputType | null
   _max: SummonSkillMaxAggregateOutputType | null
 }
@@ -186,56 +220,48 @@ export type SummonSkillWhereInput = {
   NOT?: Prisma.SummonSkillWhereInput | Prisma.SummonSkillWhereInput[]
   id?: Prisma.StringFilter<"SummonSkill"> | string
   abilityId?: Prisma.StringFilter<"SummonSkill"> | string
-  skillId?: Prisma.StringFilter<"SummonSkill"> | string
-  selectedAttributeId?: Prisma.StringNullableFilter<"SummonSkill"> | string | null
+  name?: Prisma.StringFilter<"SummonSkill"> | string
+  manualValue?: Prisma.IntFilter<"SummonSkill"> | number
   createdAt?: Prisma.DateTimeFilter<"SummonSkill"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SummonSkill"> | Date | string
   ability?: Prisma.XOR<Prisma.CharacterAbilityScalarRelationFilter, Prisma.CharacterAbilityWhereInput>
-  skill?: Prisma.XOR<Prisma.TemplateSkillScalarRelationFilter, Prisma.TemplateSkillWhereInput>
-  selectedAttribute?: Prisma.XOR<Prisma.TemplateAttributeNullableScalarRelationFilter, Prisma.TemplateAttributeWhereInput> | null
-  profileValues?: Prisma.SummonSkillProfileValueListRelationFilter
 }
 
 export type SummonSkillOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   abilityId?: Prisma.SortOrder
-  skillId?: Prisma.SortOrder
-  selectedAttributeId?: Prisma.SortOrderInput | Prisma.SortOrder
+  name?: Prisma.SortOrder
+  manualValue?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   ability?: Prisma.CharacterAbilityOrderByWithRelationInput
-  skill?: Prisma.TemplateSkillOrderByWithRelationInput
-  selectedAttribute?: Prisma.TemplateAttributeOrderByWithRelationInput
-  profileValues?: Prisma.SummonSkillProfileValueOrderByRelationAggregateInput
 }
 
 export type SummonSkillWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  abilityId_skillId?: Prisma.SummonSkillAbilityIdSkillIdCompoundUniqueInput
   AND?: Prisma.SummonSkillWhereInput | Prisma.SummonSkillWhereInput[]
   OR?: Prisma.SummonSkillWhereInput[]
   NOT?: Prisma.SummonSkillWhereInput | Prisma.SummonSkillWhereInput[]
   abilityId?: Prisma.StringFilter<"SummonSkill"> | string
-  skillId?: Prisma.StringFilter<"SummonSkill"> | string
-  selectedAttributeId?: Prisma.StringNullableFilter<"SummonSkill"> | string | null
+  name?: Prisma.StringFilter<"SummonSkill"> | string
+  manualValue?: Prisma.IntFilter<"SummonSkill"> | number
   createdAt?: Prisma.DateTimeFilter<"SummonSkill"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SummonSkill"> | Date | string
   ability?: Prisma.XOR<Prisma.CharacterAbilityScalarRelationFilter, Prisma.CharacterAbilityWhereInput>
-  skill?: Prisma.XOR<Prisma.TemplateSkillScalarRelationFilter, Prisma.TemplateSkillWhereInput>
-  selectedAttribute?: Prisma.XOR<Prisma.TemplateAttributeNullableScalarRelationFilter, Prisma.TemplateAttributeWhereInput> | null
-  profileValues?: Prisma.SummonSkillProfileValueListRelationFilter
-}, "id" | "abilityId_skillId">
+}, "id">
 
 export type SummonSkillOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   abilityId?: Prisma.SortOrder
-  skillId?: Prisma.SortOrder
-  selectedAttributeId?: Prisma.SortOrderInput | Prisma.SortOrder
+  name?: Prisma.SortOrder
+  manualValue?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.SummonSkillCountOrderByAggregateInput
+  _avg?: Prisma.SummonSkillAvgOrderByAggregateInput
   _max?: Prisma.SummonSkillMaxOrderByAggregateInput
   _min?: Prisma.SummonSkillMinOrderByAggregateInput
+  _sum?: Prisma.SummonSkillSumOrderByAggregateInput
 }
 
 export type SummonSkillScalarWhereWithAggregatesInput = {
@@ -244,63 +270,61 @@ export type SummonSkillScalarWhereWithAggregatesInput = {
   NOT?: Prisma.SummonSkillScalarWhereWithAggregatesInput | Prisma.SummonSkillScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"SummonSkill"> | string
   abilityId?: Prisma.StringWithAggregatesFilter<"SummonSkill"> | string
-  skillId?: Prisma.StringWithAggregatesFilter<"SummonSkill"> | string
-  selectedAttributeId?: Prisma.StringNullableWithAggregatesFilter<"SummonSkill"> | string | null
+  name?: Prisma.StringWithAggregatesFilter<"SummonSkill"> | string
+  manualValue?: Prisma.IntWithAggregatesFilter<"SummonSkill"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SummonSkill"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"SummonSkill"> | Date | string
 }
 
 export type SummonSkillCreateInput = {
   id?: string
+  name: string
+  manualValue?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   ability: Prisma.CharacterAbilityCreateNestedOneWithoutSummonSkillsInput
-  skill: Prisma.TemplateSkillCreateNestedOneWithoutSummonSkillsInput
-  selectedAttribute?: Prisma.TemplateAttributeCreateNestedOneWithoutSummonSkillSelectionsInput
-  profileValues?: Prisma.SummonSkillProfileValueCreateNestedManyWithoutSummonSkillInput
 }
 
 export type SummonSkillUncheckedCreateInput = {
   id?: string
   abilityId: string
-  skillId: string
-  selectedAttributeId?: string | null
+  name: string
+  manualValue?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  profileValues?: Prisma.SummonSkillProfileValueUncheckedCreateNestedManyWithoutSummonSkillInput
 }
 
 export type SummonSkillUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  manualValue?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ability?: Prisma.CharacterAbilityUpdateOneRequiredWithoutSummonSkillsNestedInput
-  skill?: Prisma.TemplateSkillUpdateOneRequiredWithoutSummonSkillsNestedInput
-  selectedAttribute?: Prisma.TemplateAttributeUpdateOneWithoutSummonSkillSelectionsNestedInput
-  profileValues?: Prisma.SummonSkillProfileValueUpdateManyWithoutSummonSkillNestedInput
 }
 
 export type SummonSkillUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   abilityId?: Prisma.StringFieldUpdateOperationsInput | string
-  skillId?: Prisma.StringFieldUpdateOperationsInput | string
-  selectedAttributeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  manualValue?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  profileValues?: Prisma.SummonSkillProfileValueUncheckedUpdateManyWithoutSummonSkillNestedInput
 }
 
 export type SummonSkillCreateManyInput = {
   id?: string
   abilityId: string
-  skillId: string
-  selectedAttributeId?: string | null
+  name: string
+  manualValue?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
 export type SummonSkillUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  manualValue?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -308,8 +332,8 @@ export type SummonSkillUpdateManyMutationInput = {
 export type SummonSkillUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   abilityId?: Prisma.StringFieldUpdateOperationsInput | string
-  skillId?: Prisma.StringFieldUpdateOperationsInput | string
-  selectedAttributeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  manualValue?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -324,25 +348,24 @@ export type SummonSkillOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
-export type SummonSkillAbilityIdSkillIdCompoundUniqueInput = {
-  abilityId: string
-  skillId: string
-}
-
 export type SummonSkillCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   abilityId?: Prisma.SortOrder
-  skillId?: Prisma.SortOrder
-  selectedAttributeId?: Prisma.SortOrder
+  name?: Prisma.SortOrder
+  manualValue?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type SummonSkillAvgOrderByAggregateInput = {
+  manualValue?: Prisma.SortOrder
 }
 
 export type SummonSkillMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   abilityId?: Prisma.SortOrder
-  skillId?: Prisma.SortOrder
-  selectedAttributeId?: Prisma.SortOrder
+  name?: Prisma.SortOrder
+  manualValue?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -350,99 +373,14 @@ export type SummonSkillMaxOrderByAggregateInput = {
 export type SummonSkillMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   abilityId?: Prisma.SortOrder
-  skillId?: Prisma.SortOrder
-  selectedAttributeId?: Prisma.SortOrder
+  name?: Prisma.SortOrder
+  manualValue?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
-export type SummonSkillScalarRelationFilter = {
-  is?: Prisma.SummonSkillWhereInput
-  isNot?: Prisma.SummonSkillWhereInput
-}
-
-export type SummonSkillCreateNestedManyWithoutSelectedAttributeInput = {
-  create?: Prisma.XOR<Prisma.SummonSkillCreateWithoutSelectedAttributeInput, Prisma.SummonSkillUncheckedCreateWithoutSelectedAttributeInput> | Prisma.SummonSkillCreateWithoutSelectedAttributeInput[] | Prisma.SummonSkillUncheckedCreateWithoutSelectedAttributeInput[]
-  connectOrCreate?: Prisma.SummonSkillCreateOrConnectWithoutSelectedAttributeInput | Prisma.SummonSkillCreateOrConnectWithoutSelectedAttributeInput[]
-  createMany?: Prisma.SummonSkillCreateManySelectedAttributeInputEnvelope
-  connect?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-}
-
-export type SummonSkillUncheckedCreateNestedManyWithoutSelectedAttributeInput = {
-  create?: Prisma.XOR<Prisma.SummonSkillCreateWithoutSelectedAttributeInput, Prisma.SummonSkillUncheckedCreateWithoutSelectedAttributeInput> | Prisma.SummonSkillCreateWithoutSelectedAttributeInput[] | Prisma.SummonSkillUncheckedCreateWithoutSelectedAttributeInput[]
-  connectOrCreate?: Prisma.SummonSkillCreateOrConnectWithoutSelectedAttributeInput | Prisma.SummonSkillCreateOrConnectWithoutSelectedAttributeInput[]
-  createMany?: Prisma.SummonSkillCreateManySelectedAttributeInputEnvelope
-  connect?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-}
-
-export type SummonSkillUpdateManyWithoutSelectedAttributeNestedInput = {
-  create?: Prisma.XOR<Prisma.SummonSkillCreateWithoutSelectedAttributeInput, Prisma.SummonSkillUncheckedCreateWithoutSelectedAttributeInput> | Prisma.SummonSkillCreateWithoutSelectedAttributeInput[] | Prisma.SummonSkillUncheckedCreateWithoutSelectedAttributeInput[]
-  connectOrCreate?: Prisma.SummonSkillCreateOrConnectWithoutSelectedAttributeInput | Prisma.SummonSkillCreateOrConnectWithoutSelectedAttributeInput[]
-  upsert?: Prisma.SummonSkillUpsertWithWhereUniqueWithoutSelectedAttributeInput | Prisma.SummonSkillUpsertWithWhereUniqueWithoutSelectedAttributeInput[]
-  createMany?: Prisma.SummonSkillCreateManySelectedAttributeInputEnvelope
-  set?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-  disconnect?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-  delete?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-  connect?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-  update?: Prisma.SummonSkillUpdateWithWhereUniqueWithoutSelectedAttributeInput | Prisma.SummonSkillUpdateWithWhereUniqueWithoutSelectedAttributeInput[]
-  updateMany?: Prisma.SummonSkillUpdateManyWithWhereWithoutSelectedAttributeInput | Prisma.SummonSkillUpdateManyWithWhereWithoutSelectedAttributeInput[]
-  deleteMany?: Prisma.SummonSkillScalarWhereInput | Prisma.SummonSkillScalarWhereInput[]
-}
-
-export type SummonSkillUncheckedUpdateManyWithoutSelectedAttributeNestedInput = {
-  create?: Prisma.XOR<Prisma.SummonSkillCreateWithoutSelectedAttributeInput, Prisma.SummonSkillUncheckedCreateWithoutSelectedAttributeInput> | Prisma.SummonSkillCreateWithoutSelectedAttributeInput[] | Prisma.SummonSkillUncheckedCreateWithoutSelectedAttributeInput[]
-  connectOrCreate?: Prisma.SummonSkillCreateOrConnectWithoutSelectedAttributeInput | Prisma.SummonSkillCreateOrConnectWithoutSelectedAttributeInput[]
-  upsert?: Prisma.SummonSkillUpsertWithWhereUniqueWithoutSelectedAttributeInput | Prisma.SummonSkillUpsertWithWhereUniqueWithoutSelectedAttributeInput[]
-  createMany?: Prisma.SummonSkillCreateManySelectedAttributeInputEnvelope
-  set?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-  disconnect?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-  delete?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-  connect?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-  update?: Prisma.SummonSkillUpdateWithWhereUniqueWithoutSelectedAttributeInput | Prisma.SummonSkillUpdateWithWhereUniqueWithoutSelectedAttributeInput[]
-  updateMany?: Prisma.SummonSkillUpdateManyWithWhereWithoutSelectedAttributeInput | Prisma.SummonSkillUpdateManyWithWhereWithoutSelectedAttributeInput[]
-  deleteMany?: Prisma.SummonSkillScalarWhereInput | Prisma.SummonSkillScalarWhereInput[]
-}
-
-export type SummonSkillCreateNestedManyWithoutSkillInput = {
-  create?: Prisma.XOR<Prisma.SummonSkillCreateWithoutSkillInput, Prisma.SummonSkillUncheckedCreateWithoutSkillInput> | Prisma.SummonSkillCreateWithoutSkillInput[] | Prisma.SummonSkillUncheckedCreateWithoutSkillInput[]
-  connectOrCreate?: Prisma.SummonSkillCreateOrConnectWithoutSkillInput | Prisma.SummonSkillCreateOrConnectWithoutSkillInput[]
-  createMany?: Prisma.SummonSkillCreateManySkillInputEnvelope
-  connect?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-}
-
-export type SummonSkillUncheckedCreateNestedManyWithoutSkillInput = {
-  create?: Prisma.XOR<Prisma.SummonSkillCreateWithoutSkillInput, Prisma.SummonSkillUncheckedCreateWithoutSkillInput> | Prisma.SummonSkillCreateWithoutSkillInput[] | Prisma.SummonSkillUncheckedCreateWithoutSkillInput[]
-  connectOrCreate?: Prisma.SummonSkillCreateOrConnectWithoutSkillInput | Prisma.SummonSkillCreateOrConnectWithoutSkillInput[]
-  createMany?: Prisma.SummonSkillCreateManySkillInputEnvelope
-  connect?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-}
-
-export type SummonSkillUpdateManyWithoutSkillNestedInput = {
-  create?: Prisma.XOR<Prisma.SummonSkillCreateWithoutSkillInput, Prisma.SummonSkillUncheckedCreateWithoutSkillInput> | Prisma.SummonSkillCreateWithoutSkillInput[] | Prisma.SummonSkillUncheckedCreateWithoutSkillInput[]
-  connectOrCreate?: Prisma.SummonSkillCreateOrConnectWithoutSkillInput | Prisma.SummonSkillCreateOrConnectWithoutSkillInput[]
-  upsert?: Prisma.SummonSkillUpsertWithWhereUniqueWithoutSkillInput | Prisma.SummonSkillUpsertWithWhereUniqueWithoutSkillInput[]
-  createMany?: Prisma.SummonSkillCreateManySkillInputEnvelope
-  set?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-  disconnect?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-  delete?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-  connect?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-  update?: Prisma.SummonSkillUpdateWithWhereUniqueWithoutSkillInput | Prisma.SummonSkillUpdateWithWhereUniqueWithoutSkillInput[]
-  updateMany?: Prisma.SummonSkillUpdateManyWithWhereWithoutSkillInput | Prisma.SummonSkillUpdateManyWithWhereWithoutSkillInput[]
-  deleteMany?: Prisma.SummonSkillScalarWhereInput | Prisma.SummonSkillScalarWhereInput[]
-}
-
-export type SummonSkillUncheckedUpdateManyWithoutSkillNestedInput = {
-  create?: Prisma.XOR<Prisma.SummonSkillCreateWithoutSkillInput, Prisma.SummonSkillUncheckedCreateWithoutSkillInput> | Prisma.SummonSkillCreateWithoutSkillInput[] | Prisma.SummonSkillUncheckedCreateWithoutSkillInput[]
-  connectOrCreate?: Prisma.SummonSkillCreateOrConnectWithoutSkillInput | Prisma.SummonSkillCreateOrConnectWithoutSkillInput[]
-  upsert?: Prisma.SummonSkillUpsertWithWhereUniqueWithoutSkillInput | Prisma.SummonSkillUpsertWithWhereUniqueWithoutSkillInput[]
-  createMany?: Prisma.SummonSkillCreateManySkillInputEnvelope
-  set?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-  disconnect?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-  delete?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-  connect?: Prisma.SummonSkillWhereUniqueInput | Prisma.SummonSkillWhereUniqueInput[]
-  update?: Prisma.SummonSkillUpdateWithWhereUniqueWithoutSkillInput | Prisma.SummonSkillUpdateWithWhereUniqueWithoutSkillInput[]
-  updateMany?: Prisma.SummonSkillUpdateManyWithWhereWithoutSkillInput | Prisma.SummonSkillUpdateManyWithWhereWithoutSkillInput[]
-  deleteMany?: Prisma.SummonSkillScalarWhereInput | Prisma.SummonSkillScalarWhereInput[]
+export type SummonSkillSumOrderByAggregateInput = {
+  manualValue?: Prisma.SortOrder
 }
 
 export type SummonSkillCreateNestedManyWithoutAbilityInput = {
@@ -487,136 +425,20 @@ export type SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput = {
   deleteMany?: Prisma.SummonSkillScalarWhereInput | Prisma.SummonSkillScalarWhereInput[]
 }
 
-export type SummonSkillCreateNestedOneWithoutProfileValuesInput = {
-  create?: Prisma.XOR<Prisma.SummonSkillCreateWithoutProfileValuesInput, Prisma.SummonSkillUncheckedCreateWithoutProfileValuesInput>
-  connectOrCreate?: Prisma.SummonSkillCreateOrConnectWithoutProfileValuesInput
-  connect?: Prisma.SummonSkillWhereUniqueInput
-}
-
-export type SummonSkillUpdateOneRequiredWithoutProfileValuesNestedInput = {
-  create?: Prisma.XOR<Prisma.SummonSkillCreateWithoutProfileValuesInput, Prisma.SummonSkillUncheckedCreateWithoutProfileValuesInput>
-  connectOrCreate?: Prisma.SummonSkillCreateOrConnectWithoutProfileValuesInput
-  upsert?: Prisma.SummonSkillUpsertWithoutProfileValuesInput
-  connect?: Prisma.SummonSkillWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.SummonSkillUpdateToOneWithWhereWithoutProfileValuesInput, Prisma.SummonSkillUpdateWithoutProfileValuesInput>, Prisma.SummonSkillUncheckedUpdateWithoutProfileValuesInput>
-}
-
-export type SummonSkillCreateWithoutSelectedAttributeInput = {
-  id?: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  ability: Prisma.CharacterAbilityCreateNestedOneWithoutSummonSkillsInput
-  skill: Prisma.TemplateSkillCreateNestedOneWithoutSummonSkillsInput
-  profileValues?: Prisma.SummonSkillProfileValueCreateNestedManyWithoutSummonSkillInput
-}
-
-export type SummonSkillUncheckedCreateWithoutSelectedAttributeInput = {
-  id?: string
-  abilityId: string
-  skillId: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  profileValues?: Prisma.SummonSkillProfileValueUncheckedCreateNestedManyWithoutSummonSkillInput
-}
-
-export type SummonSkillCreateOrConnectWithoutSelectedAttributeInput = {
-  where: Prisma.SummonSkillWhereUniqueInput
-  create: Prisma.XOR<Prisma.SummonSkillCreateWithoutSelectedAttributeInput, Prisma.SummonSkillUncheckedCreateWithoutSelectedAttributeInput>
-}
-
-export type SummonSkillCreateManySelectedAttributeInputEnvelope = {
-  data: Prisma.SummonSkillCreateManySelectedAttributeInput | Prisma.SummonSkillCreateManySelectedAttributeInput[]
-  skipDuplicates?: boolean
-}
-
-export type SummonSkillUpsertWithWhereUniqueWithoutSelectedAttributeInput = {
-  where: Prisma.SummonSkillWhereUniqueInput
-  update: Prisma.XOR<Prisma.SummonSkillUpdateWithoutSelectedAttributeInput, Prisma.SummonSkillUncheckedUpdateWithoutSelectedAttributeInput>
-  create: Prisma.XOR<Prisma.SummonSkillCreateWithoutSelectedAttributeInput, Prisma.SummonSkillUncheckedCreateWithoutSelectedAttributeInput>
-}
-
-export type SummonSkillUpdateWithWhereUniqueWithoutSelectedAttributeInput = {
-  where: Prisma.SummonSkillWhereUniqueInput
-  data: Prisma.XOR<Prisma.SummonSkillUpdateWithoutSelectedAttributeInput, Prisma.SummonSkillUncheckedUpdateWithoutSelectedAttributeInput>
-}
-
-export type SummonSkillUpdateManyWithWhereWithoutSelectedAttributeInput = {
-  where: Prisma.SummonSkillScalarWhereInput
-  data: Prisma.XOR<Prisma.SummonSkillUpdateManyMutationInput, Prisma.SummonSkillUncheckedUpdateManyWithoutSelectedAttributeInput>
-}
-
-export type SummonSkillScalarWhereInput = {
-  AND?: Prisma.SummonSkillScalarWhereInput | Prisma.SummonSkillScalarWhereInput[]
-  OR?: Prisma.SummonSkillScalarWhereInput[]
-  NOT?: Prisma.SummonSkillScalarWhereInput | Prisma.SummonSkillScalarWhereInput[]
-  id?: Prisma.StringFilter<"SummonSkill"> | string
-  abilityId?: Prisma.StringFilter<"SummonSkill"> | string
-  skillId?: Prisma.StringFilter<"SummonSkill"> | string
-  selectedAttributeId?: Prisma.StringNullableFilter<"SummonSkill"> | string | null
-  createdAt?: Prisma.DateTimeFilter<"SummonSkill"> | Date | string
-  updatedAt?: Prisma.DateTimeFilter<"SummonSkill"> | Date | string
-}
-
-export type SummonSkillCreateWithoutSkillInput = {
-  id?: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  ability: Prisma.CharacterAbilityCreateNestedOneWithoutSummonSkillsInput
-  selectedAttribute?: Prisma.TemplateAttributeCreateNestedOneWithoutSummonSkillSelectionsInput
-  profileValues?: Prisma.SummonSkillProfileValueCreateNestedManyWithoutSummonSkillInput
-}
-
-export type SummonSkillUncheckedCreateWithoutSkillInput = {
-  id?: string
-  abilityId: string
-  selectedAttributeId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  profileValues?: Prisma.SummonSkillProfileValueUncheckedCreateNestedManyWithoutSummonSkillInput
-}
-
-export type SummonSkillCreateOrConnectWithoutSkillInput = {
-  where: Prisma.SummonSkillWhereUniqueInput
-  create: Prisma.XOR<Prisma.SummonSkillCreateWithoutSkillInput, Prisma.SummonSkillUncheckedCreateWithoutSkillInput>
-}
-
-export type SummonSkillCreateManySkillInputEnvelope = {
-  data: Prisma.SummonSkillCreateManySkillInput | Prisma.SummonSkillCreateManySkillInput[]
-  skipDuplicates?: boolean
-}
-
-export type SummonSkillUpsertWithWhereUniqueWithoutSkillInput = {
-  where: Prisma.SummonSkillWhereUniqueInput
-  update: Prisma.XOR<Prisma.SummonSkillUpdateWithoutSkillInput, Prisma.SummonSkillUncheckedUpdateWithoutSkillInput>
-  create: Prisma.XOR<Prisma.SummonSkillCreateWithoutSkillInput, Prisma.SummonSkillUncheckedCreateWithoutSkillInput>
-}
-
-export type SummonSkillUpdateWithWhereUniqueWithoutSkillInput = {
-  where: Prisma.SummonSkillWhereUniqueInput
-  data: Prisma.XOR<Prisma.SummonSkillUpdateWithoutSkillInput, Prisma.SummonSkillUncheckedUpdateWithoutSkillInput>
-}
-
-export type SummonSkillUpdateManyWithWhereWithoutSkillInput = {
-  where: Prisma.SummonSkillScalarWhereInput
-  data: Prisma.XOR<Prisma.SummonSkillUpdateManyMutationInput, Prisma.SummonSkillUncheckedUpdateManyWithoutSkillInput>
-}
-
 export type SummonSkillCreateWithoutAbilityInput = {
   id?: string
+  name: string
+  manualValue?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  skill: Prisma.TemplateSkillCreateNestedOneWithoutSummonSkillsInput
-  selectedAttribute?: Prisma.TemplateAttributeCreateNestedOneWithoutSummonSkillSelectionsInput
-  profileValues?: Prisma.SummonSkillProfileValueCreateNestedManyWithoutSummonSkillInput
 }
 
 export type SummonSkillUncheckedCreateWithoutAbilityInput = {
   id?: string
-  skillId: string
-  selectedAttributeId?: string | null
+  name: string
+  manualValue?: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  profileValues?: Prisma.SummonSkillProfileValueUncheckedCreateNestedManyWithoutSummonSkillInput
 }
 
 export type SummonSkillCreateOrConnectWithoutAbilityInput = {
@@ -645,270 +467,112 @@ export type SummonSkillUpdateManyWithWhereWithoutAbilityInput = {
   data: Prisma.XOR<Prisma.SummonSkillUpdateManyMutationInput, Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityInput>
 }
 
-export type SummonSkillCreateWithoutProfileValuesInput = {
-  id?: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  ability: Prisma.CharacterAbilityCreateNestedOneWithoutSummonSkillsInput
-  skill: Prisma.TemplateSkillCreateNestedOneWithoutSummonSkillsInput
-  selectedAttribute?: Prisma.TemplateAttributeCreateNestedOneWithoutSummonSkillSelectionsInput
-}
-
-export type SummonSkillUncheckedCreateWithoutProfileValuesInput = {
-  id?: string
-  abilityId: string
-  skillId: string
-  selectedAttributeId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type SummonSkillCreateOrConnectWithoutProfileValuesInput = {
-  where: Prisma.SummonSkillWhereUniqueInput
-  create: Prisma.XOR<Prisma.SummonSkillCreateWithoutProfileValuesInput, Prisma.SummonSkillUncheckedCreateWithoutProfileValuesInput>
-}
-
-export type SummonSkillUpsertWithoutProfileValuesInput = {
-  update: Prisma.XOR<Prisma.SummonSkillUpdateWithoutProfileValuesInput, Prisma.SummonSkillUncheckedUpdateWithoutProfileValuesInput>
-  create: Prisma.XOR<Prisma.SummonSkillCreateWithoutProfileValuesInput, Prisma.SummonSkillUncheckedCreateWithoutProfileValuesInput>
-  where?: Prisma.SummonSkillWhereInput
-}
-
-export type SummonSkillUpdateToOneWithWhereWithoutProfileValuesInput = {
-  where?: Prisma.SummonSkillWhereInput
-  data: Prisma.XOR<Prisma.SummonSkillUpdateWithoutProfileValuesInput, Prisma.SummonSkillUncheckedUpdateWithoutProfileValuesInput>
-}
-
-export type SummonSkillUpdateWithoutProfileValuesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  ability?: Prisma.CharacterAbilityUpdateOneRequiredWithoutSummonSkillsNestedInput
-  skill?: Prisma.TemplateSkillUpdateOneRequiredWithoutSummonSkillsNestedInput
-  selectedAttribute?: Prisma.TemplateAttributeUpdateOneWithoutSummonSkillSelectionsNestedInput
-}
-
-export type SummonSkillUncheckedUpdateWithoutProfileValuesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  abilityId?: Prisma.StringFieldUpdateOperationsInput | string
-  skillId?: Prisma.StringFieldUpdateOperationsInput | string
-  selectedAttributeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type SummonSkillCreateManySelectedAttributeInput = {
-  id?: string
-  abilityId: string
-  skillId: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type SummonSkillUpdateWithoutSelectedAttributeInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  ability?: Prisma.CharacterAbilityUpdateOneRequiredWithoutSummonSkillsNestedInput
-  skill?: Prisma.TemplateSkillUpdateOneRequiredWithoutSummonSkillsNestedInput
-  profileValues?: Prisma.SummonSkillProfileValueUpdateManyWithoutSummonSkillNestedInput
-}
-
-export type SummonSkillUncheckedUpdateWithoutSelectedAttributeInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  abilityId?: Prisma.StringFieldUpdateOperationsInput | string
-  skillId?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  profileValues?: Prisma.SummonSkillProfileValueUncheckedUpdateManyWithoutSummonSkillNestedInput
-}
-
-export type SummonSkillUncheckedUpdateManyWithoutSelectedAttributeInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  abilityId?: Prisma.StringFieldUpdateOperationsInput | string
-  skillId?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type SummonSkillCreateManySkillInput = {
-  id?: string
-  abilityId: string
-  selectedAttributeId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type SummonSkillUpdateWithoutSkillInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  ability?: Prisma.CharacterAbilityUpdateOneRequiredWithoutSummonSkillsNestedInput
-  selectedAttribute?: Prisma.TemplateAttributeUpdateOneWithoutSummonSkillSelectionsNestedInput
-  profileValues?: Prisma.SummonSkillProfileValueUpdateManyWithoutSummonSkillNestedInput
-}
-
-export type SummonSkillUncheckedUpdateWithoutSkillInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  abilityId?: Prisma.StringFieldUpdateOperationsInput | string
-  selectedAttributeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  profileValues?: Prisma.SummonSkillProfileValueUncheckedUpdateManyWithoutSummonSkillNestedInput
-}
-
-export type SummonSkillUncheckedUpdateManyWithoutSkillInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  abilityId?: Prisma.StringFieldUpdateOperationsInput | string
-  selectedAttributeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+export type SummonSkillScalarWhereInput = {
+  AND?: Prisma.SummonSkillScalarWhereInput | Prisma.SummonSkillScalarWhereInput[]
+  OR?: Prisma.SummonSkillScalarWhereInput[]
+  NOT?: Prisma.SummonSkillScalarWhereInput | Prisma.SummonSkillScalarWhereInput[]
+  id?: Prisma.StringFilter<"SummonSkill"> | string
+  abilityId?: Prisma.StringFilter<"SummonSkill"> | string
+  name?: Prisma.StringFilter<"SummonSkill"> | string
+  manualValue?: Prisma.IntFilter<"SummonSkill"> | number
+  createdAt?: Prisma.DateTimeFilter<"SummonSkill"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"SummonSkill"> | Date | string
 }
 
 export type SummonSkillCreateManyAbilityInput = {
   id?: string
-  skillId: string
-  selectedAttributeId?: string | null
+  name: string
+  manualValue?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
 export type SummonSkillUpdateWithoutAbilityInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  manualValue?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  skill?: Prisma.TemplateSkillUpdateOneRequiredWithoutSummonSkillsNestedInput
-  selectedAttribute?: Prisma.TemplateAttributeUpdateOneWithoutSummonSkillSelectionsNestedInput
-  profileValues?: Prisma.SummonSkillProfileValueUpdateManyWithoutSummonSkillNestedInput
 }
 
 export type SummonSkillUncheckedUpdateWithoutAbilityInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  skillId?: Prisma.StringFieldUpdateOperationsInput | string
-  selectedAttributeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  manualValue?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  profileValues?: Prisma.SummonSkillProfileValueUncheckedUpdateManyWithoutSummonSkillNestedInput
 }
 
 export type SummonSkillUncheckedUpdateManyWithoutAbilityInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  skillId?: Prisma.StringFieldUpdateOperationsInput | string
-  selectedAttributeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  manualValue?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-
-/**
- * Count Type SummonSkillCountOutputType
- */
-
-export type SummonSkillCountOutputType = {
-  profileValues: number
-}
-
-export type SummonSkillCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  profileValues?: boolean | SummonSkillCountOutputTypeCountProfileValuesArgs
-}
-
-/**
- * SummonSkillCountOutputType without action
- */
-export type SummonSkillCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the SummonSkillCountOutputType
-   */
-  select?: Prisma.SummonSkillCountOutputTypeSelect<ExtArgs> | null
-}
-
-/**
- * SummonSkillCountOutputType without action
- */
-export type SummonSkillCountOutputTypeCountProfileValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.SummonSkillProfileValueWhereInput
-}
 
 
 export type SummonSkillSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   abilityId?: boolean
-  skillId?: boolean
-  selectedAttributeId?: boolean
+  name?: boolean
+  manualValue?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   ability?: boolean | Prisma.CharacterAbilityDefaultArgs<ExtArgs>
-  skill?: boolean | Prisma.TemplateSkillDefaultArgs<ExtArgs>
-  selectedAttribute?: boolean | Prisma.SummonSkill$selectedAttributeArgs<ExtArgs>
-  profileValues?: boolean | Prisma.SummonSkill$profileValuesArgs<ExtArgs>
-  _count?: boolean | Prisma.SummonSkillCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["summonSkill"]>
 
 export type SummonSkillSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   abilityId?: boolean
-  skillId?: boolean
-  selectedAttributeId?: boolean
+  name?: boolean
+  manualValue?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   ability?: boolean | Prisma.CharacterAbilityDefaultArgs<ExtArgs>
-  skill?: boolean | Prisma.TemplateSkillDefaultArgs<ExtArgs>
-  selectedAttribute?: boolean | Prisma.SummonSkill$selectedAttributeArgs<ExtArgs>
 }, ExtArgs["result"]["summonSkill"]>
 
 export type SummonSkillSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   abilityId?: boolean
-  skillId?: boolean
-  selectedAttributeId?: boolean
+  name?: boolean
+  manualValue?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   ability?: boolean | Prisma.CharacterAbilityDefaultArgs<ExtArgs>
-  skill?: boolean | Prisma.TemplateSkillDefaultArgs<ExtArgs>
-  selectedAttribute?: boolean | Prisma.SummonSkill$selectedAttributeArgs<ExtArgs>
 }, ExtArgs["result"]["summonSkill"]>
 
 export type SummonSkillSelectScalar = {
   id?: boolean
   abilityId?: boolean
-  skillId?: boolean
-  selectedAttributeId?: boolean
+  name?: boolean
+  manualValue?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type SummonSkillOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "abilityId" | "skillId" | "selectedAttributeId" | "createdAt" | "updatedAt", ExtArgs["result"]["summonSkill"]>
+export type SummonSkillOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "abilityId" | "name" | "manualValue" | "createdAt" | "updatedAt", ExtArgs["result"]["summonSkill"]>
 export type SummonSkillInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   ability?: boolean | Prisma.CharacterAbilityDefaultArgs<ExtArgs>
-  skill?: boolean | Prisma.TemplateSkillDefaultArgs<ExtArgs>
-  selectedAttribute?: boolean | Prisma.SummonSkill$selectedAttributeArgs<ExtArgs>
-  profileValues?: boolean | Prisma.SummonSkill$profileValuesArgs<ExtArgs>
-  _count?: boolean | Prisma.SummonSkillCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type SummonSkillIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   ability?: boolean | Prisma.CharacterAbilityDefaultArgs<ExtArgs>
-  skill?: boolean | Prisma.TemplateSkillDefaultArgs<ExtArgs>
-  selectedAttribute?: boolean | Prisma.SummonSkill$selectedAttributeArgs<ExtArgs>
 }
 export type SummonSkillIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   ability?: boolean | Prisma.CharacterAbilityDefaultArgs<ExtArgs>
-  skill?: boolean | Prisma.TemplateSkillDefaultArgs<ExtArgs>
-  selectedAttribute?: boolean | Prisma.SummonSkill$selectedAttributeArgs<ExtArgs>
 }
 
 export type $SummonSkillPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "SummonSkill"
   objects: {
     ability: Prisma.$CharacterAbilityPayload<ExtArgs>
-    skill: Prisma.$TemplateSkillPayload<ExtArgs>
-    selectedAttribute: Prisma.$TemplateAttributePayload<ExtArgs> | null
-    profileValues: Prisma.$SummonSkillProfileValuePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     abilityId: string
-    skillId: string
-    selectedAttributeId: string | null
+    name: string
+    manualValue: number
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["summonSkill"]>
@@ -1306,9 +970,6 @@ readonly fields: SummonSkillFieldRefs;
 export interface Prisma__SummonSkillClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   ability<T extends Prisma.CharacterAbilityDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterAbilityDefaultArgs<ExtArgs>>): Prisma.Prisma__CharacterAbilityClient<runtime.Types.Result.GetResult<Prisma.$CharacterAbilityPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  skill<T extends Prisma.TemplateSkillDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateSkillDefaultArgs<ExtArgs>>): Prisma.Prisma__TemplateSkillClient<runtime.Types.Result.GetResult<Prisma.$TemplateSkillPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  selectedAttribute<T extends Prisma.SummonSkill$selectedAttributeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SummonSkill$selectedAttributeArgs<ExtArgs>>): Prisma.Prisma__TemplateAttributeClient<runtime.Types.Result.GetResult<Prisma.$TemplateAttributePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  profileValues<T extends Prisma.SummonSkill$profileValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SummonSkill$profileValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummonSkillProfileValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1340,8 +1001,8 @@ export interface Prisma__SummonSkillClient<T, Null = never, ExtArgs extends runt
 export interface SummonSkillFieldRefs {
   readonly id: Prisma.FieldRef<"SummonSkill", 'String'>
   readonly abilityId: Prisma.FieldRef<"SummonSkill", 'String'>
-  readonly skillId: Prisma.FieldRef<"SummonSkill", 'String'>
-  readonly selectedAttributeId: Prisma.FieldRef<"SummonSkill", 'String'>
+  readonly name: Prisma.FieldRef<"SummonSkill", 'String'>
+  readonly manualValue: Prisma.FieldRef<"SummonSkill", 'Int'>
   readonly createdAt: Prisma.FieldRef<"SummonSkill", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"SummonSkill", 'DateTime'>
 }
@@ -1742,49 +1403,6 @@ export type SummonSkillDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.I
    * Limit how many SummonSkills to delete.
    */
   limit?: number
-}
-
-/**
- * SummonSkill.selectedAttribute
- */
-export type SummonSkill$selectedAttributeArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the TemplateAttribute
-   */
-  select?: Prisma.TemplateAttributeSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the TemplateAttribute
-   */
-  omit?: Prisma.TemplateAttributeOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.TemplateAttributeInclude<ExtArgs> | null
-  where?: Prisma.TemplateAttributeWhereInput
-}
-
-/**
- * SummonSkill.profileValues
- */
-export type SummonSkill$profileValuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the SummonSkillProfileValue
-   */
-  select?: Prisma.SummonSkillProfileValueSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the SummonSkillProfileValue
-   */
-  omit?: Prisma.SummonSkillProfileValueOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SummonSkillProfileValueInclude<ExtArgs> | null
-  where?: Prisma.SummonSkillProfileValueWhereInput
-  orderBy?: Prisma.SummonSkillProfileValueOrderByWithRelationInput | Prisma.SummonSkillProfileValueOrderByWithRelationInput[]
-  cursor?: Prisma.SummonSkillProfileValueWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.SummonSkillProfileValueScalarFieldEnum | Prisma.SummonSkillProfileValueScalarFieldEnum[]
 }
 
 /**

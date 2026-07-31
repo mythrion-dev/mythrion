@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
+// scrollIntoView is not available in jsdom
+Element.prototype.scrollIntoView = vi.fn()
+
 // ── Mocks ──
 
 const mockGet = vi.fn()
@@ -317,7 +320,8 @@ describe('ProfessionalSkillsSection', () => {
     const nameInput = screen.getByRole('textbox')
     await userEvent.type(nameInput, 'Mining')
     const attrSelect = screen.getByRole('combobox')
-    await userEvent.selectOptions(attrSelect, 'attr-2')
+    await userEvent.click(attrSelect)
+    await userEvent.click(screen.getByRole('option', { name: 'Dexterity' }))
     await userEvent.click(screen.getByRole('button', { name: 'Add' }))
 
     expect(mockPost).toHaveBeenCalledWith(
@@ -455,9 +459,10 @@ describe('ProfessionalSkillsSection', () => {
     // Change the name input
     const nameInput = screen.getByDisplayValue('Blacksmith')
     fireEvent.change(nameInput, { target: { value: 'Master Blacksmith' } })
-    // Change the select — find the select by role and select a different option
+    // Change the select — open the custom combobox and click the Dexterity option
     const select = screen.getByRole('combobox')
-    await userEvent.selectOptions(select, 'attr-2')
+    await userEvent.click(select)
+    await userEvent.click(screen.getByRole('option', { name: 'Dexterity' }))
 
     await userEvent.click(screen.getByText('Save'))
 
@@ -587,8 +592,8 @@ describe('ProfessionalSkillsSection', () => {
     })
     // Profile name should appear as a label
     expect(screen.getByText('Expertise')).toBeInTheDocument()
-    // Default "—" option should exist in select
-    expect(screen.getByRole('option', { name: '—' })).toBeInTheDocument()
+    // Select component should be rendered (combobox role)
+    expect(screen.getByRole('combobox')).toBeInTheDocument()
   })
 
   it('shows MOD value with positive profile option', async () => {
@@ -681,7 +686,8 @@ describe('ProfessionalSkillsSection', () => {
     const selects = screen.getAllByRole('combobox')
     // Change the last select (the profile one) to "Trained"
     const profileSelect = selects[selects.length - 1]
-    fireEvent.change(profileSelect, { target: { value: 'opt-2' } })
+    fireEvent.click(profileSelect)
+    fireEvent.click(screen.getByRole('option', { name: /Trained/ }))
     await waitFor(() => {
       expect(mockPatch).toHaveBeenCalledWith(
         '/character-sheets/sheet-1/professional-skills/sk-1/profiles/prof-1',

@@ -285,4 +285,8 @@ export class UpdateTemplateDto {
   @ValidateNested({ each: true })
   @Type(() => UpdateResistanceDefDto)
   resistances?: UpdateResistanceDefDto[]
+
+  @IsBoolean()
+  @IsOptional()
+  isPublic?: boolean
 }

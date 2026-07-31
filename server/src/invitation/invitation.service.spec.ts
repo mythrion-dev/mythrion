@@ -53,7 +53,6 @@ describe('InvitationService', () => {
     const params = {
       adventureId: 'a1',
       invitedEmail: 'player@test.com',
-      role: 'PLAYER' as const,
       createdById: 'gm1',
     }
 
@@ -115,16 +114,6 @@ describe('InvitationService', () => {
       expect(mockMembershipService.assertPlayerCapacity).toHaveBeenCalledWith('a1')
     })
 
-    it('skips player capacity check for non-PLAYER roles', async () => {
-      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', name: 'Test' })
-      prisma.campaignInvitation.create.mockResolvedValue({ id: 'inv1', token: 't' })
-      prisma.user.findUnique.mockResolvedValue({ id: 'gm1', displayName: 'GM', email: 'gm@test.com' })
-
-      await service.inviteByEmail({ ...params, role: 'GM' })
-
-      expect(mockMembershipService.assertPlayerCapacity).not.toHaveBeenCalled()
-    })
-
     it('falls back to email when inviter has no displayName', async () => {
       prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', name: 'Test Adventure' })
       prisma.campaignInvitation.create.mockResolvedValue({ id: 'inv1', token: 't' })
@@ -152,10 +141,30 @@ describe('InvitationService', () => {
         expect.objectContaining({ inviterName: 'Someone' }),
       )
     })
+
+    it('rolls back the invitation and throws BadRequestException when email fails', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', name: 'Test Adventure' })
+      prisma.campaignInvitation.create.mockResolvedValue({ id: 'inv1', token: 't' })
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'gm1',
+        displayName: 'Mighty GM',
+        email: 'gm@test.com',
+      })
+      mockEmailService.sendInvitation.mockRejectedValue(new Error('SMTP refused connection'))
+
+      await expect(service.inviteByEmail(params)).rejects.toThrow(BadRequestException)
+      await expect(service.inviteByEmail(params)).rejects.toThrow(
+        'Failed to send invitation email: SMTP refused connection',
+      )
+
+      expect(prisma.campaignInvitation.delete).toHaveBeenCalledWith({
+        where: { id: 'inv1' },
+      })
+    })
   })
 
   describe('inviteByLink', () => {
-    const params = { adventureId: 'a1', role: 'PLAYER' as const, createdById: 'gm1' }
+    const params = { adventureId: 'a1', createdById: 'gm1' }
 
     it('requires GM role', async () => {
       prisma.campaignInvitation.create.mockResolvedValue({ token: 'some-token' })
@@ -180,14 +189,6 @@ describe('InvitationService', () => {
       await service.inviteByLink(params)
 
       expect(mockMembershipService.assertPlayerCapacity).toHaveBeenCalledWith('a1')
-    })
-
-    it('skips player capacity check for non-PLAYER roles', async () => {
-      prisma.campaignInvitation.create.mockResolvedValue({ token: 't' })
-
-      await service.inviteByLink({ ...params, role: 'GM' })
-
-      expect(mockMembershipService.assertPlayerCapacity).not.toHaveBeenCalled()
     })
   })
 
@@ -409,20 +410,6 @@ describe('InvitationService', () => {
       await expect(service.accept('tok1', 'u1')).rejects.toThrow(
         'Adventure is at maximum player capacity',
       )
-    })
-
-    it('skips capacity check when invitation role is not PLAYER', async () => {
-      const gmInvitation = { ...pendingInvitation, role: 'GM' as const }
-      prisma.campaignInvitation.findUnique.mockResolvedValue(gmInvitation)
-      prisma.campaignInvitation.update.mockResolvedValue({ ...gmInvitation, status: 'ACCEPTED' })
-      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', name: 'Test Adv' })
-      mockMembershipService.isMember.mockResolvedValue(false)
-      mockMembershipService.createMembership.mockResolvedValue({})
-
-      const result = await service.accept('tok1', 'u1')
-
-      expect(mockMembershipService.countPlayers).not.toHaveBeenCalled()
-      expect(result.success).toBe(true)
     })
 
     it('throws NotFoundException when invitation not found', async () => {

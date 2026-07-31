@@ -1,11 +1,21 @@
-jest.mock("../generated/prisma/client", () => ({ PrismaClient: class {} }))
+jest.mock("../generated/prisma/client", () => ({
+  PrismaClient: class {},
+  Prisma: {
+    sql: jest.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({ strings, values })),
+    join: jest.fn((parts: unknown[], sep?: string) => ({ parts, sep })),
+    empty: {},
+    raw: jest.fn((s: string) => s),
+    Sql: class {},
+  },
+}))
 jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
 jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
 jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }))
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals'
 import { Test } from '@nestjs/testing'
-import { NotFoundException, ForbiddenException } from '@nestjs/common'
+import { NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common'
+import { DbNull } from '@prisma/client/runtime/client'
 import { TemplateService } from './template.service'
 import { PrismaService } from '../prisma.service'
 import { MembershipService } from '../membership/membership.service'
@@ -93,10 +103,12 @@ describe('TemplateService', () => {
         templateSkills: [],
         armorClasses: [],
       })
+      prisma.adventure.findUnique.mockResolvedValue({ id: adventureId, isPublic: false })
       prisma.template.create.mockResolvedValue(created)
       prisma.templateAttribute.findMany.mockResolvedValue(created.attributes)
       prisma.templateArmorClass.findMany.mockResolvedValue([])
       prisma.template.findUnique.mockResolvedValue(created)
+      prisma.adventure.update.mockResolvedValue({ id: adventureId, templateSource: 'campaign' })
 
       const result = await service.create(adventureId, userId, dto)
 
@@ -184,10 +196,12 @@ describe('TemplateService', () => {
         }],
       })
 
+      prisma.adventure.findUnique.mockResolvedValue({ id: adventureId, isPublic: false })
       prisma.template.create.mockResolvedValue(created)
       prisma.templateAttribute.findMany.mockResolvedValue(createdAttrs)
       prisma.templateArmorClass.findMany.mockResolvedValue(created.armorClasses)
       prisma.template.findUnique.mockResolvedValue(created)
+      prisma.adventure.update.mockResolvedValue({ id: adventureId, templateSource: 'campaign' })
 
       await service.create(adventureId, userId, dto as any)
 
@@ -195,6 +209,13 @@ describe('TemplateService', () => {
       expect(prisma.template.create).toHaveBeenCalled()
       // Skills post-create should have been updated with attribute links
       expect(prisma.templateSkill.update).toHaveBeenCalled()
+      // Should set templateSource to 'campaign'
+      expect(prisma.adventure.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: adventureId },
+          data: { templateSource: 'campaign' },
+        }),
+      )
       // Invalidate cache
       expect(mockRedisService.del).toHaveBeenCalledWith(`templates:adventure:${adventureId}`)
     })
@@ -224,10 +245,12 @@ describe('TemplateService', () => {
 
       const createdAcs = [{ id: 'ac-1', name: 'Armor Class', templateId: 'template-1', enabled: true, createdAt: new Date('2025-01-01') }]
 
+      prisma.adventure.findUnique.mockResolvedValue({ id: adventureId, isPublic: false })
       prisma.template.create.mockResolvedValue(created)
       prisma.templateAttribute.findMany.mockResolvedValue(createdAttrs)
       prisma.templateArmorClass.findMany.mockResolvedValue(createdAcs as any)
       prisma.template.findUnique.mockResolvedValue(created)
+      prisma.adventure.update.mockResolvedValue({ id: adventureId, templateSource: 'campaign' })
 
       await service.create(adventureId, userId, dto as any)
 
@@ -244,6 +267,25 @@ describe('TemplateService', () => {
           }),
         }),
       )
+    })
+
+    it('throws ConflictException when an attached template already exists', async () => {
+      const dto: CreateTemplateDto = {
+        name: 'My Template',
+        attributes: [{ key: 'str', name: 'Strength' }],
+      }
+      prisma.adventure.findUnique.mockResolvedValue({
+        id: adventureId,
+        isPublic: false,
+        originalTemplateId: 'existing-tpl',
+        templateSnapshot: { name: 'Existing Snapshot' },
+      })
+
+      await expect(
+        service.create(adventureId, userId, dto),
+      ).rejects.toThrow(ConflictException)
+
+      expect(prisma.template.create).not.toHaveBeenCalled()
     })
   })
 
@@ -687,10 +729,12 @@ describe('TemplateService', () => {
     const id = 'template-1'
     const userId = 'user-1'
 
-    it('deletes the template and invalidates cache', async () => {
+    it('deletes the template and sets templateSource to null when no more campaign templates remain', async () => {
       const existing = mockTemplateWithInclude()
       prisma.template.findUnique.mockResolvedValue(existing)
+      prisma.template.count.mockResolvedValue(0) // no remaining campaign templates
       prisma.template.delete.mockResolvedValue(existing)
+      prisma.adventure.update.mockResolvedValue({ id: 'adv-1', templateSource: null })
 
       const result = await service.remove(id, userId)
 
@@ -698,9 +742,28 @@ describe('TemplateService', () => {
       expect(prisma.template.delete).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id } }),
       )
+      expect(prisma.adventure.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'adv-1' },
+          data: { templateSource: null },
+        }),
+      )
       expect(mockRedisService.del).toHaveBeenCalledWith(`template:${id}`)
       expect(mockRedisService.del).toHaveBeenCalledWith(`templates:adventure:adv-1`)
       expect(result).toEqual(existing)
+    })
+
+    it('does not update templateSource when other campaign templates remain', async () => {
+      const existing = mockTemplateWithInclude()
+      prisma.template.findUnique.mockResolvedValue(existing)
+      prisma.template.count.mockResolvedValue(2) // other templates remain
+      prisma.template.delete.mockResolvedValue(existing)
+
+      await service.remove(id, userId)
+
+      expect(prisma.adventure.update).not.toHaveBeenCalledWith(
+        expect.objectContaining({ data: { templateSource: null } }),
+      )
     })
 
     it('throws NotFoundException when template does not exist', async () => {
@@ -709,6 +772,271 @@ describe('TemplateService', () => {
       await expect(service.remove(id, userId)).rejects.toThrow(NotFoundException)
       await expect(service.remove(id, userId)).rejects.toThrow('Template not found')
       expect(prisma.template.delete).not.toHaveBeenCalled()
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  clone()
+  // ──────────────────────────────────────────────
+
+  describe('clone', () => {
+    const id = 'template-1'
+    const userId = 'user-1'
+
+    it('deep copies a template with all relations', async () => {
+      const original = mockTemplateWithInclude({
+        name: 'Original',
+        description: 'A test template',
+        attributes: [
+          { id: 'attr-1', key: 'str', name: 'Strength', templateId: id, order: 0 },
+        ],
+        templateSkills: [
+          { id: 'skill-1', name: 'Athletics', templateId: id, order: 0, attributeId: 'attr-1', allowedAttributeIds: ['attr-1'], defaultAttributeId: 'attr-1', description: null },
+        ],
+        armorClasses: [
+          {
+            id: 'ac-1', name: 'Armor Class', templateId: id, enabled: true,
+            attributeModifiers: [
+              { id: 'am-1', attributeId: 'attr-1', allowPlayerSelection: false, defaultAttributeId: null },
+            ],
+            fields: [
+              { id: 'acf-1', name: 'Total', key: 'total', defaultValue: '10', editableByPlayer: false, description: null, order: 0, armorClassId: 'ac-1' },
+            ],
+          },
+        ],
+        coreResources: [
+          { id: 'cr-1', slug: 'hp', displayName: 'Hit Points', enabled: true, editableByPlayer: true, showNotes: true, color: null, order: 0 },
+        ],
+        characterSections: [{ id: 'cs-1', name: 'Equipment', templateId: id, order: 0 }],
+        resistances: [
+          {
+            id: 'res-1', name: 'Damage Resistances', templateId: id, calculationType: 'MANUAL', order: 0,
+            components: [{ id: 'rc-1', name: 'Slashing', resistanceId: 'res-1', editableByPlayer: true, defaultValue: '0', order: 0 }],
+            attributeModifiers: [],
+          },
+        ],
+        skillModifierProfiles: [],
+        templateFields: [],
+      })
+
+      prisma.template.findUnique.mockResolvedValue(original)
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'adv-1', isPublic: false })
+      // The create will be called internally by clone()
+      const cloned = mockTemplateWithInclude({
+        name: 'Original (copy)',
+      })
+      prisma.template.create.mockResolvedValue(cloned)
+      prisma.templateAttribute.findMany.mockResolvedValue([])
+      prisma.templateArmorClass.findMany.mockResolvedValue([])
+      prisma.template.findUnique.mockResolvedValue(cloned)
+
+      const result = await service.clone(id, userId)
+
+      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('adv-1', userId, 'GM')
+      expect(prisma.template.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id } }),
+      )
+      expect(result).toBeDefined()
+    })
+
+    it('uses custom name when provided', async () => {
+      const original = mockTemplateWithInclude({ name: 'Original' })
+      prisma.template.findUnique.mockResolvedValue(original)
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'adv-1', isPublic: false })
+      const cloned = mockTemplateWithInclude({ name: 'Custom Clone' })
+      prisma.template.create.mockResolvedValue(cloned)
+      prisma.templateAttribute.findMany.mockResolvedValue([])
+      prisma.templateArmorClass.findMany.mockResolvedValue([])
+      prisma.template.findUnique.mockResolvedValue(cloned)
+
+      const result = await service.clone(id, userId, 'Custom Clone')
+
+      expect(result.name).toBe('Custom Clone')
+    })
+
+    it('throws NotFoundException when template not found', async () => {
+      prisma.template.findUnique.mockResolvedValue(null)
+
+      await expect(service.clone('nonexistent', userId)).rejects.toThrow(
+        NotFoundException,
+      )
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  findPublicAll()
+  // ──────────────────────────────────────────────
+
+  describe('findPublicAll', () => {
+    it('returns paginated public templates with enriched fields', async () => {
+      const templates = [
+        {
+          id: 't1',
+          name: 'Public Template',
+          description: 'A public template',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          useCount: 3,
+          adventure: { id: 'adv-1', name: 'Adventure', campaign: 'Camp' },
+          owner: { id: 'u1', displayName: 'Owner' },
+          _count: { attributes: 4, templateSkills: 2 },
+        },
+      ]
+      prisma.$transaction.mockResolvedValue([templates, 1])
+
+      const result = await service.findPublicAll({ page: 1, limit: 10 })
+
+      expect(result.data).toEqual([
+        {
+          id: 't1',
+          name: 'Public Template',
+          description: 'A public template',
+          createdAt: templates[0].createdAt,
+          updatedAt: templates[0].updatedAt,
+          useCount: 3,
+          adventure: { id: 'adv-1', name: 'Adventure', campaign: 'Camp' },
+          owner: { id: 'u1', displayName: 'Owner' },
+          _count: { attributes: 4, templateSkills: 2 },
+          campaign: 'Camp',
+          adventureName: 'Adventure',
+          adventureId: 'adv-1',
+        },
+      ])
+      expect(result.total).toBe(1)
+      expect(result.page).toBe(1)
+      expect(result.totalPages).toBe(1)
+    })
+
+    it('filters by adventureId', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublicAll({ adventureId: 'adv-1' })
+
+      expect(prisma.template.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            adventureId: 'adv-1',
+          }),
+        }),
+      )
+    })
+
+    it('filters by campaign through the nullable adventure relation', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0])
+
+      await service.findPublicAll({ campaign: 'Camp' })
+
+      expect(prisma.template.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            adventure: { is: { campaign: 'Camp' } },
+          }),
+        }),
+      )
+    })
+
+    it('filters by search through the ranked SQL path and hydrates results', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ total: 1, ids: ['t1'] }])
+      prisma.template.findMany.mockResolvedValue([
+        {
+          id: 't1',
+          name: 'Warrior Template',
+          description: 'A warrior build',
+          createdAt: new Date('2025-01-01'),
+          updatedAt: new Date('2025-01-01'),
+          useCount: 5,
+          adventure: { id: 'adv-1', name: 'Adventure', campaign: 'Camp' },
+          owner: { id: 'u1', displayName: 'Owner' },
+          _count: { attributes: 4, templateSkills: 2 },
+        },
+      ])
+
+      const result = await service.findPublicAll({ search: 'warrior', limit: 10 })
+
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
+      expect(prisma.template.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: { in: ['t1'] } },
+        }),
+      )
+      expect(result.data).toHaveLength(1)
+      expect(result.data[0].id).toBe('t1')
+      expect(result.data[0].name).toBe('Warrior Template')
+      expect(result.data[0].campaign).toBe('Camp')
+      expect(result.data[0].adventureName).toBe('Adventure')
+      expect(result.data[0].adventureId).toBe('adv-1')
+      expect(result.total).toBe(1)
+      expect(result.totalPages).toBe(1)
+    })
+
+    it('returns empty results when search matches nothing', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ total: 0, ids: [] }])
+
+      const result = await service.findPublicAll({ search: 'zzzznope', limit: 10 })
+
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
+      expect(prisma.template.findMany).not.toHaveBeenCalled()
+      expect(result.data).toHaveLength(0)
+      expect(result.total).toBe(0)
+    })
+
+    it('combines search with campaign filter on the ranked path', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ total: 0, ids: [] }])
+
+      await service.findPublicAll({ search: 'warrior', campaign: 'Camp' })
+
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
+      expect(prisma.template.findMany).not.toHaveBeenCalled()
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  findOnePublic()
+  // ──────────────────────────────────────────────
+
+  describe('findOnePublic', () => {
+    it('returns a public template with its full structure', async () => {
+      const template = {
+        id: 't1',
+        name: 'Public Template',
+        description: 'A public template',
+        attributeModifiersEnabled: true,
+        attributeModifierFormula: null,
+        skillFormula: null,
+        createdAt: new Date(),
+        adventure: { id: 'adv-1', name: 'Adventure', campaign: 'Camp' },
+        owner: { id: 'u1', displayName: 'Owner' },
+        _count: { characterSheets: 3 },
+        attributes: [],
+        templateFields: [],
+        templateSkills: [],
+        skillModifierProfiles: [],
+        coreResources: [],
+        armorClasses: [],
+        characterSections: [],
+        resistances: [],
+      }
+      prisma.template.findFirst.mockResolvedValue(template)
+
+      const result = await service.findOnePublic('t1')
+
+      expect(prisma.template.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            id: 't1',
+            isPublic: true,
+          },
+        }),
+      )
+      expect(result).toEqual(template)
+    })
+
+    it('throws NotFoundException when template not found or not public', async () => {
+      prisma.template.findFirst.mockResolvedValue(null)
+
+      await expect(service.findOnePublic('nonexistent')).rejects.toThrow(
+        NotFoundException,
+      )
     })
   })
 
@@ -734,6 +1062,757 @@ describe('TemplateService', () => {
 
       await expect(service.update(id, 'user-1', { name: 'Try' })).rejects.toThrow(ForbiddenException)
       await expect(service.update(id, 'user-1', { name: 'Try' })).rejects.toThrow('Only the Game Master can perform this action')
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  Auth expansion for standalone templates
+  // ──────────────────────────────────────────────
+
+  describe('findOne auth (standalone)', () => {
+    const id = 'template-1'
+    const ownerId = 'user-owner'
+
+    it('allows owner to access their standalone template', async () => {
+      const tpl = mockTemplateWithInclude({ adventureId: null, ownerId, isPublic: false })
+      mockRedisService.cacheGet.mockResolvedValue(null)
+      prisma.template.findUnique.mockResolvedValue(tpl)
+
+      const result = await service.findOne(id, ownerId)
+
+      expect(result).toEqual(tpl)
+      expect(mockMembershipService.isMember).not.toHaveBeenCalled()
+    })
+
+    it('allows a member to access an adventure-scoped template', async () => {
+      const tpl = mockTemplateWithInclude({ adventureId: 'adv-1', ownerId: 'other-user', isPublic: false })
+      mockRedisService.cacheGet.mockResolvedValue(null)
+      prisma.template.findUnique.mockResolvedValue(tpl)
+      // isMember called via ensureTemplateAccess because ownerId !== userId and user IS a member
+      mockMembershipService.isMember.mockResolvedValue(true)
+
+      const result = await service.findOne(id, 'user-member')
+
+      expect(result).toEqual(tpl)
+    })
+
+    it('allows anyone to access a public template', async () => {
+      const tpl = mockTemplateWithInclude({ adventureId: null, ownerId: 'other-user', isPublic: true })
+      mockRedisService.cacheGet.mockResolvedValue(null)
+      prisma.template.findUnique.mockResolvedValue(tpl)
+
+      const result = await service.findOne(id, 'stranger')
+
+      expect(result).toEqual(tpl)
+      expect(mockMembershipService.isMember).not.toHaveBeenCalled()
+    })
+
+    it('throws ForbiddenException for standalone template by non-owner', async () => {
+      const tpl = mockTemplateWithInclude({ adventureId: null, ownerId: 'other-user', isPublic: false })
+      mockRedisService.cacheGet.mockResolvedValue(null)
+      prisma.template.findUnique.mockResolvedValue(tpl)
+
+      await expect(service.findOne(id, 'stranger')).rejects.toThrow(ForbiddenException)
+      await expect(service.findOne(id, 'stranger')).rejects.toThrow('You do not have access to this template')
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  update auth (standalone)
+  // ──────────────────────────────────────────────
+
+  describe('update auth (standalone)', () => {
+    const id = 'template-1'
+    const ownerId = 'user-owner'
+
+    it('allows owner to update their standalone template', async () => {
+      const existing = mockTemplateWithInclude({ adventureId: null, ownerId, isPublic: false })
+      prisma.template.findUnique.mockResolvedValue(existing)
+      const updated = { ...existing, name: 'Updated' }
+      prisma.template.update.mockResolvedValue(updated)
+
+      const result = await service.update(id, ownerId, { name: 'Updated' })
+
+      expect(result.name).toBe('Updated')
+      expect(mockMembershipService.requireRole).not.toHaveBeenCalled()
+    })
+
+    it('throws ForbiddenException when non-owner tries to update a standalone template', async () => {
+      const existing = mockTemplateWithInclude({ adventureId: null, ownerId, isPublic: false })
+      prisma.template.findUnique.mockResolvedValue(existing)
+
+      await expect(service.update(id, 'stranger', { name: 'Hacked' })).rejects.toThrow(ForbiddenException)
+      await expect(service.update(id, 'stranger', { name: 'Hacked' })).rejects.toThrow('Only the template owner can update this template')
+      expect(prisma.template.update).not.toHaveBeenCalled()
+    })
+
+    it('allows GM to update adventure-scoped template owned by someone else', async () => {
+      const existing = mockTemplateWithInclude({ adventureId: 'adv-1', ownerId: 'other-user', isPublic: false })
+      prisma.template.findUnique.mockResolvedValue(existing)
+      const updated = { ...existing, name: 'GM Update' }
+      prisma.template.update.mockResolvedValue(updated)
+
+      const result = await service.update(id, 'gm-user', { name: 'GM Update' })
+
+      expect(result.name).toBe('GM Update')
+      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('adv-1', 'gm-user', 'GM')
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  remove auth (standalone)
+  // ──────────────────────────────────────────────
+
+  describe('remove auth (standalone)', () => {
+    const id = 'template-1'
+    const ownerId = 'user-owner'
+
+    it('allows owner to delete their standalone template', async () => {
+      const existing = mockTemplateWithInclude({ adventureId: null, ownerId, isPublic: false })
+      prisma.template.findUnique.mockResolvedValue(existing)
+      prisma.characterSheet.count.mockResolvedValue(0)
+      prisma.template.delete.mockResolvedValue(existing)
+
+      const result = await service.remove(id, ownerId)
+
+      expect(result).toEqual(existing)
+      expect(mockMembershipService.requireRole).not.toHaveBeenCalled()
+      expect(mockRedisService.del).toHaveBeenCalledWith(`template:${id}`)
+    })
+
+    it('throws ForbiddenException when non-owner tries to delete a standalone template', async () => {
+      const existing = mockTemplateWithInclude({ adventureId: null, ownerId, isPublic: false })
+      prisma.template.findUnique.mockResolvedValue(existing)
+
+      await expect(service.remove(id, 'stranger')).rejects.toThrow(ForbiddenException)
+      await expect(service.remove(id, 'stranger')).rejects.toThrow('Only the template owner can delete this template')
+      expect(prisma.template.delete).not.toHaveBeenCalled()
+    })
+
+    it('blocks deletion when character sheets reference the template', async () => {
+      const existing = mockTemplateWithInclude({ adventureId: null, ownerId, isPublic: false })
+      prisma.template.findUnique.mockResolvedValue(existing)
+      prisma.characterSheet.count.mockResolvedValue(3)
+
+      await expect(service.remove(id, ownerId)).rejects.toThrow(ForbiddenException)
+      await expect(service.remove(id, ownerId)).rejects.toThrow(/3 character sheet/)
+      expect(prisma.template.delete).not.toHaveBeenCalled()
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  clone auth (standalone)
+  // ──────────────────────────────────────────────
+
+  describe('clone auth (standalone)', () => {
+    const id = 'template-1'
+    const ownerId = 'user-owner'
+
+    it('allows owner to clone their own template', async () => {
+      const original = mockTemplateWithInclude({ adventureId: null, ownerId, isPublic: false })
+      const copy = mockTemplateWithInclude({ name: 'Original (copy)', ownerId })
+      prisma.template.findUnique
+        .mockResolvedValueOnce(original)
+        .mockResolvedValueOnce(copy)
+      prisma.template.create.mockResolvedValue(copy)
+      prisma.templateAttribute.findMany.mockResolvedValue([])
+      prisma.templateArmorClass.findMany.mockResolvedValue([])
+
+      const result = await service.clone(id, ownerId)
+
+      expect(result).toBeDefined()
+      expect(prisma.template.findUnique).toHaveBeenCalledTimes(2)
+    })
+
+    it('allows anyone to clone a public template', async () => {
+      const original = mockTemplateWithInclude({ adventureId: null, ownerId: 'other-user', isPublic: true })
+      const copy = mockTemplateWithInclude({ name: 'Public (copy)', ownerId: 'stranger' })
+      prisma.template.findUnique
+        .mockResolvedValueOnce(original)
+        .mockResolvedValueOnce(copy)
+      prisma.template.create.mockResolvedValue(copy)
+      prisma.templateAttribute.findMany.mockResolvedValue([])
+      prisma.templateArmorClass.findMany.mockResolvedValue([])
+
+      const result = await service.clone(id, 'stranger')
+
+      expect(result).toBeDefined()
+      expect(mockMembershipService.requireRole).not.toHaveBeenCalled()
+    })
+
+    it('throws ForbiddenException when cloning a non-public, non-owned standalone template', async () => {
+      const original = mockTemplateWithInclude({ adventureId: null, ownerId: 'other-user', isPublic: false })
+      prisma.template.findUnique.mockResolvedValue(original)
+
+      await expect(service.clone(id, 'stranger')).rejects.toThrow(ForbiddenException)
+      await expect(service.clone(id, 'stranger')).rejects.toThrow('You do not have permission to clone this template')
+    })
+
+    it('allows GM to clone adventure-scoped template', async () => {
+      const original = mockTemplateWithInclude({ adventureId: 'adv-1', ownerId: 'other-user', isPublic: false })
+      prisma.template.findUnique
+        .mockResolvedValueOnce(original)
+        .mockResolvedValueOnce(mockTemplateWithInclude({ name: 'Adventure (copy)', ownerId: 'gm-user' }))
+      prisma.template.create.mockResolvedValue(mockTemplateWithInclude({ name: 'Adventure (copy)', ownerId: 'gm-user' }))
+      prisma.templateAttribute.findMany.mockResolvedValue([])
+      prisma.templateArmorClass.findMany.mockResolvedValue([])
+
+      const result = await service.clone(id, 'gm-user')
+
+      expect(result).toBeDefined()
+      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('adv-1', 'gm-user', 'GM')
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  createStandalone()
+  // ──────────────────────────────────────────────
+
+  describe('createStandalone', () => {
+    const userId = 'user-1'
+
+    it('creates a standalone template with minimal DTO', async () => {
+      const dto: CreateTemplateDto = {
+        name: 'My Standalone',
+        attributes: [{ key: 'str', name: 'Strength' }],
+      }
+      const created = mockTemplateWithInclude({
+        adventureId: null,
+        ownerId: userId,
+        isPublic: false,
+        useCount: 0,
+        name: 'My Standalone',
+        attributes: [{ id: 'attr-1', key: 'str', name: 'Strength', templateId: 'template-1', order: 0 }],
+      })
+      prisma.template.create.mockResolvedValue(created)
+      prisma.templateAttribute.findMany.mockResolvedValue(created.attributes)
+      prisma.templateArmorClass.findMany.mockResolvedValue([])
+      prisma.template.findUnique.mockResolvedValue(created)
+
+      const result = await service.createStandalone(userId, dto)
+
+      expect(prisma.template.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            adventureId: null,
+            ownerId: userId,
+            isPublic: false,
+            useCount: 0,
+            name: 'My Standalone',
+          }),
+        }),
+      )
+      expect(mockRedisService.del).toHaveBeenCalledWith(`templates:user:${userId}`)
+      expect(result).toEqual(created)
+    })
+
+    it('creates a standalone template with full DTO (all sub-entities)', async () => {
+      const dto: CreateTemplateDto = {
+        name: 'Full Standalone',
+        description: 'A full-featured template',
+        attributeModifierFormula: 'floor(str/2) - 5',
+        skillFormula: 'floor(str/2) + prof',
+        attributes: [{ key: 'str', name: 'Strength' }, { key: 'dex', name: 'Dexterity' }],
+        templateFields: [{ key: 'bio', label: 'Biography' }],
+        skills: [{ name: 'Athletics', attributeId: 'str', allowedAttributeIds: ['str'], description: null }],
+        armorClasses: [{
+          name: 'Armor Class', enabled: true,
+          fields: [{ name: 'Total', key: 'total', defaultValue: '10', editableByPlayer: false, description: null }],
+          attributeModifiers: [{ attributeId: 'str', allowPlayerSelection: false }],
+        }],
+      }
+      const created = mockTemplateWithInclude({
+        adventureId: null,
+        ownerId: userId,
+        name: 'Full Standalone',
+        attributes: [
+          { id: 'attr-1', key: 'str', name: 'Strength', templateId: 'template-1', order: 0 },
+          { id: 'attr-2', key: 'dex', name: 'Dexterity', templateId: 'template-1', order: 1 },
+        ],
+        templateSkills: [],
+        armorClasses: [],
+      })
+      prisma.template.create.mockResolvedValue(created)
+      prisma.templateAttribute.findMany.mockResolvedValue(created.attributes)
+      prisma.templateArmorClass.findMany.mockResolvedValue([])
+      prisma.template.findUnique.mockResolvedValue(created)
+
+      const result = await service.createStandalone(userId, dto)
+
+      expect(prisma.template.create).toHaveBeenCalled()
+      expect(mockRedisService.del).toHaveBeenCalledWith(`templates:user:${userId}`)
+      expect(result).toEqual(created)
+    })
+
+    it('invalidates user list cache on creation', async () => {
+      const dto: CreateTemplateDto = {
+        name: 'Cached Template',
+        attributes: [{ key: 'str', name: 'Strength' }],
+      }
+      const created = mockTemplateWithInclude({ adventureId: null, ownerId: userId, name: 'Cached Template' })
+      prisma.template.create.mockResolvedValue(created)
+      prisma.templateAttribute.findMany.mockResolvedValue([])
+      prisma.templateArmorClass.findMany.mockResolvedValue([])
+      prisma.template.findUnique.mockResolvedValue(created)
+
+      await service.createStandalone(userId, dto)
+
+      expect(mockRedisService.del).toHaveBeenCalledWith(`templates:user:${userId}`)
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  findAllByUser()
+  // ──────────────────────────────────────────────
+
+  describe('findAllByUser', () => {
+    const userId = 'user-1'
+
+    it('returns cached templates when cache hit', async () => {
+      const cached = [mockTemplateWithInclude({ adventureId: null, ownerId: userId })]
+      mockRedisService.cacheGet.mockResolvedValue(cached)
+
+      const result = await service.findAllByUser(userId)
+
+      expect(result).toEqual(cached)
+      expect(mockRedisService.cacheGet).toHaveBeenCalledWith(`templates:user:${userId}`)
+      expect(prisma.template.findMany).not.toHaveBeenCalled()
+    })
+
+    it('queries DB and caches on cache miss', async () => {
+      mockRedisService.cacheGet.mockResolvedValue(null)
+      const templates = [mockTemplateWithInclude({ adventureId: null, ownerId: userId })]
+      prisma.template.findMany.mockResolvedValue(templates)
+
+      const result = await service.findAllByUser(userId)
+
+      expect(prisma.template.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { ownerId: userId },
+        }),
+      )
+      expect(mockRedisService.cacheSet).toHaveBeenCalledWith(
+        `templates:user:${userId}`,
+        templates,
+        15,
+      )
+      expect(result).toEqual(templates)
+    })
+
+    it('returns empty array when user has no templates', async () => {
+      mockRedisService.cacheGet.mockResolvedValue(null)
+      prisma.template.findMany.mockResolvedValue([])
+
+      const result = await service.findAllByUser(userId)
+
+      expect(result).toEqual([])
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  buildSnapshot()
+  // ──────────────────────────────────────────────
+
+  describe('buildSnapshot', () => {
+    it('builds a snapshot from a full template preserving all entity IDs', async () => {
+      const template = mockTemplateWithInclude({
+        id: 'tpl-1',
+        name: 'Snapshot Template',
+        attributeModifiersEnabled: true,
+        attributeModifierFormula: 'floor(str/2)-5',
+        skillFormula: null,
+        attributes: [
+          { id: 'attr-1', key: 'str', name: 'Strength', templateId: 'tpl-1', order: 0 },
+          { id: 'attr-2', key: 'dex', name: 'Dexterity', templateId: 'tpl-1', order: 1 },
+        ],
+        templateFields: [
+          { id: 'fld-1', key: 'bio', label: 'Biography', templateId: 'tpl-1', order: 0 },
+        ],
+        templateSkills: [
+          { id: 'skill-1', name: 'Athletics', description: null, templateId: 'tpl-1', order: 0, attributeId: 'attr-1', allowedAttributeIds: ['attr-1'], defaultAttributeId: 'attr-1' },
+        ],
+        skillModifierProfiles: [
+          {
+            id: 'prof-1', templateId: 'tpl-1', name: 'Expert', order: 0, targetMode: 'ALL_SKILLS', targetSkillIds: [],
+            options: [{ id: 'opt-1', profileId: 'prof-1', label: 'x2', value: 2, order: 0 }],
+          },
+        ],
+        coreResources: [
+          { id: 'cr-1', templateId: 'tpl-1', slug: 'hp', displayName: 'Hit Points', enabled: true, editableByPlayer: true, showNotes: true, color: null, order: 0 },
+        ],
+        armorClasses: [{
+          id: 'ac-1', templateId: 'tpl-1', name: 'Armor Class', enabled: true,
+          attributeModifiers: [{ id: 'am-1', armorClassId: 'ac-1', attributeId: 'attr-1', allowPlayerSelection: false, defaultAttributeId: null }],
+          fields: [{ id: 'acf-1', armorClassId: 'ac-1', name: 'Total', key: 'total', defaultValue: '10', editableByPlayer: false, description: null, order: 0 }],
+        }],
+        characterSections: [{ id: 'cs-1', templateId: 'tpl-1', name: 'Equipment', order: 0 }],
+        resistances: [{
+          id: 'res-1', templateId: 'tpl-1', name: 'Damage Resistances', calculationType: 'MANUAL', order: 0,
+          components: [{ id: 'rc-1', resistanceId: 'res-1', name: 'Slashing', editableByPlayer: true, defaultValue: '0', order: 0 }],
+          attributeModifiers: [{ id: 'ram-1', resistanceId: 'res-1', attributeId: 'attr-1', enabled: true }],
+        }],
+      })
+
+      const snapshot = await (service as any).buildSnapshot(template)
+
+      expect(snapshot.id).toBe('tpl-1')
+      expect(snapshot.name).toBe('Snapshot Template')
+      expect(snapshot.attributeModifierFormula).toBe('floor(str/2)-5')
+
+      // Verify IDs are preserved
+      expect(snapshot.attributes[0].id).toBe('attr-1')
+      expect(snapshot.templateFields[0].id).toBe('fld-1')
+      expect(snapshot.templateSkills[0].id).toBe('skill-1')
+      expect(snapshot.skillModifierProfiles[0].id).toBe('prof-1')
+      expect(snapshot.skillModifierProfiles[0].options[0].id).toBe('opt-1')
+      expect(snapshot.coreResources[0].id).toBe('cr-1')
+      expect(snapshot.armorClasses[0].id).toBe('ac-1')
+      expect(snapshot.armorClasses[0].attributeModifiers[0].id).toBe('am-1')
+      expect(snapshot.armorClasses[0].fields[0].id).toBe('acf-1')
+      expect(snapshot.characterSections[0].id).toBe('cs-1')
+      expect(snapshot.resistances[0].id).toBe('res-1')
+      expect(snapshot.resistances[0].components[0].id).toBe('rc-1')
+      expect(snapshot.resistances[0].attributeModifiers[0].id).toBe('ram-1')
+
+      // Verify counts
+      expect(snapshot.attributes).toHaveLength(2)
+      expect(snapshot.armorClasses).toHaveLength(1)
+    })
+
+    it('handles empty sub-arrays', async () => {
+      const template = mockTemplateWithInclude({
+        attributes: [],
+        templateFields: [],
+        templateSkills: [],
+        skillModifierProfiles: [],
+        coreResources: [],
+        armorClasses: [],
+        characterSections: [],
+        resistances: [],
+      })
+
+      const snapshot = await (service as any).buildSnapshot(template)
+
+      expect(snapshot.attributes).toEqual([])
+      expect(snapshot.templateFields).toEqual([])
+      expect(snapshot.templateSkills).toEqual([])
+      expect(snapshot.skillModifierProfiles).toEqual([])
+      expect(snapshot.coreResources).toEqual([])
+      expect(snapshot.armorClasses).toEqual([])
+      expect(snapshot.characterSections).toEqual([])
+      expect(snapshot.resistances).toEqual([])
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  attachToAdventure()
+  // ──────────────────────────────────────────────
+
+  describe('attachToAdventure', () => {
+    const templateId = 'template-1'
+    const adventureId = 'adv-1'
+    const userId = 'user-1'
+    const fullTemplate = mockTemplateWithInclude({
+      name: 'Attached Template',
+      attributes: [{ id: 'attr-1', key: 'str', name: 'Strength', templateId, order: 0 }],
+    })
+
+    it('attaches a template, creates snapshot, and sets templateSource to attached', async () => {
+      prisma.adventure.findUnique.mockResolvedValueOnce(null) // no existing attachment
+      prisma.template.count.mockResolvedValue(0) // no campaign-owned templates
+      prisma.template.findUnique.mockResolvedValue(fullTemplate)
+      const updatedAdventure = { id: adventureId, templateSnapshot: {}, originalTemplateId: templateId, templateSource: 'attached' }
+      prisma.adventure.update.mockResolvedValue(updatedAdventure)
+
+      const result = await service.attachToAdventure(templateId, adventureId, userId)
+
+      expect(mockMembershipService.requireRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
+      expect(prisma.template.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: templateId } }),
+      )
+      expect(prisma.adventure.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: adventureId },
+          data: expect.objectContaining({
+            originalTemplateId: templateId,
+            templateSource: 'attached',
+          }),
+        }),
+      )
+      expect(prisma.template.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: templateId },
+          data: { useCount: { increment: 1 } },
+        }),
+      )
+      expect(mockRedisService.del).toHaveBeenCalledWith(`templates:adventure:${adventureId}`)
+      expect(result).toEqual(updatedAdventure)
+    })
+
+    it('throws NotFoundException when template not found', async () => {
+      prisma.template.findUnique.mockResolvedValue(null)
+
+      await expect(service.attachToAdventure('nonexistent', adventureId, userId)).rejects.toThrow(NotFoundException)
+      expect(prisma.adventure.update).not.toHaveBeenCalled()
+    })
+
+    it('throws ForbiddenException when user is not GM', async () => {
+      mockMembershipService.requireRole.mockRejectedValue(new ForbiddenException('Not GM'))
+
+      await expect(service.attachToAdventure(templateId, adventureId, 'not-gm')).rejects.toThrow(ForbiddenException)
+      expect(prisma.template.findUnique).not.toHaveBeenCalled()
+    })
+
+    it('throws ConflictException when a template is already attached', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        originalTemplateId: 'existing-tpl',
+        templateSnapshot: { name: 'Existing Snapshot' },
+      })
+
+      await expect(
+        service.attachToAdventure('new-tpl', adventureId, userId),
+      ).rejects.toThrow(ConflictException)
+      expect(prisma.template.findUnique).not.toHaveBeenCalled()
+      expect(prisma.adventure.update).not.toHaveBeenCalled()
+    })
+
+    it('throws ConflictException when campaign-owned templates exist', async () => {
+      prisma.adventure.findUnique.mockResolvedValue(null) // no existing attachment
+      prisma.template.count.mockResolvedValue(2) // campaign has campaign-owned templates
+
+      await expect(
+        service.attachToAdventure(templateId, adventureId, userId),
+      ).rejects.toThrow(ConflictException)
+      expect(prisma.template.findUnique).not.toHaveBeenCalled()
+      expect(prisma.adventure.update).not.toHaveBeenCalled()
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  replaceAdventureTemplate()
+  // ──────────────────────────────────────────────
+
+  describe('replaceAdventureTemplate', () => {
+    const templateId = 'template-2'
+    const adventureId = 'adv-1'
+    const userId = 'user-1'
+    const fullTemplate = mockTemplateWithInclude({
+      name: 'Replacement Template',
+      attributes: [{ id: 'attr-2', key: 'dex', name: 'Dexterity', templateId, order: 0 }],
+    })
+
+    it('replaces the attached template and sets templateSource to attached', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({ originalTemplateId: 'template-1' })
+      prisma.template.count.mockResolvedValue(0) // no campaign-owned templates
+      prisma.template.findUnique.mockResolvedValue(fullTemplate)
+      const updatedAdventure = { id: adventureId, templateSnapshot: {}, originalTemplateId: templateId, templateSource: 'attached' }
+      prisma.adventure.update.mockResolvedValue(updatedAdventure)
+
+      const result = await service.replaceAdventureTemplate(templateId, adventureId, userId)
+
+      expect(mockMembershipService.requireRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
+      expect(prisma.template.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: templateId } }),
+      )
+      expect(prisma.adventure.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: adventureId },
+          data: expect.objectContaining({
+            originalTemplateId: templateId,
+            templateSource: 'attached',
+          }),
+        }),
+      )
+      // Cache invalidated for current adventure
+      expect(mockRedisService.del).toHaveBeenCalledWith(`templates:adventure:${adventureId}`)
+      // Cache invalidated for both old template ('template-1') and new template ('template-2')
+      expect(mockRedisService.del).toHaveBeenCalledWith(expect.stringContaining('template-1'))
+      expect(result).toEqual(updatedAdventure)
+    })
+
+    it('throws NotFoundException when template not found', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({ originalTemplateId: 'template-1' })
+      prisma.template.findUnique.mockResolvedValue(null)
+
+      await expect(
+        service.replaceAdventureTemplate('nonexistent', adventureId, userId),
+      ).rejects.toThrow(NotFoundException)
+      expect(prisma.adventure.update).not.toHaveBeenCalled()
+    })
+
+    it('throws ForbiddenException when user is not GM', async () => {
+      mockMembershipService.requireRole.mockRejectedValue(new ForbiddenException('Not GM'))
+
+      await expect(
+        service.replaceAdventureTemplate(templateId, adventureId, 'not-gm'),
+      ).rejects.toThrow(ForbiddenException)
+      expect(prisma.template.findUnique).not.toHaveBeenCalled()
+    })
+
+    it('works when no template was previously attached', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({ originalTemplateId: null })
+      prisma.template.count.mockResolvedValue(0)
+      prisma.template.findUnique.mockResolvedValue(fullTemplate)
+      const updatedAdventure = { id: adventureId, templateSnapshot: {}, originalTemplateId: templateId, templateSource: 'attached' }
+      prisma.adventure.update.mockResolvedValue(updatedAdventure)
+
+      const result = await service.replaceAdventureTemplate(templateId, adventureId, userId)
+
+      expect(prisma.adventure.update).toHaveBeenCalled()
+      expect(result.originalTemplateId).toBe(templateId)
+    })
+
+    it('throws ConflictException when campaign-owned templates exist', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({ originalTemplateId: 'template-1' })
+      prisma.template.count.mockResolvedValue(2) // campaign has campaign-owned templates
+
+      await expect(
+        service.replaceAdventureTemplate(templateId, adventureId, userId),
+      ).rejects.toThrow(ConflictException)
+      expect(prisma.template.findUnique).not.toHaveBeenCalled()
+      expect(prisma.adventure.update).not.toHaveBeenCalled()
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  detachFromAdventure()
+  // ──────────────────────────────────────────────
+
+  describe('detachFromAdventure', () => {
+    const adventureId = 'adv-1'
+    const userId = 'user-1'
+
+    it('detaches template link, clears snapshot, and sets templateSource to null', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({ originalTemplateId: 'template-1' })
+      const updatedAdventure = { id: adventureId, originalTemplateId: null, templateSnapshot: null, templateSource: null }
+      prisma.adventure.update.mockResolvedValue(updatedAdventure)
+
+      const result = await service.detachFromAdventure(adventureId, userId)
+
+      expect(mockMembershipService.requireRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
+      expect(prisma.adventure.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: adventureId },
+          data: { originalTemplateId: null, templateSnapshot: DbNull, templateSource: null },
+        }),
+      )
+      expect(mockRedisService.del).toHaveBeenCalledWith(`templates:adventure:${adventureId}`)
+      expect(result).toEqual(updatedAdventure)
+    })
+
+    it('handles already-detached template', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({ originalTemplateId: null })
+      const updatedAdventure = { id: adventureId, originalTemplateId: null, templateSnapshot: null, templateSource: null }
+      prisma.adventure.update.mockResolvedValue(updatedAdventure)
+
+      const result = await service.detachFromAdventure(adventureId, userId)
+
+      expect(prisma.adventure.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            originalTemplateId: null,
+            templateSnapshot: DbNull,
+            templateSource: null,
+          }),
+        }),
+      )
+      expect(result.originalTemplateId).toBeNull()
+      expect(result.templateSnapshot).toBeNull()
+    })
+
+    it('throws ForbiddenException when user is not GM', async () => {
+      mockMembershipService.requireRole.mockRejectedValue(new ForbiddenException('Not GM'))
+
+      await expect(service.detachFromAdventure(adventureId, 'not-gm')).rejects.toThrow(ForbiddenException)
+      expect(prisma.adventure.update).not.toHaveBeenCalled()
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  getTemplateSnapshot()
+  // ──────────────────────────────────────────────
+
+  describe('getTemplateSnapshot', () => {
+    const adventureId = 'adv-1'
+    const userId = 'user-1'
+
+    it('returns snapshot and originalTemplateId when they exist', async () => {
+      mockMembershipService.isMember.mockResolvedValue(true)
+      prisma.adventure.findUnique.mockResolvedValue({
+        templateSnapshot: { id: 'tpl-1', name: 'Snapshot', attributes: [] },
+        originalTemplateId: 'tpl-1',
+      })
+
+      const result = await service.getTemplateSnapshot(adventureId, userId)
+
+      expect(mockMembershipService.isMember).toHaveBeenCalledWith(adventureId, userId)
+      expect(result.snapshot).toBeDefined()
+      expect(result.snapshot.name).toBe('Snapshot')
+      expect(result.originalTemplateId).toBe('tpl-1')
+    })
+
+    it('throws NotFoundException when adventure not found', async () => {
+      mockMembershipService.isMember.mockResolvedValue(true)
+      prisma.adventure.findUnique.mockResolvedValue(null)
+
+      await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow(NotFoundException)
+      await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow('Adventure not found')
+    })
+
+    it('returns null snapshot when no snapshot exists', async () => {
+      mockMembershipService.isMember.mockResolvedValue(true)
+      prisma.adventure.findUnique.mockResolvedValue({
+        templateSnapshot: null,
+        originalTemplateId: null,
+      })
+
+      const result = await service.getTemplateSnapshot(adventureId, userId)
+
+      expect(result.snapshot).toBeNull()
+      expect(result.originalTemplateId).toBeNull()
+    })
+
+    it('throws ForbiddenException when user is not a member', async () => {
+      mockMembershipService.isMember.mockResolvedValue(false)
+
+      await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow(ForbiddenException)
+      await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow('You are not a member of this adventure')
+      expect(prisma.adventure.findUnique).not.toHaveBeenCalled()
+    })
+  })
+
+  // ──────────────────────────────────────────────
+  //  extractVariableNames()
+  // ──────────────────────────────────────────────
+
+  describe('extractVariableNames', () => {
+    it('returns empty array for null/empty formula', async () => {
+      const result1 = await (service as any).extractVariableNames(null)
+      const result2 = await (service as any).extractVariableNames('')
+
+      expect(result1).toEqual([])
+      expect(result2).toEqual([])
+    })
+
+    it('extracts attribute names from a formula', async () => {
+      const result = await (service as any).extractVariableNames('str + dex + con')
+
+      expect(result).toEqual(['str', 'dex', 'con'])
+    })
+
+    it('filters out known function names (mod, floor, ceil, round, max, min, abs)', async () => {
+      const result = await (service as any).extractVariableNames('floor(str/2) + max(dex, con) + abs(prof)')
+
+      expect(result).toEqual(['str', 'dex', 'con', 'prof'])
+      expect(result).not.toContain('floor')
+      expect(result).not.toContain('max')
+      expect(result).not.toContain('abs')
+    })
+
+    it('deduplicates repeated variable names', async () => {
+      const result = await (service as any).extractVariableNames('str + str + dex + str')
+
+      expect(result).toEqual(['str', 'dex'])
     })
   })
 })

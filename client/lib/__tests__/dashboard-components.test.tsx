@@ -43,6 +43,18 @@ vi.mock('@/lib/auth-context', () => ({
   }),
 }))
 
+// ── Subscription context mock (Sidebar now uses useSubscription) ──
+
+vi.mock('@/lib/subscription-context', () => ({
+  useSubscription: () => ({
+    subscription: null,
+    hasActiveSubscription: false,
+    loading: false,
+    refresh: vi.fn(),
+    hasEverHadSubscription: false,
+  }),
+}))
+
 // ════════════════════════════════════════════════════════════
 // Sidebar — rendering
 // ════════════════════════════════════════════════════════════
@@ -246,6 +258,38 @@ describe('Sidebar active link', () => {
     const dashboardLink = links.find((l) => l.textContent === 'Dashboard')
     expect(dashboardLink?.className).not.toContain('sidebar-link-active')
   })
+
+  it('highlights Explore Campaigns when pathname is /dashboard/explore-campaigns', () => {
+    mockUsePathname.mockReturnValue('/dashboard/explore-campaigns')
+    render(<Sidebar />)
+    const links = screen.getAllByRole('link')
+    const exploreLink = links.find((l) => l.textContent === 'Explore Campaigns')
+    expect(exploreLink?.className).toContain('sidebar-link-active')
+  })
+
+  it('highlights Public Templates when pathname is /dashboard/public-templates', () => {
+    mockUsePathname.mockReturnValue('/dashboard/public-templates')
+    render(<Sidebar />)
+    const links = screen.getAllByRole('link')
+    const templatesLink = links.find((l) => l.textContent === 'Public Templates')
+    expect(templatesLink?.className).toContain('sidebar-link-active')
+  })
+
+  it('does not highlight Explore Campaigns when on /dashboard/public-templates', () => {
+    mockUsePathname.mockReturnValue('/dashboard/public-templates')
+    render(<Sidebar />)
+    const links = screen.getAllByRole('link')
+    const exploreLink = links.find((l) => l.textContent === 'Explore Campaigns')
+    expect(exploreLink?.className).not.toContain('sidebar-link-active')
+  })
+
+  it('does not highlight Public Templates when on /dashboard/explore-campaigns', () => {
+    mockUsePathname.mockReturnValue('/dashboard/explore-campaigns')
+    render(<Sidebar />)
+    const links = screen.getAllByRole('link')
+    const templatesLink = links.find((l) => l.textContent === 'Public Templates')
+    expect(templatesLink?.className).not.toContain('sidebar-link-active')
+  })
 })
 
 // ════════════════════════════════════════════════════════════
@@ -393,5 +437,33 @@ describe('Sidebar nav link hrefs', () => {
     const links = screen.getAllByRole('link')
     const csLink = links.find((l) => l.textContent === 'Character Sheets')
     expect(csLink).toHaveAttribute('href', '/dashboard?tab=character-sheets')
+  })
+
+  it('Explore Campaigns link points to /dashboard/explore-campaigns', () => {
+    render(<Sidebar />)
+    const links = screen.getAllByRole('link')
+    const exploreLink = links.find((l) => l.textContent === 'Explore Campaigns')
+    expect(exploreLink).toHaveAttribute('href', '/dashboard/explore-campaigns')
+  })
+
+  it('Public Templates link points to /dashboard/public-templates', () => {
+    render(<Sidebar />)
+    const links = screen.getAllByRole('link')
+    const templatesLink = links.find((l) => l.textContent === 'Public Templates')
+    expect(templatesLink).toHaveAttribute('href', '/dashboard/public-templates')
+  })
+
+  it('My Templates link points to /dashboard/templates', () => {
+    render(<Sidebar />)
+    const links = screen.getAllByRole('link')
+    const myTemplatesLink = links.find((l) => l.textContent === 'My Templates')
+    expect(myTemplatesLink).toHaveAttribute('href', '/dashboard/templates')
+  })
+
+  it('Subscription link points to /dashboard/subscription', () => {
+    render(<Sidebar />)
+    const links = screen.getAllByRole('link')
+    const subLink = links.find((l) => l.textContent === 'Subscription')
+    expect(subLink).toHaveAttribute('href', '/dashboard/subscription')
   })
 })

@@ -58,3 +58,22 @@ Object.defineProperty(window, 'ResizeObserver', {
   value: ResizeObserverMock,
   writable: true,
 })
+
+// Polyfill Element.prototype.scrollIntoView (jsdom doesn't implement it)
+if (typeof Element.prototype.scrollIntoView !== 'function') {
+  Element.prototype.scrollIntoView = function () {}
+}
+
+// Polyfill HTMLFormElement.prototype.requestSubmit (jsdom doesn't implement it)
+if (typeof HTMLFormElement.prototype.requestSubmit !== 'function') {
+  HTMLFormElement.prototype.requestSubmit = function (
+    submitter?: HTMLElement,
+  ) {
+    if (submitter) {
+      submitter.click()
+    } else {
+      // Fall back to dispatching a submit event so React's onSubmit fires
+      this.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    }
+  }
+}

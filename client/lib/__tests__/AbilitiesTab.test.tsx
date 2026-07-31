@@ -84,18 +84,30 @@ vi.mock('@/components/shared/NumericInput', () => ({
   ),
 }))
 
-vi.mock('@/components/character-sheet/ResistanceTab', () => ({
-  ResistanceTab: ({ resistances, isOwner }: {
-    resistances: Array<{ resistanceId: string; name: string; calculationType: string; total: number }>
-    isOwner: boolean
+vi.mock('@/components/character-sheet/SummonResourceCard', () => ({
+  SummonResourceCard: ({ ability, attributeDisplays, acResult, permissions }: {
+    ability: { id: string; name: string; description?: string | null; notes?: string | null }
+    attributeDisplays: Array<{ key: string; name: string; value: string; modifier: number | null; attributeId: string }>
+    acResult: number | null
+    permissions: { canEditAbilities: boolean }
   }) => (
-    <div data-testid="resistance-tab">
-      {resistances.map(r => (
-        <div key={r.resistanceId} data-testid={`resistance-${r.resistanceId}`}>
-          {r.name}: {r.total}
+    <div data-testid="summon-resource-card">
+      <div data-testid="resource-card-ability-id">{ability.id}</div>
+      <div data-testid="resource-card-ability-name">{ability.name}</div>
+      <div data-testid="resource-card-ac">{acResult !== null && acResult !== undefined ? acResult : 'null'}</div>
+      <div data-testid="resource-card-attr-count">{attributeDisplays.length}</div>
+      {attributeDisplays.map(ad => (
+        <div key={ad.attributeId} data-testid={`attr-display-${ad.attributeId}`}>
+          {ad.key}: {ad.value} (mod: {ad.modifier !== null && ad.modifier !== undefined ? ad.modifier : 'null'})
         </div>
       ))}
-      {resistances.length === 0 && <span>No resistances configured.</span>}
+      <div data-testid="resource-card-can-edit">{String(permissions.canEditAbilities)}</div>
+      {ability.description?.trim() && (
+        <div data-testid="resource-card-description">{ability.description}</div>
+      )}
+      {ability.notes?.trim() && (
+        <div data-testid="resource-card-notes">{ability.notes}</div>
+      )}
     </div>
   ),
 }))
@@ -161,11 +173,8 @@ function makeAbility(overrides: Record<string, unknown> = {}) {
     levelOrder: 0,
     summonHealth: null,
     summonAttributes: [],
-    summonResistanceValues: [],
-    summonResistanceComponentValues: [],
     summonSkills: [],
     summonAcValues: [],
-    summonAcAttributeValues: [],
     _count: { levels: 2 },
     childAbilities: [],
   }
@@ -185,13 +194,10 @@ function makeSummon(overrides: Record<string, unknown> = {}) {
       { id: 'sa-1', attributeId: 'attr-1', value: '14' },
       { id: 'sa-2', attributeId: 'attr-2', value: '12' },
     ],
-    summonResistanceValues: [],
-    summonResistanceComponentValues: [],
     summonSkills: [],
     summonAcValues: [
-      { id: 'acv-1', fieldId: 'ac-field-1', value: '12' },
+      { id: 'acv-1', value: '12' },
     ],
-    summonAcAttributeValues: [],
     childAbilities: [],
     ...overrides,
   })
@@ -213,18 +219,13 @@ const defaultSetExpandedAbilities = vi.fn()
 const defaultSetSearchQuery = vi.fn()
 const defaultSaveSummonAttribute = vi.fn()
 const defaultSaveSummonAcValue = vi.fn()
-const defaultSaveSummonAcAttributeValue = vi.fn()
 const defaultSaveSummonHealth = vi.fn()
-const defaultSetSummonTabs = vi.fn()
 const defaultHandleAddSummonSkill = vi.fn()
 const defaultHandleRemoveSummonSkill = vi.fn()
-const defaultHandleSummonSkillAttributeChange = vi.fn()
-const defaultHandleSummonSkillProfileChange = vi.fn()
+const defaultHandleUpdateSummonSkill = vi.fn()
 const defaultHandleCreateSummonAbility = vi.fn()
 const defaultSummonModifierResults = {}
 const defaultSummonAcResults = {}
-const defaultSummonSkillResults = {}
-const defaultSummonTabs = {}
 
 function defaultProps(overrides: Record<string, unknown> = {}) {
   return {
@@ -273,15 +274,10 @@ function defaultProps(overrides: Record<string, unknown> = {}) {
     summonAcResults: defaultSummonAcResults,
     saveSummonAttribute: defaultSaveSummonAttribute,
     saveSummonAcValue: defaultSaveSummonAcValue,
-    saveSummonAcAttributeValue: defaultSaveSummonAcAttributeValue,
     saveSummonHealth: defaultSaveSummonHealth,
-    summonTabs: defaultSummonTabs,
-    setSummonTabs: defaultSetSummonTabs,
-    summonSkillResults: defaultSummonSkillResults,
     handleAddSummonSkill: defaultHandleAddSummonSkill,
     handleRemoveSummonSkill: defaultHandleRemoveSummonSkill,
-    handleSummonSkillAttributeChange: defaultHandleSummonSkillAttributeChange,
-    handleSummonSkillProfileChange: defaultHandleSummonSkillProfileChange,
+    handleUpdateSummonSkill: defaultHandleUpdateSummonSkill,
     handleCreateSummonAbility: defaultHandleCreateSummonAbility,
     ...overrides,
   }
@@ -324,14 +320,12 @@ describe('AbilitiesTab', () => {
   })
 
   it('shows search empty state when search yields no results', () => {
-    // Provide an ability that won't match the search
     renderAbilitiesTab({ abilities: [makeAbility()], searchQuery: 'zzz' })
     expect(screen.getByText('No entries match your search.')).toBeInTheDocument()
   })
 
   it('does not show search empty state when searchQuery is empty and no abilities', () => {
     renderAbilitiesTab({ searchQuery: '' })
-    // Shows the general empty state, not the search empty state
     expect(screen.getByText('No abilities or summons yet.')).toBeInTheDocument()
     expect(screen.queryByText('No entries match your search.')).not.toBeInTheDocument()
   })
@@ -364,16 +358,20 @@ describe('AbilitiesTab', () => {
   })
 
   it('shows level badge for ability with level', () => {
-    renderAbilitiesTab({ abilities: [makeAbility()] })
-    expect(screen.getByText('Level 1')).toBeInTheDocument()
+    renderAbilitiesTab({
+      abilities: [makeAbility()],
+      selectedLevels: { 'abil-1': 'lvl-1' },
+    })
+    // Badge + Select trigger both display "Level 1"
+    expect(screen.getAllByText('Level 1').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders level select dropdown for abilities with levels', () => {
+  it('renders level select dropdown for abilities with levels', async () => {
+    const user = userEvent.setup()
     renderAbilitiesTab({ abilities: [makeAbility()] })
-    const level1s = screen.getAllByText('Level 1')
-    expect(level1s.length).toBeGreaterThanOrEqual(1)
-    const level2s = screen.getAllByText('Level 2')
-    expect(level2s.length).toBeGreaterThanOrEqual(1)
+    await user.click(screen.getAllByRole('combobox')[0])
+    expect(screen.getByRole('option', { name: 'Level 1' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Level 2' })).toBeInTheDocument()
   })
 
   // ── Expand/collapse ──
@@ -673,10 +671,6 @@ describe('AbilitiesTab', () => {
   it('calls setNewAbilityType(null) when back arrow is clicked in ability form', () => {
     const setType = vi.fn()
     renderAbilitiesTab({ showNewAbility: true, newAbilityType: 'ABILITY', setNewAbilityType: setType })
-    // The back arrow is the first svg button in the form header
-    const backBtns = document.querySelectorAll('button svg')
-    expect(backBtns.length).toBeGreaterThan(0)
-    // Click the back button (the one with the left chevron path)
     const chevronLeftBtn = Array.from(document.querySelectorAll('button')).find(
       btn => btn.innerHTML.includes('M15 19l-7-7 7-7')
     )
@@ -780,10 +774,8 @@ describe('AbilitiesTab', () => {
       showAddLevelModal: 'abil-1',
       expandedAbilities: { 'abil-1': true },
     })
-    // The level modal has a Create button
     const createBtn = screen.getByText('Create')
     fireEvent.click(createBtn)
-    // api.post should have been called
     expect(mockPost).toHaveBeenCalled()
   })
 
@@ -810,7 +802,6 @@ describe('AbilitiesTab', () => {
       newLevelForm: { level: 2, copyFromPrevious: true },
       setNewLevelForm: setForm,
     })
-    // Click "No" radio
     const noRadio = screen.getByText('No').previousElementSibling as HTMLInputElement
     fireEvent.click(noRadio)
     expect(setForm).toHaveBeenCalled()
@@ -835,7 +826,6 @@ describe('AbilitiesTab', () => {
       selectedLevels: { 'abil-1': 'lvl-1' },
     })
     fireEvent.click(screen.getByText('Delete Level 1'))
-    // Check for the level info in the confirmation text
     expect(screen.getAllByText(/Level 1/).length).toBeGreaterThanOrEqual(1)
   })
 
@@ -876,15 +866,19 @@ describe('AbilitiesTab', () => {
 
   // ── Level select ──
 
-  it('changes selected level when level select changes', () => {
+  it('changes selected level when level select changes', async () => {
     const setLevels = vi.fn()
     renderAbilitiesTab({
       abilities: [makeAbility()],
       setSelectedLevels: setLevels,
     })
-    const selects = screen.getAllByRole('combobox')
-    fireEvent.change(selects[0], { target: { value: 'lvl-2' } })
+    const user = userEvent.setup()
+    await user.click(screen.getAllByRole('combobox')[0])
+    await user.click(screen.getByRole('option', { name: 'Level 2' }))
+    // Component uses a functional updater: setSelectedLevels(prev => ({ ...prev, [a.id]: val }))
     expect(setLevels).toHaveBeenCalled()
+    const updater = setLevels.mock.calls[0][0]
+    expect(updater({ 'abil-1': 'lvl-1' })).toEqual({ 'abil-1': 'lvl-2' })
   })
 
   it('selects last level by default when no selection exists', () => {
@@ -892,336 +886,111 @@ describe('AbilitiesTab', () => {
       abilities: [makeAbility()],
       selectedLevels: {},
     })
-    // Shows level 2 (the last level) badge + select option
     expect(screen.getAllByText('Level 2').length).toBeGreaterThanOrEqual(1)
   })
 
-  // ── Summon rendering ──
+  // ── SummonResourceCard integration ──
 
-  it('renders summon with health display', () => {
+  it('renders SummonResourceCard when summon expanded', () => {
     renderAbilitiesTab({ abilities: [makeSummon()], expandedAbilities: { 'summon-1': true } })
-    expect(screen.getByText('Health')).toBeInTheDocument()
-    expect(screen.getByText('Current')).toBeInTheDocument()
-    expect(screen.getByText('Max')).toBeInTheDocument()
+    const card = screen.getByTestId('summon-resource-card')
+    expect(card).toBeInTheDocument()
   })
 
-  it('shows summon health current and max values', () => {
-    renderAbilitiesTab({ abilities: [makeSummon()], expandedAbilities: { 'summon-1': true } })
-    // Current = 30, Max = 50
-    expect(screen.getByText('30')).toBeInTheDocument()
-    expect(screen.getByText('50')).toBeInTheDocument()
+  it('does not render SummonResourceCard when summon not expanded', () => {
+    renderAbilitiesTab({ abilities: [makeSummon()], expandedAbilities: {} })
+    expect(screen.queryByTestId('summon-resource-card')).not.toBeInTheDocument()
   })
 
-  it('shows summon attributes section when attributes exist', () => {
-    renderAbilitiesTab({ abilities: [makeSummon()], expandedAbilities: { 'summon-1': true } })
-    expect(screen.getByText('Attributes')).toBeInTheDocument()
-    expect(screen.getAllByText('Strength').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getAllByText('Dexterity').length).toBeGreaterThanOrEqual(1)
+  it('does not render SummonResourceCard for ability type (not summon)', () => {
+    renderAbilitiesTab({ abilities: [makeAbility()], expandedAbilities: { 'abil-1': true } })
+    expect(screen.queryByTestId('summon-resource-card')).not.toBeInTheDocument()
   })
 
-  it('does not show attributes section when no summon attributes', () => {
+  it('passes correct ability id to SummonResourceCard', () => {
+    renderAbilitiesTab({ abilities: [makeSummon()], expandedAbilities: { 'summon-1': true } })
+    expect(screen.getByTestId('resource-card-ability-id').textContent).toBe('summon-1')
+  })
+
+  it('passes correct acResult to SummonResourceCard', () => {
+    renderAbilitiesTab({
+      abilities: [makeSummon()],
+      expandedAbilities: { 'summon-1': true },
+      summonAcResults: { 'summon-1': 18 },
+    })
+    expect(screen.getByTestId('resource-card-ac').textContent).toBe('18')
+  })
+
+  it('passes null acResult when no result in summonAcResults', () => {
+    renderAbilitiesTab({
+      abilities: [makeSummon()],
+      expandedAbilities: { 'summon-1': true },
+      summonAcResults: {},
+    })
+    expect(screen.getByTestId('resource-card-ac').textContent).toBe('null')
+  })
+
+  it('passes correct attribute displays from summonAttributes and template', () => {
+    renderAbilitiesTab({
+      abilities: [makeSummon()],
+      expandedAbilities: { 'summon-1': true },
+    })
+    expect(screen.getByTestId('resource-card-attr-count').textContent).toBe('2')
+    expect(screen.getByTestId('attr-display-attr-1')).toBeInTheDocument()
+    expect(screen.getByTestId('attr-display-attr-1').textContent).toContain('str')
+    expect(screen.getByTestId('attr-display-attr-1').textContent).toContain('14')
+    expect(screen.getByTestId('attr-display-attr-2')).toBeInTheDocument()
+    expect(screen.getByTestId('attr-display-attr-2').textContent).toContain('dex')
+    expect(screen.getByTestId('attr-display-attr-2').textContent).toContain('12')
+  })
+
+  it('passes modifier results computed from summonModifierResults', () => {
+    renderAbilitiesTab({
+      abilities: [makeSummon()],
+      expandedAbilities: { 'summon-1': true },
+      summonModifierResults: { 'summon-1': { 'attr-1': 7, 'attr-2': 6 } },
+    })
+    expect(screen.getByTestId('attr-display-attr-1').textContent).toContain('mod: 7')
+    expect(screen.getByTestId('attr-display-attr-2').textContent).toContain('mod: 6')
+  })
+
+  it('passes null modifier when no modifier result exists', () => {
+    renderAbilitiesTab({
+      abilities: [makeSummon()],
+      expandedAbilities: { 'summon-1': true },
+      summonModifierResults: {},
+    })
+    expect(screen.getByTestId('attr-display-attr-1').textContent).toContain('mod: null')
+    expect(screen.getByTestId('attr-display-attr-2').textContent).toContain('mod: null')
+  })
+
+  it('passes empty attributeDisplays when no summonAttributes', () => {
     renderAbilitiesTab({
       abilities: [makeSummon({ summonAttributes: [] })],
       expandedAbilities: { 'summon-1': true },
     })
-    expect(screen.queryByText('Attributes')).not.toBeInTheDocument()
+    expect(screen.getByTestId('resource-card-attr-count').textContent).toBe('0')
   })
 
-  it('shows Damage and Heal buttons for owner in summon health', () => {
-    renderAbilitiesTab({ abilities: [makeSummon()], expandedAbilities: { 'summon-1': true } })
-    expect(screen.getByText('Damage')).toBeInTheDocument()
-    expect(screen.getByText('Heal')).toBeInTheDocument()
+  it('passes permissions correctly to SummonResourceCard', () => {
+    renderAbilitiesTab({
+      abilities: [makeSummon()],
+      expandedAbilities: { 'summon-1': true },
+    })
+    expect(screen.getByTestId('resource-card-can-edit').textContent).toBe('true')
   })
 
-  it('hides Damage and Heal buttons for non-owner', () => {
+  it('passes false permissions for non-owner', () => {
     renderAbilitiesTab({
       abilities: [makeSummon()],
       isOwner: false,
-      permissions: { canEditAbilities: false },
+      permissions: { canEditAbilities: false, canEditCharacter: false, canEditInventory: false, canEditPersonalAbilities: false, canEditResistances: false, canEditResources: false, canEditSkills: false, canEditStory: false, canEditProfessionalSkills: false },
       expandedAbilities: { 'summon-1': true },
     })
-    expect(screen.queryByText('Damage')).not.toBeInTheDocument()
-    expect(screen.queryByText('Heal')).not.toBeInTheDocument()
+    expect(screen.getByTestId('resource-card-can-edit').textContent).toBe('false')
   })
 
-  it('calls saveSummonHealth with Damage when Damage button clicked', async () => {
-    const saveHealth = vi.fn()
-    renderAbilitiesTab({
-      abilities: [makeSummon({ summonHealth: { current: 30, maximum: 50 } })],
-      expandedAbilities: { 'summon-1': true },
-      saveSummonHealth: saveHealth,
-      summonHpAmount: { 'summon-1': '10' },
-    })
-    // Set the HP amount via the NumericInput mock
-    const numericInputs = screen.getAllByTestId('numeric-input')
-    fireEvent.change(numericInputs[0], { target: { value: '10' } })
-    fireEvent.click(screen.getByText('Damage'))
-    expect(saveHealth).toHaveBeenCalledWith('summon-1', 'current', 20) // 30-10 = 20
-  })
-
-  it('calls saveSummonHealth with Heal when Heal button clicked', async () => {
-    const saveHealth = vi.fn()
-    renderAbilitiesTab({
-      abilities: [makeSummon({ summonHealth: { current: 30, maximum: 50 } })],
-      expandedAbilities: { 'summon-1': true },
-      saveSummonHealth: saveHealth,
-      summonHpAmount: { 'summon-1': '10' },
-    })
-    const numericInputs = screen.getAllByTestId('numeric-input')
-    fireEvent.change(numericInputs[0], { target: { value: '10' } })
-    fireEvent.click(screen.getByText('Heal'))
-    expect(saveHealth).toHaveBeenCalledWith('summon-1', 'current', 40) // 30+10 = 40
-  })
-
-  it('shows dash for max health when null for non-owner', () => {
-    renderAbilitiesTab({
-      abilities: [makeSummon({ summonHealth: { current: 30, maximum: null } })],
-      isOwner: false,
-      expandedAbilities: { 'summon-1': true },
-    })
-    const dashes = screen.getAllByText('—')
-    expect(dashes.length).toBeGreaterThanOrEqual(1)
-  })
-
-  // ── Summon tabs ──
-
-  it('renders summon sub-tabs: Stats, Skills, Abilities, Resistances', () => {
-    renderAbilitiesTab({ abilities: [makeSummon()], expandedAbilities: { 'summon-1': true } })
-    expect(screen.getByText('Stats')).toBeInTheDocument()
-    expect(screen.getByText('Skills')).toBeInTheDocument()
-    expect(screen.getByText('Abilities')).toBeInTheDocument()
-    expect(screen.getByText('Resistances')).toBeInTheDocument()
-  })
-
-  it('switches to Skills tab when Skills button clicked', () => {
-    const setTabs = vi.fn()
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      expandedAbilities: { 'summon-1': true },
-      setSummonTabs: setTabs,
-    })
-    fireEvent.click(screen.getByText('Skills'))
-    expect(setTabs).toHaveBeenCalled()
-  })
-
-  it('switches to Abilities tab when Abilities button clicked', () => {
-    const setTabs = vi.fn()
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      expandedAbilities: { 'summon-1': true },
-      setSummonTabs: setTabs,
-    })
-    fireEvent.click(screen.getByText('Abilities'))
-    expect(setTabs).toHaveBeenCalled()
-  })
-
-  it('switches to Resistances tab when Resistances button clicked', () => {
-    const setTabs = vi.fn()
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      expandedAbilities: { 'summon-1': true },
-      setSummonTabs: setTabs,
-    })
-    fireEvent.click(screen.getByText('Resistances'))
-    expect(setTabs).toHaveBeenCalled()
-  })
-
-  // ── Skills tab ──
-
-  it('shows Add Skill button in Skills tab for owner', () => {
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'skills' },
-    })
-    expect(screen.getByText('Add Skill')).toBeInTheDocument()
-  })
-
-  it('shows no skills message when no summon skills', () => {
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'skills' },
-    })
-    expect(screen.getByText(/No skills added/)).toBeInTheDocument()
-  })
-
-  it('opens skill search when Add Skill clicked', () => {
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'skills' },
-    })
-    fireEvent.click(screen.getByText('Add Skill'))
-    expect(screen.getByPlaceholderText('Search Skill...')).toBeInTheDocument()
-  })
-
-  it('closes skill search on Escape key', () => {
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'skills' },
-    })
-    fireEvent.click(screen.getByText('Add Skill'))
-    const searchInput = screen.getByPlaceholderText('Search Skill...')
-    fireEvent.keyDown(searchInput, { key: 'Escape' })
-    expect(screen.queryByPlaceholderText('Search Skill...')).not.toBeInTheDocument()
-  })
-
-  it('shows template skills in search results', () => {
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'skills' },
-    })
-    fireEvent.click(screen.getByText('Add Skill'))
-    expect(screen.getByText('Athletics')).toBeInTheDocument()
-    expect(screen.getByText('Stealth')).toBeInTheDocument()
-  })
-
-  it('filters template skills by search query in skill search', () => {
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'skills' },
-    })
-    fireEvent.click(screen.getByText('Add Skill'))
-    const searchInput = screen.getByPlaceholderText('Search Skill...')
-    fireEvent.change(searchInput, { target: { value: 'Ath' } })
-    expect(screen.getByText('Athletics')).toBeInTheDocument()
-    expect(screen.queryByText('Stealth')).not.toBeInTheDocument()
-  })
-
-  it('shows "No skills found" when search has no matches', () => {
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'skills' },
-    })
-    fireEvent.click(screen.getByText('Add Skill'))
-    const searchInput = screen.getByPlaceholderText('Search Skill...')
-    fireEvent.change(searchInput, { target: { value: 'Zzz' } })
-    expect(screen.getByText('No skills found')).toBeInTheDocument()
-  })
-
-  it('does not show Add Skill button for non-owner', () => {
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      isOwner: false,
-      permissions: { canEditAbilities: false },
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'skills' },
-    })
-    expect(screen.queryByText('Add Skill')).not.toBeInTheDocument()
-  })
-
-  it('renders skill rows with names and results', () => {
-    const skills = [
-      { id: 'ss-1', skillId: 'skill-1', skill: { id: 'skill-1', name: 'Athletics', allowedAttributeIds: ['attr-1', 'attr-2'] }, selectedAttributeId: 'attr-1', selectedAttribute: { id: 'attr-1', key: 'str', name: 'Strength' } },
-    ]
-    renderAbilitiesTab({
-      abilities: [makeSummon({ summonSkills: skills })],
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'skills' },
-      summonSkillResults: { 'summon-1': { 'ss-1': 5 } },
-    })
-    expect(screen.getByText('Athletics')).toBeInTheDocument()
-    expect(screen.getByText('+5')).toBeInTheDocument()
-  })
-
-  it('shows remove skill button for owner', () => {
-    const skills = [
-      { id: 'ss-1', skillId: 'skill-1', skill: { id: 'skill-1', name: 'Athletics', allowedAttributeIds: ['attr-1', 'attr-2'] }, selectedAttributeId: null, selectedAttribute: null },
-    ]
-    renderAbilitiesTab({
-      abilities: [makeSummon({ summonSkills: skills })],
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'skills' },
-    })
-    const removeBtns = screen.getAllByTitle('Remove skill')
-    expect(removeBtns.length).toBeGreaterThanOrEqual(1)
-  })
-
-  it('shows dash for skill result when null', () => {
-    const skills = [
-      { id: 'ss-1', skillId: 'skill-1', skill: { id: 'skill-1', name: 'Athletics', allowedAttributeIds: ['attr-1', 'attr-2'] }, selectedAttributeId: null, selectedAttribute: null },
-    ]
-    renderAbilitiesTab({
-      abilities: [makeSummon({ summonSkills: skills })],
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'skills' },
-      summonSkillResults: { 'summon-1': { 'ss-1': null } },
-    })
-    const dashElements = screen.getAllByText('—')
-    // At least one of these dashes should be from skill result
-    expect(dashElements.length).toBeGreaterThanOrEqual(1)
-  })
-
-  // ── Child abilities tab ──
-
-  it('shows no abilities message in child abilities tab', () => {
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'abilities' },
-    })
-    expect(screen.getByText('No abilities yet.')).toBeInTheDocument()
-  })
-
-  it('renders child abilities in abilities tab', () => {
-    const childAbility = makeAbility({ id: 'child-1', name: 'Bite', levels: [{ id: 'cl-1', level: 1, manaCost: 5, range: 'melee', damage: '1d4', description: 'A sharp bite', notes: null }] })
-    renderAbilitiesTab({
-      abilities: [makeSummon({ childAbilities: [childAbility] })],
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'abilities' },
-    })
-    expect(screen.getByText('Bite')).toBeInTheDocument()
-  })
-
-  it('shows Add Ability button for owner in child abilities tab', () => {
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'abilities' },
-    })
-    expect(screen.getByText('Add Ability')).toBeInTheDocument()
-  })
-
-  // ── Resistances tab ──
-
-  it('renders ResistanceTab in resistances tab', () => {
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'resistances' },
-    })
-    expect(screen.getByTestId('resistance-tab')).toBeInTheDocument()
-  })
-
-  // ── Summon with modifier results ──
-
-  it('shows attribute modifier result when present', () => {
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      expandedAbilities: { 'summon-1': true },
-      summonModifierResults: { 'summon-1': { 'attr-1': 3, 'attr-2': 2 } },
-    })
-    // Should have modifier display (+3 or +2)
-    expect(screen.getByText('(+3)')).toBeInTheDocument()
-    expect(screen.getByText('(+2)')).toBeInTheDocument()
-  })
-
-  // ── AC display ──
-
-  it('shows armor class section for summons with AC values', () => {
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      expandedAbilities: { 'summon-1': true },
-    })
-    expect(screen.getByText(/Armor Class/)).toBeInTheDocument()
-  })
-
-  // ── Description/notes for non-owner in summon ──
+  // ── Description/notes for summon ──
 
   it('shows summon description for non-owner when present', () => {
     renderAbilitiesTab({
@@ -1239,6 +1008,44 @@ describe('AbilitiesTab', () => {
       expandedAbilities: { 'summon-1': true },
     })
     expect(screen.getByText('Can be summoned once per day')).toBeInTheDocument()
+  })
+
+  // ── Child abilities (always visible, no longer behind a tab) ──
+
+  it('shows child abilities heading and no abilities message', () => {
+    renderAbilitiesTab({
+      abilities: [makeSummon()],
+      expandedAbilities: { 'summon-1': true },
+    })
+    expect(screen.getByText('Abilities')).toBeInTheDocument()
+    expect(screen.getByText('No abilities yet.')).toBeInTheDocument()
+  })
+
+  it('renders child abilities', () => {
+    const childAbility = makeAbility({ id: 'child-1', name: 'Bite', levels: [{ id: 'cl-1', level: 1, manaCost: 5, range: 'melee', damage: '1d4', description: 'A sharp bite', notes: null }] })
+    renderAbilitiesTab({
+      abilities: [makeSummon({ childAbilities: [childAbility] })],
+      expandedAbilities: { 'summon-1': true },
+    })
+    expect(screen.getByText('Bite')).toBeInTheDocument()
+  })
+
+  it('shows Add Ability button for owner', () => {
+    renderAbilitiesTab({
+      abilities: [makeSummon()],
+      expandedAbilities: { 'summon-1': true },
+    })
+    expect(screen.getByText('Add Ability')).toBeInTheDocument()
+  })
+
+  it('hides Add Ability button for non-owner', () => {
+    renderAbilitiesTab({
+      abilities: [makeSummon()],
+      isOwner: false,
+      permissions: { canEditAbilities: false, canEditCharacter: false, canEditInventory: false, canEditPersonalAbilities: false, canEditResistances: false, canEditResources: false, canEditSkills: false, canEditStory: false, canEditProfessionalSkills: false },
+      expandedAbilities: { 'summon-1': true },
+    })
+    expect(screen.queryByText('Add Ability')).not.toBeInTheDocument()
   })
 
   // ── InlineClickEdit interactions ──
@@ -1265,10 +1072,8 @@ describe('AbilitiesTab', () => {
   it('handles level select stopping propagation', () => {
     renderAbilitiesTab({ abilities: [makeAbility()] })
     const selects = screen.getAllByRole('combobox')
-    // Clicking the level select should not trigger expand toggle
     const stopPropagation = vi.fn()
     fireEvent.click(selects[0], { stopPropagation })
-    // The expand function should not be called because we stopped propagation
   })
 
   it('shows "No levels added yet." for owner when ability has no levels', () => {
@@ -1365,55 +1170,7 @@ describe('AbilitiesTab', () => {
     })
   })
 
-  // ── __evaluateSummonFormula tests ──
-
-  it('builds summon resistances correctly for MANUAL type', () => {
-    const resistances = [
-      { id: 'res-1', name: 'Fortitude', calculationType: 'MANUAL', components: [], attributeModifiers: [] },
-    ]
-    const template = {
-      ...defaultTemplate,
-      resistances,
-    }
-    renderAbilitiesTab({
-      abilities: [makeSummon({
-        summonResistanceValues: [{ resistanceId: 'res-1', manualValue: '15' }],
-      })],
-      template,
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'resistances' },
-    })
-    expect(screen.getByTestId('resistance-tab')).toBeInTheDocument()
-  })
-
-  it('builds summon resistances for CALCULATED type with editable components', () => {
-    renderAbilitiesTab({
-      abilities: [makeSummon({
-        summonResistanceComponentValues: [{ componentId: 'comp-1', value: '10' }],
-      })],
-      expandedAbilities: { 'summon-1': true },
-      summonTabs: { 'summon-1': 'resistances' },
-    })
-    const tab = screen.getByTestId('resistance-tab')
-    expect(tab).toBeInTheDocument()
-    // Physical resistance should appear
-    expect(screen.getByText(/Physical/)).toBeInTheDocument()
-  })
-
-  // ── AC attribute modifiers display ──
-
-  it('shows AC attribute modifier section when attributeModifiersEnabled is true', () => {
-    renderAbilitiesTab({
-      abilities: [makeSummon()],
-      expandedAbilities: { 'summon-1': true },
-    })
-    // The template has attributeModifiersEnabled: true
-    // AC section should show attribute modifiers
-    const textContents = document.body.textContent || ''
-    expect(textContents).toContain('Armor Class')
-  })
-
-  // ── Level modal level input ──
+  // ── Edge cases and multiple abilities ──
 
   it('updates level input in add level modal', () => {
     const setForm = vi.fn()
@@ -1426,8 +1183,6 @@ describe('AbilitiesTab', () => {
     fireEvent.change(levelInput, { target: { value: '3' } })
     expect(setForm).toHaveBeenCalled()
   })
-
-  // ── Multiple abilities rendering ──
 
   it('renders multiple abilities with correct name display', () => {
     renderAbilitiesTab({
@@ -1452,8 +1207,6 @@ describe('AbilitiesTab', () => {
     expect(screen.getByText((content) => content.includes('2') && content.includes('entrys'))).toBeInTheDocument()
   })
 
-  // ── Non-owner read-only level metadata ──
-
   it('renders level metadata for non-owner when manaCost is null', () => {
     renderAbilitiesTab({
       abilities: [makeAbility({
@@ -1463,8 +1216,62 @@ describe('AbilitiesTab', () => {
       expandedAbilities: { 'abil-1': true },
       selectedLevels: { 'abil-1': 'lvl-1' },
     })
-    // Non-owner only renders spans when values exist — with null values, nothing renders
-    // But the component should not crash
+  })
+
+  it('includes SummonResourceCard when summon is expanded with child abilities', () => {
+    const childAbility = makeAbility({ id: 'child-1', name: 'Bite', levels: [{ id: 'cl-1', level: 1, manaCost: 5, range: 'melee', damage: '1d4', description: null, notes: null }] })
+    renderAbilitiesTab({
+      abilities: [makeSummon({ childAbilities: [childAbility] })],
+      expandedAbilities: { 'summon-1': true },
+    })
+    // SummonResourceCard renders, child abilities appear below
+    expect(screen.getByTestId('summon-resource-card')).toBeInTheDocument()
+    expect(screen.getByText('Bite')).toBeInTheDocument()
+  })
+
+  it('handles summon with no summonAcValues gracefully', () => {
+    renderAbilitiesTab({
+      abilities: [makeSummon({ summonAcValues: [] })],
+      expandedAbilities: { 'summon-1': true },
+    })
+    // SummonResourceCard should still render, ac result is null
+    expect(screen.getByTestId('summon-resource-card')).toBeInTheDocument()
+    expect(screen.getByTestId('resource-card-ac').textContent).toBe('null')
+  })
+
+  it('handles summon with no health gracefully', () => {
+    renderAbilitiesTab({
+      abilities: [makeSummon({ summonHealth: null })],
+      expandedAbilities: { 'summon-1': true },
+    })
+    // SummonResourceCard should still render with null health
+    expect(screen.getByTestId('summon-resource-card')).toBeInTheDocument()
+  })
+
+  it('handles summon with no description or notes for non-owner', () => {
+    renderAbilitiesTab({
+      abilities: [makeSummon({ description: null, notes: null })],
+      isOwner: false,
+      permissions: { canEditAbilities: false, canEditCharacter: false, canEditInventory: false, canEditPersonalAbilities: false, canEditResistances: false, canEditResources: false, canEditSkills: false, canEditStory: false, canEditProfessionalSkills: false },
+      expandedAbilities: { 'summon-1': true },
+    })
+    // Should render without crashing, no description/notes shown
+    expect(screen.getByTestId('summon-resource-card')).toBeInTheDocument()
+  })
+
+  it('renders non-owner summon view without edit features', () => {
+    renderAbilitiesTab({
+      abilities: [makeSummon()],
+      isOwner: false,
+      permissions: { canEditAbilities: false, canEditCharacter: false, canEditInventory: false, canEditPersonalAbilities: false, canEditResistances: false, canEditResources: false, canEditSkills: false, canEditStory: false, canEditProfessionalSkills: false },
+      expandedAbilities: { 'summon-1': true },
+    })
+    // SummonResourceCard renders with canEdit=false
+    expect(screen.getByTestId('summon-resource-card')).toBeInTheDocument()
+    expect(screen.getByTestId('resource-card-can-edit').textContent).toBe('false')
+    // Description and notes visible
+    expect(screen.getByText('A loyal spirit wolf')).toBeInTheDocument()
+    expect(screen.getByText('Can be summoned once per day')).toBeInTheDocument()
   })
 })
 
@@ -1648,17 +1455,14 @@ describe('evaluateSummonFormula', () => {
   })
 
   it('tolerates trailing operator: 5 + = 5', () => {
-    // The parser stops after consuming the number, trailing operator is ignored
     expect(evaluateSummonFormula('5 +', {})).toBe(5)
   })
 
   it('tolerates missing closing paren: (5 + 3 = 8', () => {
-    // The parser is lenient — expect('rparen') returns false silently
     expect(evaluateSummonFormula('(5 + 3', {})).toBe(8)
   })
 
   it('tolerates unclosed function call: floor(5 = 5', () => {
-    // The parser is lenient about missing closing paren
     expect(evaluateSummonFormula('floor(5', {})).toBe(5)
   })
 
@@ -1693,7 +1497,6 @@ describe('evaluateSummonFormula', () => {
   })
 
   it('returns 0 for NaN result from Math function', () => {
-    // min() with no arguments returns Infinity, wrapped in expression that makes it finite-checked
     expect(evaluateSummonFormula('min()', {})).toBe(0)
   })
 

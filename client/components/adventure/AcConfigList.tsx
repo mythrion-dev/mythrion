@@ -1,5 +1,6 @@
 'use client'
 
+import { Select } from '@/components/shared/Select'
 import type { AcConfigDraft, ArmorClassAttributeModifierDraft } from '@/components/adventure/types'
 
 export function AcConfigList(props: {
@@ -83,9 +84,13 @@ export function AcConfigList(props: {
                         <div key={am.attributeId} className="rounded border border-border/50 bg-background/20 p-2 space-y-2">
                           <div>
                             <label className="text-[0.65rem] font-semibold text-muted uppercase tracking-wider mb-1 block">Attribute</label>
-                            <select className="input-field text-xs" value={am.attributeId} onChange={e => onUpdateAttributeModifier(ci, am.attributeId, { attributeId: e.target.value, defaultAttributeId: e.target.value })}>
-                              {attrs.filter(a => a.key.trim() && a.name.trim()).map(attr => <option key={attr.key} value={attr.key.trim()}>{attr.name.trim()}</option>)}
-                            </select>
+                            <Select
+                              options={attrs.filter(a => a.key.trim() && a.name.trim()).map(attr => ({ id: attr.key.trim(), label: attr.name.trim() }))}
+                              value={am.attributeId}
+                              onChange={val => onUpdateAttributeModifier(ci, am.attributeId, { attributeId: val, defaultAttributeId: val })}
+                              size="sm"
+                              className="text-xs"
+                            />
                           </div>
                           <div>
                             <label className="text-[0.65rem] font-semibold text-muted uppercase tracking-wider mb-1 block">Player Selection</label>
@@ -97,9 +102,13 @@ export function AcConfigList(props: {
                           {am.allowPlayerSelection && (
                             <div>
                               <label className="text-[0.65rem] font-semibold text-muted uppercase tracking-wider mb-1 block">Default Attribute</label>
-                              <select className="input-field text-xs" value={defaultAttributeId} onChange={e => onUpdateAttributeModifier(ci, am.attributeId, { defaultAttributeId: e.target.value })}>
-                                {attrs.filter(a => a.key.trim() && a.name.trim()).map(attr => <option key={attr.key} value={attr.key.trim()}>{attr.name.trim()}</option>)}
-                              </select>
+                              <Select
+                                options={attrs.filter(a => a.key.trim() && a.name.trim()).map(attr => ({ id: attr.key.trim(), label: attr.name.trim() }))}
+                                value={defaultAttributeId}
+                                onChange={val => onUpdateAttributeModifier(ci, am.attributeId, { defaultAttributeId: val })}
+                                size="sm"
+                                className="text-xs"
+                              />
                             </div>
                           )}
                         </div>
