@@ -117,7 +117,23 @@ If the auth system uses Google OAuth, you may also need:
 |---|---|
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
-| `GOOGLE_CALLBACK_URL` | `https://<your-domain>/api/auth/google/callback` |
+| `GOOGLE_CALLBACK_URL` | `https://<your-railway-domain>/api/auth/google/callback` — **single, unchanged** value. The OAuth token exchange always happens on the Railway API, so there is exactly one redirect URI and **no new URI is added in the Google console when you register new frontend domains.** |
+
+---
+
+### 8. `ALLOWED_ORIGINS` — Multi-Domain Frontend
+
+The API is served from a single Railway URL, but the Next.js frontend can be reached from multiple domains (the Vercel URL plus custom domains like `mythrion.com.br`). Every frontend origin must be allow-listed here — it drives both CORS and the Google OAuth redirect target.
+
+Comma-separated list of frontend origins:
+
+```
+ALLOWED_ORIGINS=https://mythrion.vercel.app,https://mythrion.com.br,https://mythrion.online
+```
+
+> `FRONTEND_URL` is always included in the allowlist too (and used as the fallback redirect when no `state` is present), so existing setups keep working even before you set `ALLOWED_ORIGINS`.
+
+**How Google OAuth works across domains:** the client sends `?state=<origin>` when starting login; the API validates it against this allowlist, Google echoes it back, and the callback redirects the user to the domain they came from — falling back to `FRONTEND_URL` if the origin is absent or not allowed (prevents open redirects).
 
 ---
 

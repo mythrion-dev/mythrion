@@ -7,6 +7,7 @@ import { JwtAuthGuard } from './jwt-auth.guard.js'
 import { PrismaService } from '../prisma.service.js'
 import { GoogleService } from './google.service.js'
 import { GoogleStrategy } from './google.strategy.js'
+import { GoogleAuthGuard } from './google-auth.guard.js'
 import { TokenService } from './token.service.js'
 import { RateLimitGuard } from './rate-limit.guard.js'
 import { AdminService } from './admin.service.js'
@@ -30,6 +31,7 @@ import { SubscriptionModule } from '../subscription/subscription.module.js'
     PrismaService,
     GoogleService,
     GoogleStrategy,
+    GoogleAuthGuard,
     TokenService,
     RateLimitGuard,
     AdminService,

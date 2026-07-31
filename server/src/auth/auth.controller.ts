@@ -5,12 +5,24 @@ import { RegisterDto } from './dto/register.dto.js'
 import { OnboardingDto } from './dto/onboarding.dto.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
 import { AuthGuard } from '@nestjs/passport'
+import { GoogleAuthGuard } from './google-auth.guard.js'
+import { isAllowedOrigin, normalizeOrigin } from '../config/allowed-origins.js'
 import { RateLimit } from './rate-limit.decorator.js'
 import { RateLimitGuard } from './rate-limit.guard.js'
 import type { AuthenticatedRequest } from './AuthenticatedRequest.js'
 import type { Response } from 'express'
 
 const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:3001'
+
+/** Resolve which frontend domain to send the user back to after OAuth.
+ *  The `state` param carries the origin the user started from; it is
+ *  validated against the allowlist so an attacker cannot set the redirect. */
+function resolveRedirectOrigin(state?: string): string {
+  if (isAllowedOrigin(state)) {
+    return normalizeOrigin(state) as string
+  }
+  return FRONTEND_URL
+}
 
 @Controller('auth')
 @UseGuards(RateLimitGuard)
@@ -67,14 +79,17 @@ export class AuthController {
     }
   }
 
-  /** Google OAuth — redirect to Google */
+  /** Google OAuth — redirect to Google. The guard threads the requesting
+   *  frontend origin through `state` so the callback can redirect back. */
   @Get('google')
-  @UseGuards(AuthGuard('google'))
+  @UseGuards(GoogleAuthGuard)
   googleAuth() {
     // Guard redirects to Google
   }
 
-  /** Google OAuth callback — returns tokens via redirect */
+  /** Google OAuth callback — returns tokens via redirect. The static
+   *  GOOGLE_CALLBACK_URL is unchanged; only the final redirect target varies
+   *  per frontend domain, resolved from the validated `state`. */
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleCallback(@Req() req: any, @Res() res: Response, @Query('state') state?: string) {
@@ -82,9 +97,7 @@ export class AuthController {
     const params = new URLSearchParams()
     params.set('token', accessToken)
     params.set('refreshToken', refreshToken)
-    if (state) {
-      params.set('state', state)
-    }
-    res.redirect(`${FRONTEND_URL}/auth/google/callback?${params.toString()}`)
+    const origin = resolveRedirectOrigin(state)
+    res.redirect(`${origin}/auth/google/callback?${params.toString()}`)
   }
 }
