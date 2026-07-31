@@ -78,35 +78,20 @@ describe('JoinRequestPanel', () => {
     expect(screen.queryByText('Accept')).toBeNull()
   })
 
-  it('shows Accepted badge for accepted requests', () => {
+  it('shows Accept and Reject buttons regardless of status (backend only returns pending)', () => {
     render(
       <JoinRequestPanel
         {...defaultProps}
         requests={[
           {
             ...defaultRequests[0],
-            status: 'accepted' as const,
+            status: 'pending' as const,
           },
         ]}
       />,
     )
-    expect(screen.getByText('Accepted')).toBeDefined()
-    expect(screen.queryByText('Accept')).toBeNull()
-  })
-
-  it('shows Rejected badge for rejected requests', () => {
-    render(
-      <JoinRequestPanel
-        {...defaultProps}
-        requests={[
-          {
-            ...defaultRequests[0],
-            status: 'rejected' as const,
-          },
-        ]}
-      />,
-    )
-    expect(screen.getByText('Rejected')).toBeDefined()
+    expect(screen.getByText('Accept')).toBeDefined()
+    expect(screen.getByText('Reject')).toBeDefined()
   })
 
   it('shows loading skeleton when loading', () => {
@@ -120,11 +105,9 @@ describe('JoinRequestPanel', () => {
 
   it('shows empty state when no requests', () => {
     render(<JoinRequestPanel {...defaultProps} requests={[]} />)
-    expect(screen.getByText('No Requests')).toBeDefined()
+    expect(screen.getByText('No Pending Requests')).toBeDefined()
     expect(
-      screen.getByText(
-        'No one has requested to join this campaign yet.',
-      ),
+      screen.getByText('No pending join requests.'),
     ).toBeDefined()
   })
 
@@ -172,18 +155,63 @@ describe('JoinRequestPanel', () => {
     expect(screen.queryByText('I would love to join!')).toBeNull()
   })
 
-  it('shows correct pending count with mixed statuses', () => {
+  it('shows search bar when requests exist', () => {
+    render(<JoinRequestPanel {...defaultProps} />)
+    expect(
+      screen.getByPlaceholderText('Search by name or email...'),
+    ).toBeDefined()
+  })
+
+  it('filters requests by search term', () => {
     render(
       <JoinRequestPanel
         {...defaultProps}
         requests={[
-          { ...defaultRequests[0], status: 'pending' },
+          { ...defaultRequests[0], id: 'req-1', userDisplayName: 'Alice' },
+          {
+            id: 'req-2',
+            userId: 'user-2',
+            userDisplayName: 'Bob',
+            message: null,
+            status: 'pending',
+            createdAt: '2025-06-15T11:00:00Z',
+          },
+        ]}
+      />,
+    )
+    expect(screen.getByText('Alice')).toBeDefined()
+    expect(screen.getByText('Bob')).toBeDefined()
+
+    const input = screen.getByPlaceholderText('Search by name or email...')
+    fireEvent.change(input, { target: { value: 'Ali' } })
+
+    expect(screen.getByText('Alice')).toBeDefined()
+    expect(screen.queryByText('Bob')).toBeNull()
+  })
+
+  it('shows no-results empty state when search yields nothing', () => {
+    render(<JoinRequestPanel {...defaultProps} />)
+    const input = screen.getByPlaceholderText('Search by name or email...')
+    fireEvent.change(input, { target: { value: 'nonexistent' } })
+
+    expect(screen.getByText('No Results')).toBeDefined()
+    expect(
+      screen.getByText('No join requests match your search.'),
+    ).toBeDefined()
+  })
+
+  it('shows correct pending count with multiple requests', () => {
+    render(
+      <JoinRequestPanel
+        {...defaultProps}
+        requests={[
+          { ...defaultRequests[0], id: 'req-1' },
           {
             id: 'req-2',
             userId: 'user-2',
             userDisplayName: 'Carol',
             message: null,
-            status: 'accepted',
+            status: 'pending',
             createdAt: '2025-06-15T11:00:00Z',
           },
           {
@@ -191,12 +219,12 @@ describe('JoinRequestPanel', () => {
             userId: 'user-3',
             userDisplayName: 'Dave',
             message: null,
-            status: 'rejected',
+            status: 'pending',
             createdAt: '2025-06-15T12:00:00Z',
           },
         ]}
       />,
     )
-    expect(screen.getByText('1 pending')).toBeDefined()
+    expect(screen.getByText('3 pending')).toBeDefined()
   })
 })

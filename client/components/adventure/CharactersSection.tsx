@@ -1,11 +1,7 @@
 'use client'
 
-import { Select } from '@/components/shared/Select'
 import type { FormEvent } from 'react'
 
-interface Template {
-  id: string; name: string; description: string | null
-}
 interface CampaignCharacter {
   id: string; characterName: string; adventure: { id: string; name: string; campaign: string }
   template: { id: string; name: string }; owner: { id: string; displayName: string | null; email: string } | null; createdAt: string
@@ -19,12 +15,11 @@ export function CharactersSection({
   characters,
   isGM,
   userId,
-  templates,
+  snapshotName,
   userSheets,
   showNewCharForm,
   showLinkCharForm,
   newCharName,
-  newCharTemplateId,
   newCharError,
   newCharCreating,
   linkSheetId,
@@ -37,7 +32,6 @@ export function CharactersSection({
   onCreateCharacter,
   onLinkCharacter,
   onNewCharNameChange,
-  onNewCharTemplateChange,
   onLinkSheetChange,
   onRemoveCharacter,
   onViewCharacter,
@@ -45,12 +39,11 @@ export function CharactersSection({
   characters: CampaignCharacter[]
   isGM: boolean
   userId: string
-  templates: Template[]
+  snapshotName: string | null
   userSheets: UserSheet[]
   showNewCharForm: boolean
   showLinkCharForm: boolean
   newCharName: string
-  newCharTemplateId: string
   newCharError: string | null
   newCharCreating: boolean
   linkSheetId: string
@@ -63,7 +56,6 @@ export function CharactersSection({
   onCreateCharacter: (e: FormEvent) => void
   onLinkCharacter: (e: FormEvent) => void
   onNewCharNameChange: (v: string) => void
-  onNewCharTemplateChange: (v: string) => void
   onLinkSheetChange: (v: string) => void
   onRemoveCharacter: (id: string) => void
   onViewCharacter: (id: string) => void
@@ -143,22 +135,20 @@ export function CharactersSection({
             />
           </div>
 
+          {/* Snapshot-based template info */}
           <div>
             <label className="label">Template</label>
-            {templates.length === 0 ? (
-              <p className="text-sm text-muted italic">
-                No templates available. Ask your GM to create one.
-              </p>
+            {snapshotName ? (
+              <div className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-secondary/40 border border-border/40 text-sm text-foreground">
+                <svg className="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>{snapshotName}</span>
+              </div>
             ) : (
-              <Select
-                options={[
-                  { id: '', label: 'Select a template...' },
-                  ...templates.map(t => ({ id: t.id, label: t.name })),
-                ]}
-                value={newCharTemplateId}
-                onChange={val => onNewCharTemplateChange(val)}
-                className="text-sm"
-              />
+              <p className="text-sm text-muted italic">
+                No template is attached to this campaign. Ask the GM to attach one before creating a character.
+              </p>
             )}
           </div>
 
@@ -179,7 +169,7 @@ export function CharactersSection({
             </button>
             <button
               type="submit"
-              disabled={newCharCreating || !newCharName.trim() || !newCharTemplateId}
+              disabled={newCharCreating || !newCharName.trim() || !snapshotName}
               className="btn-primary text-sm"
             >
               {newCharCreating ? 'Creating...' : 'Create'}
@@ -201,15 +191,18 @@ export function CharactersSection({
             {userSheets.length === 0 ? (
               <p className="text-sm text-muted italic">No unlinked characters available.</p>
             ) : (
-              <Select
-                options={[
-                  { id: '', label: 'Select a character...' },
-                  ...userSheets.map(s => ({ id: s.id, label: `${s.characterName} (${s.template.name})` })),
-                ]}
+              <select
+                className="input-field"
                 value={linkSheetId}
-                onChange={val => onLinkSheetChange(val)}
-                className="text-sm"
-              />
+                onChange={e => onLinkSheetChange(e.target.value)}
+              >
+                <option value="">Select a character...</option>
+                {userSheets.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.characterName} ({s.template.name})
+                  </option>
+                ))}
+              </select>
             )}
           </div>
 

@@ -55,6 +55,9 @@ export const ModelName = {
   Adventure: 'Adventure',
   JoinRequest: 'JoinRequest',
   Book: 'Book',
+  Notebook: 'Notebook',
+  NotebookFolder: 'NotebookFolder',
+  NotebookPage: 'NotebookPage',
   CampaignMember: 'CampaignMember',
   CampaignInvitation: 'CampaignInvitation',
   GoogleAccount: 'GoogleAccount',
@@ -142,6 +145,7 @@ export const AdventureScalarFieldEnum = {
   sessionType: 'sessionType',
   ownerId: 'ownerId',
   isPublic: 'isPublic',
+  templateSource: 'templateSource',
   templateSnapshot: 'templateSnapshot',
   originalTemplateId: 'originalTemplateId',
   createdAt: 'createdAt',
@@ -176,6 +180,43 @@ export const BookScalarFieldEnum = {
 } as const
 
 export type BookScalarFieldEnum = (typeof BookScalarFieldEnum)[keyof typeof BookScalarFieldEnum]
+
+
+export const NotebookScalarFieldEnum = {
+  id: 'id',
+  adventureId: 'adventureId',
+  userId: 'userId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotebookScalarFieldEnum = (typeof NotebookScalarFieldEnum)[keyof typeof NotebookScalarFieldEnum]
+
+
+export const NotebookFolderScalarFieldEnum = {
+  id: 'id',
+  notebookId: 'notebookId',
+  name: 'name',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotebookFolderScalarFieldEnum = (typeof NotebookFolderScalarFieldEnum)[keyof typeof NotebookFolderScalarFieldEnum]
+
+
+export const NotebookPageScalarFieldEnum = {
+  id: 'id',
+  notebookId: 'notebookId',
+  folderId: 'folderId',
+  title: 'title',
+  content: 'content',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotebookPageScalarFieldEnum = (typeof NotebookPageScalarFieldEnum)[keyof typeof NotebookPageScalarFieldEnum]
 
 
 export const CampaignMemberScalarFieldEnum = {
@@ -241,6 +282,7 @@ export const TemplateScalarFieldEnum = {
   ownerId: 'ownerId',
   isPublic: 'isPublic',
   useCount: 'useCount',
+  createdFromTemplateId: 'createdFromTemplateId',
   name: 'name',
   description: 'description',
   attributeModifierFormula: 'attributeModifierFormula',
@@ -758,7 +800,7 @@ export const SubscriptionPlanScalarFieldEnum = {
   name: 'name',
   description: 'description',
   price: 'price',
-  mpPlanId: 'mpPlanId',
+  pgPlanId: 'pgPlanId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -770,12 +812,14 @@ export const UserSubscriptionScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   planId: 'planId',
-  mpSubscriptionId: 'mpSubscriptionId',
+  pgSubscriptionId: 'pgSubscriptionId',
   status: 'status',
   graceEndsAt: 'graceEndsAt',
   currentPeriodStart: 'currentPeriodStart',
   currentPeriodEnd: 'currentPeriodEnd',
   cancelledAt: 'cancelledAt',
+  cancelAtPeriodEnd: 'cancelAtPeriodEnd',
+  pgCustomerId: 'pgCustomerId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -786,7 +830,7 @@ export type UserSubscriptionScalarFieldEnum = (typeof UserSubscriptionScalarFiel
 export const SubscriptionInvoiceScalarFieldEnum = {
   id: 'id',
   subscriptionId: 'subscriptionId',
-  mpInvoiceId: 'mpInvoiceId',
+  pgInvoiceId: 'pgInvoiceId',
   amount: 'amount',
   currency: 'currency',
   status: 'status',

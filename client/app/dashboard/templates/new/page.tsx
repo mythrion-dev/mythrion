@@ -6,9 +6,34 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import { TemplateForm } from '@/components/adventure/TemplateForm'
 import type { CoreResource, AcConfigDraft, ArmorClassAttributeModifierDraft, ResistanceDef } from '@/components/adventure/types'
+import { emptyAcConfig, slugify } from '@/components/adventure/types'
+import { useSubscription } from '@/lib/subscription-context'
 
 export default function NewTemplatePage() {
+  const { hasActiveSubscription } = useSubscription()
   const router = useRouter()
+
+  if (!hasActiveSubscription) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-6">
+          <svg className="w-8 h-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 2.25h.008v.008H12v-.008z" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-semibold text-foreground mb-2">Subscription Required</h2>
+        <p className="text-sm text-muted-foreground max-w-sm mb-8">
+          Creating templates is a premium feature. Upgrade to a paid plan to create and manage your own character sheet templates.
+        </p>
+        <Link href="/pricing" className="btn-primary">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          View Plans
+        </Link>
+      </div>
+    )
+  }
 
   // ── Feature toggles ──
   const [featureSkills, setFeatureSkills] = useState(false)
@@ -33,6 +58,7 @@ export default function NewTemplatePage() {
   const [attrModifierFormula, setAttrModifierFormula] = useState('')
   const [skillFormula, setSkillFormula] = useState('')
   const [attrModifiersEnabled, setAttrModifiersEnabled] = useState(true)
+  const [isPublic, setIsPublic] = useState(false)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -147,7 +173,62 @@ export default function NewTemplatePage() {
     setCoreResources(prev => prev.map((cr, idx) => idx === i ? { ...cr, showNotes: v } : cr))
   }, [])
 
-  // ── AC Config handlers (no-op stubs for creation — added when features are expanded) ──
+  // ── AC Config handlers ──
+
+  const handleAddNewAcConfig = useCallback(() => {
+    setAcConfigs(prev => [...prev, emptyAcConfig()])
+  }, [])
+  const handleRemoveNewAcConfig = useCallback((i: number) => {
+    setAcConfigs(prev => prev.filter((_, idx) => idx !== i))
+  }, [])
+  const handleUpdateNewAcConfig = useCallback((i: number, patch: Partial<AcConfigDraft>) => {
+    setAcConfigs(prev => prev.map((ac, idx) => idx === i ? { ...ac, ...patch } : ac))
+  }, [])
+  const handleAddNewAcFieldForConfig = useCallback((configIdx: number) => {
+    setAcConfigs(prev => prev.map((ac, i) => i === configIdx
+      ? { ...ac, fields: [...ac.fields, { name: '', key: '', defaultValue: '0', editableByPlayer: false, description: '' }] }
+      : ac))
+  }, [])
+  const handleRemoveNewAcFieldForConfig = useCallback((configIdx: number, fieldIdx: number) => {
+    setAcConfigs(prev => prev.map((ac, i) => i === configIdx
+      ? { ...ac, fields: ac.fields.filter((_, j) => j !== fieldIdx) }
+      : ac))
+  }, [])
+  const handleUpdateNewAcFieldForConfig = useCallback((configIdx: number, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string) => {
+    setAcConfigs(prev => prev.map((ac, i) => {
+      if (i !== configIdx) return ac
+      return {
+        ...ac, fields: ac.fields.map((field, j) => {
+          if (j !== fieldIdx) return field
+          const updated = { ...field, [f]: v }
+          if (f === 'name' && v.trim() && !field.key.trim()) updated.key = slugify(v.trim())
+          return updated
+        })
+      }
+    }))
+  }, [])
+  const handleUpdateNewAcFieldEditableForConfig = useCallback((configIdx: number, fieldIdx: number, v: boolean) => {
+    setAcConfigs(prev => prev.map((ac, i) => i === configIdx
+      ? { ...ac, fields: ac.fields.map((field, j) => j === fieldIdx ? { ...field, editableByPlayer: v } : field) }
+      : ac))
+  }, [])
+  const handleToggleNewAcAttributeIdForConfig = useCallback((configIdx: number, attrId: string) => {
+    setAcConfigs(prev => prev.map((ac, i) => {
+      if (i !== configIdx) return ac
+      const exists = ac.attributeModifiers.some(am => am.attributeId === attrId)
+      return {
+        ...ac,
+        attributeModifiers: exists
+          ? ac.attributeModifiers.filter(am => am.attributeId !== attrId)
+          : [...ac.attributeModifiers, { attributeId: attrId, allowPlayerSelection: false, defaultAttributeId: attrId }],
+      }
+    }))
+  }, [])
+  const handleUpdateNewAcAttributeModifierForConfig = useCallback((configIdx: number, attrId: string, patch: Partial<ArmorClassAttributeModifierDraft>) => {
+    setAcConfigs(prev => prev.map((ac, i) => i === configIdx
+      ? { ...ac, attributeModifiers: ac.attributeModifiers.map(am => am.attributeId === attrId ? { ...am, ...patch } : am) }
+      : ac))
+  }, [])
 
   // ── Character Section handlers ──
 
@@ -178,11 +259,12 @@ export default function NewTemplatePage() {
         })),
         attributeModifierFormula: attrModifierFormula || null,
         skillFormula: skillFormula || null,
-        attrModifiersEnabled,
+        attributeModifiersEnabled: attrModifiersEnabled,
+        isPublic,
       }
 
       if (featureSkills) {
-        payload.templateSkills = skills.map(s => ({
+        payload.skills = skills.map(s => ({
           name: s.name,
           description: s.description || null,
           attributeId: s.attributeId || null,
@@ -212,7 +294,22 @@ export default function NewTemplatePage() {
       }
 
       if (featureArmorClass) {
-        payload.armorClasses = acConfigs
+        payload.armorClasses = acConfigs.map(ac => ({
+          enabled: ac.enabled,
+          name: ac.name,
+          attributeModifiers: (ac.attributeModifiers ?? []).map(am => ({
+            attributeId: am.attributeId,
+            allowPlayerSelection: am.allowPlayerSelection,
+            defaultAttributeId: am.defaultAttributeId,
+          })),
+          fields: (ac.fields ?? []).map(f => ({
+            name: f.name,
+            key: f.key,
+            defaultValue: f.defaultValue,
+            editableByPlayer: f.editableByPlayer,
+            description: f.description,
+          })),
+        }))
       }
 
       if (featureCharacterSections) {
@@ -270,6 +367,8 @@ export default function NewTemplatePage() {
         newAttrModifiersEnabled={attrModifiersEnabled}
         newCharacterSections={characterSections}
         newResistances={resistances}
+        newIsPublic={isPublic}
+        onNewIsPublicChange={setIsPublic}
         templateError={error}
         templateCreating={creating}
         onNameChange={setName}
@@ -303,17 +402,17 @@ export default function NewTemplatePage() {
         onNewAttrModifiersEnabledChange={setAttrModifiersEnabled}
         onNewAttrModifierFormulaChange={setAttrModifierFormula}
         onNewSkillFormulaChange={setSkillFormula}
-        // AC config — no-op stubs for creation (can be expanded later)
+        // AC config
         newAttrsForAc={attrs.filter(a => a.key.trim() && a.name.trim()).map(a => ({ key: a.key.trim(), name: a.name.trim() }))}
-        onAddNewAcConfig={() => {}}
-        onRemoveNewAcConfig={() => {}}
-        onUpdateNewAcConfig={() => {}}
-        onAddNewAcFieldForConfig={() => {}}
-        onRemoveNewAcFieldForConfig={() => {}}
-        onUpdateNewAcFieldForConfig={() => {}}
-        onUpdateNewAcFieldEditableForConfig={() => {}}
-        onToggleNewAcAttributeIdForConfig={() => {}}
-        onUpdateNewAcAttributeModifierForConfig={() => {}}
+        onAddNewAcConfig={handleAddNewAcConfig}
+        onRemoveNewAcConfig={handleRemoveNewAcConfig}
+        onUpdateNewAcConfig={handleUpdateNewAcConfig}
+        onAddNewAcFieldForConfig={handleAddNewAcFieldForConfig}
+        onRemoveNewAcFieldForConfig={handleRemoveNewAcFieldForConfig}
+        onUpdateNewAcFieldForConfig={handleUpdateNewAcFieldForConfig}
+        onUpdateNewAcFieldEditableForConfig={handleUpdateNewAcFieldEditableForConfig}
+        onToggleNewAcAttributeIdForConfig={handleToggleNewAcAttributeIdForConfig}
+        onUpdateNewAcAttributeModifierForConfig={handleUpdateNewAcAttributeModifierForConfig}
         // Character sections
         onAddNewCharacterSection={handleAddCharacterSection}
         onRemoveNewCharacterSection={handleRemoveCharacterSection}

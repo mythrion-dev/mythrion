@@ -23,25 +23,28 @@ export default function SuccessPage() {
     }
   }, [authLoading, user, router])
 
-  // Poll for subscription status
+  // Poll for subscription status (stops on timeout or active status)
   useEffect(() => {
-    if (authLoading || !user) return
+    if (authLoading || !user || timedOut) return
 
     // Poll every 3 seconds
     intervalRef.current = setInterval(async () => {
-      await refresh()
+      if (subscription?.status !== 'ACTIVE' && subscription?.status !== 'AUTHORIZED') {
+        await refresh()
+      }
     }, 3000)
 
     // Timeout after 30 seconds
     timeoutRef.current = setTimeout(() => {
       setTimedOut(true)
+      if (intervalRef.current) clearInterval(intervalRef.current)
     }, 30000)
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
-  }, [authLoading, user, refresh])
+  }, [authLoading, user, refresh, timedOut, subscription?.status])
 
   // Track elapsed time for the message
   useEffect(() => {
@@ -110,7 +113,7 @@ export default function SuccessPage() {
             </div>
             <h2 className="text-lg font-semibold text-foreground">Still waiting for confirmation</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Your payment is being processed by Mercado Pago. This may take a few minutes.
+              Your payment is being processed by PagBank. This may take a few minutes.
             </p>
             <div className="mt-6 flex gap-3 justify-center">
               <button

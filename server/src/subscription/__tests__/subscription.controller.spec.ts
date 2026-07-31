@@ -8,14 +8,26 @@ import {
 } from '@nestjs/common'
 import { SubscriptionController } from '../subscription.controller'
 import { SubscriptionService } from '../subscription.service'
-import { MercadoPagoService } from '../mercado-pago.service'
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard'
+import { PrismaService } from '../../prisma.service'
+import { createMockPrismaService } from '../../__mocks__/prisma-service.mock'
+import { PAYMENT_GATEWAY } from '../payment-gateway.interface'
+import type { PaymentGateway } from '../payment-gateway.interface'
 import type { Request } from 'express'
+
+const mockGateway: jest.Mocked<PaymentGateway> = {
+  createSubscription: jest.fn(),
+  cancelSubscription: jest.fn(),
+  updatePaymentMethod: jest.fn(),
+  getSubscription: jest.fn(),
+  getPaymentCharge: jest.fn(),
+  validateWebhook: jest.fn(),
+}
 
 describe('SubscriptionController', () => {
   let controller: SubscriptionController
   let subscriptionService: jest.Mocked<SubscriptionService>
-  let mpService: jest.Mocked<MercadoPagoService>
+  let prisma: ReturnType<typeof createMockPrismaService>
 
   const mockUser = { sub: 'user-1', email: 'user@test.com', role: 'user' }
 
@@ -27,30 +39,27 @@ describe('SubscriptionController', () => {
   }
 
   beforeEach(async () => {
+    prisma = createMockPrismaService()
+    jest.clearAllMocks()
+
     subscriptionService = {
       listPlans: jest.fn(),
       createSubscription: jest.fn(),
       getMySubscription: jest.fn(),
       cancelSubscription: jest.fn(),
+      updatePaymentMethod: jest.fn(),
       processWebhook: jest.fn(),
       expireGraceSubscriptions: jest.fn(),
+      expireCancelledSubscriptions: jest.fn(),
       hasActiveSubscription: jest.fn(),
     } as unknown as jest.Mocked<SubscriptionService>
-
-    mpService = {
-      validateWebhook: jest.fn(),
-      createSubscription: jest.fn(),
-      cancelSubscription: jest.fn(),
-      getSubscription: jest.fn(),
-    } as unknown as jest.Mocked<MercadoPagoService>
-
-    jest.clearAllMocks()
 
     const module = await Test.createTestingModule({
       controllers: [SubscriptionController],
       providers: [
         { provide: SubscriptionService, useValue: subscriptionService },
-        { provide: MercadoPagoService, useValue: mpService },
+        { provide: PrismaService, useValue: prisma },
+        { provide: PAYMENT_GATEWAY, useValue: mockGateway },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -91,7 +100,7 @@ describe('SubscriptionController', () => {
     it('creates a subscription and returns initPoint and subscriptionId', async () => {
       const planId = 'monthly'
       const expectedResult = {
-        initPoint: 'https://mercadopago.com/checkout/123',
+        initPoint: '',
         subscriptionId: 'sub-1',
       }
       subscriptionService.createSubscription.mockResolvedValue(expectedResult)
@@ -106,12 +115,48 @@ describe('SubscriptionController', () => {
         'user-1',
         planId,
         'user@test.com',
+        undefined, // cardToken
+        undefined, // securityCode
+        undefined, // payerName
+        undefined, // payerDocument
+        undefined, // deviceId
+        undefined, // cardTokenId
+      )
+    })
+
+    it('passes cardToken when provided', async () => {
+      subscriptionService.createSubscription.mockResolvedValue({
+        initPoint: '',
+        subscriptionId: 'sub-1',
+      })
+
+      await controller.createSubscription(
+        { planId: 'monthly', cardToken: 'encrypted-card-abc' },
+        createRequest(),
+      )
+
+      expect(subscriptionService.createSubscription).toHaveBeenCalledWith(
+        'user-1',
+        'monthly',
+        'user@test.com',
+        'encrypted-card-abc',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined, // cardTokenId
       )
     })
 
     it('throws UnprocessableEntityException when planId is missing', async () => {
       await expect(
         controller.createSubscription({ planId: '' }, createRequest()),
+      ).rejects.toThrow(UnprocessableEntityException)
+    })
+
+    it('throws UnprocessableEntityException when planId is undefined', async () => {
+      await expect(
+        controller.createSubscription({}, createRequest()),
       ).rejects.toThrow(UnprocessableEntityException)
     })
 
@@ -176,92 +221,128 @@ describe('SubscriptionController', () => {
     })
   })
 
+  // ─── updatePaymentMethod ───────────────────────────────────────────
+
+  describe('POST /api/subscriptions/update-payment-method', () => {
+    it('updates payment method and returns success message', async () => {
+      subscriptionService.updatePaymentMethod.mockResolvedValue(undefined)
+
+      const result = await controller.updatePaymentMethod(
+        { cardToken: 'encrypted-card-new' },
+        createRequest(),
+      )
+
+      expect(result).toEqual({ message: 'Payment method updated successfully' })
+      expect(subscriptionService.updatePaymentMethod).toHaveBeenCalledWith(
+        'user-1',
+        'encrypted-card-new',
+        undefined,
+        undefined,
+      )
+    })
+
+    it('passes payer info when provided', async () => {
+      subscriptionService.updatePaymentMethod.mockResolvedValue(undefined)
+
+      await controller.updatePaymentMethod(
+        {
+          cardToken: 'encrypted-card-new',
+          payerName: 'João Silva',
+          payerDocument: '12345678909',
+        },
+        createRequest(),
+      )
+
+      expect(subscriptionService.updatePaymentMethod).toHaveBeenCalledWith(
+        'user-1',
+        'encrypted-card-new',
+        'João Silva',
+        '12345678909',
+      )
+    })
+
+    it('throws UnprocessableEntityException when cardToken is missing', async () => {
+      await expect(
+        controller.updatePaymentMethod({ cardToken: '' }, createRequest()),
+      ).rejects.toThrow(UnprocessableEntityException)
+    })
+  })
+
   // ─── handleWebhook ─────────────────────────────────────────────────
 
   describe('POST /api/subscriptions/webhook', () => {
-    const validWebhookBody = {
-      type: 'subscription_activated',
-      data: { id: 'mp-sub-1' },
+    const webhookBody = {
+      event: 'subscription.activated',
+      resource: { id: 'SUBS_001' },
     }
 
-    it('processes a valid webhook and returns received:true', async () => {
-      mpService.validateWebhook.mockReturnValue(true)
+    it('processes a valid webhook and returns received:true with action', async () => {
       subscriptionService.processWebhook.mockResolvedValue('activated')
       subscriptionService.expireGraceSubscriptions.mockResolvedValue(0)
+      subscriptionService.expireCancelledSubscriptions.mockResolvedValue(0)
 
       const result = await controller.handleWebhook(
-        validWebhookBody,
-        'ts=123456,v1=validhmac',
+        webhookBody,
+        'valid-sha256-hex',
         'req-123',
+        {} as any,
       )
 
       expect(result).toEqual({
         received: true,
-        validated: true,
         action: 'activated',
       })
-      expect(mpService.validateWebhook).toHaveBeenCalledWith(
-        'ts=123456,v1=validhmac',
-        'mp-sub-1',
-        'req-123',
+      expect(subscriptionService.processWebhook).toHaveBeenCalledWith(
+        JSON.stringify(webhookBody),
+        'valid-sha256-hex',
+        { type: 'subscription.activated', action: undefined, data: { id: 'SUBS_001' } },
       )
-      expect(subscriptionService.processWebhook).toHaveBeenCalledWith({
-        type: 'subscription_activated',
-        action: undefined,
-        data: { id: 'mp-sub-1' },
-      })
       expect(subscriptionService.expireGraceSubscriptions).toHaveBeenCalled()
+      expect(subscriptionService.expireCancelledSubscriptions).toHaveBeenCalled()
     })
 
-    it('returns validated:false when HMAC signature is invalid', async () => {
-      mpService.validateWebhook.mockReturnValue(false)
+    it('passes undefined authenticityToken when header is missing', async () => {
+      subscriptionService.processWebhook.mockResolvedValue('invalid_signature')
+      subscriptionService.expireGraceSubscriptions.mockResolvedValue(0)
+      subscriptionService.expireCancelledSubscriptions.mockResolvedValue(0)
 
       const result = await controller.handleWebhook(
-        validWebhookBody,
-        'ts=123456,v1=invalid',
-        'req-123',
-      )
-
-      expect(result).toEqual({ received: true, validated: false })
-      expect(subscriptionService.processWebhook).not.toHaveBeenCalled()
-    })
-
-    it('handles missing signature gracefully', async () => {
-      mpService.validateWebhook.mockReturnValue(false)
-
-      const result = await controller.handleWebhook(
-        validWebhookBody,
+        webhookBody,
         undefined,
         undefined,
+        {} as any,
       )
 
-      expect(result).toEqual({ received: true, validated: false })
+      expect(result).toEqual({ received: true, action: 'invalid_signature' })
+      expect(subscriptionService.processWebhook).toHaveBeenCalledWith(
+        JSON.stringify(webhookBody),
+        undefined,
+        { type: 'subscription.activated', action: undefined, data: { id: 'SUBS_001' } },
+      )
     })
 
-    it('processes different webhook event types', async () => {
-      const events = [
-        { type: 'subscription_authorized', action: 'authorized' },
-        { type: 'subscription_cancelled', action: 'cancelled' },
-        { type: 'payment', action: 'invoice_paid' },
-      ]
-
-      for (const event of events) {
-        mpService.validateWebhook.mockReturnValue(true)
-        subscriptionService.processWebhook.mockResolvedValue(event.action)
-        subscriptionService.expireGraceSubscriptions.mockResolvedValue(0)
-
-        const result = await controller.handleWebhook(
-          { type: event.type, data: { id: 'mp-sub-1' } },
-          'ts=123456,v1=valid',
-          'req-123',
-        )
-
-        expect(result).toEqual({
-          received: true,
-          validated: true,
-          action: event.action,
-        })
+    it('processes subscription.canceled webhook event', async () => {
+      const cancelBody = {
+        event: 'subscription.canceled',
+        resource: { id: 'SUBS_002', status: 'CANCELED' },
       }
+      subscriptionService.processWebhook.mockResolvedValue('cancelled')
+      subscriptionService.expireGraceSubscriptions.mockResolvedValue(0)
+      subscriptionService.expireCancelledSubscriptions.mockResolvedValue(0)
+
+      const result = await controller.handleWebhook(
+        cancelBody,
+        'valid-token',
+        'req-789',
+        {} as any,
+      )
+
+      expect(result).toEqual({ received: true, action: 'cancelled' })
+      expect(subscriptionService.processWebhook).toHaveBeenCalledWith(
+        JSON.stringify(cancelBody),
+        'valid-token',
+        { type: 'subscription.canceled', action: undefined, data: { id: 'SUBS_002', status: 'CANCELED' } },
+      )
     })
   })
 })

@@ -1,4 +1,13 @@
-jest.mock("../generated/prisma/client", () => ({ PrismaClient: class {} }))
+jest.mock("../generated/prisma/client", () => ({
+  PrismaClient: class {},
+  Prisma: {
+    sql: jest.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({ strings, values })),
+    join: jest.fn((parts: unknown[], sep?: string) => ({ parts, sep })),
+    empty: {},
+    raw: jest.fn((s: string) => s),
+    Sql: class {},
+  },
+}))
 jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
 jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
 import { Test } from '@nestjs/testing'
@@ -272,10 +281,15 @@ describe('AdventureService', () => {
 
       const result = await service.findPublic({ page: 1, limit: 10 })
 
-      expect(result.data).toEqual(adventures)
-      expect(result.meta.total).toBe(1)
-      expect(result.meta.page).toBe(1)
-      expect(result.meta.totalPages).toBe(1)
+      expect(result.data).toHaveLength(1)
+      expect(result.data[0].gmDisplayName).toBe('Owner')
+      expect(result.data[0].playerCount).toBe(2)
+      expect(result.data[0].ownerId).toBe('u1')
+      expect(result.data[0]).not.toHaveProperty('owner')
+      expect(result.data[0]).not.toHaveProperty('_count')
+      expect(result.total).toBe(1)
+      expect(result.page).toBe(1)
+      expect(result.totalPages).toBe(1)
     })
 
     it('filters by campaign', async () => {
@@ -293,24 +307,62 @@ describe('AdventureService', () => {
       )
     })
 
-    it('filters by search (name or synopsis)', async () => {
-      prisma.$transaction.mockResolvedValue([[], 0])
+    it('filters by search through the ranked SQL path and hydrates results', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ total: 1, ids: ['a1'] }])
+      prisma.adventure.findMany.mockResolvedValue([
+        {
+          id: 'a1',
+          name: 'Dragon Hoard',
+          campaign: 'D&D 5e',
+          synopsis: 'A dragon adventure',
+          maxPlayers: 4,
+          isPublic: true,
+          sessionWeekday: null,
+          sessionTime: null,
+          sessionType: null,
+          createdAt: new Date('2025-01-01'),
+          owner: { id: 'u1', displayName: 'DragonGM' },
+          _count: { members: 2 },
+        },
+      ])
 
-      await service.findPublic({ search: 'dragon' })
+      const result = await service.findPublic({ search: 'dragon', limit: 10 })
 
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
       expect(prisma.adventure.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
-            isPublic: true,
-            OR: [
-              { name: { contains: 'dragon', mode: 'insensitive' } },
-              { synopsis: { contains: 'dragon', mode: 'insensitive' } },
-            ],
-          }),
+          where: { id: { in: ['a1'] } },
         }),
       )
+      expect(result.data).toHaveLength(1)
+      expect(result.data[0].id).toBe('a1')
+      expect(result.data[0].name).toBe('Dragon Hoard')
+      expect(result.data[0].gmDisplayName).toBe('DragonGM')
+      expect(result.data[0].playerCount).toBe(2)
+      expect(result.data[0].ownerId).toBe('u1')
+      expect(result.total).toBe(1)
+      expect(result.totalPages).toBe(1)
     })
 
+    it('returns empty results when search matches nothing', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ total: 0, ids: [] }])
+
+      const result = await service.findPublic({ search: 'zzzznope', limit: 10 })
+
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
+      expect(prisma.adventure.findMany).not.toHaveBeenCalled()
+      expect(result.data).toHaveLength(0)
+      expect(result.total).toBe(0)
+    })
+
+    it('combines search with campaign filter on the ranked path', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ total: 0, ids: [] }])
+
+      await service.findPublic({ search: 'dragon', campaign: 'D&D 5e' })
+
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
+      expect(prisma.adventure.findMany).not.toHaveBeenCalled()
+    })
 
     it('filters by sessionWeekday', async () => {
       prisma.$transaction.mockResolvedValue([[], 0])
@@ -426,7 +478,11 @@ describe('AdventureService', () => {
           where: { id: 'a1', isPublic: true },
         }),
       )
-      expect(result).toEqual(adventure)
+      expect(result.gmDisplayName).toBe('Owner')
+      expect(result.playerCount).toBe(2)
+      expect(result.ownerId).toBe('u1')
+      expect(result).not.toHaveProperty('owner')
+      expect(result).not.toHaveProperty('_count')
     })
 
     it('throws NotFoundException when adventure is not public', async () => {
@@ -446,7 +502,12 @@ describe('AdventureService', () => {
         campaign: 'Camp',
         synopsis: 'Fun!',
         maxPlayers: 4,
+        isPublic: true,
         createdAt: new Date(),
+        updatedAt: new Date(),
+        sessionWeekday: null,
+        sessionTime: null,
+        sessionType: null,
         owner: { id: 'u1', displayName: 'Owner' },
         _count: { members: 2 },
       }
@@ -459,7 +520,12 @@ describe('AdventureService', () => {
           where: { id: 'a1', isPublic: true },
         }),
       )
-      expect(result).toEqual(adventure)
+      expect(result.gmDisplayName).toBe('Owner')
+      expect(result.playerCount).toBe(2)
+      expect(result.ownerId).toBe('u1')
+      expect(result.isPublic).toBe(true)
+      expect(result).not.toHaveProperty('owner')
+      expect(result).not.toHaveProperty('_count')
     })
 
     it('throws NotFoundException when adventure not found or not public', async () => {

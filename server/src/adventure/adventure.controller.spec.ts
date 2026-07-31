@@ -5,6 +5,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { AdventureController } from './adventure.controller.js'
 import { AdventureService } from './adventure.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
+import { SubscriptionGuard } from '../auth/subscription.guard.js'
 import { CreateAdventureDto } from './dto/create-adventure.dto.js'
 import { UpdateAdventureDto } from './dto/update-adventure.dto.js'
 import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
@@ -44,6 +45,8 @@ describe('AdventureController', () => {
       ],
     })
       .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: jest.fn(() => true) })
+      .overrideGuard(SubscriptionGuard)
       .useValue({ canActivate: jest.fn(() => true) })
       .compile()
 

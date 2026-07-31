@@ -38,6 +38,21 @@ export type JoinRequest = Prisma.JoinRequestModel
  */
 export type Book = Prisma.BookModel
 /**
+ * Model Notebook
+ * 
+ */
+export type Notebook = Prisma.NotebookModel
+/**
+ * Model NotebookFolder
+ * 
+ */
+export type NotebookFolder = Prisma.NotebookFolderModel
+/**
+ * Model NotebookPage
+ * 
+ */
+export type NotebookPage = Prisma.NotebookPageModel
+/**
  * Model CampaignMember
  * 
  */

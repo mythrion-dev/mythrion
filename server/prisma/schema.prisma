@@ -27,6 +27,7 @@ model User {
   refreshTokens      RefreshToken[]
   characterSheets    CharacterSheet[]
   subscription       UserSubscription?
+  notebooks          Notebook[]
 }
 
 model Adventure {
@@ -41,6 +42,7 @@ model Adventure {
   ownerId         String
   owner           User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   isPublic             Boolean              @default(false)
+  templateSource       String?              @map("template_source")
   templateSnapshot     Json?                @map("template_snapshot")
   originalTemplateId   String?
   originalTemplate     Template?            @relation("OriginalTemplateForAdventure", fields: [originalTemplateId], references: [id], onDelete: SetNull)
@@ -52,6 +54,7 @@ model Adventure {
   templates            Template[]
   characterSheets      CharacterSheet[]
   books                Book[]
+  notebooks            Notebook[]
   @@index([ownerId])
   @@index([originalTemplateId])
 }
@@ -108,6 +111,51 @@ model Book {
   updatedAt     DateTime       @updatedAt
 
   @@index([adventureId])
+}
+
+model Notebook {
+  id          String           @id @default(cuid())
+  adventureId String
+  adventure   Adventure        @relation(fields: [adventureId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folders     NotebookFolder[]
+  pages       NotebookPage[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([adventureId, userId])
+  @@index([adventureId])
+  @@index([userId])
+}
+
+model NotebookFolder {
+  id          String           @id @default(cuid())
+  notebookId  String
+  notebook    Notebook         @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  name        String
+  pages       NotebookPage[]
+  sortOrder   Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([notebookId])
+}
+
+model NotebookPage {
+  id        String          @id @default(cuid())
+  notebookId String
+  notebook  Notebook        @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  folderId  String?
+  folder    NotebookFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  title     String
+  content   String          @default("")
+  sortOrder Int             @default(0)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([notebookId])
+  @@index([folderId])
 }
 
 model CampaignMember {
@@ -180,6 +228,9 @@ model Template {
   owner                    User                      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   isPublic                 Boolean                   @default(false)
   useCount                 Int                       @default(0)
+  createdFromTemplateId    String?                  @map("created_from_template_id")
+  createdFromTemplate      Template?                 @relation("TemplateClones", fields: [createdFromTemplateId], references: [id])
+  clonedTemplates          Template[]                @relation("TemplateClones")
   name                     String
   description              String?
   attributeModifierFormula String?
@@ -202,6 +253,7 @@ model Template {
   @@index([ownerId])
   @@index([isPublic])
   @@index([useCount])
+  @@index([createdFromTemplateId])
 }
 
 // ── Skill Modifier Profiles ──
@@ -882,7 +934,7 @@ model SubscriptionPlan {
   name          String
   description   String?
   price         Int
-  mpPlanId      String              @unique
+  pgPlanId      String              @unique
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   subscriptions UserSubscription[]
@@ -894,12 +946,14 @@ model UserSubscription {
   user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   planId             String
   plan               SubscriptionPlan     @relation(fields: [planId], references: [id])
-  mpSubscriptionId   String?              @unique
+  pgSubscriptionId   String?              @unique
   status             SubscriptionStatus   @default(PENDING)
   graceEndsAt        DateTime?
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
   cancelledAt        DateTime?
+  cancelAtPeriodEnd  Boolean              @default(false) @map("cancel_at_period_end")
+  pgCustomerId       String?
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
   invoices           SubscriptionInvoice[]
@@ -912,7 +966,7 @@ model SubscriptionInvoice {
   id              String             @id @default(cuid())
   subscriptionId  String
   subscription    UserSubscription   @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  mpInvoiceId     String?            @unique
+  pgInvoiceId     String?            @unique
   amount          Int
   currency        String             @default("BRL")
   status          String             @default("pending")
@@ -922,5 +976,5 @@ model SubscriptionInvoice {
   updatedAt       DateTime           @updatedAt
 
   @@index([subscriptionId])
-  @@index([mpInvoiceId])
+  @@index([pgInvoiceId])
 }

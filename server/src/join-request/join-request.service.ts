@@ -57,7 +57,7 @@ export class JoinRequestService {
     await this.membership.requireRole(adventureId, userId, 'GM')
 
     return this.prisma.joinRequest.findMany({
-      where: { adventureId },
+      where: { adventureId, status: 'PENDING' },
       include: {
         user: { select: { id: true, email: true, displayName: true } },
       },

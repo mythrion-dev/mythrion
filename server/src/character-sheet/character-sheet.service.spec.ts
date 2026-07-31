@@ -5,6 +5,7 @@ jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }))
 import { Test } from '@nestjs/testing'
 import {
   NotFoundException,
+  BadRequestException,
   ForbiddenException,
   ConflictException,
 } from '@nestjs/common'
@@ -235,6 +236,33 @@ describe('CharacterSheetService', () => {
           }),
         )
         expect(result).toEqual(mockSheet)
+      })
+
+      it('should create a sheet with optional playerName and level', async () => {
+        const extendedDto = { ...dto, playerName: 'Player One', level: 3 }
+        const expectedSheet = {
+          ...mockSheet,
+          playerName: 'Player One',
+          level: 3,
+        }
+        prisma.characterSheet.create.mockResolvedValue(expectedSheet)
+
+        const result = await service.create(userId, extendedDto)
+
+        expect(prisma.characterSheet.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              characterName: 'Test Character',
+              playerName: 'Player One',
+              level: 3,
+              adventureId: null,
+              templateId: 'template-1',
+              ownerId: userId,
+            }),
+          }),
+        )
+        expect(result.playerName).toBe('Player One')
+        expect(result.level).toBe(3)
       })
 
       it('should throw NotFoundException when template is not found', async () => {
@@ -897,6 +925,417 @@ describe('CharacterSheetService', () => {
         expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:user:${userId}`)
         expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}`)
       })
+    })
+  })
+
+  // ── createFromCampaignSnapshot ─────────────────────────────────
+
+  describe('createFromCampaignSnapshot', () => {
+    const userId = 'campaign-user'
+    const adventureId = 'campaign-adv-1'
+
+    const mockSnapshot = {
+      id: 'snapshot-id',
+      name: 'Fantasy Template',
+      skillFormula: '#{level} + #{prof1} + 5',
+      attributes: [
+        { id: 'snap-attr-1', key: 'str', name: 'Strength', order: 0 },
+        { id: 'snap-attr-2', key: 'dex', name: 'Dexterity', order: 1 },
+      ],
+      templateFields: [
+        { id: 'snap-field-1', key: 'height', label: 'Height', order: 0 },
+      ],
+      templateSkills: [
+        { id: 'snap-skill-1', name: 'Athletics', description: '', templateId: 'snapshot-id', order: 0, attributeId: 'snap-attr-1', defaultAttributeId: 'snap-attr-1', allowedAttributeIds: ['snap-attr-1'] },
+        { id: 'snap-skill-2', name: 'Stealth', description: '', templateId: 'snapshot-id', order: 1, attributeId: 'snap-attr-2', defaultAttributeId: null, allowedAttributeIds: ['snap-attr-1', 'snap-attr-2'] },
+      ],
+      skillModifierProfiles: [
+        { id: 'snap-prof-1', name: 'prof1', order: 0, targetMode: 'ALL_SKILLS', targetSkillIds: [], options: [{ id: 'opt-1', label: 'Half', value: '0.5', order: 0 }, { id: 'opt-2', label: 'Full', value: '1', order: 1 }] },
+        { id: 'snap-prof-2', name: 'nonexistent', order: 1, targetMode: 'ALL_SKILLS', targetSkillIds: [], options: [{ id: 'opt-3', label: 'No', value: '0', order: 0 }] },
+      ],
+      coreResources: [
+        { id: 'snap-cr-1', displayName: 'HP', slug: 'hp', enabled: true, editableByPlayer: true, showNotes: false },
+        { id: 'snap-cr-2', displayName: 'MP', slug: 'mp', enabled: false, editableByPlayer: true, showNotes: false },
+      ],
+      armorClasses: [
+        {
+          id: 'snap-ac-1', name: 'Armor Class', enabled: true,
+          fields: [
+            { id: 'snap-ac-field-1', name: 'Base', key: 'base', defaultValue: '10', editableByPlayer: true, description: '', order: 0 },
+          ],
+          attributeModifiers: [
+            { id: 'snap-ac-mod-1', attributeId: 'snap-attr-2', defaultAttributeId: 'snap-attr-2', allowPlayerSelection: true, enabled: true },
+          ],
+        },
+        {
+          id: 'snap-ac-2', name: 'Magic AC', enabled: false,
+          fields: [],
+          attributeModifiers: [],
+        },
+      ],
+      resistances: [
+        {
+          id: 'snap-res-1', name: 'Fire', order: 0,
+          components: [
+            { id: 'snap-res-comp-1', name: 'Base', order: 0, editableByPlayer: true, defaultValue: '0' },
+          ],
+          attributeModifiers: [],
+        },
+      ],
+      characterSections: [
+        { id: 'snap-sec-1', name: 'Background', order: 0 },
+      ],
+    }
+
+    const mockAdventure = {
+      templateSnapshot: mockSnapshot,
+      originalTemplateId: 'original-template-id',
+    }
+
+    const mockCreatedSheet = {
+      id: 'cs-campaign-1',
+      characterName: 'Campaign Hero',
+      playerName: null,
+      level: 1,
+      ownerId: userId,
+      adventureId,
+      templateId: 'original-template-id',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+
+    beforeEach(() => {
+      jest.clearAllMocks()
+      prisma.adventure.findUnique.mockResolvedValue(mockAdventure)
+      mockMembershipService.isMember.mockResolvedValue(true)
+      mockRedisService.del.mockResolvedValue(undefined)
+      prisma.characterSheet.create.mockResolvedValue(mockCreatedSheet)
+    })
+
+    it('creates a sheet from snapshot with all sub-resources', async () => {
+      const result = await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Campaign Hero',
+        adventureId,
+      })
+
+      expect(prisma.adventure.findUnique).toHaveBeenCalledWith({
+        where: { id: adventureId },
+        select: { templateSnapshot: true, originalTemplateId: true },
+      })
+
+      expect(prisma.characterSheet.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            characterName: 'Campaign Hero',
+            playerName: null,
+            level: 1,
+            adventureId,
+            templateId: 'original-template-id',
+            ownerId: userId,
+          }),
+        }),
+      )
+      expect(result).toEqual(mockCreatedSheet)
+    })
+
+    it('creates attribute values from snapshot attributes', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.values).toEqual({
+        create: [
+          { attributeId: 'snap-attr-1', value: '' },
+          { attributeId: 'snap-attr-2', value: '' },
+        ],
+      })
+    })
+
+    it('creates field values from snapshot templateFields', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.fieldValues).toEqual({
+        create: [
+          { templateFieldId: 'snap-field-1', value: '' },
+        ],
+      })
+    })
+
+    it('creates skill values with default attribute from snapshot', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.skillValues).toEqual({
+        create: [
+          { skillId: 'snap-skill-1', value: '', selectedAttributeId: 'snap-attr-1' },
+          { skillId: 'snap-skill-2', value: '', selectedAttributeId: 'snap-attr-2' },
+        ],
+      })
+    })
+
+    it('creates skill profile values from snapshot skillFormula and profiles', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      // prof1 is in the formula (extractVariableNames will find it from '#{level} + #{prof1} + 5')
+      // nonexistent is NOT in 'level, prof1' variables, so it should be skipped
+      expect(callData.skillProfileValues).toEqual({
+        create: expect.arrayContaining([
+          expect.objectContaining({
+            skillId: 'snap-skill-1',
+            profileId: 'snap-prof-1',
+            optionId: 'opt-1',
+          }),
+          expect.objectContaining({
+            skillId: 'snap-skill-2',
+            profileId: 'snap-prof-1',
+            optionId: 'opt-1',
+          }),
+        ]),
+      })
+      // Only prof1 matches, not 'nonexistent'
+      expect(callData.skillProfileValues.create).toHaveLength(2)
+    })
+
+    it('creates core resource values for enabled resources only', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.coreResourceValues).toEqual({
+        create: [
+          { coreResourceId: 'snap-cr-1' },
+        ],
+      })
+    })
+
+    it('creates AC field values and attribute values from snapshot', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.acValues).toEqual({
+        create: [
+          { fieldId: 'snap-ac-field-1', value: '10' },
+        ],
+      })
+      expect(callData.acAttributeValues).toEqual({
+        create: [
+          { acAttributeModifierId: 'snap-ac-mod-1', selectedAttributeId: 'snap-attr-2' },
+        ],
+      })
+    })
+
+    it('creates resistance values with component values from snapshot', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.resistanceValues).toEqual({
+        create: [
+          { resistanceId: 'snap-res-1' },
+        ],
+      })
+      expect(callData.resistanceComponentValues).toEqual({
+        create: [
+          { componentId: 'snap-res-comp-1', value: '0' },
+        ],
+      })
+    })
+
+    it('sets templateId from adventure.originalTemplateId', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.templateId).toBe('original-template-id')
+    })
+
+    it('invalidates Redis cache after creation', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:${mockCreatedSheet.id}`)
+      expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:user:${userId}`)
+      expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}`)
+    })
+
+    it('handles cache invalidation failure gracefully', async () => {
+      mockRedisService.del.mockRejectedValue(new Error('Redis down'))
+
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId,
+        }),
+      ).resolves.toEqual(mockCreatedSheet)
+    })
+
+    it('accepts optional playerName and level', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Custom Hero',
+        adventureId,
+        playerName: 'Player One',
+        level: 3,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.playerName).toBe('Player One')
+      expect(callData.level).toBe(3)
+    })
+
+    it('skips acValues and acAttributeValues when armor classes have no fields/attributeModifiers', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        ...mockAdventure,
+        templateSnapshot: {
+          ...mockSnapshot,
+          armorClasses: [
+            { id: 'ac-empty', name: 'Empty AC', enabled: true, fields: [], attributeModifiers: [] },
+          ],
+        },
+      })
+
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.acValues).toBeUndefined()
+      expect(callData.acAttributeValues).toBeUndefined()
+    })
+
+    // ── Error cases ──
+
+    it('throws NotFoundException when adventure does not exist', async () => {
+      prisma.adventure.findUnique.mockResolvedValue(null)
+
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId: 'nonexistent',
+        }),
+      ).rejects.toThrow(NotFoundException)
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId: 'nonexistent',
+        }),
+      ).rejects.toThrow('Campaign not found')
+    })
+
+    it('throws BadRequestException when templateSnapshot is null', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        templateSnapshot: null,
+        originalTemplateId: 'original-template-id',
+      })
+
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId,
+        }),
+      ).rejects.toThrow(BadRequestException)
+    })
+
+    it('throws BadRequestException when originalTemplateId is null', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        templateSnapshot: mockSnapshot,
+        originalTemplateId: null,
+      })
+
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId,
+        }),
+      ).rejects.toThrow(BadRequestException)
+    })
+
+    it('throws ForbiddenException when user is not a campaign member', async () => {
+      mockMembershipService.isMember.mockResolvedValue(false)
+
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId,
+        }),
+      ).rejects.toThrow(ForbiddenException)
+    })
+
+    it('handles snapshot with empty sub-arrays gracefully', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        templateSnapshot: {
+          id: 'empty-snapshot',
+          name: 'Empty Template',
+          skillFormula: null,
+          attributes: [],
+          templateFields: [],
+          templateSkills: [],
+          skillModifierProfiles: [],
+          coreResources: [],
+          armorClasses: [],
+          resistances: [],
+          characterSections: [],
+        },
+        originalTemplateId: 'empty-original',
+      })
+
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Empty Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.values).toEqual({ create: [] })
+      expect(callData.fieldValues).toEqual({ create: [] })
+      expect(callData.skillValues).toEqual({ create: [] })
+      expect(callData.skillProfileValues).toEqual({ create: [] })
+      expect(callData.coreResourceValues).toEqual({ create: [] })
+      expect(callData.acValues).toBeUndefined()
+      expect(callData.acAttributeValues).toBeUndefined()
+      expect(callData.resistanceValues).toEqual({ create: [] })
+      expect(callData.resistanceComponentValues).toEqual({ create: [] })
+    })
+
+    it('skips profile values when skillFormula is null', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        ...mockAdventure,
+        templateSnapshot: {
+          ...mockSnapshot,
+          skillFormula: null,
+        },
+      })
+
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.skillProfileValues).toEqual({ create: [] })
     })
   })
 

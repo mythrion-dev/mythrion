@@ -49,6 +49,7 @@ describe('CommunityTemplateController', () => {
         page: 1,
         limit: 10,
         adventureId: undefined,
+        campaign: undefined,
         search: undefined,
       })
       expect(result.data).toHaveLength(1)
@@ -56,12 +57,13 @@ describe('CommunityTemplateController', () => {
     })
 
     it('passes query parameters when provided', async () => {
-      const result = await controller.findAll(2, 5, 'adv-1', 'warrior')
+      const result = await controller.findAll(2, 5, 'adv-1', 'Tormenta', 'warrior')
 
       expect(mockTemplateService.findPublicAll).toHaveBeenCalledWith({
         page: 2,
         limit: 5,
         adventureId: 'adv-1',
+        campaign: 'Tormenta',
         search: 'warrior',
       })
       expect(result).toBeDefined()

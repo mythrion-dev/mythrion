@@ -7,14 +7,17 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common'
 import { SubscriptionService } from '../subscription.service'
-import { MercadoPagoService } from '../mercado-pago.service'
 import { PrismaService } from '../../prisma.service'
 import { createMockPrismaService } from '../../__mocks__/prisma-service.mock'
+import { PAYMENT_GATEWAY } from '../payment-gateway.interface'
+import type { PaymentGateway } from '../payment-gateway.interface'
 
-const mockMpService = {
+const mockGateway: jest.Mocked<PaymentGateway> = {
   createSubscription: jest.fn(),
   cancelSubscription: jest.fn(),
+  updatePaymentMethod: jest.fn(),
   getSubscription: jest.fn(),
+  getPaymentCharge: jest.fn(),
   validateWebhook: jest.fn(),
 }
 
@@ -30,7 +33,7 @@ describe('SubscriptionService', () => {
       providers: [
         SubscriptionService,
         { provide: PrismaService, useValue: prisma },
-        { provide: MercadoPagoService, useValue: mockMpService },
+        { provide: PAYMENT_GATEWAY, useValue: mockGateway },
       ],
     }).compile()
 
@@ -72,7 +75,7 @@ describe('SubscriptionService', () => {
     const email = 'user@example.com'
     const plan = {
       id: 'monthly',
-      mpPlanId: 'mp-plan-123',
+      pgPlanId: 'pg-plan-123',
       slug: 'monthly',
       name: 'Monthly Plan',
       price: 12000,
@@ -81,30 +84,110 @@ describe('SubscriptionService', () => {
     it('creates a subscription and returns initPoint and subscriptionId', async () => {
       prisma.userSubscription.findUnique.mockResolvedValue(null)
       prisma.subscriptionPlan.findUnique.mockResolvedValue(plan)
-      mockMpService.createSubscription.mockResolvedValue({
-        id: 'mp-sub-1',
-        init_point: 'https://mercadopago.com/checkout/123',
+      mockGateway.createSubscription.mockResolvedValue({
+        id: 'SUB-1',
+        initPoint: '',
+        status: 'PENDING',
       })
       prisma.userSubscription.upsert.mockResolvedValue({
         id: 'local-sub-1',
         userId,
         planId,
-        mpSubscriptionId: 'mp-sub-1',
+        pgSubscriptionId: 'SUB-1',
         status: 'PENDING',
       })
 
       const result = await service.createSubscription(userId, planId, email)
 
       expect(result).toEqual({
-        initPoint: 'https://mercadopago.com/checkout/123',
+        initPoint: '',
         subscriptionId: 'local-sub-1',
       })
-      expect(mockMpService.createSubscription).toHaveBeenCalledWith(
-        plan.mpPlanId,
-        email,
-        expect.stringContaining('/subscription/success'),
+      expect(mockGateway.createSubscription).toHaveBeenCalledWith(
+        expect.objectContaining({
+          planId: plan.pgPlanId,
+          payerEmail: email,
+        }),
       )
       expect(prisma.userSubscription.upsert).toHaveBeenCalled()
+    })
+
+    it('saves AUTHORIZED status when gateway returns ACTIVE (card token flow)', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue(null)
+      prisma.subscriptionPlan.findUnique.mockResolvedValue(plan)
+      mockGateway.createSubscription.mockResolvedValue({
+        id: 'SUB-auth',
+        initPoint: '',
+        status: 'ACTIVE',
+        customerId: 'CUST-123',
+      })
+      prisma.userSubscription.upsert.mockResolvedValue({
+        id: 'local-sub-auth',
+        userId,
+        planId,
+        pgSubscriptionId: 'SUB-auth',
+        pgCustomerId: 'CUST-123',
+        status: 'ACTIVE',
+      })
+
+      await service.createSubscription(userId, planId, email, 'encrypted-card-123', 'João Silva', '12345678909')
+
+      const upsertCall = prisma.userSubscription.upsert.mock.calls[0][0]
+      expect(upsertCall.create.status).toBe('ACTIVE')
+      expect(upsertCall.update.status).toBe('ACTIVE')
+      expect(upsertCall.create.currentPeriodStart).toBeInstanceOf(Date)
+      expect(upsertCall.create.pgCustomerId).toBe('CUST-123')
+    })
+
+    it('persists currentPeriodEnd from gateway next_invoice_at', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue(null)
+      prisma.subscriptionPlan.findUnique.mockResolvedValue(plan)
+      mockGateway.createSubscription.mockResolvedValue({
+        id: 'SUB-period',
+        initPoint: '',
+        status: 'ACTIVE',
+        customerId: 'CUST-123',
+        nextPaymentDate: '2026-08-31T10:00:00Z',
+      })
+      prisma.userSubscription.upsert.mockResolvedValue({
+        id: 'local-sub-period',
+        userId,
+        planId,
+        pgSubscriptionId: 'SUB-period',
+        status: 'ACTIVE',
+      })
+
+      await service.createSubscription(userId, planId, email)
+
+      const upsertCall = prisma.userSubscription.upsert.mock.calls[0][0]
+      expect(upsertCall.create.currentPeriodEnd).toBeInstanceOf(Date)
+      expect(upsertCall.create.currentPeriodEnd.toISOString()).toBe(
+        '2026-08-31T10:00:00.000Z',
+      )
+      expect(upsertCall.update.currentPeriodEnd).toBeInstanceOf(Date)
+    })
+
+    it('stores null currentPeriodEnd when gateway returns no nextPaymentDate', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue(null)
+      prisma.subscriptionPlan.findUnique.mockResolvedValue(plan)
+      mockGateway.createSubscription.mockResolvedValue({
+        id: 'SUB-no-date',
+        initPoint: '',
+        status: 'PENDING',
+      })
+      prisma.userSubscription.upsert.mockResolvedValue({
+        id: 'local-sub-no-date',
+        userId,
+        planId,
+        pgSubscriptionId: 'SUB-no-date',
+        status: 'PENDING',
+      })
+
+      await service.createSubscription(userId, planId, email)
+
+      const upsertCall = prisma.userSubscription.upsert.mock.calls[0][0]
+      expect(upsertCall.create.currentPeriodEnd).toBeNull()
+      expect(upsertCall.update.currentPeriodEnd).toBeNull()
     })
 
     it('throws UnprocessableEntityException when user has an active subscription', async () => {
@@ -135,28 +218,28 @@ describe('SubscriptionService', () => {
         status: 'CANCELLED',
       })
       prisma.subscriptionPlan.findUnique.mockResolvedValue(plan)
-      mockMpService.createSubscription.mockResolvedValue({
-        id: 'mp-sub-2',
-        init_point: 'https://mercadopago.com/checkout/456',
+      mockGateway.createSubscription.mockResolvedValue({
+        id: 'SUB-2',
+        initPoint: '',
+        status: 'PENDING',
       })
       prisma.userSubscription.upsert.mockResolvedValue({
         id: 'local-sub-2',
         userId,
         planId,
-        mpSubscriptionId: 'mp-sub-2',
+        pgSubscriptionId: 'SUB-2',
         status: 'PENDING',
       })
 
       const result = await service.createSubscription(userId, planId, email)
 
-      expect(result.initPoint).toBe('https://mercadopago.com/checkout/456')
+      expect(result.initPoint).toBe('')
       expect(prisma.userSubscription.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { userId },
           update: expect.objectContaining({
             planId: plan.id,
             status: 'PENDING',
-            graceEndsAt: null,
             cancelledAt: null,
           }),
           create: expect.objectContaining({
@@ -176,10 +259,12 @@ describe('SubscriptionService', () => {
       const subData = {
         id: 'sub-1',
         status: 'ACTIVE',
-        mpSubscriptionId: 'mp-1',
+        pgSubscriptionId: 'SUB-1',
+        pgCustomerId: 'CUST-1',
         graceEndsAt: null,
         currentPeriodStart: new Date('2025-01-01'),
         currentPeriodEnd: new Date('2025-02-01'),
+        cancelAtPeriodEnd: false,
         cancelledAt: null,
         createdAt: new Date('2025-01-01'),
         plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
@@ -199,7 +284,29 @@ describe('SubscriptionService', () => {
 
       const result = await service.getMySubscription('user-1')
 
-      expect(result).toEqual(subData)
+      expect(result).toEqual({
+        id: 'sub-1',
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        status: 'ACTIVE',
+        pgSubscriptionId: 'SUB-1',
+        graceEndsAt: null,
+        currentPeriodStart: new Date('2025-01-01'),
+        currentPeriodEnd: new Date('2025-02-01'),
+        cancelledAt: null,
+        cancelAtPeriodEnd: false,
+        createdAt: new Date('2025-01-01'),
+        invoices: [
+          {
+            id: 'inv-1',
+            amount: 12000,
+            currency: 'BRL',
+            status: 'paid',
+            paidAt: new Date('2025-01-01'),
+            dueDate: null,
+            createdAt: new Date('2025-01-01'),
+          },
+        ],
+      })
       expect(prisma.userSubscription.findUnique).toHaveBeenCalledWith({
         where: { userId: 'user-1' },
         include: {
@@ -228,34 +335,271 @@ describe('SubscriptionService', () => {
 
       expect(result).toBeNull()
     })
+
+    it('auto-repairs PENDING subscription when gateway reports ACTIVE', async () => {
+      const pendingSub = {
+        id: 'sub-stuck',
+        status: 'PENDING',
+        pgSubscriptionId: 'SUB-stuck',
+        pgCustomerId: null,
+        graceEndsAt: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        cancelledAt: null,
+        createdAt: new Date(),
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        invoices: [],
+      }
+      const repairedSub = {
+        ...pendingSub,
+        status: 'ACTIVE',
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date('2026-08-29'),
+      }
+
+      prisma.userSubscription.findUnique.mockResolvedValueOnce(pendingSub)
+      mockGateway.getSubscription.mockResolvedValue({
+        id: 'SUB-stuck',
+        status: 'ACTIVE',
+        nextPaymentDate: '2026-08-29T00:00:00Z',
+      })
+      prisma.userSubscription.update.mockResolvedValue(repairedSub)
+
+      const result = await service.getMySubscription('user-1')
+
+      expect(result?.status).toBe('ACTIVE')
+      expect(result?.currentPeriodStart).toBeInstanceOf(Date)
+      expect(result?.currentPeriodEnd).toBeInstanceOf(Date)
+      expect(mockGateway.getSubscription).toHaveBeenCalledWith('SUB-stuck')
+    })
+
+    it('does not auto-repair when gateway also reports pending', async () => {
+      const pendingSub = {
+        id: 'sub-pending',
+        status: 'PENDING',
+        pgSubscriptionId: 'SUB-pending',
+        pgCustomerId: null,
+        graceEndsAt: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        cancelledAt: null,
+        createdAt: new Date(),
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        invoices: [],
+      }
+
+      prisma.userSubscription.findUnique.mockResolvedValueOnce(pendingSub)
+      mockGateway.getSubscription.mockResolvedValue({
+        id: 'SUB-pending',
+        status: 'PENDING',
+      })
+
+      const result = await service.getMySubscription('user-1')
+
+      expect(result?.status).toBe('PENDING')
+      expect(prisma.userSubscription.update).not.toHaveBeenCalled()
+    })
+
+    it('does not call gateway when local status is not PENDING', async () => {
+      const activeSub = {
+        id: 'sub-active',
+        status: 'ACTIVE',
+        pgSubscriptionId: 'SUB-active',
+        pgCustomerId: null,
+        graceEndsAt: null,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(),
+        cancelAtPeriodEnd: false,
+        cancelledAt: null,
+        createdAt: new Date(),
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        invoices: [],
+      }
+
+      prisma.userSubscription.findUnique.mockResolvedValueOnce(activeSub)
+
+      const result = await service.getMySubscription('user-1')
+
+      expect(result?.status).toBe('ACTIVE')
+      expect(mockGateway.getSubscription).not.toHaveBeenCalled()
+    })
+
+    it('does not auto-repair when pgSubscriptionId is missing', async () => {
+      const pendingNoPg = {
+        id: 'sub-no-pg',
+        status: 'PENDING',
+        pgSubscriptionId: null,
+        pgCustomerId: null,
+        graceEndsAt: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        cancelledAt: null,
+        createdAt: new Date(),
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        invoices: [],
+      }
+
+      prisma.userSubscription.findUnique.mockResolvedValueOnce(pendingNoPg)
+
+      const result = await service.getMySubscription('user-1')
+
+      expect(result?.status).toBe('PENDING')
+      expect(mockGateway.getSubscription).not.toHaveBeenCalled()
+    })
+
+    it('falls back to stale data when gateway API call fails during auto-repair', async () => {
+      const pendingSub = {
+        id: 'sub-stuck',
+        status: 'PENDING',
+        pgSubscriptionId: 'SUB-stuck',
+        pgCustomerId: null,
+        graceEndsAt: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        cancelledAt: null,
+        createdAt: new Date(),
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        invoices: [],
+      }
+
+      prisma.userSubscription.findUnique.mockResolvedValueOnce(pendingSub)
+      mockGateway.getSubscription.mockRejectedValue(new Error('Network error'))
+
+      const result = await service.getMySubscription('user-1')
+
+      expect(result?.status).toBe('PENDING')
+      expect(prisma.userSubscription.update).not.toHaveBeenCalled()
+    })
+
+    it('backfills currentPeriodEnd for ACTIVE subscription with missing period end', async () => {
+      const activeSub = {
+        id: 'sub-active',
+        status: 'ACTIVE',
+        pgSubscriptionId: 'SUB-active',
+        pgCustomerId: null,
+        graceEndsAt: null,
+        currentPeriodStart: new Date('2025-01-01'),
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        cancelledAt: null,
+        createdAt: new Date(),
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        invoices: [],
+      }
+      const repairedSub = {
+        ...activeSub,
+        currentPeriodEnd: new Date('2026-08-29T00:00:00Z'),
+        pgCustomerId: 'CUST-9',
+      }
+
+      prisma.userSubscription.findUnique.mockResolvedValueOnce(activeSub)
+      mockGateway.getSubscription.mockResolvedValue({
+        id: 'SUB-active',
+        status: 'ACTIVE',
+        nextPaymentDate: '2026-08-29T00:00:00Z',
+        customerId: 'CUST-9',
+      })
+      prisma.userSubscription.update.mockResolvedValue(repairedSub)
+
+      const result = await service.getMySubscription('user-1')
+
+      expect(result?.status).toBe('ACTIVE')
+      expect(result?.currentPeriodEnd).toEqual(new Date('2026-08-29T00:00:00Z'))
+      expect(mockGateway.getSubscription).toHaveBeenCalledWith('SUB-active')
+      expect(prisma.userSubscription.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 'user-1' },
+          data: expect.objectContaining({
+            status: 'ACTIVE',
+            // currentPeriodStart is preserved for already-ACTIVE subs
+            currentPeriodStart: activeSub.currentPeriodStart,
+            currentPeriodEnd: new Date('2026-08-29T00:00:00Z'),
+            pgCustomerId: 'CUST-9',
+          }),
+        }),
+      )
+    })
+
+    it('does not auto-repair when ACTIVE subscription already has currentPeriodEnd', async () => {
+      const activeSub = {
+        id: 'sub-active',
+        status: 'ACTIVE',
+        pgSubscriptionId: 'SUB-active',
+        pgCustomerId: 'CUST-1',
+        graceEndsAt: null,
+        currentPeriodStart: new Date('2025-01-01'),
+        currentPeriodEnd: new Date('2025-02-01'),
+        cancelAtPeriodEnd: false,
+        cancelledAt: null,
+        createdAt: new Date(),
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        invoices: [],
+      }
+
+      prisma.userSubscription.findUnique.mockResolvedValueOnce(activeSub)
+
+      const result = await service.getMySubscription('user-1')
+
+      expect(result?.currentPeriodEnd).toEqual(new Date('2025-02-01'))
+      expect(mockGateway.getSubscription).not.toHaveBeenCalled()
+    })
+
+    it('does not auto-repair CANCELLED subscription even with missing period end', async () => {
+      const cancelledSub = {
+        id: 'sub-cancelled',
+        status: 'CANCELLED',
+        pgSubscriptionId: 'SUB-cancelled',
+        pgCustomerId: 'CUST-1',
+        graceEndsAt: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        cancelledAt: new Date(),
+        createdAt: new Date(),
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        invoices: [],
+      }
+
+      prisma.userSubscription.findUnique.mockResolvedValueOnce(cancelledSub)
+
+      const result = await service.getMySubscription('user-1')
+
+      expect(result?.status).toBe('CANCELLED')
+      expect(mockGateway.getSubscription).not.toHaveBeenCalled()
+    })
   })
 
   // ─── cancelSubscription ─────────────────────────────────────────────
 
   describe('cancelSubscription', () => {
-    it('cancels subscription via MP and marks as CANCELLED locally', async () => {
+    it('schedules cancellation at period end via gateway and sets cancelAtPeriodEnd', async () => {
       prisma.userSubscription.findUnique.mockResolvedValue({
         id: 'sub-1',
         userId: 'user-1',
         status: 'ACTIVE',
-        mpSubscriptionId: 'mp-1',
+        pgSubscriptionId: 'SUB-1',
+        cancelAtPeriodEnd: false,
       })
-      mockMpService.cancelSubscription.mockResolvedValue(undefined)
+      mockGateway.cancelSubscription.mockResolvedValue(undefined)
       prisma.userSubscription.update.mockResolvedValue({
         id: 'sub-1',
-        status: 'CANCELLED',
+        cancelAtPeriodEnd: true,
       })
 
       await service.cancelSubscription('user-1')
 
-      expect(mockMpService.cancelSubscription).toHaveBeenCalledWith('mp-1')
+      expect(mockGateway.cancelSubscription).toHaveBeenCalledWith('SUB-1')
       expect(prisma.userSubscription.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { userId: 'user-1' },
-          data: expect.objectContaining({
-            status: 'CANCELLED',
+          data: {
+            cancelAtPeriodEnd: true,
             cancelledAt: expect.any(Date),
-          }),
+          },
         }),
       )
     })
@@ -290,17 +634,17 @@ describe('SubscriptionService', () => {
       )
     })
 
-    it('handles cancellation without mpSubscriptionId (skips MP call)', async () => {
+    it('handles cancellation without pgSubscriptionId (skips gateway call)', async () => {
       prisma.userSubscription.findUnique.mockResolvedValue({
         id: 'sub-1',
         userId: 'user-1',
         status: 'ACTIVE',
-        mpSubscriptionId: null,
+        pgSubscriptionId: null,
       })
 
       await service.cancelSubscription('user-1')
 
-      expect(mockMpService.cancelSubscription).not.toHaveBeenCalled()
+      expect(mockGateway.cancelSubscription).not.toHaveBeenCalled()
       expect(prisma.userSubscription.update).toHaveBeenCalled()
     })
   })
@@ -380,75 +724,31 @@ describe('SubscriptionService', () => {
   // ─── processWebhook ─────────────────────────────────────────────────
 
   describe('processWebhook', () => {
-    const mpSubId = 'mp-sub-1'
+    const pgSubId = 'SUB-1'
+    const rawBody = JSON.stringify({ type: 'subscription.activated', data: { id: pgSubId } })
 
-    describe('subscription_authorized', () => {
-      it('transitions PENDING → AUTHORIZED and sets period dates', async () => {
-        mockMpService.getSubscription.mockResolvedValue({
-          id: mpSubId,
-          status: 'authorized',
-          next_payment_date: '2025-02-01T00:00:00Z',
-        })
-        prisma.userSubscription.update.mockResolvedValue({ id: 's1' })
-
-        const result = await service.processWebhook({
-          type: 'subscription_authorized',
-          data: { id: mpSubId },
-        })
-
-        expect(result).toBe('authorized')
-        expect(prisma.userSubscription.update).toHaveBeenCalledWith(
-          expect.objectContaining({
-            where: { mpSubscriptionId: mpSubId },
-            data: expect.objectContaining({
-              status: 'AUTHORIZED',
-              currentPeriodStart: expect.any(Date),
-              currentPeriodEnd: expect.any(Date),
-            }),
-          }),
-        )
-      })
-
-      it('returns noop when data.id is missing', async () => {
-        const result = await service.processWebhook({
-          type: 'subscription_authorized',
-          data: { id: '' },
-        })
-        expect(result).toBe('noop')
-      })
-
-      it('returns error when MP API call fails', async () => {
-        mockMpService.getSubscription.mockRejectedValue(
-          new Error('MP API error'),
-        )
-
-        const result = await service.processWebhook({
-          type: 'subscription_authorized',
-          data: { id: mpSubId },
-        })
-
-        expect(result).toBe('error')
-      })
+    beforeEach(() => {
+      mockGateway.validateWebhook.mockReturnValue(true)
     })
 
-    describe('subscription_activated', () => {
+    describe('subscription.activated', () => {
       it('transitions to ACTIVE and clears grace period', async () => {
-        mockMpService.getSubscription.mockResolvedValue({
-          id: mpSubId,
-          status: 'active',
-          next_payment_date: '2025-03-01T00:00:00Z',
+        mockGateway.getSubscription.mockResolvedValue({
+          id: pgSubId,
+          status: 'ACTIVE',
+          nextPaymentDate: '2025-03-01T00:00:00Z',
         })
         prisma.userSubscription.update.mockResolvedValue({ id: 's1' })
 
-        const result = await service.processWebhook({
-          type: 'subscription_activated',
-          data: { id: mpSubId },
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'subscription.activated',
+          data: { id: pgSubId },
         })
 
         expect(result).toBe('activated')
         expect(prisma.userSubscription.update).toHaveBeenCalledWith(
           expect.objectContaining({
-            where: { mpSubscriptionId: mpSubId },
+            where: { pgSubscriptionId: pgSubId },
             data: expect.objectContaining({
               status: 'ACTIVE',
               graceEndsAt: null,
@@ -458,16 +758,16 @@ describe('SubscriptionService', () => {
         )
       })
 
-      it('handles missing next_payment_date', async () => {
-        mockMpService.getSubscription.mockResolvedValue({
-          id: mpSubId,
-          status: 'active',
+      it('handles missing nextPaymentDate', async () => {
+        mockGateway.getSubscription.mockResolvedValue({
+          id: pgSubId,
+          status: 'ACTIVE',
         })
         prisma.userSubscription.update.mockResolvedValue({ id: 's1' })
 
-        const result = await service.processWebhook({
-          type: 'subscription_activated',
-          data: { id: mpSubId },
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'subscription.activated',
+          data: { id: pgSubId },
         })
 
         expect(result).toBe('activated')
@@ -482,33 +782,44 @@ describe('SubscriptionService', () => {
         )
       })
 
-      it('returns error when MP API call fails for activated event', async () => {
-        mockMpService.getSubscription.mockRejectedValue(
-          new Error('MP API error'),
+      it('returns noop when data.id is missing', async () => {
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'subscription.activated',
+          data: { id: '' },
+        })
+        expect(result).toBe('noop')
+      })
+
+      it('returns error when gateway API call fails', async () => {
+        mockGateway.getSubscription.mockRejectedValue(
+          new Error('PagBank API error'),
         )
 
-        const result = await service.processWebhook({
-          type: 'subscription_activated',
-          data: { id: mpSubId },
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'subscription.activated',
+          data: { id: pgSubId },
         })
 
         expect(result).toBe('error')
       })
     })
 
-    describe('subscription_cancelled', () => {
-      it('marks subscription as CANCELLED', async () => {
+    describe('subscription.canceled', () => {
+      it('marks subscription as CANCELLED when not user-initiated', async () => {
+        prisma.userSubscription.findUnique.mockResolvedValue({
+          cancelAtPeriodEnd: false,
+        })
         prisma.userSubscription.update.mockResolvedValue({ id: 's1' })
 
-        const result = await service.processWebhook({
-          type: 'subscription_cancelled',
-          data: { id: mpSubId },
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'subscription.canceled',
+          data: { id: pgSubId },
         })
 
         expect(result).toBe('cancelled')
         expect(prisma.userSubscription.update).toHaveBeenCalledWith(
           expect.objectContaining({
-            where: { mpSubscriptionId: mpSubId },
+            where: { pgSubscriptionId: pgSubId },
             data: expect.objectContaining({
               status: 'CANCELLED',
               cancelledAt: expect.any(Date),
@@ -517,177 +828,417 @@ describe('SubscriptionService', () => {
         )
       })
 
-      it('returns error when prisma update fails for cancelled event', async () => {
+      it('returns cancelled_at_period_end when user initiated', async () => {
+        prisma.userSubscription.findUnique.mockResolvedValue({
+          cancelAtPeriodEnd: true,
+          currentPeriodEnd: new Date('2025-03-01'),
+        })
+
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'subscription.canceled',
+          data: { id: pgSubId },
+        })
+
+        expect(result).toBe('cancelled_at_period_end')
+        expect(prisma.userSubscription.update).not.toHaveBeenCalled()
+      })
+
+      it('returns error when prisma update fails', async () => {
+        prisma.userSubscription.findUnique.mockResolvedValue({
+          cancelAtPeriodEnd: false,
+        })
         prisma.userSubscription.update.mockRejectedValue(
           new Error('DB error'),
         )
 
-        const result = await service.processWebhook({
-          type: 'subscription_cancelled',
-          data: { id: mpSubId },
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'subscription.canceled',
+          data: { id: pgSubId },
         })
 
         expect(result).toBe('error')
       })
     })
 
-    describe('subscription_updated', () => {
-      it('mirrors cancelled status from MP', async () => {
-        mockMpService.getSubscription.mockResolvedValue({
-          id: mpSubId,
-          status: 'cancelled',
+    describe('subscription.recurrence', () => {
+      it('reactivates from GRACE and extends period', async () => {
+        mockGateway.getSubscription.mockResolvedValue({
+          id: pgSubId,
+          status: 'ACTIVE',
+          nextPaymentDate: '2025-04-01T00:00:00Z',
         })
         prisma.userSubscription.update.mockResolvedValue({ id: 's1' })
 
-        const result = await service.processWebhook({
-          type: 'subscription_updated',
-          data: { id: mpSubId },
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'subscription.recurrence',
+          data: { id: pgSubId },
+        })
+
+        expect(result).toBe('recurrence_processed')
+        expect(prisma.userSubscription.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { pgSubscriptionId: pgSubId },
+            data: {
+              status: 'ACTIVE',
+              graceEndsAt: null,
+              currentPeriodEnd: new Date('2025-04-01T00:00:00Z'),
+            },
+          }),
+        )
+      })
+
+      it('returns error when gateway API fails', async () => {
+        mockGateway.getSubscription.mockRejectedValue(new Error('API error'))
+
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'subscription.recurrence',
+          data: { id: pgSubId },
+        })
+
+        expect(result).toBe('error')
+      })
+    })
+
+    describe('subscription.updated', () => {
+      it('mirrors cancelled status from gateway', async () => {
+        mockGateway.getSubscription.mockResolvedValue({
+          id: pgSubId,
+          status: 'CANCELED',
+        })
+        prisma.userSubscription.findUnique.mockResolvedValue({
+          cancelAtPeriodEnd: false,
+        })
+        prisma.userSubscription.update.mockResolvedValue({ id: 's1' })
+
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'subscription.updated',
+          data: { id: pgSubId },
         })
 
         expect(result).toBe('cancelled')
       })
 
-      it('catches missed authorized webhook when local is PENDING and MP is authorized', async () => {
-        mockMpService.getSubscription.mockResolvedValue({
-          id: mpSubId,
-          status: 'authorized',
-          next_payment_date: '2025-02-01T00:00:00Z',
+      it('catches missed activated webhook when local is PENDING and gateway is ACTIVE', async () => {
+        mockGateway.getSubscription.mockResolvedValue({
+          id: pgSubId,
+          status: 'ACTIVE',
+          nextPaymentDate: '2025-02-01T00:00:00Z',
         })
         prisma.userSubscription.findUnique.mockResolvedValue({
           status: 'PENDING',
         })
         prisma.userSubscription.update.mockResolvedValue({ id: 's1' })
 
-        const result = await service.processWebhook({
-          type: 'subscription_updated',
-          data: { id: mpSubId },
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'subscription.updated',
+          data: { id: pgSubId },
         })
 
-        expect(result).toBe('authorized')
+        expect(result).toBe('advanced')
       })
 
-      it('updates currentPeriodEnd when next_payment_date changes', async () => {
-        mockMpService.getSubscription.mockResolvedValue({
-          id: mpSubId,
-          status: 'active',
-          next_payment_date: '2025-04-01T00:00:00Z',
+      it('updates currentPeriodEnd when next_billing_date changes', async () => {
+        mockGateway.getSubscription.mockResolvedValue({
+          id: pgSubId,
+          status: 'ACTIVE',
+          nextPaymentDate: '2025-04-01T00:00:00Z',
         })
         prisma.userSubscription.findUnique.mockResolvedValue({
           status: 'ACTIVE',
         })
         prisma.userSubscription.update.mockResolvedValue({ id: 's1' })
 
-        const result = await service.processWebhook({
-          type: 'subscription_updated',
-          data: { id: mpSubId },
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'subscription.updated',
+          data: { id: pgSubId },
         })
 
         expect(result).toBe('updated')
       })
 
-      it('returns error when MP API call fails for updated event', async () => {
-        mockMpService.getSubscription.mockRejectedValue(
-          new Error('MP API error'),
+      it('returns error when gateway API call fails', async () => {
+        mockGateway.getSubscription.mockRejectedValue(
+          new Error('PagBank API error'),
         )
 
-        const result = await service.processWebhook({
-          type: 'subscription_updated',
-          data: { id: mpSubId },
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'subscription.updated',
+          data: { id: pgSubId },
         })
 
         expect(result).toBe('error')
       })
     })
 
-    describe('authorized_payment / payment', () => {
-      it('handles invoice paid for GRACE→ACTIVE reactivation', async () => {
-        prisma.subscriptionInvoice.findUnique.mockResolvedValue({
-          id: 'inv-1',
-          mpInvoiceId: 'mp-inv-1',
-          subscription: {
-            id: 'sub-1',
-            status: 'GRACE',
-          },
+    describe('charge.paid / charge.failed', () => {
+      it('handles paid charge for GRACE→ACTIVE reactivation', async () => {
+        mockGateway.getPaymentCharge.mockResolvedValue({
+          id: 'CHARGE-1',
+          status: 'paid',
+          subscriptionId: 'SUB-1',
+          transactionAmount: 12000,
+          currencyId: 'BRL',
+          nextPaymentDate: '2025-02-15T12:00:00Z',
+          dateApproved: '2025-01-15T12:00:00Z',
+        })
+        prisma.userSubscription.findUnique.mockResolvedValue({
+          id: 'sub-1',
+          status: 'GRACE',
+          planId: 'monthly',
         })
         prisma.userSubscription.update.mockResolvedValue({ id: 'sub-1' })
-        prisma.subscriptionInvoice.update.mockResolvedValue({ id: 'inv-1' })
+        prisma.subscriptionInvoice.upsert.mockResolvedValue({ id: 'inv-1' })
 
-        const result = await service.processWebhook({
-          type: 'authorized_payment',
-          data: { id: 'mp-inv-1' },
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'charge.paid',
+          data: { id: 'CHARGE-1' },
         })
 
-        expect(result).toBe('invoice_paid')
+        expect(result).toBe('payment_approved')
+        expect(mockGateway.getPaymentCharge).toHaveBeenCalledWith('CHARGE-1')
+        expect(prisma.userSubscription.findUnique).toHaveBeenCalledWith({
+          where: { pgSubscriptionId: 'SUB-1' },
+          select: { id: true, status: true, planId: true },
+        })
+        // Reactivates from GRACE
         expect(prisma.userSubscription.update).toHaveBeenCalledWith(
           expect.objectContaining({
             where: { id: 'sub-1' },
             data: { status: 'ACTIVE', graceEndsAt: null },
           }),
         )
-        expect(prisma.subscriptionInvoice.update).toHaveBeenCalledWith(
+        // Also extends period end via next_payment_date
+        expect(prisma.userSubscription.update).toHaveBeenCalledWith(
           expect.objectContaining({
-            where: { mpInvoiceId: 'mp-inv-1' },
-            data: { status: 'paid', paidAt: expect.any(Date) },
+            where: { id: 'sub-1' },
+            data: { currentPeriodEnd: new Date('2025-02-15T12:00:00Z') },
+          }),
+        )
+        // Upserts invoice with charge data
+        expect(prisma.subscriptionInvoice.upsert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { pgInvoiceId: 'CHARGE-1' },
+            create: expect.objectContaining({
+              subscriptionId: 'sub-1',
+              amount: 12000,
+              status: 'paid',
+            }),
           }),
         )
       })
 
-      it('handles invoice paid without a local match (noop)', async () => {
-        prisma.subscriptionInvoice.findUnique.mockResolvedValue(null)
+      it('returns noop when charge has no subscriptionId', async () => {
+        mockGateway.getPaymentCharge.mockResolvedValue({
+          id: 'CHARGE-unknown',
+          status: 'paid',
+          subscriptionId: '',
+          transactionAmount: 12000,
+          currencyId: 'BRL',
+          nextPaymentDate: null,
+          dateApproved: null,
+        })
 
-        const result = await service.processWebhook({
-          type: 'payment',
-          data: { id: 'unknown-invoice' },
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'charge.paid',
+          data: { id: 'CHARGE-unknown' },
         })
 
         expect(result).toBe('noop')
       })
 
-      it('handles invoice paid for non-GRACE subscription', async () => {
-        prisma.subscriptionInvoice.findUnique.mockResolvedValue({
-          id: 'inv-2',
-          mpInvoiceId: 'mp-inv-2',
-          subscription: {
-            id: 'sub-2',
-            status: 'ACTIVE',
-          },
+      it('handles paid charge for non-GRACE subscription', async () => {
+        mockGateway.getPaymentCharge.mockResolvedValue({
+          id: 'CHARGE-2',
+          status: 'paid',
+          subscriptionId: 'SUB-2',
+          transactionAmount: 12000,
+          currencyId: 'BRL',
+          nextPaymentDate: '2025-02-15T12:00:00Z',
+          dateApproved: '2025-01-15T12:00:00Z',
         })
-        prisma.subscriptionInvoice.update.mockResolvedValue({ id: 'inv-2' })
+        prisma.userSubscription.findUnique.mockResolvedValue({
+          id: 'sub-2',
+          status: 'ACTIVE',
+          planId: 'monthly',
+        })
+        prisma.subscriptionInvoice.upsert.mockResolvedValue({ id: 'inv-2' })
 
-        const result = await service.processWebhook({
-          type: 'payment',
-          data: { id: 'mp-inv-2' },
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'charge.paid',
+          data: { id: 'CHARGE-2' },
         })
 
-        expect(result).toBe('invoice_paid')
-        // Only updates invoice, not subscription (status isn't GRACE)
-        expect(prisma.userSubscription.update).not.toHaveBeenCalled()
-        expect(prisma.subscriptionInvoice.update).toHaveBeenCalled()
+        expect(result).toBe('payment_approved')
+        // Should NOT reactivate (not in GRACE), only upsert invoice and extend period
+        expect(prisma.subscriptionInvoice.upsert).toHaveBeenCalled()
+        expect(prisma.userSubscription.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: 'sub-2' },
+            data: { currentPeriodEnd: new Date('2025-02-15T12:00:00Z') },
+          }),
+        )
       })
 
-      it('returns error when invoice paid processing fails', async () => {
-        prisma.subscriptionInvoice.findUnique.mockRejectedValue(
-          new Error('DB error'),
+      it('handles rejected charge moving to GRACE', async () => {
+        mockGateway.getPaymentCharge.mockResolvedValue({
+          id: 'CHARGE-rejected',
+          status: 'failed',
+          subscriptionId: 'SUB-3',
+          transactionAmount: 12000,
+          currencyId: 'BRL',
+          nextPaymentDate: null,
+          dateApproved: null,
+        })
+        prisma.userSubscription.findUnique.mockResolvedValue({
+          id: 'sub-3',
+          status: 'ACTIVE',
+          planId: 'monthly',
+        })
+        prisma.userSubscription.update.mockResolvedValue({ id: 'sub-3' })
+        prisma.subscriptionInvoice.upsert.mockResolvedValue({ id: 'inv-3' })
+
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'charge.failed',
+          data: { id: 'CHARGE-rejected' },
+        })
+
+        expect(result).toBe('payment_rejected')
+        expect(prisma.userSubscription.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: 'sub-3' },
+            data: expect.objectContaining({
+              status: 'GRACE',
+              graceEndsAt: expect.any(Date),
+            }),
+          }),
+        )
+      })
+
+      it('returns error when getPaymentCharge fails', async () => {
+        mockGateway.getPaymentCharge.mockRejectedValue(
+          new Error('PagBank API error'),
         )
 
-        const result = await service.processWebhook({
-          type: 'payment',
-          data: { id: 'mp-inv-3' },
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'charge.paid',
+          data: { id: 'CHARGE-err' },
         })
 
         expect(result).toBe('error')
       })
     })
 
+    describe('charge.created', () => {
+      it('returns noop for charge.created events', async () => {
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'charge.created',
+          data: { id: 'CHARGE-1' },
+        })
+
+        expect(result).toBe('noop')
+      })
+    })
+
+    describe('charge.refunded', () => {
+      it('returns payment_refunded for charge.refunded events', async () => {
+        const result = await service.processWebhook(rawBody, 'valid-token', {
+          type: 'charge.refunded',
+          data: { id: 'CHARGE-1' },
+        })
+
+        expect(result).toBe('payment_refunded')
+      })
+    })
+
     describe('unhandled types', () => {
       it('returns noop for unknown event types', async () => {
-        const result = await service.processWebhook({
+        const result = await service.processWebhook(rawBody, 'valid-token', {
           type: 'unknown_event_type',
           data: { id: 'whatever' },
         })
 
         expect(result).toBe('noop')
       })
+    })
+
+    describe('validation', () => {
+      it('returns invalid_signature when authenticity token is invalid', async () => {
+        mockGateway.validateWebhook.mockReturnValue(false)
+
+        const result = await service.processWebhook(rawBody, 'bad-token', {
+          type: 'subscription.activated',
+          data: { id: pgSubId },
+        })
+
+        expect(result).toBe('invalid_signature')
+        expect(prisma.userSubscription.update).not.toHaveBeenCalled()
+      })
+    })
+  })
+
+  // ─── updatePaymentMethod ───────────────────────────────────────────
+
+  describe('updatePaymentMethod', () => {
+    it('updates payment method successfully', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue({
+        id: 'sub-1',
+        status: 'ACTIVE',
+        pgSubscriptionId: 'SUB-1',
+        pgCustomerId: 'CUST-1',
+      })
+      mockGateway.updatePaymentMethod.mockResolvedValue(undefined)
+
+      await service.updatePaymentMethod('user-1', 'encrypted-card-new')
+
+      expect(mockGateway.updatePaymentMethod).toHaveBeenCalledWith(
+        'SUB-1',
+        'CUST-1',
+        'encrypted-card-new',
+      )
+    })
+
+    it('throws NotFoundException when no subscription exists', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue(null)
+
+      await expect(
+        service.updatePaymentMethod('user-1', 'card-token'),
+      ).rejects.toThrow(NotFoundException)
+    })
+
+    it('throws when subscription is CANCELLED', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue({
+        id: 'sub-1',
+        status: 'CANCELLED',
+      })
+
+      await expect(
+        service.updatePaymentMethod('user-1', 'card-token'),
+      ).rejects.toThrow(UnprocessableEntityException)
+    })
+
+    it('throws when subscription has no pgSubscriptionId', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue({
+        id: 'sub-1',
+        status: 'ACTIVE',
+        pgSubscriptionId: null,
+      })
+
+      await expect(
+        service.updatePaymentMethod('user-1', 'card-token'),
+      ).rejects.toThrow(UnprocessableEntityException)
+    })
+
+    it('throws when subscription has no pgCustomerId', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue({
+        id: 'sub-1',
+        status: 'ACTIVE',
+        pgSubscriptionId: 'SUB-1',
+        pgCustomerId: null,
+      })
+
+      await expect(
+        service.updatePaymentMethod('user-1', 'card-token'),
+      ).rejects.toThrow(UnprocessableEntityException)
     })
   })
 
@@ -713,6 +1264,34 @@ describe('SubscriptionService', () => {
       prisma.userSubscription.updateMany.mockResolvedValue({ count: 0 })
 
       const result = await service.expireGraceSubscriptions()
+
+      expect(result).toBe(0)
+    })
+  })
+
+  // ─── expireCancelledSubscriptions ───────────────────────────────────
+
+  describe('expireCancelledSubscriptions', () => {
+    it('expires cancel-at-period-end subscriptions past their currentPeriodEnd', async () => {
+      prisma.userSubscription.updateMany.mockResolvedValue({ count: 2 })
+
+      const result = await service.expireCancelledSubscriptions()
+
+      expect(result).toBe(2)
+      expect(prisma.userSubscription.updateMany).toHaveBeenCalledWith({
+        where: {
+          cancelAtPeriodEnd: true,
+          currentPeriodEnd: { lte: expect.any(Date) },
+          status: { notIn: ['EXPIRED', 'CANCELLED'] },
+        },
+        data: { status: 'EXPIRED' },
+      })
+    })
+
+    it('returns 0 when no subscriptions to expire', async () => {
+      prisma.userSubscription.updateMany.mockResolvedValue({ count: 0 })
+
+      const result = await service.expireCancelledSubscriptions()
 
       expect(result).toBe(0)
     })

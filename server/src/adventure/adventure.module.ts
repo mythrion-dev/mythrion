@@ -1,13 +1,15 @@
-import { Module } from '@nestjs/common'
+import { Module, forwardRef } from '@nestjs/common'
 import { AdventureService } from './adventure.service.js'
 import { AdventureController } from './adventure.controller.js'
 import { AdventureTemplateController } from './adventure-template.controller.js'
 import { PrismaService } from '../prisma.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
+import { AuthModule } from '../auth/auth.module.js'
 import { JwtModule } from '@nestjs/jwt'
 import { CollaborationModule } from '../collaboration/collaboration.module.js'
 import { CharacterSheetModule } from '../character-sheet/character-sheet.module.js'
 import { TemplateModule } from '../template/template.module.js'
+import { SubscriptionModule } from '../subscription/subscription.module.js'
 
 @Module({
   imports: [
@@ -15,6 +17,8 @@ import { TemplateModule } from '../template/template.module.js'
       secret: process.env.JWT_SECRET ?? 'dev-secret-change-me',
       signOptions: { expiresIn: '7d' },
     }),
+    forwardRef(() => AuthModule),
+    SubscriptionModule,
     CollaborationModule,
     CharacterSheetModule,
     TemplateModule,

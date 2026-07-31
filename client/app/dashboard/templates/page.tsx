@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
+import { useSubscription } from '@/lib/subscription-context'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -17,6 +18,7 @@ interface TemplateSummary {
   createdAt: string
   updatedAt: string
   useCount: number
+  isPublic: boolean
   _count: {
     attributes: number
     templateSkills: number
@@ -24,6 +26,7 @@ interface TemplateSummary {
 }
 
 export default function DashboardTemplatesPage() {
+  const { hasActiveSubscription } = useSubscription()
   const router = useRouter()
   const [templates, setTemplates] = useState<TemplateSummary[]>([])
   const [fetching, setFetching] = useState(true)
@@ -53,12 +56,24 @@ export default function DashboardTemplatesPage() {
         title="My Templates"
         subtitle="Your personal template library — create, edit, and reuse character sheet templates across adventures."
         actions={
-          <Link href="/dashboard/templates/new" className="btn-primary text-sm">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            <span className="hidden sm:inline">New Template</span>
-          </Link>
+          hasActiveSubscription ? (
+            <Link href="/dashboard/templates/new" className="btn-primary text-sm">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              <span className="hidden sm:inline">New Template</span>
+            </Link>
+          ) : (
+            <Link
+              href="/pricing"
+              className="btn-ghost text-xs border border-accent/30 bg-accent/10 text-accent hover:bg-accent/15"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span className="hidden sm:inline">Upgrade to Create</span>
+            </Link>
+          )
         }
       />
 
@@ -80,9 +95,9 @@ export default function DashboardTemplatesPage() {
         <EmptyState
           icon="📄"
           title="No templates yet"
-          description="Templates let you define character sheets with attributes, skills, and more. Create your first template to get started."
-          actionLabel="Create your first template"
-          actionHref="/dashboard/templates/new"
+          description={hasActiveSubscription ? "Templates let you define character sheets with attributes, skills, and more. Create your first template to get started." : "Upgrade to a paid plan to create your own templates."}
+          actionLabel={hasActiveSubscription ? "Create your first template" : "View Plans →"}
+          actionHref={hasActiveSubscription ? "/dashboard/templates/new" : "/pricing"}
         />
       )}
 
@@ -100,6 +115,7 @@ export default function DashboardTemplatesPage() {
               attributeCount={template._count?.attributes ?? 0}
               skillCount={template._count?.templateSkills ?? 0}
               useCount={template.useCount}
+              isPublic={template.isPublic}
               index={i}
             />
           ))}

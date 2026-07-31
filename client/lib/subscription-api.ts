@@ -6,7 +6,7 @@ export interface Plan {
   name: string
   description: string | null
   price: number
-  mpPlanId: string
+  pgPlanId: string
 }
 
 export interface Invoice {
@@ -27,11 +27,12 @@ export interface MySubscription {
     price: number
   }
   status: string
-  mpSubscriptionId: string | null
+  pgSubscriptionId: string | null
   graceEndsAt: string | null
   currentPeriodStart: string | null
   currentPeriodEnd: string | null
   cancelledAt: string | null
+  cancelAtPeriodEnd: boolean
   createdAt: string
   invoices: Invoice[]
 }
@@ -47,11 +48,21 @@ export async function fetchPlans(): Promise<Plan[]> {
 
 export async function createSubscription(
   planId: string,
+  cardToken?: string,
+  securityCode?: string,
+  payerName?: string,
+  payerDocument?: string,
+  deviceId?: string,
   cardTokenId?: string,
 ): Promise<CreateSubscriptionResponse> {
   return api.post<CreateSubscriptionResponse>('/subscriptions', {
     planId,
+    ...(cardToken ? { cardToken } : {}),
     ...(cardTokenId ? { cardTokenId } : {}),
+    ...(securityCode ? { securityCode } : {}),
+    ...(payerName ? { payerName } : {}),
+    ...(payerDocument ? { payerDocument } : {}),
+    ...(deviceId ? { deviceId } : {}),
   })
 }
 
@@ -61,4 +72,16 @@ export async function fetchMySubscription(): Promise<MySubscription | null> {
 
 export async function cancelSubscription(): Promise<void> {
   await api.post<void>('/subscriptions/cancel')
+}
+
+export async function updatePaymentMethod(
+  cardToken: string,
+  payerName?: string,
+  payerDocument?: string,
+): Promise<void> {
+  await api.post<void>('/subscriptions/update-payment-method', {
+    cardToken,
+    ...(payerName ? { payerName } : {}),
+    ...(payerDocument ? { payerDocument } : {}),
+  })
 }

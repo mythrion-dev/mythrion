@@ -18,12 +18,13 @@ function fakeSubscription(
     id: 'sub-1',
     userId: 'user-1',
     planId: 'monthly',
-    mpSubscriptionId: 'mp-1',
+    pgSubscriptionId: 'pg-1',
     status,
     graceEndsAt,
     currentPeriodStart: '2025-01-01',
     currentPeriodEnd: '2025-02-01',
     cancelledAt: null,
+    cancelAtPeriodEnd: false,
     createdAt: '2025-01-01',
     plan: { slug: 'monthly', name: 'Monthly', price: 12000 },
     invoices: [],
@@ -149,7 +150,7 @@ describe('GracePeriodBanner', () => {
 
     const link = screen.getByText('Update payment method')
     expect(link).toBeInTheDocument()
-    expect(link.closest('a')).toHaveAttribute('href', '/subscription/manage')
+    expect(link.closest('a')).toHaveAttribute('href', '/dashboard/subscription')
   })
 
   // ─── Dismiss behavior ───────────────────────────────────────────────

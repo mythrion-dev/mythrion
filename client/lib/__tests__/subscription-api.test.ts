@@ -51,7 +51,7 @@ describe('subscription-api', () => {
   describe('createSubscription', () => {
     it('calls api.post with planId and returns initPoint and subscriptionId', async () => {
       const response = {
-        initPoint: 'https://mercadopago.com/checkout/123',
+        initPoint: '', // PagBank card flow is direct — no redirect
         subscriptionId: 'sub-1',
       }
       vi.mocked(api.post).mockResolvedValue(response)
@@ -79,11 +79,12 @@ describe('subscription-api', () => {
         invoices: [
           { id: 'inv-1', amount: 12000, currency: 'BRL', status: 'paid', paidAt: '2025-01-01', dueDate: null, createdAt: '2025-01-01' },
         ],
-        mpSubscriptionId: 'mp-1',
+        pgSubscriptionId: 'SUB-1',
         graceEndsAt: null,
         currentPeriodStart: '2025-01-01',
         currentPeriodEnd: '2025-02-01',
         cancelledAt: null,
+        cancelAtPeriodEnd: false,
         createdAt: '2025-01-01',
       }
       vi.mocked(api.get).mockResolvedValue(subscription)

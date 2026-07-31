@@ -9,6 +9,7 @@ import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { TemplateForm } from '@/components/adventure/TemplateForm'
 import type { CoreResource, AcConfigDraft, ArmorClassAttributeModifierDraft, ResistanceDef } from '@/components/adventure/types'
+import { emptyAcConfig, slugify } from '@/components/adventure/types'
 
 interface TemplateAttribute {
   id: string
@@ -105,6 +106,7 @@ export default function TemplateDetailPage() {
   const [editFeatureSkillProfiles, setEditFeatureSkillProfiles] = useState(true)
   const [editFeatureResistance, setEditFeatureResistance] = useState(true)
   const [editAttrModifiersEnabled, setEditAttrModifiersEnabled] = useState(true)
+  const [editIsPublic, setEditIsPublic] = useState(false)
 
   const fetchTemplate = useCallback(async () => {
     setFetching(true)
@@ -183,6 +185,7 @@ export default function TemplateDetailPage() {
       })),
     })))
     setEditAttrModifiersEnabled(template.attrModifiersEnabled ?? true)
+    setEditIsPublic(template.isPublic)
     setEditing(true)
     setEditError(null)
   }, [template])
@@ -203,23 +206,22 @@ export default function TemplateDetailPage() {
         name: editName.trim(),
         description: editDescription.trim() || null,
         attributes: editAttrs.filter(a => a.key.trim()).map(a => ({
-          ...(a.id ? { id: a.id } : {}),
           key: a.key.trim(),
           name: a.name.trim(),
         })),
         attributeModifierFormula: editAttrModifierFormula || null,
         skillFormula: editSkillFormula || null,
-        attrModifiersEnabled: editAttrModifiersEnabled,
+        attributeModifiersEnabled: editAttrModifiersEnabled,
+        isPublic: editIsPublic,
       }
 
       payload.templateFields = editFields.filter(f => f.key.trim()).map(f => ({
-        ...(f.id ? { id: f.id } : {}),
         key: f.key.trim(),
         label: f.label.trim(),
       }))
 
       if (editFeatureSkills) {
-        payload.templateSkills = editSkills.map(s => ({
+        payload.skills = editSkills.map(s => ({
           name: s.name,
           description: s.description || null,
           attributeId: s.attributeId || null,
@@ -238,19 +240,57 @@ export default function TemplateDetailPage() {
       }
 
       if (editFeatureCoreResources) {
-        payload.coreResources = editCoreResources
+        payload.coreResources = editCoreResources.map(cr => ({
+          displayName: cr.displayName,
+          slug: cr.slug,
+          enabled: cr.enabled,
+          editableByPlayer: cr.editableByPlayer,
+          showNotes: cr.showNotes,
+          color: cr.color,
+        }))
       }
 
       if (editFeatureArmorClass) {
-        payload.armorClasses = editAcConfigs
+        payload.armorClasses = editAcConfigs.map(ac => ({
+          enabled: ac.enabled,
+          name: ac.name,
+          attributeModifiers: (ac.attributeModifiers ?? []).map(am => ({
+            attributeId: am.attributeId,
+            allowPlayerSelection: am.allowPlayerSelection,
+            defaultAttributeId: am.defaultAttributeId,
+          })),
+          fields: (ac.fields ?? []).map(f => ({
+            name: f.name,
+            key: f.key,
+            defaultValue: f.defaultValue,
+            editableByPlayer: f.editableByPlayer,
+            description: f.description,
+          })),
+        }))
       }
 
       if (editFeatureCharacterSections) {
-        payload.characterSections = editCharacterSections
+        payload.characterSections = editCharacterSections.map(s => ({
+          ...(s.id ? { id: s.id } : {}),
+          name: s.name,
+        }))
       }
 
       if (editFeatureResistance) {
-        payload.resistances = editResistances
+        payload.resistances = editResistances.map(r => ({
+          ...(r.id ? { id: r.id } : {}),
+          name: r.name,
+          calculationType: r.calculationType,
+          components: (r.components ?? []).map(c => ({
+            name: c.name,
+            editableByPlayer: c.editableByPlayer,
+            defaultValue: c.defaultValue,
+          })),
+          attributeModifiers: (r.attributeModifiers ?? []).map(am => ({
+            attributeId: am.attributeId,
+            enabled: am.enabled,
+          })),
+        }))
       }
 
       const updated = await api.patch<StandaloneTemplate>(`/templates/${template.id}`, payload)
@@ -261,7 +301,7 @@ export default function TemplateDetailPage() {
     } finally {
       setSaving(false)
     }
-  }, [template, editName, editDescription, editAttrs, editAttrModifierFormula, editSkillFormula, editFields, editSkills, editProfiles, editCoreResources, editAcConfigs, editCharacterSections, editResistances, editAttrModifiersEnabled, editFeatureSkills, editFeatureCustomFields, editFeatureCoreResources, editFeatureArmorClass, editFeatureCharacterSections, editFeatureSkillProfiles, editFeatureResistance])
+  }, [template, editName, editDescription, editAttrs, editAttrModifierFormula, editSkillFormula, editFields, editSkills, editProfiles, editCoreResources, editAcConfigs, editCharacterSections, editResistances, editAttrModifiersEnabled, editIsPublic, editFeatureSkills, editFeatureCustomFields, editFeatureCoreResources, editFeatureArmorClass, editFeatureCharacterSections, editFeatureSkillProfiles, editFeatureResistance])
 
   // ── Delete handler ──
 
@@ -402,6 +442,81 @@ export default function TemplateDetailPage() {
     setEditCoreResources(prev => prev.map((cr, idx) => idx === i ? { ...cr, showNotes: v } : cr))
   }, [])
 
+  // ── AC Config edit handlers ──
+
+  const handleAddEditAcConfig = useCallback(() => {
+    setEditAcConfigs(prev => [...prev, emptyAcConfig()])
+  }, [])
+  const handleRemoveEditAcConfig = useCallback((i: number) => {
+    setEditAcConfigs(prev => prev.filter((_, idx) => idx !== i))
+  }, [])
+  const handleUpdateEditAcConfig = useCallback((i: number, patch: Partial<AcConfigDraft>) => {
+    setEditAcConfigs(prev => prev.map((ac, idx) => idx === i ? { ...ac, ...patch } : ac))
+  }, [])
+  const handleAddEditAcFieldForConfig = useCallback((configIdx: number) => {
+    setEditAcConfigs(prev => prev.map((ac, i) => i === configIdx
+      ? { ...ac, fields: [...ac.fields, { name: '', key: '', defaultValue: '0', editableByPlayer: false, description: '' }] }
+      : ac))
+  }, [])
+  const handleRemoveEditAcFieldForConfig = useCallback((configIdx: number, fieldIdx: number) => {
+    setEditAcConfigs(prev => prev.map((ac, i) => i === configIdx
+      ? { ...ac, fields: ac.fields.filter((_, j) => j !== fieldIdx) }
+      : ac))
+  }, [])
+  const handleUpdateEditAcFieldForConfig = useCallback((configIdx: number, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string) => {
+    setEditAcConfigs(prev => prev.map((ac, i) => {
+      if (i !== configIdx) return ac
+      return {
+        ...ac, fields: ac.fields.map((field, j) => {
+          if (j !== fieldIdx) return field
+          const updated = { ...field, [f]: v }
+          if (f === 'name' && v.trim() && !field.key.trim()) updated.key = slugify(v.trim())
+          return updated
+        })
+      }
+    }))
+  }, [])
+  const handleUpdateEditAcFieldEditableForConfig = useCallback((configIdx: number, fieldIdx: number, v: boolean) => {
+    setEditAcConfigs(prev => prev.map((ac, i) => i === configIdx
+      ? { ...ac, fields: ac.fields.map((field, j) => j === fieldIdx ? { ...field, editableByPlayer: v } : field) }
+      : ac))
+  }, [])
+  const handleToggleEditAcAttributeIdForConfig = useCallback((configIdx: number, attrId: string) => {
+    setEditAcConfigs(prev => prev.map((ac, i) => {
+      if (i !== configIdx) return ac
+      const exists = ac.attributeModifiers.some(am => am.attributeId === attrId)
+      return {
+        ...ac,
+        attributeModifiers: exists
+          ? ac.attributeModifiers.filter(am => am.attributeId !== attrId)
+          : [...ac.attributeModifiers, { attributeId: attrId, allowPlayerSelection: false, defaultAttributeId: attrId }],
+      }
+    }))
+  }, [])
+  const handleUpdateEditAcAttributeModifierForConfig = useCallback((configIdx: number, attrId: string, patch: Partial<ArmorClassAttributeModifierDraft>) => {
+    setEditAcConfigs(prev => prev.map((ac, i) => i === configIdx
+      ? { ...ac, attributeModifiers: ac.attributeModifiers.map(am => am.attributeId === attrId ? { ...am, ...patch } : am) }
+      : ac))
+  }, [])
+
+  // ── Character section edit handlers ──
+
+  const handleAddEditCharacterSection = useCallback(() => {
+    setEditCharacterSections(prev => [...prev, { name: '' }])
+  }, [])
+  const handleRemoveEditCharacterSection = useCallback((i: number) => {
+    setEditCharacterSections(prev => prev.filter((_, idx) => idx !== i))
+  }, [])
+  const handleUpdateEditCharacterSection = useCallback((i: number, v: string) => {
+    setEditCharacterSections(prev => prev.map((s, idx) => idx === i ? { ...s, name: v } : s))
+  }, [])
+
+  // ── Resistance edit handler ──
+
+  const handleEditResistancesChange = useCallback((v: ResistanceDef[]) => {
+    setEditResistances(v)
+  }, [])
+
   // ── Loading / Error states ──
 
   if (fetching) {
@@ -515,23 +630,25 @@ export default function TemplateDetailPage() {
           onNewSkillFormulaChange={setEditSkillFormula}
           // AC config
           newAttrsForAc={editAttrs.filter(a => a.key.trim() && a.name.trim()).map(a => ({ key: a.key.trim(), name: a.name.trim() }))}
-          onAddNewAcConfig={() => {}}
-          onRemoveNewAcConfig={() => {}}
-          onUpdateNewAcConfig={() => {}}
-          onAddNewAcFieldForConfig={() => {}}
-          onRemoveNewAcFieldForConfig={() => {}}
-          onUpdateNewAcFieldForConfig={() => {}}
-          onUpdateNewAcFieldEditableForConfig={() => {}}
-          onToggleNewAcAttributeIdForConfig={() => {}}
-          onUpdateNewAcAttributeModifierForConfig={() => {}}
+          onAddNewAcConfig={handleAddEditAcConfig}
+          onRemoveNewAcConfig={handleRemoveEditAcConfig}
+          onUpdateNewAcConfig={handleUpdateEditAcConfig}
+          onAddNewAcFieldForConfig={handleAddEditAcFieldForConfig}
+          onRemoveNewAcFieldForConfig={handleRemoveEditAcFieldForConfig}
+          onUpdateNewAcFieldForConfig={handleUpdateEditAcFieldForConfig}
+          onUpdateNewAcFieldEditableForConfig={handleUpdateEditAcFieldEditableForConfig}
+          onToggleNewAcAttributeIdForConfig={handleToggleEditAcAttributeIdForConfig}
+          onUpdateNewAcAttributeModifierForConfig={handleUpdateEditAcAttributeModifierForConfig}
           // Character sections
-          onAddNewCharacterSection={() => {}}
-          onRemoveNewCharacterSection={() => {}}
-          onUpdateNewCharacterSection={() => {}}
+          onAddNewCharacterSection={handleAddEditCharacterSection}
+          onRemoveNewCharacterSection={handleRemoveEditCharacterSection}
+          onUpdateNewCharacterSection={handleUpdateEditCharacterSection}
           // Resistances
-          onNewResistancesChange={() => {}}
+          onNewResistancesChange={handleEditResistancesChange}
           attrsForNewResistance={attrsForResistance}
           // Feature toggles
+          newIsPublic={editIsPublic}
+          onNewIsPublicChange={setEditIsPublic}
           newFeatureSkills={editFeatureSkills}
           onNewFeatureSkillsChange={setEditFeatureSkills}
           newFeatureCustomFields={editFeatureCustomFields}
@@ -651,32 +768,16 @@ export default function TemplateDetailPage() {
         <h2 className="text-lg font-semibold text-foreground mb-4">Template Features</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <FeatureSummaryCard label="Attributes" count={attrCount} icon="📊" />
-          <FeatureSummaryCard label="Skills" count={skillCount} icon="⚡" />
-          <FeatureSummaryCard label="Custom Fields" count={fieldCount} icon="📝" />
-          <FeatureSummaryCard label="Skill Profiles" count={profileCount} icon="🎯" />
-          <FeatureSummaryCard label="Core Resources" count={crCount} icon="❤️" />
-          <FeatureSummaryCard label="Armor Classes" count={acCount} icon="🛡️" />
-          <FeatureSummaryCard label="Character Sections" count={sectionCount} icon="📋" />
-          <FeatureSummaryCard label="Resistances" count={resistCount} icon="🔥" />
+          <FeatureSummaryCard label="Attributes" count={attrCount} iconKey="attributes" />
+          <FeatureSummaryCard label="Skills" count={skillCount} iconKey="skills" />
+          <FeatureSummaryCard label="Custom Fields" count={fieldCount} iconKey="customfields" />
+          <FeatureSummaryCard label="Skill Profiles" count={profileCount} iconKey="profiles" />
+          <FeatureSummaryCard label="Core Resources" count={crCount} iconKey="coreResources" />
+          <FeatureSummaryCard label="Armor Classes" count={acCount} iconKey="armorClass" />
+          <FeatureSummaryCard label="Character Sections" count={sectionCount} iconKey="sections" />
+          <FeatureSummaryCard label="Resistances" count={resistCount} iconKey="resistances" />
         </div>
 
-        {(template.attributeModifierFormula || template.skillFormula) && (
-          <div className="mt-4 pt-4 border-t border-border space-y-2">
-            {template.attributeModifierFormula && (
-              <p className="text-sm text-muted">
-                <span className="text-foreground font-medium">Attribute Formula:</span>{' '}
-                <code className="text-xs bg-surface px-2 py-0.5 rounded border border-border">{template.attributeModifierFormula}</code>
-              </p>
-            )}
-            {template.skillFormula && (
-              <p className="text-sm text-muted">
-                <span className="text-foreground font-medium">Skill Formula:</span>{' '}
-                <code className="text-xs bg-surface px-2 py-0.5 rounded border border-border">{template.skillFormula}</code>
-              </p>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Delete confirmation modal */}
@@ -727,10 +828,26 @@ export default function TemplateDetailPage() {
 
 /* ── Feature summary card ── */
 
-function FeatureSummaryCard({ label, count, icon }: { label: string; count: number; icon: string }) {
+const FEATURE_ICONS: Record<string, string> = {
+  attributes: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+  skills: 'M13 10V3L4 14h7v7l9-11h-7z',
+  customfields: 'M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 0 0 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2',
+  coreResources: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z',
+  armorClass: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
+  sections: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
+  profiles: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+  resistances: 'M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01',
+}
+
+function FeatureSummaryCard({ label, count, iconKey }: { label: string; count: number; iconKey: string }) {
+  const pathData = FEATURE_ICONS[iconKey] ?? ''
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg bg-surface border border-border">
-      <span className="text-lg">{icon}</span>
+      <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 border border-primary/20">
+        <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+          <path d={pathData} />
+        </svg>
+      </div>
       <div>
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className="text-sm font-semibold text-foreground">{count}</p>

@@ -13,6 +13,7 @@ import {
 import { CharacterSheetService } from './character-sheet.service.js'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
 import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
+import { CreateCharacterFromCampaignDto } from './dto/create-character-from-campaign.dto.js'
 import { ResistanceCalculationService } from './resistance-calculation.service.js'
 import { AcCalculationService } from './ac-calculation.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
@@ -30,6 +31,14 @@ export class CharacterSheetController {
   @Post()
   create(@Req() req: AuthenticatedRequest, @Body() dto: CreateCharacterSheetDto) {
     return this.sheetService.create(req.user.sub, dto)
+  }
+
+  @Post('from-campaign')
+  createFromCampaign(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: CreateCharacterFromCampaignDto,
+  ) {
+    return this.sheetService.createFromCampaignSnapshot(req.user.sub, dto)
   }
 
   @Get()

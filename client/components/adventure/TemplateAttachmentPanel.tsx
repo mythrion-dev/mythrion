@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { api } from '@/lib/api'
 import { TemplatePickerModal } from '@/components/adventure/TemplatePickerModal'
+import { ConfirmDetachModal } from '@/components/adventure/ConfirmDetachModal'
 
 interface SnapshotSummary {
   name: string
@@ -37,14 +38,22 @@ export function TemplateAttachmentPanel({
 }: TemplateAttachmentPanelProps) {
   const [showPicker, setShowPicker] = useState(false)
   const [attaching, setAttaching] = useState(false)
+  const [showConfirmDetach, setShowConfirmDetach] = useState(false)
   const [detaching, setDetaching] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [detachSuccess, setDetachSuccess] = useState(false)
+
+  const hasAttachment = originalTemplateId !== null || templateSnapshot !== null
 
   const handleSelect = useCallback(async (templateId: string, _templateName: string) => {
     setAttaching(true)
     setError(null)
     try {
-      await api.post(`/adventures/${adventureId}/template/attach`, { templateId })
+      if (hasAttachment) {
+        await api.post(`/adventures/${adventureId}/template/replace`, { templateId })
+      } else {
+        await api.post(`/adventures/${adventureId}/template/attach`, { templateId })
+      }
       setShowPicker(false)
       onAttached?.()
     } catch (err) {
@@ -52,15 +61,20 @@ export function TemplateAttachmentPanel({
     } finally {
       setAttaching(false)
     }
-  }, [adventureId, onAttached])
+  }, [adventureId, onAttached, hasAttachment])
 
-  const handleDetach = useCallback(async () => {
-    if (!confirm('Detach the template link? The snapshot will be preserved for existing character sheets, but you won\'t be able to track the original template from this adventure.')) return
+  const handleDetach = useCallback(() => {
+    setError(null)
+    setShowConfirmDetach(true)
+  }, [])
 
+  const handleConfirmDetach = useCallback(async () => {
     setDetaching(true)
     setError(null)
     try {
       await api.delete(`/adventures/${adventureId}/template/detach`)
+      setShowConfirmDetach(false)
+      setDetachSuccess(true)
       onDetached?.()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to detach template')
@@ -69,7 +83,12 @@ export function TemplateAttachmentPanel({
     }
   }, [adventureId, onDetached])
 
-  const hasAttachment = originalTemplateId !== null || templateSnapshot !== null
+  // Auto-clear success message after 4 seconds
+  useEffect(() => {
+    if (!detachSuccess) return
+    const t = setTimeout(() => setDetachSuccess(false), 4000)
+    return () => clearTimeout(t)
+  }, [detachSuccess])
 
   return (
     <div className="card !p-4">
@@ -96,22 +115,35 @@ export function TemplateAttachmentPanel({
                 )}
               </button>
             ) : (
-              <button
-                onClick={handleDetach}
-                disabled={detaching}
-                className="btn-ghost text-xs !px-3 !py-1"
-              >
-                {detaching ? (
-                  <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                ) : (
-                  'Detach'
-                )}
-              </button>
+              <>
+                <button
+                  onClick={() => setShowPicker(true)}
+                  className="btn-secondary text-xs !px-3 !py-1"
+                >
+                  Replace
+                </button>
+                <button
+                  onClick={handleDetach}
+                  disabled={detaching}
+                  className="btn-ghost text-xs !px-3 !py-1"
+                >
+                  {detaching ? (
+                    <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  ) : (
+                    'Detach'
+                  )}
+                </button>
+              </>
             )}
           </div>
         )}
       </div>
 
+      {detachSuccess && (
+        <div className="mb-3 rounded-lg bg-success-muted border border-success/30 px-3 py-2 text-xs text-success">
+          Sheet Template detached successfully.
+        </div>
+      )}
       {error && (
         <div className="mb-3 rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">
           {error}
@@ -215,6 +247,16 @@ export function TemplateAttachmentPanel({
           onClose={() => { setShowPicker(false); setError(null) }}
           onSelect={handleSelect}
           adventureId={adventureId}
+        />
+      )}
+
+      {/* Confirm Detach Modal */}
+      {showConfirmDetach && (
+        <ConfirmDetachModal
+          loading={detaching}
+          error={error}
+          onCancel={() => { setShowConfirmDetach(false); setError(null) }}
+          onConfirm={handleConfirmDetach}
         />
       )}
     </div>

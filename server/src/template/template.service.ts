@@ -1,5 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common'
+import { Injectable, NotFoundException, ForbiddenException, ConflictException, Logger } from '@nestjs/common'
 import { PrismaService } from '../prisma.service.js'
+import { Prisma } from '../generated/prisma/client.js'
+import { splitSearchTokens, escapeLike } from '../community/search.util.js'
+import { DbNull } from '@prisma/client/runtime/client'
 import { MembershipService } from '../membership/membership.service.js'
 import { CreateTemplateDto } from './dto/create-template.dto.js'
 import { UpdateTemplateDto } from './dto/update-template.dto.js'
@@ -192,6 +195,15 @@ export class TemplateService {
     const adventure = await this.prisma.adventure.findUnique({ where: { id: adventureId } })
     if (!adventure) throw new NotFoundException('Adventure not found')
 
+    // Enforce single template per campaign: reject if any template already exists
+    // Check both templateSource (new field) and legacy indicators for backward compatibility
+    if (adventure.templateSource || adventure.originalTemplateId || adventure.templateSnapshot) {
+      throw new ConflictException(
+        'This campaign already has an attached template. ' +
+        'Detach it first before creating a campaign-owned template.',
+      )
+    }
+
     // Create the template with attributes and skills (initially without attribute links)
     const armorClasses = dto.armorClasses ?? []
     const created = await this.prisma.template.create({
@@ -366,6 +378,12 @@ export class TemplateService {
       }
     }
 
+    // Set template source to 'campaign' since a campaign-owned template was created
+    await this.prisma.adventure.update({
+      where: { id: adventureId },
+      data: { templateSource: 'campaign' },
+    })
+
     // Invalidate list cache for this adventure
     await this.invalidateCache(adventureId, created.id)
 
@@ -440,6 +458,11 @@ export class TemplateService {
       } else {
         throw new ForbiddenException('Only the template owner can update this template')
       }
+    }
+
+    // Only the owner can change visibility (isPublic)
+    if (dto.isPublic !== undefined && template.ownerId !== userId) {
+      throw new ForbiddenException('Only the template owner can change visibility')
     }
 
     if (dto.attributes) {
@@ -1024,6 +1047,7 @@ export class TemplateService {
         ...(dto.attributeModifiersEnabled !== undefined && { attributeModifiersEnabled: dto.attributeModifiersEnabled }),
         ...(dto.attributeModifierFormula !== undefined && { attributeModifierFormula: dto.attributeModifierFormula || null }),
         ...(dto.skillFormula !== undefined && { skillFormula: dto.skillFormula || null }),
+        ...(dto.isPublic !== undefined && { isPublic: dto.isPublic }),
       },
       include: templateInclude,
     })
@@ -1061,6 +1085,19 @@ export class TemplateService {
     await this.invalidateSheetCaches(id)
 
     const result = await this.prisma.template.delete({ where: { id } })
+
+    // If this was a campaign-owned template, update templateSource if no more remain
+    if (template.adventureId) {
+      const remaining = await this.prisma.template.count({
+        where: { adventureId: template.adventureId },
+      })
+      if (remaining === 0) {
+        await this.prisma.adventure.update({
+          where: { id: template.adventureId },
+          data: { templateSource: null },
+        })
+      }
+    }
 
     // Invalidate template caches
     await this.invalidateCache(template.adventureId, id, userId)
@@ -1150,18 +1187,84 @@ export class TemplateService {
       })),
     }
 
-    return this.createStandalone(userId, dto)
+    // Create the clone — track which template it was created from
+    const result = await this.createStandalone(userId, dto, original.id)
+
+    // If cloning a public template, increment useCount on the original for analytics
+    if (original.isPublic) {
+      await this.prisma.template.update({
+        where: { id: original.id },
+        data: { useCount: { increment: 1 } },
+      }).catch(() => {
+        // Non-critical analytics — don't fail the clone if this errors
+      })
+    }
+
+    return result
   }
 
   /**
    * Find all public templates (using the standalone isPublic flag).
    * No auth required.
    */
-  async findPublicAll(params: { page?: number; limit?: number; adventureId?: string; search?: string }) {
+  async findPublicAll(params: {
+    page?: number
+    limit?: number
+    adventureId?: string
+    campaign?: string
+    search?: string
+  }) {
     const page = params.page ?? 1
     const limit = params.limit ?? 10
     const skip = (page - 1) * limit
 
+    // Route to the ranked (raw-SQL) path only when there is at least one real
+    // search token; whitespace-only queries fall back to the plain listing.
+    const search = params.search
+    const hasSearch = search
+      ? splitSearchTokens(search).length > 0
+      : false
+
+    const { rows, total } = hasSearch && search
+      ? await this.findPublicAllRanked({ ...params, search, page, limit, skip })
+      : await this.findPublicAllPlain({ ...params, page, limit, skip })
+
+    const data = rows.map((t) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+      useCount: t.useCount,
+      adventure: t.adventure,
+      owner: t.owner,
+      _count: t._count,
+      // Top-level convenience fields (nested `adventure` kept for compat).
+      campaign: t.adventure?.campaign ?? null,
+      adventureName: t.adventure?.name ?? null,
+      adventureId: t.adventure?.id ?? null,
+    }))
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    }
+  }
+
+  /**
+   * Plain listing path — no meaningful search term. Same filters and select as
+   * the ranked path, but lets Prisma do the ordering and pagination.
+   */
+  private async findPublicAllPlain(params: {
+    page: number
+    limit: number
+    skip: number
+    adventureId?: string
+    campaign?: string
+  }) {
     const where: any = {
       isPublic: true,
     }
@@ -1170,45 +1273,132 @@ export class TemplateService {
       where.adventureId = params.adventureId
     }
 
-    if (params.search) {
-      where.AND = [
-        {
-          OR: [
-            { name: { contains: params.search, mode: 'insensitive' } },
-            { description: { contains: params.search, mode: 'insensitive' } },
-          ],
-        },
-      ]
+    if (params.campaign) {
+      where.adventure = { is: { campaign: params.campaign } }
     }
 
     const [templates, total] = await this.prisma.$transaction([
       this.prisma.template.findMany({
         where,
-        skip,
-        take: limit,
+        skip: params.skip,
+        take: params.limit,
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
           name: true,
           description: true,
           createdAt: true,
+          updatedAt: true,
+          useCount: true,
           adventure: { select: { id: true, name: true, campaign: true } },
           owner: { select: { id: true, displayName: true } },
-          _count: { select: { characterSheets: true } },
+          _count: { select: { attributes: true, templateSkills: true } },
         },
       }),
       this.prisma.template.count({ where }),
     ])
 
-    return {
-      data: templates,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+    return { rows: templates, total }
+  }
+
+  /**
+   * Ranked search path. Finds and orders matching IDs entirely in SQL —
+   * accent- and case-insensitive, tokenized, ranked by name-match quality —
+   * then hydrates full rows with a normal Prisma findMany and reorders them
+   * to the SQL order so relevance ranking survives pagination.
+   */
+  private async findPublicAllRanked(params: {
+    page: number
+    limit: number
+    skip: number
+    adventureId?: string
+    campaign?: string
+    search: string
+  }) {
+    const { limit, skip } = params
+    const tokens = splitSearchTokens(params.search).map((t) => escapeLike(t))
+
+    // Per-token score: exact name > name prefix > name substring > other fields.
+    const scoreParts = tokens.map((tok) =>
+      Prisma.sql`CASE WHEN search_norm(t."name") = search_norm(${tok}) THEN 0 WHEN search_norm(t."name") LIKE (search_norm(${tok}) || '%') THEN 1 WHEN search_norm(t."name") LIKE ('%' || search_norm(${tok}) || '%') THEN 2 ELSE 3 END`,
+    )
+
+    // Per-token filter: the token must appear in at least one searchable field.
+    const tokenClauses = tokens.map((tok) =>
+      Prisma.sql`(
+        search_norm(t."name") = search_norm(${tok})
+        OR search_norm(t."name") LIKE (search_norm(${tok}) || '%')
+        OR search_norm(t."name") LIKE ('%' || search_norm(${tok}) || '%')
+        OR search_norm(COALESCE(t."description", '')) LIKE ('%' || search_norm(${tok}) || '%')
+        OR search_norm(COALESCE(owner."displayName", '')) LIKE ('%' || search_norm(${tok}) || '%')
+        OR search_norm(COALESCE(adv."campaign", '')) LIKE ('%' || search_norm(${tok}) || '%')
+      )`,
+    )
+
+    const ands: Prisma.Sql[] = [Prisma.sql`t."isPublic" = true`]
+
+    if (params.adventureId) {
+      ands.push(Prisma.sql`t."adventureId" = ${params.adventureId}`)
     }
+    if (params.campaign) {
+      ands.push(Prisma.sql`adv."campaign" = ${params.campaign}`)
+    }
+
+    const query = Prisma.sql`
+      WITH matched AS (
+        SELECT t."id" AS id, t."createdAt" AS created_at,
+          (${Prisma.join(scoreParts, ' + ')}) AS score
+        FROM "Template" t
+        LEFT JOIN "Adventure" adv ON adv."id" = t."adventureId"
+        LEFT JOIN "User" owner ON owner."id" = t."ownerId"
+        WHERE ${Prisma.join(ands, ' AND ')}
+          AND (${Prisma.join(tokenClauses, ' AND ')})
+      ),
+      ordered AS (
+        SELECT id, created_at, score,
+          ROW_NUMBER() OVER (ORDER BY score ASC, created_at DESC) AS rn
+        FROM matched
+      )
+      SELECT
+        (SELECT COUNT(*)::int FROM matched) AS total,
+        COALESCE(
+          (SELECT jsonb_agg(id ORDER BY rn) FROM ordered WHERE rn > ${skip} AND rn <= ${skip + limit}),
+          '[]'::jsonb
+        ) AS ids
+    `
+
+    const [result] = await this.prisma.$queryRaw<
+      { total: number; ids: string[] | null }[]
+    >(query)
+
+    const total = result?.total ?? 0
+    const ids = result?.ids ?? []
+
+    if (ids.length === 0) {
+      return { rows: [], total }
+    }
+
+    const templates = await this.prisma.template.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+        useCount: true,
+        adventure: { select: { id: true, name: true, campaign: true } },
+        owner: { select: { id: true, displayName: true } },
+        _count: { select: { attributes: true, templateSkills: true } },
+      },
+    })
+
+    const byId = new Map(templates.map((t) => [t.id, t] as const))
+    const rows = ids
+      .map((id) => byId.get(id))
+      .filter((t): t is NonNullable<typeof t> => Boolean(t))
+
+    return { rows, total }
   }
 
   /**
@@ -1293,13 +1483,14 @@ export class TemplateService {
    * Create a standalone template (no adventure context).
    * The template is owned by the creating user and is not public by default.
    */
-  async createStandalone(userId: string, dto: CreateTemplateDto) {
+  async createStandalone(userId: string, dto: CreateTemplateDto, createdFromTemplateId?: string) {
     const created = await this.prisma.template.create({
       data: {
         adventureId: null,
         ownerId: userId,
-        isPublic: false,
+        isPublic: dto.isPublic ?? false,
         useCount: 0,
+        createdFromTemplateId: createdFromTemplateId ?? null,
         name: dto.name,
         description: dto.description ?? null,
         attributeModifiersEnabled: dto.attributeModifiersEnabled ?? true,
@@ -1556,6 +1747,28 @@ export class TemplateService {
     // GM only
     await this.membership.requireRole(adventureId, userId, 'GM')
 
+    // Enforce single template per campaign: reject if one is already attached
+    const existing = await this.prisma.adventure.findUnique({
+      where: { id: adventureId },
+      select: { originalTemplateId: true, templateSnapshot: true },
+    })
+    if (existing?.originalTemplateId || existing?.templateSnapshot) {
+      throw new ConflictException(
+        'This campaign already has an attached template. Use the replace endpoint to change it.',
+      )
+    }
+
+    // Reject if campaign-owned templates exist
+    const campaignCount = await this.prisma.template.count({
+      where: { adventureId },
+    })
+    if (campaignCount > 0) {
+      throw new ConflictException(
+        'This campaign has campaign-owned templates. ' +
+        'Remove them first before attaching a template.',
+      )
+    }
+
     const template = await this.prisma.template.findUnique({
       where: { id: templateId },
       include: templateInclude,
@@ -1570,6 +1783,7 @@ export class TemplateService {
       data: {
         templateSnapshot: snapshot as any,
         originalTemplateId: templateId,
+        templateSource: 'attached',
       },
     })
 
@@ -1581,6 +1795,64 @@ export class TemplateService {
 
     // Invalidate adventure template list cache
     await this.invalidateCache(adventureId, templateId)
+
+    return adventure
+  }
+
+  /**
+   * Replace the attached template on an adventure (GM only).
+   * Atomically swaps the template snapshot and originalTemplateId.
+   * No pre-check for existing attachment — works like attach when none exists.
+   * Invalidates cache for both old and new templates.
+   */
+  async replaceAdventureTemplate(templateId: string, adventureId: string, userId: string) {
+    // GM only
+    await this.membership.requireRole(adventureId, userId, 'GM')
+
+    // Read existing attachment for old template ID cache invalidation
+    const current = await this.prisma.adventure.findUnique({
+      where: { id: adventureId },
+      select: { originalTemplateId: true },
+    })
+
+    // Reject if campaign-owned templates exist
+    const campaignCount = await this.prisma.template.count({
+      where: { adventureId },
+    })
+    if (campaignCount > 0) {
+      throw new ConflictException(
+        'This campaign has campaign-owned templates. ' +
+        'Remove them first before attaching a template.',
+      )
+    }
+
+    const template = await this.prisma.template.findUnique({
+      where: { id: templateId },
+      include: templateInclude,
+    })
+    if (!template) throw new NotFoundException('Template not found')
+
+    // Build and store the new snapshot
+    const snapshot = await this.buildSnapshot(template)
+
+    const adventure = await this.prisma.adventure.update({
+      where: { id: adventureId },
+      data: {
+        templateSnapshot: snapshot as any,
+        originalTemplateId: templateId,
+        templateSource: 'attached',
+      },
+    })
+
+    // Increment new template useCount
+    await this.prisma.template.update({
+      where: { id: templateId },
+      data: { useCount: { increment: 1 } },
+    })
+
+    // Invalidate cache for both old and new template
+    await this.invalidateCache(adventureId, templateId)
+    await this.invalidateCache(adventureId, current?.originalTemplateId ?? undefined)
 
     return adventure
   }
@@ -1603,6 +1875,8 @@ export class TemplateService {
       where: { id: adventureId },
       data: {
         originalTemplateId: null,
+        templateSnapshot: DbNull,
+        templateSource: null,
       },
     })
 
@@ -1627,7 +1901,10 @@ export class TemplateService {
 
     if (!adventure) throw new NotFoundException('Adventure not found')
     if (!adventure.templateSnapshot) {
-      throw new NotFoundException('No template snapshot found for this adventure')
+      return {
+        snapshot: null,
+        originalTemplateId: null,
+      }
     }
 
     return {

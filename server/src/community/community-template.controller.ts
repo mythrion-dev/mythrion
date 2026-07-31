@@ -21,9 +21,10 @@ export class CommunityTemplateController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
     @Query('adventureId') adventureId?: string,
+    @Query('campaign') campaign?: string,
     @Query('search') search?: string,
   ) {
-    return this.templateService.findPublicAll({ page, limit, adventureId, search })
+    return this.templateService.findPublicAll({ page, limit, adventureId, campaign, search })
   }
 
   /**
