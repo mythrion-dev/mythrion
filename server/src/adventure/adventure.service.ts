@@ -5,6 +5,8 @@ import {
   Logger,
 } from '@nestjs/common'
 import { PrismaService } from '../prisma.service.js'
+import { Prisma } from '../generated/prisma/client.js'
+import { splitSearchTokens, escapeLike } from '../community/search.util.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { CharacterSheetService } from '../character-sheet/character-sheet.service.js'
 import { TemplateService } from '../template/template.service.js'
@@ -142,62 +144,18 @@ export class AdventureService {
     const limit = params.limit ?? 10
     const skip = (page - 1) * limit
 
-    const where: any = { isPublic: true }
+    // Route to the ranked (raw-SQL) path only when there is at least one real
+    // search token; whitespace-only queries fall back to the plain listing.
+    const search = params.search
+    const hasSearch = search
+      ? splitSearchTokens(search).length > 0
+      : false
 
-    if (params.campaign) {
-      where.campaign = params.campaign
-    }
+    const { rows, total } = hasSearch && search
+      ? await this.findPublicRanked({ ...params, search, page, limit, skip })
+      : await this.findPublicPlain({ ...params, page, limit, skip })
 
-    if (params.search) {
-      where.OR = [
-        { name: { contains: params.search, mode: 'insensitive' } },
-        { synopsis: { contains: params.search, mode: 'insensitive' } },
-      ]
-    }
-
-    if (params.sessionWeekday) {
-      where.sessionWeekday = params.sessionWeekday
-    }
-
-    if (params.sessionType) {
-      where.sessionType = params.sessionType
-    }
-
-    if (params.timePeriod) {
-      const timeFilters: Record<string, { gte: string; lt: string }> = {
-        morning: { gte: '06:00', lt: '12:00' },
-        afternoon: { gte: '12:00', lt: '18:00' },
-        night: { gte: '18:00', lt: '24:00' },
-      }
-      const filter = timeFilters[params.timePeriod]
-      where.sessionTime = { gte: filter.gte, lt: filter.lt }
-    }
-
-    const [adventures, total] = await this.prisma.$transaction([
-      this.prisma.adventure.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          name: true,
-          campaign: true,
-          synopsis: true,
-          maxPlayers: true,
-          isPublic: true,
-          sessionWeekday: true,
-          sessionTime: true,
-          sessionType: true,
-          createdAt: true,
-          owner: { select: { id: true, displayName: true } },
-          _count: { select: { members: { where: { role: 'PLAYER' } } } },
-        },
-      }),
-      this.prisma.adventure.count({ where }),
-    ])
-
-    let data = adventures.map((a) => ({
+    let data = rows.map((a) => ({
       id: a.id,
       name: a.name,
       campaign: a.campaign,
@@ -224,6 +182,187 @@ export class AdventureService {
       page,
       totalPages: Math.max(1, Math.ceil((total - removedCount) / limit)),
     }
+  }
+
+  /**
+   * Plain listing path — no meaningful search term. Same filters and select as
+   * the ranked path, but lets Prisma do the ordering and pagination.
+   */
+  private async findPublicPlain(params: {
+    page: number
+    limit: number
+    skip: number
+    campaign?: string
+    sessionWeekday?: string
+    sessionType?: string
+    timePeriod?: 'morning' | 'afternoon' | 'night'
+  }) {
+    const where: any = { isPublic: true }
+
+    if (params.campaign) {
+      where.campaign = params.campaign
+    }
+
+    if (params.sessionWeekday) {
+      where.sessionWeekday = params.sessionWeekday
+    }
+
+    if (params.sessionType) {
+      where.sessionType = params.sessionType
+    }
+
+    if (params.timePeriod) {
+      const timeFilters: Record<string, { gte: string; lt: string }> = {
+        morning: { gte: '06:00', lt: '12:00' },
+        afternoon: { gte: '12:00', lt: '18:00' },
+        night: { gte: '18:00', lt: '24:00' },
+      }
+      const filter = timeFilters[params.timePeriod]
+      where.sessionTime = { gte: filter.gte, lt: filter.lt }
+    }
+
+    const [adventures, total] = await this.prisma.$transaction([
+      this.prisma.adventure.findMany({
+        where,
+        skip: params.skip,
+        take: params.limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          campaign: true,
+          synopsis: true,
+          maxPlayers: true,
+          isPublic: true,
+          sessionWeekday: true,
+          sessionTime: true,
+          sessionType: true,
+          createdAt: true,
+          owner: { select: { id: true, displayName: true } },
+          _count: { select: { members: { where: { role: 'PLAYER' } } } },
+        },
+      }),
+      this.prisma.adventure.count({ where }),
+    ])
+
+    return { rows: adventures, total }
+  }
+
+  /**
+   * Ranked search path. Finds and orders matching IDs entirely in SQL —
+   * accent- and case-insensitive, tokenized, ranked by name-match quality —
+   * then hydrates full rows with a normal Prisma findMany and reorders them
+   * to the SQL order so relevance ranking survives pagination.
+   */
+  private async findPublicRanked(params: {
+    page: number
+    limit: number
+    skip: number
+    campaign?: string
+    search: string
+    sessionWeekday?: string
+    sessionType?: string
+    timePeriod?: 'morning' | 'afternoon' | 'night'
+  }) {
+    const { limit, skip } = params
+    const tokens = splitSearchTokens(params.search).map((t) => escapeLike(t))
+
+    // Per-token score: exact name > name prefix > name substring > other fields.
+    const scoreParts = tokens.map((tok) =>
+      Prisma.sql`CASE WHEN search_norm(a."name") = search_norm(${tok}) THEN 0 WHEN search_norm(a."name") LIKE (search_norm(${tok}) || '%') THEN 1 WHEN search_norm(a."name") LIKE ('%' || search_norm(${tok}) || '%') THEN 2 ELSE 3 END`,
+    )
+
+    // Per-token filter: the token must appear in at least one searchable field.
+    const tokenClauses = tokens.map((tok) =>
+      Prisma.sql`(
+        search_norm(a."name") = search_norm(${tok})
+        OR search_norm(a."name") LIKE (search_norm(${tok}) || '%')
+        OR search_norm(a."name") LIKE ('%' || search_norm(${tok}) || '%')
+        OR search_norm(COALESCE(a."campaign", '')) LIKE ('%' || search_norm(${tok}) || '%')
+        OR search_norm(COALESCE(a."synopsis", '')) LIKE ('%' || search_norm(${tok}) || '%')
+        OR search_norm(COALESCE(owner."displayName", '')) LIKE ('%' || search_norm(${tok}) || '%')
+      )`,
+    )
+
+    const ands: Prisma.Sql[] = [Prisma.sql`a."isPublic" = true`]
+
+    if (params.campaign) {
+      ands.push(Prisma.sql`a."campaign" = ${params.campaign}`)
+    }
+    if (params.sessionWeekday) {
+      ands.push(Prisma.sql`a."sessionWeekday" = ${params.sessionWeekday}`)
+    }
+    if (params.sessionType) {
+      ands.push(Prisma.sql`a."sessionType" = ${params.sessionType}`)
+    }
+    if (params.timePeriod) {
+      const timeFilters: Record<string, { gte: string; lt: string }> = {
+        morning: { gte: '06:00', lt: '12:00' },
+        afternoon: { gte: '12:00', lt: '18:00' },
+        night: { gte: '18:00', lt: '24:00' },
+      }
+      const filter = timeFilters[params.timePeriod]
+      ands.push(Prisma.sql`a."sessionTime" >= ${filter.gte}`)
+      ands.push(Prisma.sql`a."sessionTime" < ${filter.lt}`)
+    }
+
+    const query = Prisma.sql`
+      WITH matched AS (
+        SELECT a."id" AS id, a."createdAt" AS created_at,
+          (${Prisma.join(scoreParts, ' + ')}) AS score
+        FROM "Adventure" a
+        LEFT JOIN "User" owner ON owner."id" = a."ownerId"
+        WHERE ${Prisma.join(ands, ' AND ')}
+          AND (${Prisma.join(tokenClauses, ' AND ')})
+      ),
+      ordered AS (
+        SELECT id, created_at, score,
+          ROW_NUMBER() OVER (ORDER BY score ASC, created_at DESC) AS rn
+        FROM matched
+      )
+      SELECT
+        (SELECT COUNT(*)::int FROM matched) AS total,
+        COALESCE(
+          (SELECT jsonb_agg(id ORDER BY rn) FROM ordered WHERE rn > ${skip} AND rn <= ${skip + limit}),
+          '[]'::jsonb
+        ) AS ids
+    `
+
+    const [result] = await this.prisma.$queryRaw<
+      { total: number; ids: string[] | null }[]
+    >(query)
+
+    const total = result?.total ?? 0
+    const ids = result?.ids ?? []
+
+    if (ids.length === 0) {
+      return { rows: [], total }
+    }
+
+    const adventures = await this.prisma.adventure.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        name: true,
+        campaign: true,
+        synopsis: true,
+        maxPlayers: true,
+        isPublic: true,
+        sessionWeekday: true,
+        sessionTime: true,
+        sessionType: true,
+        createdAt: true,
+        owner: { select: { id: true, displayName: true } },
+        _count: { select: { members: { where: { role: 'PLAYER' } } } },
+      },
+    })
+
+    const byId = new Map(adventures.map((a) => [a.id, a] as const))
+    const rows = ids
+      .map((id) => byId.get(id))
+      .filter((a): a is NonNullable<typeof a> => Boolean(a))
+
+    return { rows, total }
   }
 
   /**

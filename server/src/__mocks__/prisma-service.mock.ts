@@ -99,6 +99,7 @@ export function createMockPrismaService() {
     $connect: jest.fn().mockResolvedValue(undefined),
     $disconnect: jest.fn().mockResolvedValue(undefined),
     $queryRawUnsafe: jest.fn().mockResolvedValue([{ 1: 1 }]),
+    $queryRaw: jest.fn().mockResolvedValue([{ total: 0, ids: [] }]),
     $transaction: jest.fn().mockImplementation((cb: any) =>
       typeof cb === 'function' ? cb(undefined) : Promise.resolve([]),
     ),
@@ -341,6 +342,7 @@ export function createMockPrismaServiceWithData(
   service.$connect = jest.fn().mockResolvedValue(undefined);
   service.$disconnect = jest.fn().mockResolvedValue(undefined);
   service.$queryRawUnsafe = jest.fn().mockResolvedValue([{ 1: 1 }]);
+  service.$queryRaw = jest.fn().mockResolvedValue([{ total: 0, ids: [] }]);
   service.$transaction = jest.fn().mockImplementation((cb: any) =>
     typeof cb === 'function' ? cb(undefined) : Promise.resolve([]),
   );

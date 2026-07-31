@@ -1,4 +1,13 @@
-jest.mock("../generated/prisma/client", () => ({ PrismaClient: class {} }))
+jest.mock("../generated/prisma/client", () => ({
+  PrismaClient: class {},
+  Prisma: {
+    sql: jest.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({ strings, values })),
+    join: jest.fn((parts: unknown[], sep?: string) => ({ parts, sep })),
+    empty: {},
+    raw: jest.fn((s: string) => s),
+    Sql: class {},
+  },
+}))
 jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
 jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
 jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }))
@@ -859,24 +868,43 @@ describe('TemplateService', () => {
   // ──────────────────────────────────────────────
 
   describe('findPublicAll', () => {
-    it('returns paginated public templates', async () => {
+    it('returns paginated public templates with enriched fields', async () => {
       const templates = [
         {
           id: 't1',
           name: 'Public Template',
           description: 'A public template',
           createdAt: new Date(),
+          updatedAt: new Date(),
+          useCount: 3,
           adventure: { id: 'adv-1', name: 'Adventure', campaign: 'Camp' },
           owner: { id: 'u1', displayName: 'Owner' },
-          _count: { characterSheets: 3 },
+          _count: { attributes: 4, templateSkills: 2 },
         },
       ]
       prisma.$transaction.mockResolvedValue([templates, 1])
 
       const result = await service.findPublicAll({ page: 1, limit: 10 })
 
-      expect(result.data).toEqual(templates)
-      expect(result.meta.total).toBe(1)
+      expect(result.data).toEqual([
+        {
+          id: 't1',
+          name: 'Public Template',
+          description: 'A public template',
+          createdAt: templates[0].createdAt,
+          updatedAt: templates[0].updatedAt,
+          useCount: 3,
+          adventure: { id: 'adv-1', name: 'Adventure', campaign: 'Camp' },
+          owner: { id: 'u1', displayName: 'Owner' },
+          _count: { attributes: 4, templateSkills: 2 },
+          campaign: 'Camp',
+          adventureName: 'Adventure',
+          adventureId: 'adv-1',
+        },
+      ])
+      expect(result.total).toBe(1)
+      expect(result.page).toBe(1)
+      expect(result.totalPages).toBe(1)
     })
 
     it('filters by adventureId', async () => {
@@ -893,25 +921,72 @@ describe('TemplateService', () => {
       )
     })
 
-    it('filters by search', async () => {
+    it('filters by campaign through the nullable adventure relation', async () => {
       prisma.$transaction.mockResolvedValue([[], 0])
 
-      await service.findPublicAll({ search: 'warrior' })
+      await service.findPublicAll({ campaign: 'Camp' })
 
       expect(prisma.template.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            AND: expect.arrayContaining([
-              expect.objectContaining({
-                OR: expect.arrayContaining([
-                  { name: { contains: 'warrior', mode: 'insensitive' } },
-                  { description: { contains: 'warrior', mode: 'insensitive' } },
-                ]),
-              }),
-            ]),
+            adventure: { is: { campaign: 'Camp' } },
           }),
         }),
       )
+    })
+
+    it('filters by search through the ranked SQL path and hydrates results', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ total: 1, ids: ['t1'] }])
+      prisma.template.findMany.mockResolvedValue([
+        {
+          id: 't1',
+          name: 'Warrior Template',
+          description: 'A warrior build',
+          createdAt: new Date('2025-01-01'),
+          updatedAt: new Date('2025-01-01'),
+          useCount: 5,
+          adventure: { id: 'adv-1', name: 'Adventure', campaign: 'Camp' },
+          owner: { id: 'u1', displayName: 'Owner' },
+          _count: { attributes: 4, templateSkills: 2 },
+        },
+      ])
+
+      const result = await service.findPublicAll({ search: 'warrior', limit: 10 })
+
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
+      expect(prisma.template.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: { in: ['t1'] } },
+        }),
+      )
+      expect(result.data).toHaveLength(1)
+      expect(result.data[0].id).toBe('t1')
+      expect(result.data[0].name).toBe('Warrior Template')
+      expect(result.data[0].campaign).toBe('Camp')
+      expect(result.data[0].adventureName).toBe('Adventure')
+      expect(result.data[0].adventureId).toBe('adv-1')
+      expect(result.total).toBe(1)
+      expect(result.totalPages).toBe(1)
+    })
+
+    it('returns empty results when search matches nothing', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ total: 0, ids: [] }])
+
+      const result = await service.findPublicAll({ search: 'zzzznope', limit: 10 })
+
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
+      expect(prisma.template.findMany).not.toHaveBeenCalled()
+      expect(result.data).toHaveLength(0)
+      expect(result.total).toBe(0)
+    })
+
+    it('combines search with campaign filter on the ranked path', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ total: 0, ids: [] }])
+
+      await service.findPublicAll({ search: 'warrior', campaign: 'Camp' })
+
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
+      expect(prisma.template.findMany).not.toHaveBeenCalled()
     })
   })
 

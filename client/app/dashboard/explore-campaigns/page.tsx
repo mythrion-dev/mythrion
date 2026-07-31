@@ -184,6 +184,9 @@ function DashboardExploreCampaignsContent() {
   // ── Client-side sorting ──
 
   const sortedAdventures = useMemo(() => {
+    // When searching, the server already ranks results by relevance —
+    // skip client-side sorting so that order wins.
+    if (debouncedSearch) return adventures
     const list = [...adventures]
     switch (sortValue) {
       case 'popular':
@@ -207,7 +210,7 @@ function DashboardExploreCampaignsContent() {
       default:
         return list
     }
-  }, [adventures, sortValue])
+  }, [adventures, sortValue, debouncedSearch])
 
   // ── Filter change handlers ──
 
