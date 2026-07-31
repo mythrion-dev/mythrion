@@ -20,7 +20,7 @@ interface SearchFilterSectionProps {
   /** Called when the search input changes */
   onSearchChange: (value: string) => void
   /** Filter controls rendered inside the collapsible filter area */
-  children: ReactNode
+  children?: ReactNode
   /** Active filters displayed as removable chips */
   activeFilters: ActiveFilter[]
   /** Called when a single filter chip is clicked (removed) */
