@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { api, API_URL, getAccessToken } from '@/lib/api'
+import { api, API_URL, authFetch } from '@/lib/api'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import { StoryTab, CharacterTab, InventoryTab, PersonalAbilitiesTab, AbilitiesTab, ResistanceTab } from '@/components/character-sheet'
 import { PageNav } from '@/lib/breadcrumb'
@@ -216,12 +216,12 @@ export default function CharacterSheetDetailPage() {
       setSummonModifierResults(summonMods); setSummonAcResults(summonAc)
       // Check if an avatar exists on the server (cache-bust to avoid stale 204s)
       try {
-        const avatarRes = await fetch(avatarServerUrl + '?t=' + Date.now(), { method: 'HEAD', cache: 'no-store' })
+        const avatarRes = await authFetch(avatarServerUrl + '?t=' + Date.now(), { method: 'HEAD', cache: 'no-store' })
         if (avatarRes.ok && avatarRes.status !== 204) setAvatarUrl(avatarServerUrl + '?t=' + Date.now())
       } catch { /* no avatar */ }
-    } catch (e: unknown) { if ((e as { statusCode?: number }).statusCode === 401 || (e as { statusCode?: number }).statusCode === 403) router.replace('/login') }
+    } catch { /* load errors keep the sheet null; session loss is handled centrally by the layout AuthGuard via onAuthFailure */ }
     finally { setFetching(false) }
-  }, [id, router, computeModifiers, computeSkills, computeAC, computeSummonModifiers, computeSummonAC, evaluateFormula])
+  }, [id, computeModifiers, computeSkills, computeAC, computeSummonModifiers, computeSummonAC, evaluateFormula])
 
   useEffect(() => { fetchSheet() }, [fetchSheet])
 
@@ -525,12 +525,10 @@ export default function CharacterSheetDetailPage() {
     if (!file || !sheet) return
     setAvatarUploading(true)
     try {
-      const token = getAccessToken()
       const formData = new FormData()
       formData.append('avatar', file)
-      const res = await fetch(avatarServerUrl, {
+      const res = await authFetch(avatarServerUrl, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       })
       if (res.ok) {
@@ -544,10 +542,8 @@ export default function CharacterSheetDetailPage() {
   async function handleAvatarDelete() {
     if (!sheet) return
     try {
-      const token = getAccessToken()
-      await fetch(avatarServerUrl, {
+      await authFetch(avatarServerUrl, {
         method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : {},
       })
       setAvatarUrl(null)
     } catch { /* delete failed */ }

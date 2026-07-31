@@ -28,7 +28,7 @@ const mockRouter = vi.hoisted(() => ({
 
 vi.mock('@/lib/api', () => {
   const API_URL = 'https://mythrion-dev.up.railway.app/api'
-  return { api: mockApi, API_URL }
+  return { api: mockApi, API_URL, authFetch: (input: any, init?: any) => fetch(input, init) }
 })
 
 vi.mock('next/navigation', () => ({
