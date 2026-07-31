@@ -141,6 +141,26 @@ describe('InvitationService', () => {
         expect.objectContaining({ inviterName: 'Someone' }),
       )
     })
+
+    it('rolls back the invitation and throws BadRequestException when email fails', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', name: 'Test Adventure' })
+      prisma.campaignInvitation.create.mockResolvedValue({ id: 'inv1', token: 't' })
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'gm1',
+        displayName: 'Mighty GM',
+        email: 'gm@test.com',
+      })
+      mockEmailService.sendInvitation.mockRejectedValue(new Error('SMTP refused connection'))
+
+      await expect(service.inviteByEmail(params)).rejects.toThrow(BadRequestException)
+      await expect(service.inviteByEmail(params)).rejects.toThrow(
+        'Failed to send invitation email: SMTP refused connection',
+      )
+
+      expect(prisma.campaignInvitation.delete).toHaveBeenCalledWith({
+        where: { id: 'inv1' },
+      })
+    })
   })
 
   describe('inviteByLink', () => {
