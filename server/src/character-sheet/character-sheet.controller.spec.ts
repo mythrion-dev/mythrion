@@ -48,6 +48,9 @@ describe('CharacterSheetController', () => {
       deleteAbilityLevel: jest.fn().mockResolvedValue(undefined),
       addSummonSkill: jest.fn().mockResolvedValue({ id: 'ss-1', name: 'Bite', manualValue: 5 }),
       removeSummonSkill: jest.fn().mockResolvedValue(undefined),
+      addSummonResistance: jest.fn().mockResolvedValue({ id: 'sr-1', name: 'Fire', value: 'Immunity' }),
+      updateSummonResistance: jest.fn().mockResolvedValue({ id: 'sr-1', name: 'Fire', value: 'Resistance' }),
+      removeSummonResistance: jest.fn().mockResolvedValue(undefined),
       updateSummonAttribute: jest.fn().mockResolvedValue({ success: true }),
       updateSummonAcValue: jest.fn().mockResolvedValue({ success: true }),
       updateSummonHealth: jest.fn().mockResolvedValue({ success: true }),
@@ -313,6 +316,41 @@ describe('CharacterSheetController', () => {
       // Method only extracts @Param('summonSkillId')
       const result = await controller.removeSummonSkill(mockReq, 'ss-1')
       expect(mockSheetService.removeSummonSkill).toHaveBeenCalledWith('ss-1', 'user-1')
+      expect(result).toBeUndefined()
+    })
+  })
+
+  // ── Summon Resistances ──
+  describe('addSummonResistance', () => {
+    it('should delegate to sheetService.addSummonResistance with name and value', async () => {
+      // Method extracts @Param('abilityId'), @Body('name'), and @Body('value')
+      const result = await controller.addSummonResistance(mockReq, 'ab-1', 'Fire', 'Immunity')
+      expect(mockSheetService.addSummonResistance).toHaveBeenCalledWith('ab-1', 'Fire', 'Immunity', 'user-1')
+      expect(result).toEqual({ id: 'sr-1', name: 'Fire', value: 'Immunity' })
+    })
+
+    it('defaults value to empty string when not provided', async () => {
+      const result = await controller.addSummonResistance(mockReq, 'ab-1', 'Fire', undefined as unknown as string)
+      expect(mockSheetService.addSummonResistance).toHaveBeenCalledWith('ab-1', 'Fire', '', 'user-1')
+      expect(result).toEqual({ id: 'sr-1', name: 'Fire', value: 'Immunity' })
+    })
+  })
+
+  describe('updateSummonResistance', () => {
+    it('should delegate to sheetService.updateSummonResistance with dto', async () => {
+      // Method extracts @Param('summonResistanceId') and @Body()
+      const dto = { name: 'Fire', value: 'Resistance' }
+      const result = await controller.updateSummonResistance(mockReq, 'sr-1', dto)
+      expect(mockSheetService.updateSummonResistance).toHaveBeenCalledWith('sr-1', 'user-1', dto)
+      expect(result).toEqual({ id: 'sr-1', name: 'Fire', value: 'Resistance' })
+    })
+  })
+
+  describe('removeSummonResistance', () => {
+    it('should delegate to sheetService.removeSummonResistance', async () => {
+      // Method only extracts @Param('summonResistanceId')
+      const result = await controller.removeSummonResistance(mockReq, 'sr-1')
+      expect(mockSheetService.removeSummonResistance).toHaveBeenCalledWith('sr-1', 'user-1')
       expect(result).toBeUndefined()
     })
   })

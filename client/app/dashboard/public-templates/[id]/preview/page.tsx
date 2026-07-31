@@ -36,6 +36,7 @@ import type {
   SheetPermissions,
   Tab,
   SummonSkillData,
+  SummonResistanceData,
   ArmorClassAttributeModifierDef,
 } from '@/components/character-sheet/types'
 
@@ -522,6 +523,39 @@ export default function TemplatePreviewPage() {
     dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
   }, [dispatch])
 
+  const handleAddSummonResistance = useCallback(async (abilityId: string, name: string, value: string) => {
+    const newResistance: SummonResistanceData = {
+      id: `preview-sr-${Date.now()}`,
+      abilityId,
+      name,
+      value,
+    }
+    const updated = abilitiesRef.current.map(a => {
+      if (a.id !== abilityId) return a
+      return { ...a, summonResistances: [...(a.summonResistances ?? []), newResistance] }
+    })
+    dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
+  }, [dispatch])
+
+  const handleRemoveSummonResistance = useCallback(async (abilityId: string, summonResistanceId: string) => {
+    const updated = abilitiesRef.current.map(a => {
+      if (a.id !== abilityId) return a
+      return { ...a, summonResistances: (a.summonResistances ?? []).filter(r => r.id !== summonResistanceId) }
+    })
+    dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
+  }, [dispatch])
+
+  const handleUpdateSummonResistance = useCallback(async (abilityId: string, summonResistanceId: string, name: string, value: string) => {
+    const updated = abilitiesRef.current.map(a => {
+      if (a.id !== abilityId) return a
+      return {
+        ...a,
+        summonResistances: (a.summonResistances ?? []).map(r => r.id === summonResistanceId ? { ...r, name, value } : r),
+      }
+    })
+    dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
+  }, [dispatch])
+
   const handleCreateSummonAbility = useCallback(async (summonId: string, e: FormEvent) => {
     e.preventDefault()
     const s = stateRef.current
@@ -809,6 +843,9 @@ export default function TemplatePreviewPage() {
             handleAddSummonSkill={handleAddSummonSkill}
             handleUpdateSummonSkill={handleUpdateSummonSkill}
             handleRemoveSummonSkill={handleRemoveSummonSkill}
+            handleAddSummonResistance={handleAddSummonResistance}
+            handleUpdateSummonResistance={handleUpdateSummonResistance}
+            handleRemoveSummonResistance={handleRemoveSummonResistance}
             handleCreateSummonAbility={handleCreateSummonAbility}
           />
         )}

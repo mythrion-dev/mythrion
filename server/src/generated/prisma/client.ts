@@ -251,6 +251,11 @@ export type CharacterAbilityLevel = Prisma.CharacterAbilityLevelModel
  */
 export type SummonSkill = Prisma.SummonSkillModel
 /**
+ * Model SummonResistance
+ * 
+ */
+export type SummonResistance = Prisma.SummonResistanceModel
+/**
  * Model SummonAttribute
  * 
  */

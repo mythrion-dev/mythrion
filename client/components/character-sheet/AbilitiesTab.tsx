@@ -221,6 +221,7 @@ export function AbilitiesTab({
   summonModifierResults, summonAcResults,
   saveSummonAttribute, saveSummonAcValue, saveSummonHealth,
   handleAddSummonSkill, handleRemoveSummonSkill, handleUpdateSummonSkill,
+  handleAddSummonResistance, handleUpdateSummonResistance, handleRemoveSummonResistance,
   handleCreateSummonAbility,
 }: {
   abilities: Ability[]; permissions: SheetPermissions; sheetId: string
@@ -248,6 +249,9 @@ export function AbilitiesTab({
   handleAddSummonSkill: (abilityId: string, name: string, manualValue: number) => Promise<void>
   handleRemoveSummonSkill: (abilityId: string, summonSkillId: string) => Promise<void>
   handleUpdateSummonSkill: (abilityId: string, summonSkillId: string, name: string, manualValue: number) => Promise<void>
+  handleAddSummonResistance: (abilityId: string, name: string, value: string) => Promise<void>
+  handleRemoveSummonResistance: (abilityId: string, summonResistanceId: string) => Promise<void>
+  handleUpdateSummonResistance: (abilityId: string, summonResistanceId: string, name: string, value: string) => Promise<void>
   handleCreateSummonAbility: (summonId: string, e: FormEvent) => Promise<void>
 }) {
   const canEditAbilities = permissions.canEditAbilities
@@ -570,6 +574,9 @@ export function AbilitiesTab({
                               handleAddSummonSkill={handleAddSummonSkill}
                               handleUpdateSummonSkill={handleUpdateSummonSkill}
                               handleRemoveSummonSkill={handleRemoveSummonSkill}
+                              handleAddSummonResistance={handleAddSummonResistance}
+                              handleUpdateSummonResistance={handleUpdateSummonResistance}
+                              handleRemoveSummonResistance={handleRemoveSummonResistance}
                               saveDescription={async (abilityId, value) => {
                                 try {
                                   await api.patch(`/character-sheets/${sheetId}/abilities/${abilityId}`, { description: value.trim() || null })

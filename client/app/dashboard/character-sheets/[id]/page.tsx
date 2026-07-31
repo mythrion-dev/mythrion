@@ -9,7 +9,7 @@ import { StoryTab, CharacterTab, InventoryTab, PersonalAbilitiesTab, AbilitiesTa
 import { PageNav } from '@/lib/breadcrumb'
 import { PdfViewerSidebar } from '@/components/books/PdfViewerSidebar'
 import { NotebookSidebar } from '@/components/notebook/NotebookSidebar'
-import type { SkillModifierProfile, ArmorClassAttributeModifierDef, SectionEntry, SummonSkillData, Ability, AbilityLevel, InventoryItem, Story, CharacterSheet, Tab, AcResultMap, SheetPermissions } from '@/components/character-sheet/types'
+import type { SkillModifierProfile, ArmorClassAttributeModifierDef, SectionEntry, SummonSkillData, SummonResistanceData, Ability, AbilityLevel, InventoryItem, Story, CharacterSheet, Tab, AcResultMap, SheetPermissions } from '@/components/character-sheet/types'
 import {
   computeModifiers as engineComputeModifiers,
   computeSkills as engineComputeSkills,
@@ -431,6 +431,31 @@ export default function CharacterSheetDetailPage() {
     } catch {}
   }
 
+  // ── Summon Resistance operations ──
+  async function handleAddSummonResistance(abilityId: string, name: string, value: string) {
+    if (!sheet) return
+    try {
+      const sr = await api.post<SummonResistanceData>(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-resistances`, { name, value })
+      setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, summonResistances: [...(a.summonResistances ?? []), sr] } : a))
+    } catch {}
+  }
+
+  async function handleRemoveSummonResistance(abilityId: string, summonResistanceId: string) {
+    if (!sheet) return
+    try {
+      await api.delete(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-resistances/${summonResistanceId}`)
+      setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, summonResistances: (a.summonResistances ?? []).filter(r => r.id !== summonResistanceId) } : a))
+    } catch {}
+  }
+
+  async function handleUpdateSummonResistance(abilityId: string, summonResistanceId: string, name: string, value: string) {
+    if (!sheet) return
+    try {
+      await api.patch(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-resistances/${summonResistanceId}`, { name, value })
+      setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, summonResistances: (a.summonResistances ?? []).map(r => r.id === summonResistanceId ? { ...r, name, value } : r) } : a))
+    } catch {}
+  }
+
   // ── Summon-scoped ability CRUD ──
   async function handleCreateSummonAbility(summonId: string, e: FormEvent) {
     e.preventDefault()
@@ -701,6 +726,9 @@ export default function CharacterSheetDetailPage() {
         handleAddSummonSkill={handleAddSummonSkill}
         handleUpdateSummonSkill={handleUpdateSummonSkill}
         handleRemoveSummonSkill={handleRemoveSummonSkill}
+        handleAddSummonResistance={handleAddSummonResistance}
+        handleUpdateSummonResistance={handleUpdateSummonResistance}
+        handleRemoveSummonResistance={handleRemoveSummonResistance}
         handleCreateSummonAbility={handleCreateSummonAbility}
       />}
       {activeTab === 'inventory' && <InventoryTab
