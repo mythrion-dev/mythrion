@@ -139,6 +139,57 @@ describe('SubscriptionService', () => {
       expect(upsertCall.create.pgCustomerId).toBe('CUST-123')
     })
 
+    it('persists currentPeriodEnd from gateway next_invoice_at', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue(null)
+      prisma.subscriptionPlan.findUnique.mockResolvedValue(plan)
+      mockGateway.createSubscription.mockResolvedValue({
+        id: 'SUB-period',
+        initPoint: '',
+        status: 'ACTIVE',
+        customerId: 'CUST-123',
+        nextPaymentDate: '2026-08-31T10:00:00Z',
+      })
+      prisma.userSubscription.upsert.mockResolvedValue({
+        id: 'local-sub-period',
+        userId,
+        planId,
+        pgSubscriptionId: 'SUB-period',
+        status: 'ACTIVE',
+      })
+
+      await service.createSubscription(userId, planId, email)
+
+      const upsertCall = prisma.userSubscription.upsert.mock.calls[0][0]
+      expect(upsertCall.create.currentPeriodEnd).toBeInstanceOf(Date)
+      expect(upsertCall.create.currentPeriodEnd.toISOString()).toBe(
+        '2026-08-31T10:00:00.000Z',
+      )
+      expect(upsertCall.update.currentPeriodEnd).toBeInstanceOf(Date)
+    })
+
+    it('stores null currentPeriodEnd when gateway returns no nextPaymentDate', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue(null)
+      prisma.subscriptionPlan.findUnique.mockResolvedValue(plan)
+      mockGateway.createSubscription.mockResolvedValue({
+        id: 'SUB-no-date',
+        initPoint: '',
+        status: 'PENDING',
+      })
+      prisma.userSubscription.upsert.mockResolvedValue({
+        id: 'local-sub-no-date',
+        userId,
+        planId,
+        pgSubscriptionId: 'SUB-no-date',
+        status: 'PENDING',
+      })
+
+      await service.createSubscription(userId, planId, email)
+
+      const upsertCall = prisma.userSubscription.upsert.mock.calls[0][0]
+      expect(upsertCall.create.currentPeriodEnd).toBeNull()
+      expect(upsertCall.update.currentPeriodEnd).toBeNull()
+    })
+
     it('throws UnprocessableEntityException when user has an active subscription', async () => {
       prisma.userSubscription.findUnique.mockResolvedValue({
         id: 'existing',
@@ -422,6 +473,103 @@ describe('SubscriptionService', () => {
 
       expect(result?.status).toBe('PENDING')
       expect(prisma.userSubscription.update).not.toHaveBeenCalled()
+    })
+
+    it('backfills currentPeriodEnd for ACTIVE subscription with missing period end', async () => {
+      const activeSub = {
+        id: 'sub-active',
+        status: 'ACTIVE',
+        pgSubscriptionId: 'SUB-active',
+        pgCustomerId: null,
+        graceEndsAt: null,
+        currentPeriodStart: new Date('2025-01-01'),
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        cancelledAt: null,
+        createdAt: new Date(),
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        invoices: [],
+      }
+      const repairedSub = {
+        ...activeSub,
+        currentPeriodEnd: new Date('2026-08-29T00:00:00Z'),
+        pgCustomerId: 'CUST-9',
+      }
+
+      prisma.userSubscription.findUnique.mockResolvedValueOnce(activeSub)
+      mockGateway.getSubscription.mockResolvedValue({
+        id: 'SUB-active',
+        status: 'ACTIVE',
+        nextPaymentDate: '2026-08-29T00:00:00Z',
+        customerId: 'CUST-9',
+      })
+      prisma.userSubscription.update.mockResolvedValue(repairedSub)
+
+      const result = await service.getMySubscription('user-1')
+
+      expect(result?.status).toBe('ACTIVE')
+      expect(result?.currentPeriodEnd).toEqual(new Date('2026-08-29T00:00:00Z'))
+      expect(mockGateway.getSubscription).toHaveBeenCalledWith('SUB-active')
+      expect(prisma.userSubscription.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 'user-1' },
+          data: expect.objectContaining({
+            status: 'ACTIVE',
+            // currentPeriodStart is preserved for already-ACTIVE subs
+            currentPeriodStart: activeSub.currentPeriodStart,
+            currentPeriodEnd: new Date('2026-08-29T00:00:00Z'),
+            pgCustomerId: 'CUST-9',
+          }),
+        }),
+      )
+    })
+
+    it('does not auto-repair when ACTIVE subscription already has currentPeriodEnd', async () => {
+      const activeSub = {
+        id: 'sub-active',
+        status: 'ACTIVE',
+        pgSubscriptionId: 'SUB-active',
+        pgCustomerId: 'CUST-1',
+        graceEndsAt: null,
+        currentPeriodStart: new Date('2025-01-01'),
+        currentPeriodEnd: new Date('2025-02-01'),
+        cancelAtPeriodEnd: false,
+        cancelledAt: null,
+        createdAt: new Date(),
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        invoices: [],
+      }
+
+      prisma.userSubscription.findUnique.mockResolvedValueOnce(activeSub)
+
+      const result = await service.getMySubscription('user-1')
+
+      expect(result?.currentPeriodEnd).toEqual(new Date('2025-02-01'))
+      expect(mockGateway.getSubscription).not.toHaveBeenCalled()
+    })
+
+    it('does not auto-repair CANCELLED subscription even with missing period end', async () => {
+      const cancelledSub = {
+        id: 'sub-cancelled',
+        status: 'CANCELLED',
+        pgSubscriptionId: 'SUB-cancelled',
+        pgCustomerId: 'CUST-1',
+        graceEndsAt: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        cancelledAt: new Date(),
+        createdAt: new Date(),
+        plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
+        invoices: [],
+      }
+
+      prisma.userSubscription.findUnique.mockResolvedValueOnce(cancelledSub)
+
+      const result = await service.getMySubscription('user-1')
+
+      expect(result?.status).toBe('CANCELLED')
+      expect(mockGateway.getSubscription).not.toHaveBeenCalled()
     })
   })
 

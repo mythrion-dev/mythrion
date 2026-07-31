@@ -77,6 +77,7 @@ describe('PagBankService', () => {
       id: 'SUB-12345',
       status: 'ACTIVE',
       customer: { id: 'CUST-67890' },
+      next_invoice_at: '2026-08-31T10:00:00Z',
     }
 
     it('creates a subscription with card token', async () => {
@@ -97,6 +98,9 @@ describe('PagBankService', () => {
       expect(result.status).toBe('ACTIVE')
       expect(result.customerId).toBe('CUST-67890')
       expect(result.initPoint).toBe('')
+      // next_invoice_at maps to nextPaymentDate so the service can persist it
+      // as currentPeriodEnd
+      expect(result.nextPaymentDate).toBe('2026-08-31T10:00:00Z')
 
       const fetchCall = mockFetch.mock.calls[0]
       expect(fetchCall[0]).toBe(
@@ -210,6 +214,8 @@ describe('PagBankService', () => {
       expect(result.id).toBe('SUB-no-cust')
       expect(result.status).toBe('PENDING')
       expect(result.customerId).toBeUndefined()
+      // no next_invoice_at in the response → nextPaymentDate is null
+      expect(result.nextPaymentDate).toBeNull()
     })
 
     it('throws on API error', async () => {
@@ -429,10 +435,41 @@ describe('PagBankService', () => {
       )
       expect(fetchCall[1]?.method).toBe('PUT')
 
+      // PagBank requires RAW_BODY to be a direct ARRAY of { type, card } objects
+      // (not a JSON string, not wrapped in a billing_info key). Sending the wrong
+      // shape returns invalid_payload_format / "Invalid JSON format."
       const reqBody = JSON.parse(fetchCall[1]?.body as string)
-      expect(reqBody.RAW_BODY).toBeDefined()
-      const rawBody = JSON.parse(reqBody.RAW_BODY)
-      expect(rawBody.billing_info[0].card.encrypted).toBe('encrypted-card')
+      expect(reqBody.RAW_BODY).toEqual([
+        { type: 'CREDIT_CARD', card: { encrypted: 'encrypted-card' } },
+      ])
+    })
+
+    it('throws 422 when customerId is missing', async () => {
+      await expect(
+        service.updatePaymentMethod('SUB-1', '', 'encrypted-card'),
+      ).rejects.toThrow(UnprocessableEntityException)
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('throws 422 when customerId is whitespace', async () => {
+      await expect(
+        service.updatePaymentMethod('SUB-1', '   ', 'encrypted-card'),
+      ).rejects.toThrow(UnprocessableEntityException)
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('throws 422 when cardToken is missing', async () => {
+      await expect(
+        service.updatePaymentMethod('SUB-1', 'CUST-12345', ''),
+      ).rejects.toThrow(UnprocessableEntityException)
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('throws 422 when cardToken is whitespace', async () => {
+      await expect(
+        service.updatePaymentMethod('SUB-1', 'CUST-12345', '   '),
+      ).rejects.toThrow(UnprocessableEntityException)
+      expect(mockFetch).not.toHaveBeenCalled()
     })
 
     it('throws on API error', async () => {

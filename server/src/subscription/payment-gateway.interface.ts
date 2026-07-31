@@ -24,6 +24,8 @@ export interface CreateSubscriptionResult {
   initPoint: string // redirect URL (empty for card flow)
   status: string // gateway native status (e.g. 'ACTIVE')
   customerId?: string // PagBank customer UUID (CUST_xxx)
+  /** PagBank next_invoice_at — date of the next charge, stored as currentPeriodEnd */
+  nextPaymentDate?: string | null
 }
 
 export interface GatewaySubscription {

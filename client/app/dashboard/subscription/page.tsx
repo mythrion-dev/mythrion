@@ -387,14 +387,6 @@ export default function DashboardSubscriptionPage() {
               {formatDateTime(subscription.createdAt)}
             </p>
           </div>
-          {subscription.pgSubscriptionId && (
-            <div className="sm:col-span-2">
-              <p className="text-xs text-muted-foreground">ID PagBank</p>
-              <p className="mt-0.5 font-mono text-xs text-muted-foreground break-all">
-                {subscription.pgSubscriptionId}
-              </p>
-            </div>
-          )}
         </div>
       </div>
 

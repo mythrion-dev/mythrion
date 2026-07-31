@@ -129,6 +129,9 @@ export class PagBankService implements PaymentGateway {
         initPoint: '', // PagBank subscriptions have no redirect URL
         status: result.status,
         customerId: result.customer?.id,
+        // next_invoice_at is the next charge date — used as the subscription's
+        // currentPeriodEnd so the UI can show when the billing period expires.
+        nextPaymentDate: result.next_invoice_at ?? null,
       }
     } catch (err: any) {
       if (err instanceof UnprocessableEntityException) throw err
@@ -178,17 +181,31 @@ export class PagBankService implements PaymentGateway {
     customerId: string,
     cardToken: string,
   ): Promise<void> {
+    // Pre-flight validation — catch malformed payloads before hitting PagBank.
+    if (!customerId || typeof customerId !== 'string' || customerId.trim() === '') {
+      throw new UnprocessableEntityException(
+        'customerId is required to update the payment method',
+      )
+    }
+    if (!cardToken || typeof cardToken !== 'string' || cardToken.trim() === '') {
+      throw new UnprocessableEntityException(
+        'cardToken is required and must be a valid encrypted card string',
+      )
+    }
+
     try {
-      // PagBank requires RAW_BODY wrapping for PUT /customers/{customer_id}/billing_info
+      // PagBank requires the card array wrapped in RAW_BODY (see docs:
+      // "Alterar Dados de Pagamento do Assinante"). RAW_BODY must be an ARRAY
+      // of { type, card } objects — NOT a JSON string and NOT nested under a
+      // billing_info key. Sending the wrong shape returns
+      // invalid_payload_format / "Invalid JSON format."
       const body = {
-        RAW_BODY: JSON.stringify({
-          billing_info: [
-            {
-              type: 'CREDIT_CARD',
-              card: { encrypted: cardToken },
-            },
-          ],
-        }),
+        RAW_BODY: [
+          {
+            type: 'CREDIT_CARD',
+            card: { encrypted: cardToken },
+          },
+        ],
       }
 
       const response = await fetch(

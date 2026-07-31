@@ -163,6 +163,12 @@ export class SubscriptionService {
         (result.customerId ? `, customerId: ${result.customerId}` : ''),
     )
 
+    // next_invoice_at from PagBank = when the next charge fires. Store it as
+    // currentPeriodEnd so the UI can show when the billing period expires.
+    const nextPayment = result.nextPaymentDate
+      ? new Date(result.nextPaymentDate)
+      : null
+
     // Upsert the UserSubscription row (create or replace cancelled/expired one)
     const subscription = await this.prisma.userSubscription.upsert({
       where: { userId },
@@ -175,6 +181,7 @@ export class SubscriptionService {
           effectiveStatus === 'AUTHORIZED' || effectiveStatus === 'ACTIVE'
             ? new Date()
             : undefined,
+        currentPeriodEnd: nextPayment,
         cancelledAt: null,
       },
       create: {
@@ -187,6 +194,7 @@ export class SubscriptionService {
           effectiveStatus === 'AUTHORIZED' || effectiveStatus === 'ACTIVE'
             ? new Date()
             : undefined,
+        currentPeriodEnd: nextPayment,
       },
     })
 
@@ -236,30 +244,51 @@ export class SubscriptionService {
 
     if (!sub) return null
 
-    // Auto-repair: if local status is PENDING or GRACE but we have a pgSubscriptionId,
-    // check PagBank's actual status (the gateway may have advanced the subscription
-    // via webhook or recurring payment).
+    // Auto-repair: when we have a pgSubscriptionId but the local record is
+    // missing data the gateway can supply, refresh it. This covers:
+    //  - PENDING/GRACE stuck local status (the gateway may have advanced the
+    //    subscription via webhook or recurring payment)
+    //  - ACTIVE subscriptions whose currentPeriodEnd is null (e.g. created
+    //    before next_invoice_at was stored, or no webhook round-trip yet)
     if (
-      (sub.status === 'PENDING' || sub.status === 'GRACE') &&
-      sub.pgSubscriptionId
+      sub.pgSubscriptionId &&
+      (sub.status === 'PENDING' ||
+        sub.status === 'GRACE' ||
+        (!sub.currentPeriodEnd &&
+          sub.status !== 'CANCELLED' &&
+          sub.status !== 'EXPIRED'))
     ) {
       try {
         const gatewaySub = await this.gateway.getSubscription(
           sub.pgSubscriptionId,
         )
         const mappedStatus = mapGatewayStatus(gatewaySub.status)
-        if (mappedStatus !== 'PENDING') {
+        const nextPayment = gatewaySub.nextPaymentDate
+          ? new Date(gatewaySub.nextPaymentDate)
+          : null
+
+        const statusChanged = mappedStatus !== 'PENDING'
+        const periodEndMissing = !sub.currentPeriodEnd && !!nextPayment
+        const customerIdMissing = !!gatewaySub.customerId && !sub.pgCustomerId
+
+        if (statusChanged || periodEndMissing || customerIdMissing) {
           const now = new Date()
-          const nextPayment = gatewaySub.nextPaymentDate
-            ? new Date(gatewaySub.nextPaymentDate)
-            : null
           sub = await this.prisma.userSubscription.update({
             where: { userId },
             data: {
-              status: mappedStatus,
-              currentPeriodStart: now,
-              currentPeriodEnd: nextPayment,
-              pgCustomerId: gatewaySub.customerId ?? sub.pgCustomerId,
+              status: statusChanged ? mappedStatus : sub.status,
+              currentPeriodStart:
+                statusChanged &&
+                (sub.status === 'PENDING' || sub.status === 'GRACE')
+                  ? now
+                  : sub.currentPeriodStart,
+              currentPeriodEnd:
+                statusChanged || periodEndMissing
+                  ? nextPayment
+                  : sub.currentPeriodEnd,
+              pgCustomerId: customerIdMissing
+                ? gatewaySub.customerId
+                : sub.pgCustomerId,
             },
             include: {
               plan: { select: { slug: true, name: true, price: true } },
@@ -279,7 +308,7 @@ export class SubscriptionService {
             },
           })
           this.logger.log(
-            `Auto-repaired subscription ${sub.pgSubscriptionId} from PENDING to ${mappedStatus}`,
+            `Auto-repaired subscription ${sub.pgSubscriptionId} (status: ${sub.status}, period end: ${sub.currentPeriodEnd?.toISOString() ?? 'n/a'})`,
           )
         }
       } catch (err) {
