@@ -115,8 +115,8 @@ export default function DashboardSubscriptionPage() {
   const [showCardForm, setShowCardForm] = useState(false)
   const [updatingCard, setUpdatingCard] = useState(false)
   const [updateError, setUpdateError] = useState('')
-  const [updateSuccess, setUpdateSuccess] = useState(false)
   const [formErrors, setFormErrors] = useState<{ name?: string; document?: string; card?: string }>({})
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const pgReady = usePagBankEncryption()
   const pgPublicKey = process.env.NEXT_PUBLIC_PAGBANK_PUBLIC_KEY
 
@@ -140,6 +140,13 @@ export default function DashboardSubscriptionPage() {
     if (digits.length <= 2) return digits
     return `${digits.slice(0, 2)}/${digits.slice(2)}`
   }
+
+  // ─── toast auto-dismiss ───────────────────────────────────────
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => setToast(null), 5000)
+    return () => clearTimeout(timer)
+  }, [toast])
 
   // ─── form validation ───────────────────────────────────────────
   const validate = useCallback((): boolean => {
@@ -177,7 +184,7 @@ export default function DashboardSubscriptionPage() {
 
     setUpdatingCard(true)
     setUpdateError('')
-    setUpdateSuccess(false)
+    setToast(null)
 
     try {
       let cardToken: string
@@ -216,7 +223,7 @@ export default function DashboardSubscriptionPage() {
         payerDocument.replace(/\D/g, ''),
       )
 
-      setUpdateSuccess(true)
+      setToast({ type: 'success', message: 'Cartão atualizado com sucesso!' })
       setShowCardForm(false)
       setFormErrors({})
       setPayerName('')
@@ -231,6 +238,7 @@ export default function DashboardSubscriptionPage() {
           ? err.message
           : 'Falha ao atualizar cartão. Tente novamente.'
       setUpdateError(message)
+      setToast({ type: 'error', message })
     } finally {
       setUpdatingCard(false)
     }
@@ -305,6 +313,39 @@ export default function DashboardSubscriptionPage() {
         title="Assinatura"
         subtitle="Gerencie sua assinatura Mythrion Premium."
       />
+
+      {/* ─── Toast notification ───────────────────────────────── */}
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md animate-slide-up glass-panel flex items-start gap-3 px-4 py-3 shadow-xl ${
+            toast.type === 'success' ? 'border-success/40' : 'border-danger/40'
+          }`}
+        >
+          {toast.type === 'success' ? (
+            <svg className="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5 text-danger shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86l-8.18 14.02A2 2 0 003.82 21h16.36a2 2 0 001.79-2.07l-8.18-14.02a2 2 0 00-3.57 0z" />
+            </svg>
+          )}
+          <p className="text-sm font-medium text-foreground break-words leading-snug">
+            {toast.message}
+          </p>
+          <button
+            onClick={() => setToast(null)}
+            aria-label="Fechar notificação"
+            className="ml-auto shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* ─── Plan overview ─────────────────────────────────────── */}
       <div className="mt-6 rounded-xl border border-border bg-surface p-6">
@@ -537,16 +578,12 @@ export default function DashboardSubscriptionPage() {
               <p className="mb-3 text-xs text-red-500">{updateError}</p>
             )}
 
-            {updateSuccess && (
-              <p className="mb-3 text-xs text-emerald-500">Cartão atualizado com sucesso!</p>
-            )}
-
             <div className="flex gap-2">
               <button
                 onClick={() => {
                   setShowCardForm(false)
                   setUpdateError('')
-                  setUpdateSuccess(false)
+                  setToast(null)
                   setFormErrors({})
                 }}
                 className="flex-1 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground transition-colors"
