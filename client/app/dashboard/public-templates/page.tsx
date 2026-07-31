@@ -305,14 +305,13 @@ function DashboardPublicTemplatesContent() {
         search={search}
         onSearchChange={(v) => {
           setSearch(v)
-        }}
+        } }
         activeFilters={activeFilters}
         onRemoveFilter={handleRemoveFilter}
         onRemoveAll={handleRemoveAll}
         sortOptions={SORT_OPTIONS}
         sortValue={sortValue}
-        onSortChange={setSortValue}
-      >
+        onSortChange={setSortValue} children={undefined}      >
         {/* Campaign/System filter */}
         {/* <div className="flex flex-col gap-1.5 min-w-[200px]">
           <label className="label !mb-0">Campaign / System</label>
