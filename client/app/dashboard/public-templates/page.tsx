@@ -311,19 +311,8 @@ function DashboardPublicTemplatesContent() {
         onRemoveAll={handleRemoveAll}
         sortOptions={SORT_OPTIONS}
         sortValue={sortValue}
-        onSortChange={setSortValue} children={undefined}      >
-        {/* Campaign/System filter */}
-        {/* <div className="flex flex-col gap-1.5 min-w-[200px]">
-          <label className="label !mb-0">Campaign / System</label>
-          <input
-            type="text"
-            placeholder="e.g. D&D 5e, Tormenta..."
-            value={campaign}
-            onChange={(e) => handleCampaignChange(e.target.value)}
-            className="input-field py-2 px-3 text-sm"
-          />
-        </div> */}
-      </SearchFilterSection>
+        onSortChange={setSortValue}
+      />
 
       {/* ── Error state ── */}
       {error && !fetching && (

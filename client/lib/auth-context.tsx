@@ -20,6 +20,8 @@ import {
   getInvitationToken,
   removeInvitationToken,
   refreshAccessToken,
+  isAccessTokenExpiringSoon,
+  onAuthFailure,
 } from './api'
 
 interface User {
@@ -57,36 +59,86 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const profile = await api.get<Omit<User, 'isAdmin'>>('/auth/profile')
       setUser({ ...profile, isAdmin: isAdminFromToken() })
-    } catch {
-      removeAccessToken()
-      removeRefreshToken()
-      setUser(null)
-    } finally {
       setLoading(false)
+    } catch {
+      // Transient failure (network blip / server 5xx) — this is NOT a logout,
+      // so do not clear the tokens. Keep loading true: guards render the
+      // loading state instead of redirecting to /login, and the
+      // focus/visibility listener below retries. Definitive rejection (refresh
+      // token refused by the server) is handled by onAuthFailure, which resets
+      // the session from a single place.
+      return
     }
   }, [isAdminFromToken])
 
+  /**
+   * Restore a session on mount (or on return to the tab). Order of preference:
+   * access token present → fetch profile; else refresh token present → rotate
+   * it, then fetch profile; else no session at all.
+   */
+  const restoreSession = useCallback(async () => {
+    if (getAccessToken()) {
+      await fetchProfile()
+      return
+    }
+    if (getRefreshToken()) {
+      // Refresh token but no access token — rotate first to avoid an
+      // unnecessary 401 round-trip on the profile fetch.
+      const newToken = await refreshAccessToken()
+      if (newToken) {
+        await fetchProfile()
+        return
+      }
+      if (!getRefreshToken()) {
+        // The refresh token was definitively rejected and cleared; onAuthFailure
+        // already reset the session.
+        return
+      }
+      // Transient refresh failure — tokens remain, so keep loading true and let
+      // the focus/visibility listener retry. Do not redirect to /login.
+      return
+    }
+    setLoading(false)
+  }, [fetchProfile])
+
   useEffect(() => {
-    const token = getAccessToken()
-    if (token) {
-      fetchProfile()
-    } else {
-      const storedRefresh = getRefreshToken()
-      if (storedRefresh) {
-        // We have a refresh token but no access token — refresh first,
-        // then fetch the profile, avoiding an unnecessary 401 round-trip.
-        refreshAccessToken().then((newToken) => {
-          if (newToken) {
-            fetchProfile()
-          } else {
-            setLoading(false)
-          }
-        })
-      } else {
-        setLoading(false)
+    void restoreSession()
+  }, [restoreSession])
+
+  // Single place that reacts to a definitive session loss (the refresh token
+  // was rejected server-side — revoked, expired, or invalid). Clears all auth
+  // state and stops the loading spinner so guards redirect to /login.
+  useEffect(() => {
+    return onAuthFailure(() => {
+      removeAccessToken()
+      removeRefreshToken()
+      removeInvitationToken()
+      setUser(null)
+      setLoading(false)
+    })
+  }, [])
+
+  // Recover from transient failures and keep long sessions alive: when the tab
+  // regains focus, rotate an access token that is close to expiring so the next
+  // interaction never 401s; if a previous restore was interrupted (stuck in
+  // loading with tokens still present), try again.
+  useEffect(() => {
+    const onActive = () => {
+      if (document.visibilityState !== 'visible') return
+      const token = getAccessToken()
+      if (token && isAccessTokenExpiringSoon(token)) {
+        void refreshAccessToken()
+      } else if (!token && getRefreshToken()) {
+        void restoreSession()
       }
     }
-  }, [fetchProfile])
+    window.addEventListener('focus', onActive)
+    document.addEventListener('visibilitychange', onActive)
+    return () => {
+      window.removeEventListener('focus', onActive)
+      document.removeEventListener('visibilitychange', onActive)
+    }
+  }, [restoreSession])
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.post<{ accessToken: string; refreshToken: string }>('/auth/login', {

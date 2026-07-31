@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { api, API_URL, getAccessToken } from '@/lib/api'
+import { api, API_URL, authFetch } from '@/lib/api'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import { StoryTab, CharacterTab, InventoryTab, PersonalAbilitiesTab, AbilitiesTab, ResistanceTab } from '@/components/character-sheet'
 import { PageNav } from '@/lib/breadcrumb'
@@ -178,7 +178,7 @@ export default function CharacterSheetDetailPage() {
       const d = await api.get<CharacterSheet>(`/character-sheets/${id}`)
       setSheet(d)
       const actives: Record<string, boolean> = {}; const others: Record<string, number> = {}
-      d.skillValues.forEach(sv => { const parts = (sv.value || '').split('|'); actives[sv.skillId] = parts[0] === '1'; others[sv.skillId] = parseInt(parts[1] || '0', 10) || 0 })
+      d.skillValues.forEach(sv => { const parts = (sv.value || '').split('|'); actives[sv.skillId] = parts[0] === '1'; others[sv.skillId] = Number.parseInt(parts[1] || '0', 10) || 0 })
       setActiveSkills(actives); setOthersValues(others)
       const selMap: Record<string, Record<string, string | null>> = {}; d.skillProfileValues.forEach(spv => { if (!selMap[spv.skillId]) selMap[spv.skillId] = {}; selMap[spv.skillId][spv.profileId] = spv.optionId })
       // Auto-select lowest-value option for profiles without a saved selection
@@ -190,7 +190,7 @@ export default function CharacterSheetDetailPage() {
           const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
           if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(sv.skill.name)) continue
           if (selMap[sv.skillId][profile.id] === undefined && profile.options.length > 0) {
-            const lowest = profile.options.reduce((a, b) => a.value <= b.value ? a : b)
+            const lowest = profile.options.reduce((a, b) => a.value <= b.value ? a : b, profile.options[0])
             selMap[sv.skillId][profile.id] = lowest.id
           }
         }
@@ -216,12 +216,12 @@ export default function CharacterSheetDetailPage() {
       setSummonModifierResults(summonMods); setSummonAcResults(summonAc)
       // Check if an avatar exists on the server (cache-bust to avoid stale 204s)
       try {
-        const avatarRes = await fetch(avatarServerUrl + '?t=' + Date.now(), { method: 'HEAD', cache: 'no-store' })
+        const avatarRes = await authFetch(avatarServerUrl + '?t=' + Date.now(), { method: 'HEAD', cache: 'no-store' })
         if (avatarRes.ok && avatarRes.status !== 204) setAvatarUrl(avatarServerUrl + '?t=' + Date.now())
       } catch { /* no avatar */ }
-    } catch (e: unknown) { if ((e as { statusCode?: number }).statusCode === 401 || (e as { statusCode?: number }).statusCode === 403) router.replace('/login') }
+    } catch { /* load errors keep the sheet null; session loss is handled centrally by the layout AuthGuard via onAuthFailure */ }
     finally { setFetching(false) }
-  }, [id, router, computeModifiers, computeSkills, computeAC, computeSummonModifiers, computeSummonAC, evaluateFormula])
+  }, [id, computeModifiers, computeSkills, computeAC, computeSummonModifiers, computeSummonAC, evaluateFormula])
 
   useEffect(() => { fetchSheet() }, [fetchSheet])
 
@@ -245,7 +245,7 @@ export default function CharacterSheetDetailPage() {
 
   async function handleCoreResourceChange(coreResourceId: string, field: 'current' | 'maximum' | 'notes', value: string) {
     if (!sheet) return
-    const numVal = value.trim() === '' ? null : (field === 'notes' ? value : parseInt(value, 10))
+    const numVal = value.trim() === '' ? null : (field === 'notes' ? value : Number.parseInt(value, 10))
     const optimisticSheet = {
       ...sheet,
       coreResourceValues: sheet.coreResourceValues.map(v =>
@@ -349,7 +349,7 @@ export default function CharacterSheetDetailPage() {
     if (!sheet) return
     const body: Record<string, unknown> = {}
     if (field === 'description') body.description = value.trim() || null
-    else if (field === 'manaCost') body.manaCost = value.trim() ? parseInt(value, 10) : null
+    else if (field === 'manaCost') body.manaCost = value.trim() ? Number.parseInt(value, 10) : null
     else if (field === 'range') body.range = value.trim() || null
     else if (field === 'notes') body.notes = value.trim() || null
     else if (field === 'damage') body.damage = value.trim() || null
@@ -359,7 +359,7 @@ export default function CharacterSheetDetailPage() {
     if (!sheet) return
     const body: Record<string, unknown> = {}
     if (field === 'name') body.name = value.trim()
-    else if (field === 'weight') body.weight = value.trim() ? parseFloat(value) : undefined
+    else if (field === 'weight') body.weight = value.trim() ? Number.parseFloat(value) : undefined
     else if (field === 'cost') body.cost = value.trim() || undefined
     else if (field === 'description') body.description = value.trim() || undefined
     const updated = await api.patch<InventoryItem>(`/character-sheets/${sheet.id}/inventory/${itemId}`, body)
@@ -388,8 +388,8 @@ export default function CharacterSheetDetailPage() {
     try {
       await api.patch(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-ac`, { value })
       setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, summonAcValues: [{ id: a.summonAcValues[0]?.id ?? 'temp', abilityId, value }] } : a))
-      const parsed = parseFloat(value)
-      setSummonAcResults(prev => ({ ...prev, [abilityId]: isNaN(parsed) ? null : parsed }))
+      const parsed = Number.parseFloat(value)
+      setSummonAcResults(prev => ({ ...prev, [abilityId]: Number.isNaN(parsed) ? null : parsed }))
     } catch {}
   }
 
@@ -438,7 +438,7 @@ export default function CharacterSheetDetailPage() {
     setAbilitySaving(true)
     try {
       const body: Record<string, unknown> = { name: newAbility.name.trim(), description: newAbility.description.trim() || undefined, notes: newAbility.notes.trim() || undefined }
-      if (newAbility.manaCost) body.manaCost = parseInt(newAbility.manaCost, 10)
+      if (newAbility.manaCost) body.manaCost = Number.parseInt(newAbility.manaCost, 10)
       if (newAbility.range) body.range = newAbility.range.trim()
       if (newAbility.damage) body.damage = newAbility.damage.trim()
       const a = await api.post<Ability>(`/character-sheets/${sheet.id}/abilities/${summonId}/summon-abilities`, body)
@@ -455,13 +455,13 @@ export default function CharacterSheetDetailPage() {
     try {
       const body: Record<string, unknown> = { name: newAbility.name.trim(), type: newAbilityType ?? 'ABILITY', description: newAbility.description.trim() || undefined, notes: newAbility.notes.trim() || undefined }
       if (newAbilityType === 'ABILITY') {
-        body.manaCost = newAbility.manaCost.trim() ? parseInt(newAbility.manaCost, 10) : undefined
+        body.manaCost = newAbility.manaCost.trim() ? Number.parseInt(newAbility.manaCost, 10) : undefined
         body.range = newAbility.range.trim() || undefined
         body.damage = newAbility.damage.trim() || undefined
       }
       if (newAbilityType === 'SUMMON') {
-        body.summonHealthCurrent = newAbility.hpCurrent.trim() ? parseInt(newAbility.hpCurrent, 10) : undefined
-        body.summonHealthMax = newAbility.hpMax.trim() ? parseInt(newAbility.hpMax, 10) : undefined
+        body.summonHealthCurrent = newAbility.hpCurrent.trim() ? Number.parseInt(newAbility.hpCurrent, 10) : undefined
+        body.summonHealthMax = newAbility.hpMax.trim() ? Number.parseInt(newAbility.hpMax, 10) : undefined
       }
       const a = await api.post<Ability>(`/character-sheets/${sheet.id}/abilities`, body)
       // Create/update initial level if user specified one
@@ -486,7 +486,7 @@ export default function CharacterSheetDetailPage() {
     } catch (err) { setAbilityError(err instanceof Error ? err.message : 'Failed to create entry') } finally { setAbilitySaving(false) } }
   function resetNewItem() { setShowNewItem(false); setNewItem({ name: '', weight: '', cost: '', description: '' }); setItemError(null) }
   async function handleCreateItem(e: FormEvent) { e.preventDefault(); if (!newItem.name.trim() || !sheet) return; setItemSaving(true)
-    try { const i = await api.post<InventoryItem>(`/character-sheets/${sheet.id}/inventory`, { name: newItem.name.trim(), weight: newItem.weight.trim() ? parseFloat(newItem.weight) : undefined, cost: newItem.cost.trim() || undefined, description: newItem.description.trim() || undefined }); setInventoryItems(p => [...p, i]); resetNewItem() } catch (err) { setItemError(err instanceof Error ? err.message : 'Failed to create item') } finally { setItemSaving(false) } }
+    try { const i = await api.post<InventoryItem>(`/character-sheets/${sheet.id}/inventory`, { name: newItem.name.trim(), weight: newItem.weight.trim() ? Number.parseFloat(newItem.weight) : undefined, cost: newItem.cost.trim() || undefined, description: newItem.description.trim() || undefined }); setInventoryItems(p => [...p, i]); resetNewItem() } catch (err) { setItemError(err instanceof Error ? err.message : 'Failed to create item') } finally { setItemSaving(false) } }
   async function handleDeleteItem(iid: string) { if (!sheet) return; try { await api.delete(`/character-sheets/${sheet.id}/inventory/${iid}`); setInventoryItems(p => p.filter(i => i.id !== iid)) } catch {} }
   async function saveStoryField(field: string, value: string) { if (!sheet) return; try { const s = await api.patch<Story>(`/character-sheets/${sheet.id}/story`, { [field]: value.trim() || null }); setStory(s) } catch {} }
 
@@ -525,12 +525,10 @@ export default function CharacterSheetDetailPage() {
     if (!file || !sheet) return
     setAvatarUploading(true)
     try {
-      const token = getAccessToken()
       const formData = new FormData()
       formData.append('avatar', file)
-      const res = await fetch(avatarServerUrl, {
+      const res = await authFetch(avatarServerUrl, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       })
       if (res.ok) {
@@ -544,10 +542,8 @@ export default function CharacterSheetDetailPage() {
   async function handleAvatarDelete() {
     if (!sheet) return
     try {
-      const token = getAccessToken()
-      await fetch(avatarServerUrl, {
+      await authFetch(avatarServerUrl, {
         method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : {},
       })
       setAvatarUrl(null)
     } catch { /* delete failed */ }

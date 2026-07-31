@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, type FormEvent } from 'react'
-import { api, API_URL } from '@/lib/api'
+import { api, API_URL, authFetch } from '@/lib/api'
 import { NumericInput } from '@/components/shared/NumericInput'
 
 /* ── Types (mirroring the backend for type safety) ── */
@@ -215,10 +215,8 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
     try {
       const formData = new FormData()
       formData.append('avatar', file)
-      const token = localStorage.getItem('accessToken')
-      await fetch(`${API_URL}/images/abilities/${ability.id}/avatar`, {
+      await authFetch(`${API_URL}/images/abilities/${ability.id}/avatar`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       })
       setAvatarKey(k => k + 1)

@@ -18,8 +18,8 @@ function formatBRL(cents: number) {
 
 function parseBRLtoCents(value: string): number {
   // Accept "120,00" or "120.00" or "120"
-  const normalized = value.replace(/\./g, '').replace(',', '.')
-  const float = parseFloat(normalized)
+  const normalized = value.replace(/\./g, '').replaceAll(',', '.')
+  const float = Number.parseFloat(normalized)
   if (Number.isNaN(float) || float < 0) return 0
   return Math.round(float * 100)
 }
@@ -251,7 +251,7 @@ export default function AdminPlansPage() {
             {editingId === 'new' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">ID *</label>
+                  <div className="block text-sm font-medium text-foreground mb-1">ID *</div>
                   <input
                     type="text"
                     value={form.id}
@@ -261,7 +261,7 @@ export default function AdminPlansPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Slug *</label>
+                  <div className="block text-sm font-medium text-foreground mb-1">Slug *</div>
                   <input
                     type="text"
                     value={form.slug}
@@ -273,7 +273,7 @@ export default function AdminPlansPage() {
               </>
             )}
             <div className={editingId !== 'new' ? 'md:col-span-2' : ''}>
-              <label className="block text-sm font-medium text-foreground mb-1">Nome *</label>
+              <div className="block text-sm font-medium text-foreground mb-1">Nome *</div>
               <input
                 type="text"
                 value={form.name}
@@ -283,7 +283,7 @@ export default function AdminPlansPage() {
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-foreground mb-1">Descrição</label>
+              <div className="block text-sm font-medium text-foreground mb-1">Descrição</div>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -293,7 +293,7 @@ export default function AdminPlansPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Preço (R$) *</label>
+              <div className="block text-sm font-medium text-foreground mb-1">Preço (R$) *</div>
               <input
                 type="text"
                 value={form.price}
@@ -303,7 +303,7 @@ export default function AdminPlansPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">ID do Plano (PagBank) *</label>
+              <div className="block text-sm font-medium text-foreground mb-1">ID do Plano (PagBank) *</div>
               <input
                 type="text"
                 value={form.pgPlanId}

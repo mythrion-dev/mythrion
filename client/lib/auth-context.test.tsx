@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 vi.mock('@/lib/api', () => ({
@@ -17,6 +17,8 @@ vi.mock('@/lib/api', () => ({
   removeInvitationToken: vi.fn(),
   decodeJwtPayload: vi.fn(() => ({ role: 'user' })),
   refreshAccessToken: vi.fn(),
+  isAccessTokenExpiringSoon: vi.fn(() => false),
+  onAuthFailure: vi.fn(() => () => {}),
 }))
 
 // Re-import after mocking so the mock is picked up
@@ -29,6 +31,9 @@ const {
   setRefreshToken,
   removeRefreshToken,
   removeInvitationToken,
+  refreshAccessToken,
+  isAccessTokenExpiringSoon,
+  onAuthFailure,
 } = await import('@/lib/api')
 
 const { AuthProvider, useAuth } = await import('@/lib/auth-context')
@@ -127,7 +132,7 @@ describe('AuthProvider + useAuth', () => {
     })
   })
 
-  it('clears tokens on profile fetch error', async () => {
+  it('does not clear tokens on profile fetch error (transient)', async () => {
     vi.mocked(getAccessToken).mockReturnValue('mock-token')
     vi.mocked(api.get).mockRejectedValue(new Error('Network error'))
 
@@ -137,9 +142,109 @@ describe('AuthProvider + useAuth', () => {
       </TestWrapper>,
     )
 
+    // A network blip is NOT a logout — tokens must survive so the focus
+    // listener can retry the restore later.
     await waitFor(() => {
-      expect(removeAccessToken).toHaveBeenCalled()
-      expect(getRefreshToken).not.toHaveBeenCalled() // clean up variant
+      expect(removeAccessToken).not.toHaveBeenCalled()
+      expect(removeRefreshToken).not.toHaveBeenCalled()
+    })
+  })
+
+  it('restores session via refresh token when only a refresh token exists', async () => {
+    vi.mocked(getAccessToken).mockReturnValue(null)
+    vi.mocked(getRefreshToken).mockReturnValue('rt-existing')
+    vi.mocked(refreshAccessToken).mockResolvedValue('new-at')
+    vi.mocked(api.get).mockResolvedValue(mockProfile)
+
+    render(
+      <TestWrapper>
+        <TestConsumer />
+      </TestWrapper>,
+    )
+
+    await waitFor(() => {
+      expect(refreshAccessToken).toHaveBeenCalledTimes(1)
+      expect(api.get).toHaveBeenCalledWith('/auth/profile')
+      expect(screen.getByTestId('user')).toHaveTextContent('test@test.com')
+    })
+  })
+
+  it('keeps loading true on transient refresh failure (no redirect)', async () => {
+    vi.mocked(getAccessToken).mockReturnValue(null)
+    vi.mocked(getRefreshToken).mockReturnValue('rt-existing')
+    // Transient refresh failure — tokens remain, so the session is not dead.
+    vi.mocked(refreshAccessToken).mockResolvedValue(null)
+
+    render(
+      <TestWrapper>
+        <TestConsumer />
+      </TestWrapper>,
+    )
+
+    await waitFor(() => {
+      expect(refreshAccessToken).toHaveBeenCalledTimes(1)
+    })
+
+    // Guard-safe: loading stays true and the user stays null so the layout
+    // renders the loading state instead of redirecting to /login.
+    expect(screen.getByTestId('loading')).toHaveTextContent('true')
+    expect(screen.getByTestId('user')).toHaveTextContent('no-user')
+    expect(removeAccessToken).not.toHaveBeenCalled()
+    expect(removeRefreshToken).not.toHaveBeenCalled()
+  })
+
+  it('clears the session when onAuthFailure fires (definitive rejection)', async () => {
+    vi.mocked(getAccessToken).mockReturnValue('mock-token')
+    vi.mocked(api.get).mockResolvedValue(mockProfile)
+
+    render(
+      <TestWrapper>
+        <TestConsumer />
+      </TestWrapper>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('user')).toHaveTextContent('test@test.com')
+    })
+
+    // The server definitively rejected the refresh token — the auth layer
+    // notifies the provider, which must wipe the session from one place.
+    const handler = vi.mocked(onAuthFailure).mock.calls[0][0]
+    act(() => {
+      handler()
+    })
+
+    expect(removeAccessToken).toHaveBeenCalled()
+    expect(removeRefreshToken).toHaveBeenCalled()
+    expect(removeInvitationToken).toHaveBeenCalled()
+    await waitFor(() => {
+      expect(screen.getByTestId('user')).toHaveTextContent('no-user')
+      expect(screen.getByTestId('loading')).toHaveTextContent('false')
+    })
+  })
+
+  it('proactively refreshes an expiring access token on focus', async () => {
+    vi.mocked(getAccessToken).mockReturnValue('mock-token')
+    vi.mocked(isAccessTokenExpiringSoon).mockReturnValue(true)
+    vi.mocked(refreshAccessToken).mockResolvedValue('new-at')
+    vi.mocked(api.get).mockResolvedValue(mockProfile)
+
+    render(
+      <TestWrapper>
+        <TestConsumer />
+      </TestWrapper>,
+    )
+
+    await waitFor(() => {
+      expect(api.get).toHaveBeenCalledWith('/auth/profile')
+    })
+
+    act(() => {
+      window.dispatchEvent(new Event('focus'))
+    })
+
+    await waitFor(() => {
+      expect(refreshAccessToken).toHaveBeenCalledTimes(1)
     })
   })
 })

@@ -11,11 +11,23 @@ import {
   setInvitationToken,
   removeInvitationToken,
   refreshAccessToken,
+  onAuthFailure,
+  isAccessTokenExpiringSoon,
+  authFetch,
   api,
 } from './api'
 
 const mockFetch = vi.fn()
 globalThis.fetch = mockFetch
+
+/** Build a structurally-valid JWT (header.payload.signature) with the given
+ *  payload. decodeJwtPayload only reads the payload segment, so the header and
+ *  signature can be arbitrary. */
+function fakeJwt(payload: object): string {
+  const enc = (o: object) =>
+    btoa(JSON.stringify(o)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  return `${enc({ alg: 'none' })}.${enc(payload)}.${enc({})}`
+}
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -226,7 +238,7 @@ describe('api.delete', () => {
 // --------------- refreshAccessToken ---------------
 
 describe('refreshAccessToken', () => {
-  it('clears tokens on fetch error (network failure)', async () => {
+  it('keeps tokens on network failure (transient, not a logout)', async () => {
     setAccessToken('old-at')
     setRefreshToken('old-rt')
     mockFetch.mockRejectedValueOnce(new Error('Network failure'))
@@ -234,8 +246,23 @@ describe('refreshAccessToken', () => {
     const result = await refreshAccessToken()
 
     expect(result).toBeNull()
-    expect(localStorage.getItem('accessToken')).toBeNull()
-    expect(localStorage.getItem('refreshToken')).toBeNull()
+    // A network blip must not log the user out — tokens survive so the next
+    // request (or the focus listener) can retry the refresh.
+    expect(localStorage.getItem('accessToken')).toBe('old-at')
+    expect(localStorage.getItem('refreshToken')).toBe('old-rt')
+  })
+
+  it('keeps tokens on 5xx (transient server error)', async () => {
+    setRefreshToken('old-rt')
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+    })
+
+    const result = await refreshAccessToken()
+
+    expect(result).toBeNull()
+    expect(localStorage.getItem('refreshToken')).toBe('old-rt')
   })
 
   it('calls /auth/refresh with current refresh token', async () => {
@@ -269,7 +296,7 @@ describe('refreshAccessToken', () => {
     expect(document.cookie).toContain('auth_token=new-at')
   })
 
-  it('clears tokens on failure', async () => {
+  it('clears tokens when the server rejects the refresh token (401)', async () => {
     setAccessToken('old-at')
     setRefreshToken('old-rt')
     mockFetch.mockResolvedValueOnce({
@@ -282,6 +309,45 @@ describe('refreshAccessToken', () => {
     expect(result).toBeNull()
     expect(localStorage.getItem('accessToken')).toBeNull()
     expect(localStorage.getItem('refreshToken')).toBeNull()
+  })
+
+  it('notifies auth-failure handlers when the refresh token is rejected', async () => {
+    setRefreshToken('old-rt')
+    const handler = vi.fn()
+    onAuthFailure(handler)
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+    })
+
+    await refreshAccessToken()
+
+    // Definitive rejection — the whole app must learn the session is over.
+    expect(handler).toHaveBeenCalledTimes(1)
+  })
+
+  it('does NOT notify auth-failure handlers on transient failure', async () => {
+    setRefreshToken('old-rt')
+    const handler = vi.fn()
+    onAuthFailure(handler)
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+    })
+
+    await refreshAccessToken()
+
+    // A server hiccup is not a logout — no notification, no session wipe.
+    expect(handler).not.toHaveBeenCalled()
+  })
+
+  it('notifies auth-failure handlers when no refresh token exists', async () => {
+    const handler = vi.fn()
+    onAuthFailure(handler)
+
+    await refreshAccessToken()
+
+    expect(handler).toHaveBeenCalledTimes(1)
   })
 
   it('returns null when no refresh token exists', async () => {
@@ -622,6 +688,118 @@ describe('SSR guard', () => {
     expect(err.statusCode).toBe(401)
     expect(err.message).toBe('Auth error')
     // Only the original request — no retry since refresh was skipped
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+})
+
+// --------------- isAccessTokenExpiringSoon ---------------
+
+describe('isAccessTokenExpiringSoon', () => {
+  it('returns false for a non-JWT token', () => {
+    expect(isAccessTokenExpiringSoon('not-a-jwt')).toBe(false)
+  })
+
+  it('returns true when the token expires within the leeway window', () => {
+    const expSoon = fakeJwt({ exp: Math.floor(Date.now() / 1000) + 30 })
+    expect(isAccessTokenExpiringSoon(expSoon)).toBe(true)
+  })
+
+  it('returns false when the token expires far in the future', () => {
+    const expFar = fakeJwt({ exp: Math.floor(Date.now() / 1000) + 3600 })
+    expect(isAccessTokenExpiringSoon(expFar)).toBe(false)
+  })
+
+  it('returns false when the payload has no exp claim', () => {
+    expect(isAccessTokenExpiringSoon(fakeJwt({ sub: 'user-1' }))).toBe(false)
+  })
+})
+
+// --------------- Proactive Refresh ---------------
+
+describe('proactive refresh', () => {
+  it('rotates an expiring access token before sending the request', async () => {
+    const expSoon = fakeJwt({ exp: Math.floor(Date.now() / 1000) + 30 })
+    setAccessToken(expSoon)
+    setRefreshToken('rt-existing')
+    // Call 1 = /auth/refresh, call 2 = the actual request with the new token
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ accessToken: 'new-at', refreshToken: 'new-rt' }),
+    })
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ data: 'proactive' }),
+    })
+
+    const result = await api.get('/proactive')
+
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    const reqCall = mockFetch.mock.calls[1]
+    expect(reqCall[0]).toContain('/api/proactive')
+    expect((reqCall[1].headers as Record<string, string>).Authorization).toBe(
+      'Bearer new-at',
+    )
+    expect(result).toEqual({ data: 'proactive' })
+  })
+
+  it('does not refresh when the access token is far from expiry', async () => {
+    const expFar = fakeJwt({ exp: Math.floor(Date.now() / 1000) + 3600 })
+    setAccessToken(expFar)
+    setRefreshToken('rt-existing')
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ data: 'ok' }),
+    })
+
+    await api.get('/no-proactive')
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+})
+
+// --------------- authFetch ---------------
+
+describe('authFetch', () => {
+  it('attaches the Authorization header', async () => {
+    setAccessToken('bearer-tok')
+    mockFetch.mockResolvedValueOnce({ ok: true, status: 200 })
+
+    await authFetch('https://cdn.example.com/avatar.png')
+
+    const [, opts] = mockFetch.mock.calls[0]
+    expect((opts.headers as Headers).get('Authorization')).toBe('Bearer bearer-tok')
+  })
+
+  it('retries once on 401 with the refreshed token', async () => {
+    setAccessToken('old-at')
+    setRefreshToken('rt-existing')
+    // Call 1 = original request 401, call 2 = /auth/refresh, call 3 = retry
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 401 })
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ accessToken: 'new-at', refreshToken: 'new-rt' }),
+    })
+    mockFetch.mockResolvedValueOnce({ ok: true, status: 200 })
+
+    const res = await authFetch('https://cdn.example.com/avatar.png')
+
+    expect(mockFetch).toHaveBeenCalledTimes(3)
+    const retryCall = mockFetch.mock.calls[2]
+    expect((retryCall[1].headers as Headers).get('Authorization')).toBe('Bearer new-at')
+    expect(res.ok).toBe(true)
+  })
+
+  it('returns the 401 response when the refresh fails', async () => {
+    setAccessToken('old-at')
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      statusText: 'Unauthorized',
+    })
+
+    const res = await authFetch('https://cdn.example.com/file')
+
+    expect(res.status).toBe(401)
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 })

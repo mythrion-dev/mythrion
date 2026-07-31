@@ -14,11 +14,41 @@ export function normalizeApiUrl(raw: string | undefined): string {
 
 export const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL)
 
+/**
+ * Auth-failure notification. Fired ONLY when the session is definitively over
+ * (the refresh token was rejected by the server — revoked/expired/invalid) —
+ * never on transient failures. AuthProvider subscribes so the whole app can
+ * clear the user immediately instead of limping along with a dead session.
+ */
+type AuthFailureHandler = () => void
+const authFailureHandlers = new Set<AuthFailureHandler>()
+
+export function onAuthFailure(handler: AuthFailureHandler): () => void {
+  authFailureHandlers.add(handler)
+  return () => {
+    authFailureHandlers.delete(handler)
+  }
+}
+
+function notifyAuthFailure() {
+  authFailureHandlers.forEach((h) => h())
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const token = typeof window !== 'undefined' ? getAccessToken() : null
+  let token = typeof window !== 'undefined' ? getAccessToken() : null
+
+  // Proactive refresh: if the access token is within the leeway window of
+  // expiry, rotate before sending so the request never rides on an expiring
+  // token (avoids a 401 round-trip and its retry). Failure here is non-fatal —
+  // the request proceeds with the current token and the 401 path below can
+  // still recover it.
+  if (token && typeof window !== 'undefined' && isAccessTokenExpiringSoon(token)) {
+    const fresh = await refreshAccessToken()
+    if (fresh) token = fresh
+  }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -90,9 +120,11 @@ export async function refreshAccessToken(): Promise<string | null> {
   }
   const refreshToken = getRefreshToken()
   if (!refreshToken) {
-    // No refresh token, clear auth
+    // No refresh token means there is nothing to refresh — the session is
+    // definitively over.
     removeAccessToken()
     removeRefreshToken()
+    notifyAuthFailure()
     return null
   }
 
@@ -104,9 +136,18 @@ export async function refreshAccessToken(): Promise<string | null> {
         body: JSON.stringify({ refreshToken }),
       })
 
-      if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        // The server definitively rejected the refresh token (revoked,
+        // expired, or invalid). The session is over — clear it.
         removeAccessToken()
         removeRefreshToken()
+        notifyAuthFailure()
+        return null
+      }
+
+      if (!res.ok) {
+        // Transient failure (5xx, gateway, etc.). Keep the tokens so a later
+        // attempt can succeed — a server hiccup is not a logout.
         return null
       }
 
@@ -115,8 +156,8 @@ export async function refreshAccessToken(): Promise<string | null> {
       setRefreshToken(data.refreshToken)
       return data.accessToken
     } catch {
-      removeAccessToken()
-      removeRefreshToken()
+      // Network error — transient. Keep the tokens and let the next request
+      // (or the focus listener) retry the refresh.
       return null
     }
   })()
@@ -126,6 +167,18 @@ export async function refreshAccessToken(): Promise<string | null> {
   } finally {
     refreshPromise = null
   }
+}
+
+/** Leeway before expiry (ms) at which we proactively rotate the access token. */
+const PROACTIVE_REFRESH_LEEWAY_MS = 60_000
+
+/** True when the access token will expire within the proactive-refresh leeway.
+ *  Non-JWT or unparseable tokens are treated as not expiring-soon so callers
+ *  never block on a bogus token. */
+export function isAccessTokenExpiringSoon(token: string): boolean {
+  const payload = decodeJwtPayload(token)
+  if (!payload || typeof payload.exp !== 'number') return false
+  return payload.exp * 1000 - Date.now() < PROACTIVE_REFRESH_LEEWAY_MS
 }
 
 /** Decode the payload of a JWT without verifying the signature.
@@ -198,4 +251,39 @@ export const api = {
   patch: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+}
+
+/**
+ * fetch() that participates in the same auth lifecycle as `api`: attaches the
+ * current access token (refreshing proactively if near expiry) and follows a
+ * 401 with one refresh + retry. Use for endpoints that need raw fetch — HEAD
+ * checks, FormData/multipart uploads, etc. — instead of the JSON api helpers.
+ */
+export async function authFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
+  let token = typeof window !== 'undefined' ? getAccessToken() : null
+  if (token && typeof window !== 'undefined' && isAccessTokenExpiringSoon(token)) {
+    const fresh = await refreshAccessToken()
+    if (fresh) token = fresh
+  }
+
+  const headers = new Headers(init.headers)
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  const res = await fetch(input, { ...init, headers })
+
+  if (res.status === 401 && typeof window !== 'undefined') {
+    const newToken = await refreshAccessToken()
+    if (newToken) {
+      const retryHeaders = new Headers(init.headers)
+      retryHeaders.set('Authorization', `Bearer ${newToken}`)
+      return fetch(input, { ...init, headers: retryHeaders })
+    }
+  }
+
+  return res
 }
