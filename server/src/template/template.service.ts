@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException, Logger } from '@nestjs/common'
 import { PrismaService } from '../prisma.service.js'
+import { Prisma } from '../generated/prisma/client.js'
+import { splitSearchTokens, escapeLike } from '../community/search.util.js'
 import { DbNull } from '@prisma/client/runtime/client'
 import { MembershipService } from '../membership/membership.service.js'
 import { CreateTemplateDto } from './dto/create-template.dto.js'
@@ -1205,11 +1207,64 @@ export class TemplateService {
    * Find all public templates (using the standalone isPublic flag).
    * No auth required.
    */
-  async findPublicAll(params: { page?: number; limit?: number; adventureId?: string; search?: string }) {
+  async findPublicAll(params: {
+    page?: number
+    limit?: number
+    adventureId?: string
+    campaign?: string
+    search?: string
+  }) {
     const page = params.page ?? 1
     const limit = params.limit ?? 10
     const skip = (page - 1) * limit
 
+    // Route to the ranked (raw-SQL) path only when there is at least one real
+    // search token; whitespace-only queries fall back to the plain listing.
+    const search = params.search
+    const hasSearch = search
+      ? splitSearchTokens(search).length > 0
+      : false
+
+    const { rows, total } = hasSearch && search
+      ? await this.findPublicAllRanked({ ...params, search, page, limit, skip })
+      : await this.findPublicAllPlain({ ...params, page, limit, skip })
+
+    const data = rows.map((t) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+      useCount: t.useCount,
+      adventure: t.adventure,
+      owner: t.owner,
+      _count: t._count,
+      // Top-level convenience fields (nested `adventure` kept for compat).
+      campaign: t.adventure?.campaign ?? null,
+      adventureName: t.adventure?.name ?? null,
+      adventureId: t.adventure?.id ?? null,
+    }))
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    }
+  }
+
+  /**
+   * Plain listing path — no meaningful search term. Same filters and select as
+   * the ranked path, but lets Prisma do the ordering and pagination.
+   */
+  private async findPublicAllPlain(params: {
+    page: number
+    limit: number
+    skip: number
+    adventureId?: string
+    campaign?: string
+  }) {
     const where: any = {
       isPublic: true,
     }
@@ -1218,22 +1273,15 @@ export class TemplateService {
       where.adventureId = params.adventureId
     }
 
-    if (params.search) {
-      where.AND = [
-        {
-          OR: [
-            { name: { contains: params.search, mode: 'insensitive' } },
-            { description: { contains: params.search, mode: 'insensitive' } },
-          ],
-        },
-      ]
+    if (params.campaign) {
+      where.adventure = { is: { campaign: params.campaign } }
     }
 
     const [templates, total] = await this.prisma.$transaction([
       this.prisma.template.findMany({
         where,
-        skip,
-        take: limit,
+        skip: params.skip,
+        take: params.limit,
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
@@ -1250,13 +1298,107 @@ export class TemplateService {
       this.prisma.template.count({ where }),
     ])
 
-    return {
-      data: templates,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+    return { rows: templates, total }
+  }
+
+  /**
+   * Ranked search path. Finds and orders matching IDs entirely in SQL —
+   * accent- and case-insensitive, tokenized, ranked by name-match quality —
+   * then hydrates full rows with a normal Prisma findMany and reorders them
+   * to the SQL order so relevance ranking survives pagination.
+   */
+  private async findPublicAllRanked(params: {
+    page: number
+    limit: number
+    skip: number
+    adventureId?: string
+    campaign?: string
+    search: string
+  }) {
+    const { limit, skip } = params
+    const tokens = splitSearchTokens(params.search).map((t) => escapeLike(t))
+
+    // Per-token score: exact name > name prefix > name substring > other fields.
+    const scoreParts = tokens.map((tok) =>
+      Prisma.sql`CASE WHEN search_norm(t."name") = search_norm(${tok}) THEN 0 WHEN search_norm(t."name") LIKE (search_norm(${tok}) || '%') THEN 1 WHEN search_norm(t."name") LIKE ('%' || search_norm(${tok}) || '%') THEN 2 ELSE 3 END`,
+    )
+
+    // Per-token filter: the token must appear in at least one searchable field.
+    const tokenClauses = tokens.map((tok) =>
+      Prisma.sql`(
+        search_norm(t."name") = search_norm(${tok})
+        OR search_norm(t."name") LIKE (search_norm(${tok}) || '%')
+        OR search_norm(t."name") LIKE ('%' || search_norm(${tok}) || '%')
+        OR search_norm(COALESCE(t."description", '')) LIKE ('%' || search_norm(${tok}) || '%')
+        OR search_norm(COALESCE(owner."displayName", '')) LIKE ('%' || search_norm(${tok}) || '%')
+        OR search_norm(COALESCE(adv."campaign", '')) LIKE ('%' || search_norm(${tok}) || '%')
+      )`,
+    )
+
+    const ands: Prisma.Sql[] = [Prisma.sql`t."isPublic" = true`]
+
+    if (params.adventureId) {
+      ands.push(Prisma.sql`t."adventureId" = ${params.adventureId}`)
     }
+    if (params.campaign) {
+      ands.push(Prisma.sql`adv."campaign" = ${params.campaign}`)
+    }
+
+    const query = Prisma.sql`
+      WITH matched AS (
+        SELECT t."id" AS id, t."createdAt" AS created_at,
+          (${Prisma.join(scoreParts, ' + ')}) AS score
+        FROM "Template" t
+        LEFT JOIN "Adventure" adv ON adv."id" = t."adventureId"
+        LEFT JOIN "User" owner ON owner."id" = t."ownerId"
+        WHERE ${Prisma.join(ands, ' AND ')}
+          AND (${Prisma.join(tokenClauses, ' AND ')})
+      ),
+      ordered AS (
+        SELECT id, created_at, score,
+          ROW_NUMBER() OVER (ORDER BY score ASC, created_at DESC) AS rn
+        FROM matched
+      )
+      SELECT
+        (SELECT COUNT(*)::int FROM matched) AS total,
+        COALESCE(
+          (SELECT jsonb_agg(id ORDER BY rn) FROM ordered WHERE rn > ${skip} AND rn <= ${skip + limit}),
+          '[]'::jsonb
+        ) AS ids
+    `
+
+    const [result] = await this.prisma.$queryRaw<
+      { total: number; ids: string[] | null }[]
+    >(query)
+
+    const total = result?.total ?? 0
+    const ids = result?.ids ?? []
+
+    if (ids.length === 0) {
+      return { rows: [], total }
+    }
+
+    const templates = await this.prisma.template.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+        useCount: true,
+        adventure: { select: { id: true, name: true, campaign: true } },
+        owner: { select: { id: true, displayName: true } },
+        _count: { select: { attributes: true, templateSkills: true } },
+      },
+    })
+
+    const byId = new Map(templates.map((t) => [t.id, t] as const))
+    const rows = ids
+      .map((id) => byId.get(id))
+      .filter((t): t is NonNullable<typeof t> => Boolean(t))
+
+    return { rows, total }
   }
 
   /**

@@ -144,6 +144,9 @@ function DashboardPublicTemplatesContent() {
   // ── Client-side sorting ──
 
   const sortedTemplates = useMemo(() => {
+    // When searching, the server already ranks results by relevance —
+    // skip client-side sorting so that order wins.
+    if (debouncedSearch) return templates
     const list = [...templates]
     switch (sortValue) {
       case 'popular':
@@ -165,7 +168,7 @@ function DashboardPublicTemplatesContent() {
       default:
         return list
     }
-  }, [templates, sortValue])
+  }, [templates, sortValue, debouncedSearch])
 
   const handleCampaignChange = (value: string) => {
     setCampaign(value)
