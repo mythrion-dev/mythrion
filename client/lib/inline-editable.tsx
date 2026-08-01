@@ -104,9 +104,9 @@ export function InlineNumber({
   useEffect(() => { setDraft(display) }, [display])
 
   const commit = useCallback(async () => {
-    const num = draft.trim() === '' ? 0 : parseFloat(draft)
-    if (isNaN(num)) { setDraft(display); setEditing(false); return }
-    if (num === (parseFloat(display) || 0) && draft.trim() !== '' && !(display === '' && num === 0)) { setEditing(false); return }
+    const num = draft.trim() === '' ? 0 : Number.parseFloat(draft)
+    if (Number.isNaN(num)) { setDraft(display); setEditing(false); return }
+    if (num === (Number.parseFloat(display) || 0) && draft.trim() !== '' && !(display === '' && num === 0)) { setEditing(false); return }
     setSaving(true)
     try { await onSave(num); setEditing(false) }
     catch { setDraft(display) }

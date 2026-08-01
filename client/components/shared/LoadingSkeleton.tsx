@@ -1,8 +1,10 @@
 'use client'
 
+const SKELETON_IDS = Array.from({ length: 12 }, (_, i) => `skel-${i}`)
+
 interface LoadingSkeletonProps {
-  variant?: 'card' | 'list' | 'page'
-  count?: number
+  readonly variant?: 'card' | 'list' | 'page'
+  readonly count?: number
 }
 
 function SkeletonCard() {
@@ -23,7 +25,7 @@ function SkeletonList() {
   return (
     <div className="space-y-2">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="data-row">
+        <div key={SKELETON_IDS[i]} className="data-row">
           <div className="skeleton h-4 w-48" />
           <div className="skeleton h-3 w-24" />
         </div>
@@ -51,14 +53,14 @@ function SkeletonPage() {
   )
 }
 
-export function LoadingSkeleton({ variant = 'card', count = 3 }: LoadingSkeletonProps) {
+export function LoadingSkeleton({ variant = 'card', count = 3 }: Readonly<LoadingSkeletonProps>) {
   if (variant === 'page') return <SkeletonPage />
   if (variant === 'list') return <SkeletonList />
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: count }).map((_, i) => (
-        <SkeletonCard key={i} />
+        <SkeletonCard key={SKELETON_IDS[i]} />
       ))}
     </div>
   )

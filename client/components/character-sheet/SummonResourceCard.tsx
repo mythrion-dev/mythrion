@@ -72,8 +72,8 @@ export function SummonResourceCard({
 
   async function handleAddSkillSubmit() {
     const name = newSkillName.trim()
-    const value = parseInt(newSkillValue, 10)
-    if (!name || isNaN(value)) return
+    const value = Number.parseInt(newSkillValue, 10)
+    if (!name || Number.isNaN(value)) return
     setAddingSkill(true)
     try {
       await handleAddSummonSkill(ability.id, name, value)

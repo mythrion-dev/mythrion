@@ -10,7 +10,7 @@ function getInitials(name: string | null): string {
   if (!name) return '?'
   const parts = name.trim().split(/\s+/)
   if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    return (parts[0][0] + parts.at(-1)![0]).toUpperCase()
   }
   return name.slice(0, 2).toUpperCase()
 }
@@ -159,9 +159,9 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 w-full">
-        {navLinks.map((link: any) =>
+        {navLinks.map((link: any, index: number) =>
           link.type === 'divider' ? (
-            <hr key={`divider-${Math.random()}`} className={`divider my-2 transition-all duration-300 ${collapsed ? 'w-8 mx-auto' : ''}`} />
+            <hr key={`divider-${index}`} className={`divider my-2 transition-all duration-300 ${collapsed ? 'w-8 mx-auto' : ''}`} />
           ) : (
             <Link
               key={link.href}
@@ -272,9 +272,11 @@ export function Sidebar() {
 
       {/* Mobile overlay */}
       {mobileOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden border-0"
           onClick={() => setMobileOpen(false)}
+          aria-label="Close sidebar"
         />
       )}
 

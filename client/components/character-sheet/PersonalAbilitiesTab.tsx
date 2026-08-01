@@ -2,7 +2,7 @@
 
 import { InlineClickEdit } from '@/components/character-sheet'
 import type { TemplateCharacterSection, SectionEntry, SheetPermissions } from './types'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 
 export function PersonalAbilitiesTab({
   sections, entries, permissions, toSingular,
@@ -22,7 +22,7 @@ export function PersonalAbilitiesTab({
   setShowNewEntry: React.Dispatch<React.SetStateAction<string | null>>
   newEntryForm: { name: string; description: string }
   setNewEntryForm: React.Dispatch<React.SetStateAction<{ name: string; description: string }>>
-  handleCreateEntry: (sectionId: string, e: FormEvent) => Promise<void>
+  handleCreateEntry: (sectionId: string, e: SubmitEvent) => Promise<void>
   saving: boolean
   resetForm: () => void
 }) {

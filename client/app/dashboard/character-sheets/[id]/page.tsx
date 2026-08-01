@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react'
+import { useState, useEffect, useCallback, useRef, type SubmitEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { api, API_URL, authFetch } from '@/lib/api'
@@ -180,7 +180,7 @@ export default function CharacterSheetDetailPage() {
       const actives: Record<string, boolean> = {}; const others: Record<string, number> = {}
       d.skillValues.forEach(sv => { const parts = (sv.value || '').split('|'); actives[sv.skillId] = parts[0] === '1'; others[sv.skillId] = Number.parseInt(parts[1] || '0', 10) || 0 })
       setActiveSkills(actives); setOthersValues(others)
-      const selMap: Record<string, Record<string, string | null>> = {}; d.skillProfileValues.forEach(spv => { if (!selMap[spv.skillId]) selMap[spv.skillId] = {}; selMap[spv.skillId][spv.profileId] = spv.optionId })
+      const selMap: Record<string, Record<string, string | null>> = {}; d.skillProfileValues.forEach(spv => { if (!selMap[spv.skillId]) { selMap[spv.skillId] = {}; } selMap[spv.skillId][spv.profileId] = spv.optionId })
       // Auto-select lowest-value option for profiles without a saved selection
       const skillModifierProfiles = d.template?.skillModifierProfiles || []
       for (const sv of d.skillValues) {
@@ -432,7 +432,7 @@ export default function CharacterSheetDetailPage() {
   }
 
   // ── Summon-scoped ability CRUD ──
-  async function handleCreateSummonAbility(summonId: string, e: FormEvent) {
+  async function handleCreateSummonAbility(summonId: string, e: SubmitEvent) {
     e.preventDefault()
     if (!sheet || !newAbility.name.trim()) return
     setAbilitySaving(true)
@@ -451,7 +451,7 @@ export default function CharacterSheetDetailPage() {
   async function handleDeleteAbility(abilityId: string) { if (!sheet) return; try { await api.delete(`/character-sheets/${sheet.id}/abilities/${abilityId}`); setAbilities(p => p.filter(a => a.id !== abilityId).map(a => ({ ...a, childAbilities: (a.childAbilities ?? []).filter(c => c.id !== abilityId) }))) } catch {} }
 
   function resetNewAbility() { setShowNewAbility(false); setNewAbility({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '', level: '', hpCurrent: '', hpMax: '' }); setNewAbilityType(null); setAbilityError(null) }
-  async function handleCreateAbility(e: FormEvent) { e.preventDefault(); if (!newAbility.name.trim() || !sheet) return; setAbilitySaving(true)
+  async function handleCreateAbility(e: SubmitEvent) { e.preventDefault(); if (!newAbility.name.trim() || !sheet) return; setAbilitySaving(true)
     try {
       const body: Record<string, unknown> = { name: newAbility.name.trim(), type: newAbilityType ?? 'ABILITY', description: newAbility.description.trim() || undefined, notes: newAbility.notes.trim() || undefined }
       if (newAbilityType === 'ABILITY') {
@@ -485,7 +485,7 @@ export default function CharacterSheetDetailPage() {
       resetNewAbility()
     } catch (err) { setAbilityError(err instanceof Error ? err.message : 'Failed to create entry') } finally { setAbilitySaving(false) } }
   function resetNewItem() { setShowNewItem(false); setNewItem({ name: '', weight: '', cost: '', description: '' }); setItemError(null) }
-  async function handleCreateItem(e: FormEvent) { e.preventDefault(); if (!newItem.name.trim() || !sheet) return; setItemSaving(true)
+  async function handleCreateItem(e: SubmitEvent) { e.preventDefault(); if (!newItem.name.trim() || !sheet) return; setItemSaving(true)
     try { const i = await api.post<InventoryItem>(`/character-sheets/${sheet.id}/inventory`, { name: newItem.name.trim(), weight: newItem.weight.trim() ? Number.parseFloat(newItem.weight) : undefined, cost: newItem.cost.trim() || undefined, description: newItem.description.trim() || undefined }); setInventoryItems(p => [...p, i]); resetNewItem() } catch (err) { setItemError(err instanceof Error ? err.message : 'Failed to create item') } finally { setItemSaving(false) } }
   async function handleDeleteItem(iid: string) { if (!sheet) return; try { await api.delete(`/character-sheets/${sheet.id}/inventory/${iid}`); setInventoryItems(p => p.filter(i => i.id !== iid)) } catch {} }
   async function saveStoryField(field: string, value: string) { if (!sheet) return; try { const s = await api.patch<Story>(`/character-sheets/${sheet.id}/story`, { [field]: value.trim() || null }); setStory(s) } catch {} }
@@ -494,7 +494,7 @@ export default function CharacterSheetDetailPage() {
   function toSingular(name: string) { if (name.endsWith('ies')) return name.slice(0, -3) + 'y'; if (name.endsWith('s') && !name.endsWith('ss') && !name.endsWith('us')) return name.slice(0, -1); return name }
 
   function resetSectionEntryForm() { setNewSectionEntryForm({ name: '', description: '' }); setShowNewSectionEntry(null); setSectionEntrySaving(false) }
-  async function handleCreateSectionEntry(sectionId: string, e: FormEvent) {
+  async function handleCreateSectionEntry(sectionId: string, e: SubmitEvent) {
     e.preventDefault()
     if (!sheet || !newSectionEntryForm.name.trim()) return
     setSectionEntrySaving(true)

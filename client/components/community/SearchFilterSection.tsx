@@ -14,25 +14,25 @@ export interface SortOption {
 
 interface SearchFilterSectionProps {
   /** Placeholder text for the search input */
-  placeholder: string
+  readonly placeholder: string
   /** Current search value */
-  search: string
+  readonly search: string
   /** Called when the search input changes */
-  onSearchChange: (value: string) => void
+  readonly onSearchChange: (value: string) => void
   /** Filter controls rendered inside the collapsible filter area */
-  children?: ReactNode
+  readonly children?: ReactNode
   /** Active filters displayed as removable chips */
-  activeFilters: ActiveFilter[]
+  readonly activeFilters: ActiveFilter[]
   /** Called when a single filter chip is clicked (removed) */
-  onRemoveFilter: (id: string) => void
+  readonly onRemoveFilter: (id: string) => void
   /** Called when "Remove All" is clicked */
-  onRemoveAll: () => void
+  readonly onRemoveAll: () => void
   /** Available sort options */
-  sortOptions: SortOption[]
+  readonly sortOptions: SortOption[]
   /** Currently selected sort value */
-  sortValue: string
+  readonly sortValue: string
   /** Called when sort selection changes */
-  onSortChange: (value: string) => void
+  readonly onSortChange: (value: string) => void
 }
 
 export function SearchFilterSection({
@@ -46,7 +46,7 @@ export function SearchFilterSection({
   sortOptions,
   sortValue,
   onSortChange,
-}: SearchFilterSectionProps) {
+}: Readonly<SearchFilterSectionProps>) {
   const [showFilters, setShowFilters] = useState(false)
 
   return (

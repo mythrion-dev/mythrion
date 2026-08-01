@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback, type FormEvent } from 'react'
+import { useState, useEffect, useCallback, type SubmitEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { api } from '@/lib/api'
-import Link from 'next/link'
 import { PageNav } from '@/lib/breadcrumb'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -83,6 +82,123 @@ interface UserSheet {
   template: { id: string; name: string }; createdAt: string
 }
 
+function validateCoreResources(resources: { slug: string }[]) {
+  const valid = resources.filter(r => r.slug.trim())
+  const slugs = new Set<string>()
+  for (const r of valid) {
+    const s = r.slug.trim().toLowerCase()
+    if (slugs.has(s)) return `Duplicate slug: "${s}"`
+    slugs.add(s)
+  }
+  return null
+}
+
+function buildAcPayload(configs: AcConfigDraft[]) {
+  return configs
+    .filter(ac => ac.enabled && ac.name.trim())
+    .map(ac => ({
+      name: ac.name.trim(),
+      enabled: true,
+      attributeModifiers: ac.attributeModifiers.map(am => ({
+        attributeId: am.attributeId,
+        allowPlayerSelection: am.allowPlayerSelection,
+        defaultAttributeId: am.allowPlayerSelection ? (am.defaultAttributeId || am.attributeId) : undefined,
+      })),
+      fields: ac.fields.filter(f => f.name.trim() && f.key.trim()).map(f => ({
+        name: f.name.trim(),
+        key: f.key.trim(),
+        defaultValue: f.defaultValue.trim() || '0',
+        editableByPlayer: f.editableByPlayer,
+        description: f.description.trim() || undefined,
+      })),
+    }))
+}
+
+function buildResistancesPayload(resistances: ResistanceDef[]) {
+  return resistances.filter(r => r.name.trim()).map((r) => ({
+    id: r.id,
+    name: r.name.trim(),
+    calculationType: r.calculationType,
+    components: (r.components || []).filter(c => c.name.trim()).map(c => ({
+      id: c.id,
+      name: c.name.trim(),
+      editableByPlayer: c.editableByPlayer,
+      defaultValue: c.defaultValue || '0',
+    })),
+    attributeModifiers: (r.attributeModifiers || [])
+      .filter(am => am.attributeId?.trim())
+      .map(am => ({
+        attributeId: am.attributeId,
+        enabled: am.enabled,
+      })),
+  }))
+}
+
+interface TemplatePayloadSource {
+  attributes: { key: string; name: string }[]
+  attributeModifiersEnabled: boolean
+  attributeModifierFormula: string
+  skillFormula: string
+  templateFields: { key: string; label: string }[]
+  templateSkills: { name: string; description: string; attributeId: string; allowedAttributeIds: string[]; defaultAttributeId: string }[]
+  skillModifierProfiles: { name: string; targetMode?: string; targetSkillIds?: string[]; options: { label: string; value: number }[] }[]
+  coreResources: CoreResource[]
+  acConfigs: AcConfigDraft[]
+  characterSections: { id?: string; name: string }[]
+  resistances: ResistanceDef[]
+  featureSkills: boolean
+  featureCustomFields: boolean
+  featureCoreResources: boolean
+  featureArmorClass: boolean
+  featureCharacterSections: boolean
+  featureSkillProfiles: boolean
+  featureResistance: boolean
+}
+
+function buildTemplatePayload(s: TemplatePayloadSource) {
+  return {
+    attributeModifiersEnabled: s.attributeModifiersEnabled,
+    attributeModifierFormula: s.attributeModifierFormula.trim() || undefined,
+    skillFormula: s.skillFormula.trim() || undefined,
+    attributes: s.attributes.map(a => ({ key: a.key.trim(), name: a.name.trim() })),
+    templateFields: s.featureCustomFields ? s.templateFields.filter(f => f.key.trim() && f.label.trim()).map(f => ({ key: f.key.trim(), label: f.label.trim() })) : undefined,
+    skills: s.featureSkills ? s.templateSkills.filter(sk => sk.name.trim()).map(sk => ({ name: sk.name.trim(), description: sk.description.trim() || undefined, attributeId: sk.attributeId.trim() || undefined, allowedAttributeIds: sk.allowedAttributeIds.filter(k => k.trim()), defaultAttributeId: sk.defaultAttributeId.trim() || undefined })) : undefined,
+    skillModifierProfiles: s.featureSkillProfiles ? s.skillModifierProfiles.filter(p => p.name.trim()).map(p => ({ name: p.name.trim(), targetMode: p.targetMode ?? 'ALL_SKILLS', targetSkillIds: p.targetSkillIds ?? [], options: p.options.filter(o => o.label.trim()).map(o => ({ label: o.label.trim(), value: o.value })) })) : undefined,
+    coreResources: s.featureCoreResources ? s.coreResources.filter(r => r.slug.trim()).map(r => ({ displayName: r.displayName.trim() || r.slug.trim(), slug: r.slug.trim(), enabled: r.enabled, editableByPlayer: r.editableByPlayer, showNotes: r.showNotes, color: r.color || undefined })) : undefined,
+    armorClasses: s.featureArmorClass ? buildAcPayload(s.acConfigs) : undefined,
+    characterSections: s.featureCharacterSections ? s.characterSections.filter(x => x.name.trim()).map(x => ({ id: x.id, name: x.name.trim() })) : undefined,
+    resistances: s.featureResistance ? buildResistancesPayload(s.resistances) : undefined,
+  }
+}
+
+function validateTemplateForm(args: {
+  attrs: { key: string; name: string }[]
+  coreResources: CoreResource[]
+  profiles: { name: string; targetMode?: string; targetSkillIds?: string[] }[]
+  acConfigs: AcConfigDraft[]
+}): string | null {
+  const ta = args.attrs.map(a => ({ key: a.key.trim(), name: a.name.trim() }))
+  if (ta.some(a => !a.key || !a.name)) return 'All attributes must have a key and name'
+  const ve = validateCoreResources(args.coreResources)
+  if (ve) return ve
+  for (const p of args.profiles) {
+    if (p.targetMode === 'SELECTED_SKILLS' && (p.targetSkillIds?.length ?? 0) === 0) {
+      return `Profile "${p.name || 'Unnamed'}" uses "Selected Skills" mode but no skills are selected.`
+    }
+  }
+  const acNames = args.acConfigs.filter(ac => ac.enabled && ac.name.trim()).map(ac => ac.name.trim().toLowerCase())
+  if (new Set(acNames).size !== acNames.length) return 'Armor Class names must be unique'
+  for (const ac of args.acConfigs) {
+    if (!ac.enabled || !ac.name.trim()) continue
+    for (const f of ac.fields) {
+      if (f.name.trim() && !f.key.trim()) {
+        return `Armor Class "${ac.name.trim()}" has a component with an empty key. Please fill in the Key field or remove the component.`
+      }
+    }
+  }
+  return null
+}
+
 export default function AdventureDetailPage() {
   const router = useRouter(); const params = useParams(); const id = params.id as string
   const { user } = useAuth()
@@ -93,7 +209,7 @@ export default function AdventureDetailPage() {
   const [members, setMembers] = useState<Member[]>([]); const [showMembers, setShowMembers] = useState(false)
   const [showInvite, setShowInvite] = useState(false); const [inviteEmail, setInviteEmail] = useState(''); const [inviteError, setInviteError] = useState<string | null>(null); const [inviteSending, setInviteSending] = useState(false); const [inviteLink, setInviteLink] = useState<string | null>(null); const [invitations, setInvitations] = useState<Invitation[]>([])
 
-  const [templates, setTemplates] = useState<Template[]>([]); const [showTemplates, setShowTemplates] = useState(false)
+  const [templates, setTemplates] = useState<Template[]>([])
   const [showNewTemplate, setShowNewTemplate] = useState(false); const [newTemplateName, setNewTemplateName] = useState(''); const [newTemplateDescription, setNewTemplateDescription] = useState('')
   const [newTemplateAttrs, setNewTemplateAttrs] = useState<{ key: string; name: string }[]>([])
   const [newAttrModifierFormula, setNewAttrModifierFormula] = useState('')
@@ -273,7 +389,6 @@ export default function AdventureDetailPage() {
     originalTemplateId: string | null
   } | null>(null)
   const [snapshotFetching, setSnapshotFetching] = useState(false)
-  const [snapshotKey, setSnapshotKey] = useState(0)
 
   const [campaignCharacters, setCampaignCharacters] = useState<CampaignCharacter[]>([]); const [showCharacters, setShowCharacters] = useState(false)
   const [showNewCharForm, setShowNewCharForm] = useState(false); const [newCharName, setNewCharName] = useState(''); const [newCharError, setNewCharError] = useState<string | null>(null); const [newCharCreating, setNewCharCreating] = useState(false)
@@ -344,91 +459,29 @@ export default function AdventureDetailPage() {
   const fetchCampaignCharacters = useCallback(async () => { try { setCampaignCharacters(await api.get<CampaignCharacter[]>(`/character-sheets/adventure/${id}`)) } catch { } }, [id])
   const fetchUserSheets = useCallback(async () => { try { const d = await api.get<UserSheet[]>('/character-sheets'); setUserSheets(d.filter(s => s.adventure.id !== id)) } catch { } }, [id])
 
-  function buildAcPayload(configs: AcConfigDraft[]) {
-    return configs
-      .filter(ac => ac.enabled && ac.name.trim())
-      .map(ac => ({
-        name: ac.name.trim(),
-        enabled: true,
-        attributeModifiers: ac.attributeModifiers.map(am => ({
-          attributeId: am.attributeId,
-          allowPlayerSelection: am.allowPlayerSelection,
-          defaultAttributeId: am.allowPlayerSelection ? (am.defaultAttributeId || am.attributeId) : undefined,
-        })),
-        fields: ac.fields.filter(f => f.name.trim() && f.key.trim()).map(f => ({
-          name: f.name.trim(),
-          key: f.key.trim(),
-          defaultValue: f.defaultValue.trim() || '0',
-          editableByPlayer: f.editableByPlayer,
-          description: f.description.trim() || undefined,
-        })),
-      }))
-  }
-
   function resetNewTemplate() { setShowNewTemplate(false); setNewTemplateName(''); setNewTemplateDescription(''); setNewTemplateAttrs([]); setNewAttrModifierFormula(''); setNewSkillFormula(''); setNewTemplateFields([]); setNewTemplateSkills([]); setNewTemplateProfiles([]); setNewCoreResources([]); setNewAcConfigs([]); setNewResistances([]); setNewIsPublic(false); setNewFeatureSkills(true); setNewFeatureCustomFields(true); setNewFeatureCoreResources(true); setNewFeatureArmorClass(true); setNewFeatureCharacterSections(true); setNewFeatureSkillProfiles(true); setNewFeatureResistance(true); setTemplateError(null) }
   function addNewAttrRow() { setNewTemplateAttrs(p => [...p, { key: '', name: '' }]) }; function removeNewAttrRow(i: number) { setNewTemplateAttrs(p => p.filter((_, j) => j !== i)) }; function updateNewAttr(i: number, f: 'key' | 'name', v: string) { setNewTemplateAttrs(p => p.map((a, j) => j === i ? { ...a, [f]: v } : a)) }
   function addNewFieldRow() { setNewTemplateFields(p => [...p, { key: '', label: '' }]) }; function removeNewFieldRow(i: number) { setNewTemplateFields(p => p.filter((_, j) => j !== i)) }; function updateNewField(i: number, f: 'key' | 'label', v: string) { setNewTemplateFields(p => p.map((a, j) => j === i ? { ...a, [f]: v } : a)) }
   function addEditAttrRow() { setEditTemplateAttrs(p => [...p, { key: '', name: '' }]) }; function removeEditAttrRow(i: number) { setEditTemplateAttrs(p => p.filter((_, j) => j !== i)) }; function updateEditAttr(i: number, f: 'key' | 'name', v: string) { setEditTemplateAttrs(p => p.map((a, j) => j === i ? { ...a, [f]: v } : a)) }
   function addEditFieldRow() { setEditTemplateFields(p => [...p, { key: '', label: '' }]) }; function removeEditFieldRow(i: number) { setEditTemplateFields(p => p.filter((_, j) => j !== i)) }; function updateEditField(i: number, f: 'key' | 'label', v: string) { setEditTemplateFields(p => p.map((a, j) => j === i ? { ...a, [f]: v } : a)) }
 
-  function validateCoreResources(resources: { slug: string }[]) {
-    const valid = resources.filter(r => r.slug.trim()); const slugs = new Set<string>()
-    for (const r of valid) { const s = r.slug.trim().toLowerCase(); if (slugs.has(s)) return `Duplicate slug: "${s}"`; slugs.add(s) }
-    return null
-  }
-
-  function buildResistancesPayload(resistances: ResistanceDef[]) {
-    return resistances.filter(r => r.name.trim()).map((r, idx) => ({
-      id: r.id,
-      name: r.name.trim(),
-      calculationType: r.calculationType,
-      components: (r.components || []).filter(c => c.name.trim()).map(c => ({
-        id: c.id,
-        name: c.name.trim(),
-        editableByPlayer: c.editableByPlayer,
-        defaultValue: c.defaultValue || '0',
-      })),
-      attributeModifiers: (r.attributeModifiers || [])
-        .filter(am => am.attributeId && am.attributeId.trim())
-        .map(am => ({
-          attributeId: am.attributeId,
-          enabled: am.enabled,
-        })),
-    }))
-  }
-
-  async function handleCreateTemplate(e: FormEvent) {
+  async function handleCreateTemplate(e: SubmitEvent) {
     e.preventDefault(); setTemplateError(null)
-    const ta = newTemplateAttrs.map(a => ({ key: a.key.trim(), name: a.name.trim() }))
-    if (ta.some(a => !a.key || !a.name)) { setTemplateError('All attributes must have a key and name'); return }
-    const ve = validateCoreResources(newCoreResources); if (ve) { setTemplateError(ve); return }
-    for (const p of newTemplateProfiles) { if ((p as any).targetMode === 'SELECTED_SKILLS' && ((p as any).targetSkillIds?.length ?? 0) === 0) { setTemplateError(`Profile "${p.name || 'Unnamed'}" uses "Selected Skills" mode but no skills are selected.`); return } }
-    // Validate AC configs have unique names
-    const acNames = newAcConfigs.filter(ac => ac.enabled && ac.name.trim()).map(ac => ac.name.trim().toLowerCase())
-    if (new Set(acNames).size !== acNames.length) { setTemplateError('Armor Class names must be unique'); return }
-    // Validate AC fields have keys
-    for (const ac of newAcConfigs) {
-      if (!ac.enabled || !ac.name.trim()) continue
-      for (const f of ac.fields) {
-        if (f.name.trim() && !f.key.trim()) { setTemplateError(`Armor Class "${ac.name.trim()}" has a component with an empty key. Please fill in the Key field or remove the component.`); return }
-      }
-    }
+    const ve = validateTemplateForm({ attrs: newTemplateAttrs, coreResources: newCoreResources, profiles: newTemplateProfiles, acConfigs: newAcConfigs })
+    if (ve) { setTemplateError(ve); return }
     setTemplateCreating(true)
     try {
       await api.post(`/adventures/${id}/templates`, {
-        name: newTemplateName.trim(), description: newTemplateDescription.trim() || undefined,
+        name: newTemplateName.trim(),
+        description: newTemplateDescription.trim() || undefined,
         isPublic: newIsPublic,
-        attributeModifiersEnabled: newAttrModifiersEnabled,
-        attributeModifierFormula: newAttrModifierFormula.trim() || undefined,
-        skillFormula: newSkillFormula.trim() || undefined,
-        attributes: ta,
-        templateFields: newFeatureCustomFields ? newTemplateFields.filter(f => f.key.trim() && f.label.trim()).map(f => ({ key: f.key.trim(), label: f.label.trim() })) : undefined,
-        skills: newFeatureSkills ? newTemplateSkills.filter(s => s.name.trim()).map(s => ({ name: s.name.trim(), description: s.description.trim() || undefined, attributeId: s.attributeId.trim() || undefined, allowedAttributeIds: s.allowedAttributeIds.filter(k => k.trim()), defaultAttributeId: s.defaultAttributeId.trim() || undefined })) : undefined,
-        skillModifierProfiles: newFeatureSkillProfiles ? newTemplateProfiles.filter(p => p.name.trim()).map(p => ({ name: p.name.trim(), targetMode: p.targetMode ?? 'ALL_SKILLS', targetSkillIds: p.targetSkillIds ?? [], options: p.options.filter(o => o.label.trim()).map(o => ({ label: o.label.trim(), value: o.value })) })) : undefined,
-        coreResources: newFeatureCoreResources ? newCoreResources.filter(r => r.slug.trim()).map(r => ({ displayName: r.displayName.trim() || r.slug.trim(), slug: r.slug.trim(), enabled: r.enabled, editableByPlayer: r.editableByPlayer, showNotes: r.showNotes, color: r.color || undefined })) : undefined,
-        armorClasses: newFeatureArmorClass ? buildAcPayload(newAcConfigs) : undefined,
-        characterSections: newFeatureCharacterSections ? newCharacterSections.filter(s => s.name.trim()).map(s => ({ name: s.name.trim() })) : undefined,
-        resistances: newFeatureResistance ? buildResistancesPayload(newResistances) : undefined,
+        ...buildTemplatePayload({
+          attributes: newTemplateAttrs, attributeModifiersEnabled: newAttrModifiersEnabled, attributeModifierFormula: newAttrModifierFormula, skillFormula: newSkillFormula,
+          templateFields: newTemplateFields, templateSkills: newTemplateSkills, skillModifierProfiles: newTemplateProfiles, coreResources: newCoreResources, acConfigs: newAcConfigs,
+          characterSections: newCharacterSections, resistances: newResistances,
+          featureSkills: newFeatureSkills, featureCustomFields: newFeatureCustomFields, featureCoreResources: newFeatureCoreResources, featureArmorClass: newFeatureArmorClass,
+          featureCharacterSections: newFeatureCharacterSections, featureSkillProfiles: newFeatureSkillProfiles, featureResistance: newFeatureResistance,
+        }),
       })
       resetNewTemplate(); fetchTemplates(); fetchAdventure()
     } catch (err) { setTemplateError(err instanceof Error ? err.message : 'Failed to create template') } finally { setTemplateCreating(false) }
@@ -486,59 +539,45 @@ export default function AdventureDetailPage() {
   }
   function cancelEditTemplate() { setEditingTemplateId(null); setEditingTemplateError(null) }
 
-  async function handleUpdateTemplate(e: FormEvent) {
+  async function handleUpdateTemplate(e: SubmitEvent) {
     e.preventDefault(); if (!editingTemplateId) return; setEditingTemplateError(null)
-    const ta = editTemplateAttrs.map(a => ({ key: a.key.trim(), name: a.name.trim() }))
-    if (ta.some(a => !a.key || !a.name)) { setEditingTemplateError('All attributes must have a key and name'); return }
-    const ve = validateCoreResources(editCoreResources); if (ve) { setEditingTemplateError(ve); return }
-    for (const p of editTemplateProfiles) { if ((p as any).targetMode === 'SELECTED_SKILLS' && ((p as any).targetSkillIds?.length ?? 0) === 0) { setEditingTemplateError(`Profile "${p.name || 'Unnamed'}" uses "Selected Skills" mode but no skills are selected.`); return } }
-    const acNames = editAcConfigs.filter(ac => ac.enabled && ac.name.trim()).map(ac => ac.name.trim().toLowerCase())
-    if (new Set(acNames).size !== acNames.length) { setEditingTemplateError('Armor Class names must be unique'); return }
-    // Validate AC fields have keys
-    for (const ac of editAcConfigs) {
-      if (!ac.enabled || !ac.name.trim()) continue
-      for (const f of ac.fields) {
-        if (f.name.trim() && !f.key.trim()) { setEditingTemplateError(`Armor Class "${ac.name.trim()}" has a component with an empty key. Please fill in the Key field or remove the component.`); return }
-      }
-    }
+    const ve = validateTemplateForm({ attrs: editTemplateAttrs, coreResources: editCoreResources, profiles: editTemplateProfiles, acConfigs: editAcConfigs })
+    if (ve) { setEditingTemplateError(ve); return }
     setTemplateSaving(true)
     try {
       await api.patch(`/adventures/${id}/templates/${editingTemplateId}`, {
-        name: editTemplateName.trim(), description: editTemplateDescription.trim(),
-        attributeModifiersEnabled: editAttrModifiersEnabled,
-        attributeModifierFormula: editAttrModifierFormula.trim() || undefined,
-        skillFormula: editSkillFormula.trim() || undefined,
-        attributes: ta,
-        templateFields: editFeatureCustomFields ? editTemplateFields.filter(f => f.key.trim() && f.label.trim()).map(f => ({ key: f.key.trim(), label: f.label.trim() })) : undefined,
-        skills: editFeatureSkills ? editTemplateSkills.filter(s => s.name.trim()).map(s => ({ name: s.name.trim(), description: s.description.trim() || undefined, attributeId: s.attributeId.trim() || undefined, allowedAttributeIds: s.allowedAttributeIds.filter(k => k.trim()), defaultAttributeId: s.defaultAttributeId.trim() || undefined })) : undefined,
-        skillModifierProfiles: editFeatureSkillProfiles ? editTemplateProfiles.filter(p => p.name.trim()).map(p => ({ name: p.name.trim(), targetMode: p.targetMode ?? 'ALL_SKILLS', targetSkillIds: p.targetSkillIds ?? [], options: p.options.filter(o => o.label.trim()).map(o => ({ label: o.label.trim(), value: o.value })) })) : undefined,
-        coreResources: editFeatureCoreResources ? editCoreResources.filter(r => r.slug.trim()).map(r => ({ displayName: r.displayName.trim() || r.slug.trim(), slug: r.slug.trim(), enabled: r.enabled, editableByPlayer: r.editableByPlayer, showNotes: r.showNotes, color: r.color || undefined })) : undefined,
-        armorClasses: editFeatureArmorClass ? buildAcPayload(editAcConfigs) : undefined,
-        characterSections: editFeatureCharacterSections ? editCharacterSections.filter(s => s.name.trim()).map(s => ({ id: s.id, name: s.name.trim() })) : undefined,
-        resistances: editFeatureResistance ? buildResistancesPayload(editResistances) : undefined,
+        name: editTemplateName.trim(),
+        description: editTemplateDescription.trim(),
+        ...buildTemplatePayload({
+          attributes: editTemplateAttrs, attributeModifiersEnabled: editAttrModifiersEnabled, attributeModifierFormula: editAttrModifierFormula, skillFormula: editSkillFormula,
+          templateFields: editTemplateFields, templateSkills: editTemplateSkills, skillModifierProfiles: editTemplateProfiles, coreResources: editCoreResources, acConfigs: editAcConfigs,
+          characterSections: editCharacterSections, resistances: editResistances,
+          featureSkills: editFeatureSkills, featureCustomFields: editFeatureCustomFields, featureCoreResources: editFeatureCoreResources, featureArmorClass: editFeatureArmorClass,
+          featureCharacterSections: editFeatureCharacterSections, featureSkillProfiles: editFeatureSkillProfiles, featureResistance: editFeatureResistance,
+        }),
       })
       cancelEditTemplate(); fetchTemplates()
     } catch (err) { setEditingTemplateError(err instanceof Error ? err.message : 'Failed to update template') } finally { setTemplateSaving(false) }
   }
 
   async function handleDeleteTemplate(tid: string) { try { await api.delete(`/adventures/${id}/templates/${tid}`); fetchTemplates(); fetchAdventure() } catch { } }
-  async function handleTemplateAttached() { fetchSnapshot(); fetchTemplates(); fetchAdventure(); setSnapshotKey(k => k + 1) }
-  async function handleTemplateDetached() { setSnapshotData(null); setTemplateSource(null); fetchAdventure(); setSnapshotKey(k => k + 1) }
-  async function handleCreateCharacter(e: FormEvent) {
-    e.preventDefault(); setNewCharError(null); if (!newCharName.trim()) return; setNewCharCreating(true)
+  async function handleTemplateAttached() { fetchSnapshot(); fetchTemplates(); fetchAdventure() }
+  async function handleTemplateDetached() { setSnapshotData(null); setTemplateSource(null); fetchAdventure() }
+  async function handleCreateCharacter(e: SubmitEvent) {
+    e.preventDefault(); setNewCharError(null); if (!newCharName.trim()) { return; } setNewCharCreating(true)
     try { const s = await api.post<{ id: string }>('/character-sheets/from-campaign', { characterName: newCharName.trim(), adventureId: id }); router.push(`/dashboard/character-sheets/${s.id}`) } catch (err) { setNewCharError(err instanceof Error ? err.message : 'Failed to create character') } finally { setNewCharCreating(false) }
   }
-  async function handleLinkCharacter(e: FormEvent) {
+  async function handleLinkCharacter(e: SubmitEvent) {
     e.preventDefault(); setLinkCharError(null); if (!linkSheetId) return; setLinkCharLinking(true)
     try { await api.post(`/character-sheets/${linkSheetId}/link`, { adventureId: id }); setShowLinkCharForm(false); setLinkSheetId(''); fetchCampaignCharacters() } catch (err) { setLinkCharError(err instanceof Error ? err.message : 'Failed to link character') } finally { setLinkCharLinking(false) }
   }
   async function handleRemoveCharacter(sid: string) { try { await api.post(`/character-sheets/${sid}/unlink`); fetchCampaignCharacters() } catch { } }
-  async function handleUpdate(e: FormEvent) {
+  async function handleUpdate(e: SubmitEvent) {
     e.preventDefault(); setEditError(null); setSaving(true)
     try { const u = await api.patch<Adventure>(`/adventures/${id}`, { name: editName.trim() || undefined, campaign: editCampaign.trim() || undefined, synopsis: editSynopsis.trim() || undefined, maxPlayers: editMaxPlayers, sessionWeekday: editSessionWeekday || undefined, sessionTime: editSessionTime || undefined, sessionType: editSessionType || undefined }); setAdventure(u); setEditing(false) } catch (err) { setEditError(err instanceof Error ? err.message : 'Failed to update') } finally { setSaving(false) }
   }
   async function handleDelete() { setDeleteError(null); setDeleting(true); try { await api.delete(`/adventures/${id}`); router.push('/dashboard') } catch (err) { setDeleteError(err instanceof Error ? err.message : 'Failed to delete'); setDeleting(false); setConfirmDelete(false) } }
-  async function handleInviteByEmail(e: FormEvent) { e.preventDefault(); setInviteError(null); setInviteSending(true); try { await api.post(`/adventures/${id}/invitations/email`, { email: inviteEmail.trim() }); setInviteEmail(''); fetchInvitations() } catch (err) { setInviteError(err instanceof Error ? err.message : 'Failed to send invitation') } finally { setInviteSending(false) } }
+  async function handleInviteByEmail(e: SubmitEvent) { e.preventDefault(); setInviteError(null); setInviteSending(true); try { await api.post(`/adventures/${id}/invitations/email`, { email: inviteEmail.trim() }); setInviteEmail(''); fetchInvitations() } catch (err) { setInviteError(err instanceof Error ? err.message : 'Failed to send invitation') } finally { setInviteSending(false) } }
   async function handleInviteByLink() { setInviteError(null); setInviteSending(true); try { const r = await api.post<{ inviteUrl: string }>(`/adventures/${id}/invitations/link`); setInviteLink(r.inviteUrl); fetchInvitations() } catch (err) { setInviteError(err instanceof Error ? err.message : 'Failed to create link') } finally { setInviteSending(false) } }
   async function handleRevokeInvitation(invId: string) { try { await api.post(`/invitations/${invId}/revoke`); fetchInvitations() } catch { } }
   async function handleRemoveMember(uid: string) { try { await api.delete(`/adventures/${id}/members/${uid}`); fetchMembers() } catch { } }
@@ -570,6 +609,8 @@ export default function AdventureDetailPage() {
   if (fetching) return <div className="max-w-5xl mx-auto w-full py-10"><LoadingSkeleton variant="page" /></div>
   if (!adventure) return <div className="max-w-5xl mx-auto w-full py-10"><EmptyState icon="🗺️" title="Adventure Not Found" description="This adventure doesn't exist or you don't have access to it." actionLabel="Back to Dashboard" actionHref="/dashboard" /></div>
 
+  const hasSessionInfo = Boolean((adventure as any).sessionWeekday || (adventure as any).sessionTime || (adventure as any).sessionType)
+
   return (
     <div className="max-w-5xl mx-auto w-full relative">
       {/* Ambient glow */}
@@ -583,7 +624,7 @@ export default function AdventureDetailPage() {
         <hr className="divider" />
         {activeTab === 'campaign' && (<div className="space-y-6">
           {/* Session Information */}
-          {(adventure as any).sessionWeekday || (adventure as any).sessionTime || (adventure as any).sessionType ? (
+          {hasSessionInfo ? (
             <div className="card p-4">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Session Information</h3>
               <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
@@ -612,47 +653,43 @@ export default function AdventureDetailPage() {
             <CharactersSection characters={campaignCharacters} isGM={isGM} userId={user?.id ?? ''} snapshotName={snapshotData?.snapshot?.name ?? null} userSheets={userSheets} showNewCharForm={showNewCharForm} showLinkCharForm={showLinkCharForm} newCharName={newCharName} newCharError={newCharError} newCharCreating={newCharCreating} linkSheetId={linkSheetId} linkCharError={linkCharError} linkCharLinking={linkCharLinking} onNewCharClick={() => { setShowNewCharForm(true); setShowLinkCharForm(false) }} onLinkCharClick={() => { setShowLinkCharForm(true); setShowNewCharForm(false); fetchUserSheets() }} onCancelNewChar={() => { setShowNewCharForm(false); setNewCharName(''); setNewCharError(null) }} onCancelLinkChar={() => { setShowLinkCharForm(false); setLinkSheetId(''); setLinkCharError(null) }} onCreateCharacter={handleCreateCharacter} onLinkCharacter={handleLinkCharacter} onNewCharNameChange={setNewCharName} onLinkSheetChange={setLinkSheetId} onRemoveCharacter={handleRemoveCharacter} onViewCharacter={sid => router.push(`/dashboard/character-sheets/${sid}`)} />
           </CollapsibleSection>
           {isGM && (
-            <CollapsibleSection title="NPCs &amp; Mobs" accent expanded={showNpcsMobs} onToggle={() => setShowNpcsMobs(!showNpcsMobs)}>
-              <NpcsMobsSection adventureId={id} isGM={isGM} refreshKey={npcRefreshKey} />
-            </CollapsibleSection>
-          )}
-          {isGM && (
-            <CollapsibleSection title="Campaign Notebook" accent expanded={showNotebook} onToggle={() => setShowNotebook(!showNotebook)}>
-              <p className="text-sm text-muted-foreground mb-3">
-                Your private notebook for this campaign. Players cannot see this.
-              </p>
-              <button
-                type="button"
-                onClick={() => setNotebookOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                Open Notebook
-              </button>
-            </CollapsibleSection>
-          )}
-          {isGM && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Publishing</h3>
-              <VisibilityToggle
-                isPublic={(adventure as any).isPublic ?? false}
-                loading={visibilityLoading}
-                onToggle={handleVisibilityToggle}
-              />
-            </div>
-          )}
-          {isGM && (
-            <div className="space-y-4">
-              <JoinRequestPanel
-                requests={joinRequests}
-                loading={joinRequestsLoading}
-                onAccept={handleAcceptRequest}
-                onReject={handleRejectRequest}
-                processingIds={processingIds}
-              />
-            </div>
+            <>
+              <CollapsibleSection title="NPCs &amp; Mobs" accent expanded={showNpcsMobs} onToggle={() => setShowNpcsMobs(!showNpcsMobs)}>
+                <NpcsMobsSection adventureId={id} isGM={isGM} refreshKey={npcRefreshKey} />
+              </CollapsibleSection>
+              <CollapsibleSection title="Campaign Notebook" accent expanded={showNotebook} onToggle={() => setShowNotebook(!showNotebook)}>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Your private notebook for this campaign. Players cannot see this.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setNotebookOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Open Notebook
+                </button>
+              </CollapsibleSection>
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Publishing</h3>
+                <VisibilityToggle
+                  isPublic={(adventure as any).isPublic ?? false}
+                  loading={visibilityLoading}
+                  onToggle={handleVisibilityToggle}
+                />
+              </div>
+              <div className="space-y-4">
+                <JoinRequestPanel
+                  requests={joinRequests}
+                  loading={joinRequestsLoading}
+                  onAccept={handleAcceptRequest}
+                  onReject={handleRejectRequest}
+                  processingIds={processingIds}
+                />
+              </div>
+            </>
           )}
         </div>)}
         {activeTab === 'templates' && (() => {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import Link from 'next/link'
@@ -52,7 +52,7 @@ export default function NewAdventurePage() {
     'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
   ]
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: SubmitEvent) {
     e.preventDefault()
     setError(null)
 

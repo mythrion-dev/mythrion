@@ -45,7 +45,7 @@ export class FormulaService {
         throw new BadRequestException('Formula must return a number')
       }
 
-      if (!isFinite(result)) {
+      if (!Number.isFinite(result)) {
         throw new BadRequestException('Formula result must be a finite number')
       }
 

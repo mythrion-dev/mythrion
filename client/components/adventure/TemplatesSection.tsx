@@ -1,6 +1,6 @@
 'use client'
 
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import type { CoreResource, AcConfigDraft, ArmorClassAttributeModifierDraft, ResistanceDef } from '@/components/adventure/types'
 import { TemplateRow } from '@/components/adventure/TemplateRow'
 import { TemplateForm } from '@/components/adventure/TemplateForm'
@@ -18,10 +18,10 @@ export function TemplatesSection(props: {
   templates: TemplateData[]; isGM: boolean; showNewTemplate: boolean; editingTemplateId: string | null
   newTemplateName: string; newTemplateDescription: string; newTemplateAttrs: { key: string; name: string }[]; newAttrModifierFormula: string; newSkillFormula: string; newTemplateFields?: { key: string; label: string }[]; templateError: string | null; templateCreating: boolean
   editTemplateName: string; editTemplateDescription: string; editTemplateAttrs: { key: string; name: string }[]; editAttrModifierFormula: string; editSkillFormula: string; editTemplateFields?: { key: string; label: string }[]; editingTemplateError: string | null; templateSaving: boolean
-  onNewClick: () => void; onCancelNew: () => void; onCreateTemplate: (e: FormEvent) => void; onNameChange: (v: string) => void; onDescriptionChange: (v: string) => void
+  onNewClick: () => void; onCancelNew: () => void; onCreateTemplate: (e: SubmitEvent) => void; onNameChange: (v: string) => void; onDescriptionChange: (v: string) => void
   onAddAttr: () => void; onRemoveAttr: (i: number) => void; onUpdateAttr: (i: number, f: 'key' | 'name', v: string) => void
   onAddField?: () => void; onRemoveField?: (i: number) => void; onUpdateField?: (i: number, f: 'key' | 'label', v: string) => void
-  onStartEdit: (t: TemplateData) => void; onCancelEdit: () => void; onUpdateTemplate: (e: FormEvent) => void; onDeleteTemplate: (id: string) => void
+  onStartEdit: (t: TemplateData) => void; onCancelEdit: () => void; onUpdateTemplate: (e: SubmitEvent) => void; onDeleteTemplate: (id: string) => void
   onEditNameChange: (v: string) => void; onEditDescriptionChange: (v: string) => void; onAddEditAttr: () => void; onRemoveEditAttr: (i: number) => void; onUpdateEditAttr: (i: number, f: 'key' | 'name', v: string) => void
   onAddEditField?: () => void; onRemoveEditField?: (i: number) => void; onUpdateEditField?: (i: number, f: 'key' | 'label', v: string) => void
   newTemplateSkills?: { name: string; description: string; attributeId: string; allowedAttributeIds: string[]; defaultAttributeId: string }[]

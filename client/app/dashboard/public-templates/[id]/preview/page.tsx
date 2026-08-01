@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useReducer, useCallback, useMemo, useRef, type FormEvent } from 'react'
+import { useState, useEffect, useReducer, useCallback, useMemo, useRef, type SubmitEvent } from 'react'
 import { useParams } from 'next/navigation'
 import { API_URL } from '@/lib/api'
 import { PreviewBanner } from '@/components/community/PreviewBanner'
@@ -369,7 +369,7 @@ export default function TemplatePreviewPage() {
     setAbilityError(null)
   }, [])
 
-  const handleCreateAbility = useCallback(async (e: FormEvent) => {
+  const handleCreateAbility = useCallback(async (e: SubmitEvent) => {
     e.preventDefault()
     const s = stateRef.current
     if (!s || !newAbility.name.trim()) return
@@ -522,7 +522,7 @@ export default function TemplatePreviewPage() {
     dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
   }, [dispatch])
 
-  const handleCreateSummonAbility = useCallback(async (summonId: string, e: FormEvent) => {
+  const handleCreateSummonAbility = useCallback(async (summonId: string, e: SubmitEvent) => {
     e.preventDefault()
     const s = stateRef.current
     if (!s || !newAbility.name.trim()) return
@@ -563,7 +563,7 @@ export default function TemplatePreviewPage() {
     setItemError(null)
   }, [])
 
-  const handleCreateItem = useCallback(async (e: FormEvent) => {
+  const handleCreateItem = useCallback(async (e: SubmitEvent) => {
     e.preventDefault()
     if (!newItem.name.trim()) return
     setItemSaving(true)
@@ -629,7 +629,7 @@ export default function TemplatePreviewPage() {
     setSectionEntrySaving(false)
   }, [])
 
-  const handleCreateSectionEntry = useCallback(async (sectionId: string, e: FormEvent) => {
+  const handleCreateSectionEntry = useCallback(async (sectionId: string, e: SubmitEvent) => {
     e.preventDefault()
     if (!newSectionEntryForm.name.trim()) return
     setSectionEntrySaving(true)

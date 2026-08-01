@@ -6,7 +6,7 @@ import {
   Inject,
 } from '@nestjs/common'
 import { PrismaService } from '../prisma.service.js'
-import { createHash, randomBytes } from 'crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import type {
   PaymentGateway,
   CreateSubscriptionResult as GatewayCreateResult,

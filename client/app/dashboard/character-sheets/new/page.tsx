@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, type FormEvent } from 'react'
+import { useState, useEffect, useCallback, type SubmitEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import Link from 'next/link'
@@ -109,7 +109,7 @@ export default function NewCharacterSheetPage() {
 
   // ── Submission ──
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: SubmitEvent) {
     e.preventDefault()
     if (!selectedTemplateId) return
 

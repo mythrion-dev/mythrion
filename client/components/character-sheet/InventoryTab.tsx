@@ -2,7 +2,7 @@
 
 import { InlineClickEdit } from '@/components/character-sheet'
 import type { InventoryItem, SheetPermissions } from './types'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 
 export function InventoryTab({
   inventoryItems, permissions,
@@ -24,7 +24,7 @@ export function InventoryTab({
   newItem: { name: string; weight: string; cost: string; description: string }
   setNewItem: React.Dispatch<React.SetStateAction<{ name: string; weight: string; cost: string; description: string }>>
   itemSaving: boolean; itemError: string | null
-  handleCreateItem: (e: FormEvent) => Promise<void>
+  handleCreateItem: (e: SubmitEvent) => Promise<void>
   resetNewItem: () => void
   expandedItems: Record<string, boolean>
   setExpandedItems: React.Dispatch<React.SetStateAction<Record<string, boolean>>>

@@ -3,19 +3,19 @@
 import { useCallback } from 'react'
 
 interface NotebookPageItemProps {
-  id: string
-  title: string
-  isActive: boolean
+  readonly id: string
+  readonly title: string
+  readonly isActive: boolean
   /** Visually indent the page (e.g. when inside a folder) */
-  indented?: boolean
+  readonly indented?: boolean
   /** Show a folder label next to the page (search results) */
-  folderName?: string | null
-  onClick: (id: string) => void
-  onDelete: (id: string) => void
+  readonly folderName?: string | null
+  readonly onClick: (id: string) => void
+  readonly onDelete: (id: string) => void
   /** Fired when drag starts on this page — dataTransfer gets pageId */
-  onDragStart?: (pageId: string, e: React.DragEvent) => void
+  readonly onDragStart?: (pageId: string, e: React.DragEvent) => void
   /** Fired on right-click / long press for context menu */
-  onContextMenu?: (pageId: string, e: React.MouseEvent) => void
+  readonly onContextMenu?: (pageId: string, e: React.MouseEvent) => void
 }
 
 export function NotebookPageItem({
@@ -28,7 +28,7 @@ export function NotebookPageItem({
   onDelete,
   onDragStart,
   onContextMenu,
-}: NotebookPageItemProps) {
+}: Readonly<NotebookPageItemProps>) {
   const handleDragStart = useCallback(
     (e: React.DragEvent) => {
       e.dataTransfer.setData('text/plain', id)

@@ -1,4 +1,4 @@
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 
 export interface SheetAttribute { id: string; attributeId: string; value: string; attribute: { id: string; key: string; name: string } }
 export interface FieldValue { id: string; templateFieldId: string; value: string; templateField: { id: string; key: string; label: string } }

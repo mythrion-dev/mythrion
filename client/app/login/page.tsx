@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState, type FormEvent, type MouseEvent } from 'react'
+import { Suspense, useState, type SubmitEvent, type MouseEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { API_URL, setInvitationToken } from '@/lib/api'
@@ -40,7 +40,7 @@ function LoginForm() {
     window.location.href = `${API_URL}/auth/google?state=${encodeURIComponent(state)}`
   }
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: SubmitEvent) {
     e.preventDefault()
     setError(null)
     setSubmitting(true)

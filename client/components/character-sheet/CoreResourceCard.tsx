@@ -69,7 +69,7 @@ export function CoreResourceCard({ resource, value, permissions, onSave, onModif
       {canEdit && onModify && (
         <div className="space-y-2 pt-2 border-t border-border">
           <div className="flex items-center gap-2">
-            <NumericInput min={0} className="py-1 text-xs flex-1" inputClassName="!px-2 !py-1" wrapperClassName="flex-1" value={modifier || ''} placeholder="Amount" onChange={e => setModifier(parseInt(e.target.value, 10) || 0)} />
+            <NumericInput min={0} className="py-1 text-xs flex-1" inputClassName="!px-2 !py-1" wrapperClassName="flex-1" value={modifier || ''} placeholder="Amount" onChange={e => setModifier(Number.parseInt(e.target.value, 10) || 0)} />
           </div>
           <div className="flex gap-2">
             <button type="button" onClick={() => { onModify(value.coreResourceId, Math.abs(modifier)); setModifier(0) }} disabled={!modifier} className="btn-primary text-xs flex-1 py-1">+ Heal / Recover</button>
