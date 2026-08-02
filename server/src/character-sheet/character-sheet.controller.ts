@@ -203,6 +203,32 @@ export class CharacterSheetController {
     return this.sheetService.removeSummonSkill(summonSkillId, req.user.sub)
   }
 
+  // ── Summon Resistances ──
+
+  @Post(':id/abilities/:abilityId/summon-resistances')
+  addSummonResistance(
+    @Req() req: AuthenticatedRequest,
+    @Param('abilityId') abilityId: string,
+    @Body('name') name: string,
+    @Body('value') value: string,
+  ) {
+    return this.sheetService.addSummonResistance(abilityId, name, value ?? '', req.user.sub)
+  }
+
+  @Patch(':id/abilities/:abilityId/summon-resistances/:summonResistanceId')
+  updateSummonResistance(
+    @Req() req: AuthenticatedRequest,
+    @Param('summonResistanceId') summonResistanceId: string,
+    @Body() dto: { name?: string; value?: string },
+  ) {
+    return this.sheetService.updateSummonResistance(summonResistanceId, req.user.sub, dto)
+  }
+
+  @Delete(':id/abilities/:abilityId/summon-resistances/:summonResistanceId')
+  removeSummonResistance(@Req() req: AuthenticatedRequest, @Param('summonResistanceId') summonResistanceId: string) {
+    return this.sheetService.removeSummonResistance(summonResistanceId, req.user.sub)
+  }
+
   // ── Summon Attributes ──
 
   @Patch(':id/abilities/:abilityId/summon-attributes/:attributeId')

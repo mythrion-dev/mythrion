@@ -477,6 +477,7 @@ function SummonCardSection({
   sheetId, updateAbilities,
   saveSummonAttribute, saveSummonAcValue, saveSummonHealth,
   handleAddSummonSkill, handleUpdateSummonSkill, handleRemoveSummonSkill,
+  handleAddSummonResistance, handleUpdateSummonResistance, handleRemoveSummonResistance,
 }: Readonly<{
   ability: Ability; template: CharacterSheet['template']
   summonModifierResults: Record<string, Record<string, number | null>>
@@ -489,6 +490,9 @@ function SummonCardSection({
   handleAddSummonSkill: (abilityId: string, name: string, manualValue: number) => Promise<void>
   handleRemoveSummonSkill: (abilityId: string, summonSkillId: string) => Promise<void>
   handleUpdateSummonSkill: (abilityId: string, summonSkillId: string, name: string, manualValue: number) => Promise<void>
+  handleAddSummonResistance: (abilityId: string, name: string, value: string) => Promise<void>
+  handleRemoveSummonResistance: (abilityId: string, summonResistanceId: string) => Promise<void>
+  handleUpdateSummonResistance: (abilityId: string, summonResistanceId: string, name: string, value: string) => Promise<void>
 }>) {
   const attributeDisplays: AttributeDisplay[] = (ability.summonAttributes ?? []).map(sa => {
     const attr = template.attributes.find(at => at.id === sa.attributeId)
@@ -516,6 +520,9 @@ function SummonCardSection({
         handleAddSummonSkill={handleAddSummonSkill}
         handleUpdateSummonSkill={handleUpdateSummonSkill}
         handleRemoveSummonSkill={handleRemoveSummonSkill}
+          handleAddSummonResistance={handleAddSummonResistance}
+          handleUpdateSummonResistance={handleUpdateSummonResistance}
+          handleRemoveSummonResistance={handleRemoveSummonResistance}
         saveDescription={async (abilityId, value) => {
           try {
             await api.patch(`/character-sheets/${sheetId}/abilities/${abilityId}`, { description: value.trim() || null })
@@ -616,6 +623,7 @@ export function AbilitiesTab({
   summonModifierResults, summonAcResults,
   saveSummonAttribute, saveSummonAcValue, saveSummonHealth,
   handleAddSummonSkill, handleRemoveSummonSkill, handleUpdateSummonSkill,
+  handleAddSummonResistance, handleUpdateSummonResistance, handleRemoveSummonResistance,
   handleCreateSummonAbility,
 }: Readonly<{
   abilities: Ability[]; permissions: SheetPermissions; sheetId: string
@@ -644,6 +652,9 @@ export function AbilitiesTab({
   handleRemoveSummonSkill: (abilityId: string, summonSkillId: string) => Promise<void>
   handleUpdateSummonSkill: (abilityId: string, summonSkillId: string, name: string, manualValue: number) => Promise<void>
   handleCreateSummonAbility: (summonId: string, e: SubmitEvent) => Promise<void>
+  handleAddSummonResistance: (abilityId: string, name: string, value: string) => Promise<void>
+  handleRemoveSummonResistance: (abilityId: string, summonResistanceId: string) => Promise<void>
+  handleUpdateSummonResistance: (abilityId: string, summonResistanceId: string, name: string, value: string) => Promise<void>
 }>) {
   const canEditAbilities = permissions.canEditAbilities
   const [confirmDeleteAbility, setConfirmDeleteAbility] = useState<string | null>(null)
@@ -786,8 +797,10 @@ export function AbilitiesTab({
                         handleAddSummonSkill={handleAddSummonSkill}
                         handleUpdateSummonSkill={handleUpdateSummonSkill}
                         handleRemoveSummonSkill={handleRemoveSummonSkill}
+                        handleAddSummonResistance={handleAddSummonResistance}
+                        handleUpdateSummonResistance={handleUpdateSummonResistance}
+                        handleRemoveSummonResistance={handleRemoveSummonResistance}
                       />
-
                       {/* Child abilities */}
                       <div className="mt-6 space-y-3">
                           <h4 className="text-xs font-semibold text-muted uppercase tracking-wider">Abilities</h4>

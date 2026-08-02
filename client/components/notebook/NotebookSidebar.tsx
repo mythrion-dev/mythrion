@@ -150,10 +150,51 @@ export function NotebookSidebar({
     if (onClose && isOpen) onClose()
   }, [isOpen, onClose])
 
-  const handleClose = useCallback(() => {
+  // Minimize hides the panel while the aside stays mounted, so all editor state (folders,
+  // active note, caret, undo history, pending autosave) survives. Must call onClose() so the
+  // parent's forceOpen flag resets — otherwise the tab/forceOpen path can't reopen it.
+  const handleMinimize = useCallback(() => {
     setIsOpen(false)
     onClose?.()
   }, [onClose])
+
+  // Full close: flush pending autosave content, then reset every piece of state so reopening
+  // behaves like a fresh launch (root view, no folder expanded, no note selected).
+  const handleClose = useCallback(() => {
+    // Flush any pending autosave before discarding the editor state (mirrors the back button)
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    if (pendingContentRef.current && activePageId) {
+      api.patch(`/adventures/${adventureId}/notebook/pages/${activePageId}`, {
+        content: pendingContentRef.current,
+      }).catch(() => {})
+    }
+    // Null pending content + retry counter so the untracked retry setTimeout (queueSave)
+    // becomes a no-op and the debounced save can't fire after close.
+    pendingContentRef.current = null
+    retryCountRef.current = 0
+    try {
+      localStorage.removeItem(buildLSKey(adventureId, userId))
+    } catch {
+      // ignore storage errors (privacy mode, quota)
+    }
+    setNotebook(null)
+    setActivePageId(null)
+    setExpandedFolders([])
+    setSearchQuery('')
+    setSaving(false)
+    setSaveError(null)
+    setError(null)
+    setEditingTitle(false)
+    setTitleValue('')
+    setCreatingFolder(false)
+    setCreatingPage(false)
+    setContextMenu(null)
+    setFolderDeleteDialog(null)
+    setDragOverFolderId(null)
+    setDragOverRoot(false)
+    setIsOpen(false)
+    onClose?.()
+  }, [adventureId, activePageId, onClose, userId])
 
   /* ── Fetch notebook ── */
   const fetchNotebook = useCallback(async () => {
@@ -705,9 +746,21 @@ export function NotebookSidebar({
             )}
             <button
               type="button"
+              onClick={handleMinimize}
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
+              aria-label="Minimize notebook"
+              title="Minimize"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              type="button"
               onClick={handleClose}
               className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
               aria-label="Close notebook"
+              title="Close"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

@@ -51,6 +51,10 @@ export interface SummonSkillData {
   id: string; abilityId: string; name: string; manualValue: number
 }
 
+export interface SummonResistanceData {
+  id: string; abilityId: string; name: string; value: string
+}
+
 export interface Ability {
   id: string; name: string; type: string; description: string | null; notes: string | null; order: number
   summonId?: string | null
@@ -59,6 +63,7 @@ export interface Ability {
   summonAcValues: SummonAcValue[]
   summonHealth: SummonHealth | null
   summonSkills?: SummonSkillData[]
+  summonResistances?: SummonResistanceData[]
   childAbilities?: Ability[]
 }
 export interface InventoryItem { id: string; name: string; weight: number | null; cost: string | null; description: string | null; order: number }

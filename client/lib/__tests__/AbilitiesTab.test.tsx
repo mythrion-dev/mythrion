@@ -223,6 +223,9 @@ const defaultSaveSummonHealth = vi.fn()
 const defaultHandleAddSummonSkill = vi.fn()
 const defaultHandleRemoveSummonSkill = vi.fn()
 const defaultHandleUpdateSummonSkill = vi.fn()
+const defaultHandleAddSummonResistance = vi.fn()
+const defaultHandleRemoveSummonResistance = vi.fn()
+const defaultHandleUpdateSummonResistance = vi.fn()
 const defaultHandleCreateSummonAbility = vi.fn()
 const defaultSummonModifierResults = {}
 const defaultSummonAcResults = {}
@@ -278,6 +281,9 @@ function defaultProps(overrides: Record<string, unknown> = {}) {
     handleAddSummonSkill: defaultHandleAddSummonSkill,
     handleRemoveSummonSkill: defaultHandleRemoveSummonSkill,
     handleUpdateSummonSkill: defaultHandleUpdateSummonSkill,
+    handleAddSummonResistance: defaultHandleAddSummonResistance,
+    handleRemoveSummonResistance: defaultHandleRemoveSummonResistance,
+    handleUpdateSummonResistance: defaultHandleUpdateSummonResistance,
     handleCreateSummonAbility: defaultHandleCreateSummonAbility,
     ...overrides,
   }
