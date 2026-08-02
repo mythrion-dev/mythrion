@@ -218,7 +218,6 @@ export function TemplatePickerModal({
               {!fetchingMine && !mineError && filteredMine.map(t => (
                 <TemplatePickerRow
                   key={t.id}
-                  id={t.id}
                   name={t.name}
                   description={t.description}
                   campaign={t.campaign}
@@ -258,7 +257,6 @@ export function TemplatePickerModal({
               {!fetchingCommunity && !communityError && filteredCommunity.map(t => (
                 <TemplatePickerRow
                   key={t.id}
-                  id={t.id}
                   name={t.name}
                   description={t.description}
                   campaign={t.campaign}
