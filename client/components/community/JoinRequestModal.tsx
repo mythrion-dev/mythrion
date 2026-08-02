@@ -3,13 +3,13 @@
 import { useEffect, useRef, useCallback } from 'react'
 
 interface JoinRequestModalProps {
-  open: boolean
-  message: string
-  onMessageChange: (value: string) => void
-  onCancel: () => void
-  onConfirm: () => void
-  loading: boolean
-  error: string | null
+  readonly open: boolean
+  readonly message: string
+  readonly onMessageChange: (value: string) => void
+  readonly onCancel: () => void
+  readonly onConfirm: () => void
+  readonly loading: boolean
+  readonly error: string | null
 }
 
 const MAX_MESSAGE_LENGTH = 500
@@ -22,9 +22,9 @@ export function JoinRequestModal({
   onConfirm,
   loading,
   error,
-}: JoinRequestModalProps) {
+}: Readonly<JoinRequestModalProps>) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const cardRef = useRef<HTMLDivElement>(null)
+  const cardRef = useRef<HTMLDialogElement>(null)
 
   // Focus trap — keep focus within the modal while open
   const handleKeyDown = useCallback(
@@ -46,11 +46,9 @@ export function JoinRequestModal({
             e.preventDefault()
             last.focus()
           }
-        } else {
-          if (document.activeElement === last) {
-            e.preventDefault()
-            first.focus()
-          }
+        } else if (document.activeElement === last) {
+          e.preventDefault()
+          first.focus()
         }
       }
     },
@@ -93,16 +91,18 @@ export function JoinRequestModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50"
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/50 border-0"
         onClick={onCancel}
+        aria-label="Close modal"
       />
 
       {/* Card */}
-      <div
+      <dialog
         ref={cardRef}
-        className="card !p-6 max-w-sm w-full space-y-4 relative z-10"
-        role="dialog"
+        open
+        className="card !p-6 max-w-sm w-full space-y-4 relative z-10 m-0"
         aria-modal="true"
         aria-labelledby="join-modal-title"
       >
@@ -186,7 +186,7 @@ export function JoinRequestModal({
             )}
           </button>
         </div>
-      </div>
+      </dialog>
     </div>
   )
 }

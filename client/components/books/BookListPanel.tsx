@@ -18,9 +18,9 @@ interface Book {
 /* ── Props ── */
 
 interface BookListPanelProps {
-  adventureId: string
-  isGM: boolean
-  onSelectBook: (bookId: string | null) => void
+  readonly adventureId: string
+  readonly isGM: boolean
+  readonly onSelectBook: (bookId: string | null) => void
 }
 
 /* ── Helpers ── */
@@ -43,7 +43,7 @@ function formatDate(iso: string): string {
 
 /* ── Component ── */
 
-export function BookListPanel({ adventureId, isGM, onSelectBook }: BookListPanelProps) {
+export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<BookListPanelProps>) {
   const [books, setBooks] = useState<Book[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -63,7 +63,6 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: BookListPanel
 
   // Replace file state
   const [replacingId, setReplacingId] = useState<string | null>(null)
-  const [replacing, setReplacing] = useState(false)
 
   /* ── Fetch books ── */
   const fetchBooks = useCallback(async () => {
@@ -150,7 +149,6 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: BookListPanel
 
   /* ── Replace file ── */
   async function handleReplace(bookId: string, file: File) {
-    setReplacing(true)
     setError(null)
 
     try {
@@ -174,8 +172,6 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: BookListPanel
       await fetchBooks()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to replace file')
-    } finally {
-      setReplacing(false)
     }
   }
 
@@ -261,8 +257,8 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: BookListPanel
       {/* Loading state */}
       {loading && (
         <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="card !p-4">
+          {Array.from({ length: 3 }, (_, i) => `skel-${i}`).map((key) => (
+            <div key={key} className="card !p-4">
               <div className="skeleton h-5 w-48 mb-2" />
               <div className="skeleton h-3 w-32" />
             </div>

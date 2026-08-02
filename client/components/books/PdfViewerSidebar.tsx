@@ -15,16 +15,16 @@ interface Book {
 }
 
 interface PdfViewerSidebarProps {
-  adventureId: string
-  isGM: boolean
+  readonly adventureId: string
+  readonly isGM: boolean
   /** Non-null opens sidebar in viewer mode for this book. Null → closed. */
-  bookId: string | null
+  readonly bookId: string | null
   /** Called when sidebar should close entirely. */
-  onClose: () => void
+  readonly onClose: () => void
   /** Called when user selects a book from the internal list (character-sheet use). */
-  onBookSelect?: (bookId: string) => void
+  readonly onBookSelect?: (bookId: string) => void
   /** Hide the floating toggle button (adventure-page use where BookListPanel drives it). */
-  hideToggle?: boolean
+  readonly hideToggle?: boolean
 }
 
 /* ── Constants ── */
@@ -77,7 +77,7 @@ export function PdfViewerSidebar({
   onClose,
   onBookSelect,
   hideToggle = false,
-}: PdfViewerSidebarProps) {
+}: Readonly<PdfViewerSidebarProps>) {
   /* ── Core state ── */
   const [isOpen, setIsOpen] = useState(false)
   const [internalBookId, setInternalBookId] = useState<string | null>(null)
@@ -236,7 +236,7 @@ export function PdfViewerSidebar({
     <>
       {/* Mobile overlay */}
       {sidebarVisible && (
-        <div className="fixed inset-0 z-40 bg-black/40 sm:hidden" onClick={handleClose} />
+        <button type="button" className="fixed inset-0 z-40 bg-black/40 sm:hidden border-0" onClick={handleClose} aria-label="Close sidebar" />
       )}
 
       {/* Sidebar panel */}
@@ -244,7 +244,6 @@ export function PdfViewerSidebar({
         className={`fixed top-0 right-0 z-50 h-full bg-surface border-l border-border shadow-2xl transition-all duration-300 flex flex-col w-1/2 max-sm:w-full sm:max-w-[95vw] lg:w-1/2 xl:w-[45%] ${
           sidebarVisible ? 'translate-x-0' : 'translate-x-full'
         }`}
-        role="complementary"
       >
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
@@ -330,8 +329,8 @@ export function PdfViewerSidebar({
             <div className="flex-1 overflow-y-auto">
               {loadingList && (
                 <div className="p-4 space-y-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="card !p-3 flex items-center gap-3">
+                  {Array.from({ length: 4 }, (_, i) => `skel-${i}`).map((key) => (
+                    <div key={key} className="card !p-3 flex items-center gap-3">
                       <div className="skeleton w-10 h-10 rounded-lg shrink-0" />
                       <div className="flex-1 space-y-1.5">
                         <div className="skeleton h-4 w-28" />

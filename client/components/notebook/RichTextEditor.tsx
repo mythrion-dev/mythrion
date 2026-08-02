@@ -37,7 +37,7 @@ interface ToolbarButtonProps {
   readonly children: React.ReactNode
 }
 
-function ToolbarButton({ onClick, isActive = false, label, children }: ToolbarButtonProps) {
+function ToolbarButton({ onClick, isActive = false, label, children }: Readonly<ToolbarButtonProps>) {
   return (
     <button
       type="button"
