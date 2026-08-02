@@ -10,13 +10,25 @@ interface DataRowProps {
 }
 
 export function DataRow({ label, value, className = '', onClick }: Readonly<DataRowProps>) {
-  const Tag = onClick ? 'button' : 'div'
+  const Tag = 'div'
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!onClick) {
+      return
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onClick()
+    }
+  }
 
   return (
     <Tag
       className={`data-row ${onClick ? 'cursor-pointer' : ''} ${className}`}
       onClick={onClick}
-      {...(onClick ? { type: 'button' as const } : {})}
+      onKeyDown={handleKeyDown}
+      {...(onClick ? { role: 'button', tabIndex: 0 } : {})}
     >
       <span className="text-sm text-foreground font-medium">{label}</span>
       <span className="text-sm text-muted-foreground">{value}</span>
