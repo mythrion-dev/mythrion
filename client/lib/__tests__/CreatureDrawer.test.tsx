@@ -14,7 +14,7 @@ const mockApi = vi.hoisted(() => ({
 
 vi.mock('@/lib/api', () => {
   const API_URL = 'https://mythrion-dev.up.railway.app/api'
-  return { api: mockApi, API_URL }
+  return { api: mockApi, API_URL, authFetch: (input: any, init?: any) => fetch(input, init) }
 })
 
 /* ── Mock NumericInput as a simple <input>, stripping component-only props ── */
@@ -175,7 +175,7 @@ describe('CreatureDrawer', () => {
 
   /* ── 2. Loading skeleton ── */
   describe('Loading state', () => {
-    it('does not show attribute or AC sections until template resolves', async () => {
+    it('does not show attribute sections until template resolves', async () => {
       let resolveTemplate!: (value: any) => void
       const templatePromise = new Promise(resolve => { resolveTemplate = resolve })
 
@@ -198,7 +198,6 @@ describe('CreatureDrawer', () => {
         expect(screen.getByPlaceholderText('Creature name')).toBeInTheDocument()
       })
       expect(screen.queryByText('Attributes')).not.toBeInTheDocument()
-      expect(screen.queryByText('Armor Class')).not.toBeInTheDocument()
 
       await act(async () => {
         resolveTemplate(mockTemplate())
@@ -611,41 +610,15 @@ describe('CreatureDrawer', () => {
 
   /* ── 7. Armor Class section ── */
   describe('Armor Class section', () => {
-    it('renders AC section when template has enabled armorClasses', async () => {
-      const template = mockTemplate({
-        armorClasses: [
-          {
-            id: 'ac-main',
-            name: 'Main AC',
-            enabled: true,
-            fields: [
-              {
-                id: 'field-base',
-                name: 'Base',
-                key: 'base',
-                defaultValue: '10',
-                editableByPlayer: false,
-                description: null,
-              },
-            ],
-            attributeModifiers: [
-              {
-                id: 'am-dex',
-                attributeId: 'attr-dex',
-                allowPlayerSelection: false,
-                defaultAttributeId: null,
-                attribute: { id: 'attr-dex', key: 'dex', name: 'Dexterity' },
-                defaultAttribute: null,
-              },
-            ],
-          },
-        ],
+    it('renders AC section with the ability AC value', async () => {
+      const ability = mockAbility({
+        summonAcValues: [{ id: 'acv-1', abilityId: 'ability-1', value: '17' }],
       })
-      setupSuccessfulLoad(template)
+      setupSuccessfulLoad()
       render(
         <CreatureDrawer
           {...defaultProps}
-          ability={mockAbility()}
+          ability={ability}
           sheetId="sheet-1"
         />,
       )
@@ -654,46 +627,14 @@ describe('CreatureDrawer', () => {
         expect(screen.getByText('Armor Class')).toBeInTheDocument()
       })
 
-      expect(screen.getByText('Main AC')).toBeInTheDocument()
-      expect(screen.getByText('Base')).toBeInTheDocument()
+      expect(screen.getByText('AC')).toBeInTheDocument()
 
-      const baseField = screen.getByDisplayValue('10')
-      expect(baseField).toBeInTheDocument()
-
-      // "Dexterity" appears in both the Attributes section and the AC badge
-      expect(screen.getAllByText('Dexterity').length).toBeGreaterThanOrEqual(2)
+      const acInput = screen.getByDisplayValue('17') as HTMLInputElement
+      expect(acInput).toBeInTheDocument()
     })
 
-    it('renders AC section with attribute modifier when allowPlayerSelection is true', async () => {
-      const template = mockTemplate({
-        armorClasses: [
-          {
-            id: 'ac-main',
-            name: 'Selectable AC',
-            enabled: true,
-            fields: [
-              {
-                id: 'field-base',
-                name: 'Base',
-                key: 'base',
-                defaultValue: '10',
-                editableByPlayer: false,
-                description: null,
-              },
-            ],
-            attributeModifiers: [
-              {
-                id: 'am-select',
-                attributeId: 'attr-dex',
-                allowPlayerSelection: true,
-                defaultAttributeId: null,
-                attribute: { id: 'attr-dex', key: 'dex', name: 'Dexterity' },
-                defaultAttribute: null,
-              },
-            ],
-          },
-        ],
-      })
+    it('renders AC section with default value when template has no armorClasses', async () => {
+      const template = mockTemplate({ armorClasses: [] })
       setupSuccessfulLoad(template)
       render(
         <CreatureDrawer
@@ -707,170 +648,57 @@ describe('CreatureDrawer', () => {
         expect(screen.getByText('Armor Class')).toBeInTheDocument()
       })
 
-      expect(screen.getByText('Selectable AC')).toBeInTheDocument()
+      expect(screen.getByText('AC')).toBeInTheDocument()
       expect(screen.getByDisplayValue('10')).toBeInTheDocument()
     })
 
-    it('does not render disabled armor classes', async () => {
-      const template = mockTemplate({
-        armorClasses: [
-          {
-            id: 'ac-disabled',
-            name: 'Disabled AC',
-            enabled: false,
-            fields: [],
-            attributeModifiers: [],
-          },
-        ],
+    it('saves the AC value via the summon-ac endpoint', async () => {
+      const ability = mockAbility({
+        summonAcValues: [{ id: 'acv-1', abilityId: 'ability-1', value: '17' }],
       })
-      setupSuccessfulLoad(template)
+      mockApi.patch.mockResolvedValue({})
+      setupSuccessfulLoad()
       render(
         <CreatureDrawer
           {...defaultProps}
-          ability={mockAbility()}
+          ability={ability}
           sheetId="sheet-1"
         />,
       )
 
       await waitFor(() => {
-        expect(screen.queryByText('Armor Class')).not.toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /Save/i })).toBeInTheDocument()
+      })
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Save/i }))
+      })
+
+      await waitFor(() => {
+        expect(mockApi.patch).toHaveBeenCalledWith(
+          '/character-sheets/sheet-1/abilities/ability-1/summon-ac',
+          { value: '17' },
+        )
       })
     })
   })
 
   /* ── 8. Resistances section ── */
-  describe('Resistances section', () => {
-    it('renders resistances section when template has resistances', async () => {
-      const template = mockTemplate({
-        resistances: [
-          {
-            id: 'res-fire',
-            name: 'Fire',
-            calculationType: 'MANUAL',
-            order: 0,
-            components: [
-              {
-                id: 'comp-base',
-                name: 'Base',
-                editableByPlayer: true,
-                defaultValue: '0',
-              },
-            ],
-            attributeModifiers: [],
-          },
-        ],
-      })
-      setupSuccessfulLoad(template, undefined, [
-        {
-          resistanceId: 'res-fire',
-          name: 'Fire',
-          calculationType: 'MANUAL',
-          total: 5,
-        },
-      ])
-      render(
-        <CreatureDrawer
-          {...defaultProps}
-          ability={mockAbility()}
-          sheetId="sheet-1"
-        />,
-      )
-
-      await waitFor(() => {
-        expect(screen.getByText('Resistances')).toBeInTheDocument()
-      })
-
-      expect(screen.getByText('Fire')).toBeInTheDocument()
-      expect(screen.getByText('Base:')).toBeInTheDocument()
-      expect(screen.getByText('Manual:')).toBeInTheDocument()
-      expect(screen.getByText('5')).toBeInTheDocument()
-    })
-
-    it('does not show "Manual:" input for non-MANUAL calculation type', async () => {
-      const template = mockTemplate({
-        resistances: [
-          {
-            id: 'res-phys',
-            name: 'Physical',
-            calculationType: 'AUTO',
-            order: 0,
-            components: [
-              {
-                id: 'comp-armor',
-                name: 'Armor',
-                editableByPlayer: true,
-                defaultValue: '5',
-              },
-            ],
-            attributeModifiers: [],
-          },
-        ],
-      })
-      setupSuccessfulLoad(template, undefined, [
-        {
-          resistanceId: 'res-phys',
-          name: 'Physical',
-          calculationType: 'AUTO',
-          total: 8,
-        },
-      ])
-      render(
-        <CreatureDrawer
-          {...defaultProps}
-          ability={mockAbility()}
-          sheetId="sheet-1"
-        />,
-      )
-
-      await waitFor(() => {
-        expect(screen.getByText('Resistances')).toBeInTheDocument()
-      })
-
-      expect(screen.getByText('Physical')).toBeInTheDocument()
-      expect(screen.queryByText('Manual:')).not.toBeInTheDocument()
-      expect(screen.getByText('Armor:')).toBeInTheDocument()
-    })
-  })
+  // Note: the current CreatureDrawer has no Resistances section — the template's
+  // resistances are no longer rendered. The previous section-level tests were
+  // removed; the "Sections visibility" tests below still assert "Resistances"
+  // never renders.
 
   /* ── 9. Skills section ── */
   describe('Skills section', () => {
-    it('renders skills section when template has templateSkills', async () => {
-      const template = mockTemplate({
-        templateSkills: [
-          {
-            id: 'skill-stealth',
-            name: 'Stealth',
-            description: 'Hide silently',
-            attributeId: 'attr-dex',
-            allowedAttributeIds: ['attr-dex', 'attr-str'],
-            defaultAttributeId: 'attr-dex',
-            attribute: { id: 'attr-dex', key: 'dex', name: 'Dexterity' },
-            defaultAttribute: { id: 'attr-dex', key: 'dex', name: 'Dexterity' },
-          },
-        ],
-      })
+    it('renders skills section with manual values', async () => {
       const ability = mockAbility({
         summonSkills: [
-          {
-            id: 'ss-stealth',
-            skillId: 'skill-stealth',
-            selectedAttributeId: 'attr-dex',
-            skill: {
-              id: 'skill-stealth',
-              name: 'Stealth',
-              description: 'Hide silently',
-              attributeId: 'attr-dex',
-              allowedAttributeIds: ['attr-dex', 'attr-str'],
-              defaultAttributeId: 'attr-dex',
-              attribute: { id: 'attr-dex', key: 'dex', name: 'Dexterity' },
-              defaultAttribute: { id: 'attr-dex', key: 'dex', name: 'Dexterity' },
-            },
-            selectedAttribute: { id: 'attr-dex', key: 'dex', name: 'Dexterity' },
-            profileValues: [],
-          },
+          { id: 'ss-stealth', name: 'Stealth', manualValue: 4 },
+          { id: 'ss-acrobatics', name: 'Acrobatics', manualValue: -1 },
         ],
       })
-      setupSuccessfulLoad(template)
+      setupSuccessfulLoad()
       render(
         <CreatureDrawer
           {...defaultProps}
@@ -884,12 +712,9 @@ describe('CreatureDrawer', () => {
       })
 
       expect(screen.getByText('Stealth')).toBeInTheDocument()
-      expect(screen.getByText('(Dexterity)')).toBeInTheDocument()
-
-      await waitFor(() => {
-        const plus2Elements = screen.getAllByText('+2')
-        expect(plus2Elements.length).toBeGreaterThanOrEqual(1)
-      })
+      expect(screen.getByText('+4')).toBeInTheDocument()
+      expect(screen.getByText('Acrobatics')).toBeInTheDocument()
+      expect(screen.getByText('-1')).toBeInTheDocument()
     })
   })
 
@@ -1689,7 +1514,7 @@ describe('CreatureDrawer', () => {
 
   /* ── 17. No AC/skills/resistances when empty ── */
   describe('Sections visibility', () => {
-    it('does not render AC/skills/resistances sections when template has none', async () => {
+    it('does not render skills or resistances sections when template has none', async () => {
       const template = mockTemplate({
         armorClasses: [],
         templateSkills: [],
@@ -1708,7 +1533,8 @@ describe('CreatureDrawer', () => {
         expect(screen.getByText('Attributes')).toBeInTheDocument()
       })
 
-      expect(screen.queryByText('Armor Class')).not.toBeInTheDocument()
+      // The single manual AC input always renders; skills/resistances never do
+      expect(screen.getByText('Armor Class')).toBeInTheDocument()
       expect(screen.queryByText('Resistances')).not.toBeInTheDocument()
       expect(screen.queryByText('Skills')).not.toBeInTheDocument()
 
@@ -1758,7 +1584,7 @@ describe('CreatureDrawer', () => {
       expect(screen.queryByText('Skills')).not.toBeInTheDocument()
     })
 
-    it('renders only resistances when only resistances are present', async () => {
+    it('does not render a Resistances section even when the template has resistances', async () => {
       const template = mockTemplate({
         armorClasses: [],
         templateSkills: [],
@@ -1785,10 +1611,11 @@ describe('CreatureDrawer', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByText('Resistances')).toBeInTheDocument()
+        expect(screen.getByText('Attributes')).toBeInTheDocument()
       })
 
-      expect(screen.queryByText('Armor Class')).not.toBeInTheDocument()
+      expect(screen.queryByText('Resistances')).not.toBeInTheDocument()
+      expect(screen.getByText('Armor Class')).toBeInTheDocument()
       expect(screen.queryByText('Skills')).not.toBeInTheDocument()
     })
   })
@@ -2149,50 +1976,6 @@ describe('CreatureDrawer', () => {
       expect(baseInput.value).toBe('12')
     })
 
-    it('types in resistance component and manual value inputs', async () => {
-      const template = mockTemplate({
-        resistances: [
-          {
-            id: 'res-fire',
-            name: 'Fire',
-            calculationType: 'MANUAL',
-            order: 0,
-            components: [
-              { id: 'comp-base', name: 'Base', editableByPlayer: true, defaultValue: '0' },
-            ],
-            attributeModifiers: [],
-          },
-        ],
-      })
-      setupSuccessfulLoad(template, undefined, [
-        { resistanceId: 'res-fire', name: 'Fire', calculationType: 'MANUAL', total: 5 },
-      ])
-      render(
-        <CreatureDrawer {...defaultProps} ability={mockAbility()} sheetId="sheet-1" />,
-      )
-
-      await waitFor(() => {
-        expect(screen.getByText('Resistances')).toBeInTheDocument()
-      })
-
-      // Component input
-      const componentInput = screen.getByDisplayValue('0') as HTMLInputElement
-      await act(async () => {
-        fireEvent.change(componentInput, { target: { value: '3' } })
-      })
-      expect(componentInput.value).toBe('3')
-
-      // Manual value input — use querySelector to skip file-type inputs
-      const manualInputEl = document.querySelector<HTMLInputElement>(
-        'input:not([type="file"]):not([type="hidden"])[value=""]',
-      )
-      if (manualInputEl) {
-        await act(async () => {
-          fireEvent.change(manualInputEl, { target: { value: '8' } })
-        })
-        expect(manualInputEl.value).toBe('8')
-      }
-    })
 
     it('changes creature name, description, notes, and attribute inputs', async () => {
       const ability = mockAbility({

@@ -1,132 +1,209 @@
-jest.mock("../generated/prisma/client", () => ({ PrismaClient: class {} }))
-jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
-jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
-import { Test } from '@nestjs/testing'
-import { EmailService } from './email.service'
+import { Test } from '@nestjs/testing';
+import { EmailService } from './email.service';
+
+const mockFetch = jest.fn();
+const mockJson = jest.fn();
+
+type MockedInit = RequestInit & { body?: string };
+
+function fetchCall(): [string, MockedInit] {
+  return mockFetch.mock.calls[0] as [string, MockedInit];
+}
+
+const ENV_VARS = [
+  'HOSTINGER_MAIL_API_TOKEN',
+  'HOSTINGER_MAILBOX_ID',
+  'EMAIL_FROM',
+];
+
+function mockResponse({
+  ok = true,
+  status = 204,
+  jsonValue,
+}: {
+  ok?: boolean;
+  status?: number;
+  jsonValue?: unknown;
+}) {
+  mockJson.mockResolvedValue(jsonValue);
+  return { ok, status, json: mockJson } as unknown as Response;
+}
+
+async function buildService() {
+  const module = await Test.createTestingModule({
+    providers: [EmailService],
+  }).compile();
+  return module.get<EmailService>(EmailService);
+}
 
 describe('EmailService', () => {
-  let service: EmailService
-  const OLD_ENV = process.env.RESEND_API_KEY
+  let service: EmailService;
+  const savedEnv: Record<string, string | undefined> = {};
+
+  const baseParams = {
+    to: 'player@test.com',
+    campaignName: 'Test Campaign',
+    inviterName: 'Mighty GM',
+    role: 'PLAYER',
+    inviteUrl: 'http://localhost:3001/invite/abc',
+    expiresAt: new Date('2025-06-15'),
+  };
+
+  beforeAll(() => {
+    global.fetch = mockFetch;
+    for (const v of ENV_VARS) savedEnv[v] = process.env[v];
+  });
 
   afterAll(() => {
-    process.env.RESEND_API_KEY = OLD_ENV
-  })
+    for (const v of ENV_VARS) {
+      if (savedEnv[v] === undefined) delete process.env[v];
+      else process.env[v] = savedEnv[v];
+    }
+  });
 
   beforeEach(() => {
-    jest.clearAllMocks()
-  })
+    jest.clearAllMocks();
+    for (const v of ENV_VARS) delete process.env[v];
+    mockFetch.mockResolvedValue(mockResponse({}));
+  });
 
-  describe('when RESEND_API_KEY is not set', () => {
-    beforeEach(() => {
-      delete process.env.RESEND_API_KEY
-    })
-
+  describe('when HOSTINGER_MAIL_API_TOKEN / HOSTINGER_MAILBOX_ID are not set', () => {
     it('sends nothing and logs [DEV] message (does not throw)', async () => {
-      const module = await Test.createTestingModule({
-        providers: [EmailService],
-      }).compile()
+      service = await buildService();
 
-      service = module.get<EmailService>(EmailService)
+      await expect(service.sendInvitation(baseParams)).resolves.toBeUndefined();
 
-      await expect(
-        service.sendInvitation({
-          to: 'player@test.com',
-          campaignName: 'Test Adventure',
-          inviterName: 'GM',
-          role: 'PLAYER',
-          inviteUrl: 'http://localhost:3001/invite/abc',
-          expiresAt: new Date('2025-01-01'),
-        }),
-      ).resolves.toBeUndefined()
-    })
-  })
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+  });
 
-  describe('when RESEND_API_KEY is set', () => {
-    const mockSend = jest.fn().mockResolvedValue({ data: { id: 'email-1' }, error: null })
-    const mockResend = { emails: { send: mockSend } }
-
+  describe('when Hostinger env vars are set', () => {
     beforeEach(() => {
-      process.env.RESEND_API_KEY = 're_test_key'
-    })
+      process.env.HOSTINGER_MAIL_API_TOKEN = 'secret-token';
+      process.env.HOSTINGER_MAILBOX_ID = 'AC1a2b3c4d5e6f7g';
+    });
 
-    it('calls resend.emails.send with correct params', async () => {
-      // We need to test that the internal resend instance is used.
-      // Since Resend is instantiated in the constructor, we create a new instance
-      // and verify behavior by checking that no error is thrown and the method completes.
-      const module = await Test.createTestingModule({
-        providers: [EmailService],
-      }).compile()
+    it('POSTs the send payload to the right mailbox endpoint with bearer auth', async () => {
+      service = await buildService();
+      await service.sendInvitation(baseParams);
 
-      service = module.get<EmailService>(EmailService)
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const [url, init] = fetchCall();
+      expect(url).toBe(
+        'https://api.mail.hostinger.com/api/v1/mailboxes/AC1a2b3c4d5e6f7g/send',
+      );
+      expect(init.method).toBe('POST');
+      expect(init.headers).toEqual({
+        Authorization: 'Bearer secret-token',
+        'Content-Type': 'application/json',
+      });
+      expect(init.signal).toBeDefined();
+    });
 
-      // Accessing private resend for test verification
-      const resend = (service as any).resend
-      resend.emails.send = mockSend
+    it('sends default display name and subject when EMAIL_FROM is unset', async () => {
+      service = await buildService();
+      await service.sendInvitation(baseParams);
 
-      await service.sendInvitation({
-        to: 'player@test.com',
-        campaignName: 'Test Campaign',
-        inviterName: 'Mighty GM',
-        role: 'PLAYER',
-        inviteUrl: 'http://localhost:3001/invite/abc',
-        expiresAt: new Date('2025-06-15'),
-      })
-
-      expect(mockSend).toHaveBeenCalledWith(
+      const [, init] = fetchCall();
+      const body = JSON.parse(init.body!) as {
+        to: string[];
+        displayName: string;
+        subject: string;
+      };
+      expect(body).toEqual(
         expect.objectContaining({
-          from: 'Mythrion <noreply@mythrion.com>',
-          to: 'player@test.com',
+          to: ['player@test.com'],
+          displayName: 'Mythrion',
           subject: 'Mighty GM invited you to Test Campaign',
-          html: expect.stringContaining('Accept Invitation'),
         }),
-      )
-    })
+      );
+    });
 
-    it('builds HTML template with invitation details', async () => {
-      const module = await Test.createTestingModule({
-        providers: [EmailService],
-      }).compile()
+    it('derives the display name from EMAIL_FROM', async () => {
+      process.env.EMAIL_FROM = 'No-Reply <no-reply@mythrion.com.br>';
 
-      service = module.get<EmailService>(EmailService)
-      const resend = (service as any).resend
-      resend.emails.send = mockSend
+      service = await buildService();
+      await service.sendInvitation(baseParams);
 
+      const [, init] = fetchCall();
+      const body = JSON.parse(init.body!) as { displayName: string };
+      expect(body.displayName).toBe('No-Reply');
+    });
+
+    it('builds HTML and text templates with invitation details', async () => {
+      service = await buildService();
       await service.sendInvitation({
-        to: 'player@test.com',
+        ...baseParams,
         campaignName: 'My Campaign',
         inviterName: 'Alice',
         role: 'GM',
         inviteUrl: 'https://mythrion.com/invite/token123',
         expiresAt: new Date('2025-07-01T12:00:00Z'),
-      })
+      });
 
-      const callArg = mockSend.mock.calls[0][0]
-      expect(callArg.html).toContain('Alice invited you')
-      expect(callArg.html).toContain('My Campaign')
-      expect(callArg.html).toContain('GM')
-      expect(callArg.html).toContain('https://mythrion.com/invite/token123')
-      expect(callArg.html).toContain('July')
-    })
+      const [, init] = fetchCall();
+      const body = JSON.parse(init.body!) as { html: string; text: string };
+      expect(body.html).toContain('Alice invited you');
+      expect(body.html).toContain('My Campaign');
+      expect(body.html).toContain('GM');
+      expect(body.html).toContain('https://mythrion.com/invite/token123');
+      expect(body.html).toContain('July');
+      expect(body.text).toContain('My Campaign');
+      expect(body.text).toContain(
+        'Accept the invitation: https://mythrion.com/invite/token123',
+      );
+    });
 
-    it('handles errors gracefully without throwing', async () => {
-      const module = await Test.createTestingModule({
-        providers: [EmailService],
-      }).compile()
+    it('resolves on a 204 success', async () => {
+      mockFetch.mockResolvedValue(mockResponse({}));
 
-      service = module.get<EmailService>(EmailService)
-      const resend = (service as any).resend
-      resend.emails.send = jest.fn().mockRejectedValue(new Error('API error'))
+      service = await buildService();
 
-      await expect(
-        service.sendInvitation({
-          to: 'player@test.com',
-          campaignName: 'Test',
-          inviterName: 'GM',
-          role: 'PLAYER',
-          inviteUrl: 'http://localhost:3001/invite/t',
-          expiresAt: new Date('2025-01-01'),
+      await expect(service.sendInvitation(baseParams)).resolves.toBeUndefined();
+    });
+
+    it('throws with the API error code on a non-2xx response', async () => {
+      mockFetch.mockResolvedValue(
+        mockResponse({
+          ok: false,
+          status: 422,
+          jsonValue: {
+            error: 'Something is invalid.',
+            code: 'ERR_INVALID_REQUEST',
+          },
         }),
-      ).resolves.toBeUndefined()
-    })
-  })
-})
+      );
+
+      service = await buildService();
+
+      await expect(service.sendInvitation(baseParams)).rejects.toThrow(
+        'ERR_INVALID_REQUEST',
+      );
+    });
+
+    it('throws with the HTTP status when the error body is not JSON', async () => {
+      mockJson.mockRejectedValue(new SyntaxError('Unexpected token'));
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 403,
+        json: mockJson,
+      });
+
+      service = await buildService();
+
+      await expect(service.sendInvitation(baseParams)).rejects.toThrow(
+        'Hostinger Mail API error (HTTP 403)',
+      );
+    });
+
+    it('rejects when the API call fails', async () => {
+      mockFetch.mockRejectedValue(new Error('network down'));
+
+      service = await buildService();
+
+      await expect(service.sendInvitation(baseParams)).rejects.toThrow(
+        'network down',
+      );
+    });
+  });
+});

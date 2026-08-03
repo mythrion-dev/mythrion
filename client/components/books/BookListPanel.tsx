@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { api, API_URL } from '@/lib/api'
+import { api, API_URL, authFetch } from '@/lib/api'
 import { Select } from '@/components/shared/Select'
 
 /* ── Types ── */
@@ -18,9 +18,9 @@ interface Book {
 /* ── Props ── */
 
 interface BookListPanelProps {
-  adventureId: string
-  isGM: boolean
-  onSelectBook: (bookId: string | null) => void
+  readonly adventureId: string
+  readonly isGM: boolean
+  readonly onSelectBook: (bookId: string | null) => void
 }
 
 /* ── Helpers ── */
@@ -43,7 +43,7 @@ function formatDate(iso: string): string {
 
 /* ── Component ── */
 
-export function BookListPanel({ adventureId, isGM, onSelectBook }: BookListPanelProps) {
+export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<BookListPanelProps>) {
   const [books, setBooks] = useState<Book[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -63,7 +63,6 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: BookListPanel
 
   // Replace file state
   const [replacingId, setReplacingId] = useState<string | null>(null)
-  const [replacing, setReplacing] = useState(false)
 
   /* ── Fetch books ── */
   const fetchBooks = useCallback(async () => {
@@ -99,10 +98,8 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: BookListPanel
       formData.append('name', uploadName.trim())
       formData.append('visibility', uploadVisibility)
 
-      const token = localStorage.getItem('accessToken')
-      const res = await fetch(`${API_URL}/adventures/${adventureId}/books`, {
+      const res = await authFetch(`${API_URL}/adventures/${adventureId}/books`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       })
 
@@ -152,19 +149,16 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: BookListPanel
 
   /* ── Replace file ── */
   async function handleReplace(bookId: string, file: File) {
-    setReplacing(true)
     setError(null)
 
     try {
       const formData = new FormData()
       formData.append('file', file)
 
-      const token = localStorage.getItem('accessToken')
-      const res = await fetch(
+      const res = await authFetch(
         `${API_URL}/adventures/${adventureId}/books/${bookId}/replace`,
         {
           method: 'POST',
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
           body: formData,
         },
       )
@@ -178,8 +172,6 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: BookListPanel
       await fetchBooks()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to replace file')
-    } finally {
-      setReplacing(false)
     }
   }
 
@@ -265,8 +257,8 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: BookListPanel
       {/* Loading state */}
       {loading && (
         <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="card !p-4">
+          {Array.from({ length: 3 }, (_, i) => `skel-${i}`).map((key) => (
+            <div key={key} className="card !p-4">
               <div className="skeleton h-5 w-48 mb-2" />
               <div className="skeleton h-3 w-32" />
             </div>

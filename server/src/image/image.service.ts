@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit, Logger, NotFoundException } from '@nestjs/common'
 import { MongoClient, GridFSBucket, type Db, type ObjectId } from 'mongodb'
-import { Readable } from 'stream'
+import { Readable } from 'node:stream'
 
 const BUCKET_NAME = 'avatars'
 

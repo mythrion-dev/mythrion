@@ -1,6 +1,6 @@
 'use client'
 
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 
 const weekdays = [
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
@@ -43,7 +43,7 @@ export function EditForm({
   onSessionTimeChange: (v: string) => void
   onSessionTypeChange: (v: string) => void
   onCancel: () => void
-  onSubmit: (e: FormEvent) => void
+  onSubmit: (e: SubmitEvent) => void
 }) {
   return (
     <form onSubmit={onSubmit} className="card !p-6 space-y-4 animate-slide-up">

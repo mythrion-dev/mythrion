@@ -2238,6 +2238,102 @@ describe('CharacterSheetService', () => {
     })
   })
 
+  // ── Summon resistances ────────────────────────────────────────
+
+  describe('summon resistances', () => {
+    const userId = 'u1'
+    const sheetId = 'sheet-sum'
+    const abilityId = 'ab-summon'
+
+    beforeEach(() => {
+      prisma.characterAbility.findUnique.mockResolvedValue({ id: abilityId, sheetId: sheetId, type: 'SUMMON' })
+      prisma.characterSheet.findUnique.mockResolvedValue({ id: sheetId, ownerId: userId, adventureId: null })
+      jest.clearAllMocks()
+    })
+
+    describe('addSummonResistance', () => {
+      it('creates a free-form resistance with name and value', async () => {
+        prisma.characterAbility.findUnique.mockResolvedValue({ id: abilityId, sheetId, type: 'SUMMON' })
+        prisma.summonResistance.create.mockResolvedValue({
+          id: 'sr-1', name: 'Fire', value: 'Immunity', abilityId,
+        })
+
+        const result = await service.addSummonResistance(abilityId, 'Fire', 'Immunity', userId)
+
+        expect(result.name).toBe('Fire')
+        expect(result.value).toBe('Immunity')
+        expect(prisma.summonResistance.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              name: 'Fire',
+              value: 'Immunity',
+              abilityId,
+            }),
+          }),
+        )
+      })
+
+      it('throws ForbiddenException when parent is not SUMMON type', async () => {
+        prisma.characterAbility.findUnique.mockResolvedValue({ id: abilityId, sheetId: sheetId, type: 'CLASS' })
+
+        await expect(service.addSummonResistance(abilityId, 'Fire', 'Immunity', userId))
+          .rejects.toThrow('Resistances can only be added to summons')
+      })
+    })
+
+    describe('updateSummonResistance', () => {
+      it('updates only the provided fields', async () => {
+        prisma.summonResistance.findUnique.mockResolvedValue({
+          id: 'sr-1', ability: { sheetId: sheetId },
+        })
+        prisma.summonResistance.update.mockResolvedValue({
+          id: 'sr-1', name: 'Cold', value: 'Immunity',
+        })
+
+        const result = await service.updateSummonResistance('sr-1', userId, { name: 'Cold' })
+
+        expect(result.name).toBe('Cold')
+        expect(prisma.summonResistance.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({ name: 'Cold' }),
+          }),
+        )
+        expect(prisma.summonResistance.update).not.toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({ value: expect.anything() }),
+          }),
+        )
+      })
+
+      it('throws NotFoundException for missing summon resistance', async () => {
+        prisma.summonResistance.findUnique.mockResolvedValue(null)
+
+        await expect(service.updateSummonResistance('nonexistent', userId, { value: 'Vulnerable' }))
+          .rejects.toThrow('not found')
+      })
+    })
+
+    describe('removeSummonResistance', () => {
+      it('removes a resistance from a summon', async () => {
+        prisma.summonResistance.findUnique.mockResolvedValue({
+          id: 'sr-1', ability: { sheetId: sheetId },
+        })
+        prisma.summonResistance.delete.mockResolvedValue({ id: 'sr-1' })
+
+        const result = await service.removeSummonResistance('sr-1', userId)
+
+        expect(result).toEqual({ id: 'sr-1' })
+      })
+
+      it('throws NotFoundException for missing summon resistance', async () => {
+        prisma.summonResistance.findUnique.mockResolvedValue(null)
+
+        await expect(service.removeSummonResistance('nonexistent', userId))
+          .rejects.toThrow('not found')
+      })
+    })
+  })
+
   // ── Summon values ─────────────────────────────────────────────
 
   describe('summon values (attribute, AC, health)', () => {

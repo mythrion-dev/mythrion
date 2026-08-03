@@ -3,17 +3,17 @@
 import Link from 'next/link'
 
 interface CampaignCardProps {
-  id: string
-  name: string
-  campaign: string
-  synopsis: string | null
-  maxPlayers: number
-  ownerDisplayName: string | null
-  playerCount?: number
-  index?: number
-  sessionWeekday?: string | null
-  sessionTime?: string | null
-  sessionType?: string | null
+  readonly id: string
+  readonly name: string
+  readonly campaign: string
+  readonly synopsis: string | null
+  readonly maxPlayers: number
+  readonly ownerDisplayName: string | null
+  readonly playerCount?: number
+  readonly index?: number
+  readonly sessionWeekday?: string | null
+  readonly sessionTime?: string | null
+  readonly sessionType?: string | null
 }
 
 export function CampaignCard({
@@ -28,7 +28,7 @@ export function CampaignCard({
   sessionWeekday,
   sessionTime,
   sessionType,
-}: CampaignCardProps) {
+}: Readonly<CampaignCardProps>) {
   const truncatedSynopsis = synopsis && synopsis.length > 120
     ? synopsis.slice(0, 120).trimEnd() + '...'
     : synopsis

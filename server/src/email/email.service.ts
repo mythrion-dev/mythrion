@@ -1,60 +1,136 @@
-import { Injectable, Logger } from '@nestjs/common'
-import { Resend } from 'resend'
+import { Injectable, Logger } from '@nestjs/common';
+
+const API_BASE_URL = 'https://api.mail.hostinger.com';
+const DEFAULT_FROM = 'Mythrion <noreply@mythrion.com>';
+const REQUEST_TIMEOUT_MS = 10_000;
+
+/** Extract the display-name portion of a "Name <addr>" From string. */
+function parseDisplayName(from: string | undefined): string {
+  if (!from) return 'Mythrion';
+  const match = /^\s*(.*?)\s*<[^>]+>/.exec(from);
+  return match?.[1] || 'Mythrion';
+}
 
 @Injectable()
 export class EmailService {
-  private readonly logger = new Logger(EmailService.name)
-  private readonly resend: Resend | null
+  private readonly logger = new Logger(EmailService.name);
+  private readonly token: string | undefined;
+  private readonly mailboxId: string | undefined;
+  private readonly displayName: string;
 
   constructor() {
-    const apiKey = process.env.RESEND_API_KEY
-    this.resend = apiKey ? new Resend(apiKey) : null
+    this.token = process.env.HOSTINGER_MAIL_API_TOKEN;
+    this.mailboxId = process.env.HOSTINGER_MAILBOX_ID;
+    this.displayName = parseDisplayName(process.env.EMAIL_FROM ?? DEFAULT_FROM);
+
+    if (!this.token || !this.mailboxId) {
+      this.logger.warn(
+        'HOSTINGER_MAIL_API_TOKEN / HOSTINGER_MAILBOX_ID not set — email sending is disabled. Invitation emails will not be delivered.',
+      );
+    }
   }
 
   async sendInvitation(params: {
-    to: string
-    campaignName: string
-    inviterName: string
-    role: string
-    inviteUrl: string
-    expiresAt: Date
+    to: string;
+    campaignName: string;
+    inviterName: string;
+    role: string;
+    inviteUrl: string;
+    expiresAt: Date;
   }) {
-    if (!this.resend) {
+    if (!this.token || !this.mailboxId) {
       this.logger.log(
         `[DEV] Invitation email would be sent to ${params.to} - ${params.inviteUrl}`,
-      )
-      return
+      );
+      return;
     }
 
-    const html = this.buildInviteTemplate(params)
+    const html = this.buildInviteTemplate(params);
+    const text = this.buildTextTemplate(params);
 
     try {
-      const result = await this.resend.emails.send({
-        from: 'Mythrion <noreply@mythrion.com>',
-        to: params.to,
-        subject: `${params.inviterName} invited you to ${params.campaignName}`,
-        html,
-      })
-      this.logger.log(`Invitation email sent to ${params.to}: ${result.data?.id}`)
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/mailboxes/${this.mailboxId}/send`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: [params.to],
+            displayName: this.displayName,
+            subject: `${params.inviterName} invited you to ${params.campaignName}`,
+            text,
+            html,
+          }),
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(await this.describeError(response));
+      }
+
+      this.logger.log(`Invitation email sent to ${params.to}`);
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
       this.logger.error(
-        `Failed to send invitation email: ${err instanceof Error ? err.message : String(err)}`,
-      )
+        `Failed to send invitation email to ${params.to}: ${message}`,
+      );
+      // Rethrow so the caller can surface the failure (and roll back the invitation).
+      throw err;
     }
   }
 
-  private buildInviteTemplate(params: {
-    campaignName: string
-    inviterName: string
-    role: string
-    inviteUrl: string
-    expiresAt: Date
+  /** Read the API error envelope ({ error, code }) and fall back to the status. */
+  private async describeError(response: Response): Promise<string> {
+    let body: { error?: string; code?: string } | null = null;
+    try {
+      body = (await response.json()) as { error?: string; code?: string };
+    } catch {
+      // non-JSON body — use the HTTP status below
+    }
+    const detail = body?.code || body?.error;
+    return detail
+      ? `Hostinger Mail API error (HTTP ${response.status}): ${detail}`
+      : `Hostinger Mail API error (HTTP ${response.status})`;
+  }
+
+  private buildTextTemplate(params: {
+    campaignName: string;
+    inviterName: string;
+    role: string;
+    inviteUrl: string;
+    expiresAt: Date;
   }) {
     const expiryDate = params.expiresAt.toLocaleDateString('en-US', {
       month: 'long',
       day: 'numeric',
       year: 'numeric',
-    })
+    });
+
+    return [
+      `${params.inviterName} invited you to join the campaign "${params.campaignName}".`,
+      `Role: ${params.role}`,
+      `This invitation expires on ${expiryDate}.`,
+      '',
+      `Accept the invitation: ${params.inviteUrl}`,
+    ].join('\n');
+  }
+
+  private buildInviteTemplate(params: {
+    campaignName: string;
+    inviterName: string;
+    role: string;
+    inviteUrl: string;
+    expiresAt: Date;
+  }) {
+    const expiryDate = params.expiresAt.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
 
     return `
     <!DOCTYPE html>
@@ -91,6 +167,6 @@ export class EmailService {
         </div>
       </div>
     </body>
-    </html>`
+    </html>`;
   }
 }

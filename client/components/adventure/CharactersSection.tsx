@@ -1,6 +1,6 @@
 'use client'
 
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 
 interface CampaignCharacter {
   id: string; characterName: string; adventure: { id: string; name: string; campaign: string }
@@ -53,8 +53,8 @@ export function CharactersSection({
   onLinkCharClick: () => void
   onCancelNewChar: () => void
   onCancelLinkChar: () => void
-  onCreateCharacter: (e: FormEvent) => void
-  onLinkCharacter: (e: FormEvent) => void
+  onCreateCharacter: (e: SubmitEvent) => void
+  onLinkCharacter: (e: SubmitEvent) => void
   onNewCharNameChange: (v: string) => void
   onLinkSheetChange: (v: string) => void
   onRemoveCharacter: (id: string) => void

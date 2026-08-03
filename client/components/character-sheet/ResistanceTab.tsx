@@ -233,7 +233,7 @@ export function ResistanceTab({
                         type="number"
                         className="input-field"
                         value={manualVal}
-                        onChange={e => onSaveManual(r.resistanceId, parseInt(e.target.value, 10) || 0)}
+                        onChange={e => onSaveManual(r.resistanceId, Number.parseInt(e.target.value, 10) || 0)}
                       />
                     ) : (
                       <span className="text-sm font-semibold text-foreground">{manualVal || '0'}</span>
@@ -255,7 +255,7 @@ export function ResistanceTab({
                                     type="number"
                                     className="input-field py-1 text-xs w-20 text-right"
                                     value={cv.value}
-                                    onChange={e => onSaveComponent(cv.componentId, parseInt(e.target.value, 10) || 0)}
+                                    onChange={e => onSaveComponent(cv.componentId, Number.parseInt(e.target.value, 10) || 0)}
                                   />
                                 ) : (
                                   <span className="text-sm font-semibold text-foreground">{cv.value}</span>

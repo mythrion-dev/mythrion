@@ -10,7 +10,7 @@ function getInitials(name: string | null): string {
   if (!name) return '?'
   const parts = name.trim().split(/\s+/)
   if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    return (parts[0][0] + parts.at(-1)![0]).toUpperCase()
   }
   return name.slice(0, 2).toUpperCase()
 }
@@ -159,9 +159,9 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 w-full">
-        {navLinks.map((link: any) =>
+        {navLinks.map((link: any, index: number) =>
           link.type === 'divider' ? (
-            <hr key={`divider-${Math.random()}`} className={`divider my-2 transition-all duration-300 ${collapsed ? 'w-8 mx-auto' : ''}`} />
+            <hr key={`divider-${index}`} className={`divider my-2 transition-all duration-300 ${collapsed ? 'w-8 mx-auto' : ''}`} />
           ) : (
             <Link
               key={link.href}
@@ -185,6 +185,9 @@ export function Sidebar() {
             {user?.isAdmin && (
               <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-background" />
             )}
+            {!user?.isAdmin && user?.isEarlyAccess && (
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-violet-500 border-2 border-background" />
+            )}
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
@@ -198,12 +201,17 @@ export function Sidebar() {
                     Admin
                   </span>
                 )}
-                {!user?.isAdmin && hasActiveSubscription && subscription?.plan?.name && (
+                {!user?.isAdmin && user?.isEarlyAccess && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-violet-500/15 text-violet-600 dark:text-violet-400 border border-violet-500/20 shrink-0">
+                    Early Access
+                  </span>
+                )}
+                {!user?.isAdmin && !user?.isEarlyAccess && hasActiveSubscription && subscription?.plan?.name && (
                   <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
                     {subscription.plan.name}
                   </span>
                 )}
-                {!user?.isAdmin && !hasActiveSubscription && (
+                {!user?.isAdmin && !user?.isEarlyAccess && !hasActiveSubscription && (
                   <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-muted text-muted-foreground border border-border shrink-0">
                     Free
                   </span>
@@ -214,7 +222,7 @@ export function Sidebar() {
         </div>
 
         {/* Upgrade CTA for free users */}
-        {!user?.isAdmin && !hasActiveSubscription && !collapsed && (
+        {!user?.isAdmin && !user?.isEarlyAccess && !hasActiveSubscription && !collapsed && (
           <Link
             href="/pricing"
             className="flex items-center justify-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-medium text-accent hover:bg-accent/15 hover:border-accent/50 transition-colors"
@@ -225,7 +233,7 @@ export function Sidebar() {
             View Plans
           </Link>
         )}
-        {!user?.isAdmin && !hasActiveSubscription && collapsed && (
+        {!user?.isAdmin && !user?.isEarlyAccess && !hasActiveSubscription && collapsed && (
           <Link
             href="/pricing"
             className="flex items-center justify-center w-8 h-8 rounded-lg border border-accent/30 bg-accent/10 text-accent hover:bg-accent/15 hover:border-accent/50 transition-colors"
@@ -272,9 +280,11 @@ export function Sidebar() {
 
       {/* Mobile overlay */}
       {mobileOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden border-0"
           onClick={() => setMobileOpen(false)}
+          aria-label="Close sidebar"
         />
       )}
 

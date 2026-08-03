@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, type FormEvent } from 'react'
+import { useState, useCallback, type SubmitEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
@@ -12,28 +12,6 @@ import { useSubscription } from '@/lib/subscription-context'
 export default function NewTemplatePage() {
   const { hasActiveSubscription } = useSubscription()
   const router = useRouter()
-
-  if (!hasActiveSubscription) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-6">
-          <svg className="w-8 h-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 2.25h.008v.008H12v-.008z" />
-          </svg>
-        </div>
-        <h2 className="text-xl font-semibold text-foreground mb-2">Subscription Required</h2>
-        <p className="text-sm text-muted-foreground max-w-sm mb-8">
-          Creating templates is a premium feature. Upgrade to a paid plan to create and manage your own character sheet templates.
-        </p>
-        <Link href="/pricing" className="btn-primary">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          View Plans
-        </Link>
-      </div>
-    )
-  }
 
   // ── Feature toggles ──
   const [featureSkills, setFeatureSkills] = useState(false)
@@ -244,7 +222,7 @@ export default function NewTemplatePage() {
 
   // ── Create handler ──
 
-  const handleCreate = useCallback(async (e: FormEvent) => {
+  const handleCreate = useCallback(async (e: SubmitEvent) => {
     e.preventDefault()
     setCreating(true)
     setError(null)
@@ -337,6 +315,28 @@ export default function NewTemplatePage() {
   const handleCancel = useCallback(() => {
     router.push('/dashboard/templates')
   }, [router])
+
+  if (!hasActiveSubscription) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-6">
+          <svg className="w-8 h-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 2.25h.008v.008H12v-.008z" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-semibold text-foreground mb-2">Subscription Required</h2>
+        <p className="text-sm text-muted-foreground max-w-sm mb-8">
+          Creating templates is a premium feature. Upgrade to a paid plan to create and manage your own character sheet templates.
+        </p>
+        <Link href="/pricing" className="btn-primary">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          View Plans
+        </Link>
+      </div>
+    )
+  }
 
   // ── Attrs for resistance support ──
 

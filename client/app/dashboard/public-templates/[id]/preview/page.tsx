@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useReducer, useCallback, useMemo, useRef, type FormEvent } from 'react'
+import { useState, useEffect, useReducer, useCallback, useMemo, useRef, type SubmitEvent } from 'react'
 import { useParams } from 'next/navigation'
 import { API_URL } from '@/lib/api'
 import { PreviewBanner } from '@/components/community/PreviewBanner'
@@ -36,6 +36,7 @@ import type {
   SheetPermissions,
   Tab,
   SummonSkillData,
+  SummonResistanceData,
   ArmorClassAttributeModifierDef,
 } from '@/components/character-sheet/types'
 
@@ -369,7 +370,7 @@ export default function TemplatePreviewPage() {
     setAbilityError(null)
   }, [])
 
-  const handleCreateAbility = useCallback(async (e: FormEvent) => {
+  const handleCreateAbility = useCallback(async (e: SubmitEvent) => {
     e.preventDefault()
     const s = stateRef.current
     if (!s || !newAbility.name.trim()) return
@@ -395,8 +396,8 @@ export default function TemplatePreviewPage() {
         ability.summonHealth = {
           id: `preview-sh-${now}`,
           abilityId: newId,
-          current: newAbility.hpCurrent.trim() ? parseInt(newAbility.hpCurrent, 10) : null,
-          maximum: newAbility.hpMax.trim() ? parseInt(newAbility.hpMax, 10) : null,
+          current: newAbility.hpCurrent.trim() ? Number.parseInt(newAbility.hpCurrent, 10) : null,
+          maximum: newAbility.hpMax.trim() ? Number.parseInt(newAbility.hpMax, 10) : null,
           notes: null,
         }
       }
@@ -407,7 +408,7 @@ export default function TemplatePreviewPage() {
           id: `preview-level-${now}`,
           abilityId: newId,
           level: newAbility.level.trim(),
-          manaCost: newAbility.manaCost.trim() ? parseInt(newAbility.manaCost, 10) : null,
+          manaCost: newAbility.manaCost.trim() ? Number.parseInt(newAbility.manaCost, 10) : null,
           range: newAbility.range.trim() || null,
           description: null,
           notes: null,
@@ -439,7 +440,7 @@ export default function TemplatePreviewPage() {
         if (l.id !== levelId) return l
         const body: Record<string, unknown> = {}
         if (field === 'description') body.description = value.trim() || null
-        else if (field === 'manaCost') body.manaCost = value.trim() ? parseInt(value, 10) : null
+        else if (field === 'manaCost') body.manaCost = value.trim() ? Number.parseInt(value, 10) : null
         else if (field === 'range') body.range = value.trim() || null
         else if (field === 'notes') body.notes = value.trim() || null
         else if (field === 'damage') body.damage = value.trim() || null
@@ -471,8 +472,8 @@ export default function TemplatePreviewPage() {
       }
     })
     dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
-    const parsed = parseFloat(value)
-    setSummonAcResults(prev => ({ ...prev, [abilityId]: isNaN(parsed) ? null : parsed }))
+    const parsed = Number.parseFloat(value)
+    setSummonAcResults(prev => ({ ...prev, [abilityId]: Number.isNaN(parsed) ? null : parsed }))
   }, [dispatch])
 
   const saveSummonHealth = useCallback(async (abilityId: string, field: 'current' | 'maximum', value: number | null) => {
@@ -521,8 +522,40 @@ export default function TemplatePreviewPage() {
     })
     dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
   }, [dispatch])
+  const handleAddSummonResistance = useCallback(async (abilityId: string, name: string, value: string) => {
+    const newResistance: SummonResistanceData = {
+      id: `preview-sr-${Date.now()}`,
+      abilityId,
+      name,
+      value,
+    }
+    const updated = abilitiesRef.current.map(a => {
+      if (a.id !== abilityId) return a
+      return { ...a, summonResistances: [...(a.summonResistances ?? []), newResistance] }
+    })
+    dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
+  }, [dispatch])
 
-  const handleCreateSummonAbility = useCallback(async (summonId: string, e: FormEvent) => {
+  const handleRemoveSummonResistance = useCallback(async (abilityId: string, summonResistanceId: string) => {
+    const updated = abilitiesRef.current.map(a => {
+      if (a.id !== abilityId) return a
+      return { ...a, summonResistances: (a.summonResistances ?? []).filter(r => r.id !== summonResistanceId) }
+    })
+    dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
+  }, [dispatch])
+
+  const handleUpdateSummonResistance = useCallback(async (abilityId: string, summonResistanceId: string, name: string, value: string) => {
+    const updated = abilitiesRef.current.map(a => {
+      if (a.id !== abilityId) return a
+      return {
+        ...a,
+        summonResistances: (a.summonResistances ?? []).map(r => r.id === summonResistanceId ? { ...r, name, value } : r),
+      }
+    })
+    dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
+  }, [dispatch])
+
+  const handleCreateSummonAbility = useCallback(async (summonId: string, e: SubmitEvent) => {
     e.preventDefault()
     const s = stateRef.current
     if (!s || !newAbility.name.trim()) return
@@ -563,7 +596,7 @@ export default function TemplatePreviewPage() {
     setItemError(null)
   }, [])
 
-  const handleCreateItem = useCallback(async (e: FormEvent) => {
+  const handleCreateItem = useCallback(async (e: SubmitEvent) => {
     e.preventDefault()
     if (!newItem.name.trim()) return
     setItemSaving(true)
@@ -571,7 +604,7 @@ export default function TemplatePreviewPage() {
       const item: InventoryItem = {
         id: `preview-item-${Date.now()}`,
         name: newItem.name.trim(),
-        weight: newItem.weight.trim() ? parseFloat(newItem.weight) : null,
+        weight: newItem.weight.trim() ? Number.parseFloat(newItem.weight) : null,
         cost: newItem.cost.trim() || null,
         description: newItem.description.trim() || null,
         order: 0,
@@ -596,7 +629,7 @@ export default function TemplatePreviewPage() {
       if (i.id !== itemId) return i
       const body: Partial<InventoryItem> = {}
       if (field === 'name') body.name = value.trim()
-      else if (field === 'weight') body.weight = value.trim() ? parseFloat(value) : undefined
+      else if (field === 'weight') body.weight = value.trim() ? Number.parseFloat(value) : undefined
       else if (field === 'cost') body.cost = value.trim() || undefined
       else if (field === 'description') body.description = value.trim() || undefined
       return { ...i, ...body }
@@ -629,7 +662,7 @@ export default function TemplatePreviewPage() {
     setSectionEntrySaving(false)
   }, [])
 
-  const handleCreateSectionEntry = useCallback(async (sectionId: string, e: FormEvent) => {
+  const handleCreateSectionEntry = useCallback(async (sectionId: string, e: SubmitEvent) => {
     e.preventDefault()
     if (!newSectionEntryForm.name.trim()) return
     setSectionEntrySaving(true)
@@ -809,6 +842,9 @@ export default function TemplatePreviewPage() {
             handleAddSummonSkill={handleAddSummonSkill}
             handleUpdateSummonSkill={handleUpdateSummonSkill}
             handleRemoveSummonSkill={handleRemoveSummonSkill}
+            handleAddSummonResistance={handleAddSummonResistance}
+            handleUpdateSummonResistance={handleUpdateSummonResistance}
+            handleRemoveSummonResistance={handleRemoveSummonResistance}
             handleCreateSummonAbility={handleCreateSummonAbility}
           />
         )}

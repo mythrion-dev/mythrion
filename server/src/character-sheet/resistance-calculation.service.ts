@@ -89,8 +89,8 @@ export class ResistanceCalculationService {
     // ── 4. Build attribute value & modifier maps ──
     const attrValues = new Map<string, number>()
     for (const v of sheet.values) {
-      const num = parseFloat(v.value)
-      attrValues.set(v.attributeId, isNaN(num) ? 0 : num)
+      const num = Number.parseFloat(v.value)
+      attrValues.set(v.attributeId, Number.isNaN(num) ? 0 : num)
     }
 
     const template = await this.prisma.template.findUnique({
@@ -223,11 +223,11 @@ export class ResistanceCalculationService {
       if (isTemplate) {
         // Template: read from junction table
         const sv = sheetResistanceValues.find(r => r.resistanceId === resistance.id)
-        manualVal = parseFloat(sv?.manualValue ?? '0')
+        manualVal = Number.parseFloat(sv?.manualValue ?? '0')
       } else {
         // Sheet: sum component values (typically one component storing the value)
         manualVal = resistance.components.reduce(
-          (sum, c) => sum + parseFloat(c.baseValue || '0'),
+          (sum, c) => sum + Number.parseFloat(c.baseValue || '0'),
           0,
         )
       }
@@ -235,7 +235,7 @@ export class ResistanceCalculationService {
         resistanceId: resistance.id,
         name: resistance.name,
         calculationType: 'MANUAL',
-        total: isNaN(manualVal) ? 0 : manualVal,
+        total: Number.isNaN(manualVal) ? 0 : manualVal,
         componentValues: [],
         attributeModifierValues: [],
       }
@@ -250,18 +250,18 @@ export class ResistanceCalculationService {
       if (component.editableByPlayer && isTemplate) {
         // Template: use player override from junction table, else defaultValue (stored as baseValue)
         const sheetVal = sheetComponentValues.find(scv => scv.componentId === component.id)
-        val = parseFloat(sheetVal?.value ?? component.baseValue)
+        val = Number.parseFloat(sheetVal?.value ?? component.baseValue)
       } else {
         // Template non-editable or sheet: use baseValue directly
-        val = parseFloat(component.baseValue)
+        val = Number.parseFloat(component.baseValue)
       }
       componentValues.push({
         componentId: component.id,
         componentName: component.name,
-        value: isNaN(val) ? 0 : val,
+        value: Number.isNaN(val) ? 0 : val,
         editableByPlayer: component.editableByPlayer,
       })
-      total += isNaN(val) ? 0 : val
+      total += Number.isNaN(val) ? 0 : val
     }
 
     const attributeModifierValues: CalculatedResult['attributeModifierValues'] = []

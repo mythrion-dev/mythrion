@@ -6,11 +6,11 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 
 interface PreviewBannerProps {
-  templateName: string
-  templateId: string
+  readonly templateName: string
+  readonly templateId: string
 }
 
-export function PreviewBanner({ templateName, templateId }: PreviewBannerProps) {
+export function PreviewBanner({ templateName, templateId }: Readonly<PreviewBannerProps>) {
   const router = useRouter()
   const [cloning, setCloning] = useState(false)
   const [cloneError, setCloneError] = useState<string | null>(null)

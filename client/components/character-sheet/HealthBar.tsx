@@ -28,12 +28,12 @@ export function HealthBar({ current, maximum, onChange, permissions }: HealthBar
 
   // Quick heal / damage
   function handleDamage(amt: number) {
-    if (isNaN(amt) || amt <= 0) return
+    if (Number.isNaN(amt) || amt <= 0) return
     onChange('current', Math.max(0, (current ?? 0) - amt))
   }
 
   function handleHeal(amt: number) {
-    if (isNaN(amt) || amt <= 0) return
+    if (Number.isNaN(amt) || amt <= 0) return
     onChange('current', (current ?? 0) + amt)
   }
 
@@ -75,7 +75,7 @@ export function HealthBar({ current, maximum, onChange, permissions }: HealthBar
             <label className="text-[0.65rem] text-muted w-12 shrink-0">Current:</label>
             <NumericInput
               value={current !== null ? String(current) : ''}
-              onChange={e => onChange('current', e.target.value.trim() ? parseInt(e.target.value, 10) : null)}
+              onChange={e => onChange('current', e.target.value.trim() ? Number.parseInt(e.target.value, 10) : null)}
               placeholder="—"
               className="flex-1 py-1 text-xs text-center bg-background/50 border border-border rounded-md px-2 text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary"
               wrapperClassName="flex-1"
@@ -85,7 +85,7 @@ export function HealthBar({ current, maximum, onChange, permissions }: HealthBar
             <label className="text-[0.65rem] text-muted w-8 shrink-0">Max:</label>
             <NumericInput
               value={maximum !== null ? String(maximum) : ''}
-              onChange={e => onChange('maximum', e.target.value.trim() ? parseInt(e.target.value, 10) : null)}
+              onChange={e => onChange('maximum', e.target.value.trim() ? Number.parseInt(e.target.value, 10) : null)}
               placeholder="—"
               className="flex-1 py-1 text-xs text-center bg-background/50 border border-border rounded-md px-2 text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary"
               wrapperClassName="flex-1"
@@ -105,8 +105,8 @@ export function HealthBar({ current, maximum, onChange, permissions }: HealthBar
             />
             <button
               onClick={() => {
-                const amt = parseInt(hpAmount, 10)
-                if (!isNaN(amt) && amt > 0) {
+                const amt = Number.parseInt(hpAmount, 10)
+                if (!Number.isNaN(amt) && amt > 0) {
                   handleDamage(amt)
                   setHpAmount('')
                 }
@@ -117,8 +117,8 @@ export function HealthBar({ current, maximum, onChange, permissions }: HealthBar
             </button>
             <button
               onClick={() => {
-                const amt = parseInt(hpAmount, 10)
-                if (!isNaN(amt) && amt > 0) {
+                const amt = Number.parseInt(hpAmount, 10)
+                if (!Number.isNaN(amt) && amt > 0) {
                   handleHeal(amt)
                   setHpAmount('')
                 }

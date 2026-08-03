@@ -216,7 +216,7 @@ describe('PdfViewerSidebar', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('returns to book list when close is clicked in internal viewer mode', async () => {
+  it('fully closes (fresh launch) when close is clicked in internal viewer mode', async () => {
     const onClose = vi.fn()
     renderSidebar({ onClose })
 
@@ -227,10 +227,100 @@ describe('PdfViewerSidebar', () => {
     expect(await screen.findByTestId('pdf-iframe')).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('Close sidebar'))
+    // Full close: iframe unmounts, list collapses, floating toggle returns.
     await waitFor(() => {
-      expect(screen.getByText('Campaign Books')).toBeInTheDocument()
+      expect(screen.queryByTestId('pdf-iframe')).not.toBeInTheDocument()
     })
+    expect(screen.queryByText('Campaign Books')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Open books sidebar')).toBeInTheDocument()
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  /* ── Minimize / Restore ── */
+
+  it('minimize in viewer mode keeps the iframe mounted and does not call onClose', async () => {
+    const onClose = vi.fn()
+    renderSidebar({ bookId: 'book-1', onClose })
+
+    await screen.findByTestId('pdf-iframe')
+
+    fireEvent.click(screen.getByLabelText('Minimize books sidebar'))
+
+    const aside = screen.getByRole('complementary')
+    expect(aside.className).toContain('translate-x-full')
+    // Component stays mounted — native PDF page/zoom/scroll survive.
+    expect(screen.getByTestId('pdf-iframe')).toBeInTheDocument()
+    expect(screen.getByLabelText('Restore books sidebar')).toBeInTheDocument()
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('restore pill brings the panel back with the iframe intact', async () => {
+    renderSidebar({ bookId: 'book-1' })
+
+    await screen.findByTestId('pdf-iframe')
+    fireEvent.click(screen.getByLabelText('Minimize books sidebar'))
+    expect(screen.getByRole('complementary').className).toContain('translate-x-full')
+
+    fireEvent.click(screen.getByLabelText('Restore books sidebar'))
+
+    const aside = screen.getByRole('complementary')
+    expect(aside.className).toContain('translate-x-0')
+    expect(screen.queryByLabelText('Restore books sidebar')).not.toBeInTheDocument()
+    expect(screen.getByTestId('pdf-iframe')).toBeInTheDocument()
+  })
+
+  it('minimize from the internal list preserves the list state on restore', async () => {
+    renderSidebar()
+
+    fireEvent.click(screen.getByLabelText('Open books sidebar'))
+    await screen.findByText('Campaign Books')
+
+    fireEvent.click(screen.getByLabelText('Minimize books sidebar'))
+
+    // List stays mounted (offscreen), just hidden.
+    expect(screen.getByRole('complementary').className).toContain('translate-x-full')
+    expect(screen.getByText('Campaign Books')).toBeInTheDocument()
+    expect(screen.getByLabelText('Restore books sidebar')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Restore books sidebar'))
+
+    expect(screen.getByRole('complementary').className).toContain('translate-x-0')
+    expect(screen.getByText('Campaign Books')).toBeInTheDocument()
+    expect(screen.getByText('Campaign Guide')).toBeInTheDocument()
+  })
+
+  it('auto-unminimizes when a new book is selected', async () => {
+    const onClose = vi.fn()
+    const { rerender } = render(
+      <PdfViewerSidebar adventureId="adv-1" isGM={true} bookId="book-1" onClose={onClose} />,
+    )
+    await screen.findByTestId('pdf-iframe')
+
+    fireEvent.click(screen.getByLabelText('Minimize books sidebar'))
+    expect(screen.getByRole('complementary').className).toContain('translate-x-full')
+
+    rerender(
+      <PdfViewerSidebar adventureId="adv-1" isGM={true} bookId="book-2" onClose={onClose} />,
+    )
+
+    const aside = screen.getByRole('complementary')
+    expect(aside.className).toContain('translate-x-0')
+    const iframe = await screen.findByTestId('pdf-iframe')
+    expect(iframe).toHaveAttribute('src', 'http://localhost:3001/api/adventures/adv-1/books/book-2/file')
+  })
+
+  it('full close clears the persisted book selection from localStorage', async () => {
+    renderSidebar({ bookId: 'book-1' })
+
+    await screen.findByTestId('pdf-iframe')
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem('pdf-viewer:adv-1') || '{}')
+      expect(stored.bookId).toBe('book-1')
+    })
+
+    fireEvent.click(screen.getByLabelText('Close sidebar'))
+
+    expect(localStorage.getItem('pdf-viewer:adv-1')).toBeNull()
   })
 
   /* ── Responsive sidebar ── */

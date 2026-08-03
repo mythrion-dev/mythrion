@@ -169,6 +169,9 @@ describe('SummonResourceCard', () => {
         summonSkills: [
           { id: 'sk-1', abilityId: 'summon-1', name: 'Athletics', manualValue: 5 },
         ],
+        summonResistances: [
+          { id: 'sr-1', abilityId: 'summon-1', name: 'Fire', value: 'Immunity' },
+        ],
       })
       const attrs = makeAttributeDisplays()
 
@@ -184,6 +187,9 @@ describe('SummonResourceCard', () => {
           handleAddSummonSkill={handleAddSummonSkill}
           handleUpdateSummonSkill={handleUpdateSummonSkill}
           handleRemoveSummonSkill={handleRemoveSummonSkill}
+          handleAddSummonResistance={vi.fn()}
+          handleUpdateSummonResistance={vi.fn()}
+          handleRemoveSummonResistance={vi.fn()}
         />
       )
 
@@ -204,6 +210,11 @@ describe('SummonResourceCard', () => {
       // Skills section
       expect(screen.getByText('Skills')).toBeTruthy()
       expect(screen.getByText('+ Add Skill')).toBeTruthy()
+
+      // Resistances section
+      expect(screen.getByText('Resistances')).toBeTruthy()
+      expect(screen.getByText('+ Add Resistance')).toBeTruthy()
+      expect(screen.getByText('Immunity')).toBeTruthy()
     })
 
     it('renders attributes with modifier values', () => {
@@ -900,6 +911,388 @@ describe('SummonResourceCard', () => {
     })
   })
 
+  describe('Resistances list', () => {
+    it('shows resistances from summonResistances array', () => {
+      const ability = makeAbility({
+        summonResistances: [
+          { id: 'sr-1', abilityId: 'summon-1', name: 'Fire', value: 'Immunity' },
+          { id: 'sr-2', abilityId: 'summon-1', name: 'Cold', value: '5' },
+        ],
+      })
+
+      render(
+        <SummonResourceCard
+          ability={ability}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: false })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+        />
+      )
+
+      expect(screen.getByText('Fire')).toBeTruthy()
+      expect(screen.getByText('Cold')).toBeTruthy()
+      expect(screen.getByText('Immunity')).toBeTruthy()
+      expect(screen.getByText('5')).toBeTruthy()
+    })
+
+    it('shows empty state when no resistances', () => {
+      render(
+        <SummonResourceCard
+          ability={makeAbility()}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: true })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+        />
+      )
+
+      expect(screen.getByText('No resistances yet. Add one!')).toBeTruthy()
+    })
+
+    it('shows InlineText for name and value of each resistance when canEdit is true', () => {
+      const ability = makeAbility({
+        summonResistances: [
+          { id: 'sr-1', abilityId: 'summon-1', name: 'Fire', value: 'Immunity' },
+        ],
+      })
+
+      render(
+        <SummonResourceCard
+          ability={ability}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: true })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+          handleAddSummonResistance={vi.fn()}
+          handleUpdateSummonResistance={vi.fn()}
+          handleRemoveSummonResistance={vi.fn()}
+        />
+      )
+
+      const inlineTexts = screen.getAllByTestId('inline-text')
+      const nameInline = inlineTexts.find(el => el.getAttribute('data-value') === 'Fire')
+      const valueInline = inlineTexts.find(el => el.getAttribute('data-value') === 'Immunity')
+      expect(nameInline).toBeTruthy()
+      expect(valueInline).toBeTruthy()
+    })
+
+    it('renders plain text for resistance name and value when canEdit is false', () => {
+      const ability = makeAbility({
+        summonResistances: [
+          { id: 'sr-1', abilityId: 'summon-1', name: 'Fire', value: 'Immunity' },
+        ],
+      })
+
+      render(
+        <SummonResourceCard
+          ability={ability}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: false })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+        />
+      )
+
+      // Should not have inline-edit buttons
+      expect(screen.queryAllByTestId('inline-text').length).toBe(0)
+    })
+
+    it('calls handleUpdateSummonResistance when resistance name is saved', () => {
+      const handleUpdateSummonResistance = vi.fn()
+      const ability = makeAbility({
+        summonResistances: [
+          { id: 'sr-1', abilityId: 'summon-1', name: 'Fire', value: 'Immunity' },
+        ],
+      })
+
+      render(
+        <SummonResourceCard
+          ability={ability}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: true })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+          handleAddSummonResistance={vi.fn()}
+          handleUpdateSummonResistance={handleUpdateSummonResistance}
+          handleRemoveSummonResistance={vi.fn()}
+        />
+      )
+
+      // Click the InlineText for the resistance name
+      const inlineTexts = screen.getAllByTestId('inline-text')
+      const nameInline = inlineTexts.find(el => el.getAttribute('data-value') === 'Fire')
+      expect(nameInline).toBeTruthy()
+      if (nameInline) {
+        fireEvent.click(nameInline)
+      }
+
+      expect(handleUpdateSummonResistance).toHaveBeenCalledWith('summon-1', 'sr-1', 'saved-name', 'Immunity')
+    })
+
+    it('calls handleUpdateSummonResistance when resistance value is saved', () => {
+      const handleUpdateSummonResistance = vi.fn()
+      const ability = makeAbility({
+        summonResistances: [
+          { id: 'sr-1', abilityId: 'summon-1', name: 'Fire', value: 'Immunity' },
+        ],
+      })
+
+      render(
+        <SummonResourceCard
+          ability={ability}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: true })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+          handleAddSummonResistance={vi.fn()}
+          handleUpdateSummonResistance={handleUpdateSummonResistance}
+          handleRemoveSummonResistance={vi.fn()}
+        />
+      )
+
+      // Click the InlineText for the resistance value
+      const inlineTexts = screen.getAllByTestId('inline-text')
+      const valueInline = inlineTexts.find(el => el.getAttribute('data-value') === 'Immunity')
+      expect(valueInline).toBeTruthy()
+      if (valueInline) {
+        fireEvent.click(valueInline)
+      }
+
+      expect(handleUpdateSummonResistance).toHaveBeenCalledWith('summon-1', 'sr-1', 'Fire', 'saved-name')
+    })
+
+    it('calls handleRemoveSummonResistance when remove button is clicked', () => {
+      const handleRemoveSummonResistance = vi.fn()
+      const ability = makeAbility({
+        summonResistances: [
+          { id: 'sr-1', abilityId: 'summon-1', name: 'Fire', value: 'Immunity' },
+        ],
+      })
+
+      render(
+        <SummonResourceCard
+          ability={ability}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: true })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+          handleAddSummonResistance={vi.fn()}
+          handleUpdateSummonResistance={vi.fn()}
+          handleRemoveSummonResistance={handleRemoveSummonResistance}
+        />
+      )
+
+      const removeBtn = screen.getByTitle('Remove resistance')
+      expect(removeBtn).toBeTruthy()
+      fireEvent.click(removeBtn)
+
+      expect(handleRemoveSummonResistance).toHaveBeenCalledWith('summon-1', 'sr-1')
+    })
+  })
+
+  describe('Add resistance form', () => {
+    it('shows add resistance form when "+ Add Resistance" is clicked', async () => {
+      render(
+        <SummonResourceCard
+          ability={makeAbility()}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: true })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+          handleAddSummonResistance={vi.fn()}
+          handleUpdateSummonResistance={vi.fn()}
+          handleRemoveSummonResistance={vi.fn()}
+        />
+      )
+
+      // Click add resistance
+      await act(async () => {
+        fireEvent.click(screen.getByText('+ Add Resistance'))
+      })
+
+      const nameInput = screen.getByPlaceholderText('Resistance name')
+      expect(nameInput).toBeTruthy()
+      expect(screen.getByText('Add')).toBeTruthy()
+      expect(screen.getByText('Cancel')).toBeTruthy()
+    })
+
+    it('calls handleAddSummonResistance when add form is submitted', async () => {
+      const handleAddSummonResistance = vi.fn()
+
+      render(
+        <SummonResourceCard
+          ability={makeAbility()}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: true })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+          handleAddSummonResistance={handleAddSummonResistance}
+          handleUpdateSummonResistance={vi.fn()}
+          handleRemoveSummonResistance={vi.fn()}
+        />
+      )
+
+      // Open add form
+      await act(async () => {
+        fireEvent.click(screen.getByText('+ Add Resistance'))
+      })
+
+      // Fill in the name
+      const nameInput = screen.getByPlaceholderText('Resistance name')
+      fireEvent.change(nameInput, { target: { value: 'Cold' } })
+
+      // Fill in the value
+      const valueInput = screen.getByPlaceholderText('Value')
+      fireEvent.change(valueInput, { target: { value: 'Resistant' } })
+
+      // Click Add
+      await act(async () => {
+        fireEvent.click(screen.getByText('Add'))
+      })
+
+      expect(handleAddSummonResistance).toHaveBeenCalledWith('summon-1', 'Cold', 'Resistant')
+    })
+
+    it('does not call handleAddSummonResistance with empty name', async () => {
+      const handleAddSummonResistance = vi.fn()
+
+      render(
+        <SummonResourceCard
+          ability={makeAbility()}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: true })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+          handleAddSummonResistance={handleAddSummonResistance}
+          handleUpdateSummonResistance={vi.fn()}
+          handleRemoveSummonResistance={vi.fn()}
+        />
+      )
+
+      // Open add form
+      await act(async () => {
+        fireEvent.click(screen.getByText('+ Add Resistance'))
+      })
+
+      // Click Add without filling name
+      await act(async () => {
+        fireEvent.click(screen.getByText('Add'))
+      })
+
+      expect(handleAddSummonResistance).not.toHaveBeenCalled()
+    })
+
+    it('hides add form on Cancel', async () => {
+      render(
+        <SummonResourceCard
+          ability={makeAbility()}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: true })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+          handleAddSummonResistance={vi.fn()}
+          handleUpdateSummonResistance={vi.fn()}
+          handleRemoveSummonResistance={vi.fn()}
+        />
+      )
+
+      // Open add form
+      await act(async () => {
+        fireEvent.click(screen.getByText('+ Add Resistance'))
+      })
+      expect(screen.getByPlaceholderText('Resistance name')).toBeTruthy()
+
+      // Cancel
+      await act(async () => {
+        fireEvent.click(screen.getByText('Cancel'))
+      })
+      expect(screen.queryByPlaceholderText('Resistance name')).toBeNull()
+      expect(screen.getByText('+ Add Resistance')).toBeTruthy()
+    })
+
+    it('disables Add button when name is empty', async () => {
+      render(
+        <SummonResourceCard
+          ability={makeAbility()}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: true })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+          handleAddSummonResistance={vi.fn()}
+          handleUpdateSummonResistance={vi.fn()}
+          handleRemoveSummonResistance={vi.fn()}
+        />
+      )
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('+ Add Resistance'))
+      })
+      const addBtn = screen.getByText('Add') as HTMLButtonElement
+      expect(addBtn.disabled).toBe(true)
+    })
+  })
+
   describe('Permissions disabled state', () => {
     it('does not show Add Skill button when canEdit is false', () => {
       render(
@@ -943,6 +1336,56 @@ describe('SummonResourceCard', () => {
       )
 
       expect(screen.queryByTitle('Remove skill')).toBeNull()
+    })
+
+    it('does not show Add Resistance button when canEdit is false', () => {
+      render(
+        <SummonResourceCard
+          ability={makeAbility()}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: false })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+          handleAddSummonResistance={vi.fn()}
+          handleUpdateSummonResistance={vi.fn()}
+          handleRemoveSummonResistance={vi.fn()}
+        />
+      )
+
+      expect(screen.queryByText('+ Add Resistance')).toBeNull()
+    })
+
+    it('does not show resistance remove buttons when canEdit is false', () => {
+      const ability = makeAbility({
+        summonResistances: [
+          { id: 'sr-1', abilityId: 'summon-1', name: 'Fire', value: 'Immunity' },
+        ],
+      })
+
+      render(
+        <SummonResourceCard
+          ability={ability}
+          attributeDisplays={[]}
+          acResult={null}
+          permissions={editPermissions({ canEditAbilities: false })}
+          saveSummonAttribute={vi.fn()}
+          saveSummonAcValue={vi.fn()}
+          saveSummonHealth={vi.fn()}
+          handleAddSummonSkill={vi.fn()}
+          handleUpdateSummonSkill={vi.fn()}
+          handleRemoveSummonSkill={vi.fn()}
+          handleAddSummonResistance={vi.fn()}
+          handleUpdateSummonResistance={vi.fn()}
+          handleRemoveSummonResistance={vi.fn()}
+        />
+      )
+
+      expect(screen.queryByTitle('Remove resistance')).toBeNull()
     })
   })
 

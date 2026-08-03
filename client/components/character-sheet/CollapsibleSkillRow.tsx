@@ -108,7 +108,7 @@ export function CollapsibleSkillRow({
               className="input-field py-1 text-xs w-20"
               value={others || ''}
               placeholder="0"
-              onChange={e => onOthersChange(parseInt(e.target.value, 10) || 0)}
+              onChange={e => onOthersChange(Number.parseInt(e.target.value, 10) || 0)}
             />
             <span className="text-xs font-mono text-primary">+{others}</span>
           </div>

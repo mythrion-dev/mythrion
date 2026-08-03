@@ -10,10 +10,9 @@
  * 🟢 You can import this file directly.
  */
 
-import * as process from 'node:process'
-import * as path from 'node:path'
-import { fileURLToPath } from 'node:url'
-globalThis['__dirname'] = path.dirname(fileURLToPath(import.meta.url))
+// Note: __dirname is set from the compiled CJS output;
+// import.meta.url removed for CJS compatibility with Node.js 24+.
+globalThis['__dirname'] = __dirname
 
 import * as runtime from "@prisma/client/runtime/client"
 import * as $Enums from "./enums.js"
@@ -251,6 +250,11 @@ export type CharacterAbilityLevel = Prisma.CharacterAbilityLevelModel
  * 
  */
 export type SummonSkill = Prisma.SummonSkillModel
+/**
+ * Model SummonResistance
+ * 
+ */
+export type SummonResistance = Prisma.SummonResistanceModel
 /**
  * Model SummonAttribute
  * 

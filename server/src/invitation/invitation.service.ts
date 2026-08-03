@@ -71,14 +71,24 @@ export class InvitationService {
       where: { id: params.createdById },
     })
 
-    await this.email.sendInvitation({
-      to: params.invitedEmail,
-      campaignName: adventure.name,
-      inviterName: inviter?.displayName ?? inviter?.email ?? 'Someone',
-      role: 'PLAYER',
-      inviteUrl: `${APP_URL}/invite/${token}`,
-      expiresAt: invitation.expiresAt,
-    })
+    try {
+      await this.email.sendInvitation({
+        to: params.invitedEmail,
+        campaignName: adventure.name,
+        inviterName: inviter?.displayName ?? inviter?.email ?? 'Someone',
+        role: 'PLAYER',
+        inviteUrl: `${APP_URL}/invite/${token}`,
+        expiresAt: invitation.expiresAt,
+      })
+    } catch (err) {
+      // The invitation is useless if the email can't be delivered — roll it back
+      // and surface the failure so the GM sees exactly what went wrong.
+      await this.prisma.campaignInvitation
+        .delete({ where: { id: invitation.id } })
+        .catch(() => undefined)
+      const message = err instanceof Error ? err.message : String(err)
+      throw new BadRequestException(`Failed to send invitation email: ${message}`)
+    }
 
     return { success: true, invitationId: invitation.id }
   }

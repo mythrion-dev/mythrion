@@ -1,5 +1,5 @@
 import { Injectable, Logger, UnprocessableEntityException } from '@nestjs/common'
-import { createHash, timingSafeEqual } from 'crypto'
+import { createHash, timingSafeEqual } from 'node:crypto'
 import type {
   PaymentGateway,
   CreateSubscriptionParams,

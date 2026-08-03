@@ -9,25 +9,25 @@ interface FolderPage {
 }
 
 interface NotebookFolderProps {
-  id: string
-  name: string
-  pages: FolderPage[]
-  activePageId: string | null
-  isExpanded: boolean
+  readonly id: string
+  readonly name: string
+  readonly pages: FolderPage[]
+  readonly activePageId: string | null
+  readonly isExpanded: boolean
   /** Called when this folder is a drop target for a page */
-  onDragOverFolder?: (folderId: string | null) => void
-  onToggle: () => void
-  onPageClick: (pageId: string) => void
-  onDeletePage: (pageId: string) => void
-  onRename: (folderId: string, newName: string) => void
+  readonly onDragOverFolder?: (folderId: string | null) => void
+  readonly onToggle: () => void
+  readonly onPageClick: (pageId: string) => void
+  readonly onDeletePage: (pageId: string) => void
+  readonly onRename: (folderId: string, newName: string) => void
   /** Called to request folder deletion dialog (sidebar manages it) */
-  onDeleteFolderRequest?: (folderId: string) => void
+  readonly onDeleteFolderRequest?: (folderId: string) => void
   /** Called to create a new page inside this folder */
-  onCreatePage?: (folderId: string) => void
+  readonly onCreatePage?: (folderId: string) => void
   /** Called when a page is dropped onto this folder */
-  onDropOnFolder?: (folderId: string, pageId: string) => void
+  readonly onDropOnFolder?: (folderId: string, pageId: string) => void
   /** Called when right-click on a page inside this folder */
-  onPageContextMenu?: (pageId: string, e: React.MouseEvent) => void
+  readonly onPageContextMenu?: (pageId: string, e: React.MouseEvent) => void
 }
 
 export function NotebookFolder({
@@ -45,7 +45,7 @@ export function NotebookFolder({
   onCreatePage,
   onDropOnFolder,
   onPageContextMenu,
-}: NotebookFolderProps) {
+}: Readonly<NotebookFolderProps>) {
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState(name)
   const [showMenu, setShowMenu] = useState(false)
@@ -124,8 +124,9 @@ export function NotebookFolder({
       onDrop={handleDrop}
     >
       {/* Folder header */}
-      <div
-        className="group flex items-center gap-1 px-1 py-1 rounded-md hover:bg-hover cursor-pointer select-none"
+      <button
+        type="button"
+        className="group flex items-center gap-1 px-1 py-1 rounded-md hover:bg-hover cursor-pointer select-none w-full border-0 bg-transparent text-left"
         onClick={handleHeaderClick}
       >
         {/* Expand/collapse chevron */}
@@ -201,7 +202,11 @@ export function NotebookFolder({
               <div
                 ref={menuRef}
                 className="absolute right-0 top-full mt-1 z-50 min-w-[160px] bg-surface border border-border rounded-lg shadow-xl py-1"
+                role="menu"
                 onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setShowMenu(false)
+                }}
               >
                 <button
                   type="button"
@@ -251,7 +256,7 @@ export function NotebookFolder({
             )}
           </div>
         )}
-      </div>
+      </button>
 
       {/* Pages inside folder */}
       {isExpanded && (

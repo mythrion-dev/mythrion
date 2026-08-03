@@ -137,6 +137,34 @@ ALLOWED_ORIGINS=https://mythrion.vercel.app,https://mythrion.com.br,https://myth
 
 ---
 
+### 9. SMTP — Outbound Email
+
+Sends invitation emails (currently the only outbound email). Uses nodemailer with a custom SMTP server.
+
+| Variable | Description |
+|---|---|
+| `SMTP_HOST` | Your SMTP server hostname. **When unset, sending is disabled** — the server logs a `[DEV]` message and no email is sent (safe for local dev). |
+| `SMTP_PORT` | SMTP port. Default `587`. |
+| `SMTP_SECURE` | `true` for implicit TLS (usually port `465`), `false` for STARTTLS (`587`/`25`). Leave empty to auto-detect from the port (`465` → `true`, otherwise `false`). |
+| `SMTP_USER` | SMTP username / API key. |
+| `SMTP_PASS` | SMTP password / API token. |
+| `EMAIL_FROM` | `From` address shown on invitations. Default `Mythrion <noreply@mythrion.com>`. **The domain must be authorized by your SMTP provider (SPF/DKIM), otherwise email is rejected or lands in spam.** |
+
+Example:
+
+```env
+SMTP_HOST=smtp.yourprovider.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=apikey
+SMTP_PASS=your-token
+EMAIL_FROM=Mythrion <noreply@mythrion.com>
+```
+
+> **Failure semantics:** if the SMTP server rejects the message, the invitation is **rolled back** (the pending invite is deleted) and the GM sees `Failed to send invitation email: <reason>` in the dashboard — nothing is silently lost.
+
+---
+
 ## Setting Up on Railway
 
 ### Per-Environment Configuration

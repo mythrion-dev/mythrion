@@ -36,6 +36,7 @@ describe('SubscriptionGuard', () => {
 
     adminService = {
       isAdmin: jest.fn(),
+      isEarlyAccess: jest.fn(),
     } as unknown as jest.Mocked<AdminService>
 
     subscriptionService = {
@@ -99,6 +100,37 @@ describe('SubscriptionGuard', () => {
       expect(result).toBe(true)
       expect(adminService.isAdmin).toHaveBeenCalledWith('admin@mythrion.com')
       expect(subscriptionService.hasActiveSubscription).not.toHaveBeenCalled()
+    })
+
+    it('allows early-access users without checking subscription', async () => {
+      reflector.getAllAndOverride.mockReturnValue(false)
+      adminService.isAdmin.mockReturnValue(false)
+      adminService.isEarlyAccess.mockReturnValue(true)
+
+      const result = await guard.canActivate(
+        createMockContext({
+          user: { sub: 'early-1', email: 'early@mythrion.com', role: 'early_access' },
+        }),
+      )
+
+      expect(result).toBe(true)
+      expect(adminService.isEarlyAccess).toHaveBeenCalledWith('early@mythrion.com')
+      expect(subscriptionService.hasActiveSubscription).not.toHaveBeenCalled()
+    })
+
+    it('blocks early-access users from the subscription check only when not in the list', async () => {
+      reflector.getAllAndOverride.mockReturnValue(false)
+      adminService.isAdmin.mockReturnValue(false)
+      adminService.isEarlyAccess.mockReturnValue(false)
+      subscriptionService.hasActiveSubscription.mockResolvedValue(false)
+
+      await expect(
+        guard.canActivate(
+          createMockContext({
+            user: { sub: 'u1', email: 'user@test.com', role: 'user' },
+          }),
+        ),
+      ).rejects.toThrow(ForbiddenException)
     })
   })
 

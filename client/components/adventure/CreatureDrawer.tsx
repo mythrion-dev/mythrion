@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback, type FormEvent } from 'react'
-import { api, API_URL } from '@/lib/api'
+import { useState, useEffect, useCallback, type SubmitEvent } from 'react'
+import { api, API_URL, authFetch } from '@/lib/api'
 import { NumericInput } from '@/components/shared/NumericInput'
 
 /* ── Types (mirroring the backend for type safety) ── */
@@ -147,10 +147,10 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
       try {
         const vars: Record<string, number> = {}
         tpl.attributes.forEach(a => {
-          const v = parseFloat(attrs.find(s => s.attributeId === a.id)?.value ?? '0')
-          vars[a.key] = isNaN(v) ? 0 : v
+          const v = Number.parseFloat(attrs.find(s => s.attributeId === a.id)?.value ?? '0')
+          vars[a.key] = Number.isNaN(v) ? 0 : v
         })
-        vars['value'] = parseFloat(attrs.find(s => s.attributeId === attr.id)?.value ?? '0') || 0
+        vars['value'] = Number.parseFloat(attrs.find(s => s.attributeId === attr.id)?.value ?? '0') || 0
         const res = await api.post<{ result: number }>('/formula/evaluate', { formula, variables: vars })
         results[attr.id] = res.result
       } catch { results[attr.id] = null }
@@ -215,10 +215,8 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
     try {
       const formData = new FormData()
       formData.append('avatar', file)
-      const token = localStorage.getItem('accessToken')
-      await fetch(`${API_URL}/images/abilities/${ability.id}/avatar`, {
+      await authFetch(`${API_URL}/images/abilities/${ability.id}/avatar`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       })
       setAvatarKey(k => k + 1)
@@ -232,7 +230,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
 
   /* ── Child ability CRUD ── */
 
-  async function handleCreateChildAbility(e: FormEvent) {
+  async function handleCreateChildAbility(e: SubmitEvent) {
     e.preventDefault()
     if (!ability || !sheetId || !newChildAbilityForm.name.trim()) return
     setChildAbilitySaving(true)
@@ -241,7 +239,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
       const body: Record<string, unknown> = {
         name: newChildAbilityForm.name.trim(),
         description: newChildAbilityForm.description.trim() || undefined,
-        manaCost: newChildAbilityForm.manaCost.trim() ? parseInt(newChildAbilityForm.manaCost, 10) : undefined,
+        manaCost: newChildAbilityForm.manaCost.trim() ? Number.parseInt(newChildAbilityForm.manaCost, 10) : undefined,
         range: newChildAbilityForm.range.trim() || undefined,
         damage: newChildAbilityForm.damage.trim() || undefined,
       }
@@ -305,7 +303,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
       const body: Record<string, unknown> = {}
       if (field === 'level') body.level = value.trim()
       else if (field === 'description') body.description = value.trim() || null
-      else if (field === 'manaCost') body.manaCost = value.trim() ? parseInt(value, 10) : null
+      else if (field === 'manaCost') body.manaCost = value.trim() ? Number.parseInt(value, 10) : null
       else if (field === 'range') body.range = value.trim() || null
       else if (field === 'notes') body.notes = value.trim() || null
       else if (field === 'damage') body.damage = value.trim() || null
@@ -328,7 +326,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
     try {
       const existingLevels = childAbilities.find(c => c.id === childId)?.levels ?? []
       const nextLevel = existingLevels.length > 0
-        ? String(Math.max(...existingLevels.map(l => parseInt(l.level || '0', 10))) + 1)
+        ? String(Math.max(...existingLevels.map(l => Number.parseInt(l.level || '0', 10))) + 1)
         : '1'
       const lvl = await api.post<AbilityLevel>(`/character-sheets/${sheetId}/abilities/${childId}/levels`, {
         level: nextLevel,

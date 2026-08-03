@@ -12,6 +12,7 @@ import * as bcrypt from 'bcrypt'
 
 const REFRESH_TOKEN_EXPIRY_DAYS = 30
 const ACCESS_TOKEN_EXPIRY = '15m'
+const MAX_ACTIVE_REFRESH_TOKENS = 5
 
 @Injectable()
 export class TokenService {
@@ -24,11 +25,22 @@ export class TokenService {
 
   /** Generate access token (short-lived) and refresh token (long-lived, stored in DB) */
   async generateTokens(userId: string, email: string) {
-    const role = this.adminService.isAdmin(email) ? 'admin' : 'user'
+    const role = this.adminService.isAdmin(email)
+      ? 'admin'
+      : this.adminService.isEarlyAccess(email)
+        ? 'early_access'
+        : 'user'
     const accessToken = this.jwtService.sign(
       { sub: userId, email, role },
       { expiresIn: ACCESS_TOKEN_EXPIRY },
     )
+
+    // A prior logout (revokeAllTokens) leaves a Redis `token_blacklist:{userId}`
+    // marker with a 30-day TTL. The user is explicitly authenticating again here
+    // (login / register / Google / refresh), so clear that marker — otherwise the
+    // first refresh after this access token expires would be rejected and the
+    // user would be force-logged-out at the ~15 minute mark.
+    await this.redis.del(`token_blacklist:${userId}`)
 
     const refreshToken = await this.createRefreshToken(userId)
 
@@ -37,12 +49,6 @@ export class TokenService {
 
   /** Create a refresh token stored in the database */
   private async createRefreshToken(userId: string): Promise<string> {
-    // Revoke all existing refresh tokens for this user
-    await this.prisma.refreshToken.updateMany({
-      where: { userId, revoked: false },
-      data: { revoked: true },
-    })
-
     const rawToken = uuid()
     // UUIDs already have ~122 bits of entropy; bcrypt cost factor 10 is
     // sufficient and avoids ~300ms delays with cost 12 under CPU contention.
@@ -58,6 +64,24 @@ export class TokenService {
         expiresAt,
       },
     })
+
+    // Cap the number of live refresh tokens per user so a growing pile of
+    // rotated rows never accumulates. The newest MAX_ACTIVE_REFRESH_TOKENS are
+    // kept (the one just created plus the most recent siblings); any older live
+    // tokens are dropped. We deliberately do NOT revoke all siblings on issue —
+    // that would log the user out of their other devices on every login/refresh.
+    const recent = await this.prisma.refreshToken.findMany({
+      where: { userId, revoked: false },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+      take: MAX_ACTIVE_REFRESH_TOKENS,
+    })
+    if (recent.length >= MAX_ACTIVE_REFRESH_TOKENS) {
+      const keepIds = recent.map((t) => t.id)
+      await this.prisma.refreshToken.deleteMany({
+        where: { userId, revoked: false, id: { notIn: keepIds } },
+      })
+    }
 
     // Return the raw token (not the hash) so it can be sent to the client
     // We'll also encode the userId in the token for lookup during refresh
@@ -114,11 +138,10 @@ export class TokenService {
     }
 
     if (!matched) {
-      // If no match found, revoke ALL tokens for security (potential token theft)
-      await this.prisma.refreshToken.updateMany({
-        where: { userId, revoked: false },
-        data: { revoked: true },
-      })
+      // No stored token matched the presented raw token. This is usually a
+      // stale/expired token, not theft. Reject this attempt only — revoking
+      // every live token here would cascade-log-out the user's other devices
+      // for a single bad token. The presented token is simply invalid.
       throw new UnauthorizedException('Invalid refresh token')
     }
 

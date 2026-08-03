@@ -26,6 +26,10 @@ interface SummonResourceCardProps {
   handleAddSummonSkill: (abilityId: string, name: string, manualValue: number) => Promise<void>
   handleUpdateSummonSkill: (abilityId: string, skillId: string, name: string, manualValue: number) => Promise<void>
   handleRemoveSummonSkill: (abilityId: string, summonSkillId: string) => Promise<void>
+  /** Optional: resistance handlers — render the Resistances card when provided */
+  handleAddSummonResistance?: (abilityId: string, name: string, value: string) => Promise<void>
+  handleUpdateSummonResistance?: (abilityId: string, summonResistanceId: string, name: string, value: string) => Promise<void>
+  handleRemoveSummonResistance?: (abilityId: string, summonResistanceId: string) => Promise<void>
   /** Optional: save callback for summon description (moved from AbilitiesTab) */
   saveDescription?: (abilityId: string, value: string) => Promise<void>
   /** Optional: save callback for summon notes (moved from AbilitiesTab) */
@@ -43,12 +47,16 @@ export function SummonResourceCard({
   handleAddSummonSkill,
   handleUpdateSummonSkill,
   handleRemoveSummonSkill,
+  handleAddSummonResistance,
+  handleUpdateSummonResistance,
+  handleRemoveSummonResistance,
   saveDescription,
   saveNotes,
 }: SummonResourceCardProps) {
   const canEdit = permissions.canEditAbilities
   const health = ability.summonHealth
   const skills = ability.summonSkills ?? []
+  const resistances = ability.summonResistances ?? []
   const acValue = ability.summonAcValues?.[0]
   const hasNotes = ability.description || ability.notes || canEdit
 
@@ -57,6 +65,12 @@ export function SummonResourceCard({
   const [newSkillName, setNewSkillName] = useState('')
   const [newSkillValue, setNewSkillValue] = useState('0')
   const [addingSkill, setAddingSkill] = useState(false)
+
+  // Resistance add form state
+  const [showAddResistance, setShowAddResistance] = useState(false)
+  const [newResistanceName, setNewResistanceName] = useState('')
+  const [newResistanceValue, setNewResistanceValue] = useState('')
+  const [addingResistance, setAddingResistance] = useState(false)
 
   async function handleSaveSummonSkillName(skillId: string, name: string) {
     const skill = skills.find(s => s.id === skillId)
@@ -72,8 +86,8 @@ export function SummonResourceCard({
 
   async function handleAddSkillSubmit() {
     const name = newSkillName.trim()
-    const value = parseInt(newSkillValue, 10)
-    if (!name || isNaN(value)) return
+    const value = Number.parseInt(newSkillValue, 10)
+    if (!name || Number.isNaN(value)) return
     setAddingSkill(true)
     try {
       await handleAddSummonSkill(ability.id, name, value)
@@ -89,6 +103,39 @@ export function SummonResourceCard({
     setShowAddSkill(false)
     setNewSkillName('')
     setNewSkillValue('0')
+  }
+
+  // ── Resistance helpers ──
+  async function handleSaveSummonResistanceName(resistanceId: string, name: string) {
+    const r = resistances.find(x => x.id === resistanceId)
+    if (!r || !handleUpdateSummonResistance) return
+    await handleUpdateSummonResistance(ability.id, resistanceId, name, r.value)
+  }
+
+  async function handleSaveSummonResistanceValue(resistanceId: string, value: string) {
+    const r = resistances.find(x => x.id === resistanceId)
+    if (!r || !handleUpdateSummonResistance) return
+    await handleUpdateSummonResistance(ability.id, resistanceId, r.name, value)
+  }
+
+  async function handleAddResistanceSubmit() {
+    const name = newResistanceName.trim()
+    if (!name || !handleAddSummonResistance) return
+    setAddingResistance(true)
+    try {
+      await handleAddSummonResistance(ability.id, name, newResistanceValue.trim())
+      setShowAddResistance(false)
+      setNewResistanceName('')
+      setNewResistanceValue('')
+    } finally {
+      setAddingResistance(false)
+    }
+  }
+
+  function handleCancelAddResistance() {
+    setShowAddResistance(false)
+    setNewResistanceName('')
+    setNewResistanceValue('')
   }
 
   // ── Attribute modifier display ──
@@ -300,6 +347,110 @@ export function SummonResourceCard({
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── Resistances Card ── */}
+      <div className={sectionCardClass}>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className={sectionTitleClass + ' !mb-0'}>Resistances</h4>
+          {canEdit && !showAddResistance && (
+            <button
+              onClick={() => setShowAddResistance(true)}
+              className="text-xs text-primary hover:underline"
+              type="button"
+            >
+              + Add Resistance
+            </button>
+          )}
+        </div>
+
+        {resistances.length === 0 && !showAddResistance ? (
+          <p className="text-xs text-muted italic">No resistances yet. Add one!</p>
+        ) : (
+          <div className="space-y-1.5">
+            {resistances.map(resistance => (
+              <div
+                key={resistance.id}
+                className="flex items-center gap-2 bg-background/40 border border-border/40 rounded-md px-3 py-1.5"
+              >
+                {canEdit ? (
+                  <>
+                    <InlineText
+                      value={resistance.name}
+                      onSave={async (name) => handleSaveSummonResistanceName(resistance.id, name)}
+                      placeholder="Resistance name"
+                      className="flex-1 text-sm font-medium min-w-0"
+                      inputClassName="text-sm"
+                      emptyDisplay="Unnamed"
+                    />
+                    <InlineText
+                      value={resistance.value}
+                      onSave={async (value) => handleSaveSummonResistanceValue(resistance.id, value)}
+                      placeholder="Value"
+                      className="w-24 text-right text-sm tabular-nums font-semibold text-foreground"
+                      inputClassName="w-24 text-right text-sm"
+                      emptyDisplay="—"
+                    />
+                    <button
+                      onClick={() => handleRemoveSummonResistance?.(ability.id, resistance.id)}
+                      className="text-muted hover:text-danger p-1 transition-colors shrink-0"
+                      title="Remove resistance"
+                      type="button"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex-1 text-sm font-medium">{resistance.name}</span>
+                    <span className="text-sm font-semibold text-foreground">{resistance.value || '—'}</span>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add Resistance Form */}
+        {showAddResistance && canEdit && (
+          <div className="flex items-center gap-2 mt-3 bg-background/50 border border-border/50 rounded-md px-3 py-2">
+            <input
+              type="text"
+              value={newResistanceName}
+              onChange={e => setNewResistanceName(e.target.value)}
+              placeholder="Resistance name"
+              className="flex-1 bg-transparent border border-border rounded px-2 py-1 text-xs text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary"
+              autoFocus
+              disabled={addingResistance}
+            />
+            <input
+              type="text"
+              value={newResistanceValue}
+              onChange={e => setNewResistanceValue(e.target.value)}
+              placeholder="Value"
+              className="w-24 bg-transparent border border-border rounded px-2 py-1 text-xs text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary"
+              disabled={addingResistance}
+            />
+            <button
+              onClick={handleAddResistanceSubmit}
+              disabled={addingResistance || !newResistanceName.trim()}
+              className="px-2.5 py-1 text-xs font-semibold rounded-md bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              type="button"
+            >
+              Add
+            </button>
+            <button
+              onClick={handleCancelAddResistance}
+              disabled={addingResistance}
+              className="px-2 py-1 text-xs text-muted hover:text-foreground transition-colors disabled:opacity-40"
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Row 3: Notes Card (Description + Notes) ── */}

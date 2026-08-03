@@ -20,10 +20,9 @@ export function GracePeriodBanner() {
     }
 
     function calcDays() {
-      const sub = subscription
-      if (!sub || !sub.graceEndsAt) return
+      if (!subscription?.graceEndsAt) return
       const now = Date.now()
-      const graceEnd = new Date(sub.graceEndsAt).getTime()
+      const graceEnd = new Date(subscription.graceEndsAt).getTime()
       const diff = graceEnd - now
       setDaysLeft(Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24))))
     }
@@ -35,7 +34,7 @@ export function GracePeriodBanner() {
     return () => clearInterval(interval)
   }, [subscription])
 
-  if (!subscription || subscription.status !== 'GRACE' || dismissed) {
+  if (!subscription?.status || subscription.status !== 'GRACE' || dismissed) {
     return null
   }
 
@@ -62,9 +61,13 @@ export function GracePeriodBanner() {
             Payment issue detected
           </p>
           <p className="mt-0.5 text-xs text-amber-600/80 dark:text-amber-400/80">
-            {daysLeft !== null && daysLeft > 0
-              ? `Your payment failed. You have ${daysLeft} day${daysLeft === 1 ? '' : 's'} left to update your payment method before your subscription expires.`
-              : 'Your grace period has ended. Please update your payment method to continue using Mythrion.'}
+            {(() => {
+              if (daysLeft === null || daysLeft === 0) {
+                return 'Your grace period has ended. Please update your payment method to continue using Mythrion.'
+              }
+              const plural = daysLeft === 1 ? '' : 's'
+              return `Your payment failed. You have ${daysLeft} day${plural} left to update your payment method before your subscription expires.`
+            })()}
           </p>
           <div className="mt-2 flex gap-3">
             <Link

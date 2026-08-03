@@ -25,10 +25,10 @@ interface CommunityTemplate {
 }
 
 interface TemplatePickerModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onSelect: (templateId: string, templateName: string) => void
-  adventureId?: string
+  readonly isOpen: boolean
+  readonly onClose: () => void
+  readonly onSelect: (templateId: string, templateName: string) => void
+  readonly adventureId?: string
 }
 
 export function TemplatePickerModal({
@@ -36,7 +36,7 @@ export function TemplatePickerModal({
   onClose,
   onSelect,
   adventureId,
-}: TemplatePickerModalProps) {
+}: Readonly<TemplatePickerModalProps>) {
   const [tab, setTab] = useState<'my-templates' | 'community'>('my-templates')
   const [search, setSearch] = useState('')
 
@@ -132,7 +132,10 @@ export function TemplatePickerModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div
         className="card !p-0 max-w-lg w-full mx-4 max-h-[80vh] flex flex-col"
+        role="dialog"
+        aria-modal="true"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}
       >
         {/* Header */}
         <div className="p-4 border-b border-border">
@@ -215,7 +218,6 @@ export function TemplatePickerModal({
               {!fetchingMine && !mineError && filteredMine.map(t => (
                 <TemplatePickerRow
                   key={t.id}
-                  id={t.id}
                   name={t.name}
                   description={t.description}
                   campaign={t.campaign}
@@ -255,7 +257,6 @@ export function TemplatePickerModal({
               {!fetchingCommunity && !communityError && filteredCommunity.map(t => (
                 <TemplatePickerRow
                   key={t.id}
-                  id={t.id}
                   name={t.name}
                   description={t.description}
                   campaign={t.campaign}
@@ -296,18 +297,19 @@ export function TemplatePickerModal({
 
 /* ── Picker row ── */
 
-function TemplatePickerRow(props: {
-  id: string
-  name: string
-  description: string | null
-  campaign: string | null
-  useCount?: number
-  attrCount?: number
-  skillCount?: number
-  creatorName?: string
-  selected: boolean
-  onSelect: () => void
-}) {
+interface TemplatePickerRowProps {
+  readonly name: string
+  readonly description: string | null
+  readonly campaign: string | null
+  readonly useCount?: number
+  readonly attrCount?: number
+  readonly skillCount?: number
+  readonly creatorName?: string
+  readonly selected: boolean
+  readonly onSelect: () => void
+}
+
+function TemplatePickerRow(props: Readonly<TemplatePickerRowProps>) {
   return (
     <button
       onClick={props.onSelect}

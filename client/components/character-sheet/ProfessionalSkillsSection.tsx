@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, type FormEvent } from 'react'
+import { useState, useEffect, useMemo, type SubmitEvent } from 'react'
 import { api } from '@/lib/api'
 import { Select } from '@/components/shared/Select'
 import type { ProfessionalSkill, SkillModifierProfile, SheetPermissions } from './types'
@@ -210,7 +210,7 @@ export function ProfessionalSkillsSection({
     setShowCreateModal(true)
   }
 
-  async function handleCreate(e: FormEvent) {
+  async function handleCreate(e: SubmitEvent) {
     e.preventDefault()
     if (!createName.trim()) return
     setSaving(true)

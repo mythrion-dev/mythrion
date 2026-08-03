@@ -2,5 +2,8 @@
 .claude/
 
 # OS files
+.gitignore
 .DS_Store
 Thumbs.db
+test_logs/
+sonar-config.json

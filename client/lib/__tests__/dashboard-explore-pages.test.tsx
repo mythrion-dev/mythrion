@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import DashboardExploreCampaignsPage from '@/app/dashboard/explore-campaigns/page'
 import DashboardPublicTemplatesPage from '@/app/dashboard/public-templates/page'
 
@@ -94,34 +94,43 @@ describe('DashboardExploreCampaignsPage', () => {
   it('renders search input', async () => {
     render(<DashboardExploreCampaignsPage />)
     const searchInput = await screen.findByPlaceholderText(
-      'Search adventures by name or synopsis...',
+      'Search campaigns by name, GM or description...',
     )
     expect(searchInput).toBeDefined()
   })
 
-  it('renders campaign filter input', async () => {
+  it('renders a Filters toggle that reveals the filter controls', async () => {
     render(<DashboardExploreCampaignsPage />)
-    const campaignInput = await screen.findByPlaceholderText(
-      'Filter by campaign/system...',
-    )
-    expect(campaignInput).toBeDefined()
+    // The Filters toggle is always visible
+    const filtersButton = await screen.findByRole('button', { name: 'Filters' })
+    expect(filtersButton).toBeInTheDocument()
+    // Filter controls are hidden until toggled open
+    expect(screen.queryByText('Any day')).not.toBeInTheDocument()
+    fireEvent.click(filtersButton)
+    expect(screen.getByText('Any day')).toBeInTheDocument()
   })
 
   it('renders weekday dropdown', async () => {
     render(<DashboardExploreCampaignsPage />)
-    expect(await screen.findByText('Any day')).toBeDefined()
+    // The day select is inside the collapsible filter area
+    fireEvent.click(await screen.findByRole('button', { name: 'Filters' }))
+    expect(screen.getByText('Any day')).toBeDefined()
   })
 
-  it('renders session type pills (All, Online, In Person)', async () => {
+  it('renders session type pills (Any, Online, In Person)', async () => {
     render(<DashboardExploreCampaignsPage />)
-    expect(await screen.findByText('All')).toBeDefined()
-    expect(screen.getByText('🌐 Online')).toBeDefined()
-    expect(screen.getByText('📍 In Person')).toBeDefined()
+    // Type pills are inside the collapsible filter area
+    fireEvent.click(await screen.findByRole('button', { name: 'Filters' }))
+    expect(screen.getByText('Any')).toBeDefined()
+    expect(screen.getByText('Online')).toBeDefined()
+    expect(screen.getByText('In Person')).toBeDefined()
   })
 
   it('renders time-of-day dropdown', async () => {
     render(<DashboardExploreCampaignsPage />)
-    expect(await screen.findByText('Any time')).toBeDefined()
+    // The schedule select is inside the collapsible filter area
+    fireEvent.click(await screen.findByRole('button', { name: 'Filters' }))
+    expect(screen.getByText('Any time')).toBeDefined()
   })
 
   // ── Tab navigation ──
@@ -188,17 +197,19 @@ describe('DashboardPublicTemplatesPage', () => {
   it('renders search input', async () => {
     render(<DashboardPublicTemplatesPage />)
     const searchInput = await screen.findByPlaceholderText(
-      'Search templates by name...',
+      'Search templates by name, creator or system...',
     )
     expect(searchInput).toBeDefined()
   })
 
-  it('renders campaign filter input', async () => {
+  it('renders sort dropdown with sort options', async () => {
     render(<DashboardPublicTemplatesPage />)
-    const campaignInput = await screen.findByPlaceholderText(
-      'Filter by campaign/system...',
-    )
-    expect(campaignInput).toBeDefined()
+    const sortSelect = await screen.findByRole('combobox')
+    expect(sortSelect).toBeInTheDocument()
+    expect(screen.getByText('Most Popular')).toBeDefined()
+    expect(screen.getByText('Newest')).toBeDefined()
+    expect(screen.getByText('Recently Updated')).toBeDefined()
+    expect(screen.getByText('Alphabetical')).toBeDefined()
   })
 
   // ── Tab navigation ──

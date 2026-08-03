@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, type FormEvent } from 'react'
+import { useState, useEffect, useCallback, type SubmitEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import Link from 'next/link'
@@ -109,7 +109,7 @@ export default function NewCharacterSheetPage() {
 
   // ── Submission ──
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: SubmitEvent) {
     e.preventDefault()
     if (!selectedTemplateId) return
 
@@ -123,7 +123,7 @@ export default function NewCharacterSheetPage() {
       }
 
       if (playerName.trim()) body.playerName = playerName.trim()
-      if (level.trim()) body.level = parseInt(level, 10)
+      if (level.trim()) body.level = Number.parseInt(level, 10)
       if (selectedAdventureId) body.adventureId = selectedAdventureId
 
       const sheet = await api.post<{ id: string }>('/character-sheets', body)
@@ -191,7 +191,7 @@ export default function NewCharacterSheetPage() {
     return (
       <div className="space-y-4">
         <div>
-          <label className="label">Character Name *</label>
+          <div className="label">Character Name *</div>
           <input
             className="input-field"
             value={characterName}
@@ -204,7 +204,7 @@ export default function NewCharacterSheetPage() {
         </div>
 
         <div>
-          <label className="label">Player Name</label>
+          <div className="label">Player Name</div>
           <input
             className="input-field"
             value={playerName}
@@ -218,7 +218,7 @@ export default function NewCharacterSheetPage() {
         </div>
 
         <div>
-          <label className="label">Level</label>
+          <div className="label">Level</div>
           <input
             type="number"
             className="input-field w-24"
@@ -255,7 +255,7 @@ export default function NewCharacterSheetPage() {
     return (
       <div className="space-y-4">
         <div>
-          <label className="label">Search Templates</label>
+          <div className="label">Search Templates</div>
           <input
             className="input-field"
             value={templateSearch}
@@ -384,7 +384,7 @@ export default function NewCharacterSheetPage() {
     return (
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="label">Campaign (optional)</label>
+          <div className="label">Campaign (optional)</div>
           {fetchingAdv ? (
             <div className="skeleton h-10 w-full rounded-lg" />
           ) : (

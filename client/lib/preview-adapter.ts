@@ -291,7 +291,7 @@ export function buildAdapter(
     permissions: ALL_PERMISSIONS,
     enabledCoreResources: state.template.coreResources.filter(cr => cr.enabled) as CoreResourceDef[],
     handleCoreResourceChange: async (coreResourceId: string, field: 'current' | 'maximum' | 'notes', value: string) => {
-      const parsed = field === 'notes' ? value : parseFloat(value) || null
+      const parsed = field === 'notes' ? value : Number.parseFloat(value) || null
       dispatch({
         type: 'SET_RESOURCE',
         resourceId: coreResourceId,
