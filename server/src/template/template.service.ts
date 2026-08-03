@@ -8,7 +8,7 @@ import { CreateTemplateDto } from './dto/create-template.dto.js'
 import { UpdateTemplateDto } from './dto/update-template.dto.js'
 import { RedisService } from '../redis/redis.service.js'
 
-const templateInclude = {
+export const templateInclude = {
   attributes: { orderBy: { order: 'asc' as const } },
   templateFields: { orderBy: { order: 'asc' as const } },
   templateSkills: { orderBy: { order: 'asc' as const }, include: { attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } } },

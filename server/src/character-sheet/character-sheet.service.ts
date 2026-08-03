@@ -12,6 +12,7 @@ import { RedisService } from '../redis/redis.service.js'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
 import { CreateCharacterFromCampaignDto } from './dto/create-character-from-campaign.dto.js'
+import { templateInclude } from '../template/template.service.js'
 import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
 
 const sheetInclude = {
@@ -338,26 +339,34 @@ export class CharacterSheetService {
     })
     if (!adventure) throw new NotFoundException('Campaign not found')
 
-    // 2. Validate snapshot exists
-    if (!adventure.templateSnapshot) {
-      throw new BadRequestException(
-        'No template is attached to this campaign. ' +
-        'The GM must attach a template before characters can be created.',
-      )
-    }
-    if (!adventure.originalTemplateId) {
-      throw new BadRequestException(
-        'The template reference is missing. ' +
-        'The GM must re-attach the template to this campaign.',
-      )
+    // 2. Resolve the template source. A snapshot attached via the attach system
+    //    takes precedence; otherwise fall back to a template created directly on
+    //    the campaign (templateSource: 'campaign'). Its fully-included shape
+    //    mirrors the stored snapshot, so it can drive sheet creation the same way.
+    let snapshot: any
+    let templateId: string
+    if (adventure.templateSnapshot && adventure.originalTemplateId) {
+      snapshot = adventure.templateSnapshot
+      templateId = adventure.originalTemplateId
+    } else {
+      const campaignTemplate = await this.prisma.template.findFirst({
+        where: { adventureId: dto.adventureId },
+        include: templateInclude,
+        orderBy: { createdAt: 'desc' },
+      })
+      if (!campaignTemplate) {
+        throw new BadRequestException(
+          'No template is attached to this campaign. ' +
+          'The GM must attach a template before characters can be created.',
+        )
+      }
+      snapshot = campaignTemplate
+      templateId = campaignTemplate.id
     }
 
     // 3. Validate membership
     const isMember = await this.membership.isMember(dto.adventureId, userId)
     if (!isMember) throw new ForbiddenException('You are not a member of this campaign')
-
-    // 4. Parse snapshot
-    const snapshot = adventure.templateSnapshot as any
 
     // 5. Build skill profile values from snapshot data
     const skillProfileValues: Array<{
@@ -393,7 +402,7 @@ export class CharacterSheetService {
         playerName: dto.playerName ?? null,
         level: dto.level ?? 1,
         adventureId: dto.adventureId,
-        templateId: adventure.originalTemplateId,
+        templateId,
         ownerId: userId,
         values: {
           create: (snapshot.attributes ?? []).map((a: any) => ({ attributeId: a.id, value: '' })),
