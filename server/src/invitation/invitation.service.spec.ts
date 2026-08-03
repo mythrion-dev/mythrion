@@ -150,11 +150,13 @@ describe('InvitationService', () => {
         displayName: 'Mighty GM',
         email: 'gm@test.com',
       })
-      mockEmailService.sendInvitation.mockRejectedValue(new Error('SMTP refused connection'))
+      mockEmailService.sendInvitation.mockRejectedValue(
+        new Error('Hostinger Mail API error (HTTP 422)'),
+      )
 
       await expect(service.inviteByEmail(params)).rejects.toThrow(BadRequestException)
       await expect(service.inviteByEmail(params)).rejects.toThrow(
-        'Failed to send invitation email: SMTP refused connection',
+        'Failed to send invitation email: Hostinger Mail API error (HTTP 422)',
       )
 
       expect(prisma.campaignInvitation.delete).toHaveBeenCalledWith({
