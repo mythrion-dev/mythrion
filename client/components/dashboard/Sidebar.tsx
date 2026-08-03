@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useSubscription } from '@/lib/subscription-context'
@@ -139,11 +140,20 @@ export function Sidebar() {
       <div className={`flex items-center transition-all duration-300 ${collapsed ? 'justify-center' : 'justify-between'}`}>
         <Link
           href="/dashboard"
-          className={`text-xl font-semibold text-gradient tracking-tight transition-all duration-300 ${collapsed ? 'text-sm w-8 h-8 flex items-center justify-center' : ''}`}
+          className={`flex items-center transition-all duration-300 ${collapsed ? 'w-8 h-8 justify-center' : 'gap-2'}`}
           onClick={() => setMobileOpen(false)}
           title="Dashboard"
         >
-          {collapsed ? 'M' : 'Mythrion'}
+          <Image
+            src="/logo-icon.png"
+            alt="Mythrion"
+            width={532}
+            height={624}
+            className="h-8 w-auto rounded-lg"
+          />
+          {!collapsed && (
+            <span className="text-xl font-semibold text-gradient tracking-tight">Mythrion</span>
+          )}
         </Link>
         <button
           onClick={toggleCollapsed}

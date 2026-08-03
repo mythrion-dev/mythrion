@@ -132,6 +132,10 @@ export class EmailService {
       year: 'numeric',
     });
 
+    // Emails need an absolute image URL; derive the app origin from the invite
+    // link so it works in both local dev and production.
+    const logoUrl = `${new URL(params.inviteUrl).origin}/logo.png`;
+
     return `
     <!DOCTYPE html>
     <html>
@@ -142,7 +146,6 @@ export class EmailService {
         .container { max-width: 480px; margin: 0 auto; padding: 40px 20px; }
         .card { background: linear-gradient(135deg, #15101f 0%, #1c1630 100%); border: 1px solid #2a2240; border-radius: 12px; padding: 32px; }
         .logo { text-align: center; margin-bottom: 24px; }
-        .logo-text { font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #c9a44b 0%, #e0c470 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         h1 { color: #e8e2d9; font-size: 20px; margin: 0 0 8px; }
         .subtitle { color: #a098b0; font-size: 14px; margin: 0 0 24px; }
         .detail { color: #e8e2d9; font-size: 14px; margin: 0 0 4px; }
@@ -155,7 +158,7 @@ export class EmailService {
       <div class="container">
         <div class="card">
           <div class="logo">
-            <span class="logo-text">⭑ Mythrion</span>
+            <img src="${logoUrl}" alt="Mythrion" style="max-width: 200px; width: 100%; height: auto; display: inline-block;" />
           </div>
           <h1>${params.inviterName} invited you</h1>
           <p class="subtitle">You've been invited to join an adventure.</p>
