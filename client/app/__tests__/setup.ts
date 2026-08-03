@@ -1,5 +1,14 @@
 import '@testing-library/jest-dom/vitest'
 import { vi } from 'vitest'
+import React from 'react'
+
+// Mock next/image so it renders a plain <img> in jsdom
+vi.mock('next/image', () => ({
+  default: (props: Record<string, unknown>) => {
+    const { src, alt, width, height, className, ...rest } = props
+    return React.createElement('img', { src, alt, width, height, className, ...rest })
+  },
+}))
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({

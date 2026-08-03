@@ -10,6 +10,7 @@ import {
   ConflictException,
 } from '@nestjs/common'
 import { CharacterSheetService } from './character-sheet.service.js'
+import { templateInclude } from '../template/template.service.js'
 import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { RedisService } from '../redis/redis.service.js'
@@ -992,6 +993,15 @@ describe('CharacterSheetService', () => {
       originalTemplateId: 'original-template-id',
     }
 
+    // A campaign-created template loaded via templateInclude has the same shape
+    // as the stored snapshot (attributes, templateSkills, etc.), so it can drive
+    // sheet creation when no snapshot was attached.
+    const mockCampaignTemplate = {
+      ...mockSnapshot,
+      id: 'campaign-template-id',
+      name: 'Campaign Template',
+    }
+
     const mockCreatedSheet = {
       id: 'cs-campaign-1',
       characterName: 'Campaign Hero',
@@ -1022,6 +1032,10 @@ describe('CharacterSheetService', () => {
         where: { id: adventureId },
         select: { templateSnapshot: true, originalTemplateId: true },
       })
+
+      // A stored snapshot takes precedence — the campaign-template fallback is
+      // not consulted.
+      expect(prisma.template.findFirst).not.toHaveBeenCalled()
 
       expect(prisma.characterSheet.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1246,25 +1260,39 @@ describe('CharacterSheetService', () => {
       ).rejects.toThrow('Campaign not found')
     })
 
-    it('throws BadRequestException when templateSnapshot is null', async () => {
+    it('falls back to a campaign template when no snapshot is attached', async () => {
       prisma.adventure.findUnique.mockResolvedValue({
         templateSnapshot: null,
-        originalTemplateId: 'original-template-id',
-      })
-
-      await expect(
-        service.createFromCampaignSnapshot(userId, {
-          characterName: 'Hero',
-          adventureId,
-        }),
-      ).rejects.toThrow(BadRequestException)
-    })
-
-    it('throws BadRequestException when originalTemplateId is null', async () => {
-      prisma.adventure.findUnique.mockResolvedValue({
-        templateSnapshot: mockSnapshot,
         originalTemplateId: null,
       })
+      prisma.template.findFirst.mockResolvedValue(mockCampaignTemplate)
+
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      expect(prisma.template.findFirst).toHaveBeenCalledWith({
+        where: { adventureId },
+        include: templateInclude,
+        orderBy: { createdAt: 'desc' },
+      })
+      expect(prisma.characterSheet.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            adventureId,
+            templateId: 'campaign-template-id',
+          }),
+        }),
+      )
+    })
+
+    it('throws BadRequestException when no snapshot and no campaign template exists', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        templateSnapshot: null,
+        originalTemplateId: null,
+      })
+      prisma.template.findFirst.mockResolvedValue(null)
 
       await expect(
         service.createFromCampaignSnapshot(userId, {
