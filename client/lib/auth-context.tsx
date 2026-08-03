@@ -30,6 +30,7 @@ interface User {
   displayName: string | null
   onboardingComplete: boolean
   isAdmin: boolean
+  isEarlyAccess: boolean
 }
 
 interface AuthState {
@@ -55,10 +56,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return payload?.role === 'admin'
   }, [])
 
+  /** Read the early-access flag from the local JWT payload (not the API response). */
+  const isEarlyAccessFromToken = useCallback((): boolean => {
+    const token = getAccessToken()
+    if (!token) return false
+    const payload = decodeJwtPayload(token)
+    return payload?.role === 'early_access'
+  }, [])
+
   const fetchProfile = useCallback(async () => {
     try {
-      const profile = await api.get<Omit<User, 'isAdmin'>>('/auth/profile')
-      setUser({ ...profile, isAdmin: isAdminFromToken() })
+      const profile = await api.get<Omit<User, 'isAdmin' | 'isEarlyAccess'>>('/auth/profile')
+      setUser({
+        ...profile,
+        isAdmin: isAdminFromToken(),
+        isEarlyAccess: isEarlyAccessFromToken(),
+      })
       setLoading(false)
     } catch {
       // Transient failure (network blip / server 5xx) — this is NOT a logout,
@@ -69,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // the session from a single place.
       return
     }
-  }, [isAdminFromToken])
+  }, [isAdminFromToken, isEarlyAccessFromToken])
 
   /**
    * Restore a session on mount (or on return to the tab). Order of preference:
@@ -178,12 +191,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const completeOnboarding = useCallback(
     async (displayName: string) => {
-      const updated = await api.post<Omit<User, 'isAdmin'>>('/auth/onboarding', {
+      const updated = await api.post<Omit<User, 'isAdmin' | 'isEarlyAccess'>>('/auth/onboarding', {
         displayName,
       })
-      setUser({ ...updated, isAdmin: isAdminFromToken() })
+      setUser({
+        ...updated,
+        isAdmin: isAdminFromToken(),
+        isEarlyAccess: isEarlyAccessFromToken(),
+      })
     },
-    [isAdminFromToken],
+    [isAdminFromToken, isEarlyAccessFromToken],
   )
 
   return (
