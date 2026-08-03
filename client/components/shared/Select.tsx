@@ -25,6 +25,7 @@ interface SelectProps {
   showBadge?: boolean
   size?: 'sm' | 'md'
   className?: string
+  id?: string
 }
 
 const sizeClasses: Record<string, string> = {
@@ -40,6 +41,7 @@ export function Select({
   showBadge = false,
   size = 'md',
   className = '',
+  id,
 }: SelectProps) {
   const [open, setOpen] = useState(false)
   const [highlightIndex, setHighlightIndex] = useState(-1)
@@ -196,6 +198,7 @@ export function Select({
         ref={setReference}
         type="button"
         role="combobox"
+        id={id}
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-activedescendant={

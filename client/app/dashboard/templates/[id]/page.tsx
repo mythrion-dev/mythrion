@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, type FormEvent } from 'react'
+import { useState, useEffect, useCallback, type SubmitEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
@@ -195,7 +195,7 @@ export default function TemplateDetailPage() {
     setEditError(null)
   }, [])
 
-  const handleUpdate = useCallback(async (e: FormEvent) => {
+  const handleUpdate = useCallback(async (e: SubmitEvent) => {
     e.preventDefault()
     if (!template) return
     setSaving(true)

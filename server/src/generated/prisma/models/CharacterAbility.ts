@@ -263,6 +263,7 @@ export type CharacterAbilityWhereInput = {
   summonAcValues?: Prisma.SummonArmorClassValueListRelationFilter
   summonHealth?: Prisma.XOR<Prisma.SummonHealthNullableScalarRelationFilter, Prisma.SummonHealthWhereInput> | null
   summonSkills?: Prisma.SummonSkillListRelationFilter
+  summonResistances?: Prisma.SummonResistanceListRelationFilter
   childAbilities?: Prisma.CharacterAbilityListRelationFilter
 }
 
@@ -284,6 +285,7 @@ export type CharacterAbilityOrderByWithRelationInput = {
   summonAcValues?: Prisma.SummonArmorClassValueOrderByRelationAggregateInput
   summonHealth?: Prisma.SummonHealthOrderByWithRelationInput
   summonSkills?: Prisma.SummonSkillOrderByRelationAggregateInput
+  summonResistances?: Prisma.SummonResistanceOrderByRelationAggregateInput
   childAbilities?: Prisma.CharacterAbilityOrderByRelationAggregateInput
 }
 
@@ -308,6 +310,7 @@ export type CharacterAbilityWhereUniqueInput = Prisma.AtLeast<{
   summonAcValues?: Prisma.SummonArmorClassValueListRelationFilter
   summonHealth?: Prisma.XOR<Prisma.SummonHealthNullableScalarRelationFilter, Prisma.SummonHealthWhereInput> | null
   summonSkills?: Prisma.SummonSkillListRelationFilter
+  summonResistances?: Prisma.SummonResistanceListRelationFilter
   childAbilities?: Prisma.CharacterAbilityListRelationFilter
 }, "id">
 
@@ -361,6 +364,7 @@ export type CharacterAbilityCreateInput = {
   summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
   summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
   summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceCreateNestedManyWithoutAbilityInput
   childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
 }
 
@@ -380,6 +384,7 @@ export type CharacterAbilityUncheckedCreateInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
   summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
   summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceUncheckedCreateNestedManyWithoutAbilityInput
   childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
 }
 
@@ -399,6 +404,7 @@ export type CharacterAbilityUpdateInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
   summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
   summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUpdateManyWithoutAbilityNestedInput
   childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
 }
 
@@ -418,6 +424,7 @@ export type CharacterAbilityUncheckedUpdateInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
   summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
   summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUncheckedUpdateManyWithoutAbilityNestedInput
   childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
 }
 
@@ -653,6 +660,20 @@ export type CharacterAbilityUpdateOneRequiredWithoutSummonSkillsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterAbilityUpdateToOneWithWhereWithoutSummonSkillsInput, Prisma.CharacterAbilityUpdateWithoutSummonSkillsInput>, Prisma.CharacterAbilityUncheckedUpdateWithoutSummonSkillsInput>
 }
 
+export type CharacterAbilityCreateNestedOneWithoutSummonResistancesInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonResistancesInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonResistancesInput>
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutSummonResistancesInput
+  connect?: Prisma.CharacterAbilityWhereUniqueInput
+}
+
+export type CharacterAbilityUpdateOneRequiredWithoutSummonResistancesNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonResistancesInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonResistancesInput>
+  connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutSummonResistancesInput
+  upsert?: Prisma.CharacterAbilityUpsertWithoutSummonResistancesInput
+  connect?: Prisma.CharacterAbilityWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterAbilityUpdateToOneWithWhereWithoutSummonResistancesInput, Prisma.CharacterAbilityUpdateWithoutSummonResistancesInput>, Prisma.CharacterAbilityUncheckedUpdateWithoutSummonResistancesInput>
+}
+
 export type CharacterAbilityCreateNestedOneWithoutSummonAttributesInput = {
   create?: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonAttributesInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonAttributesInput>
   connectOrCreate?: Prisma.CharacterAbilityCreateOrConnectWithoutSummonAttributesInput
@@ -710,6 +731,7 @@ export type CharacterAbilityCreateWithoutSheetInput = {
   summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
   summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
   summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceCreateNestedManyWithoutAbilityInput
   childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
 }
 
@@ -728,6 +750,7 @@ export type CharacterAbilityUncheckedCreateWithoutSheetInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
   summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
   summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceUncheckedCreateNestedManyWithoutAbilityInput
   childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
 }
 
@@ -789,6 +812,7 @@ export type CharacterAbilityCreateWithoutChildAbilitiesInput = {
   summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
   summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
   summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceCreateNestedManyWithoutAbilityInput
 }
 
 export type CharacterAbilityUncheckedCreateWithoutChildAbilitiesInput = {
@@ -807,6 +831,7 @@ export type CharacterAbilityUncheckedCreateWithoutChildAbilitiesInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
   summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
   summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceUncheckedCreateNestedManyWithoutAbilityInput
 }
 
 export type CharacterAbilityCreateOrConnectWithoutChildAbilitiesInput = {
@@ -829,6 +854,7 @@ export type CharacterAbilityCreateWithoutParentSummonInput = {
   summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
   summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
   summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceCreateNestedManyWithoutAbilityInput
   childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
 }
 
@@ -847,6 +873,7 @@ export type CharacterAbilityUncheckedCreateWithoutParentSummonInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
   summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
   summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceUncheckedCreateNestedManyWithoutAbilityInput
   childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
 }
 
@@ -887,6 +914,7 @@ export type CharacterAbilityUpdateWithoutChildAbilitiesInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
   summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
   summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUpdateManyWithoutAbilityNestedInput
 }
 
 export type CharacterAbilityUncheckedUpdateWithoutChildAbilitiesInput = {
@@ -905,6 +933,7 @@ export type CharacterAbilityUncheckedUpdateWithoutChildAbilitiesInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
   summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
   summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUncheckedUpdateManyWithoutAbilityNestedInput
 }
 
 export type CharacterAbilityUpsertWithWhereUniqueWithoutParentSummonInput = {
@@ -938,6 +967,7 @@ export type CharacterAbilityCreateWithoutLevelsInput = {
   summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
   summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
   summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceCreateNestedManyWithoutAbilityInput
   childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
 }
 
@@ -956,6 +986,7 @@ export type CharacterAbilityUncheckedCreateWithoutLevelsInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
   summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
   summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceUncheckedCreateNestedManyWithoutAbilityInput
   childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
 }
 
@@ -990,6 +1021,7 @@ export type CharacterAbilityUpdateWithoutLevelsInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
   summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
   summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUpdateManyWithoutAbilityNestedInput
   childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
 }
 
@@ -1008,6 +1040,7 @@ export type CharacterAbilityUncheckedUpdateWithoutLevelsInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
   summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
   summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUncheckedUpdateManyWithoutAbilityNestedInput
   childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
 }
 
@@ -1026,6 +1059,7 @@ export type CharacterAbilityCreateWithoutSummonSkillsInput = {
   summonAttributes?: Prisma.SummonAttributeCreateNestedManyWithoutAbilityInput
   summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
   summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceCreateNestedManyWithoutAbilityInput
   childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
 }
 
@@ -1044,6 +1078,7 @@ export type CharacterAbilityUncheckedCreateWithoutSummonSkillsInput = {
   summonAttributes?: Prisma.SummonAttributeUncheckedCreateNestedManyWithoutAbilityInput
   summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
   summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceUncheckedCreateNestedManyWithoutAbilityInput
   childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
 }
 
@@ -1078,6 +1113,7 @@ export type CharacterAbilityUpdateWithoutSummonSkillsInput = {
   summonAttributes?: Prisma.SummonAttributeUpdateManyWithoutAbilityNestedInput
   summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
   summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUpdateManyWithoutAbilityNestedInput
   childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
 }
 
@@ -1096,6 +1132,99 @@ export type CharacterAbilityUncheckedUpdateWithoutSummonSkillsInput = {
   summonAttributes?: Prisma.SummonAttributeUncheckedUpdateManyWithoutAbilityNestedInput
   summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
   summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUncheckedUpdateManyWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
+}
+
+export type CharacterAbilityCreateWithoutSummonResistancesInput = {
+  id?: string
+  name: string
+  type?: string
+  order?: number
+  description?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sheet: Prisma.CharacterSheetCreateNestedOneWithoutAbilitiesInput
+  parentSummon?: Prisma.CharacterAbilityCreateNestedOneWithoutChildAbilitiesInput
+  levels?: Prisma.CharacterAbilityLevelCreateNestedManyWithoutAbilityInput
+  summonAttributes?: Prisma.SummonAttributeCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
+}
+
+export type CharacterAbilityUncheckedCreateWithoutSummonResistancesInput = {
+  id?: string
+  sheetId: string
+  summonId?: string | null
+  name: string
+  type?: string
+  order?: number
+  description?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedCreateNestedManyWithoutAbilityInput
+  summonAttributes?: Prisma.SummonAttributeUncheckedCreateNestedManyWithoutAbilityInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
+  summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
+  summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+  childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
+}
+
+export type CharacterAbilityCreateOrConnectWithoutSummonResistancesInput = {
+  where: Prisma.CharacterAbilityWhereUniqueInput
+  create: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonResistancesInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonResistancesInput>
+}
+
+export type CharacterAbilityUpsertWithoutSummonResistancesInput = {
+  update: Prisma.XOR<Prisma.CharacterAbilityUpdateWithoutSummonResistancesInput, Prisma.CharacterAbilityUncheckedUpdateWithoutSummonResistancesInput>
+  create: Prisma.XOR<Prisma.CharacterAbilityCreateWithoutSummonResistancesInput, Prisma.CharacterAbilityUncheckedCreateWithoutSummonResistancesInput>
+  where?: Prisma.CharacterAbilityWhereInput
+}
+
+export type CharacterAbilityUpdateToOneWithWhereWithoutSummonResistancesInput = {
+  where?: Prisma.CharacterAbilityWhereInput
+  data: Prisma.XOR<Prisma.CharacterAbilityUpdateWithoutSummonResistancesInput, Prisma.CharacterAbilityUncheckedUpdateWithoutSummonResistancesInput>
+}
+
+export type CharacterAbilityUpdateWithoutSummonResistancesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sheet?: Prisma.CharacterSheetUpdateOneRequiredWithoutAbilitiesNestedInput
+  parentSummon?: Prisma.CharacterAbilityUpdateOneWithoutChildAbilitiesNestedInput
+  levels?: Prisma.CharacterAbilityLevelUpdateManyWithoutAbilityNestedInput
+  summonAttributes?: Prisma.SummonAttributeUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+  childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
+}
+
+export type CharacterAbilityUncheckedUpdateWithoutSummonResistancesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sheetId?: Prisma.StringFieldUpdateOperationsInput | string
+  summonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  levels?: Prisma.CharacterAbilityLevelUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAttributes?: Prisma.SummonAttributeUncheckedUpdateManyWithoutAbilityNestedInput
+  summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
+  summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
+  summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
   childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
 }
 
@@ -1114,6 +1243,7 @@ export type CharacterAbilityCreateWithoutSummonAttributesInput = {
   summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
   summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
   summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceCreateNestedManyWithoutAbilityInput
   childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
 }
 
@@ -1132,6 +1262,7 @@ export type CharacterAbilityUncheckedCreateWithoutSummonAttributesInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
   summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
   summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceUncheckedCreateNestedManyWithoutAbilityInput
   childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
 }
 
@@ -1166,6 +1297,7 @@ export type CharacterAbilityUpdateWithoutSummonAttributesInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
   summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
   summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUpdateManyWithoutAbilityNestedInput
   childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
 }
 
@@ -1184,6 +1316,7 @@ export type CharacterAbilityUncheckedUpdateWithoutSummonAttributesInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
   summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
   summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUncheckedUpdateManyWithoutAbilityNestedInput
   childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
 }
 
@@ -1202,6 +1335,7 @@ export type CharacterAbilityCreateWithoutSummonAcValuesInput = {
   summonAttributes?: Prisma.SummonAttributeCreateNestedManyWithoutAbilityInput
   summonHealth?: Prisma.SummonHealthCreateNestedOneWithoutAbilityInput
   summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceCreateNestedManyWithoutAbilityInput
   childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
 }
 
@@ -1220,6 +1354,7 @@ export type CharacterAbilityUncheckedCreateWithoutSummonAcValuesInput = {
   summonAttributes?: Prisma.SummonAttributeUncheckedCreateNestedManyWithoutAbilityInput
   summonHealth?: Prisma.SummonHealthUncheckedCreateNestedOneWithoutAbilityInput
   summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceUncheckedCreateNestedManyWithoutAbilityInput
   childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
 }
 
@@ -1254,6 +1389,7 @@ export type CharacterAbilityUpdateWithoutSummonAcValuesInput = {
   summonAttributes?: Prisma.SummonAttributeUpdateManyWithoutAbilityNestedInput
   summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
   summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUpdateManyWithoutAbilityNestedInput
   childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
 }
 
@@ -1272,6 +1408,7 @@ export type CharacterAbilityUncheckedUpdateWithoutSummonAcValuesInput = {
   summonAttributes?: Prisma.SummonAttributeUncheckedUpdateManyWithoutAbilityNestedInput
   summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
   summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUncheckedUpdateManyWithoutAbilityNestedInput
   childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
 }
 
@@ -1290,6 +1427,7 @@ export type CharacterAbilityCreateWithoutSummonHealthInput = {
   summonAttributes?: Prisma.SummonAttributeCreateNestedManyWithoutAbilityInput
   summonAcValues?: Prisma.SummonArmorClassValueCreateNestedManyWithoutAbilityInput
   summonSkills?: Prisma.SummonSkillCreateNestedManyWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceCreateNestedManyWithoutAbilityInput
   childAbilities?: Prisma.CharacterAbilityCreateNestedManyWithoutParentSummonInput
 }
 
@@ -1308,6 +1446,7 @@ export type CharacterAbilityUncheckedCreateWithoutSummonHealthInput = {
   summonAttributes?: Prisma.SummonAttributeUncheckedCreateNestedManyWithoutAbilityInput
   summonAcValues?: Prisma.SummonArmorClassValueUncheckedCreateNestedManyWithoutAbilityInput
   summonSkills?: Prisma.SummonSkillUncheckedCreateNestedManyWithoutAbilityInput
+  summonResistances?: Prisma.SummonResistanceUncheckedCreateNestedManyWithoutAbilityInput
   childAbilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutParentSummonInput
 }
 
@@ -1342,6 +1481,7 @@ export type CharacterAbilityUpdateWithoutSummonHealthInput = {
   summonAttributes?: Prisma.SummonAttributeUpdateManyWithoutAbilityNestedInput
   summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
   summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUpdateManyWithoutAbilityNestedInput
   childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
 }
 
@@ -1360,6 +1500,7 @@ export type CharacterAbilityUncheckedUpdateWithoutSummonHealthInput = {
   summonAttributes?: Prisma.SummonAttributeUncheckedUpdateManyWithoutAbilityNestedInput
   summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
   summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUncheckedUpdateManyWithoutAbilityNestedInput
   childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
 }
 
@@ -1390,6 +1531,7 @@ export type CharacterAbilityUpdateWithoutSheetInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
   summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
   summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUpdateManyWithoutAbilityNestedInput
   childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
 }
 
@@ -1408,6 +1550,7 @@ export type CharacterAbilityUncheckedUpdateWithoutSheetInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
   summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
   summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUncheckedUpdateManyWithoutAbilityNestedInput
   childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
 }
 
@@ -1450,6 +1593,7 @@ export type CharacterAbilityUpdateWithoutParentSummonInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUpdateManyWithoutAbilityNestedInput
   summonHealth?: Prisma.SummonHealthUpdateOneWithoutAbilityNestedInput
   summonSkills?: Prisma.SummonSkillUpdateManyWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUpdateManyWithoutAbilityNestedInput
   childAbilities?: Prisma.CharacterAbilityUpdateManyWithoutParentSummonNestedInput
 }
 
@@ -1468,6 +1612,7 @@ export type CharacterAbilityUncheckedUpdateWithoutParentSummonInput = {
   summonAcValues?: Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput
   summonHealth?: Prisma.SummonHealthUncheckedUpdateOneWithoutAbilityNestedInput
   summonSkills?: Prisma.SummonSkillUncheckedUpdateManyWithoutAbilityNestedInput
+  summonResistances?: Prisma.SummonResistanceUncheckedUpdateManyWithoutAbilityNestedInput
   childAbilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutParentSummonNestedInput
 }
 
@@ -1493,6 +1638,7 @@ export type CharacterAbilityCountOutputType = {
   summonAttributes: number
   summonAcValues: number
   summonSkills: number
+  summonResistances: number
   childAbilities: number
 }
 
@@ -1501,6 +1647,7 @@ export type CharacterAbilityCountOutputTypeSelect<ExtArgs extends runtime.Types.
   summonAttributes?: boolean | CharacterAbilityCountOutputTypeCountSummonAttributesArgs
   summonAcValues?: boolean | CharacterAbilityCountOutputTypeCountSummonAcValuesArgs
   summonSkills?: boolean | CharacterAbilityCountOutputTypeCountSummonSkillsArgs
+  summonResistances?: boolean | CharacterAbilityCountOutputTypeCountSummonResistancesArgs
   childAbilities?: boolean | CharacterAbilityCountOutputTypeCountChildAbilitiesArgs
 }
 
@@ -1545,6 +1692,13 @@ export type CharacterAbilityCountOutputTypeCountSummonSkillsArgs<ExtArgs extends
 /**
  * CharacterAbilityCountOutputType without action
  */
+export type CharacterAbilityCountOutputTypeCountSummonResistancesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SummonResistanceWhereInput
+}
+
+/**
+ * CharacterAbilityCountOutputType without action
+ */
 export type CharacterAbilityCountOutputTypeCountChildAbilitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.CharacterAbilityWhereInput
 }
@@ -1568,6 +1722,7 @@ export type CharacterAbilitySelect<ExtArgs extends runtime.Types.Extensions.Inte
   summonAcValues?: boolean | Prisma.CharacterAbility$summonAcValuesArgs<ExtArgs>
   summonHealth?: boolean | Prisma.CharacterAbility$summonHealthArgs<ExtArgs>
   summonSkills?: boolean | Prisma.CharacterAbility$summonSkillsArgs<ExtArgs>
+  summonResistances?: boolean | Prisma.CharacterAbility$summonResistancesArgs<ExtArgs>
   childAbilities?: boolean | Prisma.CharacterAbility$childAbilitiesArgs<ExtArgs>
   _count?: boolean | Prisma.CharacterAbilityCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["characterAbility"]>
@@ -1624,6 +1779,7 @@ export type CharacterAbilityInclude<ExtArgs extends runtime.Types.Extensions.Int
   summonAcValues?: boolean | Prisma.CharacterAbility$summonAcValuesArgs<ExtArgs>
   summonHealth?: boolean | Prisma.CharacterAbility$summonHealthArgs<ExtArgs>
   summonSkills?: boolean | Prisma.CharacterAbility$summonSkillsArgs<ExtArgs>
+  summonResistances?: boolean | Prisma.CharacterAbility$summonResistancesArgs<ExtArgs>
   childAbilities?: boolean | Prisma.CharacterAbility$childAbilitiesArgs<ExtArgs>
   _count?: boolean | Prisma.CharacterAbilityCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -1646,6 +1802,7 @@ export type $CharacterAbilityPayload<ExtArgs extends runtime.Types.Extensions.In
     summonAcValues: Prisma.$SummonArmorClassValuePayload<ExtArgs>[]
     summonHealth: Prisma.$SummonHealthPayload<ExtArgs> | null
     summonSkills: Prisma.$SummonSkillPayload<ExtArgs>[]
+    summonResistances: Prisma.$SummonResistancePayload<ExtArgs>[]
     childAbilities: Prisma.$CharacterAbilityPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -2060,6 +2217,7 @@ export interface Prisma__CharacterAbilityClient<T, Null = never, ExtArgs extends
   summonAcValues<T extends Prisma.CharacterAbility$summonAcValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterAbility$summonAcValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummonArmorClassValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   summonHealth<T extends Prisma.CharacterAbility$summonHealthArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterAbility$summonHealthArgs<ExtArgs>>): Prisma.Prisma__SummonHealthClient<runtime.Types.Result.GetResult<Prisma.$SummonHealthPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   summonSkills<T extends Prisma.CharacterAbility$summonSkillsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterAbility$summonSkillsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummonSkillPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  summonResistances<T extends Prisma.CharacterAbility$summonResistancesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterAbility$summonResistancesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummonResistancePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   childAbilities<T extends Prisma.CharacterAbility$childAbilitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterAbility$childAbilitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterAbilityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -2632,6 +2790,30 @@ export type CharacterAbility$summonSkillsArgs<ExtArgs extends runtime.Types.Exte
   take?: number
   skip?: number
   distinct?: Prisma.SummonSkillScalarFieldEnum | Prisma.SummonSkillScalarFieldEnum[]
+}
+
+/**
+ * CharacterAbility.summonResistances
+ */
+export type CharacterAbility$summonResistancesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SummonResistance
+   */
+  select?: Prisma.SummonResistanceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SummonResistance
+   */
+  omit?: Prisma.SummonResistanceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SummonResistanceInclude<ExtArgs> | null
+  where?: Prisma.SummonResistanceWhereInput
+  orderBy?: Prisma.SummonResistanceOrderByWithRelationInput | Prisma.SummonResistanceOrderByWithRelationInput[]
+  cursor?: Prisma.SummonResistanceWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SummonResistanceScalarFieldEnum | Prisma.SummonResistanceScalarFieldEnum[]
 }
 
 /**

@@ -54,8 +54,8 @@ export function parseFormula(formula: string): ConfigValues | null {
 
   if (!floorMatch) return null
 
-  const startingAttribute = parseInt(floorMatch[1], 10)
-  const every = parseInt(floorMatch[2], 10)
+  const startingAttribute = Number.parseInt(floorMatch[1], 10)
+  const every = Number.parseInt(floorMatch[2], 10)
 
   if (every <= 0) return null
 
@@ -65,8 +65,8 @@ export function parseFormula(formula: string): ConfigValues | null {
   const multiplierMatch = cleaned.match(multiplierPattern)
 
   if (multiplierMatch) {
-    const mult = parseInt(multiplierMatch[1], 10)
-    if (!isNaN(mult) && mult !== 0) {
+    const mult = Number.parseInt(multiplierMatch[1], 10)
+    if (!Number.isNaN(mult) && mult !== 0) {
       modifierIncrease = mult
     }
   }
@@ -84,7 +84,7 @@ export function parseFormula(formula: string): ConfigValues | null {
     // Only match the base modifier (the leading number and its sign operator).
     const prefixMatch = prefix.match(/^(-?\d+)\s*[+-]/)
     if (prefixMatch) {
-      modifier = parseInt(prefixMatch[1], 10)
+      modifier = Number.parseInt(prefixMatch[1], 10)
     }
   }
 
@@ -156,13 +156,13 @@ export default function AttributeModifierConfig({
   }, [generatedFormula, isCustomFormula, initialized, onChange])
 
   const handleConfigChange = (field: keyof ConfigValues, rawValue: string) => {
-    const numValue = parseInt(rawValue, 10)
+    const numValue = Number.parseInt(rawValue, 10)
     if (rawValue === '' || rawValue === '-') {
       // Allow clearing/typing intermediate state; enforce min of 1 for 'every'
       setConfig(prev => ({ ...prev, [field]: field === 'every' ? 1 : 0 }))
       return
     }
-    if (isNaN(numValue)) return
+    if (Number.isNaN(numValue)) return
 
     // Enforce min of 1 for 'every'
     const clamped = field === 'every' ? Math.max(1, numValue) : numValue

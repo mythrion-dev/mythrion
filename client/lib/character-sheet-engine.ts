@@ -27,8 +27,8 @@ export type FormulaEvaluator = (
 
 function parseFloatSafe(v: string | undefined | null, fallback = 0): number {
   if (v === undefined || v === null) return fallback
-  const n = parseFloat(v)
-  return isNaN(n) ? fallback : n
+  const n = Number.parseFloat(v)
+  return Number.isNaN(n) ? fallback : n
 }
 
 function getModifierFormula(sheet: CharacterSheet): string | null {
@@ -266,7 +266,7 @@ export function computeAC(
         : am.attributeId
 
       const modResult = modifierResults[effectiveAttributeId]
-      if (modResult !== null && modResult !== undefined && !isNaN(modResult)) {
+      if (modResult !== null && modResult !== undefined && !Number.isNaN(modResult)) {
         total += Math.max(0, modResult)
       }
     }

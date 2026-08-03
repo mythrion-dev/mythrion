@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, type FormEvent } from 'react'
+import { useState, useCallback, type SubmitEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
@@ -222,7 +222,7 @@ export default function NewTemplatePage() {
 
   // ── Create handler ──
 
-  const handleCreate = useCallback(async (e: FormEvent) => {
+  const handleCreate = useCallback(async (e: SubmitEvent) => {
     e.preventDefault()
     setCreating(true)
     setError(null)

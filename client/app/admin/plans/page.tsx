@@ -18,7 +18,7 @@ function formatBRL(cents: number) {
 
 function parseBRLtoCents(value: string): number {
   // Accept "120,00" or "120.00" or "120"
-  const normalized = value.replace(/\./g, '').replaceAll(',', '.')
+  const normalized = value.replaceAll('./', '').replaceAll(',', '.')
   const float = Number.parseFloat(normalized)
   if (Number.isNaN(float) || float < 0) return 0
   return Math.round(float * 100)

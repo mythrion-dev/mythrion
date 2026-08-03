@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useReducer, useCallback, useMemo, useRef, type FormEvent } from 'react'
+import { useState, useEffect, useReducer, useCallback, useMemo, useRef, type SubmitEvent } from 'react'
 import { useParams } from 'next/navigation'
 import { API_URL } from '@/lib/api'
 import { PreviewBanner } from '@/components/community/PreviewBanner'
@@ -36,6 +36,7 @@ import type {
   SheetPermissions,
   Tab,
   SummonSkillData,
+  SummonResistanceData,
   ArmorClassAttributeModifierDef,
 } from '@/components/character-sheet/types'
 
@@ -369,7 +370,7 @@ export default function TemplatePreviewPage() {
     setAbilityError(null)
   }, [])
 
-  const handleCreateAbility = useCallback(async (e: FormEvent) => {
+  const handleCreateAbility = useCallback(async (e: SubmitEvent) => {
     e.preventDefault()
     const s = stateRef.current
     if (!s || !newAbility.name.trim()) return
@@ -521,8 +522,40 @@ export default function TemplatePreviewPage() {
     })
     dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
   }, [dispatch])
+  const handleAddSummonResistance = useCallback(async (abilityId: string, name: string, value: string) => {
+    const newResistance: SummonResistanceData = {
+      id: `preview-sr-${Date.now()}`,
+      abilityId,
+      name,
+      value,
+    }
+    const updated = abilitiesRef.current.map(a => {
+      if (a.id !== abilityId) return a
+      return { ...a, summonResistances: [...(a.summonResistances ?? []), newResistance] }
+    })
+    dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
+  }, [dispatch])
 
-  const handleCreateSummonAbility = useCallback(async (summonId: string, e: FormEvent) => {
+  const handleRemoveSummonResistance = useCallback(async (abilityId: string, summonResistanceId: string) => {
+    const updated = abilitiesRef.current.map(a => {
+      if (a.id !== abilityId) return a
+      return { ...a, summonResistances: (a.summonResistances ?? []).filter(r => r.id !== summonResistanceId) }
+    })
+    dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
+  }, [dispatch])
+
+  const handleUpdateSummonResistance = useCallback(async (abilityId: string, summonResistanceId: string, name: string, value: string) => {
+    const updated = abilitiesRef.current.map(a => {
+      if (a.id !== abilityId) return a
+      return {
+        ...a,
+        summonResistances: (a.summonResistances ?? []).map(r => r.id === summonResistanceId ? { ...r, name, value } : r),
+      }
+    })
+    dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
+  }, [dispatch])
+
+  const handleCreateSummonAbility = useCallback(async (summonId: string, e: SubmitEvent) => {
     e.preventDefault()
     const s = stateRef.current
     if (!s || !newAbility.name.trim()) return
@@ -563,7 +596,7 @@ export default function TemplatePreviewPage() {
     setItemError(null)
   }, [])
 
-  const handleCreateItem = useCallback(async (e: FormEvent) => {
+  const handleCreateItem = useCallback(async (e: SubmitEvent) => {
     e.preventDefault()
     if (!newItem.name.trim()) return
     setItemSaving(true)
@@ -629,7 +662,7 @@ export default function TemplatePreviewPage() {
     setSectionEntrySaving(false)
   }, [])
 
-  const handleCreateSectionEntry = useCallback(async (sectionId: string, e: FormEvent) => {
+  const handleCreateSectionEntry = useCallback(async (sectionId: string, e: SubmitEvent) => {
     e.preventDefault()
     if (!newSectionEntryForm.name.trim()) return
     setSectionEntrySaving(true)
@@ -809,6 +842,9 @@ export default function TemplatePreviewPage() {
             handleAddSummonSkill={handleAddSummonSkill}
             handleUpdateSummonSkill={handleUpdateSummonSkill}
             handleRemoveSummonSkill={handleRemoveSummonSkill}
+            handleAddSummonResistance={handleAddSummonResistance}
+            handleUpdateSummonResistance={handleUpdateSummonResistance}
+            handleRemoveSummonResistance={handleRemoveSummonResistance}
             handleCreateSummonAbility={handleCreateSummonAbility}
           />
         )}

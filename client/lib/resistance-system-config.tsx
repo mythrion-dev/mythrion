@@ -52,7 +52,7 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
     // Rebuild expanded state
     const newExpanded: Record<number, boolean> = {}
     Object.entries(expandedResistances).forEach(([k, v]) => {
-      const ki = parseInt(k)
+      const ki = Number.parseInt(k)
       if (ki < index) newExpanded[ki] = v
       else if (ki > index) newExpanded[ki - 1] = v
     })

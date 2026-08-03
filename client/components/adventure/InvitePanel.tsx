@@ -1,6 +1,6 @@
 'use client'
 
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 
 interface Invitation {
   id: string
@@ -30,7 +30,7 @@ export function InvitePanel({
   inviteSending: boolean
   invitations: Invitation[]
   onEmailChange: (e: string) => void
-  onInviteByEmail: (e: FormEvent) => void
+  onInviteByEmail: (e: SubmitEvent) => void
   onInviteByLink: () => void
   onRevoke: (id: string) => void
 }) {

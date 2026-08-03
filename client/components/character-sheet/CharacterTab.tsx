@@ -274,7 +274,7 @@ export function CharacterTab(props: CharacterTabProps) {
                           className="input-field py-1 text-[0.6rem] w-full text-center"
                           value={modVal || ''}
                           placeholder="Amount"
-                          onChange={e => setModifierInput(cr.id, parseInt(e.target.value, 10) || 0)}
+                          onChange={e => setModifierInput(cr.id, Number.parseInt(e.target.value, 10) || 0)}
                         />
                         <div className="grid grid-cols-2 gap-1">
                           <button
@@ -691,7 +691,7 @@ function SkillTable({
                           className="input-field py-0.5 text-[0.6rem] w-16"
                           value={othersValues[sv.skillId] || ''}
                           placeholder="0"
-                          onChange={e => onOthersChange(sv.skillId, parseInt(e.target.value, 10) || 0)}
+                          onChange={e => onOthersChange(sv.skillId, Number.parseInt(e.target.value, 10) || 0)}
                           disabled={!canEditSkills}
                         />
                         <span className="text-[0.6rem] font-mono text-primary tabular-nums">

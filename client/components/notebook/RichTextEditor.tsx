@@ -23,21 +23,21 @@ import 'prosemirror-tables/style/tables.css'
 /* ── Types ── */
 
 interface RichTextEditorProps {
-  content: string
-  onChange: (html: string) => void
-  placeholder?: string
+  readonly content: string
+  readonly onChange: (html: string) => void
+  readonly placeholder?: string
 }
 
 /* ── Toolbar button ── */
 
 interface ToolbarButtonProps {
-  onClick: () => void
-  isActive?: boolean
-  label: string
-  children: React.ReactNode
+  readonly onClick: () => void
+  readonly isActive?: boolean
+  readonly label: string
+  readonly children: React.ReactNode
 }
 
-function ToolbarButton({ onClick, isActive = false, label, children }: ToolbarButtonProps) {
+function ToolbarButton({ onClick, isActive = false, label, children }: Readonly<ToolbarButtonProps>) {
   return (
     <button
       type="button"
@@ -63,7 +63,7 @@ function ToolbarSeparator() {
 
 /* ── Component ── */
 
-export function RichTextEditor({ content, onChange, placeholder = 'Start writing...' }: RichTextEditorProps) {
+export function RichTextEditor({ content, onChange, placeholder = 'Start writing...' }: Readonly<RichTextEditorProps>) {
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
   const editorRef = useRef<Editor | null>(null)

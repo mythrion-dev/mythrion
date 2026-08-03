@@ -773,6 +773,7 @@ model CharacterAbility {
   summonAcValues    SummonArmorClassValue[]
   summonHealth      SummonHealth?
   summonSkills      SummonSkill[]
+  summonResistances SummonResistance[]
   childAbilities   CharacterAbility[]   @relation("SummonAbilities")
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
@@ -808,6 +809,20 @@ model SummonSkill {
   manualValue Int              @default(0)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+
+  @@index([abilityId])
+}
+
+// ── Summon Resistances (completely manual: name + value) ──
+
+model SummonResistance {
+  id        String           @id @default(cuid())
+  abilityId String
+  ability   CharacterAbility @relation(fields: [abilityId], references: [id], onDelete: Cascade)
+  name      String
+  value     String           @default("")
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
   @@index([abilityId])
 }

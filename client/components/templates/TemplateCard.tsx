@@ -3,16 +3,16 @@
 import Link from 'next/link'
 
 interface TemplateCardProps {
-  id: string
-  name: string
-  description: string | null
-  campaign: string | null
-  createdAt: string
-  attributeCount: number
-  skillCount: number
-  useCount: number
-  isPublic?: boolean
-  index?: number
+  readonly id: string
+  readonly name: string
+  readonly description: string | null
+  readonly campaign: string | null
+  readonly createdAt: string
+  readonly attributeCount: number
+  readonly skillCount: number
+  readonly useCount: number
+  readonly isPublic?: boolean
+  readonly index?: number
 }
 
 export function TemplateCard({
@@ -26,7 +26,7 @@ export function TemplateCard({
   useCount,
   isPublic = false,
   index = 0,
-}: TemplateCardProps) {
+}: Readonly<TemplateCardProps>) {
   const truncatedDescription =
     description && description.length > 120
       ? description.slice(0, 120).trimEnd() + '...'

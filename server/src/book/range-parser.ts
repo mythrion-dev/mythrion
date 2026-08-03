@@ -44,20 +44,20 @@ export function parseRange(
 
   if (suffix) {
     // Suffix range: bytes=-N → last N bytes
-    const suffixLen = parseInt(endStr, 10)
-    if (isNaN(suffixLen) || suffixLen <= 0) return null
+    const suffixLen = Number.parseInt(endStr, 10)
+    if (Number.isNaN(suffixLen) || suffixLen <= 0) return null
     start = Math.max(0, fileSize - suffixLen)
     end = fileSize - 1
   } else if (openEnded) {
     // Open-ended: bytes=N-
-    start = parseInt(startStr, 10)
-    if (isNaN(start) || start < 0) return null
+    start = Number.parseInt(startStr, 10)
+    if (Number.isNaN(start) || start < 0) return null
     end = fileSize - 1
   } else {
     // Explicit range: bytes=N-M
-    start = parseInt(startStr, 10)
-    end = parseInt(endStr, 10)
-    if (isNaN(start) || isNaN(end) || start < 0 || end < 0) return null
+    start = Number.parseInt(startStr, 10)
+    end = Number.parseInt(endStr, 10)
+    if (Number.isNaN(start) || Number.isNaN(end) || start < 0 || end < 0) return null
     if (start > end) return null
   }
 

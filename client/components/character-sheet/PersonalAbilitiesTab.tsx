@@ -2,7 +2,25 @@
 
 import { InlineClickEdit } from '@/components/character-sheet'
 import type { TemplateCharacterSection, SectionEntry, SheetPermissions } from './types'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
+
+interface PersonalAbilitiesTabProps {
+  readonly sections: TemplateCharacterSection[]
+  readonly entries: SectionEntry[]
+  readonly permissions: SheetPermissions
+  readonly toSingular: (name: string) => string
+  readonly expandedEntries: Record<string, boolean>
+  readonly setExpandedEntries: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+  readonly handleUpdateEntry: (entryId: string, field: 'name' | 'description', value: string) => Promise<void>
+  readonly handleDeleteEntry: (entryId: string) => Promise<void>
+  readonly showNewEntry: string | null
+  readonly setShowNewEntry: React.Dispatch<React.SetStateAction<string | null>>
+  readonly newEntryForm: { name: string; description: string }
+  readonly setNewEntryForm: React.Dispatch<React.SetStateAction<{ name: string; description: string }>>
+  readonly handleCreateEntry: (sectionId: string, e: SubmitEvent) => Promise<void>
+  readonly saving: boolean
+  readonly resetForm: () => void
+}
 
 export function PersonalAbilitiesTab({
   sections, entries, permissions, toSingular,
@@ -11,21 +29,7 @@ export function PersonalAbilitiesTab({
   showNewEntry, setShowNewEntry,
   newEntryForm, setNewEntryForm,
   handleCreateEntry, saving, resetForm,
-}: {
-  sections: TemplateCharacterSection[]; entries: SectionEntry[]; permissions: SheetPermissions
-  toSingular: (name: string) => string
-  expandedEntries: Record<string, boolean>
-  setExpandedEntries: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
-  handleUpdateEntry: (entryId: string, field: 'name' | 'description', value: string) => Promise<void>
-  handleDeleteEntry: (entryId: string) => Promise<void>
-  showNewEntry: string | null
-  setShowNewEntry: React.Dispatch<React.SetStateAction<string | null>>
-  newEntryForm: { name: string; description: string }
-  setNewEntryForm: React.Dispatch<React.SetStateAction<{ name: string; description: string }>>
-  handleCreateEntry: (sectionId: string, e: FormEvent) => Promise<void>
-  saving: boolean
-  resetForm: () => void
-}) {
+}: Readonly<PersonalAbilitiesTabProps>) {
   const canEditPersonalAbilities = permissions.canEditPersonalAbilities
   if (sections.length === 0) {
     return (
@@ -79,6 +83,25 @@ export function PersonalAbilitiesTab({
               <div className="space-y-2">
                 {sectionEntries.map((entry, idx) => {
                   const isExpanded = expandedEntries[entry.id] ?? false
+                  let descriptionElement: React.JSX.Element = (
+                    <p className="text-sm text-muted italic">No description.</p>
+                  )
+                  if (canEditPersonalAbilities) {
+                    descriptionElement = (
+                      <InlineClickEdit
+                        value={entry.description ?? ''}
+                        onSave={(v) => handleUpdateEntry(entry.id, 'description', v)}
+                        as="textarea"
+                        className="text-sm text-muted-foreground whitespace-pre-wrap"
+                        emptyDisplay="Add a description..."
+                        rows={2}
+                      />
+                    )
+                  } else if (entry.description) {
+                    descriptionElement = (
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{entry.description}</p>
+                    )
+                  }
                   return (
                     <div
                       key={entry.id}
@@ -132,20 +155,7 @@ export function PersonalAbilitiesTab({
                       {isExpanded && (
                         <div className="px-4 pb-4 pt-3 border-t border-border animate-fade-in">
                           <h5 className="text-xs font-medium text-muted mb-1.5">Description</h5>
-                          {canEditPersonalAbilities ? (
-                            <InlineClickEdit
-                              value={entry.description ?? ''}
-                              onSave={(v) => handleUpdateEntry(entry.id, 'description', v)}
-                              as="textarea"
-                              className="text-sm text-muted-foreground whitespace-pre-wrap"
-                              emptyDisplay="Add a description..."
-                              rows={2}
-                            />
-                          ) : entry.description ? (
-                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{entry.description}</p>
-                          ) : (
-                            <p className="text-sm text-muted italic">No description.</p>
-                          )}
+                          {descriptionElement}
                         </div>
                       )}
                     </div>

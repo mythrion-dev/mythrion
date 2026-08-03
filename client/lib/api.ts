@@ -189,7 +189,7 @@ export function decodeJwtPayload(token: string): Record<string, unknown> | null 
   try {
     const payload = token.split('.')[1]
     if (!payload) return null
-    return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
+    return JSON.parse(atob(payload.replaceAll('-/', '+').replaceAll('_/', '/')))
   } catch {
     return null
   }

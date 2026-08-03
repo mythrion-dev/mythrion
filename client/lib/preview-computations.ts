@@ -33,11 +33,11 @@ export function computeResistances(
         id: res.id,
         name: res.name,
         calculationType: 'MANUAL',
-        total: parseFloat(manualVal ?? '') || 0,
+        total: Number.parseFloat(manualVal ?? '') || 0,
         components: res.components.map((c) => ({
           id: c.id,
           name: c.name,
-          value: parseFloat(state.resistanceComponents[c.id]) || 0,
+          value: Number.parseFloat(state.resistanceComponents[c.id]) || 0,
           editableByPlayer: c.editableByPlayer,
         })),
         manualValue: manualVal ?? null,
@@ -49,7 +49,7 @@ export function computeResistances(
     const components = res.components.map((c) => ({
       id: c.id,
       name: c.name,
-      value: parseFloat(state.resistanceComponents[c.id]) || 0,
+      value: Number.parseFloat(state.resistanceComponents[c.id]) || 0,
       editableByPlayer: c.editableByPlayer,
     }))
 

@@ -3,20 +3,20 @@
 import Link from 'next/link'
 
 interface TemplateCardProps {
-  id: string
-  name: string
-  description: string | null
-  campaign: string | null
-  creatorDisplayName: string | null
-  copyCount?: number
-  attributeCount?: number
-  skillCount?: number
-  updatedAt?: string
-  index?: number
-  onClone?: (id: string) => void
-  isCloning?: boolean
-  isAuthenticated?: boolean
-  isOwn?: boolean
+  readonly id: string
+  readonly name: string
+  readonly description: string | null
+  readonly campaign: string | null
+  readonly creatorDisplayName: string | null
+  readonly copyCount?: number
+  readonly attributeCount?: number
+  readonly skillCount?: number
+  readonly updatedAt?: string
+  readonly index?: number
+  readonly onClone?: (id: string) => void
+  readonly isCloning?: boolean
+  readonly isAuthenticated?: boolean
+  readonly isOwn?: boolean
 }
 
 export function TemplateCard({
@@ -34,11 +34,65 @@ export function TemplateCard({
   isCloning = false,
   isAuthenticated = false,
   isOwn = false,
-}: TemplateCardProps) {
+}: Readonly<TemplateCardProps>) {
   const truncatedDescription =
     description && description.length > 100
       ? description.slice(0, 100).trimEnd() + '...'
       : description
+
+  let actionElement: React.ReactNode = null
+  if (isOwn) {
+    actionElement = (
+      <span className="badge text-[0.6rem]" style={{ background: 'rgba(124,92,231,0.15)', color: '#9070f0', border: '1px solid rgba(124,92,231,0.2)' }}>
+        Owned
+      </span>
+    )
+  } else if (isAuthenticated) {
+    actionElement = (
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onClone?.(id)
+        }}
+        disabled={isCloning}
+        className={`text-xs btn-primary !px-3 !py-1 ${isCloning ? '!opacity-50 !cursor-not-allowed' : ''}`}
+      >
+        {isCloning ? (
+          <>
+            <div className="w-3 h-3 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+            Cloning...
+          </>
+        ) : (
+          <>
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+              />
+            </svg>
+            Clone
+          </>
+        )}
+      </button>
+    )
+  } else {
+    actionElement = (
+      <Link
+        href="/login"
+        className="btn-ghost text-xs !px-3 !py-1"
+        onClick={(e) => e.stopPropagation()}
+      >
+        Sign in to clone
+      </Link>
+    )
+  }
 
   return (
     <div
@@ -146,52 +200,7 @@ export function TemplateCard({
             </svg>
             Preview
           </Link>
-          {isOwn ? (
-            <span className="badge text-[0.6rem]" style={{ background: 'rgba(124,92,231,0.15)', color: '#9070f0', border: '1px solid rgba(124,92,231,0.2)' }}>
-              Owned
-            </span>
-          ) : isAuthenticated ? (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onClone?.(id)
-              }}
-              disabled={isCloning}
-              className={`text-xs btn-primary !px-3 !py-1 ${isCloning ? '!opacity-50 !cursor-not-allowed' : ''}`}
-            >
-              {isCloning ? (
-                <>
-                  <div className="w-3 h-3 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                  Cloning...
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="w-3 h-3"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                    />
-                  </svg>
-                  Clone
-                </>
-              )}
-            </button>
-          ) : (
-            <Link
-              href="/login"
-              className="btn-ghost text-xs !px-3 !py-1"
-              onClick={(e) => e.stopPropagation()}
-            >
-              Sign in to clone
-            </Link>
-          )}
+          {actionElement}
         </div>
       </div>
     </div>

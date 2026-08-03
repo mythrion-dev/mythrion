@@ -56,8 +56,8 @@ export class AcCalculationService {
     // Build attribute value map
     const attrValues = new Map<string, number>()
     for (const v of sheet.values) {
-      const num = parseFloat(v.value)
-      attrValues.set(v.attributeId, isNaN(num) ? 0 : num)
+      const num = Number.parseFloat(v.value)
+      attrValues.set(v.attributeId, Number.isNaN(num) ? 0 : num)
     }
 
     // Fetch template's attribute modifier settings
@@ -148,23 +148,23 @@ export class AcCalculationService {
     for (const field of armorClass.fields) {
       if (field.editableByPlayer) {
         const sheetVal = sheetFieldValues.find(sv => sv.fieldId === field.id)
-        const val = parseFloat(sheetVal?.value ?? field.defaultValue)
+        const val = Number.parseFloat(sheetVal?.value ?? field.defaultValue)
         fieldBreakdown.push({
           fieldId: field.id,
           fieldName: field.name,
-          value: isNaN(val) ? 0 : val,
+          value: Number.isNaN(val) ? 0 : val,
           editableByPlayer: true,
         })
-        total += isNaN(val) ? 0 : val
+        total += Number.isNaN(val) ? 0 : val
       } else {
-        const defaultVal = parseFloat(field.defaultValue)
+        const defaultVal = Number.parseFloat(field.defaultValue)
         fieldBreakdown.push({
           fieldId: field.id,
           fieldName: field.name,
-          value: isNaN(defaultVal) ? 0 : defaultVal,
+          value: Number.isNaN(defaultVal) ? 0 : defaultVal,
           editableByPlayer: false,
         })
-        total += isNaN(defaultVal) ? 0 : defaultVal
+        total += Number.isNaN(defaultVal) ? 0 : defaultVal
       }
     }
 

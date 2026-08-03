@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { NumericInput } from '@/components/shared/NumericInput'
 import { PageHeader } from '@/components/shared/PageHeader'
+import { Select } from '@/components/shared/Select'
 
 // Mock next/link for EmptyState
 vi.mock('next/link', () => ({
@@ -332,5 +333,29 @@ describe('PageHeader', () => {
     const iconContainers = container.querySelectorAll('.w-10')
     // Without an icon, no icon container div should exist
     expect(iconContainers.length).toBe(0)
+  })
+})
+
+// ── Select ──
+
+describe('Select', () => {
+  it('closes when clicking outside', () => {
+    const onChange = vi.fn()
+    render(
+      <Select
+        options={[
+          { id: 'one', label: 'One' },
+          { id: 'two', label: 'Two' },
+        ]}
+        value={null}
+        onChange={onChange}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('combobox'))
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+
+    fireEvent.mouseDown(document.body)
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
   })
 })

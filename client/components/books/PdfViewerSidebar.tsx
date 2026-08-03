@@ -15,16 +15,16 @@ interface Book {
 }
 
 interface PdfViewerSidebarProps {
-  adventureId: string
-  isGM: boolean
+  readonly adventureId: string
+  readonly isGM: boolean
   /** Non-null opens sidebar in viewer mode for this book. Null → closed. */
-  bookId: string | null
+  readonly bookId: string | null
   /** Called when sidebar should close entirely. */
-  onClose: () => void
+  readonly onClose: () => void
   /** Called when user selects a book from the internal list (character-sheet use). */
-  onBookSelect?: (bookId: string) => void
+  readonly onBookSelect?: (bookId: string) => void
   /** Hide the floating toggle button (adventure-page use where BookListPanel drives it). */
-  hideToggle?: boolean
+  readonly hideToggle?: boolean
 }
 
 /* ── Constants ── */
@@ -77,11 +77,12 @@ export function PdfViewerSidebar({
   onClose,
   onBookSelect,
   hideToggle = false,
-}: PdfViewerSidebarProps) {
+}: Readonly<PdfViewerSidebarProps>) {
   /* ── Core state ── */
   const [isOpen, setIsOpen] = useState(false)
   const [internalBookId, setInternalBookId] = useState<string | null>(null)
   const [internalListOpen, setInternalListOpen] = useState(false)
+  const [minimized, setMinimized] = useState(false)
 
   /* ── Book list state ── */
   const [books, setBooks] = useState<Book[]>([])
@@ -98,6 +99,9 @@ export function PdfViewerSidebar({
   const activeBookId = bookId ?? internalBookId
   const isViewerMode = activeBookId !== null
   const sidebarVisible = isOpen || bookId !== null || internalBookId !== null || internalListOpen
+  // Whether the panel is actually on screen (false while minimized — component stays mounted so
+  // the native PDF iframe's page/zoom/scroll are preserved and reopening is instant).
+  const panelVisible = sidebarVisible && !minimized
   const activeBookName =
     books.find((b) => b.id === activeBookId)?.name ??
     bookNameMapRef.current.get(activeBookId ?? '') ??
@@ -166,18 +170,34 @@ export function PdfViewerSidebar({
     }
   }, [activeBookId, activeBookName, adventureId])
 
-  /* ── Sidebar close ── */
-  function handleClose() {
-    if (internalBookId) {
-      setInternalBookId(null)
-      setInternalListOpen(true)
-      setIsOpen(true)
-      return
-    }
-    if (internalListOpen) {
-      setInternalListOpen(false)
-    }
+  // Reopen the panel when a book is selected from the adventure page (BookListPanel eye).
+  // Re-selecting the same book bails (state setter no-op) and stays minimized — the restore
+  // pill remains the affordance in that case.
+  useEffect(() => {
+    if (bookId) setMinimized(false)
+  }, [bookId])
+
+  /* ── Sidebar close / minimize ── */
+  // Minimize hides the panel but keeps the component mounted, so all viewer state (including
+  // the native PDF iframe's page/zoom/scroll) is preserved. Deliberately does NOT call onClose —
+  // the parent's bookId must stay set so restore needs no fresh book.
+  function handleMinimize() {
     setIsOpen(false)
+    setMinimized(true)
+  }
+
+  // Full close: clear every piece of in-memory state and the persisted selection, so reopening
+  // behaves like a fresh launch (no PDF loaded, list collapsed).
+  function handleClose() {
+    setInternalBookId(null)
+    setInternalListOpen(false)
+    setMinimized(false)
+    setIsOpen(false)
+    try {
+      localStorage.removeItem(`${LS_PREFIX}:${adventureId}`)
+    } catch {
+      // ignore storage errors (privacy mode, quota)
+    }
     onClose()
   }
 
@@ -234,17 +254,16 @@ export function PdfViewerSidebar({
   /* ── Render: sidebar panel ── */
   return (
     <>
-      {/* Mobile overlay */}
-      {sidebarVisible && (
-        <div className="fixed inset-0 z-40 bg-black/40 sm:hidden" onClick={handleClose} />
+      {/* Mobile overlay — tapping the scrim minimizes (preserves state), never destroys */}
+      {panelVisible && (
+        <div className="fixed inset-0 z-40 bg-black/40 sm:hidden" onClick={handleMinimize} />
       )}
 
       {/* Sidebar panel */}
       <aside
         className={`fixed top-0 right-0 z-50 h-full bg-surface border-l border-border shadow-2xl transition-all duration-300 flex flex-col w-1/2 max-sm:w-full sm:max-w-[95vw] lg:w-1/2 xl:w-[45%] ${
-          sidebarVisible ? 'translate-x-0' : 'translate-x-full'
+          panelVisible ? 'translate-x-0' : 'translate-x-full'
         }`}
-        role="complementary"
       >
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
@@ -271,9 +290,20 @@ export function PdfViewerSidebar({
               </button>
             )}
             <button
+              onClick={handleMinimize}
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
+              aria-label="Minimize books sidebar"
+              title="Minimize"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
               onClick={handleClose}
               className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
               aria-label="Close sidebar"
+              title="Close"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -330,8 +360,8 @@ export function PdfViewerSidebar({
             <div className="flex-1 overflow-y-auto">
               {loadingList && (
                 <div className="p-4 space-y-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="card !p-3 flex items-center gap-3">
+                  {Array.from({ length: 4 }, (_, i) => `skel-${i}`).map((key) => (
+                    <div key={key} className="card !p-3 flex items-center gap-3">
                       <div className="skeleton w-10 h-10 rounded-lg shrink-0" />
                       <div className="flex-1 space-y-1.5">
                         <div className="skeleton h-4 w-28" />
@@ -412,6 +442,26 @@ export function PdfViewerSidebar({
           </>
         )}
       </aside>
+
+      {/* Restore pill — shown while minimized. The aside stays mounted (offscreen) so the
+          native PDF iframe's page/zoom/scroll survive; this is the only restore affordance on
+          the adventure page, where hideToggle suppresses the floating toggle. */}
+      {minimized && (
+        <button
+          onClick={() => {
+            setMinimized(false)
+            setIsOpen(true)
+          }}
+          className="fixed top-24 right-0 z-40 flex items-center gap-2 px-3 py-2 rounded-l-lg bg-surface border border-r-0 border-border text-sm font-medium text-foreground hover:bg-hover transition-colors shadow-lg"
+          aria-label="Restore books sidebar"
+          title="Restore books sidebar"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+          </svg>
+          <span className="hidden sm:inline text-xs">{isViewerMode ? activeBookName : 'Books'}</span>
+        </button>
+      )}
     </>
   )
 }

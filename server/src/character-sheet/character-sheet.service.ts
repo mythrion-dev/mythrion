@@ -122,6 +122,9 @@ const sheetInclude = {
       summonSkills: {
         orderBy: { createdAt: 'asc' as const },
       },
+      summonResistances: {
+        orderBy: { createdAt: 'asc' as const },
+      },
       childAbilities: {
         orderBy: { order: 'asc' as const },
         include: {
@@ -807,6 +810,9 @@ export class CharacterSheetService {
     summonSkills: {
       orderBy: { createdAt: 'asc' as const },
     },
+    summonResistances: {
+      orderBy: { createdAt: 'asc' as const },
+    },
     childAbilities: {
       orderBy: { order: 'asc' as const },
       include: {
@@ -1101,6 +1107,55 @@ export class CharacterSheetService {
     await this.requireOwnership(ss.ability.sheetId, userId)
     const result = await this.prisma.summonSkill.delete({ where: { id: summonSkillId } })
     await this.invalidateCache(ss.ability.sheetId).catch(() => {})
+    return result
+  }
+
+  // ── Summon Resistances (completely manual) ──
+
+  async addSummonResistance(abilityId: string, name: string, value: string, userId: string) {
+    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
+    if (!ability) throw new NotFoundException('Summon not found')
+    if (ability.type !== 'SUMMON') throw new ForbiddenException('Resistances can only be added to summons')
+    await this.requireOwnership(ability.sheetId, userId)
+
+    const result = await this.prisma.summonResistance.create({
+      data: {
+        abilityId,
+        name,
+        value,
+      },
+    })
+    await this.invalidateCache(ability.sheetId).catch(() => {})
+    return result
+  }
+
+  async updateSummonResistance(summonResistanceId: string, userId: string, dto: { name?: string; value?: string }) {
+    const sr = await this.prisma.summonResistance.findUnique({
+      where: { id: summonResistanceId },
+      include: { ability: true },
+    })
+    if (!sr) throw new NotFoundException('Summon resistance not found')
+    await this.requireOwnership(sr.ability.sheetId, userId)
+    const result = await this.prisma.summonResistance.update({
+      where: { id: summonResistanceId },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.value !== undefined ? { value: dto.value } : {}),
+      },
+    })
+    await this.invalidateCache(sr.ability.sheetId).catch(() => {})
+    return result
+  }
+
+  async removeSummonResistance(summonResistanceId: string, userId: string) {
+    const sr = await this.prisma.summonResistance.findUnique({
+      where: { id: summonResistanceId },
+      include: { ability: true },
+    })
+    if (!sr) throw new NotFoundException('Summon resistance not found')
+    await this.requireOwnership(sr.ability.sheetId, userId)
+    const result = await this.prisma.summonResistance.delete({ where: { id: summonResistanceId } })
+    await this.invalidateCache(sr.ability.sheetId).catch(() => {})
     return result
   }
 

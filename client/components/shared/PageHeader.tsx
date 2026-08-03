@@ -9,7 +9,7 @@ interface PageHeaderProps {
   actions?: ReactNode
 }
 
-export function PageHeader({ title, subtitle, icon, actions }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, icon, actions }: Readonly<PageHeaderProps>) {
   return (
     <header className="flex items-center justify-between pb-4 header-accent">
       <div className="flex items-center gap-3">

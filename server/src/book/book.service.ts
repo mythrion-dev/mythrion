@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit, Logger, NotFoundException, ForbiddenException } from '@nestjs/common'
 import { MongoClient, GridFSBucket, ObjectId, type Db, type ObjectId as MongoObjectId } from 'mongodb'
-import { Readable } from 'stream'
+import { Readable } from 'node:stream'
 import { PrismaService } from '../prisma.service.js'
 import { RedisService } from '../redis/redis.service.js'
 import { MembershipService } from '../membership/membership.service.js'
