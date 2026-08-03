@@ -194,6 +194,87 @@ describe('InvitationService', () => {
     })
   })
 
+  describe('origin handling', () => {
+    const emailParams = {
+      adventureId: 'a1',
+      invitedEmail: 'player@test.com',
+      createdById: 'gm1',
+    }
+    const linkParams = { adventureId: 'a1', createdById: 'gm1' }
+    const originalAllowedOrigins = process.env.ALLOWED_ORIGINS
+
+    // An earlier test leaves sendInvitation mocked to reject; restore the
+    // success default so these tests reach the URL assertion.
+    beforeEach(() => {
+      mockEmailService.sendInvitation.mockResolvedValue(undefined)
+    })
+
+    afterEach(() => {
+      if (originalAllowedOrigins === undefined) delete process.env.ALLOWED_ORIGINS
+      else process.env.ALLOWED_ORIGINS = originalAllowedOrigins
+    })
+
+    it('inviteByEmail uses an allowed origin for the invite URL', async () => {
+      process.env.ALLOWED_ORIGINS = 'https://mythrion.com.br,https://mythrion.online'
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', name: 'Test Adventure' })
+      prisma.campaignInvitation.create.mockResolvedValue({ id: 'inv1', token: 't' })
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'gm1',
+        displayName: 'GM',
+        email: 'gm@test.com',
+      })
+
+      await service.inviteByEmail({ ...emailParams, origin: 'https://mythrion.com.br' })
+
+      expect(mockEmailService.sendInvitation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          inviteUrl: 'https://mythrion.com.br/invite/mock-uuid',
+        }),
+      )
+    })
+
+    it('inviteByEmail falls back to the default URL for a disallowed origin', async () => {
+      process.env.ALLOWED_ORIGINS = 'https://mythrion.com.br'
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', name: 'Test Adventure' })
+      prisma.campaignInvitation.create.mockResolvedValue({ id: 'inv1', token: 't' })
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'gm1',
+        displayName: 'GM',
+        email: 'gm@test.com',
+      })
+
+      await service.inviteByEmail({ ...emailParams, origin: 'https://evil.example.com' })
+
+      // FRONTEND_URL is unset in the test env, so the fallback is the local default.
+      expect(mockEmailService.sendInvitation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          inviteUrl: 'http://localhost:3001/invite/mock-uuid',
+        }),
+      )
+    })
+
+    it('inviteByLink uses an allowed origin for the invite URL', async () => {
+      process.env.ALLOWED_ORIGINS = 'https://mythrion.online'
+      prisma.campaignInvitation.create.mockResolvedValue({ token: 't' })
+
+      const result = await service.inviteByLink({
+        ...linkParams,
+        origin: 'https://mythrion.online',
+      })
+
+      expect(result.inviteUrl).toBe('https://mythrion.online/invite/mock-uuid')
+    })
+
+    it('inviteByLink falls back to the default URL when no origin is present', async () => {
+      prisma.campaignInvitation.create.mockResolvedValue({ token: 't' })
+
+      const result = await service.inviteByLink(linkParams)
+
+      // FRONTEND_URL is unset in the test env, so the fallback is the local default.
+      expect(result.inviteUrl).toBe('http://localhost:3001/invite/mock-uuid')
+    })
+  })
+
   describe('validate', () => {
     const baseInvitation = {
       id: 'inv1',
