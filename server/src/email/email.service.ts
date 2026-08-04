@@ -1,40 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 
 const API_BASE_URL = 'https://api.mail.hostinger.com';
 const DEFAULT_FROM = 'Mythrion <noreply@mythrion.com>';
 const REQUEST_TIMEOUT_MS = 10_000;
 
 /**
- * Inline the logo as a base64 data URI instead of referencing a remote URL —
- * many email clients block remote images by default, so a hosted URL may show
- * up as a broken image. The PNG is copied to dist by the nest-cli asset.
+ * Gmail renders remote HTTPS images through its proxy but does NOT support
+ * data: URIs in <img src> — a base64-inlined logo shows up as a broken image
+ * with the alt text. Reference the publicly-served client asset (public/logo.png)
+ * with an absolute HTTPS URL instead. FRONTEND_URL is the canonical production
+ * frontend base the server already uses for redirects and CORS.
  */
-const EMAIL_LOGO = `data:image/png;base64,${loadEmailLogo()}`;
-
-/**
- * Locate the logo PNG. The asset lives at src/email/ in the source tree and is
- * copied to dist/email/ by the nest-cli asset config, but the compiled service
- * lands in dist/src/email/ (a rootDir quirk: server.js at the package root pulls
- * tsc's inferred rootDir above src/). So __dirname alone can't find the file.
- */
-function loadEmailLogo(): string {
-  const candidates = [
-    join(__dirname, 'email-logo.png'), // ts-jest (src/email/) or dist/email/
-    join(__dirname, '..', '..', 'email', 'email-logo.png'), // compiled dist/src/email/
-  ];
-  for (const candidate of candidates) {
-    try {
-      return readFileSync(candidate).toString('base64');
-    } catch {
-      // try next candidate
-    }
-  }
-  throw new Error(
-    `Could not locate email-logo.png (tried: ${candidates.join(', ')})`,
-  );
-}
+const FRONTEND_URL = (
+  process.env.FRONTEND_URL ?? 'https://mythrion.com.br'
+).replace(/\/+$/, '');
+const EMAIL_LOGO_URL = `${FRONTEND_URL}/logo.png`;
 
 /** Extract the display-name portion of a "Name <addr>" From string. */
 function parseDisplayName(from: string | undefined): string {
@@ -186,7 +166,7 @@ export class EmailService {
       <div class="container">
         <div class="card">
           <div class="logo">
-            <img src="${EMAIL_LOGO}" alt="Mythrion" style="max-width: 200px; width: 100%; height: auto; display: inline-block;" />
+            <img src="${EMAIL_LOGO_URL}" alt="Mythrion" style="max-width: 200px; width: 100%; height: auto; display: inline-block;" />
           </div>
           <h1>${params.inviterName} invited you</h1>
           <p class="subtitle">You've been invited to join an adventure.</p>

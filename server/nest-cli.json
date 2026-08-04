@@ -8,10 +8,6 @@
       {
         "include": "i18n/**/*.json",
         "watchAssets": true
-      },
-      {
-        "include": "email/**/*.png",
-        "watchAssets": true
       }
     ]
   }
