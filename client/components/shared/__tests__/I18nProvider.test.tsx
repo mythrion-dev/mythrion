@@ -117,4 +117,37 @@ describe('I18nProvider', () => {
       expect(mockApplyLanguage).toHaveBeenCalledWith('en')
     })
   })
+
+  it('does not let a default DB "en" override a non-default local preference', async () => {
+    mockDetectLanguage.mockReturnValue('pt-BR')
+    setUser({ id: 'u1', language: 'en' })
+    renderProvider()
+
+    await waitFor(() => {
+      expect(mockApplyLanguage).toHaveBeenCalledWith('pt-BR')
+    })
+    expect(mockApplyLanguage).toHaveBeenCalledTimes(1)
+    expect(mockApplyLanguage).not.toHaveBeenCalledWith('en')
+  })
+
+  it('applies a DB language change from the default "en" to a non-default choice', async () => {
+    mockDetectLanguage.mockReturnValue('en')
+    setUser({ id: 'u1', language: 'en' })
+    const { rerender } = renderProvider()
+
+    await waitFor(() => {
+      expect(mockApplyLanguage).toHaveBeenCalledWith('en')
+    })
+
+    setUser({ id: 'u1', language: 'pt-BR' })
+    rerender(
+      <I18nProvider>
+        <div>provider-child</div>
+      </I18nProvider>,
+    )
+
+    await waitFor(() => {
+      expect(mockApplyLanguage).toHaveBeenCalledWith('pt-BR')
+    })
+  })
 })
