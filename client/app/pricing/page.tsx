@@ -87,7 +87,7 @@ export default function PricingPage() {
               />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gradient">{t('common:appName')}</p>
+              {/* <p className="text-sm font-semibold text-gradient">{t('common:appName')}</p> */}
               <p className="text-[0.65rem] uppercase tracking-[0.25em] text-muted">{t('billing:rpgEngine')}</p>
             </div>
           </Link>

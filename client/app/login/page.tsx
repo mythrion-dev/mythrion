@@ -77,9 +77,9 @@ function LoginForm() {
       </div>
 
       <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-gradient">
+        {/* <h1 className="text-2xl font-bold tracking-tight text-gradient">
           Mythrion
-        </h1>
+        </h1> */}
         <p className="mt-1 text-sm text-muted-foreground">
           {isRegister ? t('auth:createAccountTitle') : t('auth:signInTitle')}
         </p>

@@ -56,7 +56,7 @@ export default function HomePage() {
               priority
             />
             <div>
-              <p className="text-sm font-semibold text-gradient">{t('common:appName')}</p>
+              {/* <p className="text-sm font-semibold text-gradient">{t('common:appName')}</p> */}
               <p className="text-[0.65rem] uppercase tracking-[0.25em] text-muted">{t('dashboard:rpgEngine')}</p>
             </div>
           </Link>
