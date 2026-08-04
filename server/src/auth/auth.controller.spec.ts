@@ -39,6 +39,10 @@ describe('AuthController', () => {
       completeOnboarding: jest.fn().mockResolvedValue({ id: 'user-1', onboardingComplete: true }),
       getRequestIp: jest.fn().mockReturnValue('203.0.113.1'),
       getLocationFromIp: jest.fn().mockResolvedValue({ country: 'US', region: 'CA', city: 'San Francisco' }),
+      verifyTwoFactor: jest.fn().mockResolvedValue({ accessToken: 'mock-access', refreshToken: 'mock-refresh' }),
+      resendTwoFactorCode: jest.fn().mockResolvedValue({ twoFactorId: 'challenge-2' }),
+      sendTwoFactorCode: jest.fn().mockResolvedValue({ twoFactorId: 'challenge-1' }),
+      confirmTwoFactor: jest.fn().mockResolvedValue({ recoveryCodes: ['AAAA'] }),
     }
     mockLanguageService = {
       normalize: jest.fn().mockReturnValue('en'),
@@ -145,6 +149,42 @@ describe('AuthController', () => {
       const result = await controller.completeOnboarding(mockUserReq, dto)
       expect(mockAuthService.completeOnboarding).toHaveBeenCalledWith('user-1', dto)
       expect(result).toEqual({ id: 'user-1', onboardingComplete: true })
+    })
+  })
+
+  describe('verifyTwoFactor', () => {
+    it('should delegate to authService.verifyTwoFactor with the dto', async () => {
+      const dto = { twoFactorId: 'challenge-1', code: '123456' }
+      const result = await controller.verifyTwoFactor(dto)
+      expect(mockAuthService.verifyTwoFactor).toHaveBeenCalledWith(dto)
+      expect(result).toEqual({ accessToken: 'mock-access', refreshToken: 'mock-refresh' })
+    })
+  })
+
+  describe('resendTwoFactorCode', () => {
+    it('should delegate to authService.resendTwoFactorCode with the dto', async () => {
+      const dto = { twoFactorId: 'challenge-1' }
+      const result = await controller.resendTwoFactorCode(dto)
+      expect(mockAuthService.resendTwoFactorCode).toHaveBeenCalledWith(dto)
+      expect(result).toEqual({ twoFactorId: 'challenge-2' })
+    })
+  })
+
+  describe('sendTwoFactorCode', () => {
+    it('should delegate to authService.sendTwoFactorCode with userId and purpose', async () => {
+      const dto = { purpose: 'ENABLE' }
+      const result = await controller.sendTwoFactorCode(mockUserReq, dto)
+      expect(mockAuthService.sendTwoFactorCode).toHaveBeenCalledWith('user-1', 'ENABLE')
+      expect(result).toEqual({ twoFactorId: 'challenge-1' })
+    })
+  })
+
+  describe('confirmTwoFactor', () => {
+    it('should delegate to authService.confirmTwoFactor with userId, purpose and dto', async () => {
+      const dto = { purpose: 'ENABLE', twoFactorId: 'challenge-1', code: '123456' }
+      const result = await controller.confirmTwoFactor(mockUserReq, dto)
+      expect(mockAuthService.confirmTwoFactor).toHaveBeenCalledWith('user-1', 'ENABLE', dto)
+      expect(result).toEqual({ recoveryCodes: ['AAAA'] })
     })
   })
 

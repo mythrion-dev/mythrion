@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next'
 import Image from 'next/image'
 import { useAuth } from '@/lib/auth-context'
 import { API_URL, setInvitationToken } from '@/lib/api'
+import { resendTwoFactorCode } from '@/lib/two-factor-api'
+import { TwoFactorCodeForm } from '@/components/auth/TwoFactorCodeForm'
 
 function LoginForm() {
   const router = useRouter()
@@ -13,7 +15,7 @@ function LoginForm() {
   const { t } = useTranslation()
   const redirect = searchParams.get('redirect') ?? '/dashboard'
   const errorParam = searchParams.get('error')
-  const { login, register } = useAuth()
+  const { login, register, verifyTwoFactor } = useAuth()
 
   const [isRegister, setIsRegister] = useState(false)
   const [email, setEmail] = useState('')
@@ -28,6 +30,9 @@ function LoginForm() {
     return null
   })
   const [submitting, setSubmitting] = useState(false)
+  const [step, setStep] = useState<'credentials' | 'code'>('credentials')
+  const [twoFactorId, setTwoFactorId] = useState<string | null>(null)
+  const [emailMasked, setEmailMasked] = useState('')
 
   const handleOAuthClick = (e: MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault()
@@ -51,10 +56,17 @@ function LoginForm() {
     try {
       if (isRegister) {
         await register(email, password)
+        router.push(redirect)
       } else {
-        await login(email, password)
+        const outcome = await login(email, password)
+        if (outcome.requiresTwoFactor) {
+          setTwoFactorId(outcome.twoFactorId)
+          setEmailMasked(outcome.emailMasked)
+          setStep('code')
+        } else {
+          router.push(redirect)
+        }
       }
-      router.push(redirect)
     } catch (err) {
       setError(err instanceof Error ? err.message : t('auth:somethingWentWrong'))
     } finally {
@@ -76,16 +88,33 @@ function LoginForm() {
         />
       </div>
 
-      <div className="text-center">
-        {/* <h1 className="text-2xl font-bold tracking-tight text-gradient">
-          Mythrion
-        </h1> */}
-        <p className="mt-1 text-sm text-muted-foreground">
-          {isRegister ? t('auth:createAccountTitle') : t('auth:signInTitle')}
-        </p>
-      </div>
+      {step === 'code' ? (
+        <TwoFactorCodeForm
+          emailMasked={emailMasked}
+          onVerify={async (code) => {
+            if (!twoFactorId) return
+            await verifyTwoFactor(twoFactorId, code)
+            router.push(redirect)
+          }}
+          onResend={async () => {
+            if (!twoFactorId) return
+            const { twoFactorId: newId } = await resendTwoFactorCode(twoFactorId)
+            setTwoFactorId(newId)
+          }}
+          onBack={() => setStep('credentials')}
+        />
+      ) : (
+        <>
+          <div className="text-center">
+            {/* <h1 className="text-2xl font-bold tracking-tight text-gradient">
+              Mythrion
+            </h1> */}
+            <p className="mt-1 text-sm text-muted-foreground">
+              {isRegister ? t('auth:createAccountTitle') : t('auth:signInTitle')}
+            </p>
+          </div>
 
-      <form onSubmit={handleSubmit} className="card !p-6 space-y-4">
+          <form onSubmit={handleSubmit} className="card !p-6 space-y-4">
         <div>
           <label htmlFor="email" className="label">{t('auth:email')}</label>
           <input
@@ -180,6 +209,8 @@ function LoginForm() {
           </>
         )}
       </div>
+        </>
+      )}
     </div>
   )
 }

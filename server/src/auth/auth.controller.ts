@@ -5,6 +5,10 @@ import { LoginDto } from './dto/login.dto.js'
 import { RegisterDto } from './dto/register.dto.js'
 import { OnboardingDto } from './dto/onboarding.dto.js'
 import { LanguageDto } from './dto/language.dto.js'
+import { TwoFactorSendDto } from './dto/two-factor.dto.js'
+import { TwoFactorConfirmDto } from './dto/two-factor.dto.js'
+import { VerifyTwoFactorDto } from './dto/two-factor.dto.js'
+import { ResendTwoFactorDto } from './dto/two-factor.dto.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
 import { AuthGuard } from '@nestjs/passport'
 import { GoogleAuthGuard } from './google-auth.guard.js'
@@ -45,6 +49,32 @@ export class AuthController {
   @RateLimit({ windowSeconds: 300, maxRequests: 10 })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto)
+  }
+
+  @Post('verify-2fa')
+  @RateLimit({ windowSeconds: 300, maxRequests: 10 })
+  verifyTwoFactor(@Body() dto: VerifyTwoFactorDto) {
+    return this.authService.verifyTwoFactor(dto)
+  }
+
+  @Post('2fa/resend')
+  @RateLimit({ windowSeconds: 300, maxRequests: 5 })
+  resendTwoFactorCode(@Body() dto: ResendTwoFactorDto) {
+    return this.authService.resendTwoFactorCode(dto)
+  }
+
+  @Post('2fa/send')
+  @UseGuards(JwtAuthGuard)
+  @RateLimit({ windowSeconds: 300, maxRequests: 5 })
+  sendTwoFactorCode(@Req() req: AuthenticatedRequest, @Body() dto: TwoFactorSendDto) {
+    return this.authService.sendTwoFactorCode(req.user.sub, dto.purpose)
+  }
+
+  @Post('2fa/confirm')
+  @UseGuards(JwtAuthGuard)
+  @RateLimit({ windowSeconds: 300, maxRequests: 10 })
+  confirmTwoFactor(@Req() req: AuthenticatedRequest, @Body() dto: TwoFactorConfirmDto) {
+    return this.authService.confirmTwoFactor(req.user.sub, dto.purpose, dto)
   }
 
   @Post('refresh')

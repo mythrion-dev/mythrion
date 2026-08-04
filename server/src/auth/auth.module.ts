@@ -15,6 +15,8 @@ import { AdminService } from './admin.service.js'
 import { SubscriptionGuard } from './subscription.guard.js'
 import { AdminGuard } from './admin.guard.js'
 import { SubscriptionModule } from '../subscription/subscription.module.js'
+import { EmailModule } from '../email/email.module.js'
+import { TwoFactorService } from './two-factor.service.js'
 
 @Module({
   imports: [
@@ -24,6 +26,7 @@ import { SubscriptionModule } from '../subscription/subscription.module.js'
     }),
     PassportModule,
     forwardRef(() => SubscriptionModule),
+    EmailModule,
   ],
   controllers: [AuthController],
   providers: [
@@ -39,6 +42,7 @@ import { SubscriptionModule } from '../subscription/subscription.module.js'
     AdminService,
     SubscriptionGuard,
     AdminGuard,
+    TwoFactorService,
   ],
   exports: [
     JwtAuthGuard,

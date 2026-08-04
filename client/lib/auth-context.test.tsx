@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -50,10 +51,31 @@ function TestConsumer() {
     <div>
       <div data-testid="loading">{String(auth.loading)}</div>
       <div data-testid="user">{auth.user?.email ?? 'no-user'}</div>
+      <div data-testid="twofactor">{auth.user ? String(auth.user.twoFactorEnabled) : 'no-user'}</div>
       <button onClick={() => auth.login('test@test.com', 'pass')}>Login</button>
       <button onClick={() => auth.register('test@test.com', 'pass', 'Test')}>Register</button>
       <button onClick={auth.logout}>Logout</button>
       <button onClick={() => auth.completeOnboarding('Test User')}>Onboard</button>
+      <button onClick={() => auth.verifyTwoFactor('ch-1', '123456')}>Verify2FA</button>
+      <button onClick={auth.refreshProfile}>RefreshProfile</button>
+    </div>
+  )
+}
+
+function TwoFactorLoginConsumer() {
+  const auth = useAuth()
+  const [outcome, setOutcome] = useState('')
+  return (
+    <div>
+      <div data-testid="login-outcome">{outcome}</div>
+      <button
+        onClick={async () => {
+          const res = await auth.login('test@test.com', 'pass')
+          setOutcome(res.requiresTwoFactor ? `2fa:${res.twoFactorId}:${res.emailMasked}` : 'direct')
+        }}
+      >
+        Login2FA
+      </button>
     </div>
   )
 }
@@ -63,6 +85,7 @@ const mockProfile = {
   email: 'test@test.com',
   displayName: null,
   onboardingComplete: false,
+  twoFactorEnabled: false,
 }
 
 beforeEach(() => {
@@ -568,6 +591,191 @@ describe('completeOnboarding', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('user')).toHaveTextContent('test@test.com')
+    })
+  })
+})
+
+// --------------- login (two-factor) ---------------
+
+describe('login with 2FA', () => {
+  beforeEach(() => {
+    vi.mocked(getAccessToken).mockReturnValue(null)
+    vi.mocked(getRefreshToken).mockReturnValue(null)
+  })
+
+  it('returns requiresTwoFactor outcome without storing tokens', async () => {
+    vi.mocked(api.post).mockResolvedValue({
+      requiresTwoFactor: true,
+      twoFactorId: 'ch-1',
+      emailMasked: 't***@test.com',
+    })
+
+    render(
+      <TestWrapper>
+        <TwoFactorLoginConsumer />
+      </TestWrapper>,
+    )
+
+    await userEvent.click(screen.getByText('Login2FA'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('login-outcome')).toHaveTextContent('2fa:ch-1:t***@test.com')
+    })
+    // No tokens were issued by the server, so none may be stored.
+    expect(setAccessToken).not.toHaveBeenCalled()
+    expect(setRefreshToken).not.toHaveBeenCalled()
+    expect(api.get).not.toHaveBeenCalledWith('/auth/profile')
+  })
+
+  it('stores tokens when 2FA is not required', async () => {
+    vi.mocked(api.post).mockResolvedValue({
+      accessToken: 'at-login',
+      refreshToken: 'rt-login',
+    })
+    vi.mocked(api.get).mockResolvedValue(mockProfile)
+
+    render(
+      <TestWrapper>
+        <TwoFactorLoginConsumer />
+      </TestWrapper>,
+    )
+
+    await userEvent.click(screen.getByText('Login2FA'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('login-outcome')).toHaveTextContent('direct')
+      expect(setAccessToken).toHaveBeenCalledWith('at-login')
+      expect(setRefreshToken).toHaveBeenCalledWith('rt-login')
+    })
+  })
+})
+
+// --------------- verifyTwoFactor ---------------
+
+describe('verifyTwoFactor', () => {
+  beforeEach(() => {
+    vi.mocked(getAccessToken).mockReturnValue(null)
+    vi.mocked(getRefreshToken).mockReturnValue(null)
+  })
+
+  it('calls api.post with /auth/verify-2fa and the challenge + code', async () => {
+    vi.mocked(api.post).mockResolvedValue({ accessToken: 'at-2fa', refreshToken: 'rt-2fa' })
+    vi.mocked(api.get).mockResolvedValue(mockProfile)
+
+    render(
+      <TestWrapper>
+        <TestConsumer />
+      </TestWrapper>,
+    )
+
+    await userEvent.click(screen.getByText('Verify2FA'))
+
+    await waitFor(() => {
+      expect(api.post).toHaveBeenCalledWith('/auth/verify-2fa', {
+        twoFactorId: 'ch-1',
+        code: '123456',
+      })
+    })
+  })
+
+  it('stores the tokens issued by the 2FA verification', async () => {
+    vi.mocked(api.post).mockResolvedValue({ accessToken: 'at-2fa', refreshToken: 'rt-2fa' })
+    vi.mocked(api.get).mockResolvedValue(mockProfile)
+
+    render(
+      <TestWrapper>
+        <TestConsumer />
+      </TestWrapper>,
+    )
+
+    await userEvent.click(screen.getByText('Verify2FA'))
+
+    await waitFor(() => {
+      expect(setAccessToken).toHaveBeenCalledWith('at-2fa')
+      expect(setRefreshToken).toHaveBeenCalledWith('rt-2fa')
+    })
+  })
+
+  it('fetches the profile after verification', async () => {
+    vi.mocked(api.post).mockResolvedValue({ accessToken: 'at-2fa', refreshToken: 'rt-2fa' })
+    vi.mocked(api.get).mockResolvedValue(mockProfile)
+
+    render(
+      <TestWrapper>
+        <TestConsumer />
+      </TestWrapper>,
+    )
+
+    await userEvent.click(screen.getByText('Verify2FA'))
+
+    await waitFor(() => {
+      expect(api.get).toHaveBeenCalledWith('/auth/profile')
+      expect(screen.getByTestId('user')).toHaveTextContent('test@test.com')
+    })
+  })
+
+  it('propagates the twoFactorEnabled flag into user state', async () => {
+    vi.mocked(api.post).mockResolvedValue({ accessToken: 'at-2fa', refreshToken: 'rt-2fa' })
+    vi.mocked(api.get).mockResolvedValue({ ...mockProfile, twoFactorEnabled: true })
+
+    render(
+      <TestWrapper>
+        <TestConsumer />
+      </TestWrapper>,
+    )
+
+    await userEvent.click(screen.getByText('Verify2FA'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('twofactor')).toHaveTextContent('true')
+    })
+  })
+})
+
+// --------------- refreshProfile ---------------
+
+describe('refreshProfile', () => {
+  beforeEach(() => {
+    vi.mocked(getAccessToken).mockReturnValue(null)
+    vi.mocked(getRefreshToken).mockReturnValue(null)
+  })
+
+  it('re-fetches the profile from /auth/profile', async () => {
+    vi.mocked(api.get).mockResolvedValue(mockProfile)
+
+    render(
+      <TestWrapper>
+        <TestConsumer />
+      </TestWrapper>,
+    )
+
+    await userEvent.click(screen.getByText('RefreshProfile'))
+
+    await waitFor(() => {
+      expect(api.get).toHaveBeenCalledWith('/auth/profile')
+    })
+  })
+
+  it('updates the user with the fresh profile', async () => {
+    vi.mocked(getAccessToken).mockReturnValue('mock-token')
+    vi.mocked(api.get)
+      .mockResolvedValueOnce(mockProfile) // mount restore
+      .mockResolvedValueOnce({ ...mockProfile, twoFactorEnabled: true }) // refresh
+
+    render(
+      <TestWrapper>
+        <TestConsumer />
+      </TestWrapper>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('twofactor')).toHaveTextContent('false')
+    })
+
+    await userEvent.click(screen.getByText('RefreshProfile'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('twofactor')).toHaveTextContent('true')
     })
   })
 })

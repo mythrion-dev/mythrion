@@ -392,6 +392,23 @@ export type EnumSubscriptionStatusWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumSubscriptionStatusFilter<$PrismaModel>
 }
 
+export type EnumTwoFactorPurposeFilter<$PrismaModel = never> = {
+  equals?: $Enums.TwoFactorPurpose | Prisma.EnumTwoFactorPurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.TwoFactorPurpose[] | Prisma.ListEnumTwoFactorPurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TwoFactorPurpose[] | Prisma.ListEnumTwoFactorPurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTwoFactorPurposeFilter<$PrismaModel> | $Enums.TwoFactorPurpose
+}
+
+export type EnumTwoFactorPurposeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.TwoFactorPurpose | Prisma.EnumTwoFactorPurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.TwoFactorPurpose[] | Prisma.ListEnumTwoFactorPurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TwoFactorPurpose[] | Prisma.ListEnumTwoFactorPurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTwoFactorPurposeWithAggregatesFilter<$PrismaModel> | $Enums.TwoFactorPurpose
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumTwoFactorPurposeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumTwoFactorPurposeFilter<$PrismaModel>
+}
+
 export type NestedStringFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -732,6 +749,23 @@ export type NestedEnumSubscriptionStatusWithAggregatesFilter<$PrismaModel = neve
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumSubscriptionStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumSubscriptionStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumTwoFactorPurposeFilter<$PrismaModel = never> = {
+  equals?: $Enums.TwoFactorPurpose | Prisma.EnumTwoFactorPurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.TwoFactorPurpose[] | Prisma.ListEnumTwoFactorPurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TwoFactorPurpose[] | Prisma.ListEnumTwoFactorPurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTwoFactorPurposeFilter<$PrismaModel> | $Enums.TwoFactorPurpose
+}
+
+export type NestedEnumTwoFactorPurposeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.TwoFactorPurpose | Prisma.EnumTwoFactorPurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.TwoFactorPurpose[] | Prisma.ListEnumTwoFactorPurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TwoFactorPurpose[] | Prisma.ListEnumTwoFactorPurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTwoFactorPurposeWithAggregatesFilter<$PrismaModel> | $Enums.TwoFactorPurpose
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumTwoFactorPurposeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumTwoFactorPurposeFilter<$PrismaModel>
 }
 
 

@@ -290,6 +290,14 @@ describe('Sidebar active link', () => {
     const templatesLink = links.find((l) => l.textContent === 'Public Templates')
     expect(templatesLink?.className).not.toContain('sidebar-link-active')
   })
+
+  it('highlights Settings when pathname is /dashboard/settings', () => {
+    mockUsePathname.mockReturnValue('/dashboard/settings')
+    render(<Sidebar />)
+    const links = screen.getAllByRole('link')
+    const settingsLink = links.find((l) => l.textContent === 'Settings')
+    expect(settingsLink?.className).toContain('sidebar-link-active')
+  })
 })
 
 // ════════════════════════════════════════════════════════════
@@ -465,5 +473,12 @@ describe('Sidebar nav link hrefs', () => {
     const links = screen.getAllByRole('link')
     const subLink = links.find((l) => l.textContent === 'Subscription')
     expect(subLink).toHaveAttribute('href', '/dashboard/subscription')
+  })
+
+  it('Settings link points to /dashboard/settings', () => {
+    render(<Sidebar />)
+    const links = screen.getAllByRole('link')
+    const settingsLink = links.find((l) => l.textContent === 'Settings')
+    expect(settingsLink).toHaveAttribute('href', '/dashboard/settings')
   })
 })

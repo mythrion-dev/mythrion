@@ -95,6 +95,104 @@ export class EmailService {
     }
   }
 
+  async sendTwoFactorCode(params: {
+    to: string
+    code: string
+    expiresInMinutes: number
+  }) {
+    if (!this.token || !this.mailboxId) {
+      // In dev the Hostinger env vars are unset — log the code so flows can
+      // be exercised locally without delivering mail.
+      this.logger.log(
+        `[DEV] 2FA code for ${params.to}: ${params.code}`,
+      );
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/mailboxes/${this.mailboxId}/send`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: [params.to],
+            displayName: this.displayName,
+            subject: 'Mythrion — your verification code',
+            text: this.buildTwoFactorTextTemplate(params),
+            html: this.buildTwoFactorHtmlTemplate(params),
+          }),
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(await this.describeError(response));
+      }
+
+      this.logger.log(`2FA code sent to ${params.to}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed to send 2FA code to ${params.to}: ${message}`);
+      throw err;
+    }
+  }
+
+  private buildTwoFactorTextTemplate(params: {
+    code: string
+    expiresInMinutes: number
+  }) {
+    return [
+      'Your Mythrion verification code is:',
+      '',
+      params.code,
+      '',
+      `This code expires in ${params.expiresInMinutes} minutes.`,
+      'If you didn\'t request this, you can safely ignore this email.',
+    ].join('\n');
+  }
+
+  private buildTwoFactorHtmlTemplate(params: {
+    code: string
+    expiresInMinutes: number
+  }) {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { margin: 0; padding: 0; background: #0d0a14; font-family: system-ui, sans-serif; }
+        .container { max-width: 480px; margin: 0 auto; padding: 40px 20px; }
+        .card { background: linear-gradient(135deg, #15101f 0%, #1c1630 100%); border: 1px solid #2a2240; border-radius: 12px; padding: 32px; }
+        .logo { text-align: center; margin-bottom: 24px; }
+        h1 { color: #e8e2d9; font-size: 20px; margin: 0 0 8px; }
+        .subtitle { color: #a098b0; font-size: 14px; margin: 0 0 24px; }
+        .code { color: #e8e2d9; font-size: 36px; font-weight: 700; letter-spacing: 8px; font-family: ui-monospace, monospace; text-align: center; margin: 24px 0; }
+        .hint { color: #a098b0; font-size: 14px; margin: 0; }
+        .footer { color: #4a4060; font-size: 12px; margin-top: 24px; text-align: center; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="card">
+          <div class="logo">
+            <img src="${EMAIL_LOGO_URL}" alt="Mythrion" style="max-width: 200px; width: 100%; height: auto; display: inline-block;" />
+          </div>
+          <h1>Your verification code</h1>
+          <p class="subtitle">Use this code to complete your sign-in to Mythrion.</p>
+          <div class="code">${params.code}</div>
+          <p class="hint">This code expires in ${params.expiresInMinutes} minutes.</p>
+          <div class="footer">If you didn't request this, you can safely ignore this email.</div>
+        </div>
+      </div>
+    </body>
+    </html>`;
+  }
+
   /** Read the API error envelope ({ error, code }) and fall back to the status. */
   private async describeError(response: Response): Promise<string> {
     let body: { error?: string; code?: string } | null = null;
