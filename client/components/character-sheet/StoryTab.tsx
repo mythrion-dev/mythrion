@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation } from 'react-i18next'
 import { InlineTextarea } from '@/lib/inline-editable'
 import { StoryField } from '@/components/character-sheet'
 import type { Story, SheetPermissions } from './types'
@@ -13,96 +14,97 @@ export function StoryTab({
   permissions: SheetPermissions
   onSaveField: (field: string, value: string) => Promise<void>
 }) {
+  const { t } = useTranslation()
   const canEditStory = permissions.canEditStory
   return (
     <div className="space-y-4 animate-slide-up">
       {/* Appearance */}
       <div className="card !p-6 space-y-4">
         <div className="header-accent">
-          <h2 className="text-lg font-semibold text-gradient">Appearance</h2>
+          <h2 className="text-lg font-semibold text-gradient">{t('character:storyAppearance')}</h2>
         </div>
         {canEditStory ? (
           <InlineTextarea
             value={story?.appearance ?? ''}
-            label="Appearance"
+            label={t('character:storyAppearance')}
             onSave={(v) => onSaveField('appearance', v)}
             rows={3}
-            emptyDisplay="Describe your character's appearance..."
+            emptyDisplay={t('character:storyAppearancePlaceholder')}
           />
         ) : (
-          <StoryField label="Appearance" value={story?.appearance} />
+          <StoryField label={t('character:storyAppearance')} value={story?.appearance} />
         )}
       </div>
 
       {/* Backstory */}
       <div className="card !p-6 space-y-4">
         <div className="header-accent">
-          <h2 className="text-lg font-semibold text-gradient">Backstory</h2>
+          <h2 className="text-lg font-semibold text-gradient">{t('character:storyBackstory')}</h2>
         </div>
         {canEditStory ? (
           <InlineTextarea
             value={story?.backstory ?? ''}
-            label="Backstory"
+            label={t('character:storyBackstory')}
             onSave={(v) => onSaveField('backstory', v)}
             rows={5}
-            emptyDisplay="Write your character's backstory..."
+            emptyDisplay={t('character:storyBackstoryPlaceholder')}
           />
         ) : (
-          <StoryField label="Backstory" value={story?.backstory} />
+          <StoryField label={t('character:storyBackstory')} value={story?.backstory} />
         )}
       </div>
 
       {/* Personality */}
       <div className="card !p-6 space-y-4">
         <div className="header-accent">
-          <h2 className="text-lg font-semibold text-gradient">Personality</h2>
+          <h2 className="text-lg font-semibold text-gradient">{t('character:storyPersonality')}</h2>
         </div>
         {canEditStory ? (
           <InlineTextarea
             value={story?.personality ?? ''}
-            label="Personality"
+            label={t('character:storyPersonality')}
             onSave={(v) => onSaveField('personality', v)}
             rows={3}
-            emptyDisplay="Describe your character's personality..."
+            emptyDisplay={t('character:storyPersonalityPlaceholder')}
           />
         ) : (
-          <StoryField label="Personality" value={story?.personality} />
+          <StoryField label={t('character:storyPersonality')} value={story?.personality} />
         )}
       </div>
 
       {/* Goals */}
       <div className="card !p-6 space-y-4">
         <div className="header-accent">
-          <h2 className="text-lg font-semibold text-gradient">Goals</h2>
+          <h2 className="text-lg font-semibold text-gradient">{t('character:storyGoals')}</h2>
         </div>
         {canEditStory ? (
           <InlineTextarea
             value={story?.goals ?? ''}
-            label="Goals"
+            label={t('character:storyGoals')}
             onSave={(v) => onSaveField('goals', v)}
             rows={3}
-            emptyDisplay="What are your character's goals..."
+            emptyDisplay={t('character:storyGoalsPlaceholder')}
           />
         ) : (
-          <StoryField label="Goals" value={story?.goals} />
+          <StoryField label={t('character:storyGoals')} value={story?.goals} />
         )}
       </div>
 
       {/* Notes */}
       <div className="card !p-6 space-y-4">
         <div className="header-accent">
-          <h2 className="text-lg font-semibold text-gradient">Notes</h2>
+          <h2 className="text-lg font-semibold text-gradient">{t('character:storyNotes')}</h2>
         </div>
         {canEditStory ? (
           <InlineTextarea
             value={story?.notes ?? ''}
-            label="Notes"
+            label={t('character:storyNotes')}
             onSave={(v) => onSaveField('notes', v)}
             rows={3}
-            emptyDisplay="Add any additional notes..."
+            emptyDisplay={t('character:storyNotesPlaceholder')}
           />
         ) : (
-          <StoryField label="Notes" value={story?.notes} />
+          <StoryField label={t('character:storyNotes')} value={story?.notes} />
         )}
       </div>
     </div>

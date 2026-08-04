@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation } from 'react-i18next'
 import { Select } from '@/components/shared/Select'
 
 interface SkillValue {
@@ -35,6 +36,7 @@ export function CollapsibleSkillRow({
   onExpandToggle: (id: string) => void
   modifiersEnabled?: boolean
 }) {
+  const { t } = useTranslation()
   const expanded = expandedSkillId === skill.skillId
   const skillId = skill.skillId
   const hasAttrDropdown = (skill.skill.allowedAttributeIds?.length ?? 0) > 0 && !!templateAttributes && !!onAttributeChange
@@ -100,14 +102,14 @@ export function CollapsibleSkillRow({
             )
           })}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted shrink-0 min-w-[80px]">Others:</span>
+            <span className="text-xs text-muted shrink-0 min-w-[80px]">{t('character:others')}</span>
             <input
               type="number"
               min={0}
               step={1}
               className="input-field py-1 text-xs w-20"
               value={others || ''}
-              placeholder="0"
+              placeholder={t('character:othersPlaceholder')}
               onChange={e => onOthersChange(Number.parseInt(e.target.value, 10) || 0)}
             />
             <span className="text-xs font-mono text-primary">+{others}</span>

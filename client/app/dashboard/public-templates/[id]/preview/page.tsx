@@ -3,6 +3,7 @@
 import { useState, useEffect, useReducer, useCallback, useMemo, useRef, type SubmitEvent } from 'react'
 import { useParams } from 'next/navigation'
 import { API_URL } from '@/lib/api'
+import { useTranslation } from 'react-i18next'
 import { PreviewBanner } from '@/components/community/PreviewBanner'
 import {
   CharacterTab,
@@ -43,11 +44,12 @@ import type {
 // ── Loading spinner ──
 
 function LoadingSpinner() {
+  const { t } = useTranslation()
   return (
     <div className="flex items-center justify-center py-20">
       <div className="flex flex-col items-center gap-3 text-muted-foreground">
         <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
-        <span className="text-sm">Loading template...</span>
+        <span className="text-sm">{t('templates:loadingTemplate')}</span>
       </div>
     </div>
   )
@@ -91,6 +93,7 @@ const ALL_PERMISSIONS: SheetPermissions = {
 
 export default function TemplatePreviewPage() {
   const params = useParams()
+  const { t } = useTranslation()
   const templateId = params.id as string
 
   // ── Fetch state ──
@@ -169,7 +172,7 @@ export default function TemplatePreviewPage() {
       try {
         const res = await fetch(`${API_URL}/public/templates/${templateId}`)
         if (!res.ok) {
-          throw new Error(res.status === 404 ? 'Template not found.' : 'Failed to load template.')
+          throw new Error(res.status === 404 ? t('templates:templateNotFoundDot') : t('templates:failedToLoadTemplateDot'))
         }
         const template: PreviewTemplateSnapshot = await res.json()
         if (cancelled) return
@@ -179,7 +182,7 @@ export default function TemplatePreviewPage() {
         setFetching(false)
       } catch (err) {
         if (!cancelled) {
-          setFetchError(err instanceof Error ? err.message : 'Failed to load template.')
+          setFetchError(err instanceof Error ? err.message : t('templates:failedToLoadTemplateDot'))
           setFetching(false)
         }
       }
@@ -187,7 +190,7 @@ export default function TemplatePreviewPage() {
 
     load()
     return () => { cancelled = true }
-  }, [templateId])
+  }, [templateId, t])
 
   // ── Formula evaluator for the shared engine ──
 
@@ -422,11 +425,11 @@ export default function TemplatePreviewPage() {
       setExpandedAbilities(prev => ({ ...prev, [newId]: true }))
       resetNewAbility()
     } catch {
-      setAbilityError('Failed to create ability')
+      setAbilityError(t('templates:failedToCreateAbility'))
     } finally {
       setAbilitySaving(false)
     }
-  }, [newAbility, newAbilityType, resetNewAbility, dispatch])
+  }, [newAbility, newAbilityType, resetNewAbility, dispatch, t])
 
   const handleDeleteAbility = useCallback(async (abilityId: string) => {
     const updated = abilitiesRef.current.filter(a => a.id !== abilityId)
@@ -582,11 +585,11 @@ export default function TemplatePreviewPage() {
       dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
       resetNewAbility()
     } catch (err) {
-      setAbilityError(err instanceof Error ? err.message : 'Failed to create')
+      setAbilityError(err instanceof Error ? err.message : t('templates:failedToCreateAction'))
     } finally {
       setAbilitySaving(false)
     }
-  }, [newAbility, resetNewAbility, dispatch])
+  }, [newAbility, resetNewAbility, dispatch, t])
 
   // ── InventoryTab callbacks ──
 
@@ -613,11 +616,11 @@ export default function TemplatePreviewPage() {
       dispatch({ type: 'UPDATE_INVENTORY', payload: updated })
       resetNewItem()
     } catch (err) {
-      setItemError(err instanceof Error ? err.message : 'Failed to create item')
+      setItemError(err instanceof Error ? err.message : t('templates:failedToCreateItem'))
     } finally {
       setItemSaving(false)
     }
-  }, [newItem, resetNewItem, dispatch])
+  }, [newItem, resetNewItem, dispatch, t])
 
   const handleDeleteItem = useCallback(async (itemId: string) => {
     const updated = itemsRef.current.filter(i => i.id !== itemId)
@@ -723,7 +726,7 @@ export default function TemplatePreviewPage() {
 
   if (fetching || !state) return <LoadingSpinner />
   if (fetchError) return <ErrorState message={fetchError} />
-  if (!adapterResult || !previewTemplate) return <ErrorState message="Failed to initialize preview." />
+  if (!adapterResult || !previewTemplate) return <ErrorState message={t('templates:failedToInitPreview')} />
 
   // ── Derived values ──
 
@@ -750,7 +753,7 @@ export default function TemplatePreviewPage() {
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-            Character
+            {t('templates:tabCharacter')}
           </button>
           <button onClick={() => setActiveTab('abilities')} className={tabClass(activeTab, 'abilities')}>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -758,7 +761,7 @@ export default function TemplatePreviewPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 2l.5 1.5L10 4l-1.5.5L8 6l-.5-1.5L6 4l1.5-.5L8 2z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M16 1l.3 1.2L18 3l-1.7.8L16 5l-.3-1.2L14 3l1.7-.8L16 1z" />
             </svg>
-            Abilities
+            {t('templates:tabAbilities')}
           </button>
           <button onClick={() => setActiveTab('inventory')} className={tabClass(activeTab, 'inventory')}>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -771,19 +774,19 @@ export default function TemplatePreviewPage() {
               <path d="M13 6v-1" />
               <path d="M10.5 5h3" />
             </svg>
-            Inventory
+            {t('templates:tabInventory')}
           </button>
           <button onClick={() => setActiveTab('story')} className={tabClass(activeTab, 'story')}>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
-            Story
+            {t('templates:tabStory')}
           </button>
           <button onClick={() => setActiveTab('personal-abilities')} className={tabClass(activeTab, 'personal-abilities')}>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
-            Personal Abilities
+            {t('templates:tabPersonalAbilities')}
           </button>
           <button onClick={() => setActiveTab('resistances')} className={tabClass(activeTab, 'resistances')}>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -792,7 +795,7 @@ export default function TemplatePreviewPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 3V1" />
             </svg>
-            Resistances
+            {t('templates:tabResistances')}
           </button>
         </nav>
 

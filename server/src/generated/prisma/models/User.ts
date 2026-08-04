@@ -30,6 +30,7 @@ export type UserMinAggregateOutputType = {
   passwordHash: string | null
   displayName: string | null
   onboardingComplete: boolean | null
+  language: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -40,6 +41,7 @@ export type UserMaxAggregateOutputType = {
   passwordHash: string | null
   displayName: string | null
   onboardingComplete: boolean | null
+  language: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -50,6 +52,7 @@ export type UserCountAggregateOutputType = {
   passwordHash: number
   displayName: number
   onboardingComplete: number
+  language: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -62,6 +65,7 @@ export type UserMinAggregateInputType = {
   passwordHash?: true
   displayName?: true
   onboardingComplete?: true
+  language?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -72,6 +76,7 @@ export type UserMaxAggregateInputType = {
   passwordHash?: true
   displayName?: true
   onboardingComplete?: true
+  language?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -82,6 +87,7 @@ export type UserCountAggregateInputType = {
   passwordHash?: true
   displayName?: true
   onboardingComplete?: true
+  language?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -165,6 +171,7 @@ export type UserGroupByOutputType = {
   passwordHash: string | null
   displayName: string | null
   onboardingComplete: boolean
+  language: string
   createdAt: Date
   updatedAt: Date
   _count: UserCountAggregateOutputType | null
@@ -196,6 +203,7 @@ export type UserWhereInput = {
   passwordHash?: Prisma.StringNullableFilter<"User"> | string | null
   displayName?: Prisma.StringNullableFilter<"User"> | string | null
   onboardingComplete?: Prisma.BoolFilter<"User"> | boolean
+  language?: Prisma.StringFilter<"User"> | string
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   adventures?: Prisma.AdventureListRelationFilter
@@ -216,6 +224,7 @@ export type UserOrderByWithRelationInput = {
   passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
   displayName?: Prisma.SortOrderInput | Prisma.SortOrder
   onboardingComplete?: Prisma.SortOrder
+  language?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   adventures?: Prisma.AdventureOrderByRelationAggregateInput
@@ -239,6 +248,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   passwordHash?: Prisma.StringNullableFilter<"User"> | string | null
   displayName?: Prisma.StringNullableFilter<"User"> | string | null
   onboardingComplete?: Prisma.BoolFilter<"User"> | boolean
+  language?: Prisma.StringFilter<"User"> | string
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   adventures?: Prisma.AdventureListRelationFilter
@@ -259,6 +269,7 @@ export type UserOrderByWithAggregationInput = {
   passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
   displayName?: Prisma.SortOrderInput | Prisma.SortOrder
   onboardingComplete?: Prisma.SortOrder
+  language?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
@@ -275,6 +286,7 @@ export type UserScalarWhereWithAggregatesInput = {
   passwordHash?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   displayName?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   onboardingComplete?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
+  language?: Prisma.StringWithAggregatesFilter<"User"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
 }
@@ -285,6 +297,7 @@ export type UserCreateInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureCreateNestedManyWithoutOwnerInput
@@ -305,6 +318,7 @@ export type UserUncheckedCreateInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureUncheckedCreateNestedManyWithoutOwnerInput
@@ -325,6 +339,7 @@ export type UserUpdateInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUpdateManyWithoutOwnerNestedInput
@@ -345,6 +360,7 @@ export type UserUncheckedUpdateInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUncheckedUpdateManyWithoutOwnerNestedInput
@@ -365,6 +381,7 @@ export type UserCreateManyInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -375,6 +392,7 @@ export type UserUpdateManyMutationInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -385,6 +403,7 @@ export type UserUncheckedUpdateManyInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -395,6 +414,7 @@ export type UserCountOrderByAggregateInput = {
   passwordHash?: Prisma.SortOrder
   displayName?: Prisma.SortOrder
   onboardingComplete?: Prisma.SortOrder
+  language?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -405,6 +425,7 @@ export type UserMaxOrderByAggregateInput = {
   passwordHash?: Prisma.SortOrder
   displayName?: Prisma.SortOrder
   onboardingComplete?: Prisma.SortOrder
+  language?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -415,6 +436,7 @@ export type UserMinOrderByAggregateInput = {
   passwordHash?: Prisma.SortOrder
   displayName?: Prisma.SortOrder
   onboardingComplete?: Prisma.SortOrder
+  language?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -593,6 +615,7 @@ export type UserCreateWithoutAdventuresInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.CampaignMemberCreateNestedManyWithoutUserInput
@@ -612,6 +635,7 @@ export type UserUncheckedCreateWithoutAdventuresInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutUserInput
@@ -647,6 +671,7 @@ export type UserUpdateWithoutAdventuresInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.CampaignMemberUpdateManyWithoutUserNestedInput
@@ -666,6 +691,7 @@ export type UserUncheckedUpdateWithoutAdventuresInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.CampaignMemberUncheckedUpdateManyWithoutUserNestedInput
@@ -685,6 +711,7 @@ export type UserCreateWithoutJoinRequestsInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureCreateNestedManyWithoutOwnerInput
@@ -704,6 +731,7 @@ export type UserUncheckedCreateWithoutJoinRequestsInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureUncheckedCreateNestedManyWithoutOwnerInput
@@ -739,6 +767,7 @@ export type UserUpdateWithoutJoinRequestsInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUpdateManyWithoutOwnerNestedInput
@@ -758,6 +787,7 @@ export type UserUncheckedUpdateWithoutJoinRequestsInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUncheckedUpdateManyWithoutOwnerNestedInput
@@ -777,6 +807,7 @@ export type UserCreateWithoutNotebooksInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureCreateNestedManyWithoutOwnerInput
@@ -796,6 +827,7 @@ export type UserUncheckedCreateWithoutNotebooksInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureUncheckedCreateNestedManyWithoutOwnerInput
@@ -831,6 +863,7 @@ export type UserUpdateWithoutNotebooksInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUpdateManyWithoutOwnerNestedInput
@@ -850,6 +883,7 @@ export type UserUncheckedUpdateWithoutNotebooksInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUncheckedUpdateManyWithoutOwnerNestedInput
@@ -869,6 +903,7 @@ export type UserCreateWithoutMembershipsInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureCreateNestedManyWithoutOwnerInput
@@ -888,6 +923,7 @@ export type UserUncheckedCreateWithoutMembershipsInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureUncheckedCreateNestedManyWithoutOwnerInput
@@ -923,6 +959,7 @@ export type UserUpdateWithoutMembershipsInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUpdateManyWithoutOwnerNestedInput
@@ -942,6 +979,7 @@ export type UserUncheckedUpdateWithoutMembershipsInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUncheckedUpdateManyWithoutOwnerNestedInput
@@ -961,6 +999,7 @@ export type UserCreateWithoutSentInvitationsInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureCreateNestedManyWithoutOwnerInput
@@ -980,6 +1019,7 @@ export type UserUncheckedCreateWithoutSentInvitationsInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureUncheckedCreateNestedManyWithoutOwnerInput
@@ -1015,6 +1055,7 @@ export type UserUpdateWithoutSentInvitationsInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUpdateManyWithoutOwnerNestedInput
@@ -1034,6 +1075,7 @@ export type UserUncheckedUpdateWithoutSentInvitationsInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUncheckedUpdateManyWithoutOwnerNestedInput
@@ -1053,6 +1095,7 @@ export type UserCreateWithoutGoogleAccountInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureCreateNestedManyWithoutOwnerInput
@@ -1072,6 +1115,7 @@ export type UserUncheckedCreateWithoutGoogleAccountInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureUncheckedCreateNestedManyWithoutOwnerInput
@@ -1107,6 +1151,7 @@ export type UserUpdateWithoutGoogleAccountInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUpdateManyWithoutOwnerNestedInput
@@ -1126,6 +1171,7 @@ export type UserUncheckedUpdateWithoutGoogleAccountInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUncheckedUpdateManyWithoutOwnerNestedInput
@@ -1145,6 +1191,7 @@ export type UserCreateWithoutRefreshTokensInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureCreateNestedManyWithoutOwnerInput
@@ -1164,6 +1211,7 @@ export type UserUncheckedCreateWithoutRefreshTokensInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureUncheckedCreateNestedManyWithoutOwnerInput
@@ -1199,6 +1247,7 @@ export type UserUpdateWithoutRefreshTokensInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUpdateManyWithoutOwnerNestedInput
@@ -1218,6 +1267,7 @@ export type UserUncheckedUpdateWithoutRefreshTokensInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUncheckedUpdateManyWithoutOwnerNestedInput
@@ -1237,6 +1287,7 @@ export type UserCreateWithoutOwnedTemplatesInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureCreateNestedManyWithoutOwnerInput
@@ -1256,6 +1307,7 @@ export type UserUncheckedCreateWithoutOwnedTemplatesInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureUncheckedCreateNestedManyWithoutOwnerInput
@@ -1291,6 +1343,7 @@ export type UserUpdateWithoutOwnedTemplatesInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUpdateManyWithoutOwnerNestedInput
@@ -1310,6 +1363,7 @@ export type UserUncheckedUpdateWithoutOwnedTemplatesInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUncheckedUpdateManyWithoutOwnerNestedInput
@@ -1329,6 +1383,7 @@ export type UserCreateWithoutCharacterSheetsInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureCreateNestedManyWithoutOwnerInput
@@ -1348,6 +1403,7 @@ export type UserUncheckedCreateWithoutCharacterSheetsInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureUncheckedCreateNestedManyWithoutOwnerInput
@@ -1383,6 +1439,7 @@ export type UserUpdateWithoutCharacterSheetsInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUpdateManyWithoutOwnerNestedInput
@@ -1402,6 +1459,7 @@ export type UserUncheckedUpdateWithoutCharacterSheetsInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUncheckedUpdateManyWithoutOwnerNestedInput
@@ -1421,6 +1479,7 @@ export type UserCreateWithoutSubscriptionInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureCreateNestedManyWithoutOwnerInput
@@ -1440,6 +1499,7 @@ export type UserUncheckedCreateWithoutSubscriptionInput = {
   passwordHash?: string | null
   displayName?: string | null
   onboardingComplete?: boolean
+  language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   adventures?: Prisma.AdventureUncheckedCreateNestedManyWithoutOwnerInput
@@ -1475,6 +1535,7 @@ export type UserUpdateWithoutSubscriptionInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUpdateManyWithoutOwnerNestedInput
@@ -1494,6 +1555,7 @@ export type UserUncheckedUpdateWithoutSubscriptionInput = {
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventures?: Prisma.AdventureUncheckedUpdateManyWithoutOwnerNestedInput
@@ -1607,6 +1669,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   passwordHash?: boolean
   displayName?: boolean
   onboardingComplete?: boolean
+  language?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   adventures?: boolean | Prisma.User$adventuresArgs<ExtArgs>
@@ -1628,6 +1691,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   passwordHash?: boolean
   displayName?: boolean
   onboardingComplete?: boolean
+  language?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -1638,6 +1702,7 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   passwordHash?: boolean
   displayName?: boolean
   onboardingComplete?: boolean
+  language?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -1648,11 +1713,12 @@ export type UserSelectScalar = {
   passwordHash?: boolean
   displayName?: boolean
   onboardingComplete?: boolean
+  language?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "passwordHash" | "displayName" | "onboardingComplete" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "passwordHash" | "displayName" | "onboardingComplete" | "language" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   adventures?: boolean | Prisma.User$adventuresArgs<ExtArgs>
   memberships?: boolean | Prisma.User$membershipsArgs<ExtArgs>
@@ -1689,6 +1755,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     passwordHash: string | null
     displayName: string | null
     onboardingComplete: boolean
+    language: string
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["user"]>
@@ -2129,6 +2196,7 @@ export interface UserFieldRefs {
   readonly passwordHash: Prisma.FieldRef<"User", 'String'>
   readonly displayName: Prisma.FieldRef<"User", 'String'>
   readonly onboardingComplete: Prisma.FieldRef<"User", 'Boolean'>
+  readonly language: Prisma.FieldRef<"User", 'String'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
 }

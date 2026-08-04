@@ -1,5 +1,6 @@
-import { Injectable, Logger, UnprocessableEntityException } from '@nestjs/common'
-import { createHash, timingSafeEqual } from 'node:crypto'
+import { Injectable, Logger, UnprocessableEntityException } from '@nestjs/common';
+import { I18nService } from 'nestjs-i18n';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import type {
   PaymentGateway,
   CreateSubscriptionParams,
@@ -15,7 +16,7 @@ export class PagBankService implements PaymentGateway {
   private readonly token: string
   private readonly webhookSecret: string
 
-  constructor() {
+  constructor(private readonly i18n: I18nService) {
     this.token = process.env.PAGBANK_TOKEN ?? ''
     this.apiBase =
       process.env.PAGBANK_API_URL ?? 'https://sandbox.api.assinaturas.pagseguro.com'
@@ -115,7 +116,9 @@ export class PagBankService implements PaymentGateway {
         this.logger.error(
           `PagBank API error creating subscription (${response.status}): ${pgError}`,
         )
-        throw new UnprocessableEntityException(`PagBank error: ${pgError}`)
+        throw new UnprocessableEntityException(
+          this.i18n.t('subscription.pagBankError', { args: { pgError } }),
+        )
       }
 
       const result = data as any
@@ -138,7 +141,9 @@ export class PagBankService implements PaymentGateway {
 
       const pgError = err?.message || JSON.stringify(err)
       this.logger.error(`Failed to create PagBank subscription: ${pgError}`)
-      throw new UnprocessableEntityException(`PagBank error: ${pgError}`)
+      throw new UnprocessableEntityException(
+        this.i18n.t('subscription.pagBankError', { args: { pgError } }),
+      )
     }
   }
 
@@ -156,7 +161,7 @@ export class PagBankService implements PaymentGateway {
           `PagBank API error cancelling subscription ${gatewaySubscriptionId} (${response.status}): ${pgError}`,
         )
         throw new UnprocessableEntityException(
-          `Failed to cancel subscription: ${pgError}`,
+          this.i18n.t('subscription.cancelFailed', { args: { pgError } }),
         )
       }
 
@@ -172,7 +177,9 @@ export class PagBankService implements PaymentGateway {
       this.logger.error(
         `Failed to cancel PagBank subscription ${gatewaySubscriptionId}: ${pgError}`,
       )
-      throw new UnprocessableEntityException('Failed to cancel subscription')
+      throw new UnprocessableEntityException(
+        this.i18n.t('subscription.cancelFailedGeneric'),
+      )
     }
   }
 
@@ -184,12 +191,12 @@ export class PagBankService implements PaymentGateway {
     // Pre-flight validation — catch malformed payloads before hitting PagBank.
     if (!customerId || typeof customerId !== 'string' || customerId.trim() === '') {
       throw new UnprocessableEntityException(
-        'customerId is required to update the payment method',
+        this.i18n.t('subscription.customerIdRequired'),
       )
     }
     if (!cardToken || typeof cardToken !== 'string' || cardToken.trim() === '') {
       throw new UnprocessableEntityException(
-        'cardToken is required and must be a valid encrypted card string',
+        this.i18n.t('subscription.cardTokenRequired'),
       )
     }
 
@@ -223,7 +230,9 @@ export class PagBankService implements PaymentGateway {
           `PagBank API error updating payment method for customer ${customerId} (${response.status}): ${pgError}`,
         )
         throw new UnprocessableEntityException(
-          `Failed to update payment method: ${pgError}`,
+          this.i18n.t('subscription.paymentMethodUpdateFailed', {
+            args: { pgError },
+          }),
         )
       }
 
@@ -257,7 +266,9 @@ export class PagBankService implements PaymentGateway {
         this.logger.error(
           `Failed to fetch PagBank subscription ${gatewaySubscriptionId} (${response.status}): ${JSON.stringify(errorData)}`,
         )
-        throw new UnprocessableEntityException('Failed to fetch subscription')
+        throw new UnprocessableEntityException(
+          this.i18n.t('subscription.fetchSubscriptionFailed'),
+        )
       }
 
       const data = (await response.json()) as any
@@ -275,7 +286,9 @@ export class PagBankService implements PaymentGateway {
       this.logger.error(
         `Failed to fetch PagBank subscription ${gatewaySubscriptionId}: ${pgError}`,
       )
-      throw new UnprocessableEntityException('Failed to fetch subscription')
+      throw new UnprocessableEntityException(
+        this.i18n.t('subscription.fetchSubscriptionFailed'),
+      )
     }
   }
 

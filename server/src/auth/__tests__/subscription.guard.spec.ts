@@ -7,6 +7,7 @@ import { SubscriptionGuard } from '../subscription.guard'
 import { AdminService } from '../admin.service'
 import { SubscriptionService } from '../subscription/subscription.service'
 import type { ExecutionContext } from '@nestjs/common'
+import { createI18nServiceMock } from '../../i18n/i18n-testing.js'
 
 function createMockContext(overrides?: {
   user?: { sub: string; email: string; role: string }
@@ -42,7 +43,12 @@ describe('SubscriptionGuard', () => {
       hasActiveSubscription: jest.fn(),
     } as unknown as jest.Mocked<SubscriptionService>
 
-    guard = new SubscriptionGuard(reflector, adminService, subscriptionService)
+    guard = new SubscriptionGuard(
+      reflector,
+      adminService,
+      subscriptionService,
+      createI18nServiceMock(),
+    )
   })
 
   describe('@SkipSubscriptionCheck decorator', () => {

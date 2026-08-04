@@ -7,6 +7,8 @@ import { AdminPlansController } from '../admin-plans.controller'
 import { PrismaService } from '../../prisma.service'
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard'
 import { AdminGuard } from '../../auth/admin.guard'
+import { I18nService } from 'nestjs-i18n'
+import { createI18nServiceMock } from '../../i18n/i18n-testing.js'
 
 describe('AdminPlansController', () => {
   let controller: AdminPlansController
@@ -55,6 +57,7 @@ describe('AdminPlansController', () => {
       controllers: [AdminPlansController],
       providers: [
         { provide: PrismaService, useValue: prisma },
+        { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     })
       .overrideGuard(JwtAuthGuard)

@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
+import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
 import { RedisService } from '../redis/redis.service.js'
 import { AdminService } from './admin.service.js'
@@ -21,6 +22,7 @@ export class TokenService {
     private readonly jwtService: JwtService,
     private readonly redis: RedisService,
     private readonly adminService: AdminService,
+    private readonly i18n: I18nService,
   ) {}
 
   /** Generate access token (short-lived) and refresh token (long-lived, stored in DB) */
@@ -99,7 +101,7 @@ export class TokenService {
     const blacklistedSince = await this.redis.get(`token_blacklist:${userId}`)
     if (blacklistedSince) {
       // User logged out; all their refresh tokens are revoked
-      throw new UnauthorizedException('Refresh token has been revoked')
+      throw new UnauthorizedException(this.i18n.t('auth.refreshTokenRevoked'))
     }
 
     // Find all non-revoked, non-expired refresh tokens for this user
@@ -120,7 +122,7 @@ export class TokenService {
       try {
         isValid = await bcrypt.compare(rawToken, stored.token)
       } catch (err) {
-        throw new InternalServerErrorException('Token verification failed, please try again')
+        throw new InternalServerErrorException(this.i18n.t('auth.tokenVerificationFailed'))
       }
       if (isValid) {
         matched = true
@@ -138,7 +140,7 @@ export class TokenService {
       // stale/expired token, not theft. Reject this attempt only — revoking
       // every live token here would cascade-log-out the user's other devices
       // for a single bad token. The presented token is simply invalid.
-      throw new UnauthorizedException('Invalid refresh token')
+      throw new UnauthorizedException(this.i18n.t('auth.invalidRefreshToken'))
     }
 
     // Get user email for new token generation
@@ -148,7 +150,7 @@ export class TokenService {
     })
 
     if (!user) {
-      throw new UnauthorizedException('User not found')
+      throw new UnauthorizedException(this.i18n.t('auth.userNotFound'))
     }
 
     // Issue new token pair

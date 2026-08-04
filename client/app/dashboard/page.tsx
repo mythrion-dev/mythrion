@@ -8,6 +8,7 @@ import { useSubscription } from '@/lib/subscription-context'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
+import { useTranslation } from 'react-i18next'
 
 interface Adventure {
   id: string
@@ -36,6 +37,7 @@ type Tab = 'adventures' | 'character-sheets'
 function DashboardContent() {
   const { hasActiveSubscription } = useSubscription()
   const searchParams = useSearchParams()
+  const { t } = useTranslation()
   const tabParam = searchParams.get('tab')
   const [activeTab, setActiveTab] = useState<Tab>(
     tabParam === 'character-sheets' ? 'character-sheets' : 'adventures',
@@ -97,8 +99,8 @@ function DashboardContent() {
   return (
     <>
       <PageHeader
-        title="Dashboard"
-        subtitle="Your adventures and character sheets at a glance"
+        title={t('common:dashboard')}
+        subtitle={t('dashboard:subtitle')}
         icon="⚔️"
         actions={
           activeTab === 'adventures' ? (
@@ -107,7 +109,7 @@ function DashboardContent() {
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
-                <span className="hidden sm:inline">New Adventure</span>
+                <span className="hidden sm:inline">{t('dashboard:newAdventure')}</span>
               </Link>
             ) : (
               <Link
@@ -117,7 +119,7 @@ function DashboardContent() {
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                <span className="hidden sm:inline">Upgrade to Create</span>
+                <span className="hidden sm:inline">{t('dashboard:upgradeToCreate')}</span>
               </Link>
             )
           ) : (
@@ -125,7 +127,7 @@ function DashboardContent() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              <span className="hidden sm:inline">New Character Sheet</span>
+              <span className="hidden sm:inline">{t('dashboard:newCharacterSheet')}</span>
             </Link>
           )
         }
@@ -140,7 +142,7 @@ function DashboardContent() {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
           </svg>
-          Adventures
+          {t('common:adventures')}
           {!fetchingAdv && adventures.length > 0 && (
             <span className="badge badge-gold ml-1">{adventures.length}</span>
           )}
@@ -152,7 +154,7 @@ function DashboardContent() {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          Character Sheets
+          {t('common:characterSheets')}
           {!fetchingSheets && sheets.length > 0 && (
             <span className="badge badge-gold ml-1">{sheets.length}</span>
           )}
@@ -167,9 +169,9 @@ function DashboardContent() {
           ) : adventures.length === 0 ? (
             <EmptyState
               icon="🗡️"
-              title="No adventures yet"
-              description={hasActiveSubscription ? "Your journey begins with a single step. Create your first adventure and gather your party." : "Upgrade to a paid plan to create your own adventures and invite your party."}
-              actionLabel={hasActiveSubscription ? "Create your first adventure" : "View Plans →"}
+              title={t('dashboard:noAdventuresYet')}
+              description={hasActiveSubscription ? t('dashboard:noAdventuresDescriptionActive') : t('dashboard:noAdventuresDescriptionUpgrade')}
+              actionLabel={hasActiveSubscription ? t('dashboard:createFirstAdventure') : t('dashboard:viewPlans')}
               actionHref={hasActiveSubscription ? "/dashboard/adventures/new" : "/pricing"}
             />
           ) : (
@@ -191,9 +193,9 @@ function DashboardContent() {
           ) : sheets.length === 0 ? (
             <EmptyState
               icon="📜"
-              title="No character sheets yet"
-              description="Create your first character sheet from a template and start your adventure."
-              actionLabel="Create your first sheet"
+              title={t('dashboard:noSheetsYet')}
+              description={t('dashboard:noSheetsDescription')}
+              actionLabel={t('dashboard:createFirstSheet')}
               actionHref="/dashboard/character-sheets/new"
             />
           ) : (
@@ -216,6 +218,7 @@ function AdventureCard({
   adventure: Adventure
   index: number
 }) {
+  const { t } = useTranslation()
   return (
     <Link
       href={`/dashboard/adventures/${adventure.id}`}
@@ -261,7 +264,7 @@ function AdventureCard({
         </p>
       ) : (
         <p className="text-sm text-muted italic mb-4 flex-1">
-          No synopsis yet.
+          {t('dashboard:noSynopsisYet')}
         </p>
       )}
 
@@ -280,11 +283,11 @@ function AdventureCard({
             <svg className="w-3.5 h-3.5 inline mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            {adventure.maxPlayers} max
+            {t('dashboard:maxPlayers', { count: adventure.maxPlayers })}
           </span>
         </div>
         <span className="text-xs text-accent opacity-0 group-hover:opacity-100 transition-opacity">
-          View details →
+          {t('dashboard:viewDetails')}
         </span>
       </div>
     </Link>
@@ -298,6 +301,7 @@ function CharacterSheetCard({
   sheet: CharacterSheetSummary
   index: number
 }) {
+  const { t } = useTranslation()
   return (
     <Link
       href={`/dashboard/character-sheets/${sheet.id}`}
@@ -326,8 +330,8 @@ function CharacterSheetCard({
         </>
       ) : (
         <div className="flex items-center gap-1.5 mb-4 flex-1">
-          <span className="badge badge-ghost text-[0.6rem]">Standalone</span>
-          <span className="text-xs text-muted italic">No campaign</span>
+          <span className="badge badge-ghost text-[0.6rem]">{t('dashboard:standalone')}</span>
+          <span className="text-xs text-muted italic">{t('dashboard:noCampaign')}</span>
         </div>
       )}
 
@@ -343,7 +347,7 @@ function CharacterSheetCard({
           })}
         </span>
         <span className="text-xs text-accent opacity-0 group-hover:opacity-100 transition-opacity">
-          View details →
+          {t('dashboard:viewDetails')}
         </span>
       </div>
     </Link>

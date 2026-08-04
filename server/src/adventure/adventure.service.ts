@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common'
+import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
 import { Prisma } from '../generated/prisma/client.js'
 import { splitSearchTokens, escapeLike } from '../community/search.util.js'
@@ -22,6 +23,7 @@ export class AdventureService {
     private readonly membership: MembershipService,
     private readonly sheetService: CharacterSheetService,
     private readonly templateService: TemplateService,
+    private readonly i18n: I18nService,
   ) {}
 
   async create(userId: string, dto: CreateAdventureDto) {
@@ -71,7 +73,7 @@ export class AdventureService {
       },
     })
     if (!adventure) {
-      throw new NotFoundException('Adventure not found')
+      throw new NotFoundException(this.i18n.t('adventure.notFound'))
     }
 
     // Check membership
@@ -89,7 +91,7 @@ export class AdventureService {
     }
 
     if (!isMember) {
-      throw new ForbiddenException('You are not a member of this adventure')
+      throw new ForbiddenException(this.i18n.t('adventure.notMemberAdventure'))
     }
 
     return adventure
@@ -390,12 +392,12 @@ export class AdventureService {
     })
 
     if (!adventure) {
-      throw new NotFoundException('Adventure not found or is not public')
+      throw new NotFoundException(this.i18n.t('adventure.notFoundOrNotPublic'))
     }
 
     // Hide campaigns that have reached maximum player capacity
     if (adventure._count.members >= adventure.maxPlayers) {
-      throw new NotFoundException('Adventure not found or is not public')
+      throw new NotFoundException(this.i18n.t('adventure.notFoundOrNotPublic'))
     }
 
     const { owner, _count, ...rest } = adventure
@@ -432,12 +434,12 @@ export class AdventureService {
     })
 
     if (!adventure) {
-      throw new NotFoundException('Adventure not found or is not public')
+      throw new NotFoundException(this.i18n.t('adventure.notFoundOrNotPublic'))
     }
 
     // Hide campaigns that have reached maximum player capacity
     if (adventure._count.members >= adventure.maxPlayers) {
-      throw new NotFoundException('Adventure not found or is not public')
+      throw new NotFoundException(this.i18n.t('adventure.notFoundOrNotPublic'))
     }
 
     const { owner, _count, ...rest } = adventure
@@ -547,14 +549,13 @@ export class AdventureService {
       where: { id: adventureId },
       include: { templates: { take: 1, orderBy: { createdAt: 'asc' } } },
     })
-    if (!adventure) throw new NotFoundException('Adventure not found')
+    if (!adventure) throw new NotFoundException(this.i18n.t('adventure.notFound'))
 
     // Prefer originalTemplateId (snapshot-based) over legacy templates[0]
     const templateId = adventure.originalTemplateId ?? adventure.templates[0]?.id
     if (!templateId) {
       throw new NotFoundException(
-        'No template is attached to this adventure. ' +
-        'Attach a template via the adventure settings first, then create NPCs.',
+        this.i18n.t('adventure.noTemplateAttached'),
       )
     }
 
@@ -652,12 +653,12 @@ export class AdventureService {
       where: { id: npcId },
       select: { id: true, adventureId: true, isNpc: true },
     })
-    if (!npc) throw new NotFoundException('NPC not found')
+    if (!npc) throw new NotFoundException(this.i18n.t('adventure.npcNotFound'))
     if (npc.adventureId !== adventureId) {
-      throw new ForbiddenException('NPC does not belong to this adventure')
+      throw new ForbiddenException(this.i18n.t('adventure.npcNotBelong'))
     }
     if (!npc.isNpc) {
-      throw new ForbiddenException('Not a valid NPC sheet')
+      throw new ForbiddenException(this.i18n.t('adventure.notValidNpcSheet'))
     }
 
     return this.sheetService.update(npcId, userId, {
@@ -677,12 +678,12 @@ export class AdventureService {
       where: { id: npcId },
       select: { id: true, adventureId: true, isNpc: true },
     })
-    if (!npc) throw new NotFoundException('NPC not found')
+    if (!npc) throw new NotFoundException(this.i18n.t('adventure.npcNotFound'))
     if (npc.adventureId !== adventureId) {
-      throw new ForbiddenException('NPC does not belong to this adventure')
+      throw new ForbiddenException(this.i18n.t('adventure.npcNotBelong'))
     }
     if (!npc.isNpc) {
-      throw new ForbiddenException('Not a valid NPC sheet')
+      throw new ForbiddenException(this.i18n.t('adventure.notValidNpcSheet'))
     }
 
     return this.sheetService.remove(npcId, userId)

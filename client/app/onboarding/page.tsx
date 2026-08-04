@@ -2,10 +2,12 @@
 
 import { useState, type SubmitEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/lib/auth-context'
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { t } = useTranslation()
   const { user, completeOnboarding, loading } = useAuth()
   const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -30,7 +32,7 @@ export default function OnboardingPage() {
       await completeOnboarding(displayName.trim())
       router.push('/dashboard')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      setError(err instanceof Error ? err.message : t('auth:somethingWentWrong'))
     } finally {
       setSubmitting(false)
     }
@@ -39,7 +41,7 @@ export default function OnboardingPage() {
   if (loading) {
     return (
       <main className="flex-1 flex items-center justify-center p-4">
-        <div className="text-sm text-muted-foreground">Loading...</div>
+        <div className="text-sm text-muted-foreground">{t('common:loading')}</div>
       </main>
     )
   }
@@ -71,17 +73,17 @@ export default function OnboardingPage() {
 
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold tracking-tight text-gradient">
-            Welcome to Mythrion
+            {t('auth:welcomeTitle')}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Before we begin, what should we call you in the realm?
+            {t('auth:welcomeSubtitle')}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="card !p-6 space-y-4">
           <div>
             <label htmlFor="displayName" className="label">
-              Display Name
+              {t('auth:displayName')}
             </label>
             <input
               id="displayName"
@@ -91,11 +93,11 @@ export default function OnboardingPage() {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               className="input-field"
-              placeholder="e.g. Arin the Bold"
+              placeholder={t('auth:displayNamePlaceholder')}
               autoFocus
             />
             <p className="text-xs text-muted mt-1.5">
-              This name will be visible to other adventurers.
+              {t('auth:displayNameHelper')}
             </p>
           </div>
 
@@ -110,7 +112,7 @@ export default function OnboardingPage() {
             disabled={submitting || displayName.trim().length === 0}
             className="btn-primary w-full"
           >
-            {submitting ? 'Enrolling...' : 'Begin your journey'}
+            {submitting ? t('auth:enrolling') : t('auth:beginJourney')}
           </button>
         </form>
       </div>

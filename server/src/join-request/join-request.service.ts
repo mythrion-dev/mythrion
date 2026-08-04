@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common'
+import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 
@@ -7,6 +8,7 @@ export class JoinRequestService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly membership: MembershipService,
+    private readonly i18n: I18nService,
   ) {}
 
   /**
@@ -17,20 +19,20 @@ export class JoinRequestService {
    */
   async create(adventureId: string, userId: string, message?: string) {
     const adventure = await this.prisma.adventure.findUnique({ where: { id: adventureId } })
-    if (!adventure) throw new NotFoundException('Adventure not found')
-    if (!adventure.isPublic) throw new ForbiddenException('Adventure is not public')
+    if (!adventure) throw new NotFoundException(this.i18n.t('community.adventureNotFound'))
+    if (!adventure.isPublic) throw new ForbiddenException(this.i18n.t('community.adventureNotPublic'))
 
     const isMember = await this.membership.isMember(adventureId, userId)
-    if (isMember) throw new ConflictException('You are already a member of this adventure')
+    if (isMember) throw new ConflictException(this.i18n.t('community.alreadyMember'))
 
     const existing = await this.prisma.joinRequest.findUnique({
       where: { adventureId_userId: { adventureId, userId } },
     })
     if (existing && existing.status === 'PENDING') {
-      throw new ConflictException('You already have a pending request for this adventure')
+      throw new ConflictException(this.i18n.t('community.alreadyPending'))
     }
     if (existing && existing.status === 'ACCEPTED') {
-      throw new ConflictException('You have already been accepted to this adventure')
+      throw new ConflictException(this.i18n.t('community.alreadyAccepted'))
     }
 
     // If previously rejected, allow re-requesting: update the existing record
@@ -73,9 +75,9 @@ export class JoinRequestService {
     await this.membership.requireRole(adventureId, userId, 'GM')
 
     const request = await this.prisma.joinRequest.findUnique({ where: { id: requestId } })
-    if (!request) throw new NotFoundException('Join request not found')
-    if (request.adventureId !== adventureId) throw new ForbiddenException('Request does not belong to this adventure')
-    if (request.status !== 'PENDING') throw new ConflictException('Request is not pending')
+    if (!request) throw new NotFoundException(this.i18n.t('community.joinRequestNotFound'))
+    if (request.adventureId !== adventureId) throw new ForbiddenException(this.i18n.t('community.requestNotBelong'))
+    if (request.status !== 'PENDING') throw new ConflictException(this.i18n.t('community.requestNotPending'))
 
     // Check capacity
     await this.membership.assertPlayerCapacity(adventureId, 1)
@@ -103,9 +105,9 @@ export class JoinRequestService {
     await this.membership.requireRole(adventureId, userId, 'GM')
 
     const request = await this.prisma.joinRequest.findUnique({ where: { id: requestId } })
-    if (!request) throw new NotFoundException('Join request not found')
-    if (request.adventureId !== adventureId) throw new ForbiddenException('Request does not belong to this adventure')
-    if (request.status !== 'PENDING') throw new ConflictException('Request is not pending')
+    if (!request) throw new NotFoundException(this.i18n.t('community.joinRequestNotFound'))
+    if (request.adventureId !== adventureId) throw new ForbiddenException(this.i18n.t('community.requestNotBelong'))
+    if (request.status !== 'PENDING') throw new ConflictException(this.i18n.t('community.requestNotPending'))
 
     return this.prisma.joinRequest.update({
       where: { id: requestId },

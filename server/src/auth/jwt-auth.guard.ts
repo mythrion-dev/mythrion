@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
+import { I18nService } from 'nestjs-i18n'
 import type { AuthenticatedRequest } from './AuthenticatedRequest.js'
 
 function extractBearerToken(header?: string): string | null {
@@ -20,7 +21,10 @@ function extractCookieToken(cookies?: string): string | null {
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly i18n: I18nService,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<AuthenticatedRequest>()
@@ -45,7 +49,7 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     if (!token) {
-      throw new UnauthorizedException('Missing token')
+      throw new UnauthorizedException(this.i18n.t('auth.missingToken'))
     }
 
     try {
@@ -53,7 +57,7 @@ export class JwtAuthGuard implements CanActivate {
       req.user = payload
       return true
     } catch {
-      throw new UnauthorizedException('Invalid or expired token')
+      throw new UnauthorizedException(this.i18n.t('auth.invalidOrExpiredToken'))
     }
   }
 }

@@ -4,13 +4,18 @@ jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
 import { Test, TestingModule } from '@nestjs/testing'
 import { BadRequestException } from '@nestjs/common'
 import { FormulaService } from './formula.service.js'
+import { I18nService } from 'nestjs-i18n'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 
 describe('FormulaService', () => {
   let service: FormulaService
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [FormulaService],
+      providers: [
+        FormulaService,
+        { provide: I18nService, useValue: createI18nServiceMock() },
+      ],
     }).compile()
 
     service = module.get<FormulaService>(FormulaService)

@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useSubscription } from '@/lib/subscription-context'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 
 export default function SuccessPage() {
+  const { t } = useTranslation()
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
   const { subscription, loading: subLoading, refresh } = useSubscription()
-  const [message, setMessage] = useState('Processing your payment...')
+  const [message, setMessage] = useState(t('billing:processingPayment'))
   const [elapsed, setElapsed] = useState(0)
   const [timedOut, setTimedOut] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -57,15 +59,15 @@ export default function SuccessPage() {
   // Update message based on elapsed time
   useEffect(() => {
     if (elapsed < 5) {
-      setMessage('Processing your payment...')
+      setMessage(t('billing:processingPayment'))
     } else if (elapsed < 15) {
-      setMessage('Waiting for payment confirmation...')
+      setMessage(t('billing:waitingPaymentConfirmation'))
     } else if (elapsed < 25) {
-      setMessage('Still confirming your subscription...')
+      setMessage(t('billing:stillConfirmingSubscription'))
     } else {
-      setMessage('Taking longer than expected...')
+      setMessage(t('billing:takingLonger'))
     }
-  }, [elapsed])
+  }, [elapsed, t])
 
   // Redirect once we have an active subscription
   useEffect(() => {
@@ -74,15 +76,15 @@ export default function SuccessPage() {
     const activeStatuses = ['AUTHORIZED', 'ACTIVE']
     if (activeStatuses.includes(subscription.status)) {
       // Short delay so the user sees the success state
-      const t = setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         router.replace('/dashboard')
       }, 1500)
 
-      setMessage('Payment confirmed! Redirecting...')
+      setMessage(t('billing:paymentConfirmedRedirecting'))
 
-      return () => clearTimeout(t)
+      return () => clearTimeout(timeoutId)
     }
-  }, [subscription, subLoading, router])
+  }, [subscription, subLoading, router, t])
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center min-h-screen bg-background bg-pattern">
@@ -95,9 +97,9 @@ export default function SuccessPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-lg font-semibold text-foreground">Subscription confirmed!</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t('billing:subscriptionConfirmed')}</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Welcome to Mythrion Premium. You&apos;re being redirected to the dashboard.
+              {t('billing:welcomePremiumRedirect')}
             </p>
             <div className="mt-6">
               <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
@@ -111,9 +113,9 @@ export default function SuccessPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h2 className="text-lg font-semibold text-foreground">Still waiting for confirmation</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t('billing:stillWaitingConfirmation')}</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Your payment is being processed by PagBank. This may take a few minutes.
+              {t('billing:paymentProcessingPagbank')}
             </p>
             <div className="mt-6 flex gap-3 justify-center">
               <button
@@ -124,10 +126,10 @@ export default function SuccessPage() {
                 }}
                 className="btn-primary text-sm px-4 py-2"
               >
-                Check again
+                {t('billing:checkAgain')}
               </button>
               <Link href="/dashboard" className="btn-ghost text-sm px-4 py-2">
-                Go to Dashboard
+                {t('billing:goToDashboard')}
               </Link>
             </div>
           </>

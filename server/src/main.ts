@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common'
 import cookieParser from 'cookie-parser'
 import { AppModule } from './app.module.js'
 import { getAllowedOrigins } from './config/allowed-origins.js'
+import { createI18nValidationExceptionFactory } from './i18n/validation-exception-factory.js'
 
 export async function bootstrap() {
   const app = await NestFactory.create(AppModule)
@@ -12,7 +13,7 @@ export async function bootstrap() {
     origin: getAllowedOrigins(),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept-Language'],
   })
 
   app.use(cookieParser())
@@ -26,6 +27,7 @@ export async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      exceptionFactory: createI18nValidationExceptionFactory(),
     }),
   )
 

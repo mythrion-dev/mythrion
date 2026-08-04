@@ -13,6 +13,8 @@ import { PrismaService } from '../../prisma.service'
 import { createMockPrismaService } from '../../__mocks__/prisma-service.mock'
 import { PAYMENT_GATEWAY } from '../payment-gateway.interface'
 import type { PaymentGateway } from '../payment-gateway.interface'
+import { I18nService } from 'nestjs-i18n'
+import { createI18nServiceMock } from '../../i18n/i18n-testing.js'
 import type { Request } from 'express'
 
 const mockGateway: jest.Mocked<PaymentGateway> = {
@@ -60,6 +62,7 @@ describe('SubscriptionController', () => {
         { provide: SubscriptionService, useValue: subscriptionService },
         { provide: PrismaService, useValue: prisma },
         { provide: PAYMENT_GATEWAY, useValue: mockGateway },
+        { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     })
       .overrideGuard(JwtAuthGuard)

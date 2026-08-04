@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { AuthProvider } from '@/lib/auth-context'
+import { I18nProvider } from '@/components/shared/I18nProvider'
 import { NavigationProvider } from '@/lib/navigation-context'
 import { SubscriptionProvider } from '@/lib/subscription-context'
 import './globals.css'
@@ -36,9 +37,11 @@ export default function RootLayout({
         {/* Subtle top ornament */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent pointer-events-none" />
         <AuthProvider>
-          <SubscriptionProvider>
-            <NavigationProvider>{children}</NavigationProvider>
-          </SubscriptionProvider>
+          <I18nProvider>
+            <SubscriptionProvider>
+              <NavigationProvider>{children}</NavigationProvider>
+            </SubscriptionProvider>
+          </I18nProvider>
         </AuthProvider>
       </body>
     </html>

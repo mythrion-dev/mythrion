@@ -4,10 +4,12 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { Sidebar, GracePeriodBanner } from '@/components/dashboard'
+import { useTranslation } from 'react-i18next'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const { t } = useTranslation()
 
   useEffect(() => {
     if (loading) return
@@ -38,7 +40,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-screen bg-background">
         <div className="animate-fade-in text-sm text-muted-foreground">
-          Checking access...
+          {t('common:checkingAccess')}
         </div>
       </div>
     )

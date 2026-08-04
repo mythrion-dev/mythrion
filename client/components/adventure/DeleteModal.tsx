@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslation } from 'react-i18next'
+
 export function DeleteModal({
   name,
   error,
@@ -13,6 +15,7 @@ export function DeleteModal({
   onCancel: () => void
   onConfirm: () => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
       <div className="absolute inset-0 bg-black/50" />
@@ -24,12 +27,12 @@ export function DeleteModal({
             </svg>
           </div>
           <div>
-            <h2 className="font-semibold">Delete Adventure</h2>
-            <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
+            <h2 className="font-semibold">{t('campaign:deleteAdventure')}</h2>
+            <p className="text-sm text-muted-foreground">{t('campaign:actionCannotBeUndone')}</p>
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
-          Are you sure you want to delete &ldquo;{name}&rdquo;?
+          {t('campaign:deleteConfirm', { name })}
         </p>
         {error && (
           <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">
@@ -38,10 +41,10 @@ export function DeleteModal({
         )}
         <div className="flex gap-3 justify-end">
           <button onClick={onCancel} disabled={loading} className="btn-ghost">
-            Cancel
+            {t('common:cancel')}
           </button>
           <button onClick={onConfirm} disabled={loading} className="btn-danger-solid">
-            {loading ? 'Deleting...' : 'Delete forever'}
+            {loading ? t('campaign:deleting') : t('campaign:deleteForever')}
           </button>
         </div>
       </div>

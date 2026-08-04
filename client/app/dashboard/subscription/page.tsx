@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/lib/auth-context'
 import { useSubscription } from '@/lib/subscription-context'
 import {
@@ -39,25 +40,26 @@ function formatDateTime(dateStr: string | null): string {
   })
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  PENDING: { label: 'Pendente', color: 'text-amber-500 border-amber-500/20 bg-amber-500/10' },
-  AUTHORIZED: { label: 'Autorizado', color: 'text-emerald-500 border-emerald-500/20 bg-emerald-500/10' },
-  ACTIVE: { label: 'Ativo', color: 'text-emerald-500 border-emerald-500/20 bg-emerald-500/10' },
-  GRACE: { label: 'Período de carência', color: 'text-amber-500 border-amber-500/20 bg-amber-500/10' },
-  EXPIRED: { label: 'Expirado', color: 'text-red-500 border-red-500/20 bg-red-500/10' },
-  CANCELLED: { label: 'Cancelado', color: 'text-muted border-border bg-surface' },
+const STATUS_CONFIG: Record<string, { labelKey: string; color: string }> = {
+  PENDING: { labelKey: 'billing:statusPending', color: 'text-amber-500 border-amber-500/20 bg-amber-500/10' },
+  AUTHORIZED: { labelKey: 'billing:statusAuthorized', color: 'text-emerald-500 border-emerald-500/20 bg-emerald-500/10' },
+  ACTIVE: { labelKey: 'billing:statusActive', color: 'text-emerald-500 border-emerald-500/20 bg-emerald-500/10' },
+  GRACE: { labelKey: 'billing:statusGracePeriod', color: 'text-amber-500 border-amber-500/20 bg-amber-500/10' },
+  EXPIRED: { labelKey: 'billing:statusExpired', color: 'text-red-500 border-red-500/20 bg-red-500/10' },
+  CANCELLED: { labelKey: 'billing:statusCancelled', color: 'text-muted border-border bg-surface' },
 }
 
 /* ─── status badge ─────────────────────────────────────────────── */
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation()
   const cfg = STATUS_CONFIG[status] ?? {
-    label: status,
+    labelKey: '',
     color: 'text-muted border-border bg-surface',
   }
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${cfg.color}`}>
-      {cfg.label}
+      {cfg.labelKey ? t(cfg.labelKey) : status}
     </span>
   )
 }
@@ -104,6 +106,7 @@ function usePagBankEncryption(): boolean {
 /* ─── main page ────────────────────────────────────────────────── */
 
 export default function DashboardSubscriptionPage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const { subscription, loading, refresh } = useSubscription()
   // Payment method state
@@ -153,29 +156,29 @@ export default function DashboardSubscriptionPage() {
     const errors: { name?: string; document?: string; card?: string } = {}
 
     if (!payerName.trim() || payerName.trim().length < 3) {
-      errors.name = 'Digite o nome completo do titular.'
+      errors.name = t('billing:cardHolderNameRequired')
     }
 
     const digits = payerDocument.replace(/\D/g, '')
     if (digits.length !== 11) {
-      errors.document = 'Digite um CPF válido (11 dígitos).'
+      errors.document = t('billing:cpfInvalid')
     }
 
     if (pgPublicKey) {
       if (cardNumber.replace(/\D/g, '').length < 13) {
-        errors.card = 'Número do cartão inválido.'
+        errors.card = t('billing:cardNumberInvalid')
       }
       if (cardExpiry.replace(/\D/g, '').length < 4) {
-        errors.card = 'Data de validade inválida.'
+        errors.card = t('billing:cardExpiryInvalid')
       }
       if (cardCvv.replace(/\D/g, '').length < 3) {
-        errors.card = 'CVV inválido.'
+        errors.card = t('billing:cardCvvInvalid')
       }
     }
 
     setFormErrors(errors)
     return Object.keys(errors).length === 0
-  }, [payerName, payerDocument, pgPublicKey, cardNumber, cardExpiry, cardCvv])
+  }, [payerName, payerDocument, pgPublicKey, cardNumber, cardExpiry, cardCvv, t])
 
   // ─── handle card update ───────────────────────────────────────
   const handleUpdateCard = useCallback(async () => {
@@ -193,7 +196,7 @@ export default function DashboardSubscriptionPage() {
         // Encrypt card with PagSeguro
         const pg = (window as any).PagSeguro
         if (!pg?.encryptCard) {
-          throw new Error('SDK de criptografia PagBank não carregado. Tente novamente.')
+          throw new Error(t('billing:sdkNotLoaded'))
         }
 
         const [expMonth, expYear] = cardExpiry.split('/')
@@ -208,7 +211,7 @@ export default function DashboardSubscriptionPage() {
 
         if (result.hasErrors) {
           const msgs = (result.errors || []).map((e: { message: string }) => e.message).join(' ')
-          throw new Error(`Erro na criptografia: ${msgs || 'Dados inválidos do cartão.'}`)
+          throw new Error(t('billing:encryptionError', { message: msgs || t('billing:cardDataInvalid') }))
         }
 
         cardToken = result.encryptedCard
@@ -223,7 +226,7 @@ export default function DashboardSubscriptionPage() {
         payerDocument.replace(/\D/g, ''),
       )
 
-      setToast({ type: 'success', message: 'Cartão atualizado com sucesso!' })
+      setToast({ type: 'success', message: t('billing:cardUpdatedSuccess') })
       setShowCardForm(false)
       setFormErrors({})
       setPayerName('')
@@ -236,13 +239,13 @@ export default function DashboardSubscriptionPage() {
       const message =
         err instanceof Error
           ? err.message
-          : 'Falha ao atualizar cartão. Tente novamente.'
+          : t('billing:cardUpdateFailed')
       setUpdateError(message)
       setToast({ type: 'error', message })
     } finally {
       setUpdatingCard(false)
     }
-  }, [subscription, payerName, payerDocument, cardNumber, cardExpiry, cardCvv, pgPublicKey, validate])
+  }, [subscription, payerName, payerDocument, cardNumber, cardExpiry, cardCvv, pgPublicKey, validate, t])
 
   // ─── handle cancel ────────────────────────────────────────────
   const handleCancel = useCallback(async () => {
@@ -254,12 +257,12 @@ export default function DashboardSubscriptionPage() {
       setShowCancelConfirm(false)
     } catch (err) {
       setCancelError(
-        err instanceof Error ? err.message : 'Falha ao cancelar assinatura.',
+        err instanceof Error ? err.message : t('billing:subscriptionCancelFailed'),
       )
     } finally {
       setCancelling(false)
     }
-  }, [refresh])
+  }, [refresh, t])
 
   // ─── loading state ────────────────────────────────────────────
   if (loading) {
@@ -275,8 +278,8 @@ export default function DashboardSubscriptionPage() {
     return (
       <div>
         <PageHeader
-          title="Assinatura"
-          subtitle="Gerencie sua assinatura Mythrion Premium."
+          title={t('common:subscription')}
+          subtitle={t('billing:subscriptionSubtitle')}
         />
         <div className="mt-8 max-w-lg mx-auto text-center">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted/20 mb-4">
@@ -284,12 +287,12 @@ export default function DashboardSubscriptionPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-foreground">Nenhuma assinatura encontrada</h2>
+          <h2 className="text-lg font-semibold text-foreground">{t('billing:noSubscription')}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Você ainda não possui uma assinatura ativa.
+            {t('billing:noActiveSubscription')}
           </p>
           <Link href="/pricing" className="btn-primary mt-6 inline-flex px-5 py-2.5 text-sm">
-            Ver planos
+            {t('common:viewPlans')}
           </Link>
         </div>
       </div>
@@ -305,13 +308,17 @@ export default function DashboardSubscriptionPage() {
         month: '2-digit',
         year: 'numeric',
       })
-    : 'ao final do período de faturamento atual'
+    : t('billing:endOfBillingPeriod')
+
+  const statusLabel = STATUS_CONFIG[subscription.status]?.labelKey
+    ? t(STATUS_CONFIG[subscription.status]!.labelKey)
+    : subscription.status.toLowerCase()
 
   return (
     <div>
       <PageHeader
-        title="Assinatura"
-        subtitle="Gerencie sua assinatura Mythrion Premium."
+        title={t('common:subscription')}
+        subtitle={t('billing:subscriptionSubtitle')}
       />
 
       {/* ─── Toast notification ───────────────────────────────── */}
@@ -337,7 +344,7 @@ export default function DashboardSubscriptionPage() {
           </p>
           <button
             onClick={() => setToast(null)}
-            aria-label="Fechar notificação"
+            aria-label={t('billing:closeNotification')}
             className="ml-auto shrink-0 text-muted-foreground hover:text-foreground transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -357,7 +364,7 @@ export default function DashboardSubscriptionPage() {
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               {formatBRL(subscription.plan.price)}
-              {subscription.plan.slug === 'annual' ? '/ano' : '/mês'}
+              {subscription.plan.slug === 'annual' ? t('billing:periodYear') : t('billing:periodMonth')}
             </p>
           </div>
         </div>
@@ -365,23 +372,23 @@ export default function DashboardSubscriptionPage() {
 
       {/* ─── Details ──────────────────────────────────────────── */}
       <div className="mt-4 rounded-xl border border-border bg-surface p-6">
-        <h3 className="text-sm font-semibold text-foreground mb-4">Detalhes</h3>
+        <h3 className="text-sm font-semibold text-foreground mb-4">{t('common:details')}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-xs text-muted-foreground">Status</p>
+            <p className="text-xs text-muted-foreground">{t('common:status')}</p>
             <p className="mt-0.5 font-medium text-foreground capitalize">
-              {STATUS_CONFIG[subscription.status]?.label ?? subscription.status.toLowerCase()}
+              {statusLabel}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Assinante</p>
+            <p className="text-xs text-muted-foreground">{t('billing:subscriber')}</p>
             <p className="mt-0.5 font-medium text-foreground truncate">
               {user?.displayName ?? user?.email ?? '—'}
             </p>
           </div>
           {subscription.currentPeriodStart && (
             <div>
-              <p className="text-xs text-muted-foreground">Início do período</p>
+              <p className="text-xs text-muted-foreground">{t('billing:currentPeriodStart')}</p>
               <p className="mt-0.5 font-medium text-foreground">
                 {formatDate(subscription.currentPeriodStart)}
               </p>
@@ -389,7 +396,7 @@ export default function DashboardSubscriptionPage() {
           )}
           {subscription.currentPeriodEnd && (
             <div>
-              <p className="text-xs text-muted-foreground">Fim do período</p>
+              <p className="text-xs text-muted-foreground">{t('billing:currentPeriodEnd')}</p>
               <p className="mt-0.5 font-medium text-foreground">
                 {formatDate(subscription.currentPeriodEnd)}
               </p>
@@ -398,7 +405,7 @@ export default function DashboardSubscriptionPage() {
           {subscription.graceEndsAt && subscription.status === 'GRACE' && (
             <>
               <div>
-                <p className="text-xs text-muted-foreground">Carência termina em</p>
+                <p className="text-xs text-muted-foreground">{t('billing:gracePeriodEnds')}</p>
                 <p className="mt-0.5 font-medium text-amber-600 dark:text-amber-400">
                   {formatDate(subscription.graceEndsAt)}
                 </p>
@@ -407,7 +414,7 @@ export default function DashboardSubscriptionPage() {
           )}
           {subscription.cancelledAt && (
             <div>
-              <p className="text-xs text-muted-foreground">Cancelada em</p>
+              <p className="text-xs text-muted-foreground">{t('billing:cancelledAt')}</p>
               <p className="mt-0.5 font-medium text-foreground">
                 {formatDateTime(subscription.cancelledAt)}
               </p>
@@ -415,15 +422,14 @@ export default function DashboardSubscriptionPage() {
           )}
           {subscription.cancelAtPeriodEnd && subscription.currentPeriodEnd && (
             <div className="sm:col-span-2">
-              <p className="text-xs text-amber-500 font-medium">Cancelamento agendado</p>
+              <p className="text-xs text-amber-500 font-medium">{t('billing:cancellationScheduled')}</p>
               <p className="mt-0.5 text-sm text-amber-600 dark:text-amber-400">
-                Sua assinatura expirará em {formatDate(subscription.currentPeriodEnd)}.
-                Você mantém acesso até esta data.
+                {t('billing:expiryMessage', { date: formatDate(subscription.currentPeriodEnd) })}
               </p>
             </div>
           )}
           <div>
-            <p className="text-xs text-muted-foreground">Criada em</p>
+            <p className="text-xs text-muted-foreground">{t('billing:createdAt')}</p>
             <p className="mt-0.5 font-medium text-foreground">
               {formatDateTime(subscription.createdAt)}
             </p>
@@ -433,7 +439,7 @@ export default function DashboardSubscriptionPage() {
 
       {/* ─── Actions ──────────────────────────────────────────── */}
       <div className="mt-4 rounded-xl border border-border bg-surface p-6 space-y-4">
-        <h3 className="text-sm font-semibold text-foreground">Ações</h3>
+        <h3 className="text-sm font-semibold text-foreground">{t('billing:actions')}</h3>
 
         {/* Update payment method */}
         {isUpdatable && !showCardForm && (
@@ -441,20 +447,20 @@ export default function DashboardSubscriptionPage() {
             onClick={() => setShowCardForm(true)}
             className="w-full py-2.5 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-background/40 transition-colors"
           >
-            Alterar cartão de crédito
+            {t('billing:changeCreditCard')}
           </button>
         )}
 
         {isUpdatable && showCardForm && (
           <div className="rounded-lg border border-border bg-background p-4">
             <h4 className="text-sm font-medium text-foreground mb-3">
-              Novo cartão
+              {t('billing:newCard')}
             </h4>
 
             {/* Payer name */}
             <div className="mb-3">
               <label htmlFor="cardPayerName" className="block text-sm font-medium text-foreground mb-1">
-                Nome no cartão <span className="text-red-500">*</span>
+                {t('billing:cardHolderNameLabel')}
               </label>
               <input
                 id="cardPayerName"
@@ -464,7 +470,7 @@ export default function DashboardSubscriptionPage() {
                   setPayerName(e.target.value)
                   if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: undefined }))
                 }}
-                placeholder="Como no seu cartão"
+                placeholder={t('billing:cardHolderNamePlaceholder')}
                 className={`w-full px-3 py-2 rounded-lg bg-background border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${
                   formErrors.name ? 'border-red-500' : 'border-border'
                 }`}
@@ -478,7 +484,7 @@ export default function DashboardSubscriptionPage() {
             {/* CPF */}
             <div className="mb-3">
               <label htmlFor="cardDocument" className="block text-sm font-medium text-foreground mb-1">
-                CPF <span className="text-red-500">*</span>
+                {t('billing:cpfLabel')}
               </label>
               <input
                 id="cardDocument"
@@ -504,7 +510,7 @@ export default function DashboardSubscriptionPage() {
             {/* Card number */}
             <div className="mb-3">
               <label htmlFor="cardNumber" className="block text-sm font-medium text-foreground mb-1">
-                Número do cartão <span className="text-red-500">*</span>
+                {t('billing:cardNumberLabel')}
               </label>
               <input
                 id="cardNumber"
@@ -530,7 +536,7 @@ export default function DashboardSubscriptionPage() {
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div>
                 <label htmlFor="cardExpiry" className="block text-sm font-medium text-foreground mb-1">
-                  Validade <span className="text-red-500">*</span>
+                  {t('billing:cardExpiryLabel')}
                 </label>
                 <input
                   id="cardExpiry"
@@ -550,7 +556,7 @@ export default function DashboardSubscriptionPage() {
               </div>
               <div>
                 <label htmlFor="cardCvv" className="block text-sm font-medium text-foreground mb-1">
-                  CVV <span className="text-red-500">*</span>
+                  {t('billing:cardCvvLabel')}
                 </label>
                 <input
                   id="cardCvv"
@@ -589,14 +595,14 @@ export default function DashboardSubscriptionPage() {
                 className="flex-1 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground transition-colors"
                 disabled={updatingCard}
               >
-                Cancelar
+                {t('common:cancel')}
               </button>
               <button
                 onClick={handleUpdateCard}
                 disabled={updatingCard || !pgReady}
                 className="flex-1 py-2 rounded-lg bg-primary text-background text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {updatingCard ? 'Atualizando...' : !pgReady ? 'Preparando...' : 'Atualizar cartão'}
+                {updatingCard ? t('billing:updating') : !pgReady ? t('billing:preparing') : t('billing:updateCard')}
               </button>
             </div>
           </div>
@@ -608,16 +614,14 @@ export default function DashboardSubscriptionPage() {
             onClick={() => setShowCancelConfirm(true)}
             className="w-full py-2.5 rounded-lg border border-red-500/20 text-sm font-medium text-red-500 hover:bg-red-500/5 transition-colors"
           >
-            Cancelar assinatura
+            {t('billing:cancelSubscription')}
           </button>
         )}
 
         {isCancellable && showCancelConfirm && (
           <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-4">
             <p className="text-sm text-red-600 dark:text-red-400">
-              Tem certeza que deseja cancelar sua assinatura? Seu acesso ao Mythrion Premium
-              permanecerá ativo até {periodEnd}, quando a assinatura expirará.
-              Nenhuma nova cobrança será feita.
+              {t('billing:cancelConfirmMessage', { periodEnd })}
             </p>
             {cancelError && (
               <p className="mt-2 text-xs text-red-500">{cancelError}</p>
@@ -631,14 +635,14 @@ export default function DashboardSubscriptionPage() {
                 className="flex-1 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground transition-colors"
                 disabled={cancelling}
               >
-                Manter assinatura
+                {t('billing:keepSubscription')}
               </button>
               <button
                 onClick={handleCancel}
                 className="flex-1 py-2 rounded-lg bg-red-600 text-background text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={cancelling}
               >
-                {cancelling ? 'Cancelando...' : 'Confirmar cancelamento'}
+                {cancelling ? t('billing:cancelling') : t('billing:confirmCancellation')}
               </button>
             </div>
           </div>
@@ -647,9 +651,9 @@ export default function DashboardSubscriptionPage() {
 
       {/* ─── Invoices ──────────────────────────────────────────── */}
       <div className="mt-4 rounded-xl border border-border bg-surface p-6">
-        <h3 className="text-sm font-semibold text-foreground mb-4">Faturas recentes</h3>
+        <h3 className="text-sm font-semibold text-foreground mb-4">{t('billing:recentInvoices')}</h3>
         {subscription.invoices.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhuma fatura encontrada.</p>
+          <p className="text-sm text-muted-foreground">{t('billing:noInvoices')}</p>
         ) : (
           <div className="divide-y divide-border">
             {subscription.invoices.map((invoice) => (
@@ -671,7 +675,7 @@ export default function DashboardSubscriptionPage() {
                         : 'text-muted bg-surface'
                   }`}
                 >
-                  {invoice.status === 'paid' ? 'Pago' : invoice.status === 'pending' ? 'Pendente' : invoice.status}
+                  {invoice.status === 'paid' ? t('billing:invoicePaid') : invoice.status === 'pending' ? t('common:pending') : invoice.status}
                 </span>
               </div>
             ))}

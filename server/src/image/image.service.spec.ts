@@ -64,6 +64,7 @@ function createMockWritable(id = 'mock-file-id') {
 // ---------------------------------------------------------------------------
 import { jest, describe, it, expect, beforeEach, afterAll } from '@jest/globals'
 import { NotFoundException } from '@nestjs/common'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 import { ImageService } from './image.service'
 import { Readable } from 'stream'
 
@@ -89,7 +90,7 @@ describe('ImageService', () => {
     it('connects to MongoDB and creates bucket when MONGO_URL is set', async () => {
       process.env.MONGO_URL = 'mongodb://localhost:27017'
 
-      service = new ImageService()
+      service = new ImageService(createI18nServiceMock())
       await service.onModuleInit()
 
       // Retrieve the mocked constructors to verify call arguments
@@ -103,7 +104,7 @@ describe('ImageService', () => {
     it('logs warning and does not crash when MONGO_URL is not set', async () => {
       delete process.env.MONGO_URL
 
-      service = new ImageService()
+      service = new ImageService(createI18nServiceMock())
       await expect(service.onModuleInit()).resolves.toBeUndefined()
 
       expect((service as any).client).toBeNull()
@@ -118,7 +119,7 @@ describe('ImageService', () => {
   describe('upload', () => {
     beforeEach(() => {
       process.env.MONGO_URL = 'mongodb://localhost:27017'
-      service = new ImageService()
+      service = new ImageService(createI18nServiceMock())
       // Ensure the service is initialised for every upload test
       return service.onModuleInit()
     })
@@ -173,7 +174,7 @@ describe('ImageService', () => {
   describe('getStream', () => {
     beforeEach(() => {
       process.env.MONGO_URL = 'mongodb://localhost:27017'
-      service = new ImageService()
+      service = new ImageService(createI18nServiceMock())
       return service.onModuleInit()
     })
 
@@ -213,7 +214,7 @@ describe('ImageService', () => {
     it('throws NotFoundException when bucket is null (not initialised)', async () => {
       // Start a service that never connected
       delete process.env.MONGO_URL
-      const unconnectedService = new ImageService()
+      const unconnectedService = new ImageService(createI18nServiceMock())
       await unconnectedService.onModuleInit()
 
       expect((unconnectedService as any).bucket).toBeNull()
@@ -230,7 +231,7 @@ describe('ImageService', () => {
   describe('delete', () => {
     beforeEach(() => {
       process.env.MONGO_URL = 'mongodb://localhost:27017'
-      service = new ImageService()
+      service = new ImageService(createI18nServiceMock())
       return service.onModuleInit()
     })
 

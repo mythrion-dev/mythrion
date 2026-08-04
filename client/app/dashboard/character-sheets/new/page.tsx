@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, type SubmitEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import Link from 'next/link'
@@ -27,6 +28,7 @@ type Step = 1 | 2 | 3
 
 export default function NewCharacterSheetPage() {
   const router = useRouter()
+  const { t } = useTranslation()
 
   // Navigation
   const [step, setStep] = useState<Step>(1)
@@ -59,7 +61,7 @@ export default function NewCharacterSheetPage() {
       const data = await api.get<TemplateSummary[]>('/templates')
       setTemplates(data)
     } catch {
-      setError('Failed to load templates')
+      setError(t('character:failedToLoadTemplates'))
     } finally {
       setFetchingTemplates(false)
     }
@@ -129,7 +131,7 @@ export default function NewCharacterSheetPage() {
       const sheet = await api.post<{ id: string }>('/character-sheets', body)
       router.push(`/dashboard/character-sheets/${sheet.id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create sheet')
+      setError(err instanceof Error ? err.message : t('character:failedToCreateSheet'))
       setCreating(false)
     }
   }
@@ -138,9 +140,9 @@ export default function NewCharacterSheetPage() {
 
   function renderStepIndicator() {
     const steps: { num: Step; label: string }[] = [
-      { num: 1, label: 'Character' },
-      { num: 2, label: 'Template' },
-      { num: 3, label: 'Campaign' },
+      { num: 1, label: t('character:stepCharacter') },
+      { num: 2, label: t('character:stepTemplate') },
+      { num: 3, label: t('character:stepCampaign') },
     ]
 
     return (
@@ -191,12 +193,12 @@ export default function NewCharacterSheetPage() {
     return (
       <div className="space-y-4">
         <div>
-          <div className="label">Character Name *</div>
+          <div className="label">{t('character:characterNameRequired')}</div>
           <input
             className="input-field"
             value={characterName}
             onChange={(e) => setCharacterName(e.target.value)}
-            placeholder="e.g. Aragorn, Geralt, Vex'ahlia"
+            placeholder={t('character:characterNamePlaceholder')}
             maxLength={100}
             required
             autoFocus
@@ -204,21 +206,21 @@ export default function NewCharacterSheetPage() {
         </div>
 
         <div>
-          <div className="label">Player Name</div>
+          <div className="label">{t('character:playerNameLabel')}</div>
           <input
             className="input-field"
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
-            placeholder="Your name or alias"
+            placeholder={t('character:playerNamePlaceholder')}
             maxLength={100}
           />
           <p className="text-xs text-muted-foreground mt-1">
-            Optional. Who&apos;s playing this character?
+            {t('character:playerNameHelper')}
           </p>
         </div>
 
         <div>
-          <div className="label">Level</div>
+          <div className="label">{t('character:levelLabel')}</div>
           <input
             type="number"
             className="input-field w-24"
@@ -228,13 +230,13 @@ export default function NewCharacterSheetPage() {
             max={99}
           />
           <p className="text-xs text-muted-foreground mt-1">
-            Optional. Defaults to 1.
+            {t('character:levelHelper')}
           </p>
         </div>
 
         <div className="flex gap-3 justify-end pt-2">
           <Link href="/dashboard?tab=character-sheets" className="btn-ghost">
-            Cancel
+            {t('common:cancel')}
           </Link>
           <button
             type="button"
@@ -242,7 +244,7 @@ export default function NewCharacterSheetPage() {
             onClick={() => goToStep(2)}
             className="btn-primary"
           >
-            Next
+            {t('common:next')}
           </button>
         </div>
       </div>
@@ -255,12 +257,12 @@ export default function NewCharacterSheetPage() {
     return (
       <div className="space-y-4">
         <div>
-          <div className="label">Search Templates</div>
+          <div className="label">{t('character:searchTemplates')}</div>
           <input
             className="input-field"
             value={templateSearch}
             onChange={(e) => setTemplateSearch(e.target.value)}
-            placeholder="Filter by name..."
+            placeholder={t('character:filterByNamePlaceholder')}
             autoFocus
           />
         </div>
@@ -289,28 +291,28 @@ export default function NewCharacterSheetPage() {
               </svg>
               <p className="text-sm text-muted-foreground">
                 {templateSearch
-                  ? 'No templates match your search.'
-                  : 'No templates found. Create a template first.'}
+                  ? t('character:noTemplatesMatchSearch')
+                  : t('character:noTemplatesFound')}
               </p>
               {!templateSearch && (
                 <Link
                   href="/dashboard/templates/new"
                   className="text-sm text-primary hover:underline"
                 >
-                  Create a template
+                  {t('character:createATemplate')}
                 </Link>
               )}
             </div>
           ) : (
-            filteredTemplates.map((t) => {
-              const isSelected = selectedTemplateId === t.id
-              const attrCount = t.attributes?.length ?? 0
-              const skillCount = t.templateSkills?.length ?? 0
+            filteredTemplates.map((tmpl) => {
+              const isSelected = selectedTemplateId === tmpl.id
+              const attrCount = tmpl.attributes?.length ?? 0
+              const skillCount = tmpl.templateSkills?.length ?? 0
               return (
                 <button
-                  key={t.id}
+                  key={tmpl.id}
                   type="button"
-                  onClick={() => setSelectedTemplateId(t.id)}
+                  onClick={() => setSelectedTemplateId(tmpl.id)}
                   className={`
                     w-full text-left p-3 rounded-lg border transition-colors
                     ${
@@ -324,7 +326,7 @@ export default function NewCharacterSheetPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-foreground truncate">
-                          {t.name}
+                          {tmpl.name}
                         </span>
                         {isSelected && (
                           <svg
@@ -342,16 +344,16 @@ export default function NewCharacterSheetPage() {
                           </svg>
                         )}
                       </div>
-                      {t.description && (
+                      {tmpl.description && (
                         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                          {t.description}
+                          {tmpl.description}
                         </p>
                       )}
                     </div>
                     {(attrCount > 0 || skillCount > 0) && (
                       <div className="flex items-center gap-2 shrink-0 text-[10px] text-muted-foreground">
-                        {attrCount > 0 && <span>{attrCount} attr</span>}
-                        {skillCount > 0 && <span>{skillCount} skills</span>}
+                        {attrCount > 0 && <span>{t('character:attrCount', { count: attrCount })}</span>}
+                        {skillCount > 0 && <span>{t('character:skillCount', { count: skillCount })}</span>}
                       </div>
                     )}
                   </div>
@@ -363,7 +365,7 @@ export default function NewCharacterSheetPage() {
 
         <div className="flex gap-3 justify-end pt-2">
           <button type="button" onClick={() => goToStep(1)} className="btn-ghost">
-            Back
+            {t('common:back')}
           </button>
           <button
             type="button"
@@ -371,7 +373,7 @@ export default function NewCharacterSheetPage() {
             onClick={() => goToStep(3)}
             className="btn-primary"
           >
-            Next
+            {t('common:next')}
           </button>
         </div>
       </div>
@@ -384,13 +386,13 @@ export default function NewCharacterSheetPage() {
     return (
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <div className="label">Campaign (optional)</div>
+          <div className="label">{t('character:campaignOptional')}</div>
           {fetchingAdv ? (
             <div className="skeleton h-10 w-full rounded-lg" />
           ) : (
             <Select
               options={[
-                { id: '', label: '— Standalone Character —' },
+                { id: '', label: t('character:standaloneCharacter') },
                 ...adventures.map((a) => ({
                   id: a.id,
                   label: `${a.campaign} — ${a.name}`,
@@ -402,8 +404,7 @@ export default function NewCharacterSheetPage() {
             />
           )}
           <p className="text-xs text-muted-foreground mt-1">
-            Link this character to a campaign, or leave empty for a standalone
-            character.
+            {t('character:campaignHelper')}
           </p>
         </div>
 
@@ -439,7 +440,7 @@ export default function NewCharacterSheetPage() {
 
         <div className="flex gap-3 justify-end pt-2">
           <button type="button" onClick={() => goToStep(2)} className="btn-ghost">
-            Back
+            {t('common:back')}
           </button>
           <button
             type="submit"
@@ -449,10 +450,10 @@ export default function NewCharacterSheetPage() {
             {creating ? (
               <>
                 <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                Creating...
+                {t('character:creating')}
               </>
             ) : (
-              'Create Sheet'
+              t('character:createSheet')
             )}
           </button>
         </div>
@@ -470,8 +471,8 @@ export default function NewCharacterSheetPage() {
       <div className="w-full max-w-xl space-y-6 animate-slide-up relative z-10">
         <PageNav
           crumbs={[
-            { label: 'Dashboard', href: '/dashboard' },
-            { label: 'New Character Sheet' },
+            { label: t('common:dashboard'), href: '/dashboard' },
+            { label: t('character:newCharacterSheet') },
           ]}
         />
 
@@ -494,15 +495,15 @@ export default function NewCharacterSheetPage() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-gradient">
-              New Character Sheet
+              {t('character:newCharacterSheet')}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {step === 1 && "Enter the character's basic information"}
-              {step === 2 && 'Choose a template for your character'}
+              {step === 1 && t('character:step1Helper')}
+              {step === 2 && t('character:step2Helper')}
               {step === 3 &&
                 (selectedAdventureId
-                  ? 'Link to a campaign and finish'
-                  : 'Finish creating your character')}
+                  ? t('character:step3HelperLinked')
+                  : t('character:step3Helper'))}
             </p>
           </div>
         </div>

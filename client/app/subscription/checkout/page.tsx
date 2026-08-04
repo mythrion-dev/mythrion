@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context'
 import { useSubscription } from '@/lib/subscription-context'
 import { createSubscription, fetchPlans, type Plan } from '@/lib/subscription-api'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 
 /* ---------- helper: price display ---------- */
 function formatBRL(cents: number) {
@@ -52,6 +53,7 @@ function usePagBankEncryption(): boolean {
 
 /* ---------- component ---------- */
 function CheckoutContent() {
+  const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuth()
@@ -103,10 +105,10 @@ function CheckoutContent() {
     }
     if (!planId) {
       setState('error')
-      setErrorMessage('Nenhum plano selecionado. Volte e escolha um plano.')
+      setErrorMessage(t('billing:noPlanSelected'))
       return
     }
-  }, [authLoading, user, planId, router])
+  }, [authLoading, user, planId, router, t])
 
   // ----- Fetch plan details -----
   useEffect(() => {
@@ -118,54 +120,54 @@ function CheckoutContent() {
           setPlan(found)
         } else {
           setState('error')
-          setErrorMessage('Plano não encontrado.')
+          setErrorMessage(t('billing:planNotFound'))
         }
       })
       .catch(() => {
         setState('error')
-        setErrorMessage('Erro ao carregar dados do plano.')
+        setErrorMessage(t('billing:planLoadError'))
       })
       .finally(() => setPlanLoading(false))
-  }, [planId])
+  }, [planId, t])
 
   // ----- Validate form -----
   const validate = useCallback((): boolean => {
     const errors: { name?: string; document?: string; card?: string } = {}
 
     if (!payerName.trim() || payerName.trim().length < 3) {
-      errors.name = 'Digite seu nome completo.'
+      errors.name = t('billing:fullNameRequired')
     }
 
     const digits = payerDocument.replace(/\D/g, '')
     if (digits.length !== 11) {
-      errors.document = 'Digite um CPF válido (11 dígitos).'
+      errors.document = t('billing:cpfInvalid')
     }
 
     if (pgPublicKey) {
       if (cardNumber.replace(/\D/g, '').length < 13) {
-        errors.card = 'Número do cartão inválido.'
+        errors.card = t('billing:cardNumberInvalid')
       }
       if (cardExpiry.replace(/\D/g, '').length < 4) {
-        errors.card = 'Data de validade inválida.'
+        errors.card = t('billing:cardExpiryInvalid')
       }
       if (cardCvv.replace(/\D/g, '').length < 3) {
-        errors.card = 'CVV inválido.'
+        errors.card = t('billing:cardCvvInvalid')
       }
     }
 
     setFormErrors(errors)
     return Object.keys(errors).length === 0
-  }, [payerName, payerDocument, pgPublicKey, cardNumber, cardExpiry, cardCvv])
+  }, [payerName, payerDocument, pgPublicKey, cardNumber, cardExpiry, cardCvv, t])
 
   // ----- Encrypt card using PagSeguro -----
   const encryptCard = useCallback((): string => {
     if (!pgPublicKey) {
-      throw new Error('PagBank public key not configured')
+      throw new Error(t('billing:pagbankPublicKeyNotConfigured'))
     }
 
     const pg = (window as any).PagSeguro
     if (!pg?.encryptCard) {
-      throw new Error('SDK de criptografia PagBank não carregado. Tente novamente.')
+      throw new Error(t('billing:sdkNotLoaded'))
     }
 
     const [expMonth, expYear] = cardExpiry.split('/')
@@ -180,11 +182,11 @@ function CheckoutContent() {
 
     if (result.hasErrors) {
       const msgs = (result.errors || []).map((e: { message: string }) => e.message).join(' ')
-      throw new Error(`Erro na criptografia: ${msgs || 'Dados inválidos do cartão.'}`)
+      throw new Error(t('billing:encryptionError', { message: msgs || t('billing:cardDataInvalid') }))
     }
 
     return result.encryptedCard
-  }, [pgPublicKey, cardNumber, cardExpiry, cardCvv, payerName])
+  }, [pgPublicKey, cardNumber, cardExpiry, cardCvv, payerName, t])
 
   // ----- Pre-defined sandbox card tokens for PagBank test cards -----
   // PagBank fornece tokens pre-definidos (CARD_UUID) para cartoes de teste em sandbox.
@@ -241,20 +243,20 @@ function CheckoutContent() {
           ? err.message
           : typeof err === 'string'
             ? err
-            : 'Falha ao criar assinatura. Tente novamente.'
+            : t('billing:subscriptionCreateFailed')
       setState('error')
       setErrorMessage(message)
     }
-  }, [planId, plan, payerName, payerDocument, cardCvv, cardNumber, validate, router, pgPublicKey, encryptCard])
+  }, [planId, plan, payerName, payerDocument, cardCvv, cardNumber, validate, router, pgPublicKey, encryptCard, t])
 
   // ----- Creating state -----
   if (state === 'creating') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-screen bg-background bg-pattern">
         <div className="w-12 h-12 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-        <h2 className="mt-6 text-lg font-semibold text-foreground">Preparando assinatura...</h2>
+        <h2 className="mt-6 text-lg font-semibold text-foreground">{t('billing:preparingSubscription')}</h2>
         <p className="mt-2 text-sm text-muted-foreground max-w-sm text-center">
-          Aguarde enquanto configuramos sua assinatura.
+          {t('billing:preparingSubscriptionMessage')}
         </p>
       </div>
     )
@@ -269,9 +271,9 @@ function CheckoutContent() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h2 className="text-lg font-semibold text-foreground">Assinatura criada!</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t('billing:subscriptionCreated')}</h2>
         <p className="mt-2 text-sm text-muted-foreground max-w-sm text-center">
-          Redirecionando para o dashboard...
+          {t('billing:redirectingDashboard')}
         </p>
       </div>
     )
@@ -287,20 +289,20 @@ function CheckoutContent() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-foreground">Algo deu errado</h2>
+          <h2 className="text-lg font-semibold text-foreground">{t('billing:somethingWentWrong')}</h2>
           <p className="mt-2 text-sm text-muted-foreground">{errorMessage}</p>
           <div className="mt-6 flex gap-3 justify-center">
             <button
               onClick={() => setState('form')}
               className="px-6 py-2 rounded-lg bg-primary text-background font-semibold hover:opacity-90 transition-opacity"
             >
-              Tentar novamente
+              {t('billing:tryAgain')}
             </button>
             <Link
               href="/pricing"
               className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              Voltar aos planos
+              {t('billing:backToPlans')}
             </Link>
           </div>
         </div>
@@ -316,7 +318,7 @@ function CheckoutContent() {
       <div className="w-full max-w-md">
         {/* Page title */}
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-foreground">Finalizar assinatura</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t('billing:finishSubscription')}</h1>
         </div>
 
         {/* Plan summary card */}
@@ -327,7 +329,7 @@ function CheckoutContent() {
               <p className="mt-2 text-3xl font-bold text-primary">
                 {formattedPlanPrice}
                 <span className="text-base font-normal text-muted-foreground">
-                  {plan.slug === 'monthly' ? '/mês' : '/ano'}
+                  {plan.slug === 'monthly' ? t('billing:periodMonth') : t('billing:periodYear')}
                 </span>
               </p>
             </div>
@@ -337,13 +339,13 @@ function CheckoutContent() {
         {/* Payer info form */}
         <div className="bg-surface border border-border rounded-xl p-6">
           <h3 className="text-sm font-semibold text-foreground mb-4">
-            Dados do comprador
+            {t('billing:buyerDetails')}
           </h3>
 
           {/* Name field */}
           <div className="mb-4">
             <label htmlFor="payerName" className="block text-sm font-medium text-foreground mb-1">
-              Nome completo <span className="text-red-500">*</span>
+              {t('billing:fullNameLabel')}
             </label>
             <input
               id="payerName"
@@ -353,7 +355,7 @@ function CheckoutContent() {
                 setPayerName(e.target.value)
                 if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: undefined }))
               }}
-              placeholder="Como no seu cartão"
+              placeholder={t('billing:cardHolderNamePlaceholder')}
               className={`w-full px-3 py-2 rounded-lg bg-background border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${
                 formErrors.name ? 'border-red-500' : 'border-border'
               }`}
@@ -367,7 +369,7 @@ function CheckoutContent() {
           {/* CPF field */}
           <div className="mb-4">
             <label htmlFor="payerDocument" className="block text-sm font-medium text-foreground mb-1">
-              CPF <span className="text-red-500">*</span>
+              {t('billing:cpfLabel')}
             </label>
             <input
               id="payerDocument"
@@ -394,13 +396,13 @@ function CheckoutContent() {
           {pgPublicKey && plan && (
             <>
               <h3 className="text-sm font-semibold text-foreground mb-4 mt-6 pt-6 border-t border-border">
-                Dados do cartão
+                {t('billing:cardDetails')}
               </h3>
 
               {/* Card number */}
               <div className="mb-4">
                 <label htmlFor="cardNumber" className="block text-sm font-medium text-foreground mb-1">
-                  Número do cartão <span className="text-red-500">*</span>
+                  {t('billing:cardNumberLabel')}
                 </label>
                 <input
                   id="cardNumber"
@@ -426,7 +428,7 @@ function CheckoutContent() {
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div>
                   <label htmlFor="cardExpiry" className="block text-sm font-medium text-foreground mb-1">
-                    Validade <span className="text-red-500">*</span>
+                    {t('billing:cardExpiryLabel')}
                   </label>
                   <input
                     id="cardExpiry"
@@ -446,7 +448,7 @@ function CheckoutContent() {
                 </div>
                 <div>
                   <label htmlFor="cardCvv" className="block text-sm font-medium text-foreground mb-1">
-                    CVV <span className="text-red-500">*</span>
+                    {t('billing:cardCvvLabel')}
                   </label>
                   <input
                     id="cardCvv"
@@ -474,7 +476,7 @@ function CheckoutContent() {
 
           {!pgPublicKey && (
             <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm text-amber-600 dark:text-amber-400">
-              Pagamento por cartão indisponível no momento.
+              {t('billing:cardPaymentUnavailable')}
             </div>
           )}
 
@@ -486,18 +488,20 @@ function CheckoutContent() {
             className="w-full mt-6 py-3 rounded-lg bg-primary text-background font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             {planLoading
-              ? 'Carregando...'
+              ? t('common:loading')
               : !pgReady
-              ? 'Preparando...'
-              : `Assinar ${formattedPlanPrice}${plan?.slug === 'monthly' ? '/mês' : '/ano'}`}
+              ? t('billing:preparing')
+              : t('billing:subscribeWithPrice', {
+                  price: formattedPlanPrice,
+                  period: plan?.slug === 'monthly' ? t('billing:periodMonth') : t('billing:periodYear'),
+                })}
           </button>
         </div>
 
         {/* Security note */}
         <p className="mt-4 text-xs text-muted-foreground text-center leading-relaxed">
-          Pagamento processado de forma segura pelo{' '}
-          <span className="text-foreground">PagBank</span>.
-          Os dados do seu cartão são criptografados antes do envio.
+          {t('billing:securePaymentProcessedBy')} <span className="text-foreground">PagBank</span>
+          {t('billing:securePaymentRest')}
         </p>
 
         {/* Back link */}
@@ -506,7 +510,7 @@ function CheckoutContent() {
             href="/pricing"
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            ← Voltar aos planos
+            ← {t('billing:backToPlans')}
           </Link>
         </div>
       </div>

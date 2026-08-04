@@ -44,6 +44,7 @@
     "ioredis": "^5.11.1",
     "mathjs": "^15.2.0",
     "mongodb": "^7.5.0",
+    "nestjs-i18n": "^10.8.5",
     "nodemailer": "^9.0.3",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",

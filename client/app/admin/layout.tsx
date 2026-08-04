@@ -5,23 +5,26 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { Sidebar } from '@/components/dashboard'
+import { useTranslation } from 'react-i18next'
 
 /* ── Breadcrumbs ──────────────────────────────────── */
 
 interface Crumb {
-  label: string
+  labelKey?: string
+  label?: string
   href?: string
 }
 
 const breadcrumbMap: Record<string, Crumb[]> = {
   '/admin/plans': [
-    { label: 'Admin', href: '/admin/plans' },
-    { label: 'Planos' },
+    { labelKey: 'common:admin', href: '/admin/plans' },
+    { labelKey: 'billing:plans' },
   ],
 }
 
 function Breadcrumbs({ pathname }: { pathname: string }) {
-  const crumbs = useMemo(() => {
+  const { t } = useTranslation()
+  const crumbs = useMemo<Crumb[]>(() => {
     // Exact match first
     if (breadcrumbMap[pathname]) return breadcrumbMap[pathname]
     // Fallback: build from path segments
@@ -33,7 +36,7 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
   }, [pathname])
 
   return (
-    <nav aria-label="Breadcrumb" className="mb-6">
+    <nav aria-label={t('billing:breadcrumb')} className="mb-6">
       <ol className="flex items-center gap-2 text-sm text-muted-foreground">
         {crumbs.map((crumb, i) => (
           <li key={i} className="flex items-center gap-2">
@@ -47,10 +50,10 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
                 href={crumb.href}
                 className="hover:text-foreground transition-colors"
               >
-                {crumb.label}
+                {crumb.labelKey ? t(crumb.labelKey) : crumb.label}
               </Link>
             ) : (
-              <span className="text-foreground font-medium">{crumb.label}</span>
+              <span className="text-foreground font-medium">{crumb.labelKey ? t(crumb.labelKey) : crumb.label}</span>
             )}
           </li>
         ))}
@@ -64,7 +67,7 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
 const adminNavLinks = [
   {
     href: '/admin/plans',
-    label: 'Planos',
+    labelKey: 'billing:plans',
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
@@ -74,6 +77,7 @@ const adminNavLinks = [
 ]
 
 function AdminNav({ pathname }: { pathname: string }) {
+  const { t } = useTranslation()
   return (
     <nav className="flex gap-1 mb-6 p-1 rounded-xl bg-surface border border-border">
       {adminNavLinks.map((link) => {
@@ -89,7 +93,7 @@ function AdminNav({ pathname }: { pathname: string }) {
             }`}
           >
             {link.icon}
-            {link.label}
+            {t(link.labelKey)}
           </Link>
         )
       })}

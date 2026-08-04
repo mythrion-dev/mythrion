@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
+import { I18nService } from 'nestjs-i18n'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 
 describe('JwtAuthGuard', () => {
   let guard: JwtAuthGuard
@@ -17,6 +19,7 @@ describe('JwtAuthGuard', () => {
       providers: [
         JwtAuthGuard,
         { provide: JwtService, useValue: mockJwtService },
+        { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     }).compile()
 

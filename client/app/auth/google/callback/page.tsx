@@ -2,6 +2,7 @@
 
 import { useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import {
   setAccessToken,
   setRefreshToken,
@@ -13,6 +14,7 @@ import {
 function GoogleCallbackInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { t } = useTranslation()
 
   useEffect(() => {
     const accessToken = searchParams.get('token')
@@ -42,18 +44,19 @@ function GoogleCallbackInner() {
     <main className="flex-1 flex items-center justify-center p-4">
       <div className="flex flex-col items-center gap-3 text-muted-foreground">
         <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
-        <span className="text-sm">Signing in with Google...</span>
+        <span className="text-sm">{t('auth:signingInWithGoogle')}</span>
       </div>
     </main>
   )
 }
 
 export default function GoogleCallbackPage() {
+  const { t } = useTranslation()
   return (
     <Suspense
       fallback={
         <main className="flex-1 flex items-center justify-center p-4">
-          <div className="text-sm text-muted-foreground">Loading...</div>
+          <div className="text-sm text-muted-foreground">{t('common:loading')}</div>
         </main>
       }
     >

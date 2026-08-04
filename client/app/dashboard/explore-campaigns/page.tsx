@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, Suspense, useRef } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -34,28 +35,29 @@ interface AdventuresResponse {
   totalPages: number
 }
 
-const SORT_OPTIONS: SortOption[] = [
-  { id: 'popular', label: 'Most Popular' },
-  { id: 'recent', label: 'Recently Published' },
-  { id: 'players', label: 'Most Players' },
-  { id: 'newest', label: 'Newest' },
-  { id: 'alpha', label: 'Alphabetical' },
-]
-
-const WEEKDAYS = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-]
-
 function DashboardExploreCampaignsContent() {
+  const { t } = useTranslation()
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
+
+  const SORT_OPTIONS: SortOption[] = [
+    { id: 'popular', label: t('community:mostPopular') },
+    { id: 'recent', label: t('community:recentlyPublished') },
+    { id: 'players', label: t('community:mostPlayers') },
+    { id: 'newest', label: t('community:newest') },
+    { id: 'alpha', label: t('community:alphabetical') },
+  ]
+
+  const WEEKDAYS = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ]
 
   const [search, setSearch] = useState(searchParams.get('search') ?? '')
   const [campaign, setCampaign] = useState(searchParams.get('campaign') ?? '')
@@ -147,12 +149,12 @@ function DashboardExploreCampaignsContent() {
       setTotalPages(res.totalPages)
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Failed to load adventures',
+        err instanceof Error ? err.message : t('community:failedToLoadAdventures'),
       )
     } finally {
       setFetching(false)
     }
-  }, [debouncedSearch, campaign, sessionWeekday, sessionType, timePeriod, page])
+  }, [debouncedSearch, campaign, sessionWeekday, sessionType, timePeriod, page, t])
 
   useEffect(() => {
     fetchAdventures()
@@ -229,13 +231,16 @@ function DashboardExploreCampaignsContent() {
   const activeFilters: ActiveFilter[] = useMemo(() => {
     const filters: ActiveFilter[] = []
     if (debouncedSearch)
-      filters.push({ id: 'search', label: `Search: ${debouncedSearch}` })
+      filters.push({
+        id: 'search',
+        label: t('community:searchFilterChip', { term: debouncedSearch }),
+      })
     if (campaign) filters.push({ id: 'campaign', label: campaign })
     if (sessionWeekday) filters.push({ id: 'sessionWeekday', label: sessionWeekday })
     if (sessionType)
       filters.push({
         id: 'sessionType',
-        label: sessionType === 'ONLINE' ? 'Online' : 'In Person',
+        label: sessionType === 'ONLINE' ? t('community:online') : t('community:inPerson'),
       })
     if (timePeriod)
       filters.push({
@@ -244,7 +249,7 @@ function DashboardExploreCampaignsContent() {
           timePeriod.charAt(0).toUpperCase() + timePeriod.slice(1),
       })
     return filters
-  }, [debouncedSearch, campaign, sessionWeekday, sessionType, timePeriod])
+  }, [debouncedSearch, campaign, sessionWeekday, sessionType, timePeriod, t])
 
   const handleRemoveFilter = useCallback(
     (id: string) => {
@@ -283,8 +288,8 @@ function DashboardExploreCampaignsContent() {
     <>
       <PageHeader
         icon="🌍"
-        title="Explore Campaigns"
-        subtitle="Discover public campaigns from the Mythrion community"
+        title={t('common:exploreCampaigns')}
+        subtitle={t('community:discoverCampaignsSubtitle')}
       />
 
       {/* Tab Navigation */}
@@ -308,7 +313,7 @@ function DashboardExploreCampaignsContent() {
               d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
             />
           </svg>
-          Campaigns
+          {t('community:campaigns')}
         </Link>
         <Link
           href="/dashboard/public-templates"
@@ -329,13 +334,13 @@ function DashboardExploreCampaignsContent() {
               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
             />
           </svg>
-          Templates
+          {t('community:templates')}
         </Link>
       </nav>
 
       {/* ── Search & Filters ── */}
       <SearchFilterSection
-        placeholder="Search campaigns by name, GM or description..."
+        placeholder={t('community:searchCampaignsPlaceholder')}
         search={search}
         onSearchChange={(v) => {
           setSearch(v)
@@ -361,7 +366,7 @@ function DashboardExploreCampaignsContent() {
 
         {/* Weekday filter */}
         <div className="flex flex-col gap-1.5 min-w-[160px]">
-          <div className="label !mb-0">Day</div>
+          <div className="label !mb-0">{t('community:day')}</div>
           <select
             value={sessionWeekday}
             onChange={(e) => {
@@ -370,10 +375,10 @@ function DashboardExploreCampaignsContent() {
             }}
             className="input-field py-2 pr-8 pl-3 text-sm"
           >
-            <option value="">Any day</option>
+            <option value="">{t('community:anyDay')}</option>
             {WEEKDAYS.map((day) => (
               <option key={day} value={day}>
-                {day}
+                {t(`community:${day.toLowerCase()}`)}
               </option>
             ))}
           </select>
@@ -381,7 +386,7 @@ function DashboardExploreCampaignsContent() {
 
         {/* Session type filter */}
         <div className="flex flex-col gap-1.5">
-          <div className="label !mb-0">Type</div>
+          <div className="label !mb-0">{t('community:type')}</div>
           <div className="flex gap-1 h-full items-end pb-[1px]">
             <button
               type="button"
@@ -390,7 +395,7 @@ function DashboardExploreCampaignsContent() {
                 sessionType === '' ? 'tab-pill-active' : ''
               }`}
             >
-              Any
+              {t('community:any')}
             </button>
             <button
               type="button"
@@ -399,7 +404,7 @@ function DashboardExploreCampaignsContent() {
                 sessionType === 'ONLINE' ? 'tab-pill-active' : ''
               }`}
             >
-              Online
+              {t('community:online')}
             </button>
             <button
               type="button"
@@ -408,14 +413,14 @@ function DashboardExploreCampaignsContent() {
                 sessionType === 'IN_PERSON' ? 'tab-pill-active' : ''
               }`}
             >
-              In Person
+              {t('community:inPerson')}
             </button>
           </div>
         </div>
 
         {/* Time period filter */}
         <div className="flex flex-col gap-1.5 min-w-[140px]">
-          <div className="label !mb-0">Schedule</div>
+          <div className="label !mb-0">{t('community:schedule')}</div>
           <select
             value={timePeriod}
             onChange={(e) => {
@@ -424,10 +429,10 @@ function DashboardExploreCampaignsContent() {
             }}
             className="input-field py-2 pr-8 pl-3 text-sm"
           >
-            <option value="">Any time</option>
-            <option value="morning">Morning</option>
-            <option value="afternoon">Afternoon</option>
-            <option value="night">Night</option>
+            <option value="">{t('community:anyTime')}</option>
+            <option value="morning">{t('community:morning')}</option>
+            <option value="afternoon">{t('community:afternoon')}</option>
+            <option value="night">{t('community:night')}</option>
           </select>
         </div>
       </SearchFilterSection>
@@ -437,7 +442,7 @@ function DashboardExploreCampaignsContent() {
         <div className="flex flex-col items-center justify-center py-8 space-y-4">
           <p className="text-sm text-red-400">{error}</p>
           <button onClick={fetchAdventures} className="btn-primary">
-            Try Again
+            {t('community:tryAgain')}
           </button>
         </div>
       )}
@@ -449,8 +454,8 @@ function DashboardExploreCampaignsContent() {
       {!fetching && !error && sortedAdventures.length === 0 && (
         <EmptyState
           icon="🔍"
-          title="No campaigns match your search"
-          description="Try changing your filters or check back later."
+          title={t('community:noCampaignsMatch')}
+          description={t('community:noCampaignsMatchDescription')}
         />
       )}
 
@@ -484,17 +489,17 @@ function DashboardExploreCampaignsContent() {
                 disabled={page <= 1}
                 className="btn-secondary disabled:opacity-40"
               >
-                Previous
+                {t('community:previous')}
               </button>
               <span className="text-sm text-muted-foreground">
-                Page {page} of {totalPages}
+                {t('community:pageInfo', { page, totalPages })}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
                 className="btn-secondary disabled:opacity-40"
               >
-                Next
+                {t('common:next')}
               </button>
             </div>
           )}

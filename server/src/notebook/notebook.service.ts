@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common'
+import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
 import { RedisService } from '../redis/redis.service.js'
 import { MembershipService } from '../membership/membership.service.js'
@@ -50,6 +51,7 @@ export class NotebookService {
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly membership: MembershipService,
+    private readonly i18n: I18nService,
   ) {}
 
   // ──────────────────────────────────────────────
@@ -71,7 +73,7 @@ export class NotebookService {
   async getOrCreateNotebook(adventureId: string, userId: string): Promise<NotebookWithRelations> {
     const isMember = await this.membership.isMember(adventureId, userId)
     if (!isMember) {
-      throw new ForbiddenException('You are not a member of this adventure')
+      throw new ForbiddenException(this.i18n.t('notebook.notMemberAdventure'))
     }
 
     // Try cache
@@ -182,7 +184,7 @@ export class NotebookService {
       include: { notebook: true },
     })
     if (!folder || folder.notebook.adventureId !== adventureId || folder.notebook.userId !== userId) {
-      throw new NotFoundException('Folder not found')
+      throw new NotFoundException(this.i18n.t('notebook.folderNotFound'))
     }
 
     const updated = await this.prisma.notebookFolder.update({
@@ -215,7 +217,7 @@ export class NotebookService {
       include: { notebook: true },
     })
     if (!folder || folder.notebook.adventureId !== adventureId || folder.notebook.userId !== userId) {
-      throw new NotFoundException('Folder not found')
+      throw new NotFoundException(this.i18n.t('notebook.folderNotFound'))
     }
 
     // Move orphaned pages to root before deleting the folder
@@ -280,7 +282,7 @@ export class NotebookService {
       include: { notebook: true },
     })
     if (!page || page.notebook.adventureId !== adventureId || page.notebook.userId !== userId) {
-      throw new NotFoundException('Page not found')
+      throw new NotFoundException(this.i18n.t('notebook.pageNotFound'))
     }
 
     const updated = await this.prisma.notebookPage.update({
@@ -318,7 +320,7 @@ export class NotebookService {
       include: { notebook: true },
     })
     if (!page || page.notebook.adventureId !== adventureId || page.notebook.userId !== userId) {
-      throw new NotFoundException('Page not found')
+      throw new NotFoundException(this.i18n.t('notebook.pageNotFound'))
     }
 
     await this.prisma.notebookPage.delete({ where: { id: pageId } })

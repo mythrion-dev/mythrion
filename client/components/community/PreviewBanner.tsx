@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
 
 interface PreviewBannerProps {
@@ -11,6 +12,7 @@ interface PreviewBannerProps {
 }
 
 export function PreviewBanner({ templateName, templateId }: Readonly<PreviewBannerProps>) {
+  const { t } = useTranslation()
   const router = useRouter()
   const [cloning, setCloning] = useState(false)
   const [cloneError, setCloneError] = useState<string | null>(null)
@@ -22,7 +24,7 @@ export function PreviewBanner({ templateName, templateId }: Readonly<PreviewBann
       const cloned = await api.post<{ id: string }>(`/templates/${templateId}/clone`, {})
       router.push(`/dashboard/templates/${cloned.id}`)
     } catch (err) {
-      setCloneError(err instanceof Error ? err.message : 'Failed to clone template')
+      setCloneError(err instanceof Error ? err.message : t('community:failedToCloneTemplate'))
       setCloning(false)
     }
   }
@@ -46,10 +48,10 @@ export function PreviewBanner({ templateName, templateId }: Readonly<PreviewBann
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
               />
             </svg>
-            Sandbox Mode
+            {t('community:sandboxMode')}
           </span>
           <span className="text-xs text-amber-300/80 truncate hidden sm:inline">
-            Previewing: <span className="font-medium text-amber-200">{templateName}</span>
+            {t('community:previewing')} <span className="font-medium text-amber-200">{templateName}</span>
           </span>
         </div>
 
@@ -63,10 +65,10 @@ export function PreviewBanner({ templateName, templateId }: Readonly<PreviewBann
             {cloning ? (
               <>
                 <div className="w-3 h-3 border-2 border-amber-300/30 border-t-amber-300 rounded-full animate-spin mr-1" />
-                Cloning...
+                {t('community:cloning')}
               </>
             ) : (
-              'Clone this Template'
+              t('community:cloneThisTemplate')
             )}
           </button>
           <Link
@@ -86,7 +88,7 @@ export function PreviewBanner({ templateName, templateId }: Readonly<PreviewBann
                 d="M6 18L18 6M6 6l12 12"
               />
             </svg>
-            Exit Preview
+            {t('community:exitPreview')}
           </Link>
         </div>
       </div>

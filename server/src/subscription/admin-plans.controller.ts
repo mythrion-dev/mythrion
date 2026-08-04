@@ -21,6 +21,7 @@ import {
   IsNotEmpty,
 } from 'class-validator'
 import { PrismaService } from '../prisma.service.js'
+import { I18nService, i18nValidationMessage } from 'nestjs-i18n'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { AdminGuard } from '../auth/admin.guard.js'
 import { SkipSubscriptionCheck } from '../auth/skip-subscription.decorator.js'
@@ -28,41 +29,47 @@ import { SkipSubscriptionCheck } from '../auth/skip-subscription.decorator.js'
 /* ── DTOs ─────────────────────────────────────────── */
 
 class CreateSubscriptionPlanDto {
-  @IsString() @IsNotEmpty()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
+  @IsNotEmpty({ message: i18nValidationMessage('validation.isNotEmpty') })
   id: string
 
-  @IsString() @IsNotEmpty()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
+  @IsNotEmpty({ message: i18nValidationMessage('validation.isNotEmpty') })
   slug: string
 
-  @IsString() @IsNotEmpty()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
+  @IsNotEmpty({ message: i18nValidationMessage('validation.isNotEmpty') })
   name: string
 
-  @IsOptional() @IsString()
+  @IsOptional() @IsString({ message: i18nValidationMessage('validation.isString') })
   description?: string
 
   /** Price in cents (BRL) */
-  @IsInt() @Min(1)
+  @IsInt({ message: i18nValidationMessage('validation.isInt') })
+  @Min(1, { message: i18nValidationMessage('validation.min') })
   price: number
 
-  @IsString() @IsNotEmpty()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
+  @IsNotEmpty({ message: i18nValidationMessage('validation.isNotEmpty') })
   pgPlanId: string
 }
 
 class UpdateSubscriptionPlanDto {
-  @IsOptional() @IsString() @IsNotEmpty()
+  @IsOptional() @IsString({ message: i18nValidationMessage('validation.isString') }) @IsNotEmpty({ message: i18nValidationMessage('validation.isNotEmpty') })
   slug?: string
 
-  @IsOptional() @IsString() @IsNotEmpty()
+  @IsOptional() @IsString({ message: i18nValidationMessage('validation.isString') }) @IsNotEmpty({ message: i18nValidationMessage('validation.isNotEmpty') })
   name?: string
 
-  @IsOptional() @IsString()
+  @IsOptional() @IsString({ message: i18nValidationMessage('validation.isString') })
   description?: string
 
   /** Price in cents (BRL) */
-  @IsOptional() @IsInt() @Min(1)
+  @IsOptional() @IsInt({ message: i18nValidationMessage('validation.isInt') })
+  @Min(1, { message: i18nValidationMessage('validation.min') })
   price?: number
 
-  @IsOptional() @IsString() @IsNotEmpty()
+  @IsOptional() @IsString({ message: i18nValidationMessage('validation.isString') }) @IsNotEmpty({ message: i18nValidationMessage('validation.isNotEmpty') })
   pgPlanId?: string
 }
 
@@ -74,7 +81,10 @@ class UpdateSubscriptionPlanDto {
 export class AdminPlansController {
   private readonly logger = new Logger(AdminPlansController.name)
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly i18n: I18nService,
+  ) {}
 
   /**
    * GET /api/admin/subscription-plans
@@ -96,13 +106,15 @@ export class AdminPlansController {
   async create(@Body() body: CreateSubscriptionPlanDto) {
     if (!body.id || !body.slug || !body.name || body.price == null || !body.pgPlanId) {
       throw new UnprocessableEntityException(
-        'Missing required fields: id, slug, name, price, pgPlanId',
+        this.i18n.t('subscription.missingRequiredFields'),
       )
     }
 
     // Validate price is a positive integer
     if (!Number.isInteger(body.price) || body.price <= 0) {
-      throw new UnprocessableEntityException('Price must be a positive integer (cents)')
+      throw new UnprocessableEntityException(
+        this.i18n.t('subscription.priceMustBePositiveInt'),
+      )
     }
 
     // Check for conflicting slug or pgPlanId
@@ -117,7 +129,9 @@ export class AdminPlansController {
 
     if (existing) {
       const field = existing.slug === body.slug ? 'slug' : 'pgPlanId'
-      throw new UnprocessableEntityException(`A plan with this ${field} already exists`)
+      throw new UnprocessableEntityException(
+        this.i18n.t('subscription.planFieldExists', { args: { field } }),
+      )
     }
 
     return this.prisma.subscriptionPlan.create({
@@ -145,7 +159,9 @@ export class AdminPlansController {
       where: { id },
     })
     if (!plan) {
-      throw new NotFoundException(`Subscription plan "${id}" not found`)
+      throw new NotFoundException(
+        this.i18n.t('subscription.planNotFound', { args: { planId: id } }),
+      )
     }
 
     // Check slug uniqueness if changing
@@ -154,7 +170,9 @@ export class AdminPlansController {
         where: { slug: body.slug },
       })
       if (slugConflict) {
-        throw new UnprocessableEntityException(`Slug "${body.slug}" is already in use`)
+        throw new UnprocessableEntityException(
+          this.i18n.t('subscription.slugInUse', { args: { slug: body.slug } }),
+        )
       }
     }
 
@@ -164,13 +182,19 @@ export class AdminPlansController {
         where: { pgPlanId: body.pgPlanId },
       })
       if (mpPlanConflict) {
-        throw new UnprocessableEntityException(`pgPlanId "${body.pgPlanId}" is already in use`)
+        throw new UnprocessableEntityException(
+          this.i18n.t('subscription.pgPlanIdInUse', {
+            args: { pgPlanId: body.pgPlanId },
+          }),
+        )
       }
     }
 
     // Validate price if provided
     if (body.price != null && (!Number.isInteger(body.price) || body.price <= 0)) {
-      throw new UnprocessableEntityException('Price must be a positive integer (cents)')
+      throw new UnprocessableEntityException(
+        this.i18n.t('subscription.priceMustBePositiveInt'),
+      )
     }
 
     return this.prisma.subscriptionPlan.update({
@@ -196,7 +220,9 @@ export class AdminPlansController {
       where: { id },
     })
     if (!plan) {
-      throw new NotFoundException(`Subscription plan "${id}" not found`)
+      throw new NotFoundException(
+        this.i18n.t('subscription.planNotFound', { args: { planId: id } }),
+      )
     }
 
     // Check for active subscriptions
@@ -209,7 +235,7 @@ export class AdminPlansController {
 
     if (activeSubscriptions > 0) {
       throw new UnprocessableEntityException(
-        'Cannot delete plan with active subscriptions.',
+        this.i18n.t('subscription.cannotDeletePlanWithActiveSubscriptions'),
       )
     }
 
@@ -217,6 +243,6 @@ export class AdminPlansController {
       where: { id },
     })
 
-    return { message: 'Plan deleted successfully' }
+    return { message: this.i18n.t('subscription.planDeleted') }
   }
 }

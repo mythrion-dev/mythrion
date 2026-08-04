@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, type SubmitEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslation, Trans } from 'react-i18next'
 import { api } from '@/lib/api'
 import { PageNav } from '@/lib/breadcrumb'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -64,6 +65,7 @@ interface StandaloneTemplate {
 
 export default function TemplateDetailPage() {
   const router = useRouter()
+  const { t } = useTranslation()
   const params = useParams()
   const id = params.id as string
 
@@ -115,11 +117,11 @@ export default function TemplateDetailPage() {
       const data = await api.get<StandaloneTemplate>(`/templates/${id}`)
       setTemplate(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load template')
+      setError(err instanceof Error ? err.message : t('templates:failedToLoadTemplate'))
     } finally {
       setFetching(false)
     }
-  }, [id])
+  }, [id, t])
 
   useEffect(() => {
     fetchTemplate()
@@ -297,11 +299,11 @@ export default function TemplateDetailPage() {
       setTemplate(updated)
       setEditing(false)
     } catch (err) {
-      setEditError(err instanceof Error ? err.message : 'Failed to update template')
+      setEditError(err instanceof Error ? err.message : t('templates:failedToUpdate'))
     } finally {
       setSaving(false)
     }
-  }, [template, editName, editDescription, editAttrs, editAttrModifierFormula, editSkillFormula, editFields, editSkills, editProfiles, editCoreResources, editAcConfigs, editCharacterSections, editResistances, editAttrModifiersEnabled, editIsPublic, editFeatureSkills, editFeatureCustomFields, editFeatureCoreResources, editFeatureArmorClass, editFeatureCharacterSections, editFeatureSkillProfiles, editFeatureResistance])
+  }, [template, editName, editDescription, editAttrs, editAttrModifierFormula, editSkillFormula, editFields, editSkills, editProfiles, editCoreResources, editAcConfigs, editCharacterSections, editResistances, editAttrModifiersEnabled, editIsPublic, editFeatureSkills, editFeatureCustomFields, editFeatureCoreResources, editFeatureArmorClass, editFeatureCharacterSections, editFeatureSkillProfiles, editFeatureResistance, t])
 
   // ── Delete handler ──
 
@@ -313,10 +315,10 @@ export default function TemplateDetailPage() {
       await api.delete(`/templates/${template.id}`)
       router.push('/dashboard/templates')
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Failed to delete template')
+      setDeleteError(err instanceof Error ? err.message : t('templates:failedToDelete'))
       setDeleting(false)
     }
-  }, [template, router])
+  }, [template, router, t])
 
   // ── Clone handler ──
 
@@ -330,10 +332,10 @@ export default function TemplateDetailPage() {
       })
       router.push(`/dashboard/templates/${cloned.id}`)
     } catch (err) {
-      setCloneError(err instanceof Error ? err.message : 'Failed to clone template')
+      setCloneError(err instanceof Error ? err.message : t('templates:failedToClone'))
       setCloning(false)
     }
-  }, [template, router])
+  }, [template, router, t])
 
   // ── Attribute list helpers (for edit mode form compat) ──
 
@@ -523,8 +525,8 @@ export default function TemplateDetailPage() {
     return (
       <>
         <PageNav crumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Templates', href: '/dashboard/templates' },
+          { label: t('common:dashboard'), href: '/dashboard' },
+          { label: t('templates:templates'), href: '/dashboard/templates' },
           { label: '...' },
         ]} />
         <LoadingSkeleton variant="page" />
@@ -536,15 +538,15 @@ export default function TemplateDetailPage() {
     return (
       <>
         <PageNav crumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Templates', href: '/dashboard/templates' },
-          { label: 'Error' },
+          { label: t('common:dashboard'), href: '/dashboard' },
+          { label: t('templates:templates'), href: '/dashboard/templates' },
+          { label: t('templates:error') },
         ]} />
         <EmptyState
           icon="⚠️"
-          title="Could not load template"
+          title={t('templates:couldNotLoad')}
           description={error}
-          actionLabel="Go back to templates"
+          actionLabel={t('templates:goBackToTemplates')}
           actionHref="/dashboard/templates"
         />
       </>
@@ -555,15 +557,15 @@ export default function TemplateDetailPage() {
     return (
       <>
         <PageNav crumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Templates', href: '/dashboard/templates' },
-          { label: 'Not found' },
+          { label: t('common:dashboard'), href: '/dashboard' },
+          { label: t('templates:templates'), href: '/dashboard/templates' },
+          { label: t('templates:notFoundCrumb') },
         ]} />
         <EmptyState
           icon="🔍"
-          title="Template not found"
-          description="This template could not be found or you don't have access to it."
-          actionLabel="Go back to templates"
+          title={t('templates:templateNotFound')}
+          description={t('templates:templateNotFoundBody')}
+          actionLabel={t('templates:goBackToTemplates')}
           actionHref="/dashboard/templates"
         />
       </>
@@ -577,8 +579,8 @@ export default function TemplateDetailPage() {
     return (
       <>
         <PageNav crumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Templates', href: '/dashboard/templates' },
+          { label: t('common:dashboard'), href: '/dashboard' },
+          { label: t('templates:templates'), href: '/dashboard/templates' },
           { label: template.name },
         ]} />
         <TemplateForm
@@ -703,7 +705,7 @@ export default function TemplateDetailPage() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
-              Edit
+              {t('common:edit')}
             </button>
             <button
               onClick={handleClone}
@@ -717,7 +719,7 @@ export default function TemplateDetailPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
               )}
-              Clone
+              {t('templates:clone')}
             </button>
             <button
               onClick={() => setConfirmDelete(true)}
@@ -726,7 +728,7 @@ export default function TemplateDetailPage() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
-              Delete
+              {t('common:delete')}
             </button>
           </div>
         </div>
@@ -735,11 +737,11 @@ export default function TemplateDetailPage() {
           <span className="badge badge-gold text-xs">{template.campaign}</span>
         )}
         <span className="text-xs text-muted ml-2">
-          Used {template.useCount} time{template.useCount !== 1 ? 's' : ''}
+          {t('templates:usedTime', { count: template.useCount })}
         </span>
         {template.isPublic && (
           <span className="badge text-xs ml-2" style={{ background: 'rgba(68,207,138,0.12)', color: '#44cf8a', border: '1px solid rgba(68,207,138,0.18)' }}>
-            Public
+            {t('common:public')}
           </span>
         )}
 
@@ -751,31 +753,27 @@ export default function TemplateDetailPage() {
 
         <div className="mt-4 pt-4 border-t border-border flex items-center justify-between text-xs text-muted">
           <span>
-            Created {new Date(template.createdAt).toLocaleDateString('en-US', {
-              month: 'long', day: 'numeric', year: 'numeric',
-            })}
+            {t('templates:createdDate', { date: new Date(template.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) })}
           </span>
           <span>
-            Updated {new Date(template.updatedAt).toLocaleDateString('en-US', {
-              month: 'long', day: 'numeric', year: 'numeric',
-            })}
+            {t('templates:updatedDate', { date: new Date(template.updatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) })}
           </span>
         </div>
       </div>
 
       {/* Feature summary */}
       <div className="card !p-6">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Template Features</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">{t('templates:templateFeatures')}</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <FeatureSummaryCard label="Attributes" count={attrCount} iconKey="attributes" />
-          <FeatureSummaryCard label="Skills" count={skillCount} iconKey="skills" />
-          <FeatureSummaryCard label="Custom Fields" count={fieldCount} iconKey="customfields" />
-          <FeatureSummaryCard label="Skill Profiles" count={profileCount} iconKey="profiles" />
-          <FeatureSummaryCard label="Core Resources" count={crCount} iconKey="coreResources" />
-          <FeatureSummaryCard label="Armor Classes" count={acCount} iconKey="armorClass" />
-          <FeatureSummaryCard label="Character Sections" count={sectionCount} iconKey="sections" />
-          <FeatureSummaryCard label="Resistances" count={resistCount} iconKey="resistances" />
+          <FeatureSummaryCard label={t('templates:featureAttributes')} count={attrCount} iconKey="attributes" />
+          <FeatureSummaryCard label={t('templates:featureSkills')} count={skillCount} iconKey="skills" />
+          <FeatureSummaryCard label={t('templates:featureCustomFields')} count={fieldCount} iconKey="customfields" />
+          <FeatureSummaryCard label={t('templates:featureSkillProfiles')} count={profileCount} iconKey="profiles" />
+          <FeatureSummaryCard label={t('templates:featureCoreResources')} count={crCount} iconKey="coreResources" />
+          <FeatureSummaryCard label={t('templates:featureArmorClasses')} count={acCount} iconKey="armorClass" />
+          <FeatureSummaryCard label={t('templates:featureCharacterSections')} count={sectionCount} iconKey="sections" />
+          <FeatureSummaryCard label={t('templates:featureResistances')} count={resistCount} iconKey="resistances" />
         </div>
 
       </div>
@@ -784,11 +782,13 @@ export default function TemplateDetailPage() {
       {confirmDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="card !p-6 max-w-md w-full mx-4 space-y-4">
-            <h3 className="text-lg font-semibold text-foreground">Delete Template</h3>
+            <h3 className="text-lg font-semibold text-foreground">{t('templates:deleteTemplate')}</h3>
             <p className="text-sm text-muted-foreground">
-              Are you sure you want to delete <strong className="text-foreground">{template.name}</strong>?
-              This action cannot be undone. Templates that are currently attached to adventures
-              cannot be deleted.
+              <Trans
+                i18nKey="templates:deleteConfirm"
+                values={{ name: template.name }}
+                components={[<strong key="name" className="text-foreground" />]}
+              />
             </p>
 
             {deleteError && (
@@ -802,7 +802,7 @@ export default function TemplateDetailPage() {
                 onClick={() => { setConfirmDelete(false); setDeleteError(null) }}
                 className="btn-ghost text-sm"
               >
-                Cancel
+                {t('common:cancel')}
               </button>
               <button
                 onClick={handleDelete}
@@ -812,10 +812,10 @@ export default function TemplateDetailPage() {
                 {deleting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-danger/30 border-t-danger rounded-full animate-spin" />
-                    Deleting...
+                    {t('templates:deleting')}
                   </>
                 ) : (
-                  'Delete'
+                  t('common:delete')
                 )}
               </button>
             </div>

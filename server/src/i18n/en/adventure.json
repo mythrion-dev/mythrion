@@ -1,0 +1,9 @@
+{
+  "notFound": "Adventure not found",
+  "notMemberAdventure": "You are not a member of this adventure",
+  "notFoundOrNotPublic": "Adventure not found or is not public",
+  "noTemplateAttached": "No template is attached to this adventure. Attach a template via the adventure settings first, then create NPCs.",
+  "npcNotFound": "NPC not found",
+  "npcNotBelong": "NPC does not belong to this adventure",
+  "notValidNpcSheet": "Not a valid NPC sheet"
+}

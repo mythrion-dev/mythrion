@@ -12,6 +12,8 @@ export function normalizeApiUrl(raw: string | undefined): string {
   return url
 }
 
+import i18n, { DEFAULT_LANGUAGE } from '@/i18n'
+
 export const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL)
 
 /**
@@ -52,6 +54,8 @@ async function request<T>(
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Accept-Language':
+      typeof window !== 'undefined' ? i18n.language : DEFAULT_LANGUAGE,
     ...(options.headers as Record<string, string> | undefined),
   }
 
@@ -270,6 +274,12 @@ export async function authFetch(
   }
 
   const headers = new Headers(init.headers)
+  if (!headers.has('Accept-Language')) {
+    headers.set(
+      'Accept-Language',
+      typeof window !== 'undefined' ? i18n.language : DEFAULT_LANGUAGE,
+    )
+  }
   if (token && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${token}`)
   }

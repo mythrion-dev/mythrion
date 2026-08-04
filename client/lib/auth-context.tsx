@@ -30,6 +30,7 @@ interface User {
   displayName: string | null
   onboardingComplete: boolean
   isAdmin: boolean
+  language: string
 }
 
 interface AuthState {

@@ -5,10 +5,13 @@ import {
 } from '@nestjs/common'
 import * as bcrypt from 'bcrypt'
 import { PrismaService } from '../prisma.service.js'
+import { I18nService } from 'nestjs-i18n'
 import { TokenService } from './token.service.js'
+import { LanguageService } from './language.service.js'
 import { LoginDto } from './dto/login.dto.js'
 import { RegisterDto } from './dto/register.dto.js'
 import { OnboardingDto } from './dto/onboarding.dto.js'
+import { Language } from './dto/language.dto.js'
 import { Request } from 'express'
 @Injectable()
 export class AuthService {
@@ -17,6 +20,8 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokenService: TokenService,
+    private readonly languageService: LanguageService,
+    private readonly i18n: I18nService,
   ) {}
 
   /** Lazily load geoip-lite only when first requested to avoid loading
@@ -29,12 +34,12 @@ export class AuthService {
     return this._geoip
   }
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, language?: Language) {
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
     })
     if (existing) {
-      throw new ConflictException('Email already registered')
+      throw new ConflictException(this.i18n.t('auth.emailRegistered'))
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12)
@@ -43,6 +48,7 @@ export class AuthService {
         email: dto.email,
         passwordHash,
         displayName: dto.displayName ?? null,
+        language: language ?? 'en',
       },
     })
 
@@ -54,18 +60,18 @@ export class AuthService {
       where: { email: dto.email },
     })
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials')
+      throw new UnauthorizedException(this.i18n.t('auth.invalidCredentials'))
     }
 
     if (!user.passwordHash) {
       throw new UnauthorizedException(
-        'This account uses a social login provider. Please sign in with Google.',
+        this.i18n.t('auth.socialLoginProvider'),
       )
     }
 
     const valid = await bcrypt.compare(dto.password, user.passwordHash)
     if (!valid) {
-      throw new UnauthorizedException('Invalid credentials')
+      throw new UnauthorizedException(this.i18n.t('auth.invalidCredentials'))
     }
 
     return this.tokenService.generateTokens(user.id, user.email)
@@ -97,9 +103,10 @@ export class AuthService {
       select: { id: true, email: true, displayName: true, onboardingComplete: true },
     })
     if (!user) {
-      throw new UnauthorizedException('User not found')
+      throw new UnauthorizedException(this.i18n.t('auth.userNotFound'))
     }
-    return user
+    const language = await this.languageService.getLanguage(userId)
+    return { ...user, language }
   }
 
   getRequestIp(req: Request) {

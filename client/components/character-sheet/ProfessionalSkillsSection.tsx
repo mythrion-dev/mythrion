@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, type SubmitEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
 import { Select } from '@/components/shared/Select'
 import type { ProfessionalSkill, SkillModifierProfile, SheetPermissions } from './types'
@@ -77,6 +78,7 @@ export function ProfessionalSkillsSection({
   onLocalSkillsChange,
 }: Props) {
   const canEdit = permissions.canEditProfessionalSkills
+  const { t } = useTranslation()
   const [skills, setSkills] = useState<ProfessionalSkill[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -381,14 +383,14 @@ export function ProfessionalSkillsSection({
     <div className="card !p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold">Professional Skills</h3>
+          <h3 className="font-semibold">{t('character:professionalSkills')}</h3>
           <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-primary/10 border border-primary/20 text-[0.65rem] font-medium text-primary">
             {skills.length}
           </span>
         </div>
         {canEdit && (
           <button onClick={openCreate} className="btn-primary text-sm">
-            + Add Professional Skill
+            {t('character:addProfessionalSkill')}
           </button>
         )}
       </div>
@@ -400,15 +402,15 @@ export function ProfessionalSkillsSection({
       )}
 
       {loading ? (
-        <p className="text-sm text-muted italic">Loading...</p>
+        <p className="text-sm text-muted italic">{t('common:loading')}</p>
       ) : skills.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
           <svg className="w-10 h-10 text-muted/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
           <div>
-            <p className="text-sm text-muted font-medium">No Professional Skills added yet.</p>
-            <p className="text-xs text-muted/60 mt-0.5">Click &apos;+ Add Professional Skill&apos; to create one.</p>
+            <p className="text-sm text-muted font-medium">{t('character:noProfessionalSkillsAddedYet')}</p>
+            <p className="text-xs text-muted/60 mt-0.5">{t('character:clickAddProfessionalSkill')}</p>
           </div>
         </div>
       ) : (
@@ -416,12 +418,12 @@ export function ProfessionalSkillsSection({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted uppercase tracking-wider">
-                <th className="py-2 pr-2 font-medium">Profession</th>
-                <th className="py-2 pr-2 font-medium">Attribute</th>
-                <th className="py-2 pr-2 font-medium text-right">Total</th>
-                <th className="py-2 pr-2 font-medium text-right">MOD</th>
-                <th className="py-2 pr-2 font-medium">Profile(s)</th>
-                {canEdit && <th className="py-2 font-medium text-right">Actions</th>}
+                <th className="py-2 pr-2 font-medium">{t('character:professionColumn')}</th>
+                <th className="py-2 pr-2 font-medium">{t('character:attribute')}</th>
+                <th className="py-2 pr-2 font-medium text-right">{t('character:total')}</th>
+                <th className="py-2 pr-2 font-medium text-right">{t('character:modColumn')}</th>
+                <th className="py-2 pr-2 font-medium">{t('character:profilesColumn')}</th>
+                {canEdit && <th className="py-2 font-medium text-right">{t('character:actions')}</th>}
               </tr>
             </thead>
             <tbody>
@@ -444,7 +446,7 @@ export function ProfessionalSkillsSection({
                         </td>
                         <td className="py-2 pr-2">
                           <Select
-                            options={[{ id: '', label: 'None' }, ...templateAttributes.map(attr => ({ id: attr.id, label: attr.name }))]}
+                            options={[{ id: '', label: t('common:none') }, ...templateAttributes.map(attr => ({ id: attr.id, label: attr.name }))]}
                             value={editAttributeId ?? ''}
                             onChange={val => setEditAttributeId(val)}
                             size="sm"
@@ -466,13 +468,13 @@ export function ProfessionalSkillsSection({
                               onClick={() => handleUpdate(skill.id)}
                               className="text-xs text-primary hover:text-primary/80 px-2 py-1 transition-colors"
                             >
-                              Save
+                              {t('common:save')}
                             </button>
                             <button
                               onClick={cancelEdit}
                               className="text-xs text-muted hover:text-foreground px-2 py-1 transition-colors"
                             >
-                              Cancel
+                              {t('common:cancel')}
                             </button>
                           </div>
                         </td>
@@ -499,13 +501,13 @@ export function ProfessionalSkillsSection({
                                 onClick={() => startEdit(skill)}
                                 className="text-xs text-primary hover:text-primary/80 px-2 py-1 transition-colors"
                               >
-                                Edit
+                                {t('common:edit')}
                               </button>
                               <button
                                 onClick={() => handleDelete(skill.id)}
                                 className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors"
                               >
-                                Delete
+                                {t('common:delete')}
                               </button>
                             </div>
                           </td>
@@ -527,15 +529,15 @@ export function ProfessionalSkillsSection({
             onSubmit={handleCreate}
             className="bg-surface border border-border rounded-xl shadow-xl p-6 w-full max-w-md space-y-4"
           >
-            <h4 className="text-sm font-semibold">Add Professional Skill</h4>
+            <h4 className="text-sm font-semibold">{t('character:addProfessionalSkillTitle')}</h4>
 
             <div>
-              <label className="label">Profession Name</label>
+              <label className="label">{t('character:professionName')}</label>
               <input
                 className="input-field"
                 value={createName}
                 onChange={e => setCreateName(e.target.value)}
-                placeholder="e.g. Blacksmith"
+                placeholder={t('character:professionNamePlaceholder')}
                 maxLength={100}
                 required
                 autoFocus
@@ -543,9 +545,9 @@ export function ProfessionalSkillsSection({
             </div>
 
             <div>
-              <label className="label">Attribute</label>
+              <label className="label">{t('character:attribute')}</label>
               <Select
-                options={[{ id: '', label: 'None' }, ...templateAttributes.map(attr => ({ id: attr.id, label: attr.name }))]}
+                options={[{ id: '', label: t('common:none') }, ...templateAttributes.map(attr => ({ id: attr.id, label: attr.name }))]}
                 value={createAttributeId ?? ''}
                 onChange={val => setCreateAttributeId(val)}
                 size="md"
@@ -556,7 +558,7 @@ export function ProfessionalSkillsSection({
             {/* Profile selections in create modal */}
             {allProfiles.length > 0 && (
               <div>
-                <label className="label mb-1 block">Modifier Profiles (optional)</label>
+                <label className="label mb-1 block">{t('character:modifierProfilesOptional')}</label>
                 <div className="space-y-2">
                   {allProfiles.map(profile => (
                     <div key={profile.id} className="flex items-center gap-2">
@@ -587,14 +589,14 @@ export function ProfessionalSkillsSection({
                 disabled={saving}
                 className="btn-ghost text-sm"
               >
-                Cancel
+                {t('common:cancel')}
               </button>
               <button
                 type="submit"
                 disabled={saving || !createName.trim()}
                 className="btn-primary text-sm"
               >
-                {saving ? 'Adding...' : 'Add'}
+                {saving ? t('character:adding') : t('common:add')}
               </button>
             </div>
           </form>
@@ -604,9 +606,7 @@ export function ProfessionalSkillsSection({
       {/* ── Helper text ── */}
       {skills.length > 0 && (
         <p className="text-xs text-muted mt-3">
-          Professional Skills use the selected attribute&apos;s modifier plus any Modifier Profile bonuses.
-          Choose which attribute to use for each skill and select matching profiles. All calculations
-          follow the rules defined by the GM.
+          {t('character:professionalSkillsHelper')}
         </p>
       )}
     </div>

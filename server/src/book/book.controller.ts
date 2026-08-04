@@ -15,6 +15,7 @@ import {
   Logger,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
+import { I18nService } from 'nestjs-i18n'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { BookService } from './book.service.js'
 import { parseRange } from './range-parser.js'
@@ -27,7 +28,10 @@ import type { Response, Request } from 'express'
 export class BookController {
   private readonly logger = new Logger(BookController.name)
 
-  constructor(private readonly bookService: BookService) {}
+  constructor(
+    private readonly bookService: BookService,
+    private readonly i18n: I18nService,
+  ) {}
 
   /**
    * GET /api/adventures/:adventureId/books
@@ -67,7 +71,7 @@ export class BookController {
     @Body() dto: CreateBookDto,
   ) {
     if (!file) {
-      throw new NotFoundException('No file provided')
+      throw new NotFoundException(this.i18n.t('book.noFileProvided'))
     }
 
     const userId = (req as any).user?.sub
@@ -186,7 +190,7 @@ export class BookController {
     @UploadedFile() file: Express.Multer.File | undefined,
   ) {
     if (!file) {
-      throw new NotFoundException('No file provided')
+      throw new NotFoundException(this.i18n.t('book.noFileProvided'))
     }
 
     const userId = (req as any).user?.sub

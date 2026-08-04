@@ -1,0 +1,15 @@
+{
+  "adventureNotFound": "Adventure not found",
+  "campaignAlreadyHasTemplate": "This campaign already has an attached template. Use the replace endpoint to change it.",
+  "campaignHasTemplateDetachFirst": "This campaign already has an attached template. Detach it first before creating a campaign-owned template.",
+  "campaignOwnedTemplates": "This campaign has campaign-owned templates. Remove them first before attaching a template.",
+  "deleteInUse": "Cannot delete template: {sheetCount} character sheet(s) still reference it. Remove or reassign all sheets first.",
+  "noAccess": "You do not have access to this template",
+  "noClonePermission": "You do not have permission to clone this template",
+  "notFound": "Template not found",
+  "notFoundOrNotPublic": "Template not found or is not public",
+  "notMemberAdventure": "You are not a member of this adventure",
+  "ownerOnlyDelete": "Only the template owner can delete this template",
+  "ownerOnlyUpdate": "Only the template owner can update this template",
+  "ownerOnlyVisibility": "Only the template owner can change visibility"
+}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import { NumericInput } from '@/components/shared/NumericInput'
 import type { SheetPermissions } from './types'
@@ -24,6 +25,7 @@ export function CoreResourceCard({ resource, value, permissions, onSave, onModif
   onSave: (coreResourceId: string, field: 'current' | 'maximum' | 'notes', val: string) => Promise<void>
   onModify?: (coreResourceId: string, delta: number) => void
 }) {
+  const { t } = useTranslation()
   const [modifier, setModifier] = useState(0)
   const canEdit = permissions.canEditResources && resource.editableByPlayer
 
@@ -33,13 +35,13 @@ export function CoreResourceCard({ resource, value, permissions, onSave, onModif
         {resource.displayName}
         {resource.showNotes && (
           permissions.canEditResources
-            ? <InlineText value={value.notes ?? ''} onSave={(v) => onSave(value.coreResourceId, 'notes', v)} placeholder="notes..." emptyDisplay="add notes" className="!text-xs !text-muted !font-normal" />
+            ? <InlineText value={value.notes ?? ''} onSave={(v) => onSave(value.coreResourceId, 'notes', v)} placeholder={t('character:coreResourceNotesPlaceholder')} emptyDisplay={t('character:addNotesPlaceholder')} className="!text-xs !text-muted !font-normal" />
             : value.notes && <span className="text-xs text-muted font-normal">— {value.notes}</span>
         )}
       </h3>
       <div className="flex items-center justify-between gap-3">
         <div className="text-center">
-          <span className="text-muted text-xs block">Current</span>
+          <span className="text-muted text-xs block">{t('character:current')}</span>
           {canEdit
             ? <InlineNumber value={value.current ?? 0} onSave={(v) => onSave(value.coreResourceId, 'current', String(v))} min={0} className="text-xl font-bold text-foreground" />
             : <span className="text-xl font-bold text-foreground">{value.current ?? '—'}</span>
@@ -47,7 +49,7 @@ export function CoreResourceCard({ resource, value, permissions, onSave, onModif
         </div>
         <span className="text-muted text-lg">/</span>
         <div className="text-center">
-          <span className="text-muted text-xs block">Max</span>
+          <span className="text-muted text-xs block">{t('character:max')}</span>
           {canEdit
             ? <InlineNumber value={value.maximum ?? 0} onSave={(v) => onSave(value.coreResourceId, 'maximum', String(v))} min={0} className="text-xl font-bold text-foreground" />
             : <span className="text-xl font-bold text-foreground">{value.maximum ?? '—'}</span>
@@ -69,11 +71,11 @@ export function CoreResourceCard({ resource, value, permissions, onSave, onModif
       {canEdit && onModify && (
         <div className="space-y-2 pt-2 border-t border-border">
           <div className="flex items-center gap-2">
-            <NumericInput min={0} className="py-1 text-xs flex-1" inputClassName="!px-2 !py-1" wrapperClassName="flex-1" value={modifier || ''} placeholder="Amount" onChange={e => setModifier(Number.parseInt(e.target.value, 10) || 0)} />
+            <NumericInput min={0} className="py-1 text-xs flex-1" inputClassName="!px-2 !py-1" wrapperClassName="flex-1" value={modifier || ''} placeholder={t('character:amount')} onChange={e => setModifier(Number.parseInt(e.target.value, 10) || 0)} />
           </div>
           <div className="flex gap-2">
-            <button type="button" onClick={() => { onModify(value.coreResourceId, Math.abs(modifier)); setModifier(0) }} disabled={!modifier} className="btn-primary text-xs flex-1 py-1">+ Heal / Recover</button>
-            <button type="button" onClick={() => { onModify(value.coreResourceId, -Math.abs(modifier)); setModifier(0) }} disabled={!modifier} className="btn-danger text-xs flex-1 py-1">− Damage / Lose</button>
+            <button type="button" onClick={() => { onModify(value.coreResourceId, Math.abs(modifier)); setModifier(0) }} disabled={!modifier} className="btn-primary text-xs flex-1 py-1">{t('character:healRecover')}</button>
+            <button type="button" onClick={() => { onModify(value.coreResourceId, -Math.abs(modifier)); setModifier(0) }} disabled={!modifier} className="btn-danger text-xs flex-1 py-1">{t('character:damageLose')}</button>
           </div>
         </div>
       )}

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { useSubscription } from '@/lib/subscription-context'
+import { useTranslation } from 'react-i18next'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -27,6 +28,7 @@ interface TemplateSummary {
 
 export default function DashboardTemplatesPage() {
   const { hasActiveSubscription } = useSubscription()
+  const { t } = useTranslation()
   const router = useRouter()
   const [templates, setTemplates] = useState<TemplateSummary[]>([])
   const [fetching, setFetching] = useState(true)
@@ -39,7 +41,7 @@ export default function DashboardTemplatesPage() {
       const data = await api.get<TemplateSummary[]>('/templates')
       setTemplates(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load templates')
+      setError(err instanceof Error ? err.message : t('templates:failedToLoad'))
     } finally {
       setFetching(false)
     }
@@ -53,15 +55,15 @@ export default function DashboardTemplatesPage() {
     <>
       <PageHeader
         icon="📄"
-        title="My Templates"
-        subtitle="Your personal template library — create, edit, and reuse character sheet templates across adventures."
+        title={t('common:myTemplates')}
+        subtitle={t('templates:myTemplatesSubtitle')}
         actions={
           hasActiveSubscription ? (
             <Link href="/dashboard/templates/new" className="btn-primary text-sm">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              <span className="hidden sm:inline">New Template</span>
+              <span className="hidden sm:inline">{t('templates:newTemplate')}</span>
             </Link>
           ) : (
             <Link
@@ -71,7 +73,7 @@ export default function DashboardTemplatesPage() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              <span className="hidden sm:inline">Upgrade to Create</span>
+              <span className="hidden sm:inline">{t('templates:upgradeToCreate')}</span>
             </Link>
           )
         }
@@ -85,7 +87,7 @@ export default function DashboardTemplatesPage() {
         <div className="flex flex-col items-center justify-center py-8 space-y-4">
           <p className="text-sm text-red-400">{error}</p>
           <button onClick={fetchTemplates} className="btn-primary">
-            Try Again
+            {t('templates:tryAgain')}
           </button>
         </div>
       )}
@@ -94,9 +96,9 @@ export default function DashboardTemplatesPage() {
       {!fetching && !error && templates.length === 0 && (
         <EmptyState
           icon="📄"
-          title="No templates yet"
-          description={hasActiveSubscription ? "Templates let you define character sheets with attributes, skills, and more. Create your first template to get started." : "Upgrade to a paid plan to create your own templates."}
-          actionLabel={hasActiveSubscription ? "Create your first template" : "View Plans →"}
+          title={t('templates:noTemplatesYet')}
+          description={hasActiveSubscription ? t('templates:emptyDescriptionSubscribed') : t('templates:emptyDescriptionFree')}
+          actionLabel={hasActiveSubscription ? t('templates:createFirstTemplate') : t('templates:viewPlansArrow')}
           actionHref={hasActiveSubscription ? "/dashboard/templates/new" : "/pricing"}
         />
       )}

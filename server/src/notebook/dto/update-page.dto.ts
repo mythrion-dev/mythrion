@@ -1,19 +1,20 @@
 import { IsString, IsOptional, IsInt } from 'class-validator'
+import { i18nValidationMessage } from 'nestjs-i18n'
 
 export class UpdatePageDto {
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   title?: string
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   content?: string
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   folderId?: string | null
 
-  @IsInt()
+  @IsInt({ message: i18nValidationMessage('validation.isInt') })
   @IsOptional()
   sortOrder?: number
 }

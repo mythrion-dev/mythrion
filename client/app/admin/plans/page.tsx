@@ -10,6 +10,7 @@ import {
   type UpdatePlanPayload,
 } from '@/lib/subscription-admin-api'
 import type { Plan } from '@/lib/subscription-api'
+import { useTranslation } from 'react-i18next'
 
 /* ---------- helpers ---------- */
 function formatBRL(cents: number) {
@@ -64,6 +65,7 @@ function formFromPlan(plan: Plan): PlanFormData {
 
 /* ---------- page ---------- */
 export default function AdminPlansPage() {
+  const { t } = useTranslation()
   const [plans, setPlans] = useState<Plan[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -89,11 +91,11 @@ export default function AdminPlansPage() {
       const data = await adminFetchPlans()
       setPlans(data)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to load plans')
+      setError(err instanceof Error ? err.message : t('billing:failedLoadPlans'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     loadPlans()
@@ -136,15 +138,15 @@ export default function AdminPlansPage() {
 
     // Validate
     if (editingId === 'new') {
-      if (!form.id.trim()) { setFormError('ID é obrigatório'); return }
-      if (!form.slug.trim()) { setFormError('Slug é obrigatório'); return }
+      if (!form.id.trim()) { setFormError(t('billing:idRequired')); return }
+      if (!form.slug.trim()) { setFormError(t('billing:slugRequired')); return }
     }
-    if (!form.name.trim()) { setFormError('Nome é obrigatório'); return }
-    if (!form.price.trim()) { setFormError('Preço é obrigatório'); return }
-    if (!form.pgPlanId.trim()) { setFormError('ID do plano no PagBank é obrigatório'); return }
+    if (!form.name.trim()) { setFormError(t('billing:nameRequired')); return }
+    if (!form.price.trim()) { setFormError(t('billing:priceRequired')); return }
+    if (!form.pgPlanId.trim()) { setFormError(t('billing:pagbankPlanIdRequired')); return }
 
     const price = parseBRLtoCents(form.price)
-    if (price <= 0) { setFormError('Preço deve ser maior que zero'); return }
+    if (price <= 0) { setFormError(t('billing:priceMustBePositive')); return }
 
     setSaving(true)
     try {
@@ -173,11 +175,11 @@ export default function AdminPlansPage() {
       }
       cancelForm()
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : 'Erro ao salvar')
+      setFormError(err instanceof Error ? err.message : t('billing:saveError'))
     } finally {
       setSaving(false)
     }
-  }, [editingId, form, cancelForm])
+  }, [editingId, form, cancelForm, t])
 
   // ----- Delete -----
   const handleDelete = useCallback(async () => {
@@ -189,11 +191,11 @@ export default function AdminPlansPage() {
       setPlans((prev) => prev.filter((p) => p.id !== deletingId))
       setDeletingId(null)
     } catch (err: unknown) {
-      setDeleteError(err instanceof Error ? err.message : 'Erro ao excluir')
+      setDeleteError(err instanceof Error ? err.message : t('billing:deleteError'))
     } finally {
       setDeleteLoading(false)
     }
-  }, [deletingId])
+  }, [deletingId, t])
 
   // ----- Loading state -----
   if (loading) {
@@ -215,7 +217,7 @@ export default function AdminPlansPage() {
         </div>
         <p className="text-muted-foreground text-sm mb-4">{error}</p>
         <button onClick={loadPlans} className="px-4 py-2 rounded-lg bg-primary text-background text-sm font-semibold hover:opacity-90 transition-opacity">
-          Tentar novamente
+          {t('billing:tryAgain')}
         </button>
       </div>
     )
@@ -226,9 +228,9 @@ export default function AdminPlansPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Planos</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t('billing:plans')}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Gerencie os planos de assinatura da plataforma.
+            {t('billing:plansSubtitle')}
           </p>
         </div>
         <button
@@ -236,7 +238,7 @@ export default function AdminPlansPage() {
           disabled={editingId === 'new'}
           className="px-4 py-2 rounded-lg bg-primary text-background text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Novo Plano
+          {t('billing:newPlan')}
         </button>
       </div>
 
@@ -244,71 +246,71 @@ export default function AdminPlansPage() {
       {editingId && (
         <div className="bg-surface border border-border rounded-xl p-6 mb-6">
           <h2 className="text-lg font-semibold text-foreground mb-4">
-            {editingId === 'new' ? 'Novo Plano' : 'Editar Plano'}
+            {editingId === 'new' ? t('billing:newPlan') : t('billing:editPlan')}
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {editingId === 'new' && (
               <>
                 <div>
-                  <div className="block text-sm font-medium text-foreground mb-1">ID *</div>
+                  <div className="block text-sm font-medium text-foreground mb-1">{t('billing:idField')}</div>
                   <input
                     type="text"
                     value={form.id}
                     onChange={(e) => setForm((f) => ({ ...f, id: e.target.value }))}
-                    placeholder="Ex: monthly, annual, premium..."
+                    placeholder={t('billing:idPlaceholder')}
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
                 <div>
-                  <div className="block text-sm font-medium text-foreground mb-1">Slug *</div>
+                  <div className="block text-sm font-medium text-foreground mb-1">{t('billing:slugField')}</div>
                   <input
                     type="text"
                     value={form.slug}
                     onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
-                    placeholder="Ex: monthly, annual"
+                    placeholder={t('billing:slugPlaceholder')}
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
               </>
             )}
             <div className={editingId !== 'new' ? 'md:col-span-2' : ''}>
-              <div className="block text-sm font-medium text-foreground mb-1">Nome *</div>
+              <div className="block text-sm font-medium text-foreground mb-1">{t('billing:nameLabel')}</div>
               <input
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="Ex: Mensal, Anual"
+                placeholder={t('billing:namePlaceholder')}
                 className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
             <div className="md:col-span-2">
-              <div className="block text-sm font-medium text-foreground mb-1">Descrição</div>
+              <div className="block text-sm font-medium text-foreground mb-1">{t('common:description')}</div>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="Descrição opcional do plano..."
+                placeholder={t('billing:descriptionPlaceholder')}
                 rows={2}
                 className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
               />
             </div>
             <div>
-              <div className="block text-sm font-medium text-foreground mb-1">Preço (R$) *</div>
+              <div className="block text-sm font-medium text-foreground mb-1">{t('billing:priceLabel')}</div>
               <input
                 type="text"
                 value={form.price}
                 onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
-                placeholder="Ex: 120,00"
+                placeholder={t('billing:pricePlaceholder')}
                 className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
             <div>
-              <div className="block text-sm font-medium text-foreground mb-1">ID do Plano (PagBank) *</div>
+              <div className="block text-sm font-medium text-foreground mb-1">{t('billing:pagbankPlanIdField')}</div>
               <input
                 type="text"
                 value={form.pgPlanId}
                 onChange={(e) => setForm((f) => ({ ...f, pgPlanId: e.target.value }))}
-                placeholder="ID do plano no PagBank"
+                placeholder={t('billing:pagbankPlanIdPlaceholder')}
                 className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
@@ -324,14 +326,14 @@ export default function AdminPlansPage() {
               disabled={saving}
               className="px-6 py-2 rounded-lg bg-primary text-background text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {saving ? 'Salvando...' : 'Salvar'}
+              {saving ? t('billing:saving') : t('common:save')}
             </button>
             <button
               onClick={cancelForm}
               disabled={saving}
               className="px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
             >
-              Cancelar
+              {t('common:cancel')}
             </button>
           </div>
         </div>
@@ -340,12 +342,12 @@ export default function AdminPlansPage() {
       {/* Plans table */}
       {plans.length === 0 ? (
         <div className="text-center py-16 bg-surface border border-border rounded-xl">
-          <p className="text-muted-foreground text-sm">Nenhum plano cadastrado.</p>
+          <p className="text-muted-foreground text-sm">{t('billing:noPlansRegistered')}</p>
           <button
             onClick={startCreate}
             className="mt-4 px-4 py-2 rounded-lg bg-primary text-background text-sm font-semibold hover:opacity-90 transition-opacity"
           >
-            Criar primeiro plano
+            {t('billing:createFirstPlan')}
           </button>
         </div>
       ) : (
@@ -353,12 +355,12 @@ export default function AdminPlansPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                <th className="text-left py-3 px-2 text-muted-foreground font-medium">ID</th>
-                <th className="text-left py-3 px-2 text-muted-foreground font-medium">Slug</th>
-                <th className="text-left py-3 px-2 text-muted-foreground font-medium">Nome</th>
-                <th className="text-right py-3 px-2 text-muted-foreground font-medium">Preço</th>
-                <th className="text-left py-3 px-2 text-muted-foreground font-medium">PagBank Plan ID</th>
-                <th className="text-right py-3 px-2 text-muted-foreground font-medium">Ações</th>
+                <th className="text-left py-3 px-2 text-muted-foreground font-medium">{t('billing:idColumn')}</th>
+                <th className="text-left py-3 px-2 text-muted-foreground font-medium">{t('billing:slugColumn')}</th>
+                <th className="text-left py-3 px-2 text-muted-foreground font-medium">{t('billing:nameColumn')}</th>
+                <th className="text-right py-3 px-2 text-muted-foreground font-medium">{t('billing:priceColumn')}</th>
+                <th className="text-left py-3 px-2 text-muted-foreground font-medium">{t('billing:pagbankPlanIdColumn')}</th>
+                <th className="text-right py-3 px-2 text-muted-foreground font-medium">{t('billing:actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -374,7 +376,7 @@ export default function AdminPlansPage() {
                       <button
                         onClick={() => handleCopy(plan.pgPlanId)}
                         className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
-                        title="Copiar PagBank Plan ID"
+                        title={t('billing:copyPagbankPlanIdTitle')}
                       >
                         {copiedId === plan.pgPlanId ? (
                           <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -395,14 +397,14 @@ export default function AdminPlansPage() {
                         disabled={editingId !== null}
                         className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground hover:bg-surface transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       >
-                        Editar
+                        {t('common:edit')}
                       </button>
                       <button
                         onClick={() => setDeletingId(plan.id)}
                         disabled={editingId !== null}
                         className="px-3 py-1.5 rounded-lg border border-red-500/30 text-xs text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       >
-                        Excluir
+                        {t('common:delete')}
                       </button>
                     </div>
                   </td>
@@ -417,9 +419,9 @@ export default function AdminPlansPage() {
       {deletingId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-surface border border-border rounded-xl p-6 max-w-sm w-full mx-4">
-            <h3 className="text-lg font-semibold text-foreground mb-2">Excluir plano</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-2">{t('billing:deletePlanTitle')}</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Tem certeza que deseja excluir este plano? Esta ação não pode ser desfeita.
+              {t('billing:deletePlanConfirmMessage')}
             </p>
 
             {deleteError && (
@@ -432,14 +434,14 @@ export default function AdminPlansPage() {
                 disabled={deleteLoading}
                 className="flex-1 px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {deleteLoading ? 'Excluindo...' : 'Excluir'}
+                {deleteLoading ? t('billing:deleting') : t('common:delete')}
               </button>
               <button
                 onClick={() => { setDeletingId(null); setDeleteError(null) }}
                 disabled={deleteLoading}
                 className="flex-1 px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
               >
-                Cancelar
+                {t('common:cancel')}
               </button>
             </div>
           </div>
