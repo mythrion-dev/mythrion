@@ -138,6 +138,23 @@ describe('LanguageSwitcher', () => {
     })
   })
 
+  it('renders icon-only trigger in compact mode', () => {
+    render(<LanguageSwitcher compact />)
+    const trigger = screen.getByRole('button', { name: 'Language' })
+    expect(trigger).not.toHaveTextContent('English')
+    expect(trigger).toHaveTextContent('🇺🇸')
+  })
+
+  it('compact mode still opens the dropdown with both options', () => {
+    render(<LanguageSwitcher compact />)
+    openDropdown()
+
+    const options = screen.getAllByRole('option')
+    expect(options).toHaveLength(2)
+    expect(options[0]).toHaveTextContent('English')
+    expect(options[1]).toHaveTextContent('Português')
+  })
+
   it('toggles the dropdown on repeated trigger clicks', () => {
     render(<LanguageSwitcher />)
     const trigger = screen.getByRole('button', { name: 'Language' })

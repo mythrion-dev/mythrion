@@ -15,7 +15,7 @@ const OPTIONS: ReadonlyArray<{ code: Language; flag: string; labelKey: 'common:e
   { code: 'pt-BR', flag: '🇧🇷', labelKey: 'common:portuguese' },
 ]
 
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
@@ -62,20 +62,26 @@ export function LanguageSwitcher() {
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={t('common:language')}
-        className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted hover:text-foreground hover:bg-background/40 transition-colors"
+        className={`flex items-center rounded-lg text-sm text-muted hover:text-foreground hover:bg-background/40 transition-colors ${
+          compact ? 'w-8 h-8 justify-center px-0 py-0' : 'gap-2 px-2 py-1.5'
+        }`}
       >
         <span aria-hidden="true">{currentOption.flag}</span>
-        <span className="hidden sm:inline">{t(currentOption.labelKey)}</span>
-        <svg
-          className={`w-3 h-3 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-          aria-hidden="true"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
+        {!compact && (
+          <>
+            <span className="hidden sm:inline">{t(currentOption.labelKey)}</span>
+            <svg
+              className={`w-3 h-3 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </>
+        )}
       </button>
 
       {open && (

@@ -8,6 +8,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 
 function formatPrice(cents: number): string {
   return (cents / 100).toLocaleString('pt-BR', {
@@ -92,6 +93,7 @@ export default function PricingPage() {
           </Link>
 
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             {user ? (
               <Link href="/dashboard" className="text-sm text-muted hover:text-foreground transition-colors">
                 {t('common:dashboard')}

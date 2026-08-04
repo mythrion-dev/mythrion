@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 
 export default function HomePage() {
   const { user, loading } = useAuth()
@@ -62,6 +63,7 @@ export default function HomePage() {
           </Link>
 
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             <Link href="#features" className="hidden text-sm text-muted transition-colors hover:text-foreground sm:inline-flex">
               {t('dashboard:features')}
             </Link>

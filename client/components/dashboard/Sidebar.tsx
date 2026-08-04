@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useSubscription } from '@/lib/subscription-context'
 import { useTranslation } from 'react-i18next'
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 
 function getInitials(name: string | null): string {
   if (!name) return '?'
@@ -256,6 +257,7 @@ export function Sidebar() {
             </svg>
           </Link>
         )}
+        <LanguageSwitcher compact={collapsed} />
         <button
           onClick={handleLogout}
           className={`btn-ghost text-xs ${collapsed ? 'w-8 h-8 flex items-center justify-center p-0' : 'w-full justify-start'}`}
