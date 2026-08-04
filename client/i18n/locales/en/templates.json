@@ -2,6 +2,7 @@
   "attrCount": "{{count}} attr",
   "campaigns": "Campaigns",
   "clone": "Clone",
+  "cloneSuffix": "{{name}} (Copy)",
   "couldNotLoad": "Could not load template",
   "createFirstTemplate": "Create your first template",
   "createdDate": "Created {{date}}",

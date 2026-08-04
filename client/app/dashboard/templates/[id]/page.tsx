@@ -65,7 +65,7 @@ interface StandaloneTemplate {
 
 export default function TemplateDetailPage() {
   const router = useRouter()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const params = useParams()
   const id = params.id as string
 
@@ -328,7 +328,7 @@ export default function TemplateDetailPage() {
     setCloneError(null)
     try {
       const cloned = await api.post<StandaloneTemplate>(`/templates/${template.id}/clone`, {
-        name: `${template.name} (Copy)`,
+        name: t('templates:cloneSuffix', { name: template.name }),
       })
       router.push(`/dashboard/templates/${cloned.id}`)
     } catch (err) {
@@ -683,8 +683,8 @@ export default function TemplateDetailPage() {
   return (
     <>
       <PageNav crumbs={[
-        { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Templates', href: '/dashboard/templates' },
+        { label: t('common:dashboard'), href: '/dashboard' },
+        { label: t('templates:templates'), href: '/dashboard/templates' },
         { label: template.name },
       ]} />
 
@@ -753,10 +753,10 @@ export default function TemplateDetailPage() {
 
         <div className="mt-4 pt-4 border-t border-border flex items-center justify-between text-xs text-muted">
           <span>
-            {t('templates:createdDate', { date: new Date(template.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) })}
+            {t('templates:createdDate', { date: new Date(template.createdAt).toLocaleDateString(i18n.language, { month: 'long', day: 'numeric', year: 'numeric' }) })}
           </span>
           <span>
-            {t('templates:updatedDate', { date: new Date(template.updatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) })}
+            {t('templates:updatedDate', { date: new Date(template.updatedAt).toLocaleDateString(i18n.language, { month: 'long', day: 'numeric', year: 'numeric' }) })}
           </span>
         </div>
       </div>

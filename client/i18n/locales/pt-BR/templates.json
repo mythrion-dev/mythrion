@@ -3,6 +3,7 @@
   "attrCount_other": "{{count}} atributos",
   "campaigns": "Campanhas",
   "clone": "Clonar",
+  "cloneSuffix": "{{name}} (Cópia)",
   "couldNotLoad": "Não foi possível carregar o modelo",
   "createFirstTemplate": "Crie seu primeiro modelo",
   "createdDate": "Criado em {{date}}",
