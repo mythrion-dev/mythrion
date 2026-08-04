@@ -282,3 +282,13 @@ export type UserSubscription = Prisma.UserSubscriptionModel
  * 
  */
 export type SubscriptionInvoice = Prisma.SubscriptionInvoiceModel
+/**
+ * Model TwoFactorChallenge
+ * 
+ */
+export type TwoFactorChallenge = Prisma.TwoFactorChallengeModel
+/**
+ * Model RecoveryCode
+ * 
+ */
+export type RecoveryCode = Prisma.RecoveryCodeModel

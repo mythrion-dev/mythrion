@@ -8,6 +8,7 @@ import { AuthService } from './auth.service.js'
 import { PrismaService } from '../prisma.service.js'
 import { TokenService } from './token.service.js'
 import { LanguageService } from './language.service.js'
+import { TwoFactorService } from './two-factor.service.js'
 import { createMockPrismaService } from '../__mocks__/prisma-service.mock'
 import { I18nService } from 'nestjs-i18n'
 import { createI18nServiceMock } from '../i18n/i18n-testing.js'
@@ -26,6 +27,7 @@ describe('AuthService', () => {
   let mockPrisma: ReturnType<typeof createMockPrismaService>
   let mockTokenService: Record<string, jest.Mock>
   let mockLanguageService: Record<string, jest.Mock>
+  let mockTwoFactor: Record<string, jest.Mock>
 
   const mockUser = {
     id: 'user-1',
@@ -33,6 +35,7 @@ describe('AuthService', () => {
     passwordHash: 'hashed-password',
     displayName: 'Test User',
     onboardingComplete: false,
+    twoFactorEnabled: false,
   }
 
   beforeEach(async () => {
@@ -55,6 +58,14 @@ describe('AuthService', () => {
       updateLanguage: jest.fn().mockResolvedValue('en'),
       getLanguage: jest.fn().mockResolvedValue('en'),
     }
+    mockTwoFactor = {
+      issueChallenge: jest.fn().mockResolvedValue({ twoFactorId: 'challenge-1' }),
+      maskEmail: jest.fn().mockReturnValue('tes***@test.com'),
+      verifyChallenge: jest.fn().mockResolvedValue({ userId: 'user-1', email: 'test@test.com' }),
+      resendLoginCode: jest.fn().mockResolvedValue({ twoFactorId: 'challenge-2' }),
+      enable: jest.fn().mockResolvedValue({ recoveryCodes: ['AAAA', 'BBBB'] }),
+      disable: jest.fn().mockResolvedValue({ success: true }),
+    }
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -62,6 +73,7 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: TokenService, useValue: mockTokenService },
         { provide: LanguageService, useValue: mockLanguageService },
+        { provide: TwoFactorService, useValue: mockTwoFactor },
         { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     }).compile()
@@ -174,6 +186,111 @@ describe('AuthService', () => {
         service.login({ email: 'social@test.com', password: 'password123' }),
       ).rejects.toThrow(UnauthorizedException)
     })
+
+    it('should issue a LOGIN challenge and return requiresTwoFactor for 2FA users', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        twoFactorEnabled: true,
+      })
+      ;(bcrypt.compare as jest.Mock).mockResolvedValue(true)
+      mockTwoFactor.issueChallenge.mockResolvedValue({ twoFactorId: 'challenge-1' })
+      mockTwoFactor.maskEmail.mockReturnValue('tes***@test.com')
+
+      const result = await service.login({
+        email: 'test@test.com',
+        password: 'password123',
+      })
+
+      expect(mockTwoFactor.issueChallenge).toHaveBeenCalledWith('user-1', 'LOGIN')
+      expect(mockTwoFactor.maskEmail).toHaveBeenCalledWith('test@test.com')
+      expect(mockTokenService.generateTokens).not.toHaveBeenCalled()
+      expect(result).toEqual({
+        requiresTwoFactor: true,
+        twoFactorId: 'challenge-1',
+        emailMasked: 'tes***@test.com',
+      })
+    })
+  })
+
+  describe('two factor', () => {
+    it('should verify a challenge and return tokens', async () => {
+      mockTwoFactor.verifyChallenge.mockResolvedValue({
+        userId: 'user-1',
+        email: 'test@test.com',
+      })
+
+      const result = await service.verifyTwoFactor({
+        twoFactorId: 'challenge-1',
+        code: '123456',
+      })
+
+      expect(mockTwoFactor.verifyChallenge).toHaveBeenCalledWith(
+        'challenge-1',
+        '123456',
+        'LOGIN',
+      )
+      expect(mockTokenService.generateTokens).toHaveBeenCalledWith(
+        'user-1',
+        'test@test.com',
+      )
+      expect(result).toEqual({
+        accessToken: 'mock-access',
+        refreshToken: 'mock-refresh',
+      })
+    })
+
+    it('should resend a login code', async () => {
+      const result = await service.resendTwoFactorCode({
+        twoFactorId: 'challenge-1',
+      })
+
+      expect(mockTwoFactor.resendLoginCode).toHaveBeenCalledWith('challenge-1')
+      expect(result).toEqual({ twoFactorId: 'challenge-2' })
+    })
+
+    it('should send a two-factor code for ENABLE', async () => {
+      await service.sendTwoFactorCode('user-1', 'ENABLE')
+
+      expect(mockTwoFactor.issueChallenge).toHaveBeenCalledWith('user-1', 'ENABLE')
+    })
+
+    it('should send a two-factor code for DISABLE', async () => {
+      await service.sendTwoFactorCode('user-1', 'DISABLE')
+
+      expect(mockTwoFactor.issueChallenge).toHaveBeenCalledWith('user-1', 'DISABLE')
+    })
+
+    it('should confirm ENABLE and return recovery codes', async () => {
+      mockTwoFactor.enable.mockResolvedValue({ recoveryCodes: ['AAAA', 'BBBB'] })
+
+      const result = await service.confirmTwoFactor('user-1', 'ENABLE', {
+        purpose: 'ENABLE',
+        twoFactorId: 'challenge-1',
+        code: '123456',
+      })
+
+      expect(mockTwoFactor.enable).toHaveBeenCalledWith(
+        'user-1',
+        'challenge-1',
+        '123456',
+      )
+      expect(result).toEqual({ recoveryCodes: ['AAAA', 'BBBB'] })
+    })
+
+    it('should confirm DISABLE', async () => {
+      const result = await service.confirmTwoFactor('user-1', 'DISABLE', {
+        purpose: 'DISABLE',
+        twoFactorId: 'challenge-1',
+        code: '123456',
+      })
+
+      expect(mockTwoFactor.disable).toHaveBeenCalledWith(
+        'user-1',
+        'challenge-1',
+        '123456',
+      )
+      expect(result).toEqual({ success: true })
+    })
   })
 
   describe('refreshTokens', () => {
@@ -238,7 +355,13 @@ describe('AuthService', () => {
 
       expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: 'user-1' },
-        select: { id: true, email: true, displayName: true, onboardingComplete: true },
+        select: {
+          id: true,
+          email: true,
+          displayName: true,
+          onboardingComplete: true,
+          twoFactorEnabled: true,
+        },
       })
       expect(mockLanguageService.getLanguage).toHaveBeenCalledWith('user-1')
       expect(result).toEqual({ ...profileData, language: 'pt-BR' })

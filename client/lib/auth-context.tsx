@@ -32,15 +32,24 @@ interface User {
   isAdmin: boolean
   language: string
   isEarlyAccess: boolean
+  twoFactorEnabled: boolean
 }
+
+/** Result of a password login: either the session is established, or the
+ *  server demands a 2FA code first (no tokens are issued until it is verified). */
+export type LoginOutcome =
+  | { requiresTwoFactor: true; twoFactorId: string; emailMasked: string }
+  | { requiresTwoFactor: false }
 
 interface AuthState {
   user: User | null
   loading: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<LoginOutcome>
   register: (email: string, password: string, displayName?: string) => Promise<void>
   logout: () => Promise<void>
   completeOnboarding: (displayName: string) => Promise<void>
+  verifyTwoFactor: (twoFactorId: string, code: string) => Promise<void>
+  refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
@@ -154,13 +163,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [restoreSession])
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await api.post<{ accessToken: string; refreshToken: string }>('/auth/login', {
-      email,
-      password,
-    })
-    setAccessToken(res.accessToken)
-    setRefreshToken(res.refreshToken)
+  const login = useCallback(
+    async (email: string, password: string): Promise<LoginOutcome> => {
+      const res = await api.post<LoginOutcome>('/auth/login', {
+        email,
+        password,
+      })
+      if (res.requiresTwoFactor) {
+        // No tokens were issued — the caller must complete the code step first.
+        return res
+      }
+      setAccessToken(res.accessToken)
+      setRefreshToken(res.refreshToken)
+      await fetchProfile()
+      return { requiresTwoFactor: false }
+    },
+    [fetchProfile],
+  )
+
+  /** Complete a 2FA challenge, store the tokens it unlocks, and load the profile. */
+  const verifyTwoFactor = useCallback(
+    async (twoFactorId: string, code: string) => {
+      const res = await api.post<{ accessToken: string; refreshToken: string }>(
+        '/auth/verify-2fa',
+        { twoFactorId, code },
+      )
+      setAccessToken(res.accessToken)
+      setRefreshToken(res.refreshToken)
+      await fetchProfile()
+    },
+    [fetchProfile],
+  )
+
+  /** Re-fetch the profile (e.g. to pick up a fresh twoFactorEnabled flag). */
+  const refreshProfile = useCallback(async () => {
     await fetchProfile()
   }, [fetchProfile])
 
@@ -206,7 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, completeOnboarding }}
+      value={{ user, loading, login, register, logout, completeOnboarding, verifyTwoFactor, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

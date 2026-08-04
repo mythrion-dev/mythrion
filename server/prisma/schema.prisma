@@ -11,24 +11,27 @@ datasource db {
 }
 
 model User {
-  id                 String               @id @default(cuid())
-  email              String               @unique
-  passwordHash       String?
-  displayName        String?
-  onboardingComplete Boolean              @default(false)
-  language           String               @default("en")
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  adventures         Adventure[]
-  memberships        CampaignMember[]
-  sentInvitations    CampaignInvitation[] @relation("SentInvitations")
-  joinRequests       JoinRequest[]
-  ownedTemplates     Template[]
-  googleAccount      GoogleAccount?
-  refreshTokens      RefreshToken[]
-  characterSheets    CharacterSheet[]
-  subscription       UserSubscription?
-  notebooks          Notebook[]
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  passwordHash        String?
+  displayName         String?
+  onboardingComplete  Boolean              @default(false)
+  twoFactorEnabled    Boolean              @default(false)
+  language            String               @default("en")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  adventures          Adventure[]
+  memberships         CampaignMember[]
+  sentInvitations     CampaignInvitation[] @relation("SentInvitations")
+  joinRequests        JoinRequest[]
+  ownedTemplates      Template[]
+  googleAccount       GoogleAccount?
+  refreshTokens       RefreshToken[]
+  characterSheets     CharacterSheet[]
+  subscription        UserSubscription?
+  notebooks           Notebook[]
+  twoFactorChallenges TwoFactorChallenge[]
+  recoveryCodes       RecoveryCode[]
 }
 
 model Adventure {
@@ -993,4 +996,38 @@ model SubscriptionInvoice {
 
   @@index([subscriptionId])
   @@index([pgInvoiceId])
+}
+
+// ── Two-Factor Authentication ──
+
+enum TwoFactorPurpose {
+  LOGIN
+  ENABLE
+  DISABLE
+}
+
+model TwoFactorChallenge {
+  id        String             @id @default(cuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose   TwoFactorPurpose
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int                @default(0)
+  usedAt    DateTime?
+  createdAt DateTime           @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model RecoveryCode {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }

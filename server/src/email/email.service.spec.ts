@@ -211,4 +211,104 @@ describe('EmailService', () => {
       );
     });
   });
+
+  describe('sendTwoFactorCode', () => {
+    const twoFactorParams = {
+      to: 'player@test.com',
+      code: '123456',
+      expiresInMinutes: 10,
+    };
+
+    it('logs [DEV] and does not call fetch when env vars are unset', async () => {
+      service = await buildService();
+
+      await expect(
+        service.sendTwoFactorCode(twoFactorParams),
+      ).resolves.toBeUndefined();
+
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    describe('when Hostinger env vars are set', () => {
+      beforeEach(() => {
+        process.env.HOSTINGER_MAIL_API_TOKEN = 'secret-token';
+        process.env.HOSTINGER_MAILBOX_ID = 'AC1a2b3c4d5e6f7g';
+      });
+
+      it('POSTs to the mailbox endpoint with bearer auth and the 2FA subject', async () => {
+        service = await buildService();
+
+        await service.sendTwoFactorCode(twoFactorParams);
+
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+        const [url, init] = fetchCall();
+        expect(url).toBe(
+          'https://api.mail.hostinger.com/api/v1/mailboxes/AC1a2b3c4d5e6f7g/send',
+        );
+        expect(init.method).toBe('POST');
+        expect(init.headers).toEqual({
+          Authorization: 'Bearer secret-token',
+          'Content-Type': 'application/json',
+        });
+        expect(init.signal).toBeDefined();
+        const body = JSON.parse(init.body!) as { subject: string };
+        expect(body.subject).toBe('Mythrion — your verification code');
+      });
+
+      it('includes the code and expiry in the HTML and text templates', async () => {
+        service = await buildService();
+
+        await service.sendTwoFactorCode(twoFactorParams);
+
+        const [, init] = fetchCall();
+        const body = JSON.parse(init.body!) as { html: string; text: string };
+        expect(body.html).toContain('123456');
+        expect(body.html).toContain('10 minutes');
+        // Logo must be an absolute HTTPS URL — Gmail breaks on data: URIs.
+        expect(body.html).toMatch(/<img src="https:\/\/[^"]+\/logo\.png"/);
+        expect(body.html).not.toContain('data:image');
+        expect(body.text).toContain('123456');
+        expect(body.text).toContain('This code expires in 10 minutes.');
+      });
+
+      it('resolves on a 204 success', async () => {
+        mockFetch.mockResolvedValue(mockResponse({}));
+
+        service = await buildService();
+
+        await expect(
+          service.sendTwoFactorCode(twoFactorParams),
+        ).resolves.toBeUndefined();
+      });
+
+      it('throws with the API error code on a non-2xx response', async () => {
+        mockFetch.mockResolvedValue(
+          mockResponse({
+            ok: false,
+            status: 422,
+            jsonValue: {
+              error: 'Something is invalid.',
+              code: 'ERR_INVALID_REQUEST',
+            },
+          }),
+        );
+
+        service = await buildService();
+
+        await expect(service.sendTwoFactorCode(twoFactorParams)).rejects.toThrow(
+          'ERR_INVALID_REQUEST',
+        );
+      });
+
+      it('rejects when the API call fails', async () => {
+        mockFetch.mockRejectedValue(new Error('network down'));
+
+        service = await buildService();
+
+        await expect(service.sendTwoFactorCode(twoFactorParams)).rejects.toThrow(
+          'network down',
+        );
+      });
+    });
+  });
 });

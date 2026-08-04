@@ -103,7 +103,9 @@ export const ModelName = {
   CharacterSectionEntry: 'CharacterSectionEntry',
   SubscriptionPlan: 'SubscriptionPlan',
   UserSubscription: 'UserSubscription',
-  SubscriptionInvoice: 'SubscriptionInvoice'
+  SubscriptionInvoice: 'SubscriptionInvoice',
+  TwoFactorChallenge: 'TwoFactorChallenge',
+  RecoveryCode: 'RecoveryCode'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -128,6 +130,7 @@ export const UserScalarFieldEnum = {
   passwordHash: 'passwordHash',
   displayName: 'displayName',
   onboardingComplete: 'onboardingComplete',
+  twoFactorEnabled: 'twoFactorEnabled',
   language: 'language',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -855,6 +858,31 @@ export const SubscriptionInvoiceScalarFieldEnum = {
 } as const
 
 export type SubscriptionInvoiceScalarFieldEnum = (typeof SubscriptionInvoiceScalarFieldEnum)[keyof typeof SubscriptionInvoiceScalarFieldEnum]
+
+
+export const TwoFactorChallengeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  purpose: 'purpose',
+  codeHash: 'codeHash',
+  expiresAt: 'expiresAt',
+  attempts: 'attempts',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type TwoFactorChallengeScalarFieldEnum = (typeof TwoFactorChallengeScalarFieldEnum)[keyof typeof TwoFactorChallengeScalarFieldEnum]
+
+
+export const RecoveryCodeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  codeHash: 'codeHash',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type RecoveryCodeScalarFieldEnum = (typeof RecoveryCodeScalarFieldEnum)[keyof typeof RecoveryCodeScalarFieldEnum]
 
 
 export const SortOrder = {

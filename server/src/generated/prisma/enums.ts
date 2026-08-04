@@ -54,3 +54,12 @@ export const SubscriptionStatus = {
 } as const
 
 export type SubscriptionStatus = (typeof SubscriptionStatus)[keyof typeof SubscriptionStatus]
+
+
+export const TwoFactorPurpose = {
+  LOGIN: 'LOGIN',
+  ENABLE: 'ENABLE',
+  DISABLE: 'DISABLE'
+} as const
+
+export type TwoFactorPurpose = (typeof TwoFactorPurpose)[keyof typeof TwoFactorPurpose]
