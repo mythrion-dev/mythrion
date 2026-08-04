@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import i18n, { LANGUAGE_STORAGE_KEY } from '@/i18n'
 import { LanguageSwitcher } from '../LanguageSwitcher'
@@ -29,7 +29,7 @@ function setUser(user: { id: string; language?: string } | null) {
 }
 
 function openDropdown() {
-  fireEvent.click(screen.getByRole('button', { name: 'Language' }))
+  fireEvent.click(screen.getByRole('combobox', { name: 'Language' }))
 }
 
 describe('LanguageSwitcher', () => {
@@ -40,14 +40,9 @@ describe('LanguageSwitcher', () => {
     setUser(null)
   })
 
-  afterEach(async () => {
-    await i18n.changeLanguage('en')
-    window.localStorage.clear()
-  })
-
   it('shows the current language label in the trigger', () => {
     render(<LanguageSwitcher />)
-    expect(screen.getByRole('button', { name: 'Language' })).toHaveTextContent('English')
+    expect(screen.getByRole('combobox', { name: 'Language' })).toHaveTextContent('English')
   })
 
   it('opens a dropdown with both language options', () => {
@@ -140,7 +135,7 @@ describe('LanguageSwitcher', () => {
 
   it('renders icon-only trigger in compact mode', () => {
     render(<LanguageSwitcher compact />)
-    const trigger = screen.getByRole('button', { name: 'Language' })
+    const trigger = screen.getByRole('combobox', { name: 'Language' })
     expect(trigger).not.toHaveTextContent('English')
     expect(trigger).toHaveTextContent('🇺🇸')
   })
@@ -157,12 +152,65 @@ describe('LanguageSwitcher', () => {
 
   it('toggles the dropdown on repeated trigger clicks', () => {
     render(<LanguageSwitcher />)
-    const trigger = screen.getByRole('button', { name: 'Language' })
+    const trigger = screen.getByRole('combobox', { name: 'Language' })
 
     fireEvent.click(trigger)
     expect(screen.getByRole('listbox')).toBeInTheDocument()
 
     fireEvent.click(trigger)
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
+  it('opens and highlights the current language with ArrowDown', () => {
+    render(<LanguageSwitcher />)
+    const trigger = screen.getByRole('combobox', { name: 'Language' })
+
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    expect(trigger).toHaveAttribute('aria-activedescendant', 'language-opt-en')
+  })
+
+  it('moves the highlight with ArrowDown and ArrowUp', () => {
+    render(<LanguageSwitcher />)
+    const trigger = screen.getByRole('combobox', { name: 'Language' })
+
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+    expect(trigger).toHaveAttribute('aria-activedescendant', 'language-opt-en')
+
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+    expect(trigger).toHaveAttribute('aria-activedescendant', 'language-opt-pt-BR')
+
+    fireEvent.keyDown(trigger, { key: 'ArrowUp' })
+    expect(trigger).toHaveAttribute('aria-activedescendant', 'language-opt-en')
+  })
+
+  it('selects the highlighted option with Enter', async () => {
+    render(<LanguageSwitcher />)
+    const trigger = screen.getByRole('combobox', { name: 'Language' })
+
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+    fireEvent.keyDown(trigger, { key: 'Enter' })
+
+    await waitFor(() => {
+      expect(i18n.resolvedLanguage).toBe('pt-BR')
+    })
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
+  it('returns focus to the trigger when closed with Escape', () => {
+    render(<LanguageSwitcher />)
+    const trigger = screen.getByRole('combobox', { name: 'Language' })
+    trigger.focus()
+
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
   })
 })

@@ -124,7 +124,7 @@ export function CharacterTab(props: CharacterTabProps) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(300px,0.85fr)_minmax(300px,0.85fr)_minmax(400px,1.3fr)] items-start">
 
         {/* ─── LEFT COLUMN — Character Info + Attributes ─── */}
-        <div className="space-y-4 overflow-y-auto pr-2 max-h-[calc(100vh-10rem)] scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+        <div className="space-y-4 lg:overflow-y-auto lg:pr-2 lg:max-h-[calc(100vh-10rem)] scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           {/* Character Information */}
           {hasFields && (
             <div className="card !p-4">
@@ -197,7 +197,7 @@ export function CharacterTab(props: CharacterTabProps) {
         </div>
 
         {/* ─── CENTER COLUMN — Resources (optimized layout) + AC ─── */}
-        <div className="space-y-4 overflow-y-auto pr-2 max-h-[calc(100vh-10rem)] scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+        <div className="space-y-4 lg:overflow-y-auto lg:pr-2 lg:max-h-[calc(100vh-10rem)] scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           {(hasResources || hasArmor) && (
             <div className="grid grid-cols-1 gap-3">
               {/* Resource cards — stacked vertically */}
