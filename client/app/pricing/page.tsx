@@ -77,15 +77,14 @@ export default function PricingPage() {
       <header className="border-b border-border/60 bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-3">
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-surface shadow-[0_0_25px_rgba(201,164,75,0.08)]">
-              <Image
-                src="/logo-icon.png"
-                alt="Mythrion logo"
-                width={532}
-                height={624}
-                className="h-8 w-auto"
-              />
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Mythrion logo"
+              width={912}
+              height={703}
+              className="h-11 w-auto sm:h-12"
+              priority
+            />
             <div>
               {/* <p className="text-sm font-semibold text-gradient">{t('common:appName')}</p> */}
               <p className="text-[0.65rem] uppercase tracking-[0.25em] text-muted">{t('billing:rpgEngine')}</p>

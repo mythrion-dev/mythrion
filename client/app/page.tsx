@@ -52,7 +52,7 @@ export default function HomePage() {
               alt="Mythrion logo"
               width={912}
               height={703}
-              className="h-9 w-auto sm:h-10"
+              className="h-11 w-auto sm:h-12"
               priority
             />
             <div>
