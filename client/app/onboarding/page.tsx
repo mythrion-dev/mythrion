@@ -55,15 +55,14 @@ export default function OnboardingPage() {
       <div className="w-full max-w-sm space-y-6 animate-slide-up relative z-10">
         {/* Logo */}
         <div className="flex justify-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-surface border border-border ring-1 ring-primary/10 shadow-[0_0_30px_rgba(201,164,75,0.06)]">
-            <Image
-              src="/logo-icon.png"
-              alt="Mythrion logo"
-              width={532}
-              height={624}
-              className="h-12 w-auto"
-            />
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Mythrion logo"
+            width={912}
+            height={703}
+            className="h-16 w-auto"
+            priority
+          />
         </div>
 
         <div className="text-center space-y-2">

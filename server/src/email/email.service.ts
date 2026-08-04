@@ -1,8 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 const API_BASE_URL = 'https://api.mail.hostinger.com';
 const DEFAULT_FROM = 'Mythrion <noreply@mythrion.com>';
 const REQUEST_TIMEOUT_MS = 10_000;
+
+/**
+ * Inline the logo as a base64 data URI instead of referencing a remote URL —
+ * many email clients block remote images by default, so a hosted URL may show
+ * up as a broken image. The PNG is copied to dist/email by the nest-cli asset.
+ */
+const EMAIL_LOGO = `data:image/png;base64,${readFileSync(
+  join(__dirname, 'email-logo.png'),
+).toString('base64')}`;
 
 /** Extract the display-name portion of a "Name <addr>" From string. */
 function parseDisplayName(from: string | undefined): string {
@@ -132,10 +143,6 @@ export class EmailService {
       year: 'numeric',
     });
 
-    // Emails need an absolute image URL; derive the app origin from the invite
-    // link so it works in both local dev and production.
-    const logoUrl = `${new URL(params.inviteUrl).origin}/logo.png`;
-
     return `
     <!DOCTYPE html>
     <html>
@@ -158,7 +165,7 @@ export class EmailService {
       <div class="container">
         <div class="card">
           <div class="logo">
-            <img src="${logoUrl}" alt="Mythrion" style="max-width: 200px; width: 100%; height: auto; display: inline-block;" />
+            <img src="${EMAIL_LOGO}" alt="Mythrion" style="max-width: 200px; width: 100%; height: auto; display: inline-block;" />
           </div>
           <h1>${params.inviterName} invited you</h1>
           <p class="subtitle">You've been invited to join an adventure.</p>
