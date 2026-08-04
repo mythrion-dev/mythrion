@@ -1,10 +1,14 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common'
+import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
 import { MemberRole } from '../generated/prisma/client.js'
 
 @Injectable()
 export class MembershipService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly i18n: I18nService,
+  ) {}
 
   /** Check that the user has at least the required role on the adventure. */
   async requireRole(
@@ -18,11 +22,11 @@ export class MembershipService {
       },
     })
     if (!member) {
-      throw new ForbiddenException('You are not a member of this adventure')
+      throw new ForbiddenException(this.i18n.t('community.notMember'))
     }
 
     if (requiredRole === 'GM' && member.role !== 'GM') {
-      throw new ForbiddenException('Only the Game Master can perform this action')
+      throw new ForbiddenException(this.i18n.t('community.gmOnly'))
     }
 
     return member
@@ -79,7 +83,7 @@ export class MembershipService {
   ) {
     // Prevent promoting any member to GM — a campaign can only have one GM
     if (role === 'GM') {
-      throw new ForbiddenException('Cannot promote a member to Game Master. A campaign can only have one GM.')
+      throw new ForbiddenException(this.i18n.t('community.cannotPromoteToGm'))
     }
     return this.prisma.campaignMember.update({
       where: {
@@ -113,12 +117,12 @@ export class MembershipService {
   /** Check if adding `count` PLAYERs would exceed adventure maxPlayers. */
   async assertPlayerCapacity(adventureId: string, count: number = 1) {
     const adventure = await this.prisma.adventure.findUnique({ where: { id: adventureId } })
-    if (!adventure) throw new NotFoundException('Adventure not found')
+    if (!adventure) throw new NotFoundException(this.i18n.t('community.adventureNotFound'))
 
     const currentPlayers = await this.countPlayers(adventureId)
     const pendingInvites = await this.countPendingPlayerInvitations(adventureId)
     if (currentPlayers + pendingInvites + count > adventure.maxPlayers) {
-      throw new ForbiddenException('Adventure is at maximum player capacity')
+      throw new ForbiddenException(this.i18n.t('community.maxPlayerCapacity'))
     }
   }
 }

@@ -2,11 +2,13 @@ jest.mock("../generated/prisma/client", () => ({ PrismaClient: class {} }))
 jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
 jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
 import { Test } from '@nestjs/testing'
+import { I18nService } from 'nestjs-i18n'
 import { BadRequestException } from '@nestjs/common'
 import { AcCalculationService } from './ac-calculation.service'
 import { PrismaService } from '../prisma.service'
 import { FormulaService } from '../formula/formula.service'
 import { createMockPrismaService } from '../__mocks__/prisma-service.mock'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 
 describe('AcCalculationService', () => {
   let service: AcCalculationService
@@ -57,6 +59,7 @@ describe('AcCalculationService', () => {
         AcCalculationService,
         { provide: PrismaService, useValue: prisma },
         FormulaService,
+        { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     }).compile()
 

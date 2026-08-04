@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface NotebookPageItemProps {
   readonly id: string
@@ -38,6 +39,8 @@ export function NotebookPageItem({
     [id, onDragStart],
   )
 
+  const { t } = useTranslation()
+
   const handleContextMenu = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault()
@@ -72,7 +75,7 @@ export function NotebookPageItem({
       )}
 
       {/* Title */}
-      <span className="truncate flex-1">{title || 'Untitled'}</span>
+      <span className="truncate flex-1">{title || t('notebook:untitled')}</span>
 
       {/* Folder name badge (search results) */}
       {folderName && (
@@ -86,13 +89,13 @@ export function NotebookPageItem({
         type="button"
         onClick={(e) => {
           e.stopPropagation()
-          if (window.confirm('Delete this page?')) {
+          if (window.confirm(t('notebook:deletePageConfirm'))) {
             onDelete(id)
           }
         }}
         className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-destructive transition-all shrink-0"
-        aria-label="Delete page"
-        title="Delete page"
+        aria-label={t('notebook:deletePage')}
+        title={t('notebook:deletePage')}
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

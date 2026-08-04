@@ -5,6 +5,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
+import { useTranslation, Trans } from 'react-i18next'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -39,18 +40,22 @@ interface TemplatesResponse {
   totalPages: number
 }
 
-const SORT_OPTIONS: SortOption[] = [
-  { id: 'popular', label: 'Most Popular' },
-  { id: 'newest', label: 'Newest' },
-  { id: 'updated', label: 'Recently Updated' },
-  { id: 'alpha', label: 'Alphabetical' },
-]
-
 function DashboardPublicTemplatesContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
   const { user } = useAuth()
+  const { t } = useTranslation()
+
+  const sortOptions = useMemo<SortOption[]>(
+    () => [
+      { id: 'popular', label: t('templates:sortPopular') },
+      { id: 'newest', label: t('templates:sortNewest') },
+      { id: 'updated', label: t('templates:sortRecentlyUpdated') },
+      { id: 'alpha', label: t('templates:sortAlphabetical') },
+    ],
+    [t],
+  )
 
   const [search, setSearch] = useState(searchParams.get('search') ?? '')
   const [campaign, setCampaign] = useState(searchParams.get('campaign') ?? '')
@@ -124,12 +129,12 @@ function DashboardPublicTemplatesContent() {
       setTotalPages(res.totalPages)
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Failed to load templates',
+        err instanceof Error ? err.message : t('templates:failedToLoad'),
       )
     } finally {
       setFetching(false)
     }
-  }, [debouncedSearch, campaign, page])
+  }, [debouncedSearch, campaign, page, t])
 
   useEffect(() => {
     fetchTemplates()
@@ -180,10 +185,10 @@ function DashboardPublicTemplatesContent() {
   const activeFilters: ActiveFilter[] = useMemo(() => {
     const filters: ActiveFilter[] = []
     if (debouncedSearch)
-      filters.push({ id: 'search', label: `Search: ${debouncedSearch}` })
+      filters.push({ id: 'search', label: t('templates:searchFilterLabel', { term: debouncedSearch }) })
     if (campaign) filters.push({ id: 'campaign', label: campaign })
     return filters
-  }, [debouncedSearch, campaign])
+  }, [debouncedSearch, campaign, t])
 
   const handleRemoveFilter = useCallback((id: string) => {
     switch (id) {
@@ -216,7 +221,7 @@ function DashboardPublicTemplatesContent() {
       setCloneSuccess(templateId)
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Failed to clone template',
+        err instanceof Error ? err.message : t('templates:failedToClone'),
       )
     } finally {
       setCloningId(null)
@@ -227,8 +232,8 @@ function DashboardPublicTemplatesContent() {
     <>
       <PageHeader
         icon="📄"
-        title="Explore Templates"
-        subtitle="Browse and clone character sheet templates from the community"
+        title={t('templates:exploreTemplates')}
+        subtitle={t('templates:exploreTemplatesSubtitle')}
       />
 
       {/* ── Tab Navigation ── */}
@@ -252,7 +257,7 @@ function DashboardPublicTemplatesContent() {
               d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
             />
           </svg>
-          Campaigns
+          {t('templates:campaigns')}
         </Link>
         <Link
           href="/dashboard/public-templates"
@@ -273,7 +278,7 @@ function DashboardPublicTemplatesContent() {
               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
             />
           </svg>
-          Templates
+          {t('templates:templates')}
         </Link>
       </nav>
 
@@ -281,27 +286,23 @@ function DashboardPublicTemplatesContent() {
       {showSignInPrompt && (
         <div className="mb-4 p-3 rounded-lg bg-surface border border-border text-sm">
           <span className="text-muted-foreground">
-            Please{' '}
-            <Link
-              href="/login"
-              className="text-accent hover:text-accent-hover underline"
-            >
-              sign in
-            </Link>{' '}
-            to clone templates.
+            <Trans
+              i18nKey="templates:signInToClone"
+              components={[<Link key="signin" href="/login" className="text-accent hover:text-accent-hover underline" />]}
+            />
           </span>
           <button
             onClick={() => setShowSignInPrompt(false)}
             className="ml-2 text-muted hover:text-foreground"
           >
-            Dismiss
+            {t('common:dismiss')}
           </button>
         </div>
       )}
 
       {/* ── Search & Filters ── */}
       <SearchFilterSection
-        placeholder="Search templates by name, creator or system..."
+        placeholder={t('templates:searchPlaceholder')}
         search={search}
         onSearchChange={(v) => {
           setSearch(v)
@@ -309,7 +310,7 @@ function DashboardPublicTemplatesContent() {
         activeFilters={activeFilters}
         onRemoveFilter={handleRemoveFilter}
         onRemoveAll={handleRemoveAll}
-        sortOptions={SORT_OPTIONS}
+        sortOptions={sortOptions}
         sortValue={sortValue}
         onSortChange={setSortValue}
       />
@@ -319,7 +320,7 @@ function DashboardPublicTemplatesContent() {
         <div className="flex flex-col items-center justify-center py-8 space-y-4">
           <p className="text-sm text-red-400">{error}</p>
           <button onClick={fetchTemplates} className="btn-primary">
-            Try Again
+            {t('templates:tryAgain')}
           </button>
         </div>
       )}
@@ -331,8 +332,8 @@ function DashboardPublicTemplatesContent() {
       {!fetching && !error && sortedTemplates.length === 0 && (
         <EmptyState
           icon="📄"
-          title="No templates match your search"
-          description="Try changing your filters or check back later."
+          title={t('templates:noMatchSearch')}
+          description={t('templates:noMatchSearchBody')}
         />
       )}
 
@@ -369,17 +370,17 @@ function DashboardPublicTemplatesContent() {
                 disabled={page <= 1}
                 className="btn-secondary disabled:opacity-40"
               >
-                Previous
+                {t('templates:previous')}
               </button>
               <span className="text-sm text-muted-foreground">
-                Page {page} of {totalPages}
+                {t('templates:pageOf', { page, total: totalPages })}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
                 className="btn-secondary disabled:opacity-40"
               >
-                Next
+                {t('common:next')}
               </button>
             </div>
           )}

@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
+import { I18nService } from 'nestjs-i18n'
 import { AdminService } from './admin.service.js'
 import { SubscriptionService } from '../subscription/subscription.service.js'
 import type { AuthenticatedRequest } from './AuthenticatedRequest.js'
@@ -15,6 +16,7 @@ export class SubscriptionGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly adminService: AdminService,
     private readonly subscriptionService: SubscriptionService,
+    private readonly i18n: I18nService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -30,7 +32,7 @@ export class SubscriptionGuard implements CanActivate {
 
     // If no user on the request (not authenticated), block access
     if (!user?.email) {
-      throw new ForbiddenException('Authentication required to access this resource')
+      throw new ForbiddenException(this.i18n.t('subscription.authRequired'))
     }
 
     // Layer 1 — Admin/early-access bypass. Both lists are defined in the
@@ -49,7 +51,7 @@ export class SubscriptionGuard implements CanActivate {
     const hasActive = await this.subscriptionService.hasActiveSubscription(user.sub)
     if (!hasActive) {
       throw new ForbiddenException(
-        'An active subscription is required to access this resource. Please subscribe at /pricing.',
+        this.i18n.t('subscription.activeSubscriptionRequired'),
       )
     }
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface JoinRequestModalProps {
   readonly open: boolean
@@ -23,6 +24,7 @@ export function JoinRequestModal({
   loading,
   error,
 }: Readonly<JoinRequestModalProps>) {
+  const { t } = useTranslation()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const cardRef = useRef<HTMLDialogElement>(null)
 
@@ -95,7 +97,7 @@ export function JoinRequestModal({
         type="button"
         className="absolute inset-0 bg-black/50 border-0"
         onClick={onCancel}
-        aria-label="Close modal"
+        aria-label={t('community:closeModal')}
       />
 
       {/* Card */}
@@ -125,10 +127,10 @@ export function JoinRequestModal({
           </div>
           <div>
             <h2 id="join-modal-title" className="font-semibold">
-              Request to Join Campaign
+              {t('community:requestToJoinTitle')}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Send a request to the Game Master to join this campaign.
+              {t('community:requestToJoinDescription')}
             </p>
           </div>
         </div>
@@ -137,12 +139,12 @@ export function JoinRequestModal({
         <div className="space-y-1.5">
           <textarea
             ref={textareaRef}
-            placeholder="Optional message to the Game Master..."
+            placeholder={t('community:optionalMessagePlaceholder')}
             value={message}
             onChange={(e) => onMessageChange(e.target.value.slice(0, MAX_MESSAGE_LENGTH))}
             className="input w-full h-24 resize-none"
             disabled={loading}
-            aria-label="Message to Game Master (optional)"
+            aria-label={t('community:messageToGmLabel')}
           />
           <div className="flex justify-end">
             <span
@@ -169,7 +171,7 @@ export function JoinRequestModal({
             disabled={loading}
             className="btn-ghost"
           >
-            Cancel
+            {t('common:cancel')}
           </button>
           <button
             onClick={onConfirm}
@@ -179,10 +181,10 @@ export function JoinRequestModal({
             {loading ? (
               <span className="flex items-center gap-2">
                 <div className="w-3 h-3 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                Sending...
+                {t('community:sending')}
               </span>
             ) : (
-              'Send Request'
+              t('community:sendRequest')
             )}
           </button>
         </div>

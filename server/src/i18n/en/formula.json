@@ -1,0 +1,10 @@
+{
+  "mustReturnNumber": "Formula must return a number",
+  "mustBeFinite": "Formula result must be a finite number",
+  "evaluationFailed": "Failed to evaluate formula: {error}",
+  "invalidFormula": "Invalid formula: {error}",
+  "invalidVarName": "Invalid variable name: \"{name}\"",
+  "unknownVar": "Unknown variable: \"{name}\". Available: {available}",
+  "fnNotAllowed": "Function \"{fnName}\" is not allowed. Available: {available}",
+  "operatorNotAllowed": "Operator \"{op}\" is not allowed"
+}

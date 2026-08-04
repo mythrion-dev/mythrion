@@ -1,4 +1,5 @@
 import { UnprocessableEntityException, Logger } from '@nestjs/common'
+import { createI18nServiceMock } from '../../i18n/i18n-testing.js'
 import { PagBankService } from '../pagbank.service'
 
 jest.mock('crypto', () => ({
@@ -24,7 +25,7 @@ function createService(overrides?: {
   process.env.PAGBANK_API_URL = overrides?.apiUrl ?? TEST_API_URL
   process.env.PAGBANK_WEBHOOK_SECRET = overrides?.secret ?? TEST_SECRET
 
-  const service = new PagBankService()
+  const service = new PagBankService(createI18nServiceMock())
 
   process.env = env
   return service
@@ -42,7 +43,7 @@ describe('PagBankService', () => {
     process.env.PAGBANK_TOKEN = TEST_TOKEN
     process.env.PAGBANK_API_URL = TEST_API_URL
     process.env.PAGBANK_WEBHOOK_SECRET = TEST_SECRET
-    service = new PagBankService()
+    service = new PagBankService(createI18nServiceMock())
     process.env = env
   })
 
@@ -54,7 +55,7 @@ describe('PagBankService', () => {
     it('warns when token is not set', () => {
       const warnSpy = jest.spyOn(Logger.prototype, 'warn')
       process.env.PAGBANK_TOKEN = ''
-      const svc = new PagBankService()
+      const svc = new PagBankService(createI18nServiceMock())
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('PAGBANK_TOKEN is not set'),
       )
@@ -730,7 +731,7 @@ describe('PagBankService', () => {
     it('returns false when webhook secret is empty', () => {
       const env = { ...process.env }
       process.env.PAGBANK_WEBHOOK_SECRET = ''
-      const serviceNoSecret = new PagBankService()
+      const serviceNoSecret = new PagBankService(createI18nServiceMock())
       process.env = env
 
       const result = serviceNoSecret.validateWebhook(

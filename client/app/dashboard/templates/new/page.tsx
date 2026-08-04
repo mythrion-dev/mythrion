@@ -8,9 +8,11 @@ import { TemplateForm } from '@/components/adventure/TemplateForm'
 import type { CoreResource, AcConfigDraft, ArmorClassAttributeModifierDraft, ResistanceDef } from '@/components/adventure/types'
 import { emptyAcConfig, slugify } from '@/components/adventure/types'
 import { useSubscription } from '@/lib/subscription-context'
+import { useTranslation } from 'react-i18next'
 
 export default function NewTemplatePage() {
   const { hasActiveSubscription } = useSubscription()
+  const { t } = useTranslation()
   const router = useRouter()
 
   // ── Feature toggles ──
@@ -301,14 +303,14 @@ export default function NewTemplatePage() {
       const created = await api.post<{ id: string }>('/templates', payload)
       router.push(`/dashboard/templates/${created.id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create template')
+      setError(err instanceof Error ? err.message : t('templates:failedToCreate'))
     } finally {
       setCreating(false)
     }
   }, [name, description, attrs, attrModifierFormula, skillFormula, attrModifiersEnabled,
       featureSkills, skills, featureCustomFields, fields, featureSkillProfiles, profiles,
       featureCoreResources, coreResources, featureArmorClass, acConfigs,
-      featureCharacterSections, characterSections, featureResistance, resistances, router])
+      featureCharacterSections, characterSections, featureResistance, resistances, router, t])
 
   // ── Cancel ──
 
@@ -324,15 +326,15 @@ export default function NewTemplatePage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 2.25h.008v.008H12v-.008z" />
           </svg>
         </div>
-        <h2 className="text-xl font-semibold text-foreground mb-2">Subscription Required</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-2">{t('templates:subscriptionRequired')}</h2>
         <p className="text-sm text-muted-foreground max-w-sm mb-8">
-          Creating templates is a premium feature. Upgrade to a paid plan to create and manage your own character sheet templates.
+          {t('templates:subscriptionRequiredBody')}
         </p>
         <Link href="/pricing" className="btn-primary">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
-          View Plans
+          {t('common:viewPlans')}
         </Link>
       </div>
     )
@@ -346,11 +348,11 @@ export default function NewTemplatePage() {
     <>
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-muted mb-4">
-        <Link href="/dashboard" className="hover:text-foreground transition-colors">Dashboard</Link>
+        <Link href="/dashboard" className="hover:text-foreground transition-colors">{t('common:dashboard')}</Link>
         <span>/</span>
-        <Link href="/dashboard/templates" className="hover:text-foreground transition-colors">Templates</Link>
+        <Link href="/dashboard/templates" className="hover:text-foreground transition-colors">{t('templates:templates')}</Link>
         <span>/</span>
-        <span className="text-foreground">New</span>
+        <span className="text-foreground">{t('templates:new')}</span>
       </nav>
 
       <TemplateForm

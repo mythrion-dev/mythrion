@@ -76,6 +76,7 @@ function createMockReadable(data: Buffer = Buffer.from('pdf-content')) {
 // ---------------------------------------------------------------------------
 import { jest, describe, it, expect, beforeEach, afterAll } from '@jest/globals'
 import { NotFoundException, ForbiddenException } from '@nestjs/common'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 import { BookService } from './book.service'
 import { BookVisibility, MemberRole } from '../generated/prisma/client'
 
@@ -133,7 +134,7 @@ describe('BookService', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     process.env.MONGO_URL = 'mongodb://localhost:27017'
-    service = new BookService(mockPrisma as any, mockRedis as any, mockMembership as any)
+    service = new BookService(mockPrisma as any, mockRedis as any, mockMembership as any, createI18nServiceMock())
   })
 
   // -----------------------------------------------------------------------
@@ -153,7 +154,7 @@ describe('BookService', () => {
     it('logs warning and does not crash when MONGO_URL is not set', async () => {
       delete process.env.MONGO_URL
 
-      const s = new BookService(mockPrisma as any, mockRedis as any, mockMembership as any)
+      const s = new BookService(mockPrisma as any, mockRedis as any, mockMembership as any, createI18nServiceMock())
       await expect(s.onModuleInit()).resolves.toBeUndefined()
 
       expect((s as any).client).toBeNull()

@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
+import { I18nService } from 'nestjs-i18n'
 import { create, all } from 'mathjs'
 
 // Limited math scope - only safe operations
@@ -18,6 +19,8 @@ const allowedOperators = ['+', '-', '*', '/', '(', ')', '^']
 
 @Injectable()
 export class FormulaService {
+  constructor(private readonly i18n: I18nService) {}
+
   /**
    * Evaluate a formula with given variable values.
    * Returns the numeric result.
@@ -42,17 +45,18 @@ export class FormulaService {
       const result = math.evaluate(sanitized, scope)
 
       if (typeof result !== 'number') {
-        throw new BadRequestException('Formula must return a number')
+        throw new BadRequestException(this.i18n.t('formula.mustReturnNumber'))
       }
 
       if (!Number.isFinite(result)) {
-        throw new BadRequestException('Formula result must be a finite number')
+        throw new BadRequestException(this.i18n.t('formula.mustBeFinite'))
       }
 
       return Math.round(result * 100) / 100 // Round to 2 decimal places
     } catch (err) {
       if (err instanceof BadRequestException) throw err
-      throw new BadRequestException(`Failed to evaluate formula: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      const error = err instanceof Error ? err.message : 'Unknown error'
+      throw new BadRequestException(this.i18n.t('formula.evaluationFailed', { args: { error } }))
     }
   }
 
@@ -77,7 +81,8 @@ export class FormulaService {
       this.validateNode(node, knownVariables)
     } catch (err) {
       if (err instanceof BadRequestException) throw err
-      throw new BadRequestException(`Invalid formula: ${err instanceof Error ? err.message : 'Syntax error'}`)
+      const error = err instanceof Error ? err.message : 'Syntax error'
+      throw new BadRequestException(this.i18n.t('formula.invalidFormula', { args: { error } }))
     }
   }
 
@@ -90,25 +95,25 @@ export class FormulaService {
       const name = n.name as string
       // Check if variable is known and uses only valid characters
       if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
-        throw new BadRequestException(`Invalid variable name: "${name}"`)
+        throw new BadRequestException(this.i18n.t('formula.invalidVarName', { args: { name } }))
       }
       // Only allow known variables (attributes, profiles, mod-suffixed, bonus, penalty, etc.)
       if (!knownVariables.includes(name)) {
-        throw new BadRequestException(`Unknown variable: "${name}". Available: ${knownVariables.join(', ')}`)
+        throw new BadRequestException(this.i18n.t('formula.unknownVar', { args: { name, available: knownVariables.join(', ') } }))
       }
     }
 
     if (n.isFunctionNode) {
       const fnName = n.name as string
       if (!allowedFunctions.includes(fnName.toLowerCase())) {
-        throw new BadRequestException(`Function "${fnName}" is not allowed. Available: ${allowedFunctions.join(', ')}`)
+        throw new BadRequestException(this.i18n.t('formula.fnNotAllowed', { args: { fnName, available: allowedFunctions.join(', ') } }))
       }
     }
 
     if (n.isOperatorNode) {
       const op = n.op as string
       if (!allowedOperators.includes(op) && !['and', 'or', 'not', 'xor', '==', '!=', '<', '>', '<=', '>='].includes(op)) {
-        throw new BadRequestException(`Operator "${op}" is not allowed`)
+        throw new BadRequestException(this.i18n.t('formula.operatorNotAllowed', { args: { op } }))
       }
     }
 

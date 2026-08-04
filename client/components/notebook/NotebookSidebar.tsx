@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
 import { RichTextEditor } from './RichTextEditor'
 import { NotebookFolder } from './NotebookFolder'
@@ -97,6 +98,7 @@ export function NotebookSidebar({
   onClose,
   hideToggle = false,
 }: NotebookSidebarProps) {
+  const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [notebook, setNotebook] = useState<Notebook | null>(null)
@@ -215,11 +217,11 @@ export function NotebookSidebar({
       }
       setExpandedFolders(persisted.expandedFolders)
     } catch (err: any) {
-      setError(err?.message ?? 'Failed to load notebook')
+      setError(err?.message ?? t('notebook:failedToLoadNotebook'))
     } finally {
       setIsLoading(false)
     }
-  }, [adventureId, userId])
+  }, [adventureId, t, userId])
 
   // Fetch when sidebar opens
   useEffect(() => {
@@ -321,14 +323,14 @@ export function NotebookSidebar({
               }
             }, 2000)
           } else {
-            setSaveError('Failed to save — check connection')
+            setSaveError(t('notebook:failedToSaveCheckConnection'))
           }
         } finally {
           setSaving(false)
         }
       }, DEBOUNCE_MS)
     },
-    [adventureId],
+    [adventureId, t],
   )
 
   /* ── Content change handler ── */
@@ -383,10 +385,10 @@ export function NotebookSidebar({
           title: newTitle,
         })
       } catch {
-        setSaveError('Failed to save title')
+        setSaveError(t('notebook:failedToSaveTitle'))
       }
     },
-    [adventureId, activePageId],
+    [adventureId, activePageId, t],
   )
 
   /* ── Create page ── */
@@ -396,7 +398,7 @@ export function NotebookSidebar({
       setCreatingPage(true)
       try {
         const newPage = await api.post<Page>(`/adventures/${adventureId}/notebook/pages`, {
-          title: 'Untitled page',
+          title: t('notebook:untitledPage'),
           folderId: folderId ?? null,
         })
         setNotebook((prev) => {
@@ -413,12 +415,12 @@ export function NotebookSidebar({
         })
         setActivePageId(newPage.id)
       } catch {
-        setError('Failed to create page')
+        setError(t('notebook:failedToCreatePage'))
       } finally {
         setCreatingPage(false)
       }
     },
-    [adventureId, creatingPage],
+    [adventureId, creatingPage, t],
   )
 
   /* ── Delete page ── */
@@ -441,10 +443,10 @@ export function NotebookSidebar({
           setActivePageId(null)
         }
       } catch {
-        setError('Failed to delete page')
+        setError(t('notebook:failedToDeletePage'))
       }
     },
-    [adventureId, activePageId],
+    [adventureId, activePageId, t],
   )
 
   /* ── Move page to a folder (or root) ── */
@@ -498,10 +500,10 @@ export function NotebookSidebar({
           }
         })
       } catch {
-        setError('Failed to move page')
+        setError(t('notebook:failedToMovePage'))
       }
     },
-    [adventureId],
+    [adventureId, t],
   )
 
   /* ── Context menu handler (right-click on page) ── */
@@ -517,7 +519,7 @@ export function NotebookSidebar({
     setCreatingFolder(true)
     try {
       const newFolder = await api.post<Folder>(`/adventures/${adventureId}/notebook/folders`, {
-        name: 'New folder',
+        name: t('notebook:newFolder'),
       })
       setNotebook((prev) => {
         if (!prev) return prev
@@ -525,11 +527,11 @@ export function NotebookSidebar({
       })
       setExpandedFolders((prev) => [...prev, newFolder.id])
     } catch {
-      setError('Failed to create folder')
+      setError(t('notebook:failedToCreateFolder'))
     } finally {
       setCreatingFolder(false)
     }
-  }, [adventureId, creatingFolder])
+  }, [adventureId, creatingFolder, t])
 
   /* ── Rename folder ── */
   const handleRenameFolder = useCallback(
@@ -548,10 +550,10 @@ export function NotebookSidebar({
           }
         })
       } catch {
-        setError('Failed to rename folder')
+        setError(t('notebook:failedToRenameFolder'))
       }
     },
-    [adventureId],
+    [adventureId, t],
   )
 
   /* ── Open folder deletion dialog ── */
@@ -617,9 +619,9 @@ export function NotebookSidebar({
 
       setFolderDeleteDialog(null)
     } catch {
-      setError('Failed to delete folder')
+      setError(t('notebook:failedToDeleteFolder'))
     }
-  }, [adventureId, folderDeleteDialog, notebook])
+  }, [adventureId, folderDeleteDialog, notebook, t])
 
   /* ── Drag & Drop handlers ── */
 
@@ -684,8 +686,8 @@ export function NotebookSidebar({
       type="button"
       onClick={toggle}
       className="fixed top-40 right-0 z-40 flex items-center gap-2 px-3 py-2 rounded-l-lg bg-surface border border-r-0 border-border text-sm font-medium text-foreground hover:bg-hover transition-colors shadow-lg"
-      aria-label={isOpen ? 'Close notebook' : 'Open notebook'}
-      title="Campaign Notebook"
+      aria-label={isOpen ? t('notebook:closeNotebook') : t('notebook:openNotebook')}
+      title={t('notebook:campaignNotebook')}
     >
       {/* Notebook icon */}
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -730,17 +732,17 @@ export function NotebookSidebar({
             ? 'translate-x-0 w-1/2 max-sm:w-full sm:max-w-[95vw] lg:w-1/2 xl:w-[45%]'
             : 'translate-x-full w-1/2 max-sm:w-full sm:max-w-[95vw] lg:w-1/2 xl:w-[45%]'
         }`}
-        aria-label="Campaign notebook sidebar"
+        aria-label={t('notebook:campaignNotebookSidebar')}
         role="complementary"
       >
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-          <h2 className="text-sm font-semibold text-foreground">Campaign Notebook</h2>
+          <h2 className="text-sm font-semibold text-foreground">{t('notebook:campaignNotebook')}</h2>
           <div className="flex items-center gap-1">
             {notebook && !activePage && (
               <>
                 <span className="text-[10px] text-muted-foreground bg-hover px-1.5 py-0.5 rounded">
-                  {isGM ? 'GM Only' : 'Private'}
+                  {isGM ? t('notebook:gmOnly') : t('common:private')}
                 </span>
               </>
             )}
@@ -748,8 +750,8 @@ export function NotebookSidebar({
               type="button"
               onClick={handleMinimize}
               className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
-              aria-label="Minimize notebook"
-              title="Minimize"
+              aria-label={t('notebook:minimizeNotebook')}
+              title={t('notebook:minimize')}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
@@ -759,8 +761,8 @@ export function NotebookSidebar({
               type="button"
               onClick={handleClose}
               className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
-              aria-label="Close notebook"
-              title="Close"
+              aria-label={t('notebook:closeNotebook')}
+              title={t('common:close')}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -775,7 +777,7 @@ export function NotebookSidebar({
           {isLoading && (
             <div className="flex flex-col items-center justify-center h-full gap-3 px-4">
               <div className="w-5 h-5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
-              <p className="text-sm text-muted-foreground">Loading notebook...</p>
+              <p className="text-sm text-muted-foreground">{t('notebook:loadingNotebook')}</p>
             </div>
           )}
 
@@ -787,7 +789,7 @@ export function NotebookSidebar({
               </svg>
               <p className="text-sm text-destructive text-center">{error}</p>
               <button onClick={refreshNotebook} className="btn-primary !py-1.5 !px-3 !text-xs">
-                Retry
+                {t('notebook:retry')}
               </button>
             </div>
           )}
@@ -797,15 +799,15 @@ export function NotebookSidebar({
             <div className="flex flex-col items-center justify-center h-full gap-3 px-4">
               <span className="text-3xl">📝</span>
               <p className="text-sm text-muted-foreground text-center">
-                Your notebook is empty.
+                {t('notebook:emptyNotebook')}
                 <br />
-                Create your first page to get started.
+                {t('notebook:emptyNotebookHint')}
               </p>
               <button
                 onClick={() => handleCreatePage()}
                 className="btn-primary !py-1.5 !px-3 !text-xs"
               >
-                + New Page
+                {t('notebook:createFirstPage')}
               </button>
             </div>
           )}
@@ -828,7 +830,7 @@ export function NotebookSidebar({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search pages..."
+                  placeholder={t('notebook:searchPages')}
                   className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg bg-input border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent/50"
                 />
                 {searchQuery && (
@@ -836,7 +838,7 @@ export function NotebookSidebar({
                     type="button"
                     onClick={() => setSearchQuery('')}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-foreground"
-                    aria-label="Clear search"
+                    aria-label={t('notebook:clearSearch')}
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -849,12 +851,12 @@ export function NotebookSidebar({
               {searchQuery.trim() && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">
-                    {filteredPages.length} result{filteredPages.length !== 1 ? 's' : ''} for &quot;{searchQuery}&quot;
+                    {t('notebook:searchResultsCount', { count: filteredPages.length, query: searchQuery })}
                   </p>
                   <div className="space-y-0.5">
                     {filteredPages.length === 0 ? (
                       <p className="text-xs text-muted-foreground italic px-2 py-1">
-                        No pages found
+                        {t('notebook:noPagesFound')}
                       </p>
                     ) : (
                       filteredPages.map((page) => {
@@ -924,7 +926,7 @@ export function NotebookSidebar({
                     <>
                       {notebook.folders.length > 0 && (
                         <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 px-1 font-medium">
-                          Uncategorized
+                          {t('notebook:uncategorized')}
                         </p>
                       )}
                       <div className="space-y-0.5">
@@ -949,7 +951,7 @@ export function NotebookSidebar({
                   {/* Drop indicator when empty but dragging */}
                   {notebook.pages.length === 0 && notebook.folders.length > 0 && dragOverRoot && (
                     <p className="text-xs text-accent italic px-3 py-2">
-                      Drop here to move to Root
+                      {t('notebook:dropHereToMoveToRoot')}
                     </p>
                   )}
                 </div>
@@ -967,7 +969,7 @@ export function NotebookSidebar({
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                     </svg>
-                    New page
+                    {t('notebook:newPage')}
                   </button>
                   <button
                     type="button"
@@ -978,7 +980,7 @@ export function NotebookSidebar({
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6m-3-3v6m-5 4h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
-                    New folder
+                    {t('notebook:newFolder')}
                   </button>
                 </div>
               )}
@@ -1004,8 +1006,8 @@ export function NotebookSidebar({
                     setEditingTitle(false)
                   }}
                   className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
-                  aria-label="Back to page list"
-                  title="Back"
+                  aria-label={t('notebook:backToPageList')}
+                  title={t('common:back')}
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -1047,9 +1049,9 @@ export function NotebookSidebar({
                         setEditingTitle(true)
                       }}
                       className="text-sm font-medium text-foreground truncate max-w-full text-left hover:text-accent transition-colors"
-                      title="Click to rename"
+                      title={t('notebook:clickToRename')}
                     >
-                      {activePage?.title || 'Untitled'}
+                      {activePage?.title || t('notebook:untitled')}
                     </button>
                   )}
                 </div>
@@ -1059,7 +1061,7 @@ export function NotebookSidebar({
                   {saving && (
                     <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                       <div className="w-2.5 h-2.5 border-[1.5px] border-accent/30 border-t-accent rounded-full animate-spin" />
-                      Saving...
+                      {t('notebook:saving')}
                     </div>
                   )}
                   {!saving && saveError && (
@@ -1067,7 +1069,7 @@ export function NotebookSidebar({
                   )}
                   {!saving && !saveError && (
                     <span className="text-[10px] text-muted-foreground">
-                      {activePage?.updatedAt ? `Saved` : ''}
+                      {activePage?.updatedAt ? t('notebook:saved') : ''}
                     </span>
                   )}
 
@@ -1075,13 +1077,13 @@ export function NotebookSidebar({
                   <button
                     type="button"
                     onClick={() => {
-                      if (window.confirm('Delete this page?')) {
+                      if (window.confirm(t('notebook:deletePageConfirm'))) {
                         handleDeletePage(activePage.id)
                       }
                     }}
                     className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                    aria-label="Delete page"
-                    title="Delete page"
+                    aria-label={t('notebook:deletePage')}
+                    title={t('notebook:deletePage')}
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1095,7 +1097,7 @@ export function NotebookSidebar({
                 <RichTextEditor
                   content={activePage?.content ?? ''}
                   onChange={handleContentChange}
-                  placeholder="Start writing..."
+                  placeholder={t('notebook:startWriting')}
                 />
               </div>
             </div>
@@ -1118,7 +1120,7 @@ export function NotebookSidebar({
             style={{ left: contextMenu.x, top: contextMenu.y }}
           >
             <div className="px-3 py-1 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-              Move to...
+              {t('notebook:moveTo')}
             </div>
 
             {/* Root option */}
@@ -1133,7 +1135,7 @@ export function NotebookSidebar({
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
-              Root (uncategorized)
+              {t('notebook:rootUncategorized')}
             </button>
 
             <div className="h-px bg-border my-1" />
@@ -1141,7 +1143,7 @@ export function NotebookSidebar({
             {/* Folder options */}
             {otherFoldersForContext.length === 0 && (
               <p className="px-3 py-1.5 text-xs text-muted-foreground italic">
-                No other folders
+                {t('notebook:noOtherFolders')}
               </p>
             )}
             {otherFoldersForContext.map((folder) => (
@@ -1177,9 +1179,9 @@ export function NotebookSidebar({
             ref={deleteDialogRef}
             className="fixed z-[70] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-surface border border-border rounded-xl shadow-2xl p-5"
           >
-            <h3 className="text-sm font-semibold text-foreground mb-1">Delete Folder</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-1">{t('notebook:deleteFolder')}</h3>
             <p className="text-xs text-muted-foreground mb-4">
-              Folder pages will NOT be deleted. Choose where to move them:
+              {t('notebook:deleteFolderWarning')}
             </p>
 
             {/* Move to Root */}
@@ -1194,9 +1196,9 @@ export function NotebookSidebar({
                 className="mt-0.5 accent-accent"
               />
               <div>
-                <span className="text-sm text-secondary-foreground font-medium">Move pages to Root</span>
+                <span className="text-sm text-secondary-foreground font-medium">{t('notebook:movePagesToRoot')}</span>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Pages become uncategorized in the root list
+                  {t('notebook:pagesBecomeUncategorized')}
                 </p>
               </div>
             </label>
@@ -1220,7 +1222,7 @@ export function NotebookSidebar({
                 className="mt-0.5 accent-accent"
               />
               <div className="flex-1">
-                <span className="text-sm text-secondary-foreground font-medium">Move to another folder</span>
+                <span className="text-sm text-secondary-foreground font-medium">{t('notebook:moveToAnotherFolder')}</span>
                 {folderDeleteDialog.moveToFolderId !== null && otherFoldersForDelete.length > 0 && (
                   <select
                     value={folderDeleteDialog.moveToFolderId ?? ''}
@@ -1241,7 +1243,7 @@ export function NotebookSidebar({
                   </select>
                 )}
                 {otherFoldersForDelete.length === 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">No other folders available</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('notebook:noOtherFoldersAvailable')}</p>
                 )}
               </div>
             </label>
@@ -1253,14 +1255,14 @@ export function NotebookSidebar({
                 onClick={() => setFolderDeleteDialog(null)}
                 className="px-3 py-1.5 text-xs rounded-md btn-ghost"
               >
-                Cancel
+                {t('common:cancel')}
               </button>
               <button
                 type="button"
                 onClick={handleConfirmDeleteFolder}
                 className="px-3 py-1.5 text-xs rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
               >
-                Delete Folder
+                {t('notebook:deleteFolder')}
               </button>
             </div>
           </div>

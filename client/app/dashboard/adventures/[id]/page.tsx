@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, type SubmitEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { useAuth } from '@/lib/auth-context'
 import { api } from '@/lib/api'
 import { PageNav } from '@/lib/breadcrumb'
@@ -82,12 +84,12 @@ interface UserSheet {
   template: { id: string; name: string }; createdAt: string
 }
 
-function validateCoreResources(resources: { slug: string }[]) {
+function validateCoreResources(resources: { slug: string }[], t: TFunction) {
   const valid = resources.filter(r => r.slug.trim())
   const slugs = new Set<string>()
   for (const r of valid) {
     const s = r.slug.trim().toLowerCase()
-    if (slugs.has(s)) return `Duplicate slug: "${s}"`
+    if (slugs.has(s)) return t('campaign:duplicateSlug', { slug: s })
     slugs.add(s)
   }
   return null
@@ -176,23 +178,23 @@ function validateTemplateForm(args: {
   coreResources: CoreResource[]
   profiles: { name: string; targetMode?: string; targetSkillIds?: string[] }[]
   acConfigs: AcConfigDraft[]
-}): string | null {
+}, t: TFunction): string | null {
   const ta = args.attrs.map(a => ({ key: a.key.trim(), name: a.name.trim() }))
-  if (ta.some(a => !a.key || !a.name)) return 'All attributes must have a key and name'
-  const ve = validateCoreResources(args.coreResources)
+  if (ta.some(a => !a.key || !a.name)) return t('campaign:allAttributesNeedKeyName')
+  const ve = validateCoreResources(args.coreResources, t)
   if (ve) return ve
   for (const p of args.profiles) {
     if (p.targetMode === 'SELECTED_SKILLS' && (p.targetSkillIds?.length ?? 0) === 0) {
-      return `Profile "${p.name || 'Unnamed'}" uses "Selected Skills" mode but no skills are selected.`
+      return t('campaign:profileSelectedSkillsError', { name: p.name || t('campaign:unnamed') })
     }
   }
   const acNames = args.acConfigs.filter(ac => ac.enabled && ac.name.trim()).map(ac => ac.name.trim().toLowerCase())
-  if (new Set(acNames).size !== acNames.length) return 'Armor Class names must be unique'
+  if (new Set(acNames).size !== acNames.length) return t('campaign:acNamesMustBeUnique')
   for (const ac of args.acConfigs) {
     if (!ac.enabled || !ac.name.trim()) continue
     for (const f of ac.fields) {
       if (f.name.trim() && !f.key.trim()) {
-        return `Armor Class "${ac.name.trim()}" has a component with an empty key. Please fill in the Key field or remove the component.`
+        return t('campaign:acEmptyKeyError', { name: ac.name.trim() })
       }
     }
   }
@@ -202,6 +204,7 @@ function validateTemplateForm(args: {
 export default function AdventureDetailPage() {
   const router = useRouter(); const params = useParams(); const id = params.id as string
   const { user } = useAuth()
+  const { t } = useTranslation()
   const [adventure, setAdventure] = useState<Adventure | null>(null); const [fetching, setFetching] = useState(true)
   const [userRole, setUserRole] = useState<string | null>(null)
   const [editing, setEditing] = useState(false); const [editName, setEditName] = useState(''); const [editCampaign, setEditCampaign] = useState(''); const [editSynopsis, setEditSynopsis] = useState(''); const [editMaxPlayers, setEditMaxPlayers] = useState(4); const [editSessionWeekday, setEditSessionWeekday] = useState(''); const [editSessionTime, setEditSessionTime] = useState(''); const [editSessionType, setEditSessionType] = useState(''); const [editError, setEditError] = useState<string | null>(null); const [saving, setSaving] = useState(false)
@@ -470,7 +473,7 @@ export default function AdventureDetailPage() {
 
   async function handleCreateTemplate(e: SubmitEvent) {
     e.preventDefault(); setTemplateError(null)
-    const ve = validateTemplateForm({ attrs: newTemplateAttrs, coreResources: newCoreResources, profiles: newTemplateProfiles, acConfigs: newAcConfigs })
+    const ve = validateTemplateForm({ attrs: newTemplateAttrs, coreResources: newCoreResources, profiles: newTemplateProfiles, acConfigs: newAcConfigs }, t)
     if (ve) { setTemplateError(ve); return }
     setTemplateCreating(true)
     try {
@@ -487,25 +490,25 @@ export default function AdventureDetailPage() {
         }),
       })
       resetNewTemplate(); fetchTemplates(); fetchAdventure()
-    } catch (err) { setTemplateError(err instanceof Error ? err.message : 'Failed to create template') } finally { setTemplateCreating(false) }
+    } catch (err) { setTemplateError(err instanceof Error ? err.message : t('campaign:failedToCreateTemplate')) } finally { setTemplateCreating(false) }
   }
 
-  function startEditTemplate(t: Template) {
-    setEditingTemplateId(t.id); setEditTemplateName(t.name); setEditTemplateDescription(t.description ?? '');
-    setEditTemplateAttrs(t.attributes.map(a => ({ id: a.id, key: a.key, name: a.name })));
-    setEditAttrModifiersEnabled((t as any).attributeModifiersEnabled ?? true);
-    setEditAttrModifierFormula(t.attributeModifierFormula ?? '');
-    setEditSkillFormula(t.skillFormula ?? '');
-    setEditTemplateFields((t.templateFields || []).map(f => ({ key: f.key, label: f.label })));
-    setEditTemplateSkills((t.templateSkills || []).map(s => ({
+  function startEditTemplate(tmpl: Template) {
+    setEditingTemplateId(tmpl.id); setEditTemplateName(tmpl.name); setEditTemplateDescription(tmpl.description ?? '');
+    setEditTemplateAttrs(tmpl.attributes.map(a => ({ id: a.id, key: a.key, name: a.name })));
+    setEditAttrModifiersEnabled((tmpl as any).attributeModifiersEnabled ?? true);
+    setEditAttrModifierFormula(tmpl.attributeModifierFormula ?? '');
+    setEditSkillFormula(tmpl.skillFormula ?? '');
+    setEditTemplateFields((tmpl.templateFields || []).map(f => ({ key: f.key, label: f.label })));
+    setEditTemplateSkills((tmpl.templateSkills || []).map(s => ({
       name: s.name,
       description: s.description ?? '',
       attributeId: s.attribute?.key ?? '',
-      allowedAttributeIds: (s.allowedAttributeIds || []).map((x: string) => { const a = t.attributes.find(attr => attr.id === x); return a?.key ?? ''; }).filter(Boolean),
+      allowedAttributeIds: (s.allowedAttributeIds || []).map((x: string) => { const a = tmpl.attributes.find(attr => attr.id === x); return a?.key ?? ''; }).filter(Boolean),
       defaultAttributeId: s.defaultAttribute?.key ?? (s.attribute?.key ?? ''),
     })));
-    setEditTemplateProfiles((t.skillModifierProfiles || []).map(p => ({ name: p.name, targetMode: (p as any).targetMode ?? 'ALL_SKILLS', targetSkillIds: (p as any).targetSkillIds ?? [], options: p.options.map(o => ({ label: o.label, value: o.value })) })));
-    setEditCoreResources((t.coreResources || []).map(cr => ({
+    setEditTemplateProfiles((tmpl.skillModifierProfiles || []).map(p => ({ name: p.name, targetMode: (p as any).targetMode ?? 'ALL_SKILLS', targetSkillIds: (p as any).targetSkillIds ?? [], options: p.options.map(o => ({ label: o.label, value: o.value })) })));
+    setEditCoreResources((tmpl.coreResources || []).map(cr => ({
       slug: cr.slug,
       displayName: cr.displayName ?? cr.slug,
       enabled: cr.enabled ?? true,
@@ -514,15 +517,15 @@ export default function AdventureDetailPage() {
       color: cr.color ?? '',
     })));
     // Load ALL armor classes from template
-    const acConfigs: AcConfigDraft[] = (t.armorClasses || []).map(ac => ({
-      name: (ac as any).name ?? 'Armor Class',
+    const acConfigs: AcConfigDraft[] = (tmpl.armorClasses || []).map(ac => ({
+      name: (ac as any).name ?? t('campaign:acNameFallback'),
       enabled: ac.enabled,
       fields: (ac.fields || []).map(f => ({ name: f.name, key: f.key, defaultValue: f.defaultValue ?? '0', editableByPlayer: f.editableByPlayer, description: f.description ?? '' })),
       attributeModifiers: (ac.attributeModifiers || []).map(am => ({ attributeId: am.attribute.key, allowPlayerSelection: !!am.allowPlayerSelection, defaultAttributeId: am.defaultAttribute?.key ?? am.attribute.key })),
     }))
     setEditAcConfigs(acConfigs)
-    setEditCharacterSections((t as any).characterSections?.map((s: any) => ({ id: s.id, name: s.name })) ?? [])
-    const tResistances = t.resistances || []
+    setEditCharacterSections((tmpl as any).characterSections?.map((s: any) => ({ id: s.id, name: s.name })) ?? [])
+    const tResistances = tmpl.resistances || []
     setEditResistances(tResistances.map(r => ({
       id: r.id,
       name: r.name,
@@ -531,20 +534,20 @@ export default function AdventureDetailPage() {
       attributeModifiers: (r.attributeModifiers || []).map(am => ({ attributeId: am.attributeId, attributeKey: am.attribute?.key || '', attributeName: am.attribute?.name || '', enabled: (am as any).enabled ?? true })),
     })))
     // Derive edit feature toggles from existing data
-    setEditFeatureSkills((t.templateSkills?.length ?? 0) > 0)
-    setEditFeatureCustomFields((t.templateFields?.length ?? 0) > 0)
-    setEditFeatureCoreResources((t.coreResources?.length ?? 0) > 0)
-    setEditFeatureArmorClass((t.armorClasses?.length ?? 0) > 0)
-    setEditFeatureCharacterSections(((t as any).characterSections?.length ?? 0) > 0)
-    setEditFeatureSkillProfiles((t.skillModifierProfiles?.length ?? 0) > 0)
-    setEditFeatureResistance((t.resistances?.length ?? 0) > 0)
+    setEditFeatureSkills((tmpl.templateSkills?.length ?? 0) > 0)
+    setEditFeatureCustomFields((tmpl.templateFields?.length ?? 0) > 0)
+    setEditFeatureCoreResources((tmpl.coreResources?.length ?? 0) > 0)
+    setEditFeatureArmorClass((tmpl.armorClasses?.length ?? 0) > 0)
+    setEditFeatureCharacterSections(((tmpl as any).characterSections?.length ?? 0) > 0)
+    setEditFeatureSkillProfiles((tmpl.skillModifierProfiles?.length ?? 0) > 0)
+    setEditFeatureResistance((tmpl.resistances?.length ?? 0) > 0)
     setEditingTemplateError(null)
   }
   function cancelEditTemplate() { setEditingTemplateId(null); setEditingTemplateError(null) }
 
   async function handleUpdateTemplate(e: SubmitEvent) {
     e.preventDefault(); if (!editingTemplateId) return; setEditingTemplateError(null)
-    const ve = validateTemplateForm({ attrs: editTemplateAttrs, coreResources: editCoreResources, profiles: editTemplateProfiles, acConfigs: editAcConfigs })
+    const ve = validateTemplateForm({ attrs: editTemplateAttrs, coreResources: editCoreResources, profiles: editTemplateProfiles, acConfigs: editAcConfigs }, t)
     if (ve) { setEditingTemplateError(ve); return }
     setTemplateSaving(true)
     try {
@@ -560,7 +563,7 @@ export default function AdventureDetailPage() {
         }),
       })
       cancelEditTemplate(); fetchTemplates()
-    } catch (err) { setEditingTemplateError(err instanceof Error ? err.message : 'Failed to update template') } finally { setTemplateSaving(false) }
+    } catch (err) { setEditingTemplateError(err instanceof Error ? err.message : t('campaign:failedToUpdateTemplate')) } finally { setTemplateSaving(false) }
   }
 
   async function handleDeleteTemplate(tid: string) { try { await api.delete(`/adventures/${id}/templates/${tid}`); fetchTemplates(); fetchAdventure() } catch { } }
@@ -568,20 +571,20 @@ export default function AdventureDetailPage() {
   async function handleTemplateDetached() { setSnapshotData(null); setTemplateSource(null); fetchAdventure() }
   async function handleCreateCharacter(e: SubmitEvent) {
     e.preventDefault(); setNewCharError(null); if (!newCharName.trim()) { return; } setNewCharCreating(true)
-    try { const s = await api.post<{ id: string }>('/character-sheets/from-campaign', { characterName: newCharName.trim(), adventureId: id }); router.push(`/dashboard/character-sheets/${s.id}`) } catch (err) { setNewCharError(err instanceof Error ? err.message : 'Failed to create character') } finally { setNewCharCreating(false) }
+    try { const s = await api.post<{ id: string }>('/character-sheets/from-campaign', { characterName: newCharName.trim(), adventureId: id }); router.push(`/dashboard/character-sheets/${s.id}`) } catch (err) { setNewCharError(err instanceof Error ? err.message : t('campaign:failedToCreateCharacter')) } finally { setNewCharCreating(false) }
   }
   async function handleLinkCharacter(e: SubmitEvent) {
     e.preventDefault(); setLinkCharError(null); if (!linkSheetId) return; setLinkCharLinking(true)
-    try { await api.post(`/character-sheets/${linkSheetId}/link`, { adventureId: id }); setShowLinkCharForm(false); setLinkSheetId(''); fetchCampaignCharacters() } catch (err) { setLinkCharError(err instanceof Error ? err.message : 'Failed to link character') } finally { setLinkCharLinking(false) }
+    try { await api.post(`/character-sheets/${linkSheetId}/link`, { adventureId: id }); setShowLinkCharForm(false); setLinkSheetId(''); fetchCampaignCharacters() } catch (err) { setLinkCharError(err instanceof Error ? err.message : t('campaign:failedToLinkCharacter')) } finally { setLinkCharLinking(false) }
   }
   async function handleRemoveCharacter(sid: string) { try { await api.post(`/character-sheets/${sid}/unlink`); fetchCampaignCharacters() } catch { } }
   async function handleUpdate(e: SubmitEvent) {
     e.preventDefault(); setEditError(null); setSaving(true)
-    try { const u = await api.patch<Adventure>(`/adventures/${id}`, { name: editName.trim() || undefined, campaign: editCampaign.trim() || undefined, synopsis: editSynopsis.trim() || undefined, maxPlayers: editMaxPlayers, sessionWeekday: editSessionWeekday || undefined, sessionTime: editSessionTime || undefined, sessionType: editSessionType || undefined }); setAdventure(u); setEditing(false) } catch (err) { setEditError(err instanceof Error ? err.message : 'Failed to update') } finally { setSaving(false) }
+    try { const u = await api.patch<Adventure>(`/adventures/${id}`, { name: editName.trim() || undefined, campaign: editCampaign.trim() || undefined, synopsis: editSynopsis.trim() || undefined, maxPlayers: editMaxPlayers, sessionWeekday: editSessionWeekday || undefined, sessionTime: editSessionTime || undefined, sessionType: editSessionType || undefined }); setAdventure(u); setEditing(false) } catch (err) { setEditError(err instanceof Error ? err.message : t('campaign:failedToUpdate')) } finally { setSaving(false) }
   }
-  async function handleDelete() { setDeleteError(null); setDeleting(true); try { await api.delete(`/adventures/${id}`); router.push('/dashboard') } catch (err) { setDeleteError(err instanceof Error ? err.message : 'Failed to delete'); setDeleting(false); setConfirmDelete(false) } }
-  async function handleInviteByEmail(e: SubmitEvent) { e.preventDefault(); setInviteError(null); setInviteSending(true); try { await api.post(`/adventures/${id}/invitations/email`, { email: inviteEmail.trim() }); setInviteEmail(''); fetchInvitations() } catch (err) { setInviteError(err instanceof Error ? err.message : 'Failed to send invitation') } finally { setInviteSending(false) } }
-  async function handleInviteByLink() { setInviteError(null); setInviteSending(true); try { const r = await api.post<{ inviteUrl: string }>(`/adventures/${id}/invitations/link`); setInviteLink(r.inviteUrl); fetchInvitations() } catch (err) { setInviteError(err instanceof Error ? err.message : 'Failed to create link') } finally { setInviteSending(false) } }
+  async function handleDelete() { setDeleteError(null); setDeleting(true); try { await api.delete(`/adventures/${id}`); router.push('/dashboard') } catch (err) { setDeleteError(err instanceof Error ? err.message : t('campaign:failedToDelete')); setDeleting(false); setConfirmDelete(false) } }
+  async function handleInviteByEmail(e: SubmitEvent) { e.preventDefault(); setInviteError(null); setInviteSending(true); try { await api.post(`/adventures/${id}/invitations/email`, { email: inviteEmail.trim() }); setInviteEmail(''); fetchInvitations() } catch (err) { setInviteError(err instanceof Error ? err.message : t('campaign:failedToSendInvitation')) } finally { setInviteSending(false) } }
+  async function handleInviteByLink() { setInviteError(null); setInviteSending(true); try { const r = await api.post<{ inviteUrl: string }>(`/adventures/${id}/invitations/link`); setInviteLink(r.inviteUrl); fetchInvitations() } catch (err) { setInviteError(err instanceof Error ? err.message : t('campaign:failedToCreateLink')) } finally { setInviteSending(false) } }
   async function handleRevokeInvitation(invId: string) { try { await api.post(`/invitations/${invId}/revoke`); fetchInvitations() } catch { } }
   async function handleRemoveMember(uid: string) { try { await api.delete(`/adventures/${id}/members/${uid}`); fetchMembers() } catch { } }
 
@@ -610,7 +613,7 @@ export default function AdventureDetailPage() {
   }
 
   if (fetching) return <div className="max-w-5xl mx-auto w-full py-10"><LoadingSkeleton variant="page" /></div>
-  if (!adventure) return <div className="max-w-5xl mx-auto w-full py-10"><EmptyState icon="🗺️" title="Adventure Not Found" description="This adventure doesn't exist or you don't have access to it." actionLabel="Back to Dashboard" actionHref="/dashboard" /></div>
+  if (!adventure) return <div className="max-w-5xl mx-auto w-full py-10"><EmptyState icon="🗺️" title={t('campaign:adventureNotFound')} description={t('campaign:adventureNotFoundDescription')} actionLabel={t('campaign:backToDashboard')} actionHref="/dashboard" /></div>
 
   const hasSessionInfo = Boolean((adventure as any).sessionWeekday || (adventure as any).sessionTime || (adventure as any).sessionType)
 
@@ -618,51 +621,51 @@ export default function AdventureDetailPage() {
     <div className="max-w-5xl mx-auto w-full relative">
       {/* Ambient glow */}
       <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-gradient-to-b from-accent/5 via-primary/3 to-transparent blur-3xl pointer-events-none" />
-      <PageNav crumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: adventure.name }]} />
+      <PageNav crumbs={[{ label: t('common:dashboard'), href: '/dashboard' }, { label: adventure.name }]} />
       <AdventureHeader adventure={adventure} isGM={isGM} userRole={userRole} onEdit={() => setEditing(true)} onDelete={() => setConfirmDelete(true)} />
       {!editing ? (<div className="space-y-6 mt-8">
         <div className="flex items-center justify-between gap-4">
-          <nav className="flex gap-1"><button onClick={() => setActiveTab('campaign')} className={`tab-pill ${activeTab === 'campaign' ? 'tab-pill-active' : ''}`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>Campaign</button><button onClick={() => setActiveTab('books')} className={`tab-pill ${activeTab === 'books' ? 'tab-pill-active' : ''}`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>Books</button><button onClick={() => setActiveTab('templates')} className={`tab-pill ${activeTab === 'templates' ? 'tab-pill-active' : ''}`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>Templates</button></nav>
+          <nav className="flex gap-1"><button onClick={() => setActiveTab('campaign')} className={`tab-pill ${activeTab === 'campaign' ? 'tab-pill-active' : ''}`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>{t('campaign:campaignTab')}</button><button onClick={() => setActiveTab('books')} className={`tab-pill ${activeTab === 'books' ? 'tab-pill-active' : ''}`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>{t('campaign:booksTab')}</button><button onClick={() => setActiveTab('templates')} className={`tab-pill ${activeTab === 'templates' ? 'tab-pill-active' : ''}`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>{t('campaign:templatesTab')}</button></nav>
         </div>
         <hr className="divider" />
         {activeTab === 'campaign' && (<div className="space-y-6">
           {/* Session Information */}
           {hasSessionInfo ? (
             <div className="card p-4">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Session Information</h3>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{t('campaign:sessionInformation')}</h3>
               <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
                 {(adventure as any).sessionWeekday && (
-                  <><span className="text-muted">Day:</span><span>{(adventure as any).sessionWeekday}</span></>
+                  <><span className="text-muted">{t('campaign:dayColon')}</span><span>{(adventure as any).sessionWeekday}</span></>
                 )}
                 {(adventure as any).sessionTime && (
-                  <><span className="text-muted">Time:</span><span>{(adventure as any).sessionTime}</span></>
+                  <><span className="text-muted">{t('campaign:timeColon')}</span><span>{(adventure as any).sessionTime}</span></>
                 )}
                 {(adventure as any).sessionType && (
-                  <><span className="text-muted">Format:</span><span>{(adventure as any).sessionType === 'ONLINE' ? '🌐 Online' : '📍 In Person'}</span></>
+                  <><span className="text-muted">{t('campaign:formatColon')}</span><span>{(adventure as any).sessionType === 'ONLINE' ? t('campaign:online') : t('campaign:inPerson')}</span></>
                 )}
               </div>
             </div>
           ) : (
-            <p className="text-sm text-muted italic">Session schedule not defined</p>
+            <p className="text-sm text-muted italic">{t('campaign:sessionScheduleNotDefined')}</p>
           )}
 
-          <CollapsibleSection title="Party Members" accent expanded={showMembers} onToggle={() => { setShowMembers(!showMembers); if (!showMembers) { fetchMembers(); if (isGM) fetchInvitations() } }}>
+          <CollapsibleSection title={t('campaign:partyMembers')} accent expanded={showMembers} onToggle={() => { setShowMembers(!showMembers); if (!showMembers) { fetchMembers(); if (isGM) fetchInvitations() } }}>
             {members.length === 0 ? <LoadingSkeleton variant="list" /> : <div className="space-y-2">{members.map(m => <MemberRow key={m.id} member={m} isGM={isGM} isSelf={m.user.id === user?.id} onRemove={() => handleRemoveMember(m.user.id)} />)}</div>}
           </CollapsibleSection>
-          {isGM && <CollapsibleSection title="Invite Players" accent expanded={showInvite} onToggle={() => setShowInvite(!showInvite)}>
+          {isGM && <CollapsibleSection title={t('campaign:invitePlayers')} accent expanded={showInvite} onToggle={() => setShowInvite(!showInvite)}>
             <InvitePanel inviteEmail={inviteEmail} inviteLink={inviteLink} inviteError={inviteError} inviteSending={inviteSending} invitations={invitations} onEmailChange={setInviteEmail} onInviteByEmail={handleInviteByEmail} onInviteByLink={handleInviteByLink} onRevoke={handleRevokeInvitation} />
           </CollapsibleSection>}
-          <CollapsibleSection title="Characters" accent expanded={showCharacters} onToggle={() => { setShowCharacters(!showCharacters); if (!showCharacters) { fetchCampaignCharacters(); fetchUserSheets() } }}>
+          <CollapsibleSection title={t('campaign:characters')} accent expanded={showCharacters} onToggle={() => { setShowCharacters(!showCharacters); if (!showCharacters) { fetchCampaignCharacters(); fetchUserSheets() } }}>
             <CharactersSection characters={campaignCharacters} isGM={isGM} userId={user?.id ?? ''} snapshotName={snapshotData?.snapshot?.name ?? templates[0]?.name ?? null} userSheets={userSheets} showNewCharForm={showNewCharForm} showLinkCharForm={showLinkCharForm} newCharName={newCharName} newCharError={newCharError} newCharCreating={newCharCreating} linkSheetId={linkSheetId} linkCharError={linkCharError} linkCharLinking={linkCharLinking} onNewCharClick={() => { setShowNewCharForm(true); setShowLinkCharForm(false) }} onLinkCharClick={() => { setShowLinkCharForm(true); setShowNewCharForm(false); fetchUserSheets() }} onCancelNewChar={() => { setShowNewCharForm(false); setNewCharName(''); setNewCharError(null) }} onCancelLinkChar={() => { setShowLinkCharForm(false); setLinkSheetId(''); setLinkCharError(null) }} onCreateCharacter={handleCreateCharacter} onLinkCharacter={handleLinkCharacter} onNewCharNameChange={setNewCharName} onLinkSheetChange={setLinkSheetId} onRemoveCharacter={handleRemoveCharacter} onViewCharacter={sid => router.push(`/dashboard/character-sheets/${sid}`)} />
           </CollapsibleSection>
           {isGM && (
             <>
-              <CollapsibleSection title="NPCs &amp; Mobs" accent expanded={showNpcsMobs} onToggle={() => setShowNpcsMobs(!showNpcsMobs)}>
+              <CollapsibleSection title={t('campaign:npcsAndMobs')} accent expanded={showNpcsMobs} onToggle={() => setShowNpcsMobs(!showNpcsMobs)}>
                 <NpcsMobsSection adventureId={id} isGM={isGM} refreshKey={npcRefreshKey} />
               </CollapsibleSection>
-              <CollapsibleSection title="Campaign Notebook" accent expanded={showNotebook} onToggle={() => setShowNotebook(!showNotebook)}>
+              <CollapsibleSection title={t('campaign:campaignNotebook')} accent expanded={showNotebook} onToggle={() => setShowNotebook(!showNotebook)}>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Your private notebook for this campaign. Players cannot see this.
+                  {t('campaign:notebookPrivacyNote')}
                 </p>
                 <button
                   type="button"
@@ -672,11 +675,11 @@ export default function AdventureDetailPage() {
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
-                  Open Notebook
+                  {t('campaign:openNotebook')}
                 </button>
               </CollapsibleSection>
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Publishing</h3>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t('campaign:publishing')}</h3>
                 <VisibilityToggle
                   isPublic={(adventure as any).isPublic ?? false}
                   loading={visibilityLoading}
@@ -706,7 +709,7 @@ export default function AdventureDetailPage() {
                   <div className="card !p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                      <span className="text-xs text-muted">Loading template snapshot...</span>
+                      <span className="text-xs text-muted">{t('campaign:loadingTemplateSnapshot')}</span>
                     </div>
                   </div>
                 ) : (

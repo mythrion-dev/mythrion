@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 import {
   useFloating,
   autoUpdate,
@@ -43,6 +44,7 @@ export function Select({
   className = '',
   id,
 }: SelectProps) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [highlightIndex, setHighlightIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -254,7 +256,7 @@ export function Select({
             "
           >
             {options.length === 0 ? (
-              <div className="px-3 py-2 text-xs text-muted">No options</div>
+              <div className="px-3 py-2 text-xs text-muted">{t('common:noOptions')}</div>
             ) : (
               options.map((opt, idx) => {
                 const isSelected = opt.id === value

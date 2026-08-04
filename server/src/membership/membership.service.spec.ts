@@ -6,6 +6,8 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common'
 import { MembershipService } from './membership.service'
 import { PrismaService } from '../prisma.service'
 import { createMockPrismaService } from '../__mocks__/prisma-service.mock'
+import { I18nService } from 'nestjs-i18n'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 
 describe('MembershipService', () => {
   let service: MembershipService
@@ -18,6 +20,7 @@ describe('MembershipService', () => {
       providers: [
         MembershipService,
         { provide: PrismaService, useValue: prisma },
+        { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     }).compile()
 

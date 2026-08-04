@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslation } from 'react-i18next'
+
 interface ConfirmDetachModalProps {
   loading: boolean
   error: string | null
@@ -13,6 +15,7 @@ export function ConfirmDetachModal({
   onCancel,
   onConfirm,
 }: ConfirmDetachModalProps) {
+  const { t } = useTranslation()
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
       <div className="absolute inset-0 bg-black/50" />
@@ -24,14 +27,12 @@ export function ConfirmDetachModal({
             </svg>
           </div>
           <div>
-            <h2 className="font-semibold">Detach Sheet Template</h2>
-            <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
+            <h2 className="font-semibold">{t('campaign:detachSheetTemplate')}</h2>
+            <p className="text-sm text-muted-foreground">{t('campaign:actionCannotBeUndone')}</p>
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
-          The snapshot will be preserved for existing character sheets, but you
-          won&rsquo;t be able to track the original template from this adventure.
-          Future character creation will require a new template attachment.
+          {t('campaign:detachConfirmBody')}
         </p>
         {error && (
           <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">
@@ -40,16 +41,16 @@ export function ConfirmDetachModal({
         )}
         <div className="flex gap-3 justify-end">
           <button onClick={onCancel} disabled={loading} className="btn-ghost">
-            Cancel
+            {t('common:cancel')}
           </button>
           <button onClick={onConfirm} disabled={loading} className="btn-danger-solid">
             {loading ? (
               <span className="flex items-center gap-2">
                 <div className="w-3 h-3 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                Detaching...
+                {t('campaign:detaching')}
               </span>
             ) : (
-              'Detach Template'
+              t('campaign:detachTemplate')
             )}
           </button>
         </div>

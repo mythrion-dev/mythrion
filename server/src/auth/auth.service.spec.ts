@@ -7,7 +7,10 @@ import { ConflictException, UnauthorizedException } from '@nestjs/common'
 import { AuthService } from './auth.service.js'
 import { PrismaService } from '../prisma.service.js'
 import { TokenService } from './token.service.js'
+import { LanguageService } from './language.service.js'
 import { createMockPrismaService } from '../__mocks__/prisma-service.mock'
+import { I18nService } from 'nestjs-i18n'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 import * as bcrypt from 'bcrypt'
 
 jest.mock('bcrypt', () => ({
@@ -22,6 +25,7 @@ describe('AuthService', () => {
   let service: AuthService
   let mockPrisma: ReturnType<typeof createMockPrismaService>
   let mockTokenService: Record<string, jest.Mock>
+  let mockLanguageService: Record<string, jest.Mock>
 
   const mockUser = {
     id: 'user-1',
@@ -46,12 +50,19 @@ describe('AuthService', () => {
       }),
       revokeAllTokens: jest.fn().mockResolvedValue({ success: true }),
     }
+    mockLanguageService = {
+      normalize: jest.fn().mockReturnValue('en'),
+      updateLanguage: jest.fn().mockResolvedValue('en'),
+      getLanguage: jest.fn().mockResolvedValue('en'),
+    }
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: TokenService, useValue: mockTokenService },
+        { provide: LanguageService, useValue: mockLanguageService },
+        { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     }).compile()
 
@@ -76,10 +87,29 @@ describe('AuthService', () => {
           email: dto.email,
           passwordHash: 'hashed-password',
           displayName: dto.displayName,
+          language: 'en',
         },
       })
       expect(mockTokenService.generateTokens).toHaveBeenCalledWith(mockUser.id, mockUser.email)
       expect(result).toEqual({ accessToken: 'mock-access', refreshToken: 'mock-refresh' })
+    })
+
+    it('should persist the provided language', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null)
+      ;(bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password')
+      mockPrisma.user.create.mockResolvedValue(mockUser)
+
+      const dto = { email: 'test@test.com', password: 'password123' }
+      await service.register(dto, 'pt-BR')
+
+      expect(mockPrisma.user.create).toHaveBeenCalledWith({
+        data: {
+          email: dto.email,
+          passwordHash: 'hashed-password',
+          displayName: null,
+          language: 'pt-BR',
+        },
+      })
     })
 
     it('should throw ConflictException on duplicate email', async () => {
@@ -194,7 +224,7 @@ describe('AuthService', () => {
   })
 
   describe('getProfile', () => {
-    it('should return user on valid userId', async () => {
+    it('should return user with language on valid userId', async () => {
       const profileData = {
         id: 'user-1',
         email: 'test@test.com',
@@ -202,6 +232,7 @@ describe('AuthService', () => {
         onboardingComplete: true,
       }
       mockPrisma.user.findUnique.mockResolvedValue(profileData)
+      mockLanguageService.getLanguage.mockResolvedValue('pt-BR')
 
       const result = await service.getProfile('user-1')
 
@@ -209,7 +240,8 @@ describe('AuthService', () => {
         where: { id: 'user-1' },
         select: { id: true, email: true, displayName: true, onboardingComplete: true },
       })
-      expect(result).toEqual(profileData)
+      expect(mockLanguageService.getLanguage).toHaveBeenCalledWith('user-1')
+      expect(result).toEqual({ ...profileData, language: 'pt-BR' })
     })
 
     it('should throw UnauthorizedException on missing user', async () => {

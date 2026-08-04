@@ -6,6 +6,7 @@ jest.mock('geoip-lite', () => ({ lookup: jest.fn() }))
 import { Test, TestingModule } from '@nestjs/testing'
 import { AuthController } from './auth.controller.js'
 import { AuthService } from './auth.service.js'
+import { LanguageService } from './language.service.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
 import { RateLimitGuard } from './rate-limit.guard.js'
 import { AuthGuard } from '@nestjs/passport'
@@ -18,6 +19,7 @@ import type { Response } from 'express'
 describe('AuthController', () => {
   let controller: AuthController
   let mockAuthService: Record<string, jest.Mock>
+  let mockLanguageService: Record<string, jest.Mock>
 
   const mockUserReq = {
     user: { sub: 'user-1', email: 'test@test.com' },
@@ -38,11 +40,17 @@ describe('AuthController', () => {
       getRequestIp: jest.fn().mockReturnValue('203.0.113.1'),
       getLocationFromIp: jest.fn().mockResolvedValue({ country: 'US', region: 'CA', city: 'San Francisco' }),
     }
+    mockLanguageService = {
+      normalize: jest.fn().mockReturnValue('en'),
+      updateLanguage: jest.fn().mockResolvedValue('en'),
+      getLanguage: jest.fn().mockResolvedValue('en'),
+    }
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
         { provide: AuthService, useValue: mockAuthService },
+        { provide: LanguageService, useValue: mockLanguageService },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -55,15 +63,32 @@ describe('AuthController', () => {
   })
 
   describe('register', () => {
-    it('should delegate to authService.register with the dto', async () => {
+    it('should delegate to authService.register with the dto and default language', async () => {
       const dto: RegisterDto = {
         email: 'test@test.com',
         password: 'password123',
         displayName: 'Test User',
       }
-      const result = await controller.register(dto)
-      expect(mockAuthService.register).toHaveBeenCalledWith(dto)
+      const result = await controller.register(dto, mockUserReq)
+      expect(mockLanguageService.normalize).toHaveBeenCalledWith(undefined)
+      expect(mockAuthService.register).toHaveBeenCalledWith(dto, 'en')
       expect(result).toEqual({ accessToken: 'mock-access', refreshToken: 'mock-refresh' })
+    })
+
+    it('should adopt the Accept-Language header for the new user', async () => {
+      const dto: RegisterDto = {
+        email: 'test@test.com',
+        password: 'password123',
+      }
+      const req = {
+        headers: { 'accept-language': 'pt-BR,pt;q=0.9' },
+      } as any
+      mockLanguageService.normalize.mockReturnValue('pt-BR')
+
+      await controller.register(dto, req)
+
+      expect(mockLanguageService.normalize).toHaveBeenCalledWith('pt-BR,pt;q=0.9')
+      expect(mockAuthService.register).toHaveBeenCalledWith(dto, 'pt-BR')
     })
   })
 
@@ -98,6 +123,19 @@ describe('AuthController', () => {
       const result = await controller.getProfile(mockUserReq)
       expect(mockAuthService.getProfile).toHaveBeenCalledWith('user-1')
       expect(result).toEqual({ id: 'user-1', email: 'test@test.com', displayName: 'Test User' })
+    })
+  })
+
+  describe('updateLanguage', () => {
+    it('should delegate to languageService.updateLanguage with userId and language', async () => {
+      mockLanguageService.updateLanguage.mockResolvedValue('pt-BR')
+
+      const result = await controller.updateLanguage(mockUserReq, {
+        language: 'pt-BR',
+      })
+
+      expect(mockLanguageService.updateLanguage).toHaveBeenCalledWith('user-1', 'pt-BR')
+      expect(result).toBe('pt-BR')
     })
   })
 

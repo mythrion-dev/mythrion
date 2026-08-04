@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom/vitest'
 import { vi } from 'vitest'
+import '@/i18n'
 import React from 'react'
 
 // Mock next/image so it renders a plain <img> in jsdom

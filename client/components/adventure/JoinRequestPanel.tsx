@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 
@@ -28,6 +29,7 @@ export function JoinRequestPanel({
   onReject,
   processingIds,
 }: JoinRequestPanelProps) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -62,10 +64,10 @@ export function JoinRequestPanel({
               d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
             />
           </svg>
-          <h3 className="font-semibold text-sm">Join Requests</h3>
+          <h3 className="font-semibold text-sm">{t('campaign:joinRequests')}</h3>
           {pendingCount > 0 && (
             <span className="badge text-[0.6rem]">
-              {pendingCount} pending
+              {t('campaign:pendingCount', { count: pendingCount })}
             </span>
           )}
         </div>
@@ -102,7 +104,7 @@ export function JoinRequestPanel({
               </svg>
               <input
                 type="text"
-                placeholder="Search by name or email..."
+                placeholder={t('campaign:searchBy')}
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-background border border-border/60 placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
@@ -115,14 +117,14 @@ export function JoinRequestPanel({
           ) : requests.length === 0 ? (
             <EmptyState
               icon="📋"
-              title="No Pending Requests"
-              description="No pending join requests."
+              title={t('campaign:noPendingRequests')}
+              description={t('campaign:noPendingRequestsDescription')}
             />
           ) : filteredRequests.length === 0 ? (
             <EmptyState
               icon="🔍"
-              title="No Results"
-              description="No join requests match your search."
+              title={t('campaign:noResults')}
+              description={t('campaign:noResultsDescription')}
             />
           ) : (
             <div className="space-y-3">
@@ -142,7 +144,7 @@ export function JoinRequestPanel({
 
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">
-                          {req.userDisplayName ?? 'Unknown User'}
+                          {req.userDisplayName ?? t('campaign:unknownUser')}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(req.createdAt).toLocaleDateString('en-US', {
@@ -173,10 +175,10 @@ export function JoinRequestPanel({
                         {isProcessing ? (
                           <>
                             <div className="w-3 h-3 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                            Accepting...
+                            {t('campaign:accepting')}
                           </>
                         ) : (
-                          'Accept'
+                          t('campaign:accept')
                         )}
                       </button>
                       <button
@@ -184,7 +186,7 @@ export function JoinRequestPanel({
                         disabled={isProcessing}
                         className="btn-ghost text-xs px-3 py-1"
                       >
-                        Reject
+                        {t('campaign:reject')}
                       </button>
                     </div>
                   </div>

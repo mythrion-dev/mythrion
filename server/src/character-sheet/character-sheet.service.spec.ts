@@ -3,6 +3,7 @@ jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
 jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
 jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }))
 import { Test } from '@nestjs/testing'
+import { I18nService } from 'nestjs-i18n'
 import {
   NotFoundException,
   BadRequestException,
@@ -15,6 +16,7 @@ import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { RedisService } from '../redis/redis.service.js'
 import { createMockPrismaService } from '../__mocks__/prisma-service.mock.js'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 
 const mockMembershipService = {
   requireRole: jest.fn().mockResolvedValue({ role: 'GM' }),
@@ -59,6 +61,7 @@ describe('CharacterSheetService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: MembershipService, useValue: mockMembershipService },
         { provide: RedisService, useValue: mockRedisService },
+        { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     }).compile()
 

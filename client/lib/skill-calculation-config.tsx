@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useTranslation, Trans } from 'react-i18next'
 import MythrionPopover from '@/lib/mythrion-popover'
 
 export interface SkillCalculationConfig {
@@ -59,6 +60,7 @@ export default function SkillCalculationConfig({
   placeholder,
   disabled = false,
 }: SkillCalculationConfigProps) {
+  const { t } = useTranslation()
   const [config, setConfig] = useState<SkillCalculationConfig>(DEFAULT_CONFIG)
   const [showPreview, setShowPreview] = useState(false)
   const [initialized, setInitialized] = useState(false)
@@ -152,7 +154,7 @@ export default function SkillCalculationConfig({
   const ruleDescription = useMemo(() => {
     const parts: string[] = []
     if (config.useAttributeModifier) {
-      parts.push('Linked Attribute Modifier')
+      parts.push(t('campaign:linkedAttributeModifier'))
     }
     for (const key of config.customFieldKeys) {
       const field = customFields.find(f => f.key === key)
@@ -162,7 +164,7 @@ export default function SkillCalculationConfig({
       parts.push('0')
     }
     return parts.join(' + ')
-  }, [config, customFields])
+  }, [config, customFields, t])
 
   if (!initialized) {
     return (
@@ -180,16 +182,14 @@ export default function SkillCalculationConfig({
       <div className="space-y-3">
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
           <p className="text-xs text-amber-400 mb-2">
-            This template uses a legacy skill formula that cannot be represented
-            with the simple configuration. You can switch to the new config, but
-            it will replace your current formula.
+            {t('campaign:skillLegacyFormulaWarning')}
           </p>
           <textarea
             className="input-field resize-none font-mono text-sm"
             rows={2}
             value={legacyFormula}
             onChange={(e) => handleLegacyFormulaChange(e.target.value)}
-            placeholder={placeholder ?? 'Legacy formula...'}
+            placeholder={placeholder ?? t('campaign:legacyFormulaPlaceholder')}
             spellCheck={false}
             disabled={disabled}
           />
@@ -203,7 +203,7 @@ export default function SkillCalculationConfig({
             className="btn-ghost text-xs mt-2"
             disabled={disabled}
           >
-            Switch to Simple Configuration
+            {t('campaign:switchToSimpleConfig')}
           </button>
         </div>
       </div>
@@ -218,10 +218,10 @@ export default function SkillCalculationConfig({
             <svg className="w-4 h-4 text-amber-300/70 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <h4 className="text-sm font-semibold text-amber-300/90">Skill Calculation</h4>
+            <h4 className="text-sm font-semibold text-amber-300/90">{t('campaign:skillCalculation')}</h4>
           </div>
           <p className="text-xs text-amber-300/80 leading-relaxed">
-            Attribute Modifiers are disabled. Enable the global Attribute Modifier System to configure skill calculations that depend on modifiers.
+            {t('campaign:skillCalcDisabledInfo')}
           </p>
         </div>
       </div>
@@ -232,25 +232,24 @@ export default function SkillCalculationConfig({
     <div className="space-y-4">
       <div className="rounded-lg border border-border bg-background/30 p-4 space-y-4">
         <div className="flex items-center gap-2">
-          <h4 className="text-sm font-semibold text-foreground">Skill Calculation</h4>
+          <h4 className="text-sm font-semibold text-foreground">{t('campaign:skillCalculation')}</h4>
           <MythrionPopover
             side="top"
             align="center"
             content={
               <div className="space-y-3">
-                <h5 className="text-sm font-semibold text-primary">How does this work?</h5>
+                <h5 className="text-sm font-semibold text-primary">{t('campaign:howDoesThisWork')}</h5>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Every skill value is calculated by adding the components you select below.
-                  This rule is applied globally to all skills in this template.
+                  {t('campaign:skillCalcPopoverIntro')}
                 </p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  <span className="text-foreground font-medium">Linked Attribute Modifier</span> automatically resolves to the modifier of the attribute assigned to each skill (e.g., Athletics → Strength Modifier).
+                  <Trans i18nKey="campaign:skillCalcPopoverLinked" values={{ name: t('campaign:linkedAttributeModifier') }} components={[<span key="a" className="text-foreground font-medium" />]} />
                 </p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  <span className="text-foreground font-medium">Custom Fields</span> let you include values like Proficiency Bonus, Equipment Bonus, etc. in every skill calculation.
+                  <Trans i18nKey="campaign:skillCalcPopoverCustomFields" values={{ name: t('campaign:customFields') }} components={[<span key="a" className="text-foreground font-medium" />]} />
                 </p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  You only configure this once, and every skill will use the same calculation automatically.
+                  {t('campaign:skillCalcPopoverFootnote')}
                 </p>
               </div>
             }
@@ -262,7 +261,7 @@ export default function SkillCalculationConfig({
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Every skill value is calculated by adding:
+          {t('campaign:skillCalcAdding')}
         </p>
 
         <div className="space-y-3">
@@ -276,10 +275,10 @@ export default function SkillCalculationConfig({
                 onChange={toggleAttributeModifier}
                 disabled={disabled}
               />
-              <span>Linked Attribute Modifier</span>
+              <span>{t('campaign:linkedAttributeModifier')}</span>
             </label>
             <span className="text-xs text-muted">
-              (e.g., Athletics → Strength Modifier)
+              {t('campaign:linkedAttributeModifierExample')}
             </span>
           </div>
 
@@ -320,7 +319,7 @@ export default function SkillCalculationConfig({
                   }}
                   disabled={disabled}
                 >
-                  <option value="">+ Add Character Info</option>
+                  <option value="">{t('campaign:addCharacterInfo')}</option>
                   {availableFields.map(f => (
                     <option key={f.key} value={f.key}>
                       {f.label}
@@ -333,7 +332,7 @@ export default function SkillCalculationConfig({
 
           {customFields.length === 0 && (
             <p className="text-xs text-muted italic pl-6">
-              Add Character Infos to the template first, then come back to include them in the skill calculation.
+              {t('campaign:addCharacterInfosFirst')}
             </p>
           )}
         </div>
@@ -346,50 +345,48 @@ export default function SkillCalculationConfig({
         className="btn-ghost text-sm w-full"
         disabled={disabled}
       >
-        {showPreview ? 'Hide Preview' : 'Preview Calculation'}
+        {showPreview ? t('campaign:hidePreview') : t('campaign:previewCalculation')}
       </button>
 
       {/* Preview section */}
       {showPreview && (
         <div className="rounded-lg border border-primary/20 bg-background/50 overflow-hidden animate-slide-up">
           <div className="px-4 py-3 border-b border-border bg-background/30">
-            <h4 className="text-sm font-semibold text-foreground">Global Rule</h4>
+            <h4 className="text-sm font-semibold text-foreground">{t('campaign:globalRule')}</h4>
             <p className="text-xs text-muted-foreground mt-1 font-mono">
-              Skill = {ruleDescription}
+              {t('campaign:skillEquals', { rule: ruleDescription })}
             </p>
           </div>
           <div className="p-4 space-y-3">
             <h5 className="text-xs font-semibold text-muted uppercase tracking-wider">
-              Example results
+              {t('campaign:exampleResults')}
             </h5>
             <p className="text-xs text-muted-foreground">
-              The examples below show how the global rule applies to each skill
-              based on its linked attribute. Actual values depend on attribute
-              scores and custom field values.
+              {t('campaign:skillCalcExampleDescription')}
             </p>
             <div className="space-y-2">
               <div className="rounded-lg bg-background/50 border border-border/50 p-3">
-                <p className="text-xs text-foreground font-medium">Athletics</p>
+                <p className="text-xs text-foreground font-medium">{t('campaign:exampleAthletics')}</p>
                 <p className="text-xs text-muted mt-1 font-mono">
-                  = Strength Modifier
+                  = {t('campaign:strengthModifier')}
                   {config.customFieldKeys.length > 0 &&
                     ' + ' +
                     selectedFields.map(f => f.label).join(' + ')}
                 </p>
               </div>
               <div className="rounded-lg bg-background/50 border border-border/50 p-3">
-                <p className="text-xs text-foreground font-medium">Stealth</p>
+                <p className="text-xs text-foreground font-medium">{t('campaign:exampleStealth')}</p>
                 <p className="text-xs text-muted mt-1 font-mono">
-                  = Dexterity Modifier
+                  = {t('campaign:dexterityModifier')}
                   {config.customFieldKeys.length > 0 &&
                     ' + ' +
                     selectedFields.map(f => f.label).join(' + ')}
                 </p>
               </div>
               <div className="rounded-lg bg-background/50 border border-border/50 p-3">
-                <p className="text-xs text-foreground font-medium">Arcana</p>
+                <p className="text-xs text-foreground font-medium">{t('campaign:exampleArcana')}</p>
                 <p className="text-xs text-muted mt-1 font-mono">
-                  = Intelligence Modifier
+                  = {t('campaign:intelligenceModifier')}
                   {config.customFieldKeys.length > 0 &&
                     ' + ' +
                     selectedFields.map(f => f.label).join(' + ')}

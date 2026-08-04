@@ -1,4 +1,5 @@
 import { Injectable, OnModuleInit, Logger, NotFoundException, ForbiddenException } from '@nestjs/common'
+import { I18nService } from 'nestjs-i18n'
 import { MongoClient, GridFSBucket, ObjectId, type Db, type ObjectId as MongoObjectId } from 'mongodb'
 import { Readable } from 'node:stream'
 import { PrismaService } from '../prisma.service.js'
@@ -40,6 +41,7 @@ export class BookService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly membership: MembershipService,
+    private readonly i18n: I18nService,
   ) {}
 
   async onModuleInit() {
@@ -63,7 +65,7 @@ export class BookService implements OnModuleInit {
   /** Guard: throw if not connected to GridFS */
   private ensureReady() {
     if (!this.bucket || !this.db) {
-      throw new NotFoundException('Book storage is not available')
+      throw new NotFoundException(this.i18n.t('book.storageUnavailable'))
     }
   }
 
@@ -155,7 +157,7 @@ export class BookService implements OnModuleInit {
       // Cleanup: delete the Prisma record if GridFS upload failed
       await this.prisma.book.delete({ where: { id: book.id } }).catch(() => {})
       this.logger.error(`Failed to upload book "${dto.name}" to GridFS`, err)
-      throw new NotFoundException('Failed to upload book file')
+      throw new NotFoundException(this.i18n.t('book.uploadFailed'))
     }
 
     await this.invalidateCache(adventureId)
@@ -181,12 +183,12 @@ export class BookService implements OnModuleInit {
   ) {
     const isMember = await this.membership.isMember(adventureId, userId)
     if (!isMember) {
-      throw new ForbiddenException('You are not a member of this adventure')
+      throw new ForbiddenException(this.i18n.t('book.notMemberAdventure'))
     }
 
     const book = await this.prisma.book.findUnique({ where: { id: bookId } })
     if (!book || book.adventureId !== adventureId) {
-      throw new NotFoundException('Book not found')
+      throw new NotFoundException(this.i18n.t('book.notFound'))
     }
 
     // Player cannot access GM_BOOK
@@ -195,7 +197,7 @@ export class BookService implements OnModuleInit {
     }
 
     if (!book.gridfsFileId) {
-      throw new NotFoundException('Book file not found (no file uploaded)')
+      throw new NotFoundException(this.i18n.t('book.fileNotFound'))
     }
 
     return book
@@ -214,7 +216,7 @@ export class BookService implements OnModuleInit {
       .toArray()
 
     if (files.length === 0) {
-      throw new NotFoundException('Book file not found in storage')
+      throw new NotFoundException(this.i18n.t('book.fileNotFoundInStorage'))
     }
 
     return files[0] as unknown as GridFsFile
@@ -279,7 +281,7 @@ export class BookService implements OnModuleInit {
 
     const book = await this.prisma.book.findUnique({ where: { id: bookId } })
     if (!book || book.adventureId !== adventureId) {
-      throw new NotFoundException('Book not found')
+      throw new NotFoundException(this.i18n.t('book.notFound'))
     }
 
     const updated = await this.prisma.book.update({
@@ -315,7 +317,7 @@ export class BookService implements OnModuleInit {
 
     const book = await this.prisma.book.findUnique({ where: { id: bookId } })
     if (!book || book.adventureId !== adventureId) {
-      throw new NotFoundException('Book not found')
+      throw new NotFoundException(this.i18n.t('book.notFound'))
     }
 
     this.ensureReady()
@@ -357,7 +359,7 @@ export class BookService implements OnModuleInit {
 
     const book = await this.prisma.book.findUnique({ where: { id: bookId } })
     if (!book || book.adventureId !== adventureId) {
-      throw new NotFoundException('Book not found')
+      throw new NotFoundException(this.i18n.t('book.notFound'))
     }
 
     // Delete GridFS file if it exists

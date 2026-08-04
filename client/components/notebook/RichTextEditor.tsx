@@ -15,6 +15,7 @@ import Blockquote from '@tiptap/extension-blockquote'
 import HorizontalRule from '@tiptap/extension-horizontal-rule'
 import Placeholder from '@tiptap/extension-placeholder'
 import { useCallback, useEffect, useState, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Editor } from '@tiptap/react'
 
 // Import ProseMirror table CSS for base table styling (borders, resize handles, selected cell overlay)
@@ -63,10 +64,12 @@ function ToolbarSeparator() {
 
 /* ── Component ── */
 
-export function RichTextEditor({ content, onChange, placeholder = 'Start writing...' }: Readonly<RichTextEditorProps>) {
+export function RichTextEditor({ content, onChange, placeholder }: Readonly<RichTextEditorProps>) {
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
   const editorRef = useRef<Editor | null>(null)
+  const { t } = useTranslation()
+  const resolvedPlaceholder = placeholder ?? t('notebook:startWriting')
 
   const editor = useEditor({
     shouldRerenderOnTransaction: true,
@@ -93,7 +96,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
       CodeBlock.configure({ HTMLAttributes: { class: 'bg-code p-3 rounded-lg text-sm font-mono overflow-x-auto' } }),
       Blockquote.configure({ HTMLAttributes: { class: 'border-l-4 border-accent/30 pl-4 italic text-muted-foreground my-4' } }),
       HorizontalRule.configure({ HTMLAttributes: { class: 'my-6 border-border' } }),
-      Placeholder.configure({ placeholder }),
+      Placeholder.configure({ placeholder: resolvedPlaceholder }),
     ],
     editorProps: {
       attributes: {
@@ -149,7 +152,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
   if (!editor) {
     return (
       <div className="flex items-center justify-center min-h-[200px] text-muted-foreground text-sm">
-        Loading editor...
+        {t('notebook:loadingEditor')}
       </div>
     )
   }
@@ -159,65 +162,65 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
       {/* ── Toolbar ── */}
       <div className="flex items-center flex-wrap gap-0.5 px-2 py-1.5 border-b border-border bg-surface/50">
         {/* Headings */}
-        <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} isActive={editor.isActive('heading', { level: 1 })} label="Heading 1">
+        <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} isActive={editor.isActive('heading', { level: 1 })} label={t('notebook:heading1')}>
           <span className="text-xs font-bold">H1</span>
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} label="Heading 2">
+        <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} label={t('notebook:heading2')}>
           <span className="text-xs font-bold">H2</span>
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive('heading', { level: 3 })} label="Heading 3">
+        <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive('heading', { level: 3 })} label={t('notebook:heading3')}>
           <span className="text-xs font-bold">H3</span>
         </ToolbarButton>
 
         <ToolbarSeparator />
 
         {/* Text formatting */}
-        <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} label="Bold">
+        <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} label={t('notebook:bold')}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 4h6a4 4 0 014 4 4 4 0 01-4 4H6zM6 12h8a4 4 0 014 4 4 4 0 01-4 4H6z" /></svg>
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} label="Italic">
+        <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} label={t('notebook:italic')}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 4h8m-4-4l-4 16m-4 0h8" /></svg>
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} label="Underline">
+        <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} label={t('notebook:underline')}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M7 3v7a5 5 0 0010 0V3M4 21h16" /></svg>
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} label="Strikethrough">
+        <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} label={t('notebook:strikethrough')}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6M12 4v16" /></svg>
         </ToolbarButton>
 
         <ToolbarSeparator />
 
         {/* Lists */}
-        <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} label="Bullet list">
+        <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} label={t('notebook:bulletList')}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16M8 6V4m0 4v-2m0 2h8m-8 2v2m0-2H4m12 0h4m-8 4v2" /></svg>
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} label="Ordered list">
+        <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} label={t('notebook:orderedList')}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleTaskList().run()} isActive={editor.isActive('taskList')} label="Checklist">
+        <ToolbarButton onClick={() => editor.chain().focus().toggleTaskList().run()} isActive={editor.isActive('taskList')} label={t('notebook:checklist')}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
         </ToolbarButton>
 
         <ToolbarSeparator />
 
         {/* Blocks */}
-        <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} label="Blockquote">
+        <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} label={t('notebook:blockquote')}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16M8 6V4m0 4v-2m0 2h8m-8 2v2m0-2H4m12 0h4m-8 4v2" /></svg>
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} isActive={editor.isActive('codeBlock')} label="Code block">
+        <ToolbarButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} isActive={editor.isActive('codeBlock')} label={t('notebook:codeBlock')}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().setHorizontalRule().run()} label="Horizontal rule">
+        <ToolbarButton onClick={() => editor.chain().focus().setHorizontalRule().run()} label={t('notebook:horizontalRule')}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 12h16" /></svg>
         </ToolbarButton>
 
         <ToolbarSeparator />
 
         {/* Link & Table */}
-        <ToolbarButton onClick={handleOpenLinkDialog} isActive={editor.isActive('link')} label="Link">
+        <ToolbarButton onClick={handleOpenLinkDialog} isActive={editor.isActive('link')} label={t('notebook:link')}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
         </ToolbarButton>
-        <ToolbarButton onClick={handleInsertTable} label="Insert table">
+        <ToolbarButton onClick={handleInsertTable} label={t('notebook:insertTable')}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
         </ToolbarButton>
 
@@ -228,7 +231,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
 
             <ToolbarButton
               onClick={() => editor.chain().focus().addRowBefore().run()}
-              label="Add row above"
+              label={t('notebook:addRowAbove')}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M3 20h18M3 8h18v8H3V8z" />
@@ -238,7 +241,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
 
             <ToolbarButton
               onClick={() => editor.chain().focus().addRowAfter().run()}
-              label="Add row below"
+              label={t('notebook:addRowBelow')}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M3 20h18M3 8h18v8H3V8z" />
@@ -248,7 +251,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
 
             <ToolbarButton
               onClick={() => editor.chain().focus().addColumnBefore().run()}
-              label="Add column before"
+              label={t('notebook:addColumnBefore')}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 3v18M20 3v18M8 3v18h8V3H8z" />
@@ -258,7 +261,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
 
             <ToolbarButton
               onClick={() => editor.chain().focus().addColumnAfter().run()}
-              label="Add column after"
+              label={t('notebook:addColumnAfter')}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 3v18M20 3v18M8 3v18h8V3H8z" />
@@ -270,7 +273,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
 
             <ToolbarButton
               onClick={() => editor.chain().focus().deleteRow().run()}
-              label="Delete row"
+              label={t('notebook:deleteRow')}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M3 20h18M3 8h18v8H3V8z" />
@@ -280,7 +283,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
 
             <ToolbarButton
               onClick={() => editor.chain().focus().deleteColumn().run()}
-              label="Delete column"
+              label={t('notebook:deleteColumn')}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 3v18M20 3v18M8 3v18h8V3H8z" />
@@ -292,7 +295,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
 
             <ToolbarButton
               onClick={() => editor.chain().focus().mergeCells().run()}
-              label="Merge cells"
+              label={t('notebook:mergeCells')}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" />
@@ -303,7 +306,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
 
             <ToolbarButton
               onClick={() => editor.chain().focus().splitCell().run()}
-              label="Split cell"
+              label={t('notebook:splitCell')}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" />
@@ -316,7 +319,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
 
             <ToolbarButton
               onClick={() => editor.chain().focus().deleteTable().run()}
-              label="Delete table"
+              label={t('notebook:deleteTable')}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -334,7 +337,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
             type="url"
             value={linkUrl}
             onChange={(e) => setLinkUrl(e.target.value)}
-            placeholder="https://example.com"
+            placeholder={t('notebook:linkUrlPlaceholder')}
             className="flex-1 px-2 py-1 text-sm rounded bg-input border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent/50"
             autoFocus
             onKeyDown={(e) => {
@@ -343,10 +346,10 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
             }}
           />
           <button onClick={handleApplyLink} className="btn-primary !py-1 !px-2.5 !text-xs">
-            Apply
+            {t('common:apply')}
           </button>
           <button onClick={() => setIsLinkDialogOpen(false)} className="btn-ghost !py-1 !px-2.5 !text-xs">
-            Cancel
+            {t('common:cancel')}
           </button>
         </div>
       )}

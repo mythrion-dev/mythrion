@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import Image from 'next/image'
 import { useAuth } from '@/lib/auth-context'
 import { api, setInvitationToken, getInvitationToken, removeInvitationToken } from '@/lib/api'
@@ -22,6 +23,7 @@ export default function InvitePage() {
   const router = useRouter()
   const params = useParams()
   const token = params.token as string
+  const { t } = useTranslation()
   const { user, loading: authLoading } = useAuth()
 
   const [invitation, setInvitation] = useState<InvitationInfo | null>(null)
@@ -38,7 +40,7 @@ export default function InvitePage() {
       setInvitation(data)
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Failed to load invitation',
+        err instanceof Error ? err.message : t('auth:failedToLoadInvitation'),
       )
     } finally {
       setLoading(false)
@@ -82,7 +84,7 @@ export default function InvitePage() {
         .catch((err) => {
           setAccepting(false)
           setAutoAccepted(false)
-          setError(err instanceof Error ? err.message : 'Failed to accept invitation')
+          setError(err instanceof Error ? err.message : t('auth:failedToAcceptInvitation'))
         })
     }
   }, [user, authLoading, autoAccepted, invitation, accepted, token, router])
@@ -122,7 +124,7 @@ export default function InvitePage() {
         router.push(`/dashboard/adventures/${result.adventureId}`)
       }, 1500)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to accept invitation')
+      setError(err instanceof Error ? err.message : t('auth:failedToAcceptInvitation'))
     } finally {
       setAccepting(false)
     }
@@ -133,7 +135,7 @@ export default function InvitePage() {
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
           <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
-          <span className="text-sm">Loading invitation...</span>
+          <span className="text-sm">{t('auth:loadingInvitation')}</span>
         </div>
       </main>
     )
@@ -144,12 +146,12 @@ export default function InvitePage() {
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="card !p-8 max-w-sm w-full text-center space-y-4">
           <div className="text-3xl">🔗</div>
-          <h1 className="text-lg font-semibold">Invalid Invitation</h1>
+          <h1 className="text-lg font-semibold">{t('auth:invalidInvitationTitle')}</h1>
           <p className="text-sm text-muted-foreground">
-            {error ?? 'This invitation link is invalid or has expired.'}
+            {error ?? t('auth:invalidInvitationLink')}
           </p>
           <Link href="/" className="btn-ghost">
-            Go home
+            {t('common:goHome')}
           </Link>
         </div>
       </main>
@@ -181,21 +183,21 @@ export default function InvitePage() {
         {/* Status badge */}
         <div className="text-center">
           {invitation.status === 'PENDING' && (
-            <span className="badge badge-gold">Invitation</span>
+            <span className="badge badge-gold">{t('auth:invitation')}</span>
           )}
           {invitation.status === 'EXPIRED' && (
             <span className="badge" style={{ background: 'rgba(110,104,120,0.15)', color: '#6e6878', border: '1px solid rgba(110,104,120,0.2)' }}>
-              Expired
+              {t('auth:expired')}
             </span>
           )}
           {invitation.status === 'REVOKED' && (
             <span className="badge" style={{ background: 'rgba(231,76,60,0.15)', color: '#e74c3c', border: '1px solid rgba(231,76,60,0.2)' }}>
-              Revoked
+              {t('auth:revoked')}
             </span>
           )}
           {invitation.status === 'ACCEPTED' && (
             <span className="badge" style={{ background: 'rgba(46,204,113,0.15)', color: '#2ecc71', border: '1px solid rgba(46,204,113,0.2)' }}>
-              Accepted
+              {t('auth:accepted')}
             </span>
           )}
         </div>
@@ -212,16 +214,16 @@ export default function InvitePage() {
 
         <div className="space-y-3">
           <div className="flex justify-between text-sm">
-            <span className="text-muted">Invited by</span>
+            <span className="text-muted">{t('auth:invitedBy')}</span>
             <span className="text-foreground">{invitation.invitedBy}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-muted">Role</span>
+            <span className="text-muted">{t('auth:role')}</span>
             <span className="badge badge-gold">{invitation.role}</span>
           </div>
           {invitation.expiresAt && (
             <div className="flex justify-between text-sm">
-              <span className="text-muted">Expires</span>
+              <span className="text-muted">{t('auth:expires')}</span>
               <span className="text-foreground">
                 {new Date(invitation.expiresAt).toLocaleDateString('en-US', {
                   month: 'short',
@@ -249,20 +251,20 @@ export default function InvitePage() {
 
         {alreadyMember && (
           <div className="rounded-lg bg-success/10 border border-success/20 px-4 py-2.5 text-sm text-success text-center">
-            You are already a member of this adventure. Redirecting...
+            {t('auth:alreadyMember')}
           </div>
         )}
 
         {accepted && (
           <div className="rounded-lg bg-success/10 border border-success/20 px-4 py-2.5 text-sm text-success text-center">
-            Welcome aboard! Redirecting to the adventure...
+            {t('auth:welcomeAboard')}
           </div>
         )}
 
         {autoAccepted && accepting && !accepted && (
           <div className="rounded-lg bg-success/10 border border-success/20 px-4 py-2.5 text-sm text-success text-center flex items-center justify-center gap-2">
             <div className="w-4 h-4 border-2 border-success/30 border-t-success rounded-full animate-spin" />
-            Joining the adventure...
+            {t('auth:joiningAdventure')}
           </div>
         )}
 
@@ -275,17 +277,17 @@ export default function InvitePage() {
             {accepting ? (
               <>
                 <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                Accepting...
+                {t('auth:accepting')}
               </>
             ) : (
-              'Accept Invitation'
+              t('auth:acceptInvitation')
             )}
           </button>
         )}
 
         {!isPending && !accepted && (
           <p className="text-xs text-muted text-center">
-            This invitation is no longer valid.
+            {t('auth:invitationNoLongerValid')}
           </p>
         )}
       </div>

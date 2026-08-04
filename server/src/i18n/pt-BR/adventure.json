@@ -1,0 +1,9 @@
+{
+  "notFound": "Aventura não encontrada",
+  "notMemberAdventure": "Você não é membro desta aventura",
+  "notFoundOrNotPublic": "Aventura não encontrada ou não é pública",
+  "noTemplateAttached": "Nenhum modelo está vinculado a esta aventura. Vincule um modelo pelas configurações da aventura primeiro e depois crie os NPCs.",
+  "npcNotFound": "NPC não encontrado",
+  "npcNotBelong": "O NPC não pertence a esta aventura",
+  "notValidNpcSheet": "Não é uma ficha de NPC válida"
+}

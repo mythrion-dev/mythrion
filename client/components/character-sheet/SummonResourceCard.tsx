@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import { InlineClickEdit } from '@/components/character-sheet'
 import { NumericInput } from '@/components/shared/NumericInput'
@@ -54,6 +55,7 @@ export function SummonResourceCard({
   saveNotes,
 }: SummonResourceCardProps) {
   const canEdit = permissions.canEditAbilities
+  const { t } = useTranslation()
   const health = ability.summonHealth
   const skills = ability.summonSkills ?? []
   const resistances = ability.summonResistances ?? []
@@ -159,7 +161,7 @@ export function SummonResourceCard({
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-bold text-foreground truncate">{ability.name}</h3>
         </div>
-        <span className="badge badge-gold text-[0.6rem] shrink-0">Summon</span>
+        <span className="badge badge-gold text-[0.6rem] shrink-0">{t('character:summonType')}</span>
       </div>
 
       {/* ── Row 1: Attributes | Combat ── */}
@@ -167,7 +169,7 @@ export function SummonResourceCard({
         {/* Attributes Card */}
         {attributeDisplays.length > 0 && (
           <div className={sectionCardClass}>
-            <h4 className={sectionTitleClass}>Attributes</h4>
+            <h4 className={sectionTitleClass}>{t('character:attributes')}</h4>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {attributeDisplays.map(attr => (
                 <div
@@ -208,12 +210,12 @@ export function SummonResourceCard({
 
         {/* Combat Card (AC) */}
         <div className={sectionCardClass}>
-          <h4 className={sectionTitleClass}>Combat</h4>
+          <h4 className={sectionTitleClass}>{t('character:combat')}</h4>
           <div className="flex flex-col items-center justify-center py-3">
             <span className="text-3xl font-bold tabular-nums text-foreground leading-none">
               {acDisplay !== null ? acDisplay : '—'}
             </span>
-            <span className="text-[0.6rem] text-muted uppercase tracking-wider mt-2">CA / AC</span>
+            <span className="text-[0.6rem] text-muted uppercase tracking-wider mt-2">{t('character:acLabel')}</span>
             {canEdit && (
               <div className="mt-3">
                 <InlineNumber
@@ -245,20 +247,20 @@ export function SummonResourceCard({
         {/* Skills Card */}
         <div className={sectionCardClass}>
           <div className="flex items-center justify-between mb-3">
-            <h4 className={sectionTitleClass + ' !mb-0'}>Skills</h4>
+            <h4 className={sectionTitleClass + ' !mb-0'}>{t('character:skills')}</h4>
             {canEdit && !showAddSkill && (
               <button
                 onClick={() => setShowAddSkill(true)}
                 className="text-xs text-primary hover:underline"
                 type="button"
               >
-                + Add Skill
+                {t('character:addSkill')}
               </button>
             )}
           </div>
 
           {skills.length === 0 && !showAddSkill ? (
-            <p className="text-xs text-muted italic">No skills yet. Add one!</p>
+            <p className="text-xs text-muted italic">{t('character:noSkillsYet')}</p>
           ) : (
             <div className="space-y-1.5">
               {skills.map(skill => (
@@ -271,10 +273,10 @@ export function SummonResourceCard({
                       <InlineText
                         value={skill.name}
                         onSave={async (name) => handleSaveSummonSkillName(skill.id, name)}
-                        placeholder="Skill name"
+                        placeholder={t('character:skillNamePlaceholder')}
                         className="flex-1 text-sm font-medium min-w-0"
                         inputClassName="text-sm"
-                        emptyDisplay="Unnamed"
+                        emptyDisplay={t('character:unnamed')}
                       />
                       <InlineNumber
                         value={String(skill.manualValue)}
@@ -287,7 +289,7 @@ export function SummonResourceCard({
                       <button
                         onClick={() => handleRemoveSummonSkill(ability.id, skill.id)}
                         className="text-muted hover:text-danger p-1 transition-colors shrink-0"
-                        title="Remove skill"
+                        title={t('character:removeSkill')}
                         type="button"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -313,7 +315,7 @@ export function SummonResourceCard({
                 type="text"
                 value={newSkillName}
                 onChange={e => setNewSkillName(e.target.value)}
-                placeholder="Skill name"
+                placeholder={t('character:skillNamePlaceholder')}
                 className="flex-1 bg-transparent border border-border rounded px-2 py-1 text-xs text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary"
                 autoFocus
                 disabled={addingSkill}
@@ -321,7 +323,7 @@ export function SummonResourceCard({
               <NumericInput
                 value={newSkillValue}
                 onChange={e => setNewSkillValue(e.target.value)}
-                placeholder="Value"
+                placeholder={t('character:value')}
                 className="w-16 text-center text-xs bg-transparent border border-border rounded px-2 py-1 text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary"
                 wrapperClassName="w-16 shrink-0"
                 inputClassName="!text-center !text-xs"
@@ -334,7 +336,7 @@ export function SummonResourceCard({
                 className="px-2.5 py-1 text-xs font-semibold rounded-md bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 type="button"
               >
-                Add
+                {t('common:add')}
               </button>
               <button
                 onClick={handleCancelAddSkill}
@@ -342,7 +344,7 @@ export function SummonResourceCard({
                 className="px-2 py-1 text-xs text-muted hover:text-foreground transition-colors disabled:opacity-40"
                 type="button"
               >
-                Cancel
+                {t('common:cancel')}
               </button>
             </div>
           )}
@@ -352,20 +354,20 @@ export function SummonResourceCard({
       {/* ── Resistances Card ── */}
       <div className={sectionCardClass}>
         <div className="flex items-center justify-between mb-3">
-          <h4 className={sectionTitleClass + ' !mb-0'}>Resistances</h4>
+          <h4 className={sectionTitleClass + ' !mb-0'}>{t('character:resistances')}</h4>
           {canEdit && !showAddResistance && (
             <button
               onClick={() => setShowAddResistance(true)}
               className="text-xs text-primary hover:underline"
               type="button"
             >
-              + Add Resistance
+              {t('character:addResistance')}
             </button>
           )}
         </div>
 
         {resistances.length === 0 && !showAddResistance ? (
-          <p className="text-xs text-muted italic">No resistances yet. Add one!</p>
+          <p className="text-xs text-muted italic">{t('character:noResistancesYet')}</p>
         ) : (
           <div className="space-y-1.5">
             {resistances.map(resistance => (
@@ -378,15 +380,15 @@ export function SummonResourceCard({
                     <InlineText
                       value={resistance.name}
                       onSave={async (name) => handleSaveSummonResistanceName(resistance.id, name)}
-                      placeholder="Resistance name"
+                      placeholder={t('character:summonResistancePlaceholder')}
                       className="flex-1 text-sm font-medium min-w-0"
                       inputClassName="text-sm"
-                      emptyDisplay="Unnamed"
+                      emptyDisplay={t('character:unnamed')}
                     />
                     <InlineText
                       value={resistance.value}
                       onSave={async (value) => handleSaveSummonResistanceValue(resistance.id, value)}
-                      placeholder="Value"
+                      placeholder={t('character:value')}
                       className="w-24 text-right text-sm tabular-nums font-semibold text-foreground"
                       inputClassName="w-24 text-right text-sm"
                       emptyDisplay="—"
@@ -394,7 +396,7 @@ export function SummonResourceCard({
                     <button
                       onClick={() => handleRemoveSummonResistance?.(ability.id, resistance.id)}
                       className="text-muted hover:text-danger p-1 transition-colors shrink-0"
-                      title="Remove resistance"
+                      title={t('character:removeResistance')}
                       type="button"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -420,7 +422,7 @@ export function SummonResourceCard({
               type="text"
               value={newResistanceName}
               onChange={e => setNewResistanceName(e.target.value)}
-              placeholder="Resistance name"
+              placeholder={t('character:summonResistancePlaceholder')}
               className="flex-1 bg-transparent border border-border rounded px-2 py-1 text-xs text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary"
               autoFocus
               disabled={addingResistance}
@@ -429,7 +431,7 @@ export function SummonResourceCard({
               type="text"
               value={newResistanceValue}
               onChange={e => setNewResistanceValue(e.target.value)}
-              placeholder="Value"
+              placeholder={t('character:value')}
               className="w-24 bg-transparent border border-border rounded px-2 py-1 text-xs text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary"
               disabled={addingResistance}
             />
@@ -439,7 +441,7 @@ export function SummonResourceCard({
               className="px-2.5 py-1 text-xs font-semibold rounded-md bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               type="button"
             >
-              Add
+              {t('common:add')}
             </button>
             <button
               onClick={handleCancelAddResistance}
@@ -447,7 +449,7 @@ export function SummonResourceCard({
               className="px-2 py-1 text-xs text-muted hover:text-foreground transition-colors disabled:opacity-40"
               type="button"
             >
-              Cancel
+              {t('common:cancel')}
             </button>
           </div>
         )}
@@ -456,12 +458,12 @@ export function SummonResourceCard({
       {/* ── Row 3: Notes Card (Description + Notes) ── */}
       {hasNotes && (
         <div className={sectionCardClass}>
-          <h4 className={sectionTitleClass}>Notes</h4>
+          <h4 className={sectionTitleClass}>{t('character:notes')}</h4>
           <div className="space-y-3">
             {/* Description */}
             {canEdit && saveDescription ? (
               <div>
-                <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
+                <h5 className="text-xs font-medium text-muted mb-1">{t('common:description')}</h5>
                 <InlineClickEdit
                   value={ability.description ?? ''}
                   onSave={async (v) => {
@@ -470,12 +472,12 @@ export function SummonResourceCard({
                   as="textarea"
                   rows={2}
                   className="text-sm text-muted-foreground whitespace-pre-wrap"
-                  emptyDisplay="Add description..."
+                  emptyDisplay={t('character:addDescription')}
                 />
               </div>
             ) : ability.description ? (
               <div>
-                <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
+                <h5 className="text-xs font-medium text-muted mb-1">{t('common:description')}</h5>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{ability.description}</p>
               </div>
             ) : null}
@@ -483,7 +485,7 @@ export function SummonResourceCard({
             {/* Notes */}
             {canEdit && saveNotes ? (
               <div>
-                <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
+                <h5 className="text-xs font-medium text-muted mb-1">{t('character:notes')}</h5>
                 <InlineClickEdit
                   value={ability.notes ?? ''}
                   onSave={async (v) => {
@@ -492,12 +494,12 @@ export function SummonResourceCard({
                   as="textarea"
                   rows={2}
                   className="text-xs text-muted italic whitespace-pre-wrap"
-                  emptyDisplay="Add notes..."
+                  emptyDisplay={t('character:addNotes')}
                 />
               </div>
             ) : ability.notes ? (
               <div>
-                <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
+                <h5 className="text-xs font-medium text-muted mb-1">{t('character:notes')}</h5>
                 <p className="text-xs text-muted italic whitespace-pre-wrap">{ability.notes}</p>
               </div>
             ) : null}

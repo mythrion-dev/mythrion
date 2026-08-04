@@ -4,6 +4,18 @@ const API_BASE_URL = 'https://api.mail.hostinger.com';
 const DEFAULT_FROM = 'Mythrion <noreply@mythrion.com>';
 const REQUEST_TIMEOUT_MS = 10_000;
 
+/**
+ * Gmail renders remote HTTPS images through its proxy but does NOT support
+ * data: URIs in <img src> — a base64-inlined logo shows up as a broken image
+ * with the alt text. Reference the publicly-served client asset (public/logo.png)
+ * with an absolute HTTPS URL instead. FRONTEND_URL is the canonical production
+ * frontend base the server already uses for redirects and CORS.
+ */
+const FRONTEND_URL = (
+  process.env.FRONTEND_URL ?? 'https://mythrion.com.br'
+).replace(/\/+$/, '');
+const EMAIL_LOGO_URL = `${FRONTEND_URL}/logo.png`;
+
 /** Extract the display-name portion of a "Name <addr>" From string. */
 function parseDisplayName(from: string | undefined): string {
   if (!from) return 'Mythrion';
@@ -132,10 +144,6 @@ export class EmailService {
       year: 'numeric',
     });
 
-    // Emails need an absolute image URL; derive the app origin from the invite
-    // link so it works in both local dev and production.
-    const logoUrl = `${new URL(params.inviteUrl).origin}/logo.png`;
-
     return `
     <!DOCTYPE html>
     <html>
@@ -158,7 +166,7 @@ export class EmailService {
       <div class="container">
         <div class="card">
           <div class="logo">
-            <img src="${logoUrl}" alt="Mythrion" style="max-width: 200px; width: 100%; height: auto; display: inline-block;" />
+            <img src="${EMAIL_LOGO_URL}" alt="Mythrion" style="max-width: 200px; width: 100%; height: auto; display: inline-block;" />
           </div>
           <h1>${params.inviterName} invited you</h1>
           <p class="subtitle">You've been invited to join an adventure.</p>

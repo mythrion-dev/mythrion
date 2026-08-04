@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation } from 'react-i18next'
 import { Select } from '@/components/shared/Select'
 import type { AcConfigDraft, ArmorClassAttributeModifierDraft } from '@/components/adventure/types'
 
@@ -29,14 +30,15 @@ export function AcConfigList(props: {
   const onUpdateFieldEditable = props.onUpdateFieldEditable ?? (() => { })
   const onToggleAttributeId = props.onToggleAttributeId ?? (() => { })
   const onUpdateAttributeModifier = props.onUpdateAttributeModifier ?? (() => { })
+  const { t } = useTranslation()
   return (
     <div className="space-y-4">
       {configs.map((ac, ci) => (
         <div key={ci} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
           <div className="flex items-center gap-1.5">
-            <input className="input-field flex-1 text-sm" value={ac.name} onChange={e => onUpdateConfig(ci, { name: e.target.value })} placeholder="AC Name (e.g. Standard Armor)" />
+            <input className="input-field flex-1 text-sm" value={ac.name} onChange={e => onUpdateConfig(ci, { name: e.target.value })} placeholder={t('campaign:acNamePlaceholder')} />
             <label className="flex items-center gap-1 text-xs text-muted shrink-0">
-              <input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={ac.enabled} onChange={e => onUpdateConfig(ci, { enabled: e.target.checked })} />Enabled
+              <input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={ac.enabled} onChange={e => onUpdateConfig(ci, { enabled: e.target.checked })} />{t('campaign:enabled')}
             </label>
             <button type="button" onClick={() => onRemove(ci)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
           </div>
@@ -44,36 +46,36 @@ export function AcConfigList(props: {
           {ac.enabled && (
             <div className="space-y-2 pl-2">
               <div>
-                <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 block">AC Components</label>
+                <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 block">{t('campaign:acComponents')}</label>
                 <div className="space-y-1">
                   {ac.fields.map((f, fi) => (
                     <div key={fi} className="rounded border border-border/50 bg-background/20 p-2 space-y-1">
                       <div className="flex items-center gap-1">
-                        <input className="input-field flex-1 text-xs" value={f.name} onChange={e => onUpdateField(ci, fi, 'name', e.target.value)} placeholder="Field name (e.g. Shield)" />
-                        <input className="input-field flex-1 text-xs" value={f.key} onChange={e => onUpdateField(ci, fi, 'key', e.target.value)} placeholder="Key (e.g. shield)" />
+                        <input className="input-field flex-1 text-xs" value={f.name} onChange={e => onUpdateField(ci, fi, 'name', e.target.value)} placeholder={t('campaign:fieldNamePlaceholder')} />
+                        <input className="input-field flex-1 text-xs" value={f.key} onChange={e => onUpdateField(ci, fi, 'key', e.target.value)} placeholder={t('campaign:fieldKeyPlaceholder')} />
                         <button type="button" onClick={() => onRemoveField(ci, fi)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
                       </div>
                       <div className="flex items-center gap-1">
-                        <input className="input-field flex-1 text-xs" value={f.defaultValue} onChange={e => onUpdateField(ci, fi, 'defaultValue', e.target.value)} placeholder="Default value" />
-                        <input className="input-field flex-1 text-xs" value={f.description} onChange={e => onUpdateField(ci, fi, 'description', e.target.value)} placeholder="Description (optional)" />
+                        <input className="input-field flex-1 text-xs" value={f.defaultValue} onChange={e => onUpdateField(ci, fi, 'defaultValue', e.target.value)} placeholder={t('campaign:defaultValue')} />
+                        <input className="input-field flex-1 text-xs" value={f.description} onChange={e => onUpdateField(ci, fi, 'description', e.target.value)} placeholder={t('campaign:descriptionOptional')} />
                         <label className="flex items-center gap-1 text-xs text-muted shrink-0">
-                          <input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={f.editableByPlayer} onChange={e => onUpdateFieldEditable(ci, fi, e.target.checked)} />Editable
+                          <input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={f.editableByPlayer} onChange={e => onUpdateFieldEditable(ci, fi, e.target.checked)} />{t('campaign:editable')}
                         </label>
                       </div>
                     </div>
                   ))}
                 </div>
-                <button type="button" onClick={() => onAddField(ci)} className="btn-ghost text-xs mt-1">+ Add AC Component</button>
+                <button type="button" onClick={() => onAddField(ci)} className="btn-ghost text-xs mt-1">{t('campaign:addAcComponent')}</button>
               </div>
 
               {attrModifiersEnabled ? (
                 <div>
-                  <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 block">Attribute Modifiers</label>
+                  <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 block">{t('campaign:attributeModifiers')}</label>
                   <div className="space-y-1 mb-2">
                     {attrs.filter(a => a.key.trim() && a.name.trim()).map(attr => (
                       <label key={attr.key} className="flex items-center gap-2 text-xs text-foreground py-1 cursor-pointer">
                         <input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={ac.attributeModifiers.some(am => am.attributeId === attr.key.trim())} onChange={() => onToggleAttributeId(ci, attr.key.trim())} />
-                        <span>{attr.name.trim()} Modifier</span>
+                        <span>{t('campaign:attributeModifierSuffix', { name: attr.name.trim() })}</span>
                       </label>
                     ))}
                   </div>
@@ -83,7 +85,7 @@ export function AcConfigList(props: {
                       return (
                         <div key={am.attributeId} className="rounded border border-border/50 bg-background/20 p-2 space-y-2">
                           <div>
-                            <label className="text-[0.65rem] font-semibold text-muted uppercase tracking-wider mb-1 block">Attribute</label>
+                            <label className="text-[0.65rem] font-semibold text-muted uppercase tracking-wider mb-1 block">{t('campaign:attribute')}</label>
                             <Select
                               options={attrs.filter(a => a.key.trim() && a.name.trim()).map(attr => ({ id: attr.key.trim(), label: attr.name.trim() }))}
                               value={am.attributeId}
@@ -93,15 +95,15 @@ export function AcConfigList(props: {
                             />
                           </div>
                           <div>
-                            <label className="text-[0.65rem] font-semibold text-muted uppercase tracking-wider mb-1 block">Player Selection</label>
+                            <label className="text-[0.65rem] font-semibold text-muted uppercase tracking-wider mb-1 block">{t('campaign:playerSelection')}</label>
                             <div className="space-y-1">
-                              <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer"><input type="radio" className="w-3 h-3 accent-primary" checked={!am.allowPlayerSelection} onChange={() => onUpdateAttributeModifier(ci, am.attributeId, { allowPlayerSelection: false })} />Fixed</label>
-                              <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer"><input type="radio" className="w-3 h-3 accent-primary" checked={am.allowPlayerSelection} onChange={() => onUpdateAttributeModifier(ci, am.attributeId, { allowPlayerSelection: true, defaultAttributeId })} />Player Can Change</label>
+                              <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer"><input type="radio" className="w-3 h-3 accent-primary" checked={!am.allowPlayerSelection} onChange={() => onUpdateAttributeModifier(ci, am.attributeId, { allowPlayerSelection: false })} />{t('campaign:fixed')}</label>
+                              <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer"><input type="radio" className="w-3 h-3 accent-primary" checked={am.allowPlayerSelection} onChange={() => onUpdateAttributeModifier(ci, am.attributeId, { allowPlayerSelection: true, defaultAttributeId })} />{t('campaign:playerCanChange')}</label>
                             </div>
                           </div>
                           {am.allowPlayerSelection && (
                             <div>
-                              <label className="text-[0.65rem] font-semibold text-muted uppercase tracking-wider mb-1 block">Default Attribute</label>
+                              <label className="text-[0.65rem] font-semibold text-muted uppercase tracking-wider mb-1 block">{t('campaign:defaultAttribute')}</label>
                               <Select
                                 options={attrs.filter(a => a.key.trim() && a.name.trim()).map(attr => ({ id: attr.key.trim(), label: attr.name.trim() }))}
                                 value={defaultAttributeId}
@@ -117,13 +119,13 @@ export function AcConfigList(props: {
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-muted italic">Attribute Modifiers are disabled globally.</p>
+                <p className="text-xs text-muted italic">{t('campaign:attributeModifiersDisabledGlobally')}</p>
               )}
             </div>
           )}
         </div>
       ))}
-      <button type="button" onClick={onAdd} className="btn-ghost text-xs">+ Add Armor Class Configuration</button>
+      <button type="button" onClick={onAdd} className="btn-ghost text-xs">{t('campaign:addArmorClassConfig')}</button>
     </div>
   )
 }

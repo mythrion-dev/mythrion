@@ -14,6 +14,8 @@ import { NotFoundException } from '@nestjs/common'
 import { ImageController } from './image.controller.js'
 import { ImageService } from './image.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
+import { I18nService } from 'nestjs-i18n'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 import type { Response } from 'express'
 
 describe('ImageController', () => {
@@ -55,6 +57,7 @@ describe('ImageController', () => {
       controllers: [ImageController],
       providers: [
         { provide: ImageService, useValue: mockImageService },
+        { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     })
       .overrideGuard(JwtAuthGuard)

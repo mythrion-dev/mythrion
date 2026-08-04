@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Select } from '@/components/shared/Select'
 import type { SheetPermissions } from './types'
 
@@ -66,6 +67,7 @@ export function ResistanceTab({
   onCreateResistance, onDeleteResistance,
 }: Props) {
   const canEditResistances = permissions.canEditResistances
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [showNewForm, setShowNewForm] = useState(false)
   const [draft, setDraft] = useState<NewResistanceDraft>(emptyDraft)
@@ -108,7 +110,7 @@ export function ResistanceTab({
 
   async function handleDelete(resistanceId: string) {
     if (!onDeleteResistance) return
-    if (!confirm('Delete this resistance? This cannot be undone.')) return
+    if (!confirm(t('character:deleteResistanceConfirm'))) return
     try {
       await onDeleteResistance(resistanceId)
     } catch {}
@@ -167,7 +169,7 @@ export function ResistanceTab({
             <svg className="w-10 h-10 mx-auto text-muted mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
             </svg>
-            <p className="text-sm italic">No resistances configured.</p>
+            <p className="text-sm italic">{t('character:noResistancesConfigured')}</p>
           </div>
         </div>
       )}
@@ -206,7 +208,7 @@ export function ResistanceTab({
                     type="button"
                     onClick={() => handleDelete(r.resistanceId)}
                     className="text-muted hover:text-danger p-1 transition-colors shrink-0"
-                    title="Delete resistance"
+                    title={t('character:deleteResistanceTitle')}
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -221,7 +223,7 @@ export function ResistanceTab({
               <div className="mt-4 pt-4 border-t border-border space-y-4 animate-fade-in">
                 {/* Total display */}
                 <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/30 border border-border">
-                  <span className="text-sm font-semibold text-foreground">Total</span>
+                  <span className="text-sm font-semibold text-foreground">{t('character:total')}</span>
                   <span className="text-lg font-bold text-primary">{r.total}</span>
                 </div>
 
@@ -243,7 +245,7 @@ export function ResistanceTab({
                   <>
                     {r.componentValues.length > 0 && (
                       <div>
-                        <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Components</h4>
+                        <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">{t('character:components')}</h4>
                         <div className="space-y-1.5">
                           {r.componentValues.map(cv => {
                             const canEdit = canEditResistances && cv.editableByPlayer
@@ -269,15 +271,15 @@ export function ResistanceTab({
 
                     {r.attributeModifierValues.length > 0 && (
                       <div>
-                        <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Attribute Modifiers</h4>
+                        <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">{t('character:attributeModifiers')}</h4>
                         <div className="space-y-1.5 opacity-75">
                           {r.attributeModifierValues.map(am => (
                             <div key={am.attributeId} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
-                              <span className="text-sm text-foreground truncate">{am.attributeName} Mod</span>
+                              <span className="text-sm text-foreground truncate">{t('character:attributeModLabel', { name: am.attributeName })}</span>
                               <span className="text-sm font-semibold text-muted">
                                 {formatMod(am.effectiveModifier)}
                                 {am.rawModifier !== am.effectiveModifier && (
-                                  <span className="text-[0.65rem] text-muted ml-1">(raw: {formatMod(am.rawModifier)})</span>
+                                  <span className="text-[0.65rem] text-muted ml-1">{t('character:rawLabel', { value: formatMod(am.rawModifier) })}</span>
                                 )}
                               </span>
                             </div>
@@ -305,29 +307,29 @@ export function ResistanceTab({
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
               </svg>
-              New Resistance
+              {t('character:newResistance')}
             </button>
           ) : (
             <div className="card !p-5 space-y-4 border-primary/20">
               <div className="header-accent">
-                <h3 className="text-sm font-semibold text-gradient">New Resistance</h3>
+                <h3 className="text-sm font-semibold text-gradient">{t('character:newResistance')}</h3>
               </div>
 
               {/* Name */}
               <div>
-                <label className="label">Resistance Name</label>
+                <label className="label">{t('character:resistanceName')}</label>
                 <input
                   className="input-field"
                   value={draft.name}
                   onChange={e => updateDraft({ name: e.target.value })}
-                  placeholder="e.g. Fire Resistance"
+                  placeholder={t('character:resistanceNamePlaceholder')}
                   autoFocus
                 />
               </div>
 
               {/* Calculation Type */}
               <div>
-                <label className="label">Calculation Type</label>
+                <label className="label">{t('character:calculationType')}</label>
                 <div className="flex gap-2">
                   {(['MANUAL', 'CALCULATED'] as const).map(mode => (
                     <button
@@ -345,7 +347,7 @@ export function ResistanceTab({
                           : 'text-muted hover:text-foreground border border-transparent'
                       }`}
                     >
-                      {mode === 'MANUAL' ? 'Manual Value' : 'Calculated'}
+                      {mode === 'MANUAL' ? t('character:manualValue') : t('character:calculated')}
                     </button>
                   ))}
                 </div>
@@ -356,14 +358,14 @@ export function ResistanceTab({
                 <>
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-medium text-foreground">Components</label>
+                      <label className="text-sm font-medium text-foreground">{t('character:components')}</label>
                       <button type="button" onClick={addComponent} className="btn-ghost text-xs">
-                        + Add Component
+                        {t('character:addComponent')}
                       </button>
                     </div>
                     <div className="space-y-2">
                       {draft.components.length === 0 && (
-                        <p className="text-xs text-muted italic text-center py-2">No components added yet.</p>
+                        <p className="text-xs text-muted italic text-center py-2">{t('character:noComponentsAddedYet')}</p>
                       )}
                       {draft.components.map((c, cIdx) => (
                         <div key={cIdx} className="rounded-lg border border-border/50 bg-background/20 p-2 space-y-2">
@@ -372,7 +374,7 @@ export function ResistanceTab({
                               className="input-field flex-1"
                               value={c.name}
                               onChange={e => updateComponent(cIdx, { name: e.target.value })}
-                              placeholder="Component Name (e.g. Natural)"
+                              placeholder={t('character:componentNamePlaceholder')}
                             />
                             <input
                               className="input-field w-20 text-sm text-center"
@@ -397,7 +399,7 @@ export function ResistanceTab({
                               checked={c.editableByPlayer}
                               onChange={e => updateComponent(cIdx, { editableByPlayer: e.target.checked })}
                             />
-                            Editable by Player
+                            {t('character:editableByPlayer')}
                           </label>
                         </div>
                       ))}
@@ -408,7 +410,7 @@ export function ResistanceTab({
                   {disableAttributeModifiers ? (
                     <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
                       <p className="text-xs text-amber-300/80 leading-relaxed">
-                        Attribute Modifiers are disabled. Enable the global Attribute Modifier System to use this feature.
+                        {t('character:attributeModifiersDisabled')}
                       </p>
                       {draft.attributeModifiers.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-2 opacity-50 pointer-events-none">
@@ -426,7 +428,7 @@ export function ResistanceTab({
                   ) : (
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium text-foreground">Attribute Modifiers</label>
+                        <label className="text-sm font-medium text-foreground">{t('character:attributeModifiers')}</label>
                       </div>
                       <div className="space-y-2">
                         {draft.attributeModifiers.length > 0 && (
@@ -451,7 +453,7 @@ export function ResistanceTab({
                         <div className="relative">
                           <Select
                             options={[
-                              { id: '', label: '+ Add Attribute Modifier' },
+                              { id: '', label: t('character:addAttributeModifier') },
                               ...templateAttributes
                                 .filter(a => !draft.attributeModifiers.some(am => am.attributeId === a.id))
                                 .map(a => ({ id: `${a.id}::${a.key}::${a.name}`, label: a.name }))
@@ -477,7 +479,7 @@ export function ResistanceTab({
               {/* Actions */}
               <div className="flex gap-3 justify-end pt-2 border-t border-border/40">
                 <button type="button" onClick={resetForm} disabled={saving} className="btn-ghost text-sm">
-                  Cancel
+                  {t('common:cancel')}
                 </button>
                 <button
                   type="button"
@@ -488,14 +490,14 @@ export function ResistanceTab({
                   {saving ? (
                     <>
                       <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                      Creating...
+                      {t('character:creating')}
                     </>
                   ) : (
                     <>
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
                       </svg>
-                      Create Resistance
+                      {t('character:createResistance')}
                     </>
                   )}
                 </button>

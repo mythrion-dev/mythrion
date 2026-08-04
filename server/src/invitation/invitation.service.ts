@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common'
+import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { EmailService } from '../email/email.service.js'
@@ -20,6 +21,7 @@ export class InvitationService {
     private readonly prisma: PrismaService,
     private readonly membership: MembershipService,
     private readonly email: EmailService,
+    private readonly i18n: I18nService,
   ) {}
 
   private generateToken(): string {
@@ -61,7 +63,7 @@ export class InvitationService {
     const adventure = await this.prisma.adventure.findUnique({
       where: { id: params.adventureId },
     })
-    if (!adventure) throw new NotFoundException('Adventure not found')
+    if (!adventure) throw new NotFoundException(this.i18n.t('community.adventureNotFound'))
 
     // Always check player capacity — all invitations create PLAYER members
     await this.membership.assertPlayerCapacity(params.adventureId)
@@ -101,7 +103,9 @@ export class InvitationService {
         .delete({ where: { id: invitation.id } })
         .catch(() => undefined)
       const message = err instanceof Error ? err.message : String(err)
-      throw new BadRequestException(`Failed to send invitation email: ${message}`)
+      throw new BadRequestException(
+        this.i18n.t('community.emailFailed', { args: { message } }),
+      )
     }
 
     return { success: true, invitationId: invitation.id }
@@ -149,7 +153,7 @@ export class InvitationService {
     })
 
     if (!invitation) {
-      throw new NotFoundException('Invitation not found')
+      throw new NotFoundException(this.i18n.t('community.invitationNotFound'))
     }
 
     if (invitation.status === 'REVOKED') {
@@ -206,21 +210,21 @@ export class InvitationService {
     })
 
     if (!invitation) {
-      throw new NotFoundException('Invitation not found')
+      throw new NotFoundException(this.i18n.t('community.invitationNotFound'))
     }
 
     if (invitation.status === 'ACCEPTED') {
-      throw new BadRequestException('Invitation already accepted')
+      throw new BadRequestException(this.i18n.t('community.alreadyAcceptedInvitation'))
     }
     if (invitation.status === 'REVOKED') {
-      throw new BadRequestException('Invitation has been revoked')
+      throw new BadRequestException(this.i18n.t('community.revoked'))
     }
     if (new Date() > invitation.expiresAt) {
       await this.prisma.campaignInvitation.update({
         where: { id: invitation.id },
         data: { status: 'EXPIRED' },
       })
-      throw new BadRequestException('Invitation has expired')
+      throw new BadRequestException(this.i18n.t('community.expired'))
     }
 
     // Check if user is already a member of this adventure
@@ -245,7 +249,7 @@ export class InvitationService {
     if (adventure) {
       const currentPlayers = await this.membership.countPlayers(invitation.adventureId)
       if (currentPlayers + 1 > adventure.maxPlayers) {
-        throw new BadRequestException('Adventure is at maximum player capacity')
+        throw new BadRequestException(this.i18n.t('community.maxPlayerCapacity'))
       }
     }
 
@@ -275,7 +279,7 @@ export class InvitationService {
     const invitation = await this.prisma.campaignInvitation.findUnique({
       where: { id: invitationId },
     })
-    if (!invitation) throw new NotFoundException('Invitation not found')
+    if (!invitation) throw new NotFoundException(this.i18n.t('community.invitationNotFound'))
 
     // Must be GM of the adventure
     await this.membership.requireRole(invitation.adventureId, userId, 'GM')

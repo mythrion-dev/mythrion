@@ -4,11 +4,13 @@ jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
 import { Test, TestingModule } from '@nestjs/testing'
 import { UnauthorizedException, InternalServerErrorException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
+import { I18nService } from 'nestjs-i18n'
 import { TokenService } from './token.service.js'
 import { PrismaService } from '../prisma.service.js'
 import { RedisService } from '../redis/redis.service.js'
 import { AdminService } from './admin.service.js'
 import { createMockPrismaService } from '../__mocks__/prisma-service.mock'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 import * as bcrypt from 'bcrypt'
 
 jest.mock('bcrypt', () => ({
@@ -62,6 +64,7 @@ describe('TokenService', () => {
         { provide: JwtService, useValue: mockJwtService },
         { provide: RedisService, useValue: mockRedis },
         { provide: AdminService, useValue: mockAdminService },
+        { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     }).compile()
 

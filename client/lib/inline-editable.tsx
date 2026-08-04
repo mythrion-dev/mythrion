@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 // ── Inline Text ──
 export function InlineText({
@@ -233,7 +234,7 @@ export function InlineSelect<T extends string>({
   options,
   onSave,
   disabled = false,
-  placeholder = '— Select —',
+  placeholder,
   className = '',
 }: {
   value: T | null
@@ -243,6 +244,8 @@ export function InlineSelect<T extends string>({
   placeholder?: string
   className?: string
 }) {
+  const { t } = useTranslation()
+  const resolvedPlaceholder = placeholder ?? t('templates:selectPlaceholder')
   const [saving, setSaving] = useState(false)
   const selectRef = useRef<HTMLSelectElement>(null)
   const selectedOption = options.find(o => o.value === value)
@@ -264,7 +267,7 @@ export function InlineSelect<T extends string>({
         disabled={disabled || saving}
         className="input-field py-0.5 px-1 text-xs"
       >
-        <option value="">{placeholder}</option>
+        <option value="">{resolvedPlaceholder}</option>
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
       {saving && <div className="w-2.5 h-2.5 border border-primary/30 border-t-primary rounded-full animate-spin" />}

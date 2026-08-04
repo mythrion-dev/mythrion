@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
 import { TemplatePickerModal } from '@/components/adventure/TemplatePickerModal'
 import { ConfirmDetachModal } from '@/components/adventure/ConfirmDetachModal'
@@ -36,6 +37,7 @@ export function TemplateAttachmentPanel({
   onAttached,
   onDetached,
 }: TemplateAttachmentPanelProps) {
+  const { t } = useTranslation()
   const [showPicker, setShowPicker] = useState(false)
   const [attaching, setAttaching] = useState(false)
   const [showConfirmDetach, setShowConfirmDetach] = useState(false)
@@ -57,7 +59,7 @@ export function TemplateAttachmentPanel({
       setShowPicker(false)
       onAttached?.()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to attach template')
+      setError(err instanceof Error ? err.message : t('campaign:failedToAttachTemplate'))
     } finally {
       setAttaching(false)
     }
@@ -77,7 +79,7 @@ export function TemplateAttachmentPanel({
       setDetachSuccess(true)
       onDetached?.()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to detach template')
+      setError(err instanceof Error ? err.message : t('campaign:failedToDetachTemplate'))
     } finally {
       setDetaching(false)
     }
@@ -86,8 +88,8 @@ export function TemplateAttachmentPanel({
   // Auto-clear success message after 4 seconds
   useEffect(() => {
     if (!detachSuccess) return
-    const t = setTimeout(() => setDetachSuccess(false), 4000)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => setDetachSuccess(false), 4000)
+    return () => clearTimeout(timer)
   }, [detachSuccess])
 
   return (
@@ -97,7 +99,7 @@ export function TemplateAttachmentPanel({
           <svg className="w-4 h-4 inline mr-1.5 -mt-0.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
           </svg>
-          Template Attachment
+          {t('campaign:templateAttachment')}
         </h3>
 
         {isGM && (
@@ -111,7 +113,7 @@ export function TemplateAttachmentPanel({
                 {attaching ? (
                   <div className="w-3 h-3 border-2 border-background/30 border-t-background rounded-full animate-spin" />
                 ) : (
-                  'Attach Template'
+                  t('campaign:attachTemplate')
                 )}
               </button>
             ) : (
@@ -120,7 +122,7 @@ export function TemplateAttachmentPanel({
                   onClick={() => setShowPicker(true)}
                   className="btn-secondary text-xs !px-3 !py-1"
                 >
-                  Replace
+                  {t('campaign:replace')}
                 </button>
                 <button
                   onClick={handleDetach}
@@ -130,7 +132,7 @@ export function TemplateAttachmentPanel({
                   {detaching ? (
                     <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                   ) : (
-                    'Detach'
+                    t('campaign:detach')
                   )}
                 </button>
               </>
@@ -141,7 +143,7 @@ export function TemplateAttachmentPanel({
 
       {detachSuccess && (
         <div className="mb-3 rounded-lg bg-success-muted border border-success/30 px-3 py-2 text-xs text-success">
-          Sheet Template detached successfully.
+          {t('campaign:detachedSuccessfully')}
         </div>
       )}
       {error && (
@@ -170,59 +172,59 @@ export function TemplateAttachmentPanel({
           <div className="flex flex-wrap gap-1.5">
             {templateSnapshot.attributeCount > 0 && (
               <span className="badge text-[0.55rem]" style={{ background: 'rgba(124,92,231,0.12)', color: '#9070f0', border: '1px solid rgba(124,92,231,0.18)' }}>
-                {templateSnapshot.attributeCount} attr
+                {t('campaign:attrCount', { count: templateSnapshot.attributeCount })}
               </span>
             )}
             {templateSnapshot.skillCount > 0 && (
               <span className="badge text-[0.55rem]" style={{ background: 'rgba(201,164,75,0.12)', color: '#c9a44b', border: '1px solid rgba(201,164,75,0.18)' }}>
-                {templateSnapshot.skillCount} skills
+                {t('campaign:skillCount', { count: templateSnapshot.skillCount })}
               </span>
             )}
             {templateSnapshot.fieldCount > 0 && (
               <span className="badge text-[0.55rem]" style={{ background: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.18)' }}>
-                {templateSnapshot.fieldCount} fields
+                {t('campaign:fieldCount', { count: templateSnapshot.fieldCount })}
               </span>
             )}
             {templateSnapshot.profileCount > 0 && (
               <span className="badge text-[0.55rem]" style={{ background: 'rgba(236,72,153,0.12)', color: '#f472b6', border: '1px solid rgba(236,72,153,0.18)' }}>
-                {templateSnapshot.profileCount} profiles
+                {t('campaign:profileCount', { count: templateSnapshot.profileCount })}
               </span>
             )}
             {templateSnapshot.resourceCount > 0 && (
               <span className="badge text-[0.55rem]" style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.18)' }}>
-                {templateSnapshot.resourceCount} resources
+                {t('campaign:resourceCount', { count: templateSnapshot.resourceCount })}
               </span>
             )}
             {templateSnapshot.acCount > 0 && (
               <span className="badge text-[0.55rem]" style={{ background: 'rgba(52,211,153,0.12)', color: '#34d399', border: '1px solid rgba(52,211,153,0.18)' }}>
-                {templateSnapshot.acCount} AC
+                {t('campaign:acCount', { count: templateSnapshot.acCount })}
               </span>
             )}
             {templateSnapshot.sectionCount > 0 && (
               <span className="badge text-[0.55rem]" style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.18)' }}>
-                {templateSnapshot.sectionCount} sections
+                {t('campaign:sectionCount', { count: templateSnapshot.sectionCount })}
               </span>
             )}
             {templateSnapshot.resistCount > 0 && (
               <span className="badge text-[0.55rem]" style={{ background: 'rgba(168,85,247,0.12)', color: '#a855f7', border: '1px solid rgba(168,85,247,0.18)' }}>
-                {templateSnapshot.resistCount} resists
+                {t('campaign:resistCount', { count: templateSnapshot.resistCount })}
               </span>
             )}
           </div>
 
           <div className="flex items-center justify-between pt-2 border-t border-border/50">
             <span className="text-[0.6rem] text-muted">
-              Snapshot created {new Date(templateSnapshot.createdAt).toLocaleDateString('en-US', {
+              {t('campaign:snapshotCreated', { date: new Date(templateSnapshot.createdAt).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',
-              })}
+              }) })}
             </span>
             {originalTemplateId && (
-              <span className="text-[0.6rem] text-muted">Linked to original template</span>
+              <span className="text-[0.6rem] text-muted">{t('campaign:linkedToOriginalTemplate')}</span>
             )}
             {!originalTemplateId && templateSnapshot && (
-              <span className="text-[0.6rem] text-muted italic">Detached (snapshot preserved)</span>
+              <span className="text-[0.6rem] text-muted italic">{t('campaign:detachedSnapshotPreserved')}</span>
             )}
           </div>
         </div>
@@ -230,11 +232,11 @@ export function TemplateAttachmentPanel({
         <div className="flex flex-col items-center py-6 text-center">
           <span className="text-2xl mb-2">📋</span>
           <p className="text-sm text-muted-foreground">
-            No template attached to this adventure yet.
+            {t('campaign:noTemplateAttachedYet')}
           </p>
           {isGM && (
             <p className="text-xs text-muted mt-1">
-              Attach a template to allow players to create character sheets.
+              {t('campaign:attachTemplateToAllowPlayers')}
             </p>
           )}
         </div>

@@ -7,6 +7,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 
 function formatPrice(cents: number): string {
   return (cents / 100).toLocaleString('pt-BR', {
@@ -16,6 +18,7 @@ function formatPrice(cents: number): string {
 }
 
 export default function PricingPage() {
+  const { t } = useTranslation()
   const { user, loading: authLoading } = useAuth()
   const { subscription, loading: subLoading, hasActiveSubscription } = useSubscription()
   const router = useRouter()
@@ -63,7 +66,7 @@ export default function PricingPage() {
   if (isLoading) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-background bg-pattern">
-        <div className="text-sm text-muted-foreground">Loading...</div>
+        <div className="text-sm text-muted-foreground">{t('common:loading')}</div>
       </main>
     )
   }
@@ -74,29 +77,29 @@ export default function PricingPage() {
       <header className="border-b border-border/60 bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-3">
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-surface shadow-[0_0_25px_rgba(201,164,75,0.08)]">
-              <Image
-                src="/logo-icon.png"
-                alt="Mythrion logo"
-                width={532}
-                height={624}
-                className="h-8 w-auto"
-              />
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Mythrion logo"
+              width={912}
+              height={703}
+              className="h-11 w-auto sm:h-12"
+              priority
+            />
             <div>
-              <p className="text-sm font-semibold text-gradient">Mythrion</p>
-              <p className="text-[0.65rem] uppercase tracking-[0.25em] text-muted">RPG engine</p>
+              {/* <p className="text-sm font-semibold text-gradient">{t('common:appName')}</p> */}
+              <p className="text-[0.65rem] uppercase tracking-[0.25em] text-muted">{t('billing:rpgEngine')}</p>
             </div>
           </Link>
 
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             {user ? (
               <Link href="/dashboard" className="text-sm text-muted hover:text-foreground transition-colors">
-                Dashboard
+                {t('common:dashboard')}
               </Link>
             ) : (
               <Link href="/login?redirect=/pricing" className="text-sm text-muted hover:text-foreground transition-colors">
-                Sign in
+                {t('billing:signIn')}
               </Link>
             )}
           </div>
@@ -109,13 +112,13 @@ export default function PricingPage() {
         <div className="mx-auto max-w-7xl px-4 pt-16 pb-8 text-center sm:px-6 lg:px-8">
           <div className="relative z-10">
             <div className="mb-5 inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[0.7rem] font-medium uppercase tracking-[0.25em] text-primary">
-              Choose your plan
+              {t('billing:choosePlan')}
             </div>
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Unlock the full <span className="text-gradient">Mythrion</span> experience
+              {t('billing:unlockExperience1')} <span className="text-gradient">{t('common:appName')}</span>{t('billing:unlockExperience2')}
             </h1>
             <p className="mt-4 text-base text-muted-foreground max-w-lg mx-auto">
-              Pick the plan that fits your table. Cancel anytime.
+              {t('billing:planTagline')}
             </p>
           </div>
         </div>
@@ -126,14 +129,14 @@ export default function PricingPage() {
 
             {/* Free tier — always shown */}
             <div className="flex flex-col rounded-2xl border border-border bg-surface p-8 transition-shadow hover:shadow-lg">
-              <h2 className="text-lg font-semibold">Free</h2>
+              <h2 className="text-lg font-semibold">{t('common:free')}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Get started with the essentials — no payment needed.
+                {t('billing:freeTierDescription')}
               </p>
 
               <div className="mt-6">
                 <span className="text-3xl font-bold">R$ 0</span>
-                <span className="ml-2 text-sm text-muted-foreground">/forever</span>
+                <span className="ml-2 text-sm text-muted-foreground">{t('billing:periodForever')}</span>
               </div>
 
               <ul className="mt-6 space-y-2 text-sm flex-1">
@@ -141,25 +144,25 @@ export default function PricingPage() {
                   <svg className="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                  Browse public campaigns
+                  {t('billing:browsePublicCampaigns')}
                 </li>
                 <li className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                  Browse &amp; clone public templates
+                  {t('billing:browseClonePublicTemplates')}
                 </li>
                 <li className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                  Create character sheets
+                  {t('billing:createCharacterSheets')}
                 </li>
                 <li className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                  Request access to campaigns
+                  {t('billing:requestCampaignAccess')}
                 </li>
               </ul>
 
@@ -169,21 +172,21 @@ export default function PricingPage() {
                     href="/login?redirect=/pricing"
                     className="block w-full rounded-lg border border-border bg-surface hover:bg-background px-5 py-2.5 text-center text-sm font-medium text-foreground transition-colors"
                   >
-                    Get Started — Sign up
+                    {t('billing:getStartedSignUp')}
                   </Link>
                 ) : !hasActiveSubscription ? (
                   <button
                     disabled
                     className="w-full rounded-lg border border-border bg-surface/50 px-5 py-2.5 text-sm font-medium text-muted cursor-default"
                   >
-                    Current Plan
+                    {t('billing:currentPlan')}
                   </button>
                 ) : (
                   <Link
                     href="/dashboard"
                     className="block w-full rounded-lg border border-border bg-surface hover:bg-background px-5 py-2.5 text-center text-sm font-medium text-foreground transition-colors"
                   >
-                    Dashboard
+                    {t('common:dashboard')}
                   </Link>
                 )}
               </div>
@@ -197,15 +200,15 @@ export default function PricingPage() {
                 subscription &&
                 (subscription.status === 'CANCELLED' || subscription.status === 'EXPIRED')
 
-              let cta: { label: string; href: string } | null = null
+              let cta: { labelKey: string; href: string } | null = null
               if (!user) {
-                cta = { label: 'Assinar', href: `/login?redirect=/pricing` }
+                cta = { labelKey: 'billing:subscribe', href: `/login?redirect=/pricing` }
               } else if (isSubscribed && hasActiveSubscription) {
-                cta = { label: 'Current plan', href: '/dashboard' }
+                cta = { labelKey: 'billing:currentPlan', href: '/dashboard' }
               } else if (isCancelledOrExpired && isSubscribed) {
-                cta = { label: 'Renew', href: `/subscription/checkout?planId=${plan.id}` }
+                cta = { labelKey: 'billing:renew', href: `/subscription/checkout?planId=${plan.id}` }
               } else {
-                cta = { label: 'Assinar', href: `/subscription/checkout?planId=${plan.id}` }
+                cta = { labelKey: 'billing:subscribe', href: `/subscription/checkout?planId=${plan.id}` }
               }
 
               return (
@@ -219,7 +222,7 @@ export default function PricingPage() {
                 >
                   {isAnnual && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full border border-primary/30 bg-primary/15 px-4 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-primary">
-                      Best value
+                      {t('billing:bestValue')}
                     </div>
                   )}
 
@@ -230,16 +233,16 @@ export default function PricingPage() {
                     <span className="text-3xl font-bold">{formatPrice(plan.price)}</span>
                     {isAnnual ? (
                       <span className="ml-2 text-sm text-muted-foreground">
-                        /year ({formatPrice(pricePerMonth)}/mês)
+                        {t('billing:annualPriceSuffix', { price: formatPrice(pricePerMonth) })}
                       </span>
                     ) : (
-                      <span className="ml-2 text-sm text-muted-foreground">/month</span>
+                      <span className="ml-2 text-sm text-muted-foreground">{t('billing:periodMonth')}</span>
                     )}
                   </div>
 
                   {isAnnual && (
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Save ~16% compared to the monthly plan
+                      {t('billing:saveComparedMonthly')}
                     </p>
                   )}
 
@@ -248,36 +251,36 @@ export default function PricingPage() {
                       <svg className="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
-                      Full platform access
+                      {t('billing:fullPlatformAccess')}
                     </li>
                     <li className="flex items-center gap-2">
                       <svg className="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
-                      Unlimited campaigns
+                      {t('billing:unlimitedCampaigns')}
                     </li>
                     <li className="flex items-center gap-2">
                       <svg className="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
-                      Priority support
+                      {t('billing:prioritySupport')}
                     </li>
                     <li className="flex items-center gap-2">
                       <svg className="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
-                      Cancel anytime
+                      {t('billing:cancelAnytime')}
                     </li>
                   </ul>
 
                   {cta && (
                     <div className="mt-8">
-                      {cta.label === 'Current plan' ? (
+                      {cta.labelKey === 'billing:currentPlan' ? (
                         <button
                           disabled
                           className="w-full rounded-lg border border-border bg-surface/50 px-5 py-2.5 text-sm font-medium text-muted cursor-default"
                         >
-                          {cta.label}
+                          {t(cta.labelKey)}
                         </button>
                       ) : (
                         <Link
@@ -288,7 +291,7 @@ export default function PricingPage() {
                               : 'border border-border bg-surface hover:bg-background text-foreground'
                           }`}
                         >
-                          {cta.label}
+                          {t(cta.labelKey)}
                         </Link>
                       )}
                     </div>

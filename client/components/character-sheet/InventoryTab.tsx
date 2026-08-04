@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation } from 'react-i18next'
 import { InlineClickEdit } from '@/components/character-sheet'
 import type { InventoryItem, SheetPermissions } from './types'
 import type { SubmitEvent } from 'react'
@@ -29,6 +30,7 @@ export function InventoryTab({
   expandedItems: Record<string, boolean>
   setExpandedItems: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
 }) {
+  const { t } = useTranslation()
   const canEditInventory = permissions.canEditInventory
   const q = searchQuery.toLowerCase()
   const filtered = q
@@ -49,7 +51,7 @@ export function InventoryTab({
           </svg>
           <input
             className="input-field pl-9 py-1.5 text-sm w-full"
-            placeholder="Search inventory..."
+            placeholder={t('character:searchInventoryPlaceholder')}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
@@ -73,15 +75,15 @@ export function InventoryTab({
                 <svg className="w-10 h-10 mx-auto text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
-                <p className="text-sm italic">No items match your search.</p>
+                <p className="text-sm italic">{t('character:noItemsMatchSearch')}</p>
               </div>
             ) : (
               <div className="space-y-2">
                 <svg className="w-10 h-10 mx-auto text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                 </svg>
-                <p className="text-sm italic">Inventory is empty.</p>
-                {canEditInventory && <p className="text-xs text-muted">Add your first item below.</p>}
+                <p className="text-sm italic">{t('character:inventoryEmpty')}</p>
+                {canEditInventory && <p className="text-xs text-muted">{t('character:addFirstItemBelow')}</p>}
               </div>
             )}
           </div>
@@ -127,7 +129,7 @@ export function InventoryTab({
                     <button
                       onClick={() => handleDeleteItem(item.id)}
                       className="text-muted hover:text-danger p-1 transition-colors"
-                      title="Delete item"
+                      title={t('character:deleteItemTitle')}
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -141,7 +143,7 @@ export function InventoryTab({
               {canEditInventory && (
                 <div className="flex flex-wrap gap-4 text-xs text-muted">
                   <span className="inline-flex items-center gap-1">
-                    Weight:
+                    {t('character:weightField')}
                     <InlineClickEdit
                       value={item.weight?.toString() ?? ''}
                       onSave={async (v) => saveItemField(item.id, 'weight', v)}
@@ -152,7 +154,7 @@ export function InventoryTab({
                     kg
                   </span>
                   <span className="inline-flex items-center gap-1">
-                    Cost:
+                    {t('character:costField')}
                     <InlineClickEdit
                       value={item.cost ?? ''}
                       onSave={async (v) => saveItemField(item.id, 'cost', v)}
@@ -174,7 +176,7 @@ export function InventoryTab({
                   <svg className={`w-3 h-3 transition-transform duration-200 ${expandedItems[item.id] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
                   </svg>
-                  Description
+                  {t('common:description')}
                 </button>
                 {expandedItems[item.id] && (
                   <div className="mt-2 pl-5 animate-fade-in">
@@ -184,12 +186,12 @@ export function InventoryTab({
                         onSave={async (v) => saveItemField(item.id, 'description', v)}
                         as="textarea"
                         className="text-sm text-muted-foreground whitespace-pre-wrap"
-                        emptyDisplay="Add a description..."
+                        emptyDisplay={t('character:addDescriptionPlaceholder')}
                       />
                     ) : item.description ? (
                       <p className="text-sm text-muted-foreground whitespace-pre-wrap">{item.description}</p>
                     ) : (
-                      <p className="text-sm text-muted italic">No description.</p>
+                      <p className="text-sm text-muted italic">{t('character:noDescription')}</p>
                     )}
                   </div>
                 )}
@@ -205,7 +207,7 @@ export function InventoryTab({
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
           </svg>
-          Add Item
+          {t('character:addItem')}
         </button>
       )}
 
@@ -213,23 +215,23 @@ export function InventoryTab({
       {canEditInventory && showNewItem && (
         <form onSubmit={handleCreateItem} className="card !p-6 space-y-4 border-primary/20">
           <div className="header-accent">
-            <h3 className="text-base font-semibold text-gradient">New Item</h3>
+            <h3 className="text-base font-semibold text-gradient">{t('character:newItem')}</h3>
           </div>
           <div>
-            <label htmlFor="item-name" className="label">Name</label>
+            <label htmlFor="item-name" className="label">{t('common:name')}</label>
             <input
               id="item-name"
               className="input-field"
               value={newItem.name}
               onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))}
               required
-              placeholder="e.g. Long Sword"
+              placeholder={t('character:itemNamePlaceholder')}
               autoFocus
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="item-weight" className="label">Weight (kg)</label>
+              <label htmlFor="item-weight" className="label">{t('character:weightKg')}</label>
               <input
                 id="item-weight"
                 type="number"
@@ -241,7 +243,7 @@ export function InventoryTab({
               />
             </div>
             <div>
-              <label htmlFor="item-cost" className="label">Cost</label>
+              <label htmlFor="item-cost" className="label">{t('character:cost')}</label>
               <input
                 id="item-cost"
                 className="input-field"
@@ -252,14 +254,14 @@ export function InventoryTab({
             </div>
           </div>
           <div>
-            <label htmlFor="item-description" className="label">Description</label>
+            <label htmlFor="item-description" className="label">{t('common:description')}</label>
             <textarea
               id="item-description"
               className="input-field resize-none"
               rows={3}
               value={newItem.description}
               onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))}
-              placeholder="A finely crafted steel longsword with a leather-wrapped hilt..."
+              placeholder={t('character:itemDescriptionPlaceholder')}
             />
           </div>
           {itemError && (
@@ -268,19 +270,19 @@ export function InventoryTab({
             </div>
           )}
           <div className="flex gap-3 justify-end pt-2 border-t border-border/40">
-            <button type="button" onClick={resetNewItem} disabled={itemSaving} className="btn-ghost text-sm">Cancel</button>
+            <button type="button" onClick={resetNewItem} disabled={itemSaving} className="btn-ghost text-sm">{t('common:cancel')}</button>
             <button type="submit" disabled={itemSaving || !newItem.name.trim()} className="btn-primary text-sm">
               {itemSaving ? (
                 <>
                   <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                  Creating...
+                  {t('character:creating')}
                 </>
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
                   </svg>
-                  Create Item
+                  {t('character:createItem')}
                 </>
               )}
             </button>

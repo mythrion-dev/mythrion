@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { NotebookPageItem } from './NotebookPageItem'
 
 interface FolderPage {
@@ -46,6 +47,7 @@ export function NotebookFolder({
   onDropOnFolder,
   onPageContextMenu,
 }: Readonly<NotebookFolderProps>) {
+  const { t } = useTranslation()
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState(name)
   const [showMenu, setShowMenu] = useState(false)
@@ -137,7 +139,7 @@ export function NotebookFolder({
             onToggle()
           }}
           className="p-0.5 rounded text-muted-foreground hover:text-foreground transition-colors"
-          aria-label={isExpanded ? 'Collapse folder' : 'Expand folder'}
+          aria-label={isExpanded ? t('notebook:collapseFolder') : t('notebook:expandFolder')}
         >
           <svg
             className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -187,8 +189,8 @@ export function NotebookFolder({
                 setShowMenu((prev) => !prev)
               }}
               className="p-0.5 rounded text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-              aria-label="Folder actions"
-              title="Folder actions"
+              aria-label={t('notebook:folderActions')}
+              title={t('notebook:folderActions')}
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <circle cx="12" cy="5" r="1.5" fill="currentColor" />
@@ -219,7 +221,7 @@ export function NotebookFolder({
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                   </svg>
-                  New Page
+                  {t('notebook:newPageInFolder')}
                 </button>
 
                 <button
@@ -234,7 +236,7 @@ export function NotebookFolder({
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
-                  Rename Folder
+                  {t('notebook:renameFolder')}
                 </button>
 
                 <div className="h-px bg-border my-1" />
@@ -250,7 +252,7 @@ export function NotebookFolder({
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
-                  Delete Folder
+                  {t('notebook:deleteFolder')}
                 </button>
               </div>
             )}
@@ -263,7 +265,7 @@ export function NotebookFolder({
         <div className="ml-2 mt-0.5 space-y-0.5 border-l border-border/50 pl-1">
           {pages.length === 0 ? (
             <div className="px-3 py-2">
-              <p className="text-xs text-muted-foreground mb-1.5 italic">No pages yet.</p>
+              <p className="text-xs text-muted-foreground mb-1.5 italic">{t('notebook:noPagesYet')}</p>
               <button
                 type="button"
                 onClick={() => onCreatePage?.(id)}
@@ -272,7 +274,7 @@ export function NotebookFolder({
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
-                Create Page
+                {t('notebook:createPage')}
               </button>
             </div>
           ) : (

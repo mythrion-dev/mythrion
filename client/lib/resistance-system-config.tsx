@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface ResistanceComponent {
   id?: string
@@ -31,6 +32,7 @@ function newResistance(): ResistanceDefinition {
 }
 
 export default function ResistanceSystemConfig({ resistances, attributes, onChange, disableAttributeModifiers = false }: Props) {
+  const { t } = useTranslation()
   const [expandedResistances, setExpandedResistances] = useState<Record<number, boolean>>({})
   const prevCount = useRef(0)
 
@@ -102,10 +104,10 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
     return (
       <div className="space-y-3">
         <div className="text-center py-6 text-muted-foreground text-sm italic">
-          No resistances configured.
+          {t('campaign:noResistancesConfigured')}
         </div>
         <button type="button" onClick={addResistance} className="btn-primary text-sm">
-          + New Resistance
+          {t('campaign:newResistanceButton')}
         </button>
       </div>
     )
@@ -124,7 +126,7 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
               className="flex items-center justify-between w-full px-3 py-2 text-left hover:bg-background/50 transition-colors"
             >
               <span className="text-sm font-medium text-foreground truncate">
-                {r.name || 'New Resistance'}
+                {r.name || t('campaign:newResistance')}
               </span>
               <svg className={`w-4 h-4 text-muted transition-transform shrink-0 ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/>
@@ -135,18 +137,18 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
               <div className="px-3 py-3 space-y-3 border-t border-border">
                 {/* Resistance Name */}
                 <div>
-                  <label className="label">Resistance Name</label>
+                  <label className="label">{t('campaign:resistanceName')}</label>
                   <input
                     className="input-field"
                     value={r.name}
                     onChange={e => updateResistance(rIdx, { name: e.target.value })}
-                    placeholder="e.g. Fire Resistance"
+                    placeholder={t('campaign:resistanceNamePlaceholder')}
                   />
                 </div>
 
                 {/* Calculation Type */}
                 <div>
-                  <label className="label">Calculation Type</label>
+                  <label className="label">{t('campaign:calculationType')}</label>
                   <div className="flex gap-2">
                     {(['MANUAL', 'CALCULATED'] as const).map(mode => (
                       <button
@@ -164,7 +166,7 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
                             : 'text-muted hover:text-foreground border border-transparent'
                         }`}
                       >
-                        {mode === 'MANUAL' ? 'Manual Value' : 'Calculated'}
+                        {mode === 'MANUAL' ? t('campaign:manualValue') : t('campaign:calculated')}
                       </button>
                     ))}
                   </div>
@@ -175,14 +177,14 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
                   <>
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium text-foreground">Components</label>
+                        <label className="text-sm font-medium text-foreground">{t('campaign:components')}</label>
                         <button type="button" onClick={() => addComponent(rIdx)} className="btn-ghost text-xs">
-                          + Add Component
+                          {t('campaign:addComponent')}
                         </button>
                       </div>
                       <div className="space-y-2">
                         {r.components.length === 0 && (
-                          <p className="text-xs text-muted italic text-center py-2">No components added yet.</p>
+                          <p className="text-xs text-muted italic text-center py-2">{t('campaign:noComponentsAddedYet')}</p>
                         )}
                         {r.components.map((c, cIdx) => (
                           <div key={cIdx} className="rounded-lg border border-border/50 bg-background/20 p-2 space-y-2">
@@ -191,7 +193,7 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
                                 className="input-field flex-1"
                                 value={c.name}
                                 onChange={e => updateComponent(rIdx, cIdx, { name: e.target.value })}
-                                placeholder="Component Name (e.g. Natural)"
+                                placeholder={t('campaign:componentNamePlaceholder')}
                               />
                               <input
                                 className="input-field w-20 text-sm text-center"
@@ -216,7 +218,7 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
                                 checked={c.editableByPlayer}
                                 onChange={e => updateComponent(rIdx, cIdx, { editableByPlayer: e.target.checked })}
                               />
-                              Editable by Player
+                              {t('campaign:editableByPlayer')}
                             </label>
                           </div>
                         ))}
@@ -227,7 +229,7 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
                     {disableAttributeModifiers ? (
                       <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
                         <p className="text-xs text-amber-300/80 leading-relaxed">
-                          Attribute Modifiers are disabled. Enable the global Attribute Modifier System to use this feature.
+                          {t('campaign:attributeModifiersDisabledForResistance')}
                         </p>
                         {r.attributeModifiers.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mt-2 opacity-50 pointer-events-none">
@@ -245,7 +247,7 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
                     ) : (
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <label className="text-sm font-medium text-foreground">Attribute Modifiers</label>
+                          <label className="text-sm font-medium text-foreground">{t('campaign:attributeModifiers')}</label>
                         </div>
                         <div className="space-y-2">
                           {/* Selected attribute modifiers as chips */}
@@ -284,7 +286,7 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
                                 e.target.value = ''
                               }}
                             >
-                              <option value="">+ Add Attribute Modifier</option>
+                              <option value="">{t('campaign:addAttributeModifier')}</option>
                               {attributes
                                 .filter(a => !r.attributeModifiers.some(am => am.attributeId === a.id))
                                 .map(a => (
@@ -310,7 +312,7 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
                     onClick={() => removeResistance(rIdx)}
                     className="text-xs text-danger hover:text-danger/80 transition-colors"
                   >
-                    Remove Resistance
+                    {t('campaign:removeResistance')}
                   </button>
                 </div>
               </div>
@@ -320,7 +322,7 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
       })}
 
       <button type="button" onClick={addResistance} className="btn-primary text-sm">
-        + New Resistance
+        {t('campaign:newResistanceButton')}
       </button>
     </div>
   )

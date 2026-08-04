@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation } from 'react-i18next'
 import type { SubmitEvent } from 'react'
 
 interface Invitation {
@@ -34,26 +35,27 @@ export function InvitePanel({
   onInviteByLink: () => void
   onRevoke: (id: string) => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className="space-y-4">
       {/* Invite by email */}
       <form onSubmit={onInviteByEmail} className="space-y-3">
         <div>
-          <label className="label">Invite by Email</label>
+          <label className="label">{t('campaign:inviteByEmail')}</label>
           <div className="flex gap-2">
             <input
               type="email"
               value={inviteEmail}
               onChange={e => onEmailChange(e.target.value)}
               className="input-field flex-1"
-              placeholder="player@example.com"
+              placeholder={t('campaign:emailPlaceholder')}
             />
             <button
               type="submit"
               disabled={inviteSending || inviteEmail.trim().length === 0}
               className="btn-primary"
             >
-              Send
+              {t('campaign:send')}
             </button>
           </div>
         </div>
@@ -61,13 +63,13 @@ export function InvitePanel({
 
       {/* Invite by link */}
       <div>
-        <label className="label">Invite by Link</label>
+        <label className="label">{t('campaign:inviteByLink')}</label>
         <button
           onClick={onInviteByLink}
           disabled={inviteSending}
           className="btn-ghost"
         >
-          Generate invite link
+          {t('campaign:generateInviteLink')}
         </button>
         {inviteLink && (
           <div className="mt-2 flex items-center gap-2">
@@ -81,7 +83,7 @@ export function InvitePanel({
               onClick={() => navigator.clipboard.writeText(inviteLink!)}
               className="btn-ghost text-xs"
             >
-              Copy
+              {t('common:copy')}
             </button>
           </div>
         )}
@@ -97,17 +99,17 @@ export function InvitePanel({
       {/* Pending invitations */}
       {invitations.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-muted">Pending Invitations</h4>
+          <h4 className="text-sm font-medium text-muted">{t('campaign:pendingInvitations')}</h4>
           {invitations.map(inv => (
             <div key={inv.id} className="flex items-center justify-between text-sm py-1">
               <span className="text-muted-foreground">
-                {inv.invitedEmail ?? 'Link invitation'}
+                {inv.invitedEmail ?? t('campaign:linkInvitation')}
               </span>
               <button
                 onClick={() => onRevoke(inv.id)}
                 className="text-xs text-danger hover:text-danger/80 transition-colors"
               >
-                Revoke
+                {t('campaign:revoke')}
               </button>
             </div>
           ))}

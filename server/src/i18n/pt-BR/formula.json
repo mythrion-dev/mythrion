@@ -1,0 +1,10 @@
+{
+  "mustReturnNumber": "A fórmula deve retornar um número",
+  "mustBeFinite": "O resultado da fórmula deve ser um número finito",
+  "evaluationFailed": "Falha ao avaliar a fórmula: {error}",
+  "invalidFormula": "Fórmula inválida: {error}",
+  "invalidVarName": "Nome de variável inválido: \"{name}\"",
+  "unknownVar": "Variável desconhecida: \"{name}\". Disponível: {available}",
+  "fnNotAllowed": "Função \"{fnName}\" não é permitida. Disponível: {available}",
+  "operatorNotAllowed": "Operador \"{op}\" não é permitido"
+}

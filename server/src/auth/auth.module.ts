@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt'
 import { PassportModule } from '@nestjs/passport'
 import { AuthService } from './auth.service.js'
 import { AuthController } from './auth.controller.js'
+import { LanguageService } from './language.service.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
 import { PrismaService } from '../prisma.service.js'
 import { GoogleService } from './google.service.js'
@@ -27,6 +28,7 @@ import { SubscriptionModule } from '../subscription/subscription.module.js'
   controllers: [AuthController],
   providers: [
     AuthService,
+    LanguageService,
     JwtAuthGuard,
     PrismaService,
     GoogleService,
@@ -42,6 +44,7 @@ import { SubscriptionModule } from '../subscription/subscription.module.js'
     JwtAuthGuard,
     JwtModule,
     AuthService,
+    LanguageService,
     GoogleService,
     TokenService,
     RateLimitGuard,

@@ -16,6 +16,7 @@ model User {
   passwordHash       String?
   displayName        String?
   onboardingComplete Boolean              @default(false)
+  language           String               @default("en")
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
   adventures         Adventure[]

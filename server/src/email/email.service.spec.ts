@@ -148,6 +148,11 @@ describe('EmailService', () => {
       expect(body.html).toContain('GM');
       expect(body.html).toContain('https://mythrion.com/invite/token123');
       expect(body.html).toContain('July');
+
+      // Logo must be an absolute HTTPS URL — Gmail breaks on data: URIs.
+      expect(body.html).toMatch(/<img src="https:\/\/[^"]+\/logo\.png"/);
+      expect(body.html).not.toContain('data:image');
+
       expect(body.text).toContain('My Campaign');
       expect(body.text).toContain(
         'Accept the invitation: https://mythrion.com/invite/token123',
