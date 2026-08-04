@@ -9,11 +9,32 @@ const REQUEST_TIMEOUT_MS = 10_000;
 /**
  * Inline the logo as a base64 data URI instead of referencing a remote URL —
  * many email clients block remote images by default, so a hosted URL may show
- * up as a broken image. The PNG is copied to dist/email by the nest-cli asset.
+ * up as a broken image. The PNG is copied to dist by the nest-cli asset.
  */
-const EMAIL_LOGO = `data:image/png;base64,${readFileSync(
-  join(__dirname, 'email-logo.png'),
-).toString('base64')}`;
+const EMAIL_LOGO = `data:image/png;base64,${loadEmailLogo()}`;
+
+/**
+ * Locate the logo PNG. The asset lives at src/email/ in the source tree and is
+ * copied to dist/email/ by the nest-cli asset config, but the compiled service
+ * lands in dist/src/email/ (a rootDir quirk: server.js at the package root pulls
+ * tsc's inferred rootDir above src/). So __dirname alone can't find the file.
+ */
+function loadEmailLogo(): string {
+  const candidates = [
+    join(__dirname, 'email-logo.png'), // ts-jest (src/email/) or dist/email/
+    join(__dirname, '..', '..', 'email', 'email-logo.png'), // compiled dist/src/email/
+  ];
+  for (const candidate of candidates) {
+    try {
+      return readFileSync(candidate).toString('base64');
+    } catch {
+      // try next candidate
+    }
+  }
+  throw new Error(
+    `Could not locate email-logo.png (tried: ${candidates.join(', ')})`,
+  );
+}
 
 /** Extract the display-name portion of a "Name <addr>" From string. */
 function parseDisplayName(from: string | undefined): string {
