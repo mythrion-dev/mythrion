@@ -35,10 +35,15 @@ export class SubscriptionGuard implements CanActivate {
       throw new ForbiddenException(this.i18n.t('subscription.authRequired'))
     }
 
-    // Layer 1 — Admin bypass. Admin emails are defined in the ADMIN_EMAILS
-    // environment variable (set in Railway for production), so this check
-    // cannot be bypassed via SQL injection or database compromise.
-    if (this.adminService.isAdmin(user.email)) {
+    // Layer 1 — Admin/early-access bypass. Both lists are defined in the
+    // ADMIN_EMAILS and EARLY_ACCESS_EMAILS environment variables (set in Railway
+    // for production), so these checks cannot be bypassed via SQL injection or
+    // database compromise. Early access grants the same feature access as admin
+    // (e.g. subscription paywall bypass) without admin-panel privileges.
+    if (
+      this.adminService.isAdmin(user.email) ||
+      this.adminService.isEarlyAccess(user.email)
+    ) {
       return true
     }
 

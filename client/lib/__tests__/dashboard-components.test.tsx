@@ -183,10 +183,10 @@ describe('Sidebar collapsed state', () => {
     expect(titles).toContain('Character Sheets')
   })
 
-  it('shows collapsed logo as "M"', () => {
+  it('shows the logo icon when collapsed', () => {
     render(<Sidebar />)
     fireEvent.click(screen.getByTitle('Collapse sidebar'))
-    expect(screen.getByText('M')).toBeInTheDocument()
+    expect(screen.getByAltText('Mythrion')).toBeInTheDocument()
     expect(screen.queryByText('Mythrion')).not.toBeInTheDocument()
   })
 })

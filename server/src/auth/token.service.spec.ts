@@ -31,6 +31,7 @@ describe('TokenService', () => {
   let mockPrisma: ReturnType<typeof createMockPrismaService>
   let mockJwtService: Record<string, jest.Mock>
   let mockRedis: Record<string, jest.Mock>
+  let mockAdminService: { isAdmin: jest.Mock; isEarlyAccess: jest.Mock }
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -51,6 +52,10 @@ describe('TokenService', () => {
       expire: jest.fn().mockResolvedValue(undefined),
       ttl: jest.fn().mockResolvedValue(300),
     }
+    mockAdminService = {
+      isAdmin: jest.fn().mockReturnValue(false),
+      isEarlyAccess: jest.fn().mockReturnValue(false),
+    }
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -58,7 +63,7 @@ describe('TokenService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: JwtService, useValue: mockJwtService },
         { provide: RedisService, useValue: mockRedis },
-        { provide: AdminService, useValue: { isAdmin: jest.fn().mockReturnValue(false) } },
+        { provide: AdminService, useValue: mockAdminService },
         { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     }).compile()
@@ -79,6 +84,34 @@ describe('TokenService', () => {
       )
       expect(result.accessToken).toBe('mock-access-token')
       expect(result.refreshToken).toBeTruthy()
+    })
+
+    it('should resolve role to early_access for early-access emails', async () => {
+      ;(bcrypt.hash as jest.Mock).mockResolvedValue('hashed-refresh-token')
+      mockPrisma.refreshToken.create.mockResolvedValue({ id: 'rt-1' })
+      mockAdminService.isEarlyAccess.mockReturnValue(true)
+
+      const result = await service.generateTokens('user-1', 'early@test.com')
+
+      expect(mockJwtService.sign).toHaveBeenCalledWith(
+        { sub: 'user-1', email: 'early@test.com', role: 'early_access' },
+        { expiresIn: '15m' },
+      )
+      expect(result.accessToken).toBe('mock-access-token')
+    })
+
+    it('should give admin precedence when email is in both lists', async () => {
+      ;(bcrypt.hash as jest.Mock).mockResolvedValue('hashed-refresh-token')
+      mockPrisma.refreshToken.create.mockResolvedValue({ id: 'rt-1' })
+      mockAdminService.isAdmin.mockReturnValue(true)
+      mockAdminService.isEarlyAccess.mockReturnValue(true)
+
+      await service.generateTokens('user-1', 'both@test.com')
+
+      expect(mockJwtService.sign).toHaveBeenCalledWith(
+        { sub: 'user-1', email: 'both@test.com', role: 'admin' },
+        { expiresIn: '15m' },
+      )
     })
 
     it('should create a refresh token in the database', async () => {

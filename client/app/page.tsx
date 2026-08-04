@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -46,9 +47,13 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-3">
             <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-surface shadow-[0_0_25px_rgba(201,164,75,0.08)]">
-              <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4-6.2-4.5h7.6L12 2z" />
-              </svg>
+              <Image
+                src="/logo-icon.png"
+                alt="Mythrion logo"
+                width={532}
+                height={624}
+                className="h-8 w-auto"
+              />
             </div>
             <div>
               <p className="text-sm font-semibold text-gradient">{t('common:appName')}</p>

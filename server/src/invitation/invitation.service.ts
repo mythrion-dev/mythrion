@@ -10,9 +10,10 @@ import { MembershipService } from '../membership/membership.service.js'
 import { EmailService } from '../email/email.service.js'
 import { v4 as uuid } from 'uuid'
 import { MemberRole, InvitationStatus } from '../generated/prisma/client.js'
+import { isAllowedOrigin, normalizeOrigin } from '../config/allowed-origins.js'
 
 const INVITATION_EXPIRY_DAYS = 7
-const APP_URL = process.env.FRONTEND_URL ?? 'http://localhost:3001'
+const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:3001'
 
 @Injectable()
 export class InvitationService {
@@ -33,11 +34,24 @@ export class InvitationService {
     return date
   }
 
+  /**
+   * Build the invite link from the origin the request actually came from (so a
+   * player visiting via mythrion.com.br gets a mythrion.com.br link, not a fixed
+   * FRONTEND_URL), falling back to FRONTEND_URL when the origin isn't trusted.
+   */
+  private resolveInviteUrl(origin: string | undefined, token: string): string {
+    const base = isAllowedOrigin(origin)
+      ? (normalizeOrigin(origin) as string)
+      : FRONTEND_URL
+    return `${base}/invite/${token}`
+  }
+
   /** Create an email-based invitation */
   async inviteByEmail(params: {
     adventureId: string
     invitedEmail: string
     createdById: string
+    origin?: string
   }) {
     // Verify creator is GM
     await this.membership.requireRole(
@@ -79,7 +93,7 @@ export class InvitationService {
         campaignName: adventure.name,
         inviterName: inviter?.displayName ?? inviter?.email ?? 'Someone',
         role: 'PLAYER',
-        inviteUrl: `${APP_URL}/invite/${token}`,
+        inviteUrl: this.resolveInviteUrl(params.origin, token),
         expiresAt: invitation.expiresAt,
       })
     } catch (err) {
@@ -101,6 +115,7 @@ export class InvitationService {
   async inviteByLink(params: {
     adventureId: string
     createdById: string
+    origin?: string
   }) {
     await this.membership.requireRole(
       params.adventureId,
@@ -124,7 +139,7 @@ export class InvitationService {
       },
     })
 
-    return { inviteUrl: `${APP_URL}/invite/${token}` }
+    return { inviteUrl: this.resolveInviteUrl(params.origin, token) }
   }
 
   /** Validate an invitation token (for the frontend preview page) */

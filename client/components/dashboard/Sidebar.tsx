@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useSubscription } from '@/lib/subscription-context'
@@ -141,11 +142,20 @@ export function Sidebar() {
       <div className={`flex items-center transition-all duration-300 ${collapsed ? 'justify-center' : 'justify-between'}`}>
         <Link
           href="/dashboard"
-          className={`text-xl font-semibold text-gradient tracking-tight transition-all duration-300 ${collapsed ? 'text-sm w-8 h-8 flex items-center justify-center' : ''}`}
+          className={`flex items-center transition-all duration-300 ${collapsed ? 'w-8 h-8 justify-center' : 'gap-2'}`}
           onClick={() => setMobileOpen(false)}
           title={t('common:dashboard')}
         >
-          {collapsed ? 'M' : t('common:appName')}
+          <Image
+            src="/logo-icon.png"
+            alt="Mythrion"
+            width={532}
+            height={624}
+            className="h-8 w-auto rounded-lg"
+          />
+          {!collapsed && (
+            <span className="text-xl font-semibold text-gradient tracking-tight">Mythrion</span>
+          )}
         </Link>
         <button
           onClick={toggleCollapsed}
@@ -187,6 +197,9 @@ export function Sidebar() {
             {user?.isAdmin && (
               <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-background" />
             )}
+            {!user?.isAdmin && user?.isEarlyAccess && (
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-violet-500 border-2 border-background" />
+            )}
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
@@ -200,12 +213,17 @@ export function Sidebar() {
                     {t('common:admin')}
                   </span>
                 )}
-                {!user?.isAdmin && hasActiveSubscription && subscription?.plan?.name && (
+                {!user?.isAdmin && user?.isEarlyAccess && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-violet-500/15 text-violet-600 dark:text-violet-400 border border-violet-500/20 shrink-0">
+                    Early Access
+                  </span>
+                )}
+                {!user?.isAdmin && !user?.isEarlyAccess && hasActiveSubscription && subscription?.plan?.name && (
                   <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
                     {subscription.plan.name}
                   </span>
                 )}
-                {!user?.isAdmin && !hasActiveSubscription && (
+                {!user?.isAdmin && !user?.isEarlyAccess && !hasActiveSubscription && (
                   <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-muted text-muted-foreground border border-border shrink-0">
                     {t('common:free')}
                   </span>
@@ -216,7 +234,7 @@ export function Sidebar() {
         </div>
 
         {/* Upgrade CTA for free users */}
-        {!user?.isAdmin && !hasActiveSubscription && !collapsed && (
+        {!user?.isAdmin && !user?.isEarlyAccess && !hasActiveSubscription && !collapsed && (
           <Link
             href="/pricing"
             className="flex items-center justify-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-medium text-accent hover:bg-accent/15 hover:border-accent/50 transition-colors"
@@ -227,7 +245,7 @@ export function Sidebar() {
             {t('common:viewPlans')}
           </Link>
         )}
-        {!user?.isAdmin && !hasActiveSubscription && collapsed && (
+        {!user?.isAdmin && !user?.isEarlyAccess && !hasActiveSubscription && collapsed && (
           <Link
             href="/pricing"
             className="flex items-center justify-center w-8 h-8 rounded-lg border border-accent/30 bg-accent/10 text-accent hover:bg-accent/15 hover:border-accent/50 transition-colors"

@@ -27,7 +27,11 @@ export class TokenService {
 
   /** Generate access token (short-lived) and refresh token (long-lived, stored in DB) */
   async generateTokens(userId: string, email: string) {
-    const role = this.adminService.isAdmin(email) ? 'admin' : 'user'
+    const role = this.adminService.isAdmin(email)
+      ? 'admin'
+      : this.adminService.isEarlyAccess(email)
+        ? 'early_access'
+        : 'user'
     const accessToken = this.jwtService.sign(
       { sub: userId, email, role },
       { expiresIn: ACCESS_TOKEN_EXPIRY },

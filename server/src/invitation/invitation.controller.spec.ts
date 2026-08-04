@@ -23,6 +23,7 @@ describe('InvitationController', () => {
 
   const mockUserReq = {
     user: { sub: 'user-1', email: 'gm@test.com' },
+    headers: { origin: 'http://localhost:3001' },
   } as unknown as AuthenticatedRequest
 
   const pendingValidateResponse = {
@@ -95,6 +96,7 @@ describe('InvitationController', () => {
         adventureId: 'adv-1',
         invitedEmail: 'player@test.com',
         createdById: 'user-1',
+        origin: 'http://localhost:3001',
       })
       expect(result).toEqual({ success: true, invitationId: 'inv-123' })
     })
@@ -114,6 +116,7 @@ describe('InvitationController', () => {
         adventureId: 'adv-1',
         invitedEmail: '',
         createdById: 'user-1',
+        origin: 'http://localhost:3001',
       })
     })
 
@@ -141,6 +144,7 @@ describe('InvitationController', () => {
       expect(mockInvitationService.inviteByLink).toHaveBeenCalledWith({
         adventureId: 'adv-1',
         createdById: 'user-1',
+        origin: 'http://localhost:3001',
       })
       expect(result).toEqual({
         inviteUrl: 'http://localhost:3001/invite/token-abc',
