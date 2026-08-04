@@ -41,6 +41,10 @@ export type LoginOutcome =
   | { requiresTwoFactor: true; twoFactorId: string; emailMasked: string }
   | { requiresTwoFactor: false }
 
+type LoginResponse =
+  | { requiresTwoFactor: true; twoFactorId: string; emailMasked: string }
+  | { requiresTwoFactor: false; accessToken: string; refreshToken: string }
+
 interface AuthState {
   user: User | null
   loading: boolean
@@ -165,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string): Promise<LoginOutcome> => {
-      const res = await api.post<LoginOutcome>('/auth/login', {
+      const res = await api.post<LoginResponse>('/auth/login', {
         email,
         password,
       })
