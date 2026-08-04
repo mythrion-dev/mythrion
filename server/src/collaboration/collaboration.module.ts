@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common'
 import { JwtModule } from '@nestjs/jwt'
 import { EmailModule } from '../email/email.module.js'
-import { EmailService } from '../email/email.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { MembershipController } from '../membership/membership.controller.js'
 import { InvitationService } from '../invitation/invitation.service.js'
@@ -18,6 +17,6 @@ import { PrismaService } from '../prisma.service.js'
   ],
   controllers: [InvitationController, MembershipController],
   providers: [MembershipService, InvitationService, PrismaService],
-  exports: [EmailService, MembershipService, InvitationService],
+  exports: [MembershipService, InvitationService],
 })
 export class CollaborationModule {}
