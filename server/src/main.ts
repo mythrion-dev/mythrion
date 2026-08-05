@@ -26,7 +26,10 @@ export async function bootstrap() {
   // GET/HEAD/OPTIONS are safe and skipped; non-browser clients (curl, server
   // to server) usually send no Origin and pass through via the missing-origin
   // branch.
-  const i18n = app.get(I18nService)
+  // app.get() infers K as any, which makes Path<K> resolve to never and breaks
+  // i18n.t() type-checking; annotate with I18nService so K defaults to
+  // Record<string, unknown> like constructor-injected services.
+  const i18n: I18nService = app.get(I18nService)
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
       return next()

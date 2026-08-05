@@ -202,9 +202,15 @@ export async function refreshAccessToken(): Promise<string | null> {
   const canLock =
     typeof navigator !== 'undefined' && 'locks' in navigator
 
-  refreshPromise = canLock
-    ? navigator.locks.request(REFRESH_LOCK_NAME, doRefresh)
-    : doRefresh()
+  // navigator.locks.request resolves with the callback's return value, and the
+  // callback returns a promise (doRefresh). The installed DOM lib types that as
+  // Promise<Promise<string | null>>; awaiting it through this async wrapper
+  // flattens the layers so refreshPromise stays a single promise.
+  async function withRefreshLock(): Promise<string | null> {
+    return await navigator.locks.request(REFRESH_LOCK_NAME, doRefresh)
+  }
+
+  refreshPromise = canLock ? withRefreshLock() : doRefresh()
 
   try {
     return await refreshPromise
