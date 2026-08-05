@@ -31,6 +31,12 @@ export type UserMinAggregateOutputType = {
   displayName: string | null
   onboardingComplete: boolean | null
   twoFactorEnabled: boolean | null
+  emailVerified: boolean | null
+  emailVerifiedAt: Date | null
+  verificationTokenHash: string | null
+  verificationTokenExpiresAt: Date | null
+  passwordResetTokenHash: string | null
+  passwordResetTokenExpiresAt: Date | null
   language: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -43,6 +49,12 @@ export type UserMaxAggregateOutputType = {
   displayName: string | null
   onboardingComplete: boolean | null
   twoFactorEnabled: boolean | null
+  emailVerified: boolean | null
+  emailVerifiedAt: Date | null
+  verificationTokenHash: string | null
+  verificationTokenExpiresAt: Date | null
+  passwordResetTokenHash: string | null
+  passwordResetTokenExpiresAt: Date | null
   language: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -55,6 +67,12 @@ export type UserCountAggregateOutputType = {
   displayName: number
   onboardingComplete: number
   twoFactorEnabled: number
+  emailVerified: number
+  emailVerifiedAt: number
+  verificationTokenHash: number
+  verificationTokenExpiresAt: number
+  passwordResetTokenHash: number
+  passwordResetTokenExpiresAt: number
   language: number
   createdAt: number
   updatedAt: number
@@ -69,6 +87,12 @@ export type UserMinAggregateInputType = {
   displayName?: true
   onboardingComplete?: true
   twoFactorEnabled?: true
+  emailVerified?: true
+  emailVerifiedAt?: true
+  verificationTokenHash?: true
+  verificationTokenExpiresAt?: true
+  passwordResetTokenHash?: true
+  passwordResetTokenExpiresAt?: true
   language?: true
   createdAt?: true
   updatedAt?: true
@@ -81,6 +105,12 @@ export type UserMaxAggregateInputType = {
   displayName?: true
   onboardingComplete?: true
   twoFactorEnabled?: true
+  emailVerified?: true
+  emailVerifiedAt?: true
+  verificationTokenHash?: true
+  verificationTokenExpiresAt?: true
+  passwordResetTokenHash?: true
+  passwordResetTokenExpiresAt?: true
   language?: true
   createdAt?: true
   updatedAt?: true
@@ -93,6 +123,12 @@ export type UserCountAggregateInputType = {
   displayName?: true
   onboardingComplete?: true
   twoFactorEnabled?: true
+  emailVerified?: true
+  emailVerifiedAt?: true
+  verificationTokenHash?: true
+  verificationTokenExpiresAt?: true
+  passwordResetTokenHash?: true
+  passwordResetTokenExpiresAt?: true
   language?: true
   createdAt?: true
   updatedAt?: true
@@ -178,6 +214,12 @@ export type UserGroupByOutputType = {
   displayName: string | null
   onboardingComplete: boolean
   twoFactorEnabled: boolean
+  emailVerified: boolean
+  emailVerifiedAt: Date | null
+  verificationTokenHash: string | null
+  verificationTokenExpiresAt: Date | null
+  passwordResetTokenHash: string | null
+  passwordResetTokenExpiresAt: Date | null
   language: string
   createdAt: Date
   updatedAt: Date
@@ -211,6 +253,12 @@ export type UserWhereInput = {
   displayName?: Prisma.StringNullableFilter<"User"> | string | null
   onboardingComplete?: Prisma.BoolFilter<"User"> | boolean
   twoFactorEnabled?: Prisma.BoolFilter<"User"> | boolean
+  emailVerified?: Prisma.BoolFilter<"User"> | boolean
+  emailVerifiedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
+  verificationTokenHash?: Prisma.StringNullableFilter<"User"> | string | null
+  verificationTokenExpiresAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
+  passwordResetTokenHash?: Prisma.StringNullableFilter<"User"> | string | null
+  passwordResetTokenExpiresAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   language?: Prisma.StringFilter<"User"> | string
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
@@ -226,6 +274,7 @@ export type UserWhereInput = {
   notebooks?: Prisma.NotebookListRelationFilter
   twoFactorChallenges?: Prisma.TwoFactorChallengeListRelationFilter
   recoveryCodes?: Prisma.RecoveryCodeListRelationFilter
+  auditLogs?: Prisma.AuditLogListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -235,6 +284,12 @@ export type UserOrderByWithRelationInput = {
   displayName?: Prisma.SortOrderInput | Prisma.SortOrder
   onboardingComplete?: Prisma.SortOrder
   twoFactorEnabled?: Prisma.SortOrder
+  emailVerified?: Prisma.SortOrder
+  emailVerifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  verificationTokenHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  verificationTokenExpiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  passwordResetTokenHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  passwordResetTokenExpiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
   language?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -250,6 +305,7 @@ export type UserOrderByWithRelationInput = {
   notebooks?: Prisma.NotebookOrderByRelationAggregateInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeOrderByRelationAggregateInput
   recoveryCodes?: Prisma.RecoveryCodeOrderByRelationAggregateInput
+  auditLogs?: Prisma.AuditLogOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -262,6 +318,12 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   displayName?: Prisma.StringNullableFilter<"User"> | string | null
   onboardingComplete?: Prisma.BoolFilter<"User"> | boolean
   twoFactorEnabled?: Prisma.BoolFilter<"User"> | boolean
+  emailVerified?: Prisma.BoolFilter<"User"> | boolean
+  emailVerifiedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
+  verificationTokenHash?: Prisma.StringNullableFilter<"User"> | string | null
+  verificationTokenExpiresAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
+  passwordResetTokenHash?: Prisma.StringNullableFilter<"User"> | string | null
+  passwordResetTokenExpiresAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   language?: Prisma.StringFilter<"User"> | string
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
@@ -277,6 +339,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   notebooks?: Prisma.NotebookListRelationFilter
   twoFactorChallenges?: Prisma.TwoFactorChallengeListRelationFilter
   recoveryCodes?: Prisma.RecoveryCodeListRelationFilter
+  auditLogs?: Prisma.AuditLogListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -286,6 +349,12 @@ export type UserOrderByWithAggregationInput = {
   displayName?: Prisma.SortOrderInput | Prisma.SortOrder
   onboardingComplete?: Prisma.SortOrder
   twoFactorEnabled?: Prisma.SortOrder
+  emailVerified?: Prisma.SortOrder
+  emailVerifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  verificationTokenHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  verificationTokenExpiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  passwordResetTokenHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  passwordResetTokenExpiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
   language?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -304,6 +373,12 @@ export type UserScalarWhereWithAggregatesInput = {
   displayName?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   onboardingComplete?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
   twoFactorEnabled?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
+  emailVerified?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
+  emailVerifiedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
+  verificationTokenHash?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  verificationTokenExpiresAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
+  passwordResetTokenHash?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  passwordResetTokenExpiresAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
   language?: Prisma.StringWithAggregatesFilter<"User"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
@@ -316,6 +391,12 @@ export type UserCreateInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -331,6 +412,7 @@ export type UserCreateInput = {
   notebooks?: Prisma.NotebookCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -340,6 +422,12 @@ export type UserUncheckedCreateInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -355,6 +443,7 @@ export type UserUncheckedCreateInput = {
   notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -364,6 +453,12 @@ export type UserUpdateInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -379,6 +474,7 @@ export type UserUpdateInput = {
   notebooks?: Prisma.NotebookUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -388,6 +484,12 @@ export type UserUncheckedUpdateInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -403,6 +505,7 @@ export type UserUncheckedUpdateInput = {
   notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -412,6 +515,12 @@ export type UserCreateManyInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -424,6 +533,12 @@ export type UserUpdateManyMutationInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -436,6 +551,12 @@ export type UserUncheckedUpdateManyInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -448,6 +569,12 @@ export type UserCountOrderByAggregateInput = {
   displayName?: Prisma.SortOrder
   onboardingComplete?: Prisma.SortOrder
   twoFactorEnabled?: Prisma.SortOrder
+  emailVerified?: Prisma.SortOrder
+  emailVerifiedAt?: Prisma.SortOrder
+  verificationTokenHash?: Prisma.SortOrder
+  verificationTokenExpiresAt?: Prisma.SortOrder
+  passwordResetTokenHash?: Prisma.SortOrder
+  passwordResetTokenExpiresAt?: Prisma.SortOrder
   language?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -460,6 +587,12 @@ export type UserMaxOrderByAggregateInput = {
   displayName?: Prisma.SortOrder
   onboardingComplete?: Prisma.SortOrder
   twoFactorEnabled?: Prisma.SortOrder
+  emailVerified?: Prisma.SortOrder
+  emailVerifiedAt?: Prisma.SortOrder
+  verificationTokenHash?: Prisma.SortOrder
+  verificationTokenExpiresAt?: Prisma.SortOrder
+  passwordResetTokenHash?: Prisma.SortOrder
+  passwordResetTokenExpiresAt?: Prisma.SortOrder
   language?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -472,6 +605,12 @@ export type UserMinOrderByAggregateInput = {
   displayName?: Prisma.SortOrder
   onboardingComplete?: Prisma.SortOrder
   twoFactorEnabled?: Prisma.SortOrder
+  emailVerified?: Prisma.SortOrder
+  emailVerifiedAt?: Prisma.SortOrder
+  verificationTokenHash?: Prisma.SortOrder
+  verificationTokenExpiresAt?: Prisma.SortOrder
+  passwordResetTokenHash?: Prisma.SortOrder
+  passwordResetTokenExpiresAt?: Prisma.SortOrder
   language?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -497,6 +636,10 @@ export type NullableStringFieldUpdateOperationsInput = {
 
 export type BoolFieldUpdateOperationsInput = {
   set?: boolean
+}
+
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
 }
 
 export type DateTimeFieldUpdateOperationsInput = {
@@ -673,6 +816,22 @@ export type UserUpdateOneRequiredWithoutRecoveryCodesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutRecoveryCodesInput, Prisma.UserUpdateWithoutRecoveryCodesInput>, Prisma.UserUncheckedUpdateWithoutRecoveryCodesInput>
 }
 
+export type UserCreateNestedOneWithoutAuditLogsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAuditLogsInput, Prisma.UserUncheckedCreateWithoutAuditLogsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAuditLogsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneWithoutAuditLogsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAuditLogsInput, Prisma.UserUncheckedCreateWithoutAuditLogsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAuditLogsInput
+  upsert?: Prisma.UserUpsertWithoutAuditLogsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAuditLogsInput, Prisma.UserUpdateWithoutAuditLogsInput>, Prisma.UserUncheckedUpdateWithoutAuditLogsInput>
+}
+
 export type UserCreateWithoutAdventuresInput = {
   id?: string
   email: string
@@ -680,6 +839,12 @@ export type UserCreateWithoutAdventuresInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -694,6 +859,7 @@ export type UserCreateWithoutAdventuresInput = {
   notebooks?: Prisma.NotebookCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAdventuresInput = {
@@ -703,6 +869,12 @@ export type UserUncheckedCreateWithoutAdventuresInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -717,6 +889,7 @@ export type UserUncheckedCreateWithoutAdventuresInput = {
   notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAdventuresInput = {
@@ -742,6 +915,12 @@ export type UserUpdateWithoutAdventuresInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -756,6 +935,7 @@ export type UserUpdateWithoutAdventuresInput = {
   notebooks?: Prisma.NotebookUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAdventuresInput = {
@@ -765,6 +945,12 @@ export type UserUncheckedUpdateWithoutAdventuresInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -779,6 +965,7 @@ export type UserUncheckedUpdateWithoutAdventuresInput = {
   notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutJoinRequestsInput = {
@@ -788,6 +975,12 @@ export type UserCreateWithoutJoinRequestsInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -802,6 +995,7 @@ export type UserCreateWithoutJoinRequestsInput = {
   notebooks?: Prisma.NotebookCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutJoinRequestsInput = {
@@ -811,6 +1005,12 @@ export type UserUncheckedCreateWithoutJoinRequestsInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -825,6 +1025,7 @@ export type UserUncheckedCreateWithoutJoinRequestsInput = {
   notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutJoinRequestsInput = {
@@ -850,6 +1051,12 @@ export type UserUpdateWithoutJoinRequestsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -864,6 +1071,7 @@ export type UserUpdateWithoutJoinRequestsInput = {
   notebooks?: Prisma.NotebookUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutJoinRequestsInput = {
@@ -873,6 +1081,12 @@ export type UserUncheckedUpdateWithoutJoinRequestsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -887,6 +1101,7 @@ export type UserUncheckedUpdateWithoutJoinRequestsInput = {
   notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutNotebooksInput = {
@@ -896,6 +1111,12 @@ export type UserCreateWithoutNotebooksInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -910,6 +1131,7 @@ export type UserCreateWithoutNotebooksInput = {
   subscription?: Prisma.UserSubscriptionCreateNestedOneWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutNotebooksInput = {
@@ -919,6 +1141,12 @@ export type UserUncheckedCreateWithoutNotebooksInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -933,6 +1161,7 @@ export type UserUncheckedCreateWithoutNotebooksInput = {
   subscription?: Prisma.UserSubscriptionUncheckedCreateNestedOneWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutNotebooksInput = {
@@ -958,6 +1187,12 @@ export type UserUpdateWithoutNotebooksInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -972,6 +1207,7 @@ export type UserUpdateWithoutNotebooksInput = {
   subscription?: Prisma.UserSubscriptionUpdateOneWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutNotebooksInput = {
@@ -981,6 +1217,12 @@ export type UserUncheckedUpdateWithoutNotebooksInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -995,6 +1237,7 @@ export type UserUncheckedUpdateWithoutNotebooksInput = {
   subscription?: Prisma.UserSubscriptionUncheckedUpdateOneWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutMembershipsInput = {
@@ -1004,6 +1247,12 @@ export type UserCreateWithoutMembershipsInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1018,6 +1267,7 @@ export type UserCreateWithoutMembershipsInput = {
   notebooks?: Prisma.NotebookCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutMembershipsInput = {
@@ -1027,6 +1277,12 @@ export type UserUncheckedCreateWithoutMembershipsInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1041,6 +1297,7 @@ export type UserUncheckedCreateWithoutMembershipsInput = {
   notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutMembershipsInput = {
@@ -1066,6 +1323,12 @@ export type UserUpdateWithoutMembershipsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1080,6 +1343,7 @@ export type UserUpdateWithoutMembershipsInput = {
   notebooks?: Prisma.NotebookUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutMembershipsInput = {
@@ -1089,6 +1353,12 @@ export type UserUncheckedUpdateWithoutMembershipsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1103,6 +1373,7 @@ export type UserUncheckedUpdateWithoutMembershipsInput = {
   notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutSentInvitationsInput = {
@@ -1112,6 +1383,12 @@ export type UserCreateWithoutSentInvitationsInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1126,6 +1403,7 @@ export type UserCreateWithoutSentInvitationsInput = {
   notebooks?: Prisma.NotebookCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutSentInvitationsInput = {
@@ -1135,6 +1413,12 @@ export type UserUncheckedCreateWithoutSentInvitationsInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1149,6 +1433,7 @@ export type UserUncheckedCreateWithoutSentInvitationsInput = {
   notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutSentInvitationsInput = {
@@ -1174,6 +1459,12 @@ export type UserUpdateWithoutSentInvitationsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1188,6 +1479,7 @@ export type UserUpdateWithoutSentInvitationsInput = {
   notebooks?: Prisma.NotebookUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSentInvitationsInput = {
@@ -1197,6 +1489,12 @@ export type UserUncheckedUpdateWithoutSentInvitationsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1211,6 +1509,7 @@ export type UserUncheckedUpdateWithoutSentInvitationsInput = {
   notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutGoogleAccountInput = {
@@ -1220,6 +1519,12 @@ export type UserCreateWithoutGoogleAccountInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1234,6 +1539,7 @@ export type UserCreateWithoutGoogleAccountInput = {
   notebooks?: Prisma.NotebookCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutGoogleAccountInput = {
@@ -1243,6 +1549,12 @@ export type UserUncheckedCreateWithoutGoogleAccountInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1257,6 +1569,7 @@ export type UserUncheckedCreateWithoutGoogleAccountInput = {
   notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutGoogleAccountInput = {
@@ -1282,6 +1595,12 @@ export type UserUpdateWithoutGoogleAccountInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1296,6 +1615,7 @@ export type UserUpdateWithoutGoogleAccountInput = {
   notebooks?: Prisma.NotebookUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutGoogleAccountInput = {
@@ -1305,6 +1625,12 @@ export type UserUncheckedUpdateWithoutGoogleAccountInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1319,6 +1645,7 @@ export type UserUncheckedUpdateWithoutGoogleAccountInput = {
   notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutRefreshTokensInput = {
@@ -1328,6 +1655,12 @@ export type UserCreateWithoutRefreshTokensInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1342,6 +1675,7 @@ export type UserCreateWithoutRefreshTokensInput = {
   notebooks?: Prisma.NotebookCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRefreshTokensInput = {
@@ -1351,6 +1685,12 @@ export type UserUncheckedCreateWithoutRefreshTokensInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1365,6 +1705,7 @@ export type UserUncheckedCreateWithoutRefreshTokensInput = {
   notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRefreshTokensInput = {
@@ -1390,6 +1731,12 @@ export type UserUpdateWithoutRefreshTokensInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1404,6 +1751,7 @@ export type UserUpdateWithoutRefreshTokensInput = {
   notebooks?: Prisma.NotebookUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRefreshTokensInput = {
@@ -1413,6 +1761,12 @@ export type UserUncheckedUpdateWithoutRefreshTokensInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1427,6 +1781,7 @@ export type UserUncheckedUpdateWithoutRefreshTokensInput = {
   notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutOwnedTemplatesInput = {
@@ -1436,6 +1791,12 @@ export type UserCreateWithoutOwnedTemplatesInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1450,6 +1811,7 @@ export type UserCreateWithoutOwnedTemplatesInput = {
   notebooks?: Prisma.NotebookCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutOwnedTemplatesInput = {
@@ -1459,6 +1821,12 @@ export type UserUncheckedCreateWithoutOwnedTemplatesInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1473,6 +1841,7 @@ export type UserUncheckedCreateWithoutOwnedTemplatesInput = {
   notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutOwnedTemplatesInput = {
@@ -1498,6 +1867,12 @@ export type UserUpdateWithoutOwnedTemplatesInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1512,6 +1887,7 @@ export type UserUpdateWithoutOwnedTemplatesInput = {
   notebooks?: Prisma.NotebookUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutOwnedTemplatesInput = {
@@ -1521,6 +1897,12 @@ export type UserUncheckedUpdateWithoutOwnedTemplatesInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1535,6 +1917,7 @@ export type UserUncheckedUpdateWithoutOwnedTemplatesInput = {
   notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutCharacterSheetsInput = {
@@ -1544,6 +1927,12 @@ export type UserCreateWithoutCharacterSheetsInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1558,6 +1947,7 @@ export type UserCreateWithoutCharacterSheetsInput = {
   notebooks?: Prisma.NotebookCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutCharacterSheetsInput = {
@@ -1567,6 +1957,12 @@ export type UserUncheckedCreateWithoutCharacterSheetsInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1581,6 +1977,7 @@ export type UserUncheckedCreateWithoutCharacterSheetsInput = {
   notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutCharacterSheetsInput = {
@@ -1606,6 +2003,12 @@ export type UserUpdateWithoutCharacterSheetsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1620,6 +2023,7 @@ export type UserUpdateWithoutCharacterSheetsInput = {
   notebooks?: Prisma.NotebookUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCharacterSheetsInput = {
@@ -1629,6 +2033,12 @@ export type UserUncheckedUpdateWithoutCharacterSheetsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1643,6 +2053,7 @@ export type UserUncheckedUpdateWithoutCharacterSheetsInput = {
   notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutSubscriptionInput = {
@@ -1652,6 +2063,12 @@ export type UserCreateWithoutSubscriptionInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1666,6 +2083,7 @@ export type UserCreateWithoutSubscriptionInput = {
   notebooks?: Prisma.NotebookCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutSubscriptionInput = {
@@ -1675,6 +2093,12 @@ export type UserUncheckedCreateWithoutSubscriptionInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1689,6 +2113,7 @@ export type UserUncheckedCreateWithoutSubscriptionInput = {
   notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutSubscriptionInput = {
@@ -1714,6 +2139,12 @@ export type UserUpdateWithoutSubscriptionInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1728,6 +2159,7 @@ export type UserUpdateWithoutSubscriptionInput = {
   notebooks?: Prisma.NotebookUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSubscriptionInput = {
@@ -1737,6 +2169,12 @@ export type UserUncheckedUpdateWithoutSubscriptionInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1751,6 +2189,7 @@ export type UserUncheckedUpdateWithoutSubscriptionInput = {
   notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutTwoFactorChallengesInput = {
@@ -1760,6 +2199,12 @@ export type UserCreateWithoutTwoFactorChallengesInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1774,6 +2219,7 @@ export type UserCreateWithoutTwoFactorChallengesInput = {
   subscription?: Prisma.UserSubscriptionCreateNestedOneWithoutUserInput
   notebooks?: Prisma.NotebookCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutTwoFactorChallengesInput = {
@@ -1783,6 +2229,12 @@ export type UserUncheckedCreateWithoutTwoFactorChallengesInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1797,6 +2249,7 @@ export type UserUncheckedCreateWithoutTwoFactorChallengesInput = {
   subscription?: Prisma.UserSubscriptionUncheckedCreateNestedOneWithoutUserInput
   notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutUserInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutTwoFactorChallengesInput = {
@@ -1822,6 +2275,12 @@ export type UserUpdateWithoutTwoFactorChallengesInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1836,6 +2295,7 @@ export type UserUpdateWithoutTwoFactorChallengesInput = {
   subscription?: Prisma.UserSubscriptionUpdateOneWithoutUserNestedInput
   notebooks?: Prisma.NotebookUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutTwoFactorChallengesInput = {
@@ -1845,6 +2305,12 @@ export type UserUncheckedUpdateWithoutTwoFactorChallengesInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1859,6 +2325,7 @@ export type UserUncheckedUpdateWithoutTwoFactorChallengesInput = {
   subscription?: Prisma.UserSubscriptionUncheckedUpdateOneWithoutUserNestedInput
   notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutUserNestedInput
   recoveryCodes?: Prisma.RecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutRecoveryCodesInput = {
@@ -1868,6 +2335,12 @@ export type UserCreateWithoutRecoveryCodesInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1882,6 +2355,7 @@ export type UserCreateWithoutRecoveryCodesInput = {
   subscription?: Prisma.UserSubscriptionCreateNestedOneWithoutUserInput
   notebooks?: Prisma.NotebookCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRecoveryCodesInput = {
@@ -1891,6 +2365,12 @@ export type UserUncheckedCreateWithoutRecoveryCodesInput = {
   displayName?: string | null
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
   language?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1905,6 +2385,7 @@ export type UserUncheckedCreateWithoutRecoveryCodesInput = {
   subscription?: Prisma.UserSubscriptionUncheckedCreateNestedOneWithoutUserInput
   notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutUserInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRecoveryCodesInput = {
@@ -1930,6 +2411,12 @@ export type UserUpdateWithoutRecoveryCodesInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1944,6 +2431,7 @@ export type UserUpdateWithoutRecoveryCodesInput = {
   subscription?: Prisma.UserSubscriptionUpdateOneWithoutUserNestedInput
   notebooks?: Prisma.NotebookUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRecoveryCodesInput = {
@@ -1953,6 +2441,12 @@ export type UserUncheckedUpdateWithoutRecoveryCodesInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   language?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1967,6 +2461,143 @@ export type UserUncheckedUpdateWithoutRecoveryCodesInput = {
   subscription?: Prisma.UserSubscriptionUncheckedUpdateOneWithoutUserNestedInput
   notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutUserNestedInput
   twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutAuditLogsInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  displayName?: string | null
+  onboardingComplete?: boolean
+  twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
+  language?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  adventures?: Prisma.AdventureCreateNestedManyWithoutOwnerInput
+  memberships?: Prisma.CampaignMemberCreateNestedManyWithoutUserInput
+  sentInvitations?: Prisma.CampaignInvitationCreateNestedManyWithoutCreatedByInput
+  joinRequests?: Prisma.JoinRequestCreateNestedManyWithoutUserInput
+  ownedTemplates?: Prisma.TemplateCreateNestedManyWithoutOwnerInput
+  googleAccount?: Prisma.GoogleAccountCreateNestedOneWithoutUserInput
+  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
+  characterSheets?: Prisma.CharacterSheetCreateNestedManyWithoutOwnerInput
+  subscription?: Prisma.UserSubscriptionCreateNestedOneWithoutUserInput
+  notebooks?: Prisma.NotebookCreateNestedManyWithoutUserInput
+  twoFactorChallenges?: Prisma.TwoFactorChallengeCreateNestedManyWithoutUserInput
+  recoveryCodes?: Prisma.RecoveryCodeCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutAuditLogsInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  displayName?: string | null
+  onboardingComplete?: boolean
+  twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: Date | string | null
+  verificationTokenHash?: string | null
+  verificationTokenExpiresAt?: Date | string | null
+  passwordResetTokenHash?: string | null
+  passwordResetTokenExpiresAt?: Date | string | null
+  language?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  adventures?: Prisma.AdventureUncheckedCreateNestedManyWithoutOwnerInput
+  memberships?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutUserInput
+  sentInvitations?: Prisma.CampaignInvitationUncheckedCreateNestedManyWithoutCreatedByInput
+  joinRequests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutUserInput
+  ownedTemplates?: Prisma.TemplateUncheckedCreateNestedManyWithoutOwnerInput
+  googleAccount?: Prisma.GoogleAccountUncheckedCreateNestedOneWithoutUserInput
+  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
+  characterSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutOwnerInput
+  subscription?: Prisma.UserSubscriptionUncheckedCreateNestedOneWithoutUserInput
+  notebooks?: Prisma.NotebookUncheckedCreateNestedManyWithoutUserInput
+  twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedCreateNestedManyWithoutUserInput
+  recoveryCodes?: Prisma.RecoveryCodeUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutAuditLogsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutAuditLogsInput, Prisma.UserUncheckedCreateWithoutAuditLogsInput>
+}
+
+export type UserUpsertWithoutAuditLogsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutAuditLogsInput, Prisma.UserUncheckedUpdateWithoutAuditLogsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutAuditLogsInput, Prisma.UserUncheckedCreateWithoutAuditLogsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutAuditLogsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutAuditLogsInput, Prisma.UserUncheckedUpdateWithoutAuditLogsInput>
+}
+
+export type UserUpdateWithoutAuditLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  language?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  adventures?: Prisma.AdventureUpdateManyWithoutOwnerNestedInput
+  memberships?: Prisma.CampaignMemberUpdateManyWithoutUserNestedInput
+  sentInvitations?: Prisma.CampaignInvitationUpdateManyWithoutCreatedByNestedInput
+  joinRequests?: Prisma.JoinRequestUpdateManyWithoutUserNestedInput
+  ownedTemplates?: Prisma.TemplateUpdateManyWithoutOwnerNestedInput
+  googleAccount?: Prisma.GoogleAccountUpdateOneWithoutUserNestedInput
+  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
+  characterSheets?: Prisma.CharacterSheetUpdateManyWithoutOwnerNestedInput
+  subscription?: Prisma.UserSubscriptionUpdateOneWithoutUserNestedInput
+  notebooks?: Prisma.NotebookUpdateManyWithoutUserNestedInput
+  twoFactorChallenges?: Prisma.TwoFactorChallengeUpdateManyWithoutUserNestedInput
+  recoveryCodes?: Prisma.RecoveryCodeUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutAuditLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  onboardingComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passwordResetTokenHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordResetTokenExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  language?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  adventures?: Prisma.AdventureUncheckedUpdateManyWithoutOwnerNestedInput
+  memberships?: Prisma.CampaignMemberUncheckedUpdateManyWithoutUserNestedInput
+  sentInvitations?: Prisma.CampaignInvitationUncheckedUpdateManyWithoutCreatedByNestedInput
+  joinRequests?: Prisma.JoinRequestUncheckedUpdateManyWithoutUserNestedInput
+  ownedTemplates?: Prisma.TemplateUncheckedUpdateManyWithoutOwnerNestedInput
+  googleAccount?: Prisma.GoogleAccountUncheckedUpdateOneWithoutUserNestedInput
+  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
+  characterSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutOwnerNestedInput
+  subscription?: Prisma.UserSubscriptionUncheckedUpdateOneWithoutUserNestedInput
+  notebooks?: Prisma.NotebookUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedUpdateManyWithoutUserNestedInput
+  recoveryCodes?: Prisma.RecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -1985,6 +2616,7 @@ export type UserCountOutputType = {
   notebooks: number
   twoFactorChallenges: number
   recoveryCodes: number
+  auditLogs: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1998,6 +2630,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   notebooks?: boolean | UserCountOutputTypeCountNotebooksArgs
   twoFactorChallenges?: boolean | UserCountOutputTypeCountTwoFactorChallengesArgs
   recoveryCodes?: boolean | UserCountOutputTypeCountRecoveryCodesArgs
+  auditLogs?: boolean | UserCountOutputTypeCountAuditLogsArgs
 }
 
 /**
@@ -2080,6 +2713,13 @@ export type UserCountOutputTypeCountRecoveryCodesArgs<ExtArgs extends runtime.Ty
   where?: Prisma.RecoveryCodeWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountAuditLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AuditLogWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -2088,6 +2728,12 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   displayName?: boolean
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: boolean
+  verificationTokenHash?: boolean
+  verificationTokenExpiresAt?: boolean
+  passwordResetTokenHash?: boolean
+  passwordResetTokenExpiresAt?: boolean
   language?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -2103,6 +2749,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   notebooks?: boolean | Prisma.User$notebooksArgs<ExtArgs>
   twoFactorChallenges?: boolean | Prisma.User$twoFactorChallengesArgs<ExtArgs>
   recoveryCodes?: boolean | Prisma.User$recoveryCodesArgs<ExtArgs>
+  auditLogs?: boolean | Prisma.User$auditLogsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -2113,6 +2760,12 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   displayName?: boolean
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: boolean
+  verificationTokenHash?: boolean
+  verificationTokenExpiresAt?: boolean
+  passwordResetTokenHash?: boolean
+  passwordResetTokenExpiresAt?: boolean
   language?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -2125,6 +2778,12 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   displayName?: boolean
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: boolean
+  verificationTokenHash?: boolean
+  verificationTokenExpiresAt?: boolean
+  passwordResetTokenHash?: boolean
+  passwordResetTokenExpiresAt?: boolean
   language?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -2137,12 +2796,18 @@ export type UserSelectScalar = {
   displayName?: boolean
   onboardingComplete?: boolean
   twoFactorEnabled?: boolean
+  emailVerified?: boolean
+  emailVerifiedAt?: boolean
+  verificationTokenHash?: boolean
+  verificationTokenExpiresAt?: boolean
+  passwordResetTokenHash?: boolean
+  passwordResetTokenExpiresAt?: boolean
   language?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "passwordHash" | "displayName" | "onboardingComplete" | "twoFactorEnabled" | "language" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "passwordHash" | "displayName" | "onboardingComplete" | "twoFactorEnabled" | "emailVerified" | "emailVerifiedAt" | "verificationTokenHash" | "verificationTokenExpiresAt" | "passwordResetTokenHash" | "passwordResetTokenExpiresAt" | "language" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   adventures?: boolean | Prisma.User$adventuresArgs<ExtArgs>
   memberships?: boolean | Prisma.User$membershipsArgs<ExtArgs>
@@ -2156,6 +2821,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   notebooks?: boolean | Prisma.User$notebooksArgs<ExtArgs>
   twoFactorChallenges?: boolean | Prisma.User$twoFactorChallengesArgs<ExtArgs>
   recoveryCodes?: boolean | Prisma.User$recoveryCodesArgs<ExtArgs>
+  auditLogs?: boolean | Prisma.User$auditLogsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -2176,6 +2842,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     notebooks: Prisma.$NotebookPayload<ExtArgs>[]
     twoFactorChallenges: Prisma.$TwoFactorChallengePayload<ExtArgs>[]
     recoveryCodes: Prisma.$RecoveryCodePayload<ExtArgs>[]
+    auditLogs: Prisma.$AuditLogPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2184,6 +2851,12 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     displayName: string | null
     onboardingComplete: boolean
     twoFactorEnabled: boolean
+    emailVerified: boolean
+    emailVerifiedAt: Date | null
+    verificationTokenHash: string | null
+    verificationTokenExpiresAt: Date | null
+    passwordResetTokenHash: string | null
+    passwordResetTokenExpiresAt: Date | null
     language: string
     createdAt: Date
     updatedAt: Date
@@ -2593,6 +3266,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   notebooks<T extends Prisma.User$notebooksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$notebooksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotebookPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   twoFactorChallenges<T extends Prisma.User$twoFactorChallengesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$twoFactorChallengesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TwoFactorChallengePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   recoveryCodes<T extends Prisma.User$recoveryCodesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$recoveryCodesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecoveryCodePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  auditLogs<T extends Prisma.User$auditLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$auditLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuditLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2628,6 +3302,12 @@ export interface UserFieldRefs {
   readonly displayName: Prisma.FieldRef<"User", 'String'>
   readonly onboardingComplete: Prisma.FieldRef<"User", 'Boolean'>
   readonly twoFactorEnabled: Prisma.FieldRef<"User", 'Boolean'>
+  readonly emailVerified: Prisma.FieldRef<"User", 'Boolean'>
+  readonly emailVerifiedAt: Prisma.FieldRef<"User", 'DateTime'>
+  readonly verificationTokenHash: Prisma.FieldRef<"User", 'String'>
+  readonly verificationTokenExpiresAt: Prisma.FieldRef<"User", 'DateTime'>
+  readonly passwordResetTokenHash: Prisma.FieldRef<"User", 'String'>
+  readonly passwordResetTokenExpiresAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly language: Prisma.FieldRef<"User", 'String'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
@@ -3299,6 +3979,30 @@ export type User$recoveryCodesArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.RecoveryCodeScalarFieldEnum | Prisma.RecoveryCodeScalarFieldEnum[]
+}
+
+/**
+ * User.auditLogs
+ */
+export type User$auditLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AuditLog
+   */
+  select?: Prisma.AuditLogSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AuditLog
+   */
+  omit?: Prisma.AuditLogOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AuditLogInclude<ExtArgs> | null
+  where?: Prisma.AuditLogWhereInput
+  orderBy?: Prisma.AuditLogOrderByWithRelationInput | Prisma.AuditLogOrderByWithRelationInput[]
+  cursor?: Prisma.AuditLogWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AuditLogScalarFieldEnum | Prisma.AuditLogScalarFieldEnum[]
 }
 
 /**

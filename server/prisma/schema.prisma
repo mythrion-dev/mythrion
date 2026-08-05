@@ -11,27 +11,34 @@ datasource db {
 }
 
 model User {
-  id                  String               @id @default(cuid())
-  email               String               @unique
-  passwordHash        String?
-  displayName         String?
-  onboardingComplete  Boolean              @default(false)
-  twoFactorEnabled    Boolean              @default(false)
-  language            String               @default("en")
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  adventures          Adventure[]
-  memberships         CampaignMember[]
-  sentInvitations     CampaignInvitation[] @relation("SentInvitations")
-  joinRequests        JoinRequest[]
-  ownedTemplates      Template[]
-  googleAccount       GoogleAccount?
-  refreshTokens       RefreshToken[]
-  characterSheets     CharacterSheet[]
-  subscription        UserSubscription?
-  notebooks           Notebook[]
-  twoFactorChallenges TwoFactorChallenge[]
-  recoveryCodes       RecoveryCode[]
+  id                          String               @id @default(cuid())
+  email                       String               @unique
+  passwordHash                String?
+  displayName                 String?
+  onboardingComplete          Boolean              @default(false)
+  twoFactorEnabled            Boolean              @default(false)
+  emailVerified               Boolean              @default(false)
+  emailVerifiedAt             DateTime?
+  verificationTokenHash       String?
+  verificationTokenExpiresAt  DateTime?
+  passwordResetTokenHash      String?
+  passwordResetTokenExpiresAt DateTime?
+  language                    String               @default("en")
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @updatedAt
+  adventures                  Adventure[]
+  memberships                 CampaignMember[]
+  sentInvitations             CampaignInvitation[] @relation("SentInvitations")
+  joinRequests                JoinRequest[]
+  ownedTemplates              Template[]
+  googleAccount               GoogleAccount?
+  refreshTokens               RefreshToken[]
+  characterSheets             CharacterSheet[]
+  subscription                UserSubscription?
+  notebooks                   Notebook[]
+  twoFactorChallenges         TwoFactorChallenge[]
+  recoveryCodes               RecoveryCode[]
+  auditLogs                   AuditLog[]
 }
 
 model Adventure {
@@ -1030,4 +1037,20 @@ model RecoveryCode {
   createdAt DateTime  @default(now())
 
   @@index([userId])
+}
+
+// ── Audit Log ──
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  event     String
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([event])
+  @@index([createdAt])
 }

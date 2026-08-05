@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { I18nService } from 'nestjs-i18n';
 
 const API_BASE_URL = 'https://api.mail.hostinger.com';
 const DEFAULT_FROM = 'Mythrion <noreply@mythrion.com>';
@@ -30,14 +31,14 @@ export class EmailService {
   private readonly mailboxId: string | undefined;
   private readonly displayName: string;
 
-  constructor() {
+  constructor(private readonly i18n: I18nService) {
     this.token = process.env.HOSTINGER_MAIL_API_TOKEN;
     this.mailboxId = process.env.HOSTINGER_MAILBOX_ID;
     this.displayName = parseDisplayName(process.env.EMAIL_FROM ?? DEFAULT_FROM);
 
     if (!this.token || !this.mailboxId) {
       this.logger.warn(
-        'HOSTINGER_MAIL_API_TOKEN / HOSTINGER_MAILBOX_ID not set — email sending is disabled. Invitation emails will not be delivered.',
+        'HOSTINGER_MAIL_API_TOKEN / HOSTINGER_MAILBOX_ID not set — email sending is disabled. Transactional emails will not be delivered.',
       );
     }
   }
@@ -50,49 +51,14 @@ export class EmailService {
     inviteUrl: string;
     expiresAt: Date;
   }) {
-    if (!this.token || !this.mailboxId) {
-      this.logger.log(
-        `[DEV] Invitation email would be sent to ${params.to} - ${params.inviteUrl}`,
-      );
-      return;
-    }
-
-    const html = this.buildInviteTemplate(params);
-    const text = this.buildTextTemplate(params);
-
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/mailboxes/${this.mailboxId}/send`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${this.token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            to: [params.to],
-            displayName: this.displayName,
-            subject: `${params.inviterName} invited you to ${params.campaignName}`,
-            text,
-            html,
-          }),
-          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(await this.describeError(response));
-      }
-
-      this.logger.log(`Invitation email sent to ${params.to}`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      this.logger.error(
-        `Failed to send invitation email to ${params.to}: ${message}`,
-      );
-      // Rethrow so the caller can surface the failure (and roll back the invitation).
-      throw err;
-    }
+    await this.dispatch({
+      to: params.to,
+      subject: `${params.inviterName} invited you to ${params.campaignName}`,
+      html: this.buildInviteTemplate(params),
+      text: this.buildTextTemplate(params),
+      label: 'Invitation email',
+      devDetail: params.inviteUrl,
+    });
   }
 
   async sendTwoFactorCode(params: {
@@ -100,11 +66,94 @@ export class EmailService {
     code: string
     expiresInMinutes: number
   }) {
+    await this.dispatch({
+      to: params.to,
+      subject: 'Mythrion — your verification code',
+      html: this.buildTwoFactorHtmlTemplate(params),
+      text: this.buildTwoFactorTextTemplate(params),
+      label: '2FA code',
+      devDetail: `code ${params.code}`,
+    });
+  }
+
+  async sendEmailVerification(params: {
+    to: string;
+    verificationUrl: string;
+    language: string;
+  }) {
+    const t = (key: string) =>
+      this.i18n.t(`emails.${key}`, { lang: params.language });
+
+    await this.dispatch({
+      to: params.to,
+      subject: t('verifyEmailSubject'),
+      html: this.buildLocalizedHtml({
+        title: t('verifyEmailTitle'),
+        body: t('verifyEmailBody'),
+        cta: t('verifyEmailCta'),
+        url: params.verificationUrl,
+        footer: t('verifyEmailFooter'),
+      }),
+      text: [
+        t('verifyEmailBody'),
+        '',
+        params.verificationUrl,
+        '',
+        t('verifyEmailFooter'),
+      ].join('\n'),
+      label: 'Verification email',
+      devDetail: params.verificationUrl,
+    });
+  }
+
+  async sendPasswordReset(params: {
+    to: string;
+    resetUrl: string;
+    language: string;
+  }) {
+    const t = (key: string) =>
+      this.i18n.t(`emails.${key}`, { lang: params.language });
+
+    await this.dispatch({
+      to: params.to,
+      subject: t('resetPasswordSubject'),
+      html: this.buildLocalizedHtml({
+        title: t('resetPasswordTitle'),
+        body: t('resetPasswordBody'),
+        cta: t('resetPasswordCta'),
+        url: params.resetUrl,
+        footer: t('resetPasswordFooter'),
+      }),
+      text: [
+        t('resetPasswordBody'),
+        '',
+        params.resetUrl,
+        '',
+        t('resetPasswordFooter'),
+      ].join('\n'),
+      label: 'Password reset',
+      devDetail: params.resetUrl,
+    });
+  }
+
+  /**
+   * Shared Hostinger send pipeline. When the Hostinger env vars are unset
+   * (local development) it logs a [DEV] hint — including the code/URL — so
+   * flows can be exercised without delivering mail. Failures rethrow so the
+   * caller can surface the error (and roll back any dependent write).
+   */
+  private async dispatch(params: {
+    to: string;
+    subject: string;
+    html: string;
+    text: string;
+    label: string;
+    devDetail?: string;
+  }) {
     if (!this.token || !this.mailboxId) {
-      // In dev the Hostinger env vars are unset — log the code so flows can
-      // be exercised locally without delivering mail.
+      const detail = params.devDetail ? ` - ${params.devDetail}` : '';
       this.logger.log(
-        `[DEV] 2FA code for ${params.to}: ${params.code}`,
+        `[DEV] ${params.label} would be sent to ${params.to}${detail}`,
       );
       return;
     }
@@ -121,9 +170,9 @@ export class EmailService {
           body: JSON.stringify({
             to: [params.to],
             displayName: this.displayName,
-            subject: 'Mythrion — your verification code',
-            text: this.buildTwoFactorTextTemplate(params),
-            html: this.buildTwoFactorHtmlTemplate(params),
+            subject: params.subject,
+            text: params.text,
+            html: params.html,
           }),
           signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         },
@@ -133,12 +182,54 @@ export class EmailService {
         throw new Error(await this.describeError(response));
       }
 
-      this.logger.log(`2FA code sent to ${params.to}`);
+      this.logger.log(`${params.label} sent to ${params.to}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      this.logger.error(`Failed to send 2FA code to ${params.to}: ${message}`);
+      this.logger.error(
+        `Failed to send ${params.label} to ${params.to}: ${message}`,
+      );
       throw err;
     }
+  }
+
+  /** Dark-theme action-email layout shared by verification and password-reset. */
+  private buildLocalizedHtml(params: {
+    title: string;
+    body: string;
+    cta: string;
+    url: string;
+    footer: string;
+  }) {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { margin: 0; padding: 0; background: #0d0a14; font-family: system-ui, sans-serif; }
+        .container { max-width: 480px; margin: 0 auto; padding: 40px 20px; }
+        .card { background: linear-gradient(135deg, #15101f 0%, #1c1630 100%); border: 1px solid #2a2240; border-radius: 12px; padding: 32px; }
+        .logo { text-align: center; margin-bottom: 24px; }
+        h1 { color: #e8e2d9; font-size: 20px; margin: 0 0 8px; }
+        .subtitle { color: #a098b0; font-size: 14px; margin: 0 0 24px; }
+        .btn { display: inline-block; background: linear-gradient(135deg, #c9a44b, #d4b35e); color: #0d0a14; text-decoration: none; padding: 12px 32px; border-radius: 8px; font-weight: 600; font-size: 14px; margin: 24px 0; }
+        .footer { color: #4a4060; font-size: 12px; margin-top: 24px; text-align: center; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="card">
+          <div class="logo">
+            <img src="${EMAIL_LOGO_URL}" alt="Mythrion" style="max-width: 200px; width: 100%; height: auto; display: inline-block;" />
+          </div>
+          <h1>${params.title}</h1>
+          <p class="subtitle">${params.body}</p>
+          <center><a href="${params.url}" class="btn">${params.cta}</a></center>
+          <div class="footer">${params.footer}</div>
+        </div>
+      </div>
+    </body>
+    </html>`;
   }
 
   private buildTwoFactorTextTemplate(params: {

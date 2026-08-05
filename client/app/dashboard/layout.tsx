@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { Sidebar, GracePeriodBanner } from '@/components/dashboard'
+import { Sidebar, GracePeriodBanner, VerificationBanner } from '@/components/dashboard'
 import { useTranslation } from 'react-i18next'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -63,6 +63,7 @@ export default function DashboardLayout({
         {/* Main content area */}
         <main className="flex-1 min-h-screen bg-pattern overflow-auto">
           <GracePeriodBanner />
+          <VerificationBanner />
           <div className="px-8 py-6 w-full animate-fade-in">
             {children}
           </div>

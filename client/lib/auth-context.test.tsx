@@ -86,6 +86,9 @@ const mockProfile = {
   displayName: null,
   onboardingComplete: false,
   twoFactorEnabled: false,
+  emailVerified: false,
+  hasPassword: true,
+  language: 'en',
 }
 
 beforeEach(() => {

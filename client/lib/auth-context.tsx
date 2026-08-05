@@ -33,6 +33,8 @@ interface User {
   language: string
   isEarlyAccess: boolean
   twoFactorEnabled: boolean
+  emailVerified: boolean
+  hasPassword: boolean
 }
 
 /** Result of a password login: either the session is established, or the
@@ -232,16 +234,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const completeOnboarding = useCallback(
     async (displayName: string) => {
-      const updated = await api.post<Omit<User, 'isAdmin' | 'isEarlyAccess'>>('/auth/onboarding', {
-        displayName,
-      })
-      setUser({
-        ...updated,
-        isAdmin: isAdminFromToken(),
-        isEarlyAccess: isEarlyAccessFromToken(),
-      })
+      // The server returns only { id, email, displayName, onboardingComplete },
+      // so merging it would silently drop emailVerified/twoFactorEnabled/language.
+      // Re-fetch the full profile instead.
+      await api.post('/auth/onboarding', { displayName })
+      await fetchProfile()
     },
-    [isAdminFromToken, isEarlyAccessFromToken],
+    [fetchProfile],
   )
 
   return (

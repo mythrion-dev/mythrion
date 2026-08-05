@@ -176,4 +176,57 @@ export class TokenService {
       REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
     )
   }
+
+  /**
+   * Revoke every live refresh token for a user EXCEPT the one presented in
+   * `encodedRefreshToken` (used by "change password → log out all other
+   * devices"). Operates on the DB only — it deliberately does NOT set the
+   * Redis `token_blacklist:{userId}` marker, because rotateRefreshToken
+   * consults that marker and would then reject the current session's next
+   * refresh too. When no token is provided (or it does not belong to the
+   * user), falls back to revoking everything.
+   */
+  async revokeAllTokensExcept(
+    userId: string,
+    encodedRefreshToken?: string,
+  ): Promise<void> {
+    if (!encodedRefreshToken) {
+      await this.revokeAllTokens(userId)
+      return
+    }
+
+    let exemptId: string | null = null
+    try {
+      const payload = JSON.parse(
+        Buffer.from(encodedRefreshToken, 'base64').toString('utf-8'),
+      ) as { userId?: string; token?: string }
+      if (payload?.userId === userId && payload.token) {
+        const liveTokens = await this.prisma.refreshToken.findMany({
+          where: { userId, revoked: false },
+          select: { id: true, token: true },
+        })
+        for (const stored of liveTokens) {
+          try {
+            if (await bcrypt.compare(payload.token, stored.token)) {
+              exemptId = stored.id
+              break
+            }
+          } catch {
+            // Corrupt stored hash — treat as non-matching and keep scanning.
+          }
+        }
+      }
+    } catch {
+      // Unparseable token envelope — fall through to revoking everything.
+    }
+
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        userId,
+        revoked: false,
+        id: exemptId ? { not: exemptId } : undefined,
+      },
+      data: { revoked: true },
+    })
+  }
 }

@@ -539,10 +539,6 @@ export type EnumInvitationStatusFieldUpdateOperationsInput = {
   set?: $Enums.InvitationStatus
 }
 
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
-}
-
 export type CampaignInvitationCreateWithoutCreatedByInput = {
   id?: string
   invitedEmail?: string | null

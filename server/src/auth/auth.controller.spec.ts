@@ -43,6 +43,11 @@ describe('AuthController', () => {
       resendTwoFactorCode: jest.fn().mockResolvedValue({ twoFactorId: 'challenge-2' }),
       sendTwoFactorCode: jest.fn().mockResolvedValue({ twoFactorId: 'challenge-1' }),
       confirmTwoFactor: jest.fn().mockResolvedValue({ recoveryCodes: ['AAAA'] }),
+      verifyEmail: jest.fn().mockResolvedValue({ success: true }),
+      resendVerification: jest.fn().mockResolvedValue({ success: true }),
+      forgotPassword: jest.fn().mockResolvedValue({ success: true }),
+      resetPassword: jest.fn().mockResolvedValue({ success: true }),
+      changePassword: jest.fn().mockResolvedValue({ success: true }),
     }
     mockLanguageService = {
       normalize: jest.fn().mockReturnValue('en'),
@@ -75,7 +80,7 @@ describe('AuthController', () => {
       }
       const result = await controller.register(dto, mockUserReq)
       expect(mockLanguageService.normalize).toHaveBeenCalledWith(undefined)
-      expect(mockAuthService.register).toHaveBeenCalledWith(dto, 'en')
+      expect(mockAuthService.register).toHaveBeenCalledWith(dto, 'en', mockUserReq)
       expect(result).toEqual({ accessToken: 'mock-access', refreshToken: 'mock-refresh' })
     })
 
@@ -92,15 +97,15 @@ describe('AuthController', () => {
       await controller.register(dto, req)
 
       expect(mockLanguageService.normalize).toHaveBeenCalledWith('pt-BR,pt;q=0.9')
-      expect(mockAuthService.register).toHaveBeenCalledWith(dto, 'pt-BR')
+      expect(mockAuthService.register).toHaveBeenCalledWith(dto, 'pt-BR', req)
     })
   })
 
   describe('login', () => {
     it('should delegate to authService.login with the dto', async () => {
       const dto: LoginDto = { email: 'test@test.com', password: 'password123' }
-      const result = await controller.login(dto)
-      expect(mockAuthService.login).toHaveBeenCalledWith(dto)
+      const result = await controller.login(dto, mockUserReq)
+      expect(mockAuthService.login).toHaveBeenCalledWith(dto, mockUserReq)
       expect(result).toEqual({ accessToken: 'mock-access', refreshToken: 'mock-refresh' })
     })
   })
@@ -155,9 +160,62 @@ describe('AuthController', () => {
   describe('verifyTwoFactor', () => {
     it('should delegate to authService.verifyTwoFactor with the dto', async () => {
       const dto = { twoFactorId: 'challenge-1', code: '123456' }
-      const result = await controller.verifyTwoFactor(dto)
-      expect(mockAuthService.verifyTwoFactor).toHaveBeenCalledWith(dto)
+      const result = await controller.verifyTwoFactor(dto, mockUserReq)
+      expect(mockAuthService.verifyTwoFactor).toHaveBeenCalledWith(dto, mockUserReq)
       expect(result).toEqual({ accessToken: 'mock-access', refreshToken: 'mock-refresh' })
+    })
+  })
+
+  describe('verifyEmail', () => {
+    it('should delegate to authService.verifyEmail with the dto', async () => {
+      const dto = { token: 'signed-verification-token' }
+      const result = await controller.verifyEmail(dto)
+      expect(mockAuthService.verifyEmail).toHaveBeenCalledWith(dto)
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('resendVerification', () => {
+    it('should delegate to authService.resendVerification with the dto', async () => {
+      const dto = { email: 'test@test.com' }
+      const result = await controller.resendVerification(dto)
+      expect(mockAuthService.resendVerification).toHaveBeenCalledWith(dto)
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('forgotPassword', () => {
+    it('should delegate to authService.forgotPassword with the dto', async () => {
+      const dto = { email: 'test@test.com' }
+      const result = await controller.forgotPassword(dto)
+      expect(mockAuthService.forgotPassword).toHaveBeenCalledWith(dto)
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('resetPassword', () => {
+    it('should delegate to authService.resetPassword with the dto', async () => {
+      const dto = { token: 'signed-reset-token', password: 'NewPassword1!' }
+      const result = await controller.resetPassword(dto)
+      expect(mockAuthService.resetPassword).toHaveBeenCalledWith(dto)
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('changePassword', () => {
+    it('should delegate to authService.changePassword with userId, dto and request', async () => {
+      const dto = {
+        currentPassword: 'OldPassword1!',
+        newPassword: 'NewPassword1!',
+        logoutOtherDevices: true,
+      }
+      const result = await controller.changePassword(mockUserReq, dto)
+      expect(mockAuthService.changePassword).toHaveBeenCalledWith(
+        'user-1',
+        dto,
+        mockUserReq,
+      )
+      expect(result).toEqual({ success: true })
     })
   })
 

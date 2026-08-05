@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth-context'
 import { API_URL, setInvitationToken } from '@/lib/api'
 import { resendTwoFactorCode } from '@/lib/two-factor-api'
 import { TwoFactorCodeForm } from '@/components/auth/TwoFactorCodeForm'
+import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal'
 
 function LoginForm() {
   const router = useRouter()
@@ -33,6 +34,7 @@ function LoginForm() {
   const [step, setStep] = useState<'credentials' | 'code'>('credentials')
   const [twoFactorId, setTwoFactorId] = useState<string | null>(null)
   const [emailMasked, setEmailMasked] = useState('')
+  const [forgotOpen, setForgotOpen] = useState(false)
 
   const handleOAuthClick = (e: MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault()
@@ -129,7 +131,18 @@ function LoginForm() {
         </div>
 
         <div>
-          <label htmlFor="password" className="label">{t('auth:password')}</label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="password" className="label">{t('auth:password')}</label>
+            {!isRegister && (
+              <button
+                type="button"
+                onClick={() => setForgotOpen(true)}
+                className="text-xs font-medium text-primary hover:text-primary-hover transition-colors"
+              >
+                {t('auth:forgotPassword')}
+              </button>
+            )}
+          </div>
           <input
             id="password"
             type="password"
@@ -211,6 +224,12 @@ function LoginForm() {
       </div>
         </>
       )}
+
+      <ForgotPasswordModal
+        open={forgotOpen}
+        initialEmail={email}
+        onClose={() => setForgotOpen(false)}
+      />
     </div>
   )
 }
