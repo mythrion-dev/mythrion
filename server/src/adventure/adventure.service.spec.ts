@@ -166,7 +166,7 @@ describe('AdventureService', () => {
 
       await expect(service.findOne('a1', 'u1')).rejects.toThrow(ForbiddenException)
       await expect(service.findOne('a1', 'u1')).rejects.toThrow(
-        'You are not a member of this adventure',
+        'You are not a member of this campaign',
       )
     })
 
@@ -919,7 +919,7 @@ describe('AdventureService', () => {
 
         await expect(
           service.createNpc('a1', 'u1', { name: 'NoTemplate' }),
-        ).rejects.toThrow('No template is attached to this adventure')
+        ).rejects.toThrow('No template is attached to this campaign')
       })
     })
 

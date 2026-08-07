@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
+import { normalizeLanguage } from '@/i18n'
+import { formatTimeForLocale } from '@/lib/time'
 
 interface CampaignCardProps {
   readonly id: string
@@ -30,12 +32,15 @@ export function CampaignCard({
   sessionTime,
   sessionType,
 }: Readonly<CampaignCardProps>) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const truncatedSynopsis = synopsis && synopsis.length > 120
     ? synopsis.slice(0, 120).trimEnd() + '...'
     : synopsis
 
   const hasSessionInfo = sessionWeekday || sessionTime || sessionType
+  const formattedTime = sessionTime
+    ? formatTimeForLocale(sessionTime, normalizeLanguage(i18n.resolvedLanguage ?? i18n.language), t('community:am'), t('community:pm'))
+    : ''
 
   return (
     <Link
@@ -69,13 +74,13 @@ export function CampaignCard({
       {hasSessionInfo && (
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-400">
           {sessionWeekday && sessionTime && (
-            <span>{sessionWeekday} &bull; {sessionTime}</span>
+            <span>{sessionWeekday} &bull; {formattedTime}</span>
           )}
           {sessionWeekday && !sessionTime && (
             <span>{sessionWeekday}</span>
           )}
           {sessionTime && !sessionWeekday && (
-            <span>{sessionTime}</span>
+            <span>{formattedTime}</span>
           )}
           {sessionType === 'ONLINE' && <span>&#x1F310; {t('community:online')}</span>}
           {sessionType === 'IN_PERSON' && <span>&#x1F4CD; {t('community:inPerson')}</span>}

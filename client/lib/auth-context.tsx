@@ -50,7 +50,7 @@ interface AuthState {
   user: User | null
   loading: boolean
   login: (email: string, password: string) => Promise<LoginOutcome>
-  register: (email: string, password: string, displayName?: string) => Promise<void>
+  register: (email: string, password: string, displayName?: string, acceptTerms?: boolean) => Promise<void>
   logout: () => Promise<void>
   completeOnboarding: (displayName: string) => Promise<void>
   verifyTwoFactor: (twoFactorId: string, code: string) => Promise<void>
@@ -206,11 +206,12 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   }, [fetchProfile])
 
   const register = useCallback(
-    async (email: string, password: string, displayName?: string) => {
+    async (email: string, password: string, displayName?: string, acceptTerms = false) => {
       const res = await api.post<{ accessToken: string; refreshToken: string }>('/auth/register', {
         email,
         password,
         displayName,
+        acceptTerms,
       })
       setAccessToken(res.accessToken)
       setRefreshToken(res.refreshToken)

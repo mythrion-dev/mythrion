@@ -2,6 +2,7 @@
 
 import { useTranslation } from 'react-i18next'
 import type { SubmitEvent } from 'react'
+import { TimePicker } from '@/components/shared/TimePicker'
 
 const weekdays = [
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
@@ -117,11 +118,9 @@ export function EditForm({
           </div>
           <div>
             <label className="text-xs text-muted mb-1 block">{t('campaign:time')}</label>
-            <input
-              type="time"
+            <TimePicker
               value={sessionTime}
-              onChange={e => onSessionTimeChange(e.target.value)}
-              className="input-field"
+              onChange={onSessionTimeChange}
             />
           </div>
           <div>

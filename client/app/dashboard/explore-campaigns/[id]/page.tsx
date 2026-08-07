@@ -10,6 +10,8 @@ import { PageNav } from '@/lib/breadcrumb'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { JoinRequestModal } from '@/components/community/JoinRequestModal'
+import { normalizeLanguage } from '@/i18n'
+import { formatTimeForLocale } from '@/lib/time'
 
 interface Adventure {
   id: string
@@ -39,7 +41,7 @@ interface JoinRequest {
 }
 
 function AdventureDetailContent() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const params = useParams()
   const id = params.id as string
 
@@ -238,7 +240,7 @@ function AdventureDetailContent() {
                 <><span className="text-muted">{t('community:day')}:</span><span>{adventure.sessionWeekday}</span></>
               )}
               {adventure.sessionTime && (
-                <><span className="text-muted">{t('community:time')}:</span><span>{adventure.sessionTime}</span></>
+                <><span className="text-muted">{t('community:time')}:</span><span>{formatTimeForLocale(adventure.sessionTime, normalizeLanguage(i18n.resolvedLanguage ?? i18n.language), t('community:am'), t('community:pm'))}</span></>
               )}
               {adventure.sessionType && (
                 <><span className="text-muted">{t('community:format')}:</span><span>{adventure.sessionType === 'ONLINE' ? '🌐 ' + t('community:online') : '📍 ' + t('community:inPerson')}</span></>

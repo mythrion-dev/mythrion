@@ -76,7 +76,7 @@ describe('InvitationService', () => {
       prisma.adventure.findUnique.mockResolvedValue(null)
 
       await expect(service.inviteByEmail(params)).rejects.toThrow(NotFoundException)
-      await expect(service.inviteByEmail(params)).rejects.toThrow('Adventure not found')
+      await expect(service.inviteByEmail(params)).rejects.toThrow('Campaign not found')
     })
 
     it('calls emailService.sendInvitation with correct data', async () => {
@@ -494,7 +494,7 @@ describe('InvitationService', () => {
 
       await expect(service.accept('tok1', 'u1')).rejects.toThrow(BadRequestException)
       await expect(service.accept('tok1', 'u1')).rejects.toThrow(
-        'Adventure is at maximum player capacity',
+        'Campaign is at maximum player capacity',
       )
     })
 

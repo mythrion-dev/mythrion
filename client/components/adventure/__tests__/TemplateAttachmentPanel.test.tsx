@@ -67,7 +67,7 @@ describe('TemplateAttachmentPanel', () => {
   it('renders empty state when no template is attached', () => {
     render(<TemplateAttachmentPanel {...defaultProps} />)
 
-    expect(screen.getByText('No template attached to this adventure yet.')).toBeInTheDocument()
+    expect(screen.getByText('No template attached to this campaign yet.')).toBeInTheDocument()
     expect(screen.getByText('Template Attachment')).toBeInTheDocument()
   })
 

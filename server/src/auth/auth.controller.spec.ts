@@ -78,6 +78,7 @@ describe('AuthController', () => {
         email: 'test@test.com',
         password: 'password123',
         displayName: 'Test User',
+        acceptTerms: true,
       }
       const result = await controller.register(dto, mockUserReq)
       expect(mockLanguageService.normalize).toHaveBeenCalledWith(undefined)
@@ -89,6 +90,7 @@ describe('AuthController', () => {
       const dto: RegisterDto = {
         email: 'test@test.com',
         password: 'password123',
+        acceptTerms: true,
       }
       const req = {
         headers: { 'accept-language': 'pt-BR,pt;q=0.9' },

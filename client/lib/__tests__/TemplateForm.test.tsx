@@ -214,8 +214,8 @@ describe('EditForm', () => {
     expect(screen.getByDisplayValue('My Adventure')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Campaign 1')).toBeInTheDocument()
     expect(screen.getByDisplayValue('A great adventure')).toBeInTheDocument()
-    expect(screen.getByText('3')).toBeInTheDocument()
-    expect(screen.getByText('Edit Adventure')).toBeInTheDocument()
+    expect(screen.getByText('3', { selector: '.badge' })).toBeInTheDocument()
+    expect(screen.getByText('Edit Campaign')).toBeInTheDocument()
   })
 
   it('calls onNameChange when name input changes', async () => {

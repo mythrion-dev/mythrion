@@ -1396,10 +1396,12 @@ describe('TemplateService', () => {
       )
       expect(mockRedisService.cacheSet).toHaveBeenCalledWith(
         `templates:user:${userId}`,
-        templates,
+        templates.map((t) => ({ ...t, campaign: null, adventureName: null, adventureId: null })),
         15,
       )
-      expect(result).toEqual(templates)
+      expect(result).toEqual(
+        templates.map((t) => ({ ...t, campaign: null, adventureName: null, adventureId: null })),
+      )
     })
 
     it('returns empty array when user has no templates', async () => {
@@ -1759,7 +1761,7 @@ describe('TemplateService', () => {
       prisma.adventure.findUnique.mockResolvedValue(null)
 
       await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow(NotFoundException)
-      await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow('Adventure not found')
+      await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow('Campaign not found')
     })
 
     it('returns null snapshot when no snapshot exists', async () => {
@@ -1779,7 +1781,7 @@ describe('TemplateService', () => {
       mockMembershipService.isMember.mockResolvedValue(false)
 
       await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow(ForbiddenException)
-      await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow('You are not a member of this adventure')
+      await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow('You are not a member of this campaign')
       expect(prisma.adventure.findUnique).not.toHaveBeenCalled()
     })
   })

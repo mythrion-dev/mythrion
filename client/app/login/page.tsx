@@ -4,6 +4,7 @@ import { Suspense, useState, type SubmitEvent, type MouseEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { API_URL, setInvitationToken } from '@/lib/api'
 import { resendTwoFactorCode } from '@/lib/two-factor-api'
@@ -31,6 +32,8 @@ function LoginForm() {
     return null
   })
   const [submitting, setSubmitting] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [termsError, setTermsError] = useState<string | null>(null)
   const [step, setStep] = useState<'credentials' | 'code'>('credentials')
   const [twoFactorId, setTwoFactorId] = useState<string | null>(null)
   const [emailMasked, setEmailMasked] = useState('')
@@ -58,7 +61,12 @@ function LoginForm() {
 
     try {
       if (isRegister) {
-        await register(email, password)
+        if (!acceptedTerms) {
+          setTermsError(t('auth:acceptTermsRequired'))
+          return
+        }
+        setTermsError(null)
+        await register(email, password, undefined, acceptedTerms)
         // New accounts must verify their email before entering the app.
         router.push('/verify-email')
       } else {
@@ -170,6 +178,32 @@ function LoginForm() {
         >
           {submitting ? t('auth:pleaseWait') : submitLabel}
         </button>
+
+        {isRegister && (
+          <div className="mt-4 text-sm">
+            <label className="inline-flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-border text-primary accent-primary"
+              />
+              <span className="text-sm leading-relaxed text-muted-foreground">
+                {t('auth:acceptTermsLabel')}{' '}
+                <Link href="/privacy" className="font-medium text-primary hover:text-primary-hover transition-colors">
+                  {t('auth:privacyPolicy')}
+                </Link>
+                {' '}{t('auth:and')}{' '}
+                <Link href="/terms" className="font-medium text-primary hover:text-primary-hover transition-colors">
+                  {t('auth:termsOfService')}
+                </Link>
+              </span>
+            </label>
+            {termsError && (
+              <p className="mt-2 text-xs text-red-500">{termsError}</p>
+            )}
+          </div>
+        )}
       </form>
 
       <div className="relative">

@@ -100,7 +100,7 @@ describe('CampaignCard', () => {
       />,
     )
     expect(screen.getByText(/Friday/i)).toBeDefined()
-    expect(screen.getByText(/20:00/)).toBeDefined()
+    expect(screen.getByText(/8:00 PM/)).toBeDefined()
     expect(screen.getByText(/Online/)).toBeDefined()
   })
 
@@ -158,6 +158,6 @@ describe('CampaignCard', () => {
     // The bullet should appear between weekday and time
     const card = document.querySelector('.card-interactive')
     expect(card?.textContent).toMatch(/Saturday/)
-    expect(card?.textContent).toMatch(/14:30/)
+    expect(card?.textContent).toMatch(/2:30 PM/)
   })
 })

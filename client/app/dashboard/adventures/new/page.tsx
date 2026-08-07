@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
 import Link from 'next/link'
 import { PageNav } from '@/lib/breadcrumb'
+import { TemplatePickerModal } from '@/components/adventure/TemplatePickerModal'
+import { TimePicker } from '@/components/shared/TimePicker'
 import { useSubscription } from '@/lib/subscription-context'
 
 export default function NewAdventurePage() {
@@ -25,6 +27,7 @@ export default function NewAdventurePage() {
   const [submitting, setSubmitting] = useState(false)
   const [templateId, setTemplateId] = useState<string | null>(null)
   const [templateName, setTemplateName] = useState<string | null>(null)
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
 
   if (!hasActiveSubscription) {
     return (
@@ -220,12 +223,10 @@ export default function NewAdventurePage() {
               </div>
               <div>
                 <label htmlFor="sessionTime" className="text-xs text-muted mb-1 block">{t('campaign:time')}</label>
-                <input
+                <TimePicker
                   id="sessionTime"
-                  type="time"
                   value={sessionTime}
-                  onChange={(e) => setSessionTime(e.target.value)}
-                  className="input-field"
+                  onChange={setSessionTime}
                 />
               </div>
               <div>
@@ -292,6 +293,7 @@ export default function NewAdventurePage() {
               ) : (
                 <button
                   type="button"
+                  onClick={() => setShowTemplatePicker(true)}
                   className="btn-ghost text-xs"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -351,6 +353,16 @@ export default function NewAdventurePage() {
           </div>
         </form>
       </div>
+
+      <TemplatePickerModal
+        isOpen={showTemplatePicker}
+        onClose={() => setShowTemplatePicker(false)}
+        onSelect={(selectedId, selectedName) => {
+          setTemplateId(selectedId)
+          setTemplateName(selectedName)
+          setShowTemplatePicker(false)
+        }}
+      />
     </div>
   )
 }

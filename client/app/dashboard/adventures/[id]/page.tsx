@@ -27,6 +27,8 @@ import { VisibilityToggle } from '@/components/adventure/VisibilityToggle'
 import { JoinRequestPanel } from '@/components/adventure/JoinRequestPanel'
 import type { CoreResource, AcConfigDraft, ArmorClassAttributeModifierDraft, ResistanceDef } from '@/components/adventure/types'
 import { emptyAcConfig, slugify } from '@/components/adventure/types'
+import { normalizeLanguage } from '@/i18n'
+import { formatTimeForLocale } from '@/lib/time'
 
 interface Adventure {
   id: string; name: string; campaign: string; synopsis: string | null; maxPlayers: number; ownerId: string; createdAt: string; updatedAt: string
@@ -290,7 +292,7 @@ function resolveAllowedAttributeKeys(allowedIds: string[] | undefined, attribute
 export default function AdventureDetailPage() {
   const router = useRouter(); const params = useParams(); const id = params.id as string
   const { user } = useAuth()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [adventure, setAdventure] = useState<Adventure | null>(null); const [fetching, setFetching] = useState(true)
   const [userRole, setUserRole] = useState<string | null>(null)
   const [editing, setEditing] = useState(false); const [editName, setEditName] = useState(''); const [editCampaign, setEditCampaign] = useState(''); const [editSynopsis, setEditSynopsis] = useState(''); const [editMaxPlayers, setEditMaxPlayers] = useState(4); const [editSessionWeekday, setEditSessionWeekday] = useState(''); const [editSessionTime, setEditSessionTime] = useState(''); const [editSessionType, setEditSessionType] = useState(''); const [editError, setEditError] = useState<string | null>(null); const [saving, setSaving] = useState(false)
@@ -686,7 +688,7 @@ export default function AdventureDetailPage() {
                   <><span className="text-muted">{t('campaign:dayColon')}</span><span>{(adventure as any).sessionWeekday}</span></>
                 )}
                 {(adventure as any).sessionTime && (
-                  <><span className="text-muted">{t('campaign:timeColon')}</span><span>{(adventure as any).sessionTime}</span></>
+                  <><span className="text-muted">{t('campaign:timeColon')}</span><span>{formatTimeForLocale((adventure as any).sessionTime, normalizeLanguage(i18n.resolvedLanguage ?? i18n.language), t('campaign:am'), t('campaign:pm'))}</span></>
                 )}
                 {(adventure as any).sessionType && (
                   <><span className="text-muted">{t('campaign:formatColon')}</span><span>{(adventure as any).sessionType === 'ONLINE' ? t('campaign:online') : t('campaign:inPerson')}</span></>
