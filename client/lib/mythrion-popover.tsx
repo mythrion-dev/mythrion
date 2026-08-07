@@ -239,6 +239,14 @@ export default function MythrionPopover({
     setOpen(!isOpen)
   }
 
+  const handleTriggerKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      e.stopPropagation()
+      setOpen(!isOpen)
+    }
+  }
+
   const handlePopoverMouseEnter = () => {
     mouseInPopoverRef.current = true
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
@@ -263,10 +271,13 @@ export default function MythrionPopover({
     <>
       <div
         ref={triggerRef}
+        role="button"
+        tabIndex={0}
         className="inline-flex items-center cursor-help"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onClick={handleTriggerClick}
+        onKeyDown={handleTriggerKeyDown}
       >
         {children}
       </div>

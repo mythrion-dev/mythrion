@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useId, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -45,6 +45,7 @@ export function Select({
   id,
 }: SelectProps) {
   const { t } = useTranslation()
+  const listboxId = useId()
   const [open, setOpen] = useState(false)
   const [highlightIndex, setHighlightIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -203,6 +204,7 @@ export function Select({
         id={id}
         aria-expanded={open}
         aria-haspopup="listbox"
+        aria-controls={listboxId}
         aria-activedescendant={
           open && highlightIndex >= 0
             ? `select-opt-${options[highlightIndex]?.id}`
@@ -244,6 +246,7 @@ export function Select({
           <div
             ref={setFloating}
             role="listbox"
+            id={listboxId}
             tabIndex={-1}
             style={{
               ...floatingStyles,

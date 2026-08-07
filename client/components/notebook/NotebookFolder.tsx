@@ -205,6 +205,7 @@ export function NotebookFolder({
                 ref={menuRef}
                 className="absolute right-0 top-full mt-1 z-50 min-w-[160px] bg-surface border border-border rounded-lg shadow-xl py-1"
                 role="menu"
+                tabIndex={-1}
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') setShowMenu(false)

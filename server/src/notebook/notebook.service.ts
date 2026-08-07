@@ -395,7 +395,7 @@ export class NotebookService {
       const folderMatch = folderName?.toLowerCase().includes(q) ?? false
 
       // Strip HTML tags for content matching
-      const strippedContent = page.content.replace(/<[^>]*>/g, '')
+      const strippedContent = page.content.replace(/<[^>]*?>/g, '')
       const contentMatch = strippedContent.toLowerCase().includes(q)
 
       return titleMatch || folderMatch || contentMatch

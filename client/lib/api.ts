@@ -7,7 +7,11 @@ export function normalizeApiUrl(raw: string | undefined): string {
   }
   // Add /api suffix if missing
   if (!url.endsWith('/api')) {
-    url = url.replace(/\/+$/, '') + '/api'
+    // Strip trailing slashes before appending /api. A quantified regex such as
+    // /\/+$/ backtracks super-linearly on slash-heavy input (S5843), so do it
+    // with a linear loop instead.
+    while (url.endsWith('/')) url = url.slice(0, -1)
+    url += '/api'
   }
   return url
 }
@@ -243,7 +247,7 @@ export function decodeJwtPayload(token: string): Record<string, unknown> | null 
     // stripped. atob() expects standard base64, so swap the alphabet and
     // re-add padding before decoding — otherwise decoding silently fails and
     // proactive refresh / role checks are disabled.
-    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const base64 = payload.replaceAll('-', '+').replaceAll('_', '/')
     const padded = base64.padEnd(
       base64.length + ((4 - (base64.length % 4)) % 4),
       '=',

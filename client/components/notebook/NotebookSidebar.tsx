@@ -86,7 +86,26 @@ function persistState(adventureId: string, userId: string | null, state: { activ
 
 function stripHtml(html: string): string {
   if (!html) return ''
-  return html.replace(/<[^>]*>/g, '')
+  // Strip tags in linear time: find each '<' and its matching '>'. This avoids
+  // the super-linear backtracking of /<[^>]*>/ on malformed input (e.g. many '<').
+  let result = ''
+  let cursor = 0
+  while (cursor < html.length) {
+    const open = html.indexOf('<', cursor)
+    if (open === -1) {
+      result += html.slice(cursor)
+      break
+    }
+    result += html.slice(cursor, open)
+    const close = html.indexOf('>', open + 1)
+    if (close === -1) {
+      // Unclosed tag — keep the remainder, matching the regex behavior
+      result += html.slice(open)
+      break
+    }
+    cursor = close + 1
+  }
+  return result
 }
 
 /* ── Component ── */
@@ -733,7 +752,6 @@ export function NotebookSidebar({
             : 'translate-x-full w-1/2 max-sm:w-full sm:max-w-[95vw] lg:w-1/2 xl:w-[45%]'
         }`}
         aria-label={t('notebook:campaignNotebookSidebar')}
-        role="complementary"
       >
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
@@ -1185,9 +1203,13 @@ export function NotebookSidebar({
             </p>
 
             {/* Move to Root */}
-            <label className="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-hover transition-colors mb-1">
+            <label
+              htmlFor="delete-move-root"
+              className="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-hover transition-colors mb-1"
+            >
               <input
                 type="radio"
+                id="delete-move-root"
                 name="delete-move-option"
                 checked={folderDeleteDialog.moveToFolderId === null}
                 onChange={() =>
@@ -1204,11 +1226,15 @@ export function NotebookSidebar({
             </label>
 
             {/* Move to another folder */}
-            <label className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-hover transition-colors mb-3 ${
-              otherFoldersForDelete.length === 0 ? 'opacity-50' : ''
-            }`}>
+            <label
+              htmlFor="delete-move-folder"
+              className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-hover transition-colors mb-3 ${
+                otherFoldersForDelete.length === 0 ? 'opacity-50' : ''
+              }`}
+            >
               <input
                 type="radio"
+                id="delete-move-folder"
                 name="delete-move-option"
                 checked={folderDeleteDialog.moveToFolderId !== null}
                 disabled={otherFoldersForDelete.length === 0}

@@ -45,11 +45,7 @@ export function buildPreviewSheet(template: PreviewTemplateSnapshot): PreviewShe
 
   const coreResources: Record<string, PreviewResourceState> = {}
   for (const res of template.coreResources ?? []) {
-    if (res.enabled) {
-      coreResources[res.id] = { current: null, maximum: null, notes: null }
-    } else {
-      coreResources[res.id] = { current: null, maximum: null, notes: null }
-    }
+    coreResources[res.id] = { current: null, maximum: null, notes: null }
   }
 
   const acFieldValues: Record<string, string> = {}

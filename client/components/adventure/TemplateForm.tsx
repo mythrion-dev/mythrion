@@ -141,7 +141,7 @@ export function TemplateForm(props: {
           { num: 1, label: t('campaign:basicInfoAndFeatures'), done: wizardDone },
           { num: 2, label: t('campaign:configureDetails'), done: false },
         ].map((step, idx) => (
-          <div key={step.num} className={`flex-1 flex items-center ${idx === 0 ? '' : ''}`}>
+          <div key={step.num} className="flex-1 flex items-center">
             <div className={`flex items-center gap-2.5 px-4 py-2.5 ${
               step.done ? 'text-primary' : step.num === (wizardDone ? 2 : 1) ? 'text-foreground' : 'text-muted'
             }`}>
@@ -222,13 +222,17 @@ export function TemplateForm(props: {
               </div>
             </div>
             <div className="shrink-0 pt-1">
-              <div
+              <button
+                type="button"
+                role="switch"
+                aria-checked={Boolean(props.newIsPublic)}
+                aria-label={t('campaign:makePublic')}
                 className="relative w-9 h-5 rounded-full transition-colors duration-200 cursor-pointer"
                 style={{ backgroundColor: props.newIsPublic ? '#7c5ce7' : 'rgba(255,255,255,0.1)' }}
                 onClick={() => props.onNewIsPublicChange?.(!props.newIsPublic)}
               >
-                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${props.newIsPublic ? 'left-[17px]' : 'left-0.5'}`} />
-              </div>
+                <span className={`absolute top-0.5 block w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${props.newIsPublic ? 'left-[17px]' : 'left-0.5'}`} />
+              </button>
             </div>
           </div>
 
@@ -247,7 +251,18 @@ export function TemplateForm(props: {
                       ? 'border-primary/30 bg-primary/5 hover:border-primary/50 hover:bg-primary/8'
                       : 'border-border/50 bg-background/40 hover:border-border hover:bg-background/60'
                   }`}
+                  role="button"
+                  tabIndex={isDisabled ? -1 : 0}
+                  aria-pressed={isOn}
+                  aria-disabled={isDisabled || undefined}
                   onClick={() => !isDisabled && f.onToggle(!isOn)}
+                  onKeyDown={(e) => {
+                    if (isDisabled) return
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      f.onToggle(!isOn)
+                    }
+                  }}
                 >
                   <div className={`absolute top-0 left-3 right-3 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity ${isDisabled ? 'hidden' : ''}`} />
                   <div className="flex items-start gap-3">

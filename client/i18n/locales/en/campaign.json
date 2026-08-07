@@ -238,6 +238,7 @@
   "loadingTemplateSnapshot": "Loading template snapshot...",
   "makePublic": "Make Public",
   "makePublicDescription": "Anyone can view and clone this template. Other users will see it in the community gallery.",
+  "uploadAvatar": "Upload avatar",
   "manaCost": "Mana Cost",
   "manualValue": "Manual Value",
   "maxHp": "Max HP",
