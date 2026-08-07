@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException, Logger } from '@nestjs/common'
+import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
 import { Prisma } from '../generated/prisma/client.js'
 import { splitSearchTokens, escapeLike } from '../community/search.util.js'
@@ -8,7 +9,7 @@ import { CreateTemplateDto } from './dto/create-template.dto.js'
 import { UpdateTemplateDto } from './dto/update-template.dto.js'
 import { RedisService } from '../redis/redis.service.js'
 
-const templateInclude = {
+export const templateInclude = {
   attributes: { orderBy: { order: 'asc' as const } },
   templateFields: { orderBy: { order: 'asc' as const } },
   templateSkills: { orderBy: { order: 'asc' as const }, include: { attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } } },
@@ -133,6 +134,7 @@ export class TemplateService {
     private readonly prisma: PrismaService,
     private readonly membership: MembershipService,
     private readonly redis: RedisService,
+    private readonly i18n: I18nService,
   ) {}
 
   private cacheKey(id: string): string {
@@ -193,15 +195,12 @@ export class TemplateService {
 
     // Look up the adventure to check if it's public and set ownerId
     const adventure = await this.prisma.adventure.findUnique({ where: { id: adventureId } })
-    if (!adventure) throw new NotFoundException('Adventure not found')
+    if (!adventure) throw new NotFoundException(this.i18n.t('template.adventureNotFound'))
 
     // Enforce single template per campaign: reject if any template already exists
     // Check both templateSource (new field) and legacy indicators for backward compatibility
     if (adventure.templateSource || adventure.originalTemplateId || adventure.templateSnapshot) {
-      throw new ConflictException(
-        'This campaign already has an attached template. ' +
-        'Detach it first before creating a campaign-owned template.',
-      )
+      throw new ConflictException(this.i18n.t('template.campaignHasTemplateDetachFirst'))
     }
 
     // Create the template with attributes and skills (initially without attribute links)
@@ -395,7 +394,7 @@ export class TemplateService {
     const cached = await this.redis.cacheGet<any[]>(this.listCacheKey(adventureId))
     if (cached) {
       const isMember = await this.membership.isMember(adventureId, userId)
-      if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
+      if (!isMember) throw new ForbiddenException(this.i18n.t('template.notMemberAdventure'))
       return cached
     }
 
@@ -404,7 +403,7 @@ export class TemplateService {
     })
 
     const isMember = await this.membership.isMember(adventureId, userId)
-    if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
+    if (!isMember) throw new ForbiddenException(this.i18n.t('template.notMemberAdventure'))
 
     // Cache the list
     await this.redis.cacheSet(this.listCacheKey(adventureId), templates, this.LIST_CACHE_TTL).catch(() => {})
@@ -421,7 +420,7 @@ export class TemplateService {
     }
 
     const template = await this.prisma.template.findUnique({ where: { id }, include: templateInclude })
-    if (!template) throw new NotFoundException('Template not found')
+    if (!template) throw new NotFoundException(this.i18n.t('template.notFound'))
     await this.ensureTemplateAccess(template, userId)
 
     // Cache the result (skip if Redis unavailable — cacheGet returns null gracefully)
@@ -444,25 +443,25 @@ export class TemplateService {
       const isMember = await this.membership.isMember(template.adventureId, userId)
       if (isMember) return
     }
-    throw new ForbiddenException('You do not have access to this template')
+    throw new ForbiddenException(this.i18n.t('template.noAccess'))
   }
 
   async update(id: string, userId: string, dto: UpdateTemplateDto) {
     const template = await this.prisma.template.findUnique({ where: { id } })
-    if (!template) throw new NotFoundException('Template not found')
+    if (!template) throw new NotFoundException(this.i18n.t('template.notFound'))
 
     // Owner OR GM of associated adventure can update
     if (template.ownerId !== userId) {
       if (template.adventureId) {
         await this.membership.requireRole(template.adventureId, userId, 'GM')
       } else {
-        throw new ForbiddenException('Only the template owner can update this template')
+        throw new ForbiddenException(this.i18n.t('template.ownerOnlyUpdate'))
       }
     }
 
     // Only the owner can change visibility (isPublic)
     if (dto.isPublic !== undefined && template.ownerId !== userId) {
-      throw new ForbiddenException('Only the template owner can change visibility')
+      throw new ForbiddenException(this.i18n.t('template.ownerOnlyVisibility'))
     }
 
     if (dto.attributes) {
@@ -1061,14 +1060,14 @@ export class TemplateService {
 
   async remove(id: string, userId: string) {
     const template = await this.prisma.template.findUnique({ where: { id } })
-    if (!template) throw new NotFoundException('Template not found')
+    if (!template) throw new NotFoundException(this.i18n.t('template.notFound'))
 
     // Owner OR GM of associated adventure can delete
     if (template.ownerId !== userId) {
       if (template.adventureId) {
         await this.membership.requireRole(template.adventureId, userId, 'GM')
       } else {
-        throw new ForbiddenException('Only the template owner can delete this template')
+        throw new ForbiddenException(this.i18n.t('template.ownerOnlyDelete'))
       }
     }
 
@@ -1076,8 +1075,7 @@ export class TemplateService {
     const sheetCount = await this.prisma.characterSheet.count({ where: { templateId: id } })
     if (sheetCount > 0) {
       throw new ForbiddenException(
-        `Cannot delete template: ${sheetCount} character sheet(s) still reference it. ` +
-        'Remove or reassign all sheets first.',
+        this.i18n.t('template.deleteInUse', { args: { sheetCount } }),
       )
     }
 
@@ -1118,14 +1116,14 @@ export class TemplateService {
       where: { id },
       include: templateInclude,
     })
-    if (!original) throw new NotFoundException('Template not found')
+    if (!original) throw new NotFoundException(this.i18n.t('template.notFound'))
 
     // Auth: owner can always clone; anyone can clone public; GM of adventure can clone
     if (original.ownerId !== userId && !original.isPublic) {
       if (original.adventureId) {
         await this.membership.requireRole(original.adventureId, userId, 'GM')
       } else {
-        throw new ForbiddenException('You do not have permission to clone this template')
+        throw new ForbiddenException(this.i18n.t('template.noClonePermission'))
       }
     }
 
@@ -1471,7 +1469,7 @@ export class TemplateService {
     })
 
     if (!template) {
-      throw new NotFoundException('Template not found or is not public')
+      throw new NotFoundException(this.i18n.t('template.notFoundOrNotPublic'))
     }
 
     return template
@@ -1753,9 +1751,7 @@ export class TemplateService {
       select: { originalTemplateId: true, templateSnapshot: true },
     })
     if (existing?.originalTemplateId || existing?.templateSnapshot) {
-      throw new ConflictException(
-        'This campaign already has an attached template. Use the replace endpoint to change it.',
-      )
+      throw new ConflictException(this.i18n.t('template.campaignAlreadyHasTemplate'))
     }
 
     // Reject if campaign-owned templates exist
@@ -1763,17 +1759,14 @@ export class TemplateService {
       where: { adventureId },
     })
     if (campaignCount > 0) {
-      throw new ConflictException(
-        'This campaign has campaign-owned templates. ' +
-        'Remove them first before attaching a template.',
-      )
+      throw new ConflictException(this.i18n.t('template.campaignOwnedTemplates'))
     }
 
     const template = await this.prisma.template.findUnique({
       where: { id: templateId },
       include: templateInclude,
     })
-    if (!template) throw new NotFoundException('Template not found')
+    if (!template) throw new NotFoundException(this.i18n.t('template.notFound'))
 
     // Build and store the snapshot
     const snapshot = await this.buildSnapshot(template)
@@ -1820,17 +1813,14 @@ export class TemplateService {
       where: { adventureId },
     })
     if (campaignCount > 0) {
-      throw new ConflictException(
-        'This campaign has campaign-owned templates. ' +
-        'Remove them first before attaching a template.',
-      )
+      throw new ConflictException(this.i18n.t('template.campaignOwnedTemplates'))
     }
 
     const template = await this.prisma.template.findUnique({
       where: { id: templateId },
       include: templateInclude,
     })
-    if (!template) throw new NotFoundException('Template not found')
+    if (!template) throw new NotFoundException(this.i18n.t('template.notFound'))
 
     // Build and store the new snapshot
     const snapshot = await this.buildSnapshot(template)
@@ -1892,14 +1882,14 @@ export class TemplateService {
    */
   async getTemplateSnapshot(adventureId: string, userId: string) {
     const isMember = await this.membership.isMember(adventureId, userId)
-    if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
+    if (!isMember) throw new ForbiddenException(this.i18n.t('template.notMemberAdventure'))
 
     const adventure = await this.prisma.adventure.findUnique({
       where: { id: adventureId },
       select: { templateSnapshot: true, originalTemplateId: true },
     })
 
-    if (!adventure) throw new NotFoundException('Adventure not found')
+    if (!adventure) throw new NotFoundException(this.i18n.t('template.adventureNotFound'))
     if (!adventure.templateSnapshot) {
       return {
         snapshot: null,

@@ -1,35 +1,49 @@
-jest.mock("nodemailer", () => {
-  const mock = { createTransport: jest.fn() }
-  // Provide both a default and named export so the mock works regardless of
-  // how the module interop compiles the `import nodemailer` (CJS vs ESM).
-  return { __esModule: true, ...mock, default: mock }
-})
-import { Test } from '@nestjs/testing'
-import nodemailer from 'nodemailer'
-import { EmailService } from './email.service'
+import { Test } from '@nestjs/testing';
+import { I18nService } from 'nestjs-i18n';
+import { EmailService } from './email.service';
+import { createI18nServiceMock } from '../i18n/i18n-testing.js';
 
-const mockCreateTransport = nodemailer.createTransport as jest.Mock
-const mockSendMail = jest.fn()
+const mockFetch = jest.fn();
+const mockJson = jest.fn();
 
-const SMTP_VARS = [
-  'SMTP_HOST',
-  'SMTP_PORT',
-  'SMTP_SECURE',
-  'SMTP_USER',
-  'SMTP_PASS',
+type MockedInit = RequestInit & { body?: string };
+
+function fetchCall(): [string, MockedInit] {
+  return mockFetch.mock.calls[0] as [string, MockedInit];
+}
+
+const ENV_VARS = [
+  'HOSTINGER_MAIL_API_TOKEN',
+  'HOSTINGER_MAILBOX_ID',
   'EMAIL_FROM',
-]
+];
 
-async function buildService() {
+function mockResponse({
+  ok = true,
+  status = 204,
+  jsonValue,
+}: {
+  ok?: boolean;
+  status?: number;
+  jsonValue?: unknown;
+}) {
+  mockJson.mockResolvedValue(jsonValue);
+  return { ok, status, json: mockJson } as unknown as Response;
+}
+
+async function buildService(i18nMock: I18nService = createI18nServiceMock()) {
   const module = await Test.createTestingModule({
-    providers: [EmailService],
-  }).compile()
-  return module.get<EmailService>(EmailService)
+    providers: [
+      EmailService,
+      { provide: I18nService, useValue: i18nMock },
+    ],
+  }).compile();
+  return module.get<EmailService>(EmailService);
 }
 
 describe('EmailService', () => {
-  let service: EmailService
-  const savedEnv: Record<string, string | undefined> = {}
+  let service: EmailService;
+  const savedEnv: Record<string, string | undefined> = {};
 
   const baseParams = {
     to: 'player@test.com',
@@ -38,117 +52,91 @@ describe('EmailService', () => {
     role: 'PLAYER',
     inviteUrl: 'http://localhost:3001/invite/abc',
     expiresAt: new Date('2025-06-15'),
-  }
+  };
 
   beforeAll(() => {
-    for (const v of SMTP_VARS) savedEnv[v] = process.env[v]
-  })
+    global.fetch = mockFetch;
+    for (const v of ENV_VARS) savedEnv[v] = process.env[v];
+  });
 
   afterAll(() => {
-    for (const v of SMTP_VARS) {
-      if (savedEnv[v] === undefined) delete process.env[v]
-      else process.env[v] = savedEnv[v]
+    for (const v of ENV_VARS) {
+      if (savedEnv[v] === undefined) delete process.env[v];
+      else process.env[v] = savedEnv[v];
     }
-  })
+  });
 
   beforeEach(() => {
-    jest.clearAllMocks()
-    for (const v of SMTP_VARS) delete process.env[v]
-    mockCreateTransport.mockReturnValue({ sendMail: mockSendMail })
-    mockSendMail.mockResolvedValue({ messageId: 'm1' })
-  })
+    jest.clearAllMocks();
+    for (const v of ENV_VARS) delete process.env[v];
+    mockFetch.mockResolvedValue(mockResponse({}));
+  });
 
-  describe('when SMTP_HOST is not set', () => {
+  describe('when HOSTINGER_MAIL_API_TOKEN / HOSTINGER_MAILBOX_ID are not set', () => {
     it('sends nothing and logs [DEV] message (does not throw)', async () => {
-      service = await buildService()
+      service = await buildService();
 
-      await expect(service.sendInvitation(baseParams)).resolves.toBeUndefined()
+      await expect(service.sendInvitation(baseParams)).resolves.toBeUndefined();
 
-      expect(mockCreateTransport).not.toHaveBeenCalled()
-      expect(mockSendMail).not.toHaveBeenCalled()
-    })
-  })
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+  });
 
-  describe('when SMTP_HOST is set', () => {
+  describe('when Hostinger env vars are set', () => {
     beforeEach(() => {
-      process.env.SMTP_HOST = 'smtp.example.com'
-    })
+      process.env.HOSTINGER_MAIL_API_TOKEN = 'secret-token';
+      process.env.HOSTINGER_MAILBOX_ID = 'AC1a2b3c4d5e6f7g';
+    });
 
-    it('creates a transporter with host, port 587, no TLS, and auth', async () => {
-      process.env.SMTP_USER = 'apikey'
-      process.env.SMTP_PASS = 'secret'
+    it('POSTs the send payload to the right mailbox endpoint with bearer auth', async () => {
+      service = await buildService();
+      await service.sendInvitation(baseParams);
 
-      service = await buildService()
-      await service.sendInvitation(baseParams)
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const [url, init] = fetchCall();
+      expect(url).toBe(
+        'https://api.mail.hostinger.com/api/v1/mailboxes/AC1a2b3c4d5e6f7g/send',
+      );
+      expect(init.method).toBe('POST');
+      expect(init.headers).toEqual({
+        Authorization: 'Bearer secret-token',
+        'Content-Type': 'application/json',
+      });
+      expect(init.signal).toBeDefined();
+    });
 
-      expect(mockCreateTransport).toHaveBeenCalledWith({
-        host: 'smtp.example.com',
-        port: 587,
-        secure: false,
-        auth: { user: 'apikey', pass: 'secret' },
-      })
-    })
+    it('sends default display name and subject when EMAIL_FROM is unset', async () => {
+      service = await buildService();
+      await service.sendInvitation(baseParams);
 
-    it('omits auth when SMTP_USER or SMTP_PASS is missing', async () => {
-      service = await buildService()
-      await service.sendInvitation(baseParams)
-
-      expect(mockCreateTransport).toHaveBeenCalledWith(
-        expect.objectContaining({ auth: undefined }),
-      )
-    })
-
-    it('enables implicit TLS on port 465 when SMTP_SECURE is unset', async () => {
-      process.env.SMTP_PORT = '465'
-
-      service = await buildService()
-      await service.sendInvitation(baseParams)
-
-      expect(mockCreateTransport).toHaveBeenCalledWith(
-        expect.objectContaining({ port: 465, secure: true }),
-      )
-    })
-
-    it('honours SMTP_SECURE=true on a STARTTLS port', async () => {
-      process.env.SMTP_SECURE = 'true'
-
-      service = await buildService()
-      await service.sendInvitation(baseParams)
-
-      expect(mockCreateTransport).toHaveBeenCalledWith(
-        expect.objectContaining({ secure: true }),
-      )
-    })
-
-    it('calls sendMail with default from, subject and template', async () => {
-      mockSendMail.mockResolvedValue({ messageId: 'm1' })
-
-      service = await buildService()
-      await service.sendInvitation(baseParams)
-
-      expect(mockSendMail).toHaveBeenCalledWith(
+      const [, init] = fetchCall();
+      const body = JSON.parse(init.body!) as {
+        to: string[];
+        displayName: string;
+        subject: string;
+      };
+      expect(body).toEqual(
         expect.objectContaining({
-          from: 'Mythrion <noreply@mythrion.com>',
-          to: 'player@test.com',
+          to: ['player@test.com'],
+          displayName: 'Mythrion',
           subject: 'Mighty GM invited you to Test Campaign',
-          html: expect.stringContaining('Accept Invitation'),
         }),
-      )
-    })
+      );
+    });
 
-    it('uses EMAIL_FROM when set', async () => {
-      process.env.EMAIL_FROM = 'No-Reply <no-reply@mythrion.com.br>'
+    it('derives the display name from EMAIL_FROM', async () => {
+      process.env.EMAIL_FROM = 'No-Reply <no-reply@mythrion.com.br>';
 
-      service = await buildService()
-      await service.sendInvitation(baseParams)
+      service = await buildService();
+      await service.sendInvitation(baseParams);
 
-      expect(mockSendMail).toHaveBeenCalledWith(
-        expect.objectContaining({ from: 'No-Reply <no-reply@mythrion.com.br>' }),
-      )
-    })
+      const [, init] = fetchCall();
+      const body = JSON.parse(init.body!) as { displayName: string };
+      expect(body.displayName).toBe('No-Reply');
+    });
 
-    it('builds HTML template with invitation details', async () => {
-      service = await buildService()
+    it('builds HTML and text templates with invitation details', async () => {
+      service = await buildService();
       await service.sendInvitation({
         ...baseParams,
         campaignName: 'My Campaign',
@@ -156,24 +144,320 @@ describe('EmailService', () => {
         role: 'GM',
         inviteUrl: 'https://mythrion.com/invite/token123',
         expiresAt: new Date('2025-07-01T12:00:00Z'),
-      })
+      });
 
-      const callArg = mockSendMail.mock.calls[0][0]
-      expect(callArg.html).toContain('Alice invited you')
-      expect(callArg.html).toContain('My Campaign')
-      expect(callArg.html).toContain('GM')
-      expect(callArg.html).toContain('https://mythrion.com/invite/token123')
-      expect(callArg.html).toContain('July')
-    })
+      const [, init] = fetchCall();
+      const body = JSON.parse(init.body!) as { html: string; text: string };
+      expect(body.html).toContain('Alice invited you');
+      expect(body.html).toContain('My Campaign');
+      expect(body.html).toContain('GM');
+      expect(body.html).toContain('https://mythrion.com/invite/token123');
+      expect(body.html).toContain('July');
 
-    it('rejects when sendMail fails', async () => {
-      mockSendMail.mockRejectedValue(new Error('SMTP refused connection'))
+      // Logo must be an absolute HTTPS URL — Gmail breaks on data: URIs.
+      expect(body.html).toMatch(/<img src="https:\/\/[^"]+\/logo\.png"/);
+      expect(body.html).not.toContain('data:image');
 
-      service = await buildService()
+      expect(body.text).toContain('My Campaign');
+      expect(body.text).toContain(
+        'Accept the invitation: https://mythrion.com/invite/token123',
+      );
+    });
+
+    it('resolves on a 204 success', async () => {
+      mockFetch.mockResolvedValue(mockResponse({}));
+
+      service = await buildService();
+
+      await expect(service.sendInvitation(baseParams)).resolves.toBeUndefined();
+    });
+
+    it('throws with the API error code on a non-2xx response', async () => {
+      mockFetch.mockResolvedValue(
+        mockResponse({
+          ok: false,
+          status: 422,
+          jsonValue: {
+            error: 'Something is invalid.',
+            code: 'ERR_INVALID_REQUEST',
+          },
+        }),
+      );
+
+      service = await buildService();
 
       await expect(service.sendInvitation(baseParams)).rejects.toThrow(
-        'SMTP refused connection',
-      )
-    })
-  })
-})
+        'ERR_INVALID_REQUEST',
+      );
+    });
+
+    it('throws with the HTTP status when the error body is not JSON', async () => {
+      mockJson.mockRejectedValue(new SyntaxError('Unexpected token'));
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 403,
+        json: mockJson,
+      });
+
+      service = await buildService();
+
+      await expect(service.sendInvitation(baseParams)).rejects.toThrow(
+        'Hostinger Mail API error (HTTP 403)',
+      );
+    });
+
+    it('rejects when the API call fails', async () => {
+      mockFetch.mockRejectedValue(new Error('network down'));
+
+      service = await buildService();
+
+      await expect(service.sendInvitation(baseParams)).rejects.toThrow(
+        'network down',
+      );
+    });
+  });
+
+  describe('sendTwoFactorCode', () => {
+    const twoFactorParams = {
+      to: 'player@test.com',
+      code: '123456',
+      expiresInMinutes: 10,
+    };
+
+    it('logs [DEV] and does not call fetch when env vars are unset', async () => {
+      service = await buildService();
+
+      await expect(
+        service.sendTwoFactorCode(twoFactorParams),
+      ).resolves.toBeUndefined();
+
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    describe('when Hostinger env vars are set', () => {
+      beforeEach(() => {
+        process.env.HOSTINGER_MAIL_API_TOKEN = 'secret-token';
+        process.env.HOSTINGER_MAILBOX_ID = 'AC1a2b3c4d5e6f7g';
+      });
+
+      it('POSTs to the mailbox endpoint with bearer auth and the 2FA subject', async () => {
+        service = await buildService();
+
+        await service.sendTwoFactorCode(twoFactorParams);
+
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+        const [url, init] = fetchCall();
+        expect(url).toBe(
+          'https://api.mail.hostinger.com/api/v1/mailboxes/AC1a2b3c4d5e6f7g/send',
+        );
+        expect(init.method).toBe('POST');
+        expect(init.headers).toEqual({
+          Authorization: 'Bearer secret-token',
+          'Content-Type': 'application/json',
+        });
+        expect(init.signal).toBeDefined();
+        const body = JSON.parse(init.body!) as { subject: string };
+        expect(body.subject).toBe('Mythrion — your verification code');
+      });
+
+      it('includes the code and expiry in the HTML and text templates', async () => {
+        service = await buildService();
+
+        await service.sendTwoFactorCode(twoFactorParams);
+
+        const [, init] = fetchCall();
+        const body = JSON.parse(init.body!) as { html: string; text: string };
+        expect(body.html).toContain('123456');
+        expect(body.html).toContain('10 minutes');
+        // Logo must be an absolute HTTPS URL — Gmail breaks on data: URIs.
+        expect(body.html).toMatch(/<img src="https:\/\/[^"]+\/logo\.png"/);
+        expect(body.html).not.toContain('data:image');
+        expect(body.text).toContain('123456');
+        expect(body.text).toContain('This code expires in 10 minutes.');
+      });
+
+      it('resolves on a 204 success', async () => {
+        mockFetch.mockResolvedValue(mockResponse({}));
+
+        service = await buildService();
+
+        await expect(
+          service.sendTwoFactorCode(twoFactorParams),
+        ).resolves.toBeUndefined();
+      });
+
+      it('throws with the API error code on a non-2xx response', async () => {
+        mockFetch.mockResolvedValue(
+          mockResponse({
+            ok: false,
+            status: 422,
+            jsonValue: {
+              error: 'Something is invalid.',
+              code: 'ERR_INVALID_REQUEST',
+            },
+          }),
+        );
+
+        service = await buildService();
+
+        await expect(service.sendTwoFactorCode(twoFactorParams)).rejects.toThrow(
+          'ERR_INVALID_REQUEST',
+        );
+      });
+
+      it('rejects when the API call fails', async () => {
+        mockFetch.mockRejectedValue(new Error('network down'));
+
+        service = await buildService();
+
+        await expect(service.sendTwoFactorCode(twoFactorParams)).rejects.toThrow(
+          'network down',
+        );
+      });
+    });
+  });
+
+  describe('sendEmailVerification', () => {
+    const verificationParams = {
+      to: 'player@test.com',
+      verificationUrl: 'https://mythrion.com/auth/verify-email?token=abc123',
+      language: 'en',
+    };
+
+    it('logs [DEV] and does not call fetch when env vars are unset', async () => {
+      service = await buildService();
+
+      await expect(
+        service.sendEmailVerification(verificationParams),
+      ).resolves.toBeUndefined();
+
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    describe('when Hostinger env vars are set', () => {
+      beforeEach(() => {
+        process.env.HOSTINGER_MAIL_API_TOKEN = 'secret-token';
+        process.env.HOSTINGER_MAILBOX_ID = 'AC1a2b3c4d5e6f7g';
+      });
+
+      it('sends the localized verification email', async () => {
+        service = await buildService();
+
+        await service.sendEmailVerification(verificationParams);
+
+        const [, init] = fetchCall();
+        const body = JSON.parse(init.body!) as {
+          subject: string;
+          html: string;
+          text: string;
+        };
+        expect(body.subject).toBe('Verify your Mythrion account');
+        expect(body.html).toContain('Welcome to Mythrion');
+        expect(body.html).toContain(
+          'Verify your email address to activate your account.',
+        );
+        expect(body.html).toContain(
+          'https://mythrion.com/auth/verify-email?token=abc123',
+        );
+        // Logo must be an absolute HTTPS URL — Gmail breaks on data: URIs.
+        expect(body.html).toMatch(/<img src="https:\/\/[^"]+\/logo\.png"/);
+        expect(body.html).not.toContain('data:image');
+        expect(body.text).toContain(
+          'https://mythrion.com/auth/verify-email?token=abc123',
+        );
+      });
+
+      it('passes the requested language through to the translator', async () => {
+        const i18nMock = createI18nServiceMock();
+        const tSpy = jest.spyOn(i18nMock, 't');
+        service = await buildService(i18nMock);
+
+        await service.sendEmailVerification({
+          ...verificationParams,
+          language: 'pt-BR',
+        });
+
+        expect(tSpy).toHaveBeenCalledWith(
+          'emails.verifyEmailSubject',
+          expect.objectContaining({ lang: 'pt-BR' }),
+        );
+      });
+    });
+  });
+
+  describe('sendPasswordReset', () => {
+    const resetParams = {
+      to: 'player@test.com',
+      resetUrl: 'https://mythrion.com/auth/reset-password?token=xyz789',
+      language: 'en',
+    };
+
+    it('logs [DEV] and does not call fetch when env vars are unset', async () => {
+      service = await buildService();
+
+      await expect(
+        service.sendPasswordReset(resetParams),
+      ).resolves.toBeUndefined();
+
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    describe('when Hostinger env vars are set', () => {
+      beforeEach(() => {
+        process.env.HOSTINGER_MAIL_API_TOKEN = 'secret-token';
+        process.env.HOSTINGER_MAILBOX_ID = 'AC1a2b3c4d5e6f7g';
+      });
+
+      it('sends the localized password-reset email', async () => {
+        service = await buildService();
+
+        await service.sendPasswordReset(resetParams);
+
+        const [, init] = fetchCall();
+        const body = JSON.parse(init.body!) as {
+          subject: string;
+          html: string;
+          text: string;
+        };
+        expect(body.subject).toBe('Reset your Mythrion password');
+        expect(body.html).toContain('Reset your password');
+        expect(body.html).toContain('Your password won\'t change unless');
+        expect(body.html).toContain(
+          'https://mythrion.com/auth/reset-password?token=xyz789',
+        );
+        // Logo must be an absolute HTTPS URL — Gmail breaks on data: URIs.
+        expect(body.html).toMatch(/<img src="https:\/\/[^"]+\/logo\.png"/);
+        expect(body.html).not.toContain('data:image');
+        expect(body.text).toContain(
+          'https://mythrion.com/auth/reset-password?token=xyz789',
+        );
+      });
+
+      it('passes the requested language through to the translator', async () => {
+        const i18nMock = createI18nServiceMock();
+        const tSpy = jest.spyOn(i18nMock, 't');
+        service = await buildService(i18nMock);
+
+        await service.sendPasswordReset({
+          ...resetParams,
+          language: 'en',
+        });
+
+        expect(tSpy).toHaveBeenCalledWith(
+          'emails.resetPasswordSubject',
+          expect.objectContaining({ lang: 'en' }),
+        );
+      });
+
+      it('rejects when the API call fails', async () => {
+        mockFetch.mockRejectedValue(new Error('network down'));
+
+        service = await buildService();
+
+        await expect(
+          service.sendPasswordReset(resetParams),
+        ).rejects.toThrow('network down');
+      });
+    });
+  });
+});

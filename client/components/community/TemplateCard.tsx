@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 
 interface TemplateCardProps {
   readonly id: string
@@ -35,6 +36,7 @@ export function TemplateCard({
   isAuthenticated = false,
   isOwn = false,
 }: Readonly<TemplateCardProps>) {
+  const { t } = useTranslation()
   const truncatedDescription =
     description && description.length > 100
       ? description.slice(0, 100).trimEnd() + '...'
@@ -44,7 +46,7 @@ export function TemplateCard({
   if (isOwn) {
     actionElement = (
       <span className="badge text-[0.6rem]" style={{ background: 'rgba(124,92,231,0.15)', color: '#9070f0', border: '1px solid rgba(124,92,231,0.2)' }}>
-        Owned
+        {t('community:owned')}
       </span>
     )
   } else if (isAuthenticated) {
@@ -60,7 +62,7 @@ export function TemplateCard({
         {isCloning ? (
           <>
             <div className="w-3 h-3 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-            Cloning...
+            {t('community:cloning')}
           </>
         ) : (
           <>
@@ -77,7 +79,7 @@ export function TemplateCard({
                 d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
               />
             </svg>
-            Clone
+            {t('community:clone')}
           </>
         )}
       </button>
@@ -89,7 +91,7 @@ export function TemplateCard({
         className="btn-ghost text-xs !px-3 !py-1"
         onClick={(e) => e.stopPropagation()}
       >
-        Sign in to clone
+        {t('community:signInToClone')}
       </Link>
     )
   }
@@ -119,7 +121,7 @@ export function TemplateCard({
         </p>
       ) : (
         <p className="text-sm text-muted italic mb-4 flex-1">
-          No description.
+          {t('community:noDescription')}
         </p>
       )}
 
@@ -128,12 +130,12 @@ export function TemplateCard({
         <div className="flex flex-wrap gap-1.5 mb-3">
           {attributeCount > 0 && (
             <span className="badge text-[0.6rem]" style={{ background: 'rgba(124,92,231,0.12)', color: '#9070f0', border: '1px solid rgba(124,92,231,0.18)' }}>
-              {attributeCount} attr
+              {t('community:attrCount', { count: attributeCount })}
             </span>
           )}
           {skillCount > 0 && (
             <span className="badge text-[0.6rem]" style={{ background: 'rgba(201,164,75,0.12)', color: '#c9a44b', border: '1px solid rgba(201,164,75,0.18)' }}>
-              {skillCount} skills
+              {t('community:skillCount', { count: skillCount })}
             </span>
           )}
         </div>
@@ -198,7 +200,7 @@ export function TemplateCard({
                 d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
               />
             </svg>
-            Preview
+            {t('common:preview')}
           </Link>
           {actionElement}
         </div>

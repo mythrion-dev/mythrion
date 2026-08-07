@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { NumericInput } from '@/components/shared/NumericInput'
 import type { SheetPermissions } from './types'
 
@@ -12,6 +13,7 @@ interface HealthBarProps {
 }
 
 export function HealthBar({ current, maximum, onChange, permissions }: HealthBarProps) {
+  const { t } = useTranslation()
   const canEdit = permissions.canEditAbilities
   const max = maximum ?? 0
   const cur = current ?? 0
@@ -42,7 +44,7 @@ export function HealthBar({ current, maximum, onChange, permissions }: HealthBar
       {/* Values display */}
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-muted uppercase tracking-wider">HP</span>
+          <span className="text-xs font-semibold text-muted uppercase tracking-wider">{t('character:hp')}</span>
           {(current !== null || maximum !== null) && (
             <span className="text-sm font-bold text-foreground">
               {current ?? '—'} / {maximum ?? '—'}
@@ -72,7 +74,7 @@ export function HealthBar({ current, maximum, onChange, permissions }: HealthBar
       {canEdit && (
         <div className="mt-2 space-y-2">
           <div className="flex items-center gap-3">
-            <label className="text-[0.65rem] text-muted w-12 shrink-0">Current:</label>
+            <label className="text-[0.65rem] text-muted w-12 shrink-0">{t('character:currentField')}</label>
             <NumericInput
               value={current !== null ? String(current) : ''}
               onChange={e => onChange('current', e.target.value.trim() ? Number.parseInt(e.target.value, 10) : null)}
@@ -82,7 +84,7 @@ export function HealthBar({ current, maximum, onChange, permissions }: HealthBar
               inputClassName="!text-center !text-xs"
               min={0}
             />
-            <label className="text-[0.65rem] text-muted w-8 shrink-0">Max:</label>
+            <label className="text-[0.65rem] text-muted w-8 shrink-0">{t('character:maxField')}</label>
             <NumericInput
               value={maximum !== null ? String(maximum) : ''}
               onChange={e => onChange('maximum', e.target.value.trim() ? Number.parseInt(e.target.value, 10) : null)}
@@ -98,7 +100,7 @@ export function HealthBar({ current, maximum, onChange, permissions }: HealthBar
               min={1}
               value={hpAmount}
               onChange={e => setHpAmount(e.target.value)}
-              placeholder="Amount"
+              placeholder={t('character:amount')}
               className="flex-1 py-1.5 text-xs text-center bg-background/60 border border-border rounded-md px-2 text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary"
               wrapperClassName="flex-[2]"
               inputClassName="!text-center !text-xs"
@@ -113,7 +115,7 @@ export function HealthBar({ current, maximum, onChange, permissions }: HealthBar
               }}
               className="flex-1 px-3 py-1.5 text-xs font-bold rounded-md bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
             >
-              Damage
+              {t('character:damage')}
             </button>
             <button
               onClick={() => {
@@ -125,7 +127,7 @@ export function HealthBar({ current, maximum, onChange, permissions }: HealthBar
               }}
               className="flex-1 px-3 py-1.5 text-xs font-bold rounded-md bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 transition-colors"
             >
-              Heal
+              {t('character:heal')}
             </button>
           </div>
         </div>

@@ -17,6 +17,7 @@ function mockModel() {
     findFirst: jest.fn().mockResolvedValue(null),
     findMany: jest.fn().mockResolvedValue([]),
     create: jest.fn().mockResolvedValue({}),
+    createMany: jest.fn().mockResolvedValue({ count: 0 }),
     update: jest.fn().mockResolvedValue({}),
     updateMany: jest.fn().mockResolvedValue({ count: 0 }),
     delete: jest.fn().mockResolvedValue({}),
@@ -50,6 +51,8 @@ export function createMockPrismaService() {
     campaignMember: mockModel(),
     campaignInvitation: mockModel(),
     refreshToken: mockModel(),
+    twoFactorChallenge: mockModel(),
+    recoveryCode: mockModel(),
     template: mockModel(),
     templateArmorClass: mockModel(),
     templateResistance: mockModel(),
@@ -97,6 +100,7 @@ export function createMockPrismaService() {
     resistanceComponent: mockModel(),
     resistanceAttributeModifier: mockModel(),
     joinRequest: mockModel(),
+    auditLog: mockModel(),
     $connect: jest.fn().mockResolvedValue(undefined),
     $disconnect: jest.fn().mockResolvedValue(undefined),
     $queryRawUnsafe: jest.fn().mockResolvedValue([{ 1: 1 }]),
@@ -175,6 +179,15 @@ export function createMockPrismaServiceWithData(
       const record = { ...args.data, id: args.data.id ?? crypto.randomUUID() };
       store[modelName] = [...(store[modelName] ?? []), record];
       return Promise.resolve(record);
+    });
+
+    const createMany = jest.fn().mockImplementation((args: { data: any[] }) => {
+      const records = args.data.map((r) => ({
+        ...r,
+        id: r.id ?? crypto.randomUUID(),
+      }));
+      store[modelName] = [...(store[modelName] ?? []), ...records];
+      return Promise.resolve({ count: records.length });
     });
 
     const update = jest.fn().mockImplementation(
@@ -270,6 +283,7 @@ export function createMockPrismaServiceWithData(
       findFirst,
       findMany,
       create,
+      createMany,
       update,
       updateMany,
       delete: delete_,
@@ -286,6 +300,8 @@ export function createMockPrismaServiceWithData(
     'campaignMember',
     'campaignInvitation',
     'refreshToken',
+    'twoFactorChallenge',
+    'recoveryCode',
     'template',
     'templateArmorClass',
     'templateResistance',
@@ -333,6 +349,7 @@ export function createMockPrismaServiceWithData(
     'resistanceComponent',
     'resistanceAttributeModifier',
     'joinRequest',
+    'auditLog',
   ] as const;
 
   const service: Record<string, any> = {};

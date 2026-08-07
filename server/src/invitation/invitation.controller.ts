@@ -36,6 +36,7 @@ export class InvitationController {
       adventureId,
       invitedEmail: dto.email,
       createdById: req.user.sub,
+      origin: req.headers.origin,
     })
   }
 
@@ -50,6 +51,7 @@ export class InvitationController {
     return this.invitationService.inviteByLink({
       adventureId,
       createdById: req.user.sub,
+      origin: req.headers.origin,
     })
   }
 

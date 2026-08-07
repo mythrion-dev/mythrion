@@ -21,6 +21,8 @@ import { PrismaService } from '../prisma.service'
 import { MembershipService } from '../membership/membership.service'
 import { RedisService } from '../redis/redis.service'
 import { createMockPrismaService } from '../__mocks__/prisma-service.mock'
+import { I18nService } from 'nestjs-i18n'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 import type { CreateTemplateDto } from './dto/create-template.dto'
 import type { UpdateTemplateDto } from './dto/update-template.dto'
 
@@ -78,6 +80,7 @@ describe('TemplateService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: MembershipService, useValue: mockMembershipService },
         { provide: RedisService, useValue: mockRedisService },
+        { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     }).compile()
 

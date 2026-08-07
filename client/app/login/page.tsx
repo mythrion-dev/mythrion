@@ -2,15 +2,21 @@
 
 import { Suspense, useState, type SubmitEvent, type MouseEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
+import Image from 'next/image'
 import { useAuth } from '@/lib/auth-context'
 import { API_URL, setInvitationToken } from '@/lib/api'
+import { resendTwoFactorCode } from '@/lib/two-factor-api'
+import { TwoFactorCodeForm } from '@/components/auth/TwoFactorCodeForm'
+import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal'
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { t } = useTranslation()
   const redirect = searchParams.get('redirect') ?? '/dashboard'
   const errorParam = searchParams.get('error')
-  const { login, register } = useAuth()
+  const { login, register, verifyTwoFactor } = useAuth()
 
   const [isRegister, setIsRegister] = useState(false)
   const [email, setEmail] = useState('')
@@ -18,13 +24,17 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(() => {
     if (errorParam) {
       if (errorParam === 'google_auth_failed') {
-        return 'Google sign-in failed. Please try again.'
+        return t('auth:googleAuthFailed')
       }
-      return 'Authentication failed'
+      return t('auth:authenticationFailed')
     }
     return null
   })
   const [submitting, setSubmitting] = useState(false)
+  const [step, setStep] = useState<'credentials' | 'code'>('credentials')
+  const [twoFactorId, setTwoFactorId] = useState<string | null>(null)
+  const [emailMasked, setEmailMasked] = useState('')
+  const [forgotOpen, setForgotOpen] = useState(false)
 
   const handleOAuthClick = (e: MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault()
@@ -48,12 +58,19 @@ function LoginForm() {
     try {
       if (isRegister) {
         await register(email, password)
+        router.push(redirect)
       } else {
-        await login(email, password)
+        const outcome = await login(email, password)
+        if (outcome.requiresTwoFactor) {
+          setTwoFactorId(outcome.twoFactorId)
+          setEmailMasked(outcome.emailMasked)
+          setStep('code')
+        } else {
+          router.push(redirect)
+        }
       }
-      router.push(redirect)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      setError(err instanceof Error ? err.message : t('auth:somethingWentWrong'))
     } finally {
       setSubmitting(false)
     }
@@ -63,35 +80,45 @@ function LoginForm() {
     <div className="w-full max-w-sm space-y-6">
       {/* Logo */}
       <div className="flex justify-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-surface border border-border ring-1 ring-primary/10 shadow-[0_0_30px_rgba(201,164,75,0.06)]">
-          <svg
-            className="w-7 h-7 text-primary"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1.5}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4-6.2-4.5h7.6L12 2z"
-            />
-          </svg>
-        </div>
+        <Image
+          src="/logo.png"
+          alt="Mythrion logo"
+          width={912}
+          height={703}
+          className="h-16 w-auto"
+          priority
+        />
       </div>
 
-      <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-gradient">
-          Mythrion
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {isRegister ? 'Create your account' : 'Sign in to continue your journey'}
-        </p>
-      </div>
+      {step === 'code' ? (
+        <TwoFactorCodeForm
+          emailMasked={emailMasked}
+          onVerify={async (code) => {
+            if (!twoFactorId) return
+            await verifyTwoFactor(twoFactorId, code)
+            router.push(redirect)
+          }}
+          onResend={async () => {
+            if (!twoFactorId) return
+            const { twoFactorId: newId } = await resendTwoFactorCode(twoFactorId)
+            setTwoFactorId(newId)
+          }}
+          onBack={() => setStep('credentials')}
+        />
+      ) : (
+        <>
+          <div className="text-center">
+            {/* <h1 className="text-2xl font-bold tracking-tight text-gradient">
+              Mythrion
+            </h1> */}
+            <p className="mt-1 text-sm text-muted-foreground">
+              {isRegister ? t('auth:createAccountTitle') : t('auth:signInTitle')}
+            </p>
+          </div>
 
-      <form onSubmit={handleSubmit} className="card !p-6 space-y-4">
+          <form onSubmit={handleSubmit} className="card !p-6 space-y-4">
         <div>
-          <label htmlFor="email" className="label">Email</label>
+          <label htmlFor="email" className="label">{t('auth:email')}</label>
           <input
             id="email"
             type="email"
@@ -99,12 +126,23 @@ function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="input-field"
-            placeholder="adventurer@example.com"
+            placeholder={t('auth:emailPlaceholder')}
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="label">Password</label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="password" className="label">{t('auth:password')}</label>
+            {!isRegister && (
+              <button
+                type="button"
+                onClick={() => setForgotOpen(true)}
+                className="text-xs font-medium text-primary hover:text-primary-hover transition-colors"
+              >
+                {t('auth:forgotPassword')}
+              </button>
+            )}
+          </div>
           <input
             id="password"
             type="password"
@@ -113,7 +151,7 @@ function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="input-field"
-            placeholder="At least 8 characters"
+            placeholder={t('auth:passwordPlaceholder')}
           />
         </div>
 
@@ -129,10 +167,10 @@ function LoginForm() {
           className="btn-primary w-full"
         >
           {submitting
-            ? 'Please wait...'
+            ? t('auth:pleaseWait')
             : isRegister
-              ? 'Create account'
-              : 'Enter the realm'}
+              ? t('auth:createAccount')
+              : t('auth:enterTheRealm')}
         </button>
       </form>
 
@@ -141,7 +179,7 @@ function LoginForm() {
           <hr className="divider w-full" />
         </div>
         <div className="relative flex justify-center text-xs">
-          <span className="bg-background px-2 text-muted">or continue with</span>
+          <span className="bg-background px-2 text-muted">{t('auth:orContinueWith')}</span>
         </div>
       </div>
 
@@ -162,33 +200,42 @@ function LoginForm() {
       <div className="text-center text-sm text-muted">
         {isRegister ? (
           <>
-            Already have an account?{' '}
+            {t('auth:alreadyHaveAccount')}{' '}
             <button
               type="button"
               onClick={() => { setIsRegister(false); setError(null) }}
               className="font-medium text-primary hover:text-primary-hover transition-colors"
             >
-              Sign in
+              {t('auth:signIn')}
             </button>
           </>
         ) : (
           <>
-            New to Mythrion?{' '}
+            {t('auth:newToMythrion')}{' '}
             <button
               type="button"
               onClick={() => { setIsRegister(true); setError(null) }}
               className="font-medium text-primary hover:text-primary-hover transition-colors"
             >
-              Create an account
+              {t('auth:createAccountLink')}
             </button>
           </>
         )}
       </div>
+        </>
+      )}
+
+      <ForgotPasswordModal
+        open={forgotOpen}
+        initialEmail={email}
+        onClose={() => setForgotOpen(false)}
+      />
     </div>
   )
 }
 
 export default function LoginPage() {
+  const { t } = useTranslation()
   return (
     <main className="flex-1 flex items-center justify-center p-4 relative">
       {/* Ambient glow */}
@@ -196,7 +243,7 @@ export default function LoginPage() {
 
       <Suspense
         fallback={
-          <div className="text-sm text-muted-foreground">Loading...</div>
+          <div className="text-sm text-muted-foreground">{t('common:loading')}</div>
         }
       >
         <LoginForm />

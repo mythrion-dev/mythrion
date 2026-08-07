@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 
 interface TemplateCardProps {
   readonly id: string
@@ -27,6 +28,7 @@ export function TemplateCard({
   isPublic = false,
   index = 0,
 }: Readonly<TemplateCardProps>) {
+  const { t } = useTranslation()
   const truncatedDescription =
     description && description.length > 120
       ? description.slice(0, 120).trimEnd() + '...'
@@ -48,7 +50,7 @@ export function TemplateCard({
         <div className="flex items-center gap-1.5 shrink-0">
           {isPublic && (
             <span className="badge text-[0.6rem]" style={{ background: 'rgba(68,207,138,0.12)', color: '#44cf8a', border: '1px solid rgba(68,207,138,0.18)' }}>
-              Public
+              {t('common:public')}
             </span>
           )}
           {campaign && (
@@ -65,7 +67,7 @@ export function TemplateCard({
         </p>
       ) : (
         <p className="text-sm text-muted italic mb-4 flex-1">
-          No description.
+          {t('templates:noDescription')}
         </p>
       )}
 
@@ -73,17 +75,17 @@ export function TemplateCard({
       <div className="flex flex-wrap gap-1.5 mb-4">
         {attributeCount > 0 && (
           <span className="badge text-[0.6rem]" style={{ background: 'rgba(124,92,231,0.12)', color: '#9070f0', border: '1px solid rgba(124,92,231,0.18)' }}>
-            {attributeCount} attr
+            {t('templates:attrCount', { count: attributeCount })}
           </span>
         )}
         {skillCount > 0 && (
           <span className="badge text-[0.6rem]" style={{ background: 'rgba(201,164,75,0.12)', color: '#c9a44b', border: '1px solid rgba(201,164,75,0.18)' }}>
-            {skillCount} skills
+            {t('templates:skillCount', { count: skillCount })}
           </span>
         )}
         {useCount > 0 && (
           <span className="badge text-[0.6rem]" style={{ background: 'rgba(68,207,138,0.12)', color: '#44cf8a', border: '1px solid rgba(68,207,138,0.18)' }}>
-            Used {useCount}x
+            {t('templates:usedTimes', { count: useCount })}
           </span>
         )}
       </div>
@@ -100,7 +102,7 @@ export function TemplateCard({
           })}
         </span>
         <span className="text-xs text-accent opacity-0 group-hover:opacity-100 transition-opacity">
-          View details →
+          {t('templates:viewDetails')}
         </span>
       </div>
     </Link>

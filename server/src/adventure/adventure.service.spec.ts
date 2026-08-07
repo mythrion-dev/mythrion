@@ -11,6 +11,7 @@ jest.mock("../generated/prisma/client", () => ({
 jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
 jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
 import { Test } from '@nestjs/testing'
+import { I18nService } from 'nestjs-i18n'
 import { ForbiddenException, NotFoundException } from '@nestjs/common'
 import { AdventureService } from './adventure.service'
 import { PrismaService } from '../prisma.service'
@@ -18,6 +19,7 @@ import { MembershipService } from '../membership/membership.service'
 import { CharacterSheetService } from '../character-sheet/character-sheet.service'
 import { TemplateService } from '../template/template.service'
 import { createMockPrismaService } from '../__mocks__/prisma-service.mock'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 
 const mockMembershipService = {
   requireRole: jest.fn(),
@@ -70,6 +72,7 @@ describe('AdventureService', () => {
         { provide: MembershipService, useValue: mockMembershipService },
         { provide: CharacterSheetService, useValue: mockCharacterSheetService },
         { provide: TemplateService, useValue: mockTemplateService },
+        { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     }).compile()
 

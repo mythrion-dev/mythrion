@@ -44,7 +44,7 @@
     "ioredis": "^5.11.1",
     "mathjs": "^15.2.0",
     "mongodb": "^7.5.0",
-    "nodemailer": "^9.0.3",
+    "nestjs-i18n": "^10.8.5",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "pg": "^8.21.0",
@@ -65,7 +65,6 @@
     "@types/geoip-lite": "^1.4.4",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.0",
-    "@types/nodemailer": "^8.0.1",
     "@types/passport-google-oauth20": "^2.0.17",
     "@types/supertest": "^7.0.0",
     "@types/uuid": "^10.0.0",
@@ -131,6 +130,30 @@
         "lines": 80
       },
       "./src/subscription/admin-plans.controller.ts": {
+        "statements": 80,
+        "branches": 80,
+        "functions": 80,
+        "lines": 80
+      },
+      "./src/auth/two-factor.service.ts": {
+        "statements": 80,
+        "branches": 80,
+        "functions": 80,
+        "lines": 80
+      },
+      "./src/auth/auth.service.ts": {
+        "statements": 80,
+        "branches": 80,
+        "functions": 80,
+        "lines": 80
+      },
+      "./src/auth/auth.controller.ts": {
+        "statements": 80,
+        "branches": 80,
+        "functions": 80,
+        "lines": 80
+      },
+      "./src/email/email.service.ts": {
         "statements": 80,
         "branches": 80,
         "functions": 80,

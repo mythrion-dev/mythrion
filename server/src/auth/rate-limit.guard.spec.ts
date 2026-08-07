@@ -3,6 +3,8 @@ import { ExecutionContext, HttpException, HttpStatus } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { RateLimitGuard, RATE_LIMIT_KEY } from './rate-limit.guard.js'
 import { RedisService } from '../redis/redis.service.js'
+import { I18nService } from 'nestjs-i18n'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 
 describe('RateLimitGuard', () => {
   let guard: RateLimitGuard
@@ -25,6 +27,7 @@ describe('RateLimitGuard', () => {
         RateLimitGuard,
         { provide: RedisService, useValue: mockRedis },
         { provide: Reflector, useValue: mockReflector },
+        { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     }).compile()
 

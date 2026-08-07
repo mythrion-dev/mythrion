@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt'
 import { PassportModule } from '@nestjs/passport'
 import { AuthService } from './auth.service.js'
 import { AuthController } from './auth.controller.js'
+import { LanguageService } from './language.service.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
 import { PrismaService } from '../prisma.service.js'
 import { GoogleService } from './google.service.js'
@@ -14,6 +15,8 @@ import { AdminService } from './admin.service.js'
 import { SubscriptionGuard } from './subscription.guard.js'
 import { AdminGuard } from './admin.guard.js'
 import { SubscriptionModule } from '../subscription/subscription.module.js'
+import { EmailModule } from '../email/email.module.js'
+import { TwoFactorService } from './two-factor.service.js'
 
 @Module({
   imports: [
@@ -23,10 +26,12 @@ import { SubscriptionModule } from '../subscription/subscription.module.js'
     }),
     PassportModule,
     forwardRef(() => SubscriptionModule),
+    EmailModule,
   ],
   controllers: [AuthController],
   providers: [
     AuthService,
+    LanguageService,
     JwtAuthGuard,
     PrismaService,
     GoogleService,
@@ -37,11 +42,13 @@ import { SubscriptionModule } from '../subscription/subscription.module.js'
     AdminService,
     SubscriptionGuard,
     AdminGuard,
+    TwoFactorService,
   ],
   exports: [
     JwtAuthGuard,
     JwtModule,
     AuthService,
+    LanguageService,
     GoogleService,
     TokenService,
     RateLimitGuard,

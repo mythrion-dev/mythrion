@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { join } from 'node:path';
+import { AcceptLanguageResolver, I18nModule } from 'nestjs-i18n';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { PrismaService } from './prisma.service.js';
@@ -18,6 +20,16 @@ import { SubscriptionModule } from './subscription/subscription.module.js';
 
 @Module({
   imports: [
+    I18nModule.forRoot({
+      fallbackLanguage: 'en',
+      fallbacks: { pt: 'pt-BR' },
+      loaderOptions: {
+        path: join(__dirname, '..', 'i18n'),
+        watch: false,
+      },
+      resolvers: [new AcceptLanguageResolver()],
+      throwOnMissingKey: false,
+    }),
     AuthModule,
     AdventureModule,
     TemplateModule,

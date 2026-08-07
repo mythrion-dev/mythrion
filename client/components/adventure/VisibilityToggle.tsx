@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslation } from 'react-i18next'
+
 interface VisibilityToggleProps {
   isPublic: boolean
   loading: boolean
@@ -13,6 +15,7 @@ export function VisibilityToggle({
   onToggle,
   disabled = false,
 }: VisibilityToggleProps) {
+  const { t } = useTranslation()
   return (
     <div className="card !p-5 space-y-3">
       <div className="flex items-center justify-between">
@@ -47,7 +50,7 @@ export function VisibilityToggle({
             </svg>
           )}
           <span className="text-sm font-medium text-foreground">
-            {isPublic ? 'Public Campaign' : 'Private Campaign'}
+            {isPublic ? t('campaign:publicCampaign') : t('campaign:privateCampaign')}
           </span>
         </div>
 
@@ -73,8 +76,8 @@ export function VisibilityToggle({
 
       <p className="text-xs text-muted-foreground leading-relaxed">
         {isPublic
-          ? 'Anyone can see this campaign and request to join.'
-          : 'Only invited members can see this campaign.'}
+          ? t('campaign:publicCampaignDescription')
+          : t('campaign:privateCampaignDescription')}
       </p>
     </div>
   )

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import { NumericInput } from '@/components/shared/NumericInput'
 import { Select } from '@/components/shared/Select'
@@ -70,6 +71,7 @@ export function CharacterTab(props: CharacterTabProps) {
     onLocalSkillsChange,
   } = props
   const { canEditCharacter, canEditResources, canEditSkills } = permissions
+  const { t } = useTranslation()
 
   const [modifierInputs, setModifierInputs] = useState<Record<string, number>>({})
 
@@ -122,12 +124,12 @@ export function CharacterTab(props: CharacterTabProps) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(300px,0.85fr)_minmax(300px,0.85fr)_minmax(400px,1.3fr)] items-start">
 
         {/* ─── LEFT COLUMN — Character Info + Attributes ─── */}
-        <div className="space-y-4 overflow-y-auto pr-2 max-h-[calc(100vh-10rem)] scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+        <div className="space-y-4 lg:overflow-y-auto lg:pr-2 lg:max-h-[calc(100vh-10rem)] scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           {/* Character Information */}
           {hasFields && (
             <div className="card !p-4">
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="font-semibold text-sm text-foreground">Character Information</h3>
+                <h3 className="font-semibold text-sm text-foreground">{t('character:characterInformation')}</h3>
               </div>
               <div className="grid grid-cols-1 gap-2">
                 {sheet.fieldValues.map(fv => (
@@ -155,9 +157,9 @@ export function CharacterTab(props: CharacterTabProps) {
           {hasAttributes && (
             <div className="card !p-4">
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="font-semibold text-sm text-foreground">Attributes</h3>
+                <h3 className="font-semibold text-sm text-foreground">{t('character:attributes')}</h3>
                 {modifiersEnabled && sheet.template.attributeModifierFormula && (
-                  <span className="badge-gold text-[0.55rem] px-1 py-0.5 rounded">mod</span>
+                  <span className="badge-gold text-[0.55rem] px-1 py-0.5 rounded">{t('character:mod')}</span>
                 )}
               </div>
               <div className="grid grid-cols-1 gap-2">
@@ -195,7 +197,7 @@ export function CharacterTab(props: CharacterTabProps) {
         </div>
 
         {/* ─── CENTER COLUMN — Resources (optimized layout) + AC ─── */}
-        <div className="space-y-4 overflow-y-auto pr-2 max-h-[calc(100vh-10rem)] scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+        <div className="space-y-4 lg:overflow-y-auto lg:pr-2 lg:max-h-[calc(100vh-10rem)] scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           {(hasResources || hasArmor) && (
             <div className="grid grid-cols-1 gap-3">
               {/* Resource cards — stacked vertically */}
@@ -212,8 +214,8 @@ export function CharacterTab(props: CharacterTabProps) {
                         <InlineText
                           value={crv.notes ?? ''}
                           onSave={(v) => handleCoreResourceChange(crv.coreResourceId, 'notes', v)}
-                          placeholder="notes"
-                          emptyDisplay="notes"
+                          placeholder={t('character:notesPlaceholder')}
+                          emptyDisplay={t('character:notesPlaceholder')}
                           className="!text-[0.6rem] !text-muted !font-normal"
                         />
                       )}
@@ -224,7 +226,7 @@ export function CharacterTab(props: CharacterTabProps) {
                     <div className="flex-1 flex items-center justify-center gap-2 py-2">
                       <div className="text-center flex-1">
                         <span className="text-[0.5rem] text-muted font-medium uppercase tracking-wider block mb-1">
-                          Current
+                          {t('character:current')}
                         </span>
                         {canEdit ? (
                           <InlineNumber
@@ -240,7 +242,7 @@ export function CharacterTab(props: CharacterTabProps) {
                       <span className="text-xs text-muted-foreground font-light">/</span>
                       <div className="text-center flex-1">
                         <span className="text-[0.5rem] text-muted font-medium uppercase tracking-wider block mb-1">
-                          Max
+                          {t('character:max')}
                         </span>
                         {canEdit ? (
                           <InlineNumber
@@ -273,7 +275,7 @@ export function CharacterTab(props: CharacterTabProps) {
                           min={0}
                           className="input-field py-1 text-[0.6rem] w-full text-center"
                           value={modVal || ''}
-                          placeholder="Amount"
+                          placeholder={t('character:amount')}
                           onChange={e => setModifierInput(cr.id, Number.parseInt(e.target.value, 10) || 0)}
                         />
                         <div className="grid grid-cols-2 gap-1">
@@ -283,7 +285,7 @@ export function CharacterTab(props: CharacterTabProps) {
                             disabled={!modVal}
                             className="btn-primary text-[0.55rem] py-1 disabled:opacity-40"
                           >
-                            + Heal
+                            {t('character:healButton')}
                           </button>
                           <button
                             type="button"
@@ -291,7 +293,7 @@ export function CharacterTab(props: CharacterTabProps) {
                             disabled={!modVal}
                             className="btn-danger text-[0.55rem] py-1 disabled:opacity-40"
                           >
-                            − Damage
+                            {t('character:damageButton')}
                           </button>
                         </div>
                       </div>
@@ -304,7 +306,7 @@ export function CharacterTab(props: CharacterTabProps) {
               {hasArmor && armorClasses.map(ac => (
                 <div key={ac.id} className="card !p-3 flex flex-col items-center justify-center space-y-2">
                   <h4 className="text-xs font-semibold text-foreground text-center">
-                    {(ac as any).name ?? 'Armor Class'}
+                    {(ac as any).name ?? t('character:armorClass')}
                   </h4>
                   <div className="w-16 h-16 rounded-full border-[2px] border-primary/25 flex items-center justify-center bg-background/40">
                     <span className="text-2xl font-bold text-primary tracking-tight tabular-nums">
@@ -378,7 +380,7 @@ export function CharacterTab(props: CharacterTabProps) {
             <div className="space-y-5">
               {/* Active Skills Table */}
               <SkillTable
-                title="Active"
+                title={t('character:active')}
                 skills={activeSkillValues}
                 isActiveSide
                 canEditSkills={canEditSkills}
@@ -399,7 +401,7 @@ export function CharacterTab(props: CharacterTabProps) {
 
               {/* Inactive Skills Table */}
               <SkillTable
-                title="Inactive"
+                title={t('character:inactive')}
                 skills={inactiveSkillValues}
                 isActiveSide={false}
                 canEditSkills={canEditSkills}
@@ -424,7 +426,7 @@ export function CharacterTab(props: CharacterTabProps) {
                 <svg className="w-8 h-8 text-muted/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
-                <p className="text-xs text-muted/60 italic">No skills defined for this template</p>
+                <p className="text-xs text-muted/60 italic">{t('character:noSkillsDefinedForTemplate')}</p>
               </div>
             </div>
           )}
@@ -488,6 +490,7 @@ function SkillTable({
   onAttributeChange,
   templateAttributes,
 }: SkillTableProps) {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
 
   const filteredSkills = useMemo(() => {
@@ -523,7 +526,7 @@ function SkillTable({
             <input
               type="text"
               className="input-field py-1 pl-7 text-xs w-full"
-              placeholder={`Search ${title.toLowerCase()}...`}
+              placeholder={t('character:searchSkillsPlaceholder', { title: title.toLowerCase() })}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -535,8 +538,8 @@ function SkillTable({
         {filteredSkills.length > 0 && (
           <div className="sticky top-0 z-10 hidden sm:flex items-center px-4 py-1.5 bg-background/90 backdrop-blur-sm text-[0.55rem] font-semibold text-muted uppercase tracking-wider border-b border-border/40">
             <div className="w-8 shrink-0" />
-            <div className="flex-1 shrink-0">Skill</div>
-            <div className="w-16 shrink-0 text-right">Total</div>
+            <div className="flex-1 shrink-0">{t('character:skillColumn')}</div>
+            <div className="w-16 shrink-0 text-right">{t('character:total')}</div>
             <div className="w-8 shrink-0" />
           </div>
         )}
@@ -544,10 +547,10 @@ function SkillTable({
         {filteredSkills.length === 0 ? (
           <div className="px-4 py-6 text-center text-xs text-muted">
             {search.trim()
-              ? 'No skills match your search.'
+              ? t('character:noSkillsMatchSearch')
               : isActiveSide
-                ? 'No active skills.'
-                : 'No inactive skills.'}
+                ? t('character:noActiveSkills')
+                : t('character:noInactiveSkills')}
           </div>
         ) : (
           <div className="divide-y divide-border/40">
@@ -634,7 +637,7 @@ function SkillTable({
                       {/* Attribute selector */}
                       {(sv.skill.allowedAttributeIds?.length ?? 0) > 0 ? (
                         <div className="flex items-center gap-2">
-                          <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">Attribute:</span>
+                          <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">{t('character:attributeField')}</span>
                           <Select
                             options={sv.skill.allowedAttributeIds.map(attrId => {
                               const a = templateAttributes.find(x => x.id === attrId)
@@ -654,7 +657,7 @@ function SkillTable({
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">Attribute:</span>
+                          <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">{t('character:attributeField')}</span>
                           <span className="text-[0.6rem] text-foreground">
                             {selectedAttr?.name || '—'}
                           </span>
@@ -683,14 +686,14 @@ function SkillTable({
                         )
                       })}
                       <div className="flex items-center gap-2">
-                        <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">Others:</span>
+                        <span className="text-[0.6rem] text-muted shrink-0 min-w-[70px]">{t('character:others')}</span>
                         <input
                           type="number"
                           min={0}
                           step={1}
                           className="input-field py-0.5 text-[0.6rem] w-16"
                           value={othersValues[sv.skillId] || ''}
-                          placeholder="0"
+                          placeholder={t('character:othersPlaceholder')}
                           onChange={e => onOthersChange(sv.skillId, Number.parseInt(e.target.value, 10) || 0)}
                           disabled={!canEditSkills}
                         />

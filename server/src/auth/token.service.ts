@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
+import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
 import { RedisService } from '../redis/redis.service.js'
 import { AdminService } from './admin.service.js'
@@ -21,11 +22,16 @@ export class TokenService {
     private readonly jwtService: JwtService,
     private readonly redis: RedisService,
     private readonly adminService: AdminService,
+    private readonly i18n: I18nService,
   ) {}
 
   /** Generate access token (short-lived) and refresh token (long-lived, stored in DB) */
   async generateTokens(userId: string, email: string) {
-    const role = this.adminService.isAdmin(email) ? 'admin' : 'user'
+    const role = this.adminService.isAdmin(email)
+      ? 'admin'
+      : this.adminService.isEarlyAccess(email)
+        ? 'early_access'
+        : 'user'
     const accessToken = this.jwtService.sign(
       { sub: userId, email, role },
       { expiresIn: ACCESS_TOKEN_EXPIRY },
@@ -99,7 +105,7 @@ export class TokenService {
     const blacklistedSince = await this.redis.get(`token_blacklist:${userId}`)
     if (blacklistedSince) {
       // User logged out; all their refresh tokens are revoked
-      throw new UnauthorizedException('Refresh token has been revoked')
+      throw new UnauthorizedException(this.i18n.t('auth.refreshTokenRevoked'))
     }
 
     // Find all non-revoked, non-expired refresh tokens for this user
@@ -120,7 +126,7 @@ export class TokenService {
       try {
         isValid = await bcrypt.compare(rawToken, stored.token)
       } catch (err) {
-        throw new InternalServerErrorException('Token verification failed, please try again')
+        throw new InternalServerErrorException(this.i18n.t('auth.tokenVerificationFailed'))
       }
       if (isValid) {
         matched = true
@@ -138,7 +144,7 @@ export class TokenService {
       // stale/expired token, not theft. Reject this attempt only — revoking
       // every live token here would cascade-log-out the user's other devices
       // for a single bad token. The presented token is simply invalid.
-      throw new UnauthorizedException('Invalid refresh token')
+      throw new UnauthorizedException(this.i18n.t('auth.invalidRefreshToken'))
     }
 
     // Get user email for new token generation
@@ -148,7 +154,7 @@ export class TokenService {
     })
 
     if (!user) {
-      throw new UnauthorizedException('User not found')
+      throw new UnauthorizedException(this.i18n.t('auth.userNotFound'))
     }
 
     // Issue new token pair
@@ -169,5 +175,58 @@ export class TokenService {
       String(Math.floor(Date.now() / 1000)),
       REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
     )
+  }
+
+  /**
+   * Revoke every live refresh token for a user EXCEPT the one presented in
+   * `encodedRefreshToken` (used by "change password → log out all other
+   * devices"). Operates on the DB only — it deliberately does NOT set the
+   * Redis `token_blacklist:{userId}` marker, because rotateRefreshToken
+   * consults that marker and would then reject the current session's next
+   * refresh too. When no token is provided (or it does not belong to the
+   * user), falls back to revoking everything.
+   */
+  async revokeAllTokensExcept(
+    userId: string,
+    encodedRefreshToken?: string,
+  ): Promise<void> {
+    if (!encodedRefreshToken) {
+      await this.revokeAllTokens(userId)
+      return
+    }
+
+    let exemptId: string | null = null
+    try {
+      const payload = JSON.parse(
+        Buffer.from(encodedRefreshToken, 'base64').toString('utf-8'),
+      ) as { userId?: string; token?: string }
+      if (payload?.userId === userId && payload.token) {
+        const liveTokens = await this.prisma.refreshToken.findMany({
+          where: { userId, revoked: false },
+          select: { id: true, token: true },
+        })
+        for (const stored of liveTokens) {
+          try {
+            if (await bcrypt.compare(payload.token, stored.token)) {
+              exemptId = stored.id
+              break
+            }
+          } catch {
+            // Corrupt stored hash — treat as non-matching and keep scanning.
+          }
+        }
+      }
+    } catch {
+      // Unparseable token envelope — fall through to revoking everything.
+    }
+
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        userId,
+        revoked: false,
+        id: exemptId ? { not: exemptId } : undefined,
+      },
+      data: { revoked: true },
+    })
   }
 }

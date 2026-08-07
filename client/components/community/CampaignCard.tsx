@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 
 interface CampaignCardProps {
   readonly id: string
@@ -29,6 +30,7 @@ export function CampaignCard({
   sessionTime,
   sessionType,
 }: Readonly<CampaignCardProps>) {
+  const { t } = useTranslation()
   const truncatedSynopsis = synopsis && synopsis.length > 120
     ? synopsis.slice(0, 120).trimEnd() + '...'
     : synopsis
@@ -59,7 +61,7 @@ export function CampaignCard({
         </p>
       ) : (
         <p className="text-sm text-muted italic mb-4 flex-1">
-          No synopsis yet.
+          {t('community:noSynopsis')}
         </p>
       )}
 
@@ -75,8 +77,8 @@ export function CampaignCard({
           {sessionTime && !sessionWeekday && (
             <span>{sessionTime}</span>
           )}
-          {sessionType === 'ONLINE' && <span>&#x1F310; Online</span>}
-          {sessionType === 'IN_PERSON' && <span>&#x1F4CD; In Person</span>}
+          {sessionType === 'ONLINE' && <span>&#x1F310; {t('community:online')}</span>}
+          {sessionType === 'IN_PERSON' && <span>&#x1F4CD; {t('community:inPerson')}</span>}
         </div>
       )}
 
@@ -96,7 +98,7 @@ export function CampaignCard({
                 d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
               />
             </svg>
-            {playerCount} / {maxPlayers} players
+            {t('community:playersCount', { playerCount, maxPlayers })}
           </span>
         </div>
         {ownerDisplayName && (

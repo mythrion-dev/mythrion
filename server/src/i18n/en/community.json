@@ -1,0 +1,19 @@
+{
+  "adventureNotFound": "Adventure not found",
+  "adventureNotPublic": "Adventure is not public",
+  "alreadyMember": "You are already a member of this adventure",
+  "alreadyPending": "You already have a pending request for this adventure",
+  "alreadyAccepted": "You have already been accepted to this adventure",
+  "joinRequestNotFound": "Join request not found",
+  "requestNotBelong": "Request does not belong to this adventure",
+  "requestNotPending": "Request is not pending",
+  "emailFailed": "Failed to send invitation email: {message}",
+  "invitationNotFound": "Invitation not found",
+  "alreadyAcceptedInvitation": "Invitation already accepted",
+  "revoked": "Invitation has been revoked",
+  "expired": "Invitation has expired",
+  "maxPlayerCapacity": "Adventure is at maximum player capacity",
+  "notMember": "You are not a member of this adventure",
+  "gmOnly": "Only the Game Master can perform this action",
+  "cannotPromoteToGm": "Cannot promote a member to Game Master. A campaign can only have one GM."
+}

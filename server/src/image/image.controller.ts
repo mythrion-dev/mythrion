@@ -13,6 +13,7 @@ import {
   Logger,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
+import { I18nService } from 'nestjs-i18n'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { ImageService } from './image.service.js'
 import type { Response, Request } from 'express'
@@ -21,7 +22,10 @@ import type { Response, Request } from 'express'
 export class ImageController {
   private readonly logger = new Logger(ImageController.name)
 
-  constructor(private readonly imageService: ImageService) {}
+  constructor(
+    private readonly imageService: ImageService,
+    private readonly i18n: I18nService,
+  ) {}
 
   /**
    * POST /api/images/character-sheets/:sheetId/avatar
@@ -36,7 +40,7 @@ export class ImageController {
     @UploadedFile() file: Express.Multer.File | undefined,
   ) {
     if (!file) {
-      throw new NotFoundException('No file provided')
+      throw new NotFoundException(this.i18n.t('image.noFileProvided'))
     }
 
     this.logger.log(`Uploading avatar for sheet ${sheetId}: ${file.originalname} (${file.mimetype})`)
@@ -103,7 +107,7 @@ export class ImageController {
     @UploadedFile() file: Express.Multer.File | undefined,
   ) {
     if (!file) {
-      throw new NotFoundException('No file provided')
+      throw new NotFoundException(this.i18n.t('image.noFileProvided'))
     }
     this.logger.log(`Uploading avatar for ability ${abilityId}: ${file.originalname} (${file.mimetype})`)
     const result = await this.imageService.upload(abilityId, {

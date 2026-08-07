@@ -11,6 +11,7 @@ import {
   HttpStatus,
   UnprocessableEntityException,
 } from '@nestjs/common'
+import { I18nService } from 'nestjs-i18n'
 import { SubscriptionService } from './subscription.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { SkipSubscriptionCheck } from '../auth/skip-subscription.decorator.js'
@@ -30,6 +31,7 @@ export class SubscriptionController {
 
   constructor(
     private readonly subscriptionService: SubscriptionService,
+    private readonly i18n: I18nService,
   ) {}
 
   /**
@@ -65,7 +67,9 @@ export class SubscriptionController {
     @Req() req: AuthenticatedRequest,
   ) {
     if (!body.planId) {
-      throw new UnprocessableEntityException('planId is required')
+      throw new UnprocessableEntityException(
+        this.i18n.t('subscription.controllerPlanIdRequired'),
+      )
     }
     return this.subscriptionService.createSubscription(
       req.user.sub,
@@ -100,7 +104,7 @@ export class SubscriptionController {
   @HttpCode(HttpStatus.OK)
   async cancelSubscription(@Req() req: AuthenticatedRequest) {
     await this.subscriptionService.cancelSubscription(req.user.sub)
-    return { message: 'Subscription cancelled successfully' }
+    return { message: this.i18n.t('subscription.subscriptionCancelled') }
   }
 
   /**
@@ -119,7 +123,9 @@ export class SubscriptionController {
     @Req() req: AuthenticatedRequest,
   ) {
     if (!body.cardToken) {
-      throw new UnprocessableEntityException('cardToken is required')
+      throw new UnprocessableEntityException(
+        this.i18n.t('subscription.controllerCardTokenRequired'),
+      )
     }
     await this.subscriptionService.updatePaymentMethod(
       req.user.sub,
@@ -127,7 +133,7 @@ export class SubscriptionController {
       body.payerName,
       body.payerDocument,
     )
-    return { message: 'Payment method updated successfully' }
+    return { message: this.i18n.t('subscription.paymentMethodUpdated') }
   }
 
   /**

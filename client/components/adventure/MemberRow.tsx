@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslation } from 'react-i18next'
+
 interface Member {
   id: string
   role: string
@@ -18,6 +20,7 @@ export function MemberRow({
   isSelf: boolean
   onRemove: () => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className="data-row">
       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -44,7 +47,7 @@ export function MemberRow({
           onClick={onRemove}
           className="text-xs text-danger hover:text-danger/80 transition-colors shrink-0"
         >
-          Remove
+          {t('common:remove')}
         </button>
       )}
     </div>

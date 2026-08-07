@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api, API_URL, authFetch } from '@/lib/api'
 import { Select } from '@/components/shared/Select'
+import { useTranslation } from 'react-i18next'
 
 /* ── Types ── */
 
@@ -44,6 +45,7 @@ function formatDate(iso: string): string {
 /* ── Component ── */
 
 export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<BookListPanelProps>) {
+  const { t } = useTranslation()
   const [books, setBooks] = useState<Book[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -72,7 +74,7 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
       const data = await api.get<Book[]>(`/adventures/${adventureId}/books`)
       setBooks(data)
     } catch {
-      setError('Failed to load books')
+      setError(t('books:errorLoadBooks'))
     } finally {
       setLoading(false)
     }
@@ -85,7 +87,7 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
   /* ── Upload book ── */
   async function handleUpload(file: File) {
     if (!uploadName.trim()) {
-      setError('Please enter a book name before uploading')
+      setError(t('books:uploadNameRequired'))
       return
     }
 
@@ -104,14 +106,14 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
       })
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({ message: 'Upload failed' }))
-        throw new Error(body.message ?? 'Upload failed')
+        const body = await res.json().catch(() => ({ message: t('books:uploadFailed') }))
+        throw new Error(body.message ?? t('books:uploadFailed'))
       }
 
       setUploadName('')
       await fetchBooks()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload book')
+      setError(err instanceof Error ? err.message : t('books:uploadBookFailed'))
     } finally {
       setUploading(false)
     }
@@ -129,7 +131,7 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
       setRenameValue('')
       await fetchBooks()
     } catch {
-      setError('Failed to rename book')
+      setError(t('books:renameFailed'))
     }
   }
 
@@ -141,7 +143,7 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
       setDeleteId(null)
       await fetchBooks()
     } catch {
-      setError('Failed to delete book')
+      setError(t('books:deleteFailed'))
     } finally {
       setDeleting(false)
     }
@@ -164,14 +166,14 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
       )
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({ message: 'Replace failed' }))
-        throw new Error(body.message ?? 'Replace failed')
+        const body = await res.json().catch(() => ({ message: t('books:replaceFailed') }))
+        throw new Error(body.message ?? t('books:replaceFailed'))
       }
 
       setReplacingId(null)
       await fetchBooks()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to replace file')
+      setError(err instanceof Error ? err.message : t('books:replaceFileFailed'))
     }
   }
 
@@ -197,20 +199,20 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
       {/* GM upload controls */}
       {isGM && (
         <div className="card !p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">Upload New Book</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t('books:uploadNewBook')}</h3>
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
               value={uploadName}
               onChange={e => setUploadName(e.target.value)}
-              placeholder="Book name..."
+              placeholder={t('books:bookNamePlaceholder')}
               className="flex-1 px-3 py-2 rounded-lg bg-input border border-border text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 transition-shadow"
               disabled={uploading}
             />
             <Select
               options={[
-                { id: 'GM_BOOK', label: 'GM Only' },
-                { id: 'PLAYER_BOOK', label: 'Player Visible' },
+                { id: 'GM_BOOK', label: t('books:gmOnly') },
+                { id: 'PLAYER_BOOK', label: t('books:playerVisible') },
               ]}
               value={uploadVisibility}
               onChange={val => setUploadVisibility(val as 'GM_BOOK' | 'PLAYER_BOOK')}
@@ -229,14 +231,14 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Uploading...
+                {t('books:uploading')}
               </>
             ) : (
               <>
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
-                Select PDF to Upload
+                {t('books:selectPdfToUpload')}
               </>
             )}
             <input
@@ -272,11 +274,11 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
           <div className="w-16 h-16 rounded-full bg-surface border border-border flex items-center justify-center text-3xl mb-4">
             📚
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-1">No Books Yet</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-1">{t('books:noBooksYet')}</h3>
           <p className="text-sm text-muted-foreground max-w-xs">
             {isGM
-              ? 'Upload PDF rulebooks, handouts, or lore documents for your campaign.'
-              : 'There are no books available yet. Ask your GM to upload some!'}
+              ? t('books:uploadPromptGm')
+              : t('books:uploadPromptPlayer')}
           </p>
         </div>
       )}
@@ -319,7 +321,7 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
                       <button
                         onClick={() => handleRename(book.id)}
                         className="p-1 rounded text-accent hover:bg-accent/10 transition-colors"
-                        title="Save"
+                        title={t('common:save')}
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -328,7 +330,7 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
                       <button
                         onClick={() => setRenamingId(null)}
                         className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
-                        title="Cancel"
+                        title={t('common:cancel')}
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -346,7 +348,7 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
                             ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20'
                             : 'bg-green-500/10 text-green-500 border border-green-500/20'
                         }`}>
-                          {book.visibility === 'GM_BOOK' ? 'GM' : 'Player'}
+                          {book.visibility === 'GM_BOOK' ? t('books:gmBadge') : t('books:playerBadge')}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
@@ -362,8 +364,8 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
                   <button
                     onClick={() => onSelectBook(book.id)}
                     className="p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all"
-                    aria-label={`View ${book.name}`}
-                    title="View book"
+                    aria-label={t('books:viewBook', { name: book.name })}
+                    title={t('books:viewBookTooltip')}
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -380,8 +382,8 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
                           setRenameValue(book.name)
                         }}
                         className="p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all"
-                        aria-label={`Rename ${book.name}`}
-                        title="Rename"
+                        aria-label={t('books:renameBook', { name: book.name })}
+                        title={t('common:rename')}
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -393,7 +395,7 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
                         className={`p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all cursor-pointer ${
                           isReplacing ? 'opacity-50 pointer-events-none' : ''
                         }`}
-                        title="Replace file"
+                        title={t('books:replaceFileTooltip')}
                       >
                         {isReplacing ? (
                           <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -435,22 +437,22 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                               </svg>
                             ) : (
-                              'Confirm'
+                              t('common:confirm')
                             )}
                           </button>
                           <button
                             onClick={() => setDeleteId(null)}
                             className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-all text-xs"
                           >
-                            Cancel
+                            {t('common:cancel')}
                           </button>
                         </div>
                       ) : (
                         <button
                           onClick={() => setDeleteId(book.id)}
                           className="p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all"
-                          aria-label={`Delete ${book.name}`}
-                          title="Delete"
+                          aria-label={t('books:deleteBook', { name: book.name })}
+                          title={t('common:delete')}
                         >
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

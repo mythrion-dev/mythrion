@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
 import { NumericInput } from '@/components/shared/NumericInput'
 import { InlineClickEdit } from '@/components/character-sheet'
@@ -256,6 +257,7 @@ function AbilityCardHeader({
   setSelectedLevels: React.Dispatch<React.SetStateAction<Record<string, string>>>
   setConfirmDeleteAbility: React.Dispatch<React.SetStateAction<string | null>>
 }>) {
+  const { t } = useTranslation()
   return (
     <button
       type="button"
@@ -268,16 +270,16 @@ function AbilityCardHeader({
       <div className="flex-1 min-w-0 flex items-center gap-3 flex-wrap">
         <span className="font-semibold text-foreground truncate">{ability.name}</span>
         <span className="badge text-[0.65rem] badge-gold">
-          {isAbility ? 'Ability' : 'Summon'}
+          {isAbility ? t('character:abilityType') : t('character:summonType')}
         </span>
         {selLevel && (
-          <span className="text-[0.65rem] text-muted">Level {selLevel.level}</span>
+          <span className="text-[0.65rem] text-muted">{t('character:levelWithNumber', { level: selLevel.level })}</span>
         )}
       </div>
       <div className="flex items-center gap-2 shrink-0" role="presentation" onClick={stopPropagation} onKeyDown={stopPropagation}>
         {isAbility && ability.levels.length > 0 && (
           <Select
-            options={ability.levels.map(l => ({ id: l.id, label: `Level ${l.level}` }))}
+            options={ability.levels.map(l => ({ id: l.id, label: t('character:levelWithNumber', { level: l.level }) }))}
             value={selLevel?.id ?? ''}
             onChange={val => setSelectedLevels(prev => ({ ...prev, [ability.id]: val }))}
             size="sm"
@@ -288,7 +290,7 @@ function AbilityCardHeader({
           <button
             onClick={() => setConfirmDeleteAbility(ability.id)}
             className="text-muted hover:text-danger p-1 transition-colors"
-            title={`Delete ${isAbility ? 'ability' : 'summon'}`}
+            title={isAbility ? t('character:deleteAbilityTitle') : t('character:deleteSummonTitle')}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -306,12 +308,13 @@ function AbilityLevelMetadata({
   selLevel: AbilityLevel; canEditAbilities: boolean; sheetId: string
   updateAbilities: React.Dispatch<React.SetStateAction<Ability[]>>
 }>) {
+  const { t } = useTranslation()
   return (
     <div className="flex flex-wrap gap-4 text-xs text-muted">
       {canEditAbilities ? (
         <>
           <span className="inline-flex items-center gap-1">
-            Mana:
+            {t('character:manaField')}
             <InlineClickEdit
               value={selLevel.manaCost?.toString() ?? ''}
               onSave={(v) => saveLevelPatch(updateAbilities, sheetId, selLevel.id, { manaCost: v.trim() ? Number.parseInt(v, 10) : null })}
@@ -321,7 +324,7 @@ function AbilityLevelMetadata({
             />
           </span>
           <span className="inline-flex items-center gap-1">
-            Range:
+            {t('character:rangeField')}
             <InlineClickEdit
               value={selLevel.range ?? ''}
               onSave={(v) => saveLevelPatch(updateAbilities, sheetId, selLevel.id, { range: v.trim() || null })}
@@ -332,7 +335,7 @@ function AbilityLevelMetadata({
           </span>
           {selLevel.damage != null && (
             <span className="inline-flex items-center gap-1">
-              Damage:
+              {t('character:damageField')}
               <InlineClickEdit
                 value={selLevel.damage ?? ''}
                 onSave={(v) => saveLevelPatch(updateAbilities, sheetId, selLevel.id, { damage: v.trim() || null })}
@@ -345,9 +348,9 @@ function AbilityLevelMetadata({
         </>
       ) : (
         <>
-          {selLevel.manaCost != null && <span>Mana: {selLevel.manaCost}</span>}
-          {selLevel.range && <span>Range: {selLevel.range}</span>}
-          {selLevel.damage && <span>Damage: {selLevel.damage}</span>}
+          {selLevel.manaCost != null && <span>{t('character:manaField')} {selLevel.manaCost}</span>}
+          {selLevel.range && <span>{t('character:rangeField')} {selLevel.range}</span>}
+          {selLevel.damage && <span>{t('character:damageField')} {selLevel.damage}</span>}
         </>
       )}
     </div>
@@ -360,39 +363,40 @@ function AbilityLevelDescriptionNotes({
   selLevel: AbilityLevel; canEditAbilities: boolean; sheetId: string
   updateAbilities: React.Dispatch<React.SetStateAction<Ability[]>>
 }>) {
+  const { t } = useTranslation()
   return (
     <>
       {canEditAbilities ? (
         <div>
-          <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
+          <h5 className="text-xs font-medium text-muted mb-1">{t('common:description')}</h5>
           <InlineClickEdit
             value={selLevel.description ?? ''}
             onSave={(v) => saveLevelPatch(updateAbilities, sheetId, selLevel.id, { description: v.trim() || null })}
             as="textarea"
             className="text-sm text-muted-foreground whitespace-pre-wrap"
-            emptyDisplay="Add description..."
+            emptyDisplay={t('character:addDescription')}
           />
         </div>
       ) : selLevel.description && (
         <div>
-          <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
+          <h5 className="text-xs font-medium text-muted mb-1">{t('common:description')}</h5>
           <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selLevel.description}</p>
         </div>
       )}
       {canEditAbilities ? (
         <div>
-          <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
+          <h5 className="text-xs font-medium text-muted mb-1">{t('character:notes')}</h5>
           <InlineClickEdit
             value={selLevel.notes ?? ''}
             onSave={(v) => saveLevelPatch(updateAbilities, sheetId, selLevel.id, { notes: v.trim() || null })}
             as="textarea"
             className="text-xs text-muted italic whitespace-pre-wrap"
-            emptyDisplay="Add notes..."
+            emptyDisplay={t('character:addNotes')}
           />
         </div>
       ) : selLevel.notes && (
         <div>
-          <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
+          <h5 className="text-xs font-medium text-muted mb-1">{t('character:notes')}</h5>
           <p className="text-xs text-muted italic whitespace-pre-wrap">{selLevel.notes}</p>
         </div>
       )}
@@ -411,10 +415,11 @@ function AbilityLevelDetails({
   setLevelModalError: React.Dispatch<React.SetStateAction<string | null>>
   setConfirmDeleteLevel: React.Dispatch<React.SetStateAction<string | null>>
 }>) {
+  const { t } = useTranslation()
   if (!selLevel) {
     return (
       <div className="flex items-center justify-between pt-2">
-        <p className="text-xs text-muted italic">No levels added yet.</p>
+        <p className="text-xs text-muted italic">{t('character:noLevelsAddedYet')}</p>
         {canEditAbilities && (
           <button
             onClick={() => { setShowAddLevelModal(ability.id); setNewLevelForm({ level: 1, copyFromPrevious: false }); setLevelModalError(null) }}
@@ -423,7 +428,7 @@ function AbilityLevelDetails({
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
             </svg>
-            Add Level
+            {t('character:addLevel')}
           </button>
         )}
       </div>
@@ -438,7 +443,7 @@ function AbilityLevelDetails({
             onClick={() => setConfirmDeleteLevel(selLevel.id)}
             className="text-[0.65rem] text-danger/70 hover:text-danger px-2 py-1 transition-colors"
           >
-            Delete Level {selLevel.level}
+            {t('character:deleteLevelWithNumber', { level: selLevel.level })}
           </button>
         </div>
       )}
@@ -465,7 +470,7 @@ function AbilityLevelDetails({
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
           </svg>
-          Add Level
+          {t('character:addLevel')}
         </button>
       )}
     </>
@@ -552,41 +557,42 @@ function NewSummonAbilityForm({
   handleCreateSummonAbility: (summonId: string, e: SubmitEvent) => Promise<void>
   resetNewAbility: () => void
 }>) {
+  const { t } = useTranslation()
   return (
     <>
       {showNewSummonAbility === ability.id ? (
         <form onSubmit={(e) => { handleCreateSummonAbility(ability.id, e); setShowNewSummonAbility(null) }} className="card !p-4 space-y-3 border-primary/20">
-          <h5 className="text-xs font-semibold text-primary">New Ability for {ability.name}</h5>
+          <h5 className="text-xs font-semibold text-primary">{t('character:newAbilityFor', { name: ability.name })}</h5>
           <div>
-            <label htmlFor="summon-ability-name" className="text-[0.65rem] text-muted">Name</label>
-            <input id="summon-ability-name" className="input-field text-xs" value={newAbility.name} onChange={e => setNewAbility(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Bite" />
+            <label htmlFor="summon-ability-name" className="text-[0.65rem] text-muted">{t('common:name')}</label>
+            <input id="summon-ability-name" className="input-field text-xs" value={newAbility.name} onChange={e => setNewAbility(p => ({ ...p, name: e.target.value }))} required placeholder={t('character:placeholderChildAbilityName')} />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label htmlFor="summon-ability-mana" className="text-[0.65rem] text-muted">Mana Cost</label>
-              <NumericInput id="summon-ability-mana" className="input-field text-xs" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder="0" />
+              <label htmlFor="summon-ability-mana" className="text-[0.65rem] text-muted">{t('character:manaCost')}</label>
+              <NumericInput id="summon-ability-mana" className="input-field text-xs" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder={t('character:placeholderChildMana')} />
             </div>
             <div>
-              <label htmlFor="summon-ability-range" className="text-[0.65rem] text-muted">Range</label>
-              <input id="summon-ability-range" className="input-field text-xs" value={newAbility.range} onChange={e => setNewAbility(p => ({ ...p, range: e.target.value }))} placeholder="melee" />
+              <label htmlFor="summon-ability-range" className="text-[0.65rem] text-muted">{t('character:rangeLabel')}</label>
+              <input id="summon-ability-range" className="input-field text-xs" value={newAbility.range} onChange={e => setNewAbility(p => ({ ...p, range: e.target.value }))} placeholder={t('character:placeholderChildRange')} />
             </div>
           </div>
           <div>
-            <label htmlFor="summon-ability-damage" className="text-[0.65rem] text-muted">Damage</label>
-            <input id="summon-ability-damage" className="input-field text-xs" value={newAbility.damage} onChange={e => setNewAbility(p => ({ ...p, damage: e.target.value }))} placeholder="1d6" />
+            <label htmlFor="summon-ability-damage" className="text-[0.65rem] text-muted">{t('character:damageLabel')}</label>
+            <input id="summon-ability-damage" className="input-field text-xs" value={newAbility.damage} onChange={e => setNewAbility(p => ({ ...p, damage: e.target.value }))} placeholder={t('character:placeholderChildDamage')} />
           </div>
           <div>
-            <label htmlFor="summon-ability-description" className="text-[0.65rem] text-muted">Description</label>
+            <label htmlFor="summon-ability-description" className="text-[0.65rem] text-muted">{t('common:description')}</label>
             <textarea id="summon-ability-description" className="input-field resize-none text-xs" rows={2} value={newAbility.description} onChange={e => setNewAbility(p => ({ ...p, description: e.target.value }))} />
           </div>
           <div>
-            <label htmlFor="summon-ability-notes" className="text-[0.65rem] text-muted">Notes</label>
+            <label htmlFor="summon-ability-notes" className="text-[0.65rem] text-muted">{t('character:notes')}</label>
             <textarea id="summon-ability-notes" className="input-field resize-none text-xs" rows={1} value={newAbility.notes} onChange={e => setNewAbility(p => ({ ...p, notes: e.target.value }))} />
           </div>
           {abilityError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-2 py-1 text-[0.65rem] text-danger">{abilityError}</div>}
           <div className="flex gap-2 justify-end">
-            <button type="button" onClick={() => { setShowNewSummonAbility(null); resetNewAbility() }} className="btn-ghost text-xs">Cancel</button>
-            <button type="submit" disabled={abilitySaving || !newAbility.name.trim()} className="btn-primary text-xs">{abilitySaving ? 'Creating...' : 'Create'}</button>
+            <button type="button" onClick={() => { setShowNewSummonAbility(null); resetNewAbility() }} className="btn-ghost text-xs">{t('common:cancel')}</button>
+            <button type="submit" disabled={abilitySaving || !newAbility.name.trim()} className="btn-primary text-xs">{abilitySaving ? t('character:creating') : t('common:create')}</button>
           </div>
         </form>
       ) : (
@@ -598,7 +604,7 @@ function NewSummonAbilityForm({
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
           </svg>
-          Add Ability
+          {t('character:addAbility')}
         </button>
       )}
     </>
@@ -656,11 +662,14 @@ export function AbilitiesTab({
   handleRemoveSummonResistance: (abilityId: string, summonResistanceId: string) => Promise<void>
   handleUpdateSummonResistance: (abilityId: string, summonResistanceId: string, name: string, value: string) => Promise<void>
 }>) {
+  const { t } = useTranslation()
   const canEditAbilities = permissions.canEditAbilities
   const [confirmDeleteAbility, setConfirmDeleteAbility] = useState<string | null>(null)
   const [confirmDeleteLevel, setConfirmDeleteLevel] = useState<string | null>(null)
   const [deletingAbility, setDeletingAbility] = useState(false)
   const [deletingLevel, setDeletingLevel] = useState(false)
+
+  const level = confirmDeleteLevel ? levelNumberById(abilities, confirmDeleteLevel) : '?'
 
   // Summon-scoped ability creation state
   const [showNewSummonAbility, setShowNewSummonAbility] = useState<string | null>(null)
@@ -691,7 +700,7 @@ export function AbilitiesTab({
       setAbilities(prev => prev.map(a => addLevelToAbility(a, abilityId, level)))
       setSelectedLevels(prev => ({ ...prev, [abilityId]: level.id }))
       setShowAddLevelModal(null)
-    } catch (err) { setLevelModalError(err instanceof Error ? err.message : 'Failed to create level') }
+    } catch (err) { setLevelModalError(err instanceof Error ? err.message : t('character:failedToCreateLevel')) }
     finally { setLevelModalSaving(false) }
   }
 
@@ -708,13 +717,13 @@ export function AbilitiesTab({
           </svg>
           <input
             className="input-field pl-9 py-1.5 text-sm w-full"
-            placeholder="Search abilities & summons..."
+            placeholder={t('character:searchAbilitiesPlaceholder')}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
         {filteredAbilities.length > 0 && (
-          <span className="text-xs text-muted whitespace-nowrap">{filteredAbilities.length} entry{filteredAbilities.length !== 1 && 's'}</span>
+          <span className="text-xs text-muted whitespace-nowrap">{t('character:entryCount', { count: filteredAbilities.length })}</span>
         )}
       </div>
 
@@ -727,15 +736,15 @@ export function AbilitiesTab({
                 <svg className="w-10 h-10 mx-auto text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
-                <p className="text-sm italic">No entries match your search.</p>
+                <p className="text-sm italic">{t('character:noEntriesMatchSearch')}</p>
               </div>
             ) : (
               <div className="space-y-2">
                 <svg className="w-10 h-10 mx-auto text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                 </svg>
-                <p className="text-sm italic">No abilities or summons yet.</p>
-                {canEditAbilities && <p className="text-xs text-muted">Create one below.</p>}
+                <p className="text-sm italic">{t('character:noAbilitiesOrSummonsYet')}</p>
+                {canEditAbilities && <p className="text-xs text-muted">{t('character:createOneBelow')}</p>}
               </div>
             )}
           </div>
@@ -803,9 +812,9 @@ export function AbilitiesTab({
                       />
                       {/* Child abilities */}
                       <div className="mt-6 space-y-3">
-                          <h4 className="text-xs font-semibold text-muted uppercase tracking-wider">Abilities</h4>
+                          <h4 className="text-xs font-semibold text-muted uppercase tracking-wider">{t('character:abilities')}</h4>
                           {(a.childAbilities ?? []).length === 0 && !showNewSummonAbility ? (
-                            <div className="text-xs text-muted italic py-2">No abilities yet.</div>
+                            <div className="text-xs text-muted italic py-2">{t('character:noAbilitiesYet')}</div>
                           ) : (
                             <div className="space-y-2">
                               {(a.childAbilities ?? []).map((ca: Ability) => {
@@ -825,7 +834,7 @@ export function AbilitiesTab({
                                       {canEditAbilities && ca.levels.length > 0 && (
                                         <div role="presentation" onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
                                           <Select
-                                            options={ca.levels.map(l => ({ id: l.id, label: `Level ${l.level}` }))}
+                                            options={ca.levels.map(l => ({ id: l.id, label: t('character:levelWithNumber', { level: l.level }) }))}
                                             value={caSelLevel?.id ?? ''}
                                             onChange={val => setSelectedLevels(prev => ({ ...prev, [ca.id]: val }))}
                                             size="sm"
@@ -852,7 +861,7 @@ export function AbilitiesTab({
                                               onClick={() => setConfirmDeleteLevel(caSelLevel.id)}
                                               className="text-[0.6rem] text-danger/70 hover:text-danger px-1.5 py-0.5 transition-colors"
                                             >
-                                              Delete Level {caSelLevel.level}
+                                              {t('character:deleteLevelWithNumber', { level: caSelLevel.level })}
                                             </button>
                                           </div>
                                         )}
@@ -860,7 +869,7 @@ export function AbilitiesTab({
                                           {canEditAbilities ? (
                                             <>
                                               <span className="inline-flex items-center gap-1">
-                                                Mana:
+                                                {t('character:manaField')}
                                                 <InlineClickEdit
                                                   value={caSelLevel.manaCost?.toString() ?? ''}
                                                   onSave={async (v) => {
@@ -875,7 +884,7 @@ export function AbilitiesTab({
                                                 />
                                               </span>
                                               <span className="inline-flex items-center gap-1">
-                                                Range:
+                                                {t('character:rangeField')}
                                                 <InlineClickEdit
                                                   value={caSelLevel.range ?? ''}
                                                   onSave={async (v) => {
@@ -891,7 +900,7 @@ export function AbilitiesTab({
                                               </span>
                                               {caSelLevel.damage != null && (
                                                 <span className="inline-flex items-center gap-1">
-                                                  Damage:
+                                                  {t('character:damageField')}
                                                   <InlineClickEdit
                                                     value={caSelLevel.damage ?? ''}
                                                     onSave={async (v) => {
@@ -909,16 +918,16 @@ export function AbilitiesTab({
                                             </>
                                           ) : (
                                             <>
-                                              {caSelLevel.manaCost != null && <span>Mana: {caSelLevel.manaCost}</span>}
-                                              {caSelLevel.range && <span>Range: {caSelLevel.range}</span>}
-                                              {caSelLevel.damage && <span>Damage: {caSelLevel.damage}</span>}
+                                              {caSelLevel.manaCost != null && <span>{t('character:manaField')} {caSelLevel.manaCost}</span>}
+                                              {caSelLevel.range && <span>{t('character:rangeField')} {caSelLevel.range}</span>}
+                                              {caSelLevel.damage && <span>{t('character:damageField')} {caSelLevel.damage}</span>}
                                             </>
                                           )}
                                         </div>
                                         {canEditAbilities ? (
                                           <>
                                             <div>
-                                              <h5 className="text-xs font-medium text-muted mb-1">Description</h5>
+                                              <h5 className="text-xs font-medium text-muted mb-1">{t('common:description')}</h5>
                                               <InlineClickEdit
                                                 value={caSelLevel.description ?? ''}
                                                 onSave={async (v) => {
@@ -929,11 +938,11 @@ export function AbilitiesTab({
                                                 }}
                                                 as="textarea"
                                                 className="text-xs text-muted-foreground whitespace-pre-wrap"
-                                                emptyDisplay="Add description..."
+                                                emptyDisplay={t('character:addDescription')}
                                               />
                                             </div>
                                             <div>
-                                              <h5 className="text-xs font-medium text-muted mb-1">Notes</h5>
+                                              <h5 className="text-xs font-medium text-muted mb-1">{t('character:notes')}</h5>
                                               <InlineClickEdit
                                                 value={caSelLevel.notes ?? ''}
                                                 onSave={async (v) => {
@@ -944,7 +953,7 @@ export function AbilitiesTab({
                                                 }}
                                                 as="textarea"
                                                 className="text-xs text-muted italic whitespace-pre-wrap"
-                                                emptyDisplay="Add notes..."
+                                                emptyDisplay={t('character:addNotes')}
                                               />
                                             </div>
                                             {/* Add level button */}
@@ -957,15 +966,15 @@ export function AbilitiesTab({
                                                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
                                                   </svg>
-                                                  Add Level
+                                                  {t('character:addLevel')}
                                                 </button>
                                               )}
                                             </div>
                                           </>
                                         ) : (
                                           <>
-                                            {caSelLevel.description && <div><h5 className="text-xs font-medium text-muted mb-1">Description</h5><p className="text-xs text-muted-foreground whitespace-pre-wrap">{caSelLevel.description}</p></div>}
-                                            {caSelLevel.notes && <div><h5 className="text-xs font-medium text-muted mb-1">Notes</h5><p className="text-xs text-muted italic whitespace-pre-wrap">{caSelLevel.notes}</p></div>}
+                                            {caSelLevel.description && <div><h5 className="text-xs font-medium text-muted mb-1">{t('common:description')}</h5><p className="text-xs text-muted-foreground whitespace-pre-wrap">{caSelLevel.description}</p></div>}
+                                            {caSelLevel.notes && <div><h5 className="text-xs font-medium text-muted mb-1">{t('character:notes')}</h5><p className="text-xs text-muted italic whitespace-pre-wrap">{caSelLevel.notes}</p></div>}
                                           </>
                                         )}
                                       </div>
@@ -973,7 +982,7 @@ export function AbilitiesTab({
                                     {caExpanded && !caSelLevel && (
                                       <div className="px-3 pb-3 pt-2 border-t border-border animate-fade-in">
                                         <div className="flex items-center justify-between">
-                                          <p className="text-[0.6rem] text-muted italic">No levels added yet.</p>
+                                          <p className="text-[0.6rem] text-muted italic">{t('character:noLevelsAddedYet')}</p>
                                           {canEditAbilities && (
                                             <button
                                               onClick={() => { setShowAddLevelModal(ca.id); setNewLevelForm({ level: 1, copyFromPrevious: false }); setLevelModalError(null) }}
@@ -982,7 +991,7 @@ export function AbilitiesTab({
                                               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
                                               </svg>
-                                              Add Level
+                                              {t('character:addLevel')}
                                             </button>
                                           )}
                                         </div>
@@ -1024,7 +1033,7 @@ export function AbilitiesTab({
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
           </svg>
-          New Ability or Summon
+          {t('character:newAbilityOrSummon')}
         </button>
       )}
 
@@ -1034,7 +1043,7 @@ export function AbilitiesTab({
           {!newAbilityType && (
             <>
               <div className="header-accent">
-                <h3 className="text-base font-semibold text-gradient">What would you like to create?</h3>
+                <h3 className="text-base font-semibold text-gradient">{t('character:whatWouldYouLikeToCreate')}</h3>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <button type="button" onClick={() => setNewAbilityType('ABILITY')} className="card !p-5 hover:border-primary/30 transition-colors text-center space-y-3">
@@ -1042,8 +1051,8 @@ export function AbilitiesTab({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                   </svg>
                   <div>
-                    <div className="font-semibold text-foreground text-sm">Ability</div>
-                    <div className="text-xs text-muted mt-0.5">Spells, skills, attacks, etc.</div>
+                    <div className="font-semibold text-foreground text-sm">{t('character:abilityType')}</div>
+                    <div className="text-xs text-muted mt-0.5">{t('character:abilityDescription')}</div>
                   </div>
                 </button>
                 <button type="button" onClick={() => setNewAbilityType('SUMMON')} className="card !p-5 hover:border-primary/30 transition-colors text-center space-y-3">
@@ -1051,13 +1060,13 @@ export function AbilitiesTab({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
                   </svg>
                   <div>
-                    <div className="font-semibold text-foreground text-sm">Summon</div>
-                    <div className="text-xs text-muted mt-0.5">Creatures, companions, minions</div>
+                    <div className="font-semibold text-foreground text-sm">{t('character:summonType')}</div>
+                    <div className="text-xs text-muted mt-0.5">{t('character:summonDescription')}</div>
                   </div>
                 </button>
               </div>
               <div className="flex justify-end pt-2 border-t border-border/40">
-                <button type="button" onClick={resetNewAbility} className="btn-ghost text-sm">Cancel</button>
+                <button type="button" onClick={resetNewAbility} className="btn-ghost text-sm">{t('common:cancel')}</button>
               </div>
             </>
           )}
@@ -1069,53 +1078,53 @@ export function AbilitiesTab({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
                   </svg>
                 </button>
-                <h3 className="text-base font-semibold text-gradient">New Ability</h3>
+                <h3 className="text-base font-semibold text-gradient">{t('character:newAbility')}</h3>
               </div>
               <div>
-                <label htmlFor="new-ability-name" className="label">Name</label>
-                <input id="new-ability-name" className="input-field" value={newAbility.name} onChange={e => setNewAbility(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Fireball" autoFocus />
+                <label htmlFor="new-ability-name" className="label">{t('common:name')}</label>
+                <input id="new-ability-name" className="input-field" value={newAbility.name} onChange={e => setNewAbility(p => ({ ...p, name: e.target.value }))} required placeholder={t('character:placeholderNameAbility')} autoFocus />
               </div>
               <div>
-                <label htmlFor="new-ability-desc" className="label">Description</label>
-                <textarea id="new-ability-desc" className="input-field resize-none" rows={2} value={newAbility.description} onChange={e => setNewAbility(p => ({ ...p, description: e.target.value }))} placeholder="Throws a fireball causing area damage." />
+                <label htmlFor="new-ability-desc" className="label">{t('common:description')}</label>
+                <textarea id="new-ability-desc" className="input-field resize-none" rows={2} value={newAbility.description} onChange={e => setNewAbility(p => ({ ...p, description: e.target.value }))} placeholder={t('character:placeholderAbilityDesc')} />
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label htmlFor="new-ability-level" className="label">Level</label>
-                  <input id="new-ability-level" type="text" className="input-field" value={newAbility.level} onChange={e => setNewAbility(p => ({ ...p, level: e.target.value }))} placeholder="e.g. 1" />
+                  <label htmlFor="new-ability-level" className="label">{t('character:levelLabel')}</label>
+                  <input id="new-ability-level" type="text" className="input-field" value={newAbility.level} onChange={e => setNewAbility(p => ({ ...p, level: e.target.value }))} placeholder={t('character:placeholderLevel')} />
                 </div>
                 <div>
-                  <label htmlFor="new-ability-mana" className="label">Mana Cost</label>
-                  <NumericInput id="new-ability-mana" className="input-field" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder="20" />
+                  <label htmlFor="new-ability-mana" className="label">{t('character:manaCost')}</label>
+                  <NumericInput id="new-ability-mana" className="input-field" value={newAbility.manaCost} onChange={e => setNewAbility(p => ({ ...p, manaCost: e.target.value }))} placeholder={t('character:placeholderMana')} />
                 </div>
                 <div>
-                  <label htmlFor="new-ability-range" className="label">Range</label>
-                  <input id="new-ability-range" className="input-field" value={newAbility.range} onChange={e => setNewAbility(p => ({ ...p, range: e.target.value }))} placeholder="30m" />
+                  <label htmlFor="new-ability-range" className="label">{t('character:rangeLabel')}</label>
+                  <input id="new-ability-range" className="input-field" value={newAbility.range} onChange={e => setNewAbility(p => ({ ...p, range: e.target.value }))} placeholder={t('character:placeholderRange')} />
                 </div>
               </div>
               <div>
-                <label htmlFor="new-ability-dmg" className="label">Damage</label>
-                <input id="new-ability-dmg" className="input-field" value={newAbility.damage} onChange={e => setNewAbility(p => ({ ...p, damage: e.target.value }))} placeholder="2d6" />
+                <label htmlFor="new-ability-dmg" className="label">{t('character:damageLabel')}</label>
+                <input id="new-ability-dmg" className="input-field" value={newAbility.damage} onChange={e => setNewAbility(p => ({ ...p, damage: e.target.value }))} placeholder={t('character:placeholderDamage')} />
               </div>
               <div>
-                <label htmlFor="new-ability-notes" className="label">Notes</label>
+                <label htmlFor="new-ability-notes" className="label">{t('character:notes')}</label>
                 <textarea id="new-ability-notes" className="input-field resize-none" rows={2} value={newAbility.notes} onChange={e => setNewAbility(p => ({ ...p, notes: e.target.value }))} />
               </div>
               {abilityError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">{abilityError}</div>}
               <div className="flex gap-3 justify-end pt-2 border-t border-border/40">
-                <button type="button" onClick={resetNewAbility} disabled={abilitySaving} className="btn-ghost text-sm">Cancel</button>
+                <button type="button" onClick={resetNewAbility} disabled={abilitySaving} className="btn-ghost text-sm">{t('common:cancel')}</button>
                 <button type="submit" disabled={abilitySaving || !newAbility.name.trim()} className="btn-primary text-sm">
                   {abilitySaving ? (
                     <>
                       <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                      Creating...
+                      {t('character:creating')}
                     </>
                   ) : (
                     <>
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
                       </svg>
-                      Create Ability
+                      {t('character:createAbility')}
                     </>
                   )}
                 </button>
@@ -1130,46 +1139,46 @@ export function AbilitiesTab({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
                   </svg>
                 </button>
-                <h3 className="text-base font-semibold text-gradient">New Summon</h3>
+                <h3 className="text-base font-semibold text-gradient">{t('character:newSummon')}</h3>
               </div>
               <div>
-                <label htmlFor="new-summon-name" className="label">Name</label>
-                <input id="new-summon-name" className="input-field" value={newAbility.name} onChange={e => setNewAbility(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. Spirit Wolf" autoFocus />
+                <label htmlFor="new-summon-name" className="label">{t('common:name')}</label>
+                <input id="new-summon-name" className="input-field" value={newAbility.name} onChange={e => setNewAbility(p => ({ ...p, name: e.target.value }))} required placeholder={t('character:placeholderNameSummon')} autoFocus />
               </div>
               <div>
-                <label htmlFor="new-summon-desc" className="label">Description</label>
-                <textarea id="new-summon-desc" className="input-field resize-none" rows={2} value={newAbility.description} onChange={e => setNewAbility(p => ({ ...p, description: e.target.value }))} placeholder="A loyal spirit wolf that follows commands." />
+                <label htmlFor="new-summon-desc" className="label">{t('common:description')}</label>
+                <textarea id="new-summon-desc" className="input-field resize-none" rows={2} value={newAbility.description} onChange={e => setNewAbility(p => ({ ...p, description: e.target.value }))} placeholder={t('character:placeholderSummonDesc')} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="new-summon-hp-current" className="label">Health (Current)</label>
-                  <NumericInput id="new-summon-hp-current" className="input-field" value={newAbility.hpCurrent} onChange={e => setNewAbility(p => ({ ...p, hpCurrent: e.target.value }))} placeholder="20" />
+                  <label htmlFor="new-summon-hp-current" className="label">{t('character:healthCurrent')}</label>
+                  <NumericInput id="new-summon-hp-current" className="input-field" value={newAbility.hpCurrent} onChange={e => setNewAbility(p => ({ ...p, hpCurrent: e.target.value }))} placeholder={t('character:placeholderHealth')} />
                 </div>
                 <div>
-                  <label htmlFor="new-summon-hp-max" className="label">Health (Max)</label>
-                  <NumericInput id="new-summon-hp-max" className="input-field" value={newAbility.hpMax} onChange={e => setNewAbility(p => ({ ...p, hpMax: e.target.value }))} placeholder="20" />
+                  <label htmlFor="new-summon-hp-max" className="label">{t('character:healthMax')}</label>
+                  <NumericInput id="new-summon-hp-max" className="input-field" value={newAbility.hpMax} onChange={e => setNewAbility(p => ({ ...p, hpMax: e.target.value }))} placeholder={t('character:placeholderHealth')} />
                 </div>
               </div>
               <div>
-                <label htmlFor="new-summon-notes" className="label">Notes</label>
+                <label htmlFor="new-summon-notes" className="label">{t('character:notes')}</label>
                 <textarea id="new-summon-notes" className="input-field resize-none" rows={2} value={newAbility.notes} onChange={e => setNewAbility(p => ({ ...p, notes: e.target.value }))} />
               </div>
-              <p className="text-xs text-muted italic">Attributes and Armor Class are automatically inherited from the sheet template. They can be customized after creation.</p>
+              <p className="text-xs text-muted italic">{t('character:summonInheritNote')}</p>
               {abilityError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">{abilityError}</div>}
               <div className="flex gap-3 justify-end pt-2 border-t border-border/40">
-                <button type="button" onClick={resetNewAbility} disabled={abilitySaving} className="btn-ghost text-sm">Cancel</button>
+                <button type="button" onClick={resetNewAbility} disabled={abilitySaving} className="btn-ghost text-sm">{t('common:cancel')}</button>
                 <button type="submit" disabled={abilitySaving || !newAbility.name.trim()} className="btn-primary text-sm">
                   {abilitySaving ? (
                     <>
                       <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                      Creating...
+                      {t('character:creating')}
                     </>
                   ) : (
                     <>
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
                       </svg>
-                      Create Summon
+                      {t('character:createSummon')}
                     </>
                   )}
                 </button>
@@ -1184,35 +1193,35 @@ export function AbilitiesTab({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in">
           <div className="card !p-6 max-w-sm w-full space-y-4 border-primary/20">
             <div className="header-accent">
-              <h3 className="font-semibold text-gradient">Create Ability Level</h3>
+              <h3 className="font-semibold text-gradient">{t('character:createAbilityLevel')}</h3>
             </div>
             <div>
-              <label htmlFor="new-level-input" className="label">Level</label>
+              <label htmlFor="new-level-input" className="label">{t('character:levelLabel')}</label>
               <input id="new-level-input" className="input-field w-full" value={newLevelForm.level} onChange={e => setNewLevelForm(p => ({ ...p, level: e.target.value }))} />
             </div>
             <div>
-              <span className="text-xs text-muted block mb-2">Copy information from previous level?</span>
+              <span className="text-xs text-muted block mb-2">{t('character:copyFromPreviousLevel')}</span>
               <div className="flex gap-6">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="radio" name="copyPrev" checked={newLevelForm.copyFromPrevious} onChange={() => setNewLevelForm(p => ({ ...p, copyFromPrevious: true }))} className="accent-primary" />
-                  <span className="text-sm text-foreground">Yes</span>
+                  <span className="text-sm text-foreground">{t('common:yes')}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="radio" name="copyPrev" checked={!newLevelForm.copyFromPrevious} onChange={() => setNewLevelForm(p => ({ ...p, copyFromPrevious: false }))} className="accent-primary" />
-                  <span className="text-sm text-foreground">No</span>
+                  <span className="text-sm text-foreground">{t('common:no')}</span>
                 </label>
               </div>
             </div>
             {levelModalError && <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">{levelModalError}</div>}
             <div className="flex gap-3 justify-end pt-2 border-t border-border/40">
-              <button type="button" onClick={() => setShowAddLevelModal(null)} disabled={levelModalSaving} className="btn-ghost text-sm">Cancel</button>
+              <button type="button" onClick={() => setShowAddLevelModal(null)} disabled={levelModalSaving} className="btn-ghost text-sm">{t('common:cancel')}</button>
               <button type="button" onClick={() => handleAddLevel(showAddLevelModal)} disabled={levelModalSaving} className="btn-primary text-sm">
                 {levelModalSaving ? (
                   <>
                     <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                    Creating...
+                    {t('character:creating')}
                   </>
-                ) : 'Create'}
+                ) : t('common:create')}
               </button>
             </div>
           </div>
@@ -1230,14 +1239,20 @@ export function AbilitiesTab({
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">Delete Entry</h3>
-                <p className="text-sm text-muted-foreground mt-1">This will permanently delete this entry and all its data (levels, attributes, etc.).</p>
+                <h3 className="font-semibold text-foreground">{t('character:deleteEntry')}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{t('character:deleteEntryWarning')}</p>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">Are you sure you want to delete <strong>{abilities.find(a => a.id === confirmDeleteAbility)?.name ?? 'this entry'}</strong>?</p>
+            <p className="text-sm text-muted-foreground">
+              <Trans
+                i18nKey="character:deleteAbilityConfirm"
+                values={{ name: abilities.find(a => a.id === confirmDeleteAbility)?.name ?? t('character:thisEntry') }}
+                components={[<strong key="name" />]}
+              />
+            </p>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setConfirmDeleteAbility(null)} disabled={deletingAbility} className="btn-ghost">Cancel</button>
-              <button onClick={() => { setDeletingAbility(true); handleDeleteAbility(confirmDeleteAbility).finally(() => { setDeletingAbility(false); setConfirmDeleteAbility(null) }) }} disabled={deletingAbility} className="btn-danger-solid">{deletingAbility ? 'Deleting...' : 'Delete'}</button>
+              <button onClick={() => setConfirmDeleteAbility(null)} disabled={deletingAbility} className="btn-ghost">{t('common:cancel')}</button>
+              <button onClick={() => { setDeletingAbility(true); handleDeleteAbility(confirmDeleteAbility).finally(() => { setDeletingAbility(false); setConfirmDeleteAbility(null) }) }} disabled={deletingAbility} className="btn-danger-solid">{deletingAbility ? t('character:deleting') : t('common:delete')}</button>
             </div>
           </div>
         </div>
@@ -1254,14 +1269,20 @@ export function AbilitiesTab({
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">Delete Level</h3>
-                <p className="text-sm text-muted-foreground mt-1">This will permanently delete this level and all its data.</p>
+                <h3 className="font-semibold text-foreground">{t('character:deleteLevel')}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{t('character:deleteLevelWarning')}</p>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">Are you sure you want to delete <strong>Level {levelNumberById(abilities, confirmDeleteLevel)}</strong>?</p>
+            <p className="text-sm text-muted-foreground">
+              <Trans
+                i18nKey="character:deleteLevelConfirm"
+                values={{ level }}
+                components={[<strong key="level" />]}
+              />
+            </p>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setConfirmDeleteLevel(null)} disabled={deletingLevel} className="btn-ghost">Cancel</button>
-              <button onClick={async () => { setDeletingLevel(true); try { await api.delete(`/character-sheets/${sheetId}/abilities/x/levels/${confirmDeleteLevel}`); setAbilities(prev => prev.map(a => ({ ...a, levels: a.levels.filter(l => l.id !== confirmDeleteLevel) }))); setSelectedLevels(prev => { const next = { ...prev }; for (const a of abilities) { if (a.levels.some(l => l.id === confirmDeleteLevel)) { const remaining = a.levels.filter(l => l.id !== confirmDeleteLevel); if (next[a.id] === confirmDeleteLevel) { next[a.id] = remaining.at(-1)?.id ?? ''; } break } } return next }) } catch {} finally { setDeletingLevel(false); setConfirmDeleteLevel(null) } }} disabled={deletingLevel} className="btn-danger-solid">{deletingLevel ? 'Deleting...' : 'Delete'}</button>
+              <button onClick={() => setConfirmDeleteLevel(null)} disabled={deletingLevel} className="btn-ghost">{t('common:cancel')}</button>
+              <button onClick={async () => { setDeletingLevel(true); try { await api.delete(`/character-sheets/${sheetId}/abilities/x/levels/${confirmDeleteLevel}`); setAbilities(prev => prev.map(a => ({ ...a, levels: a.levels.filter(l => l.id !== confirmDeleteLevel) }))); setSelectedLevels(prev => { const next = { ...prev }; for (const a of abilities) { if (a.levels.some(l => l.id === confirmDeleteLevel)) { const remaining = a.levels.filter(l => l.id !== confirmDeleteLevel); if (next[a.id] === confirmDeleteLevel) { next[a.id] = remaining.at(-1)?.id ?? ''; } break } } return next }) } catch {} finally { setDeletingLevel(false); setConfirmDeleteLevel(null) } }} disabled={deletingLevel} className="btn-danger-solid">{deletingLevel ? t('character:deleting') : t('common:delete')}</button>
             </div>
           </div>
         </div>

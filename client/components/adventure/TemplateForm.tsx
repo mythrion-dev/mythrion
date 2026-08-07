@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, type SubmitEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { CoreResource, AcConfigDraft, ArmorClassAttributeModifierDraft, ResistanceDef } from '@/components/adventure/types'
 import AttributeModifierConfig from '@/lib/attribute-modifier-config'
 import SkillCalculationConfig from '@/lib/skill-calculation-config'
@@ -57,6 +58,7 @@ export function TemplateForm(props: {
   // Public visibility toggle
   newIsPublic?: boolean; onNewIsPublicChange?: (v: boolean) => void
 }) {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<string>('attrs')
   const [wizardDone, setWizardDone] = useState(false)
   const [expandedAttrs, setExpandedAttrs] = useState<Record<number, boolean>>({}); const prevCount = useRef(0)
@@ -74,41 +76,41 @@ export function TemplateForm(props: {
 
   const features: FeatureCard[] = [
     {
-      key: 'skills', label: 'Skills', enabled: props.newFeatureSkills, onToggle: props.onNewFeatureSkillsChange,
+      key: 'skills', label: t('campaign:skills'), enabled: props.newFeatureSkills, onToggle: props.onNewFeatureSkillsChange,
       icon: '<path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />',
-      description: 'Add skills like Stealth, Perception, or Athletics. Players can assign values and roll checks.',
+      description: t('campaign:featureSkillsDescription'),
     },
     {
-      key: 'customfields', label: 'Character Info', enabled: props.newFeatureCustomFields, onToggle: props.onNewFeatureCustomFieldsChange,
+      key: 'customfields', label: t('campaign:characterInfo'), enabled: props.newFeatureCustomFields, onToggle: props.onNewFeatureCustomFieldsChange,
       icon: '<path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />',
-      description: 'Add custom fields like Class, Race, Background, or other character details.',
+      description: t('campaign:featureCustomFieldsDescription'),
     },
     {
-      key: 'coreResources', label: 'Core Resources', enabled: props.newFeatureCoreResources, onToggle: props.onNewFeatureCoreResourcesChange,
+      key: 'coreResources', label: t('campaign:coreResources'), enabled: props.newFeatureCoreResources, onToggle: props.onNewFeatureCoreResourcesChange,
       icon: '<path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />',
-      description: 'Set up trackable resources like Hit Points, Mana, or Stamina for your characters.',
+      description: t('campaign:featureCoreResourcesDescription'),
     },
     {
-      key: 'armorClass', label: 'Armor Class', enabled: props.newFeatureArmorClass, onToggle: props.onNewFeatureArmorClassChange,
+      key: 'armorClass', label: t('campaign:armorClass'), enabled: props.newFeatureArmorClass, onToggle: props.onNewFeatureArmorClassChange,
       icon: '<path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />',
-      description: 'Configure armor class using components like base AC + Dexterity modifier from your attributes.',
+      description: t('campaign:featureArmorClassDescription'),
     },
     {
-      key: 'sections', label: 'Personal Abilities', enabled: props.newFeatureCharacterSections, onToggle: props.onNewFeatureCharacterSectionsChange,
+      key: 'sections', label: t('campaign:personalAbilities'), enabled: props.newFeatureCharacterSections, onToggle: props.onNewFeatureCharacterSectionsChange,
       icon: '<path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />',
-      description: 'Add free-form sections like Talents, Traits, or Inventory for additional character details.',
+      description: t('campaign:featureSectionsDescription'),
     },
     {
-      key: 'profiles', label: 'Skill Profiles', enabled: props.newFeatureSkillProfiles, onToggle: props.onNewFeatureSkillProfilesChange,
+      key: 'profiles', label: t('campaign:skillProfiles'), enabled: props.newFeatureSkillProfiles, onToggle: props.onNewFeatureSkillProfilesChange,
       disabled: !props.newFeatureSkills,
-      disabledReason: 'Requires Skills to be enabled',
+      disabledReason: t('campaign:disabledReasonRequiresSkills'),
       icon: '<path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />',
-      description: 'Pre-define modifier levels (Untrained, Expert, Master) that apply to your skills.',
+      description: t('campaign:featureProfilesDescription'),
     },
     {
-      key: 'resistances', label: 'Resistance System', enabled: props.newFeatureResistance, onToggle: props.onNewFeatureResistanceChange,
+      key: 'resistances', label: t('campaign:resistanceSystem'), enabled: props.newFeatureResistance, onToggle: props.onNewFeatureResistanceChange,
       icon: '<path strokeLinecap="round" strokeLinejoin="round" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01" />',
-      description: 'Define damage types and configure resistance or weakness calculations for characters.',
+      description: t('campaign:featureResistanceDescription'),
     },
   ]
 
@@ -123,12 +125,12 @@ export function TemplateForm(props: {
         </div>
         <div>
           <h4 className="text-base font-semibold text-gradient">
-            {wizardDone ? 'Configure Template Details' : 'Create New Template'}
+            {wizardDone ? t('campaign:configureTemplateDetails') : t('campaign:createNewTemplate')}
           </h4>
           <p className="text-xs text-muted-foreground mt-0.5">
             {wizardDone
-              ? 'Fill in the details for each section of your template.'
-              : 'First, give your template a name and choose which features to include.'}
+              ? t('campaign:fillInDetailsForEachSection')
+              : t('campaign:firstGiveTemplateName')}
           </p>
         </div>
       </div>
@@ -136,8 +138,8 @@ export function TemplateForm(props: {
       {/* Step indicator */}
       <div className="flex items-center gap-0">
         {[
-          { num: 1, label: 'Basic Info & Features', done: wizardDone },
-          { num: 2, label: 'Configure Details', done: false },
+          { num: 1, label: t('campaign:basicInfoAndFeatures'), done: wizardDone },
+          { num: 2, label: t('campaign:configureDetails'), done: false },
         ].map((step, idx) => (
           <div key={step.num} className={`flex-1 flex items-center ${idx === 0 ? '' : ''}`}>
             <div className={`flex items-center gap-2.5 px-4 py-2.5 ${
@@ -171,23 +173,23 @@ export function TemplateForm(props: {
           {/* Name & Description */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="label">Template Name</label>
+              <label className="label">{t('campaign:templateName')}</label>
               <input
                 className="input-field"
                 value={props.newTemplateName}
                 onChange={e => props.onNameChange(e.target.value)}
-                placeholder="e.g. D&D 5e Character Sheet"
+                placeholder={t('campaign:templateNamePlaceholder')}
                 maxLength={100}
                 required
               />
             </div>
             <div>
-              <label className="label">Description <span className="text-muted font-normal">(optional)</span></label>
+              <label className="label">{t('common:description')} <span className="text-muted font-normal">{t('campaign:optionalLower')}</span></label>
               <input
                 className="input-field"
                 value={props.newTemplateDescription}
                 onChange={e => props.onDescriptionChange(e.target.value)}
-                placeholder="Brief description of this template"
+                placeholder={t('campaign:templateDescriptionPlaceholder')}
                 maxLength={200}
               />
             </div>
@@ -199,7 +201,7 @@ export function TemplateForm(props: {
               <div className="w-full border-t border-border/40" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-[#15101f] px-3 text-xs font-semibold text-muted uppercase tracking-wider">Choose Features</span>
+              <span className="bg-[#15101f] px-3 text-xs font-semibold text-muted uppercase tracking-wider">{t('campaign:chooseFeatures')}</span>
             </div>
           </div>
 
@@ -213,9 +215,9 @@ export function TemplateForm(props: {
                 </svg>
               </div>
               <div>
-                <span className="text-sm font-medium text-foreground">Make Public</span>
+                <span className="text-sm font-medium text-foreground">{t('campaign:makePublic')}</span>
                 <p className="text-xs text-muted mt-0.5 leading-relaxed">
-                  Anyone can view and clone this template. Other users will see it in the community gallery.
+                  {t('campaign:makePublicDescription')}
                 </p>
               </div>
             </div>
@@ -292,7 +294,7 @@ export function TemplateForm(props: {
           {/* Continue button */}
           <div className="flex items-center justify-between pt-2">
             <button type="button" onClick={props.onCancelNew} className="btn-ghost text-sm">
-              Cancel
+              {t('common:cancel')}
             </button>
             <button
               type="button"
@@ -300,7 +302,7 @@ export function TemplateForm(props: {
               disabled={!props.newTemplateName.trim()}
               className="btn-primary text-sm"
             >
-              Continue to Details
+              {t('campaign:continueToDetails')}
               <svg className="w-3.5 h-3.5 ml-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
@@ -313,12 +315,12 @@ export function TemplateForm(props: {
         {/* Name & Description inline */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="label">Name</label>
-            <input className="input-field" value={props.newTemplateName} onChange={e => props.onNameChange(e.target.value)} placeholder="e.g. D&D 5e" maxLength={100} required />
+            <label className="label">{t('common:name')}</label>
+            <input className="input-field" value={props.newTemplateName} onChange={e => props.onNameChange(e.target.value)} placeholder={t('campaign:templateNamePlaceholderShort')} maxLength={100} required />
           </div>
           <div>
-            <label className="label">Description <span className="text-muted font-normal">(optional)</span></label>
-            <input className="input-field" value={props.newTemplateDescription} onChange={e => props.onDescriptionChange(e.target.value)} placeholder="Brief description" maxLength={200} />
+            <label className="label">{t('common:description')} <span className="text-muted font-normal">{t('campaign:optionalLower')}</span></label>
+            <input className="input-field" value={props.newTemplateDescription} onChange={e => props.onDescriptionChange(e.target.value)} placeholder={t('campaign:briefDescription')} maxLength={200} />
           </div>
         </div>
 
@@ -327,7 +329,7 @@ export function TemplateForm(props: {
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
-          Change features
+          {t('campaign:changeFeatures')}
         </button>
 
         {/* Sub-tab pills */}
@@ -336,14 +338,14 @@ export function TemplateForm(props: {
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Attributes
+            {t('campaign:attributes')}
           </button>
           {props.newFeatureSkills && (
             <button type="button" onClick={() => setActiveTab('skills')} className={tabClass('skills')}>
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              Skills
+              {t('campaign:skills')}
             </button>
           )}
           {props.newFeatureCustomFields && props.onAddField && (
@@ -351,7 +353,7 @@ export function TemplateForm(props: {
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0" />
               </svg>
-              Character Info
+              {t('campaign:characterInfo')}
             </button>
           )}
           {props.newFeatureCoreResources && props.onAddCoreResource && (
@@ -359,7 +361,7 @@ export function TemplateForm(props: {
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
-              Resources
+              {t('campaign:resources')}
             </button>
           )}
           {props.newFeatureArmorClass && props.onAddNewAcConfig && (
@@ -367,7 +369,7 @@ export function TemplateForm(props: {
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
-              Armor Class
+              {t('campaign:armorClass')}
             </button>
           )}
           {props.newFeatureCharacterSections && (
@@ -375,7 +377,7 @@ export function TemplateForm(props: {
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
-              Abilities
+              {t('campaign:abilities')}
             </button>
           )}
           {props.newFeatureSkillProfiles && props.onAddProfile && (
@@ -383,7 +385,7 @@ export function TemplateForm(props: {
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
-              Profiles
+              {t('campaign:profiles')}
             </button>
           )}
           {props.newFeatureResistance && props.onNewResistancesChange && (
@@ -391,7 +393,7 @@ export function TemplateForm(props: {
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
-              Resistances
+              {t('campaign:resistances')}
             </button>
           )}
         </div>
@@ -401,65 +403,65 @@ export function TemplateForm(props: {
         {/* ── Tab Content ── */}
         {activeTab === 'attrs' && <div>
           <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-            Attributes are the core stats that define a character — like Strength, Dexterity, or Intelligence. Players will assign values to each.
+            {t('campaign:attributesDescription')}
           </p>
           <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer mb-3">
             <input type="checkbox" className="w-4 h-4 rounded accent-primary" checked={props.newAttrModifiersEnabled ?? false} onChange={e => props.onNewAttrModifiersEnabledChange?.(e.target.checked)} />
-            Enable Attribute Modifiers
+            {t('campaign:enableAttributeModifiers')}
           </label>
-          {(props.newAttrModifiersEnabled ?? false) && <div className="mb-4"><AttributeModifierConfig value={props.newAttrModifierFormula} onChange={v => props.onNewAttrModifierFormulaChange?.(v)} placeholder="floor((value - 10) / 2)" /></div>}
+          {(props.newAttrModifiersEnabled ?? false) && <div className="mb-4"><AttributeModifierConfig value={props.newAttrModifierFormula} onChange={v => props.onNewAttrModifierFormulaChange?.(v)} placeholder={t('campaign:attrModifierFormulaPlaceholder')} /></div>}
           <div className="space-y-2 mt-1">{props.newTemplateAttrs.map((attr, idx) => <CollapsibleAttrCard key={idx} index={idx} attr={attr} isExpanded={!!expandedAttrs[idx]} onToggle={() => setExpandedAttrs(p => ({ ...p, [idx]: !p[idx] }))} onUpdateAttr={props.onUpdateAttr} onRemove={() => props.onRemoveAttr(idx)} />)}</div>
           <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-3 flex items-center gap-1">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-            Add Attribute
+            {t('campaign:addAttribute')}
           </button>
         </div>}
 
         {activeTab === 'skills' && <div>
           <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-            Skills represent trained abilities like Stealth or Persuasion. Configure how they&apos;re calculated and which attributes they rely on.
+            {t('campaign:skillsDescription')}
           </p>
-          <div className="mb-4"><SkillCalculationConfig value={props.newSkillFormula} onChange={v => props.onNewSkillFormulaChange?.(v)} customFields={(props.newTemplateFields || []).filter(f => f.key.trim() && f.label.trim()).map(f => ({ key: f.key.trim(), label: f.label.trim() }))} placeholder="e.g. value + mod(value)" disabled={!(props.newAttrModifiersEnabled ?? false)} /></div>
+          <div className="mb-4"><SkillCalculationConfig value={props.newSkillFormula} onChange={v => props.onNewSkillFormulaChange?.(v)} customFields={(props.newTemplateFields || []).filter(f => f.key.trim() && f.label.trim()).map(f => ({ key: f.key.trim(), label: f.label.trim() }))} placeholder={t('campaign:skillFormulaPlaceholder')} disabled={!(props.newAttrModifiersEnabled ?? false)} /></div>
           <div className="space-y-2 mt-1">{(props.newTemplateSkills || []).map((s, idx) => <CollapsibleSkillCard key={idx} index={idx} skill={s} onUpdateSkill={props.onUpdateSkill} onRemove={() => props.onRemoveSkill?.(idx)} attributes={allAttrs} onToggleAllowedAttr={props.onToggleSkillAllowedAttr} onUpdateDefaultAttr={(i, v) => { props.onUpdateSkill?.(i, 'defaultAttributeId', v) }} />)}</div>
           <button type="button" onClick={props.onAddSkill} className="btn-ghost text-xs mt-3 flex items-center gap-1">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-            Add Skill
+            {t('campaign:addSkill')}
           </button>
         </div>}
 
         {activeTab === 'fields' && <div>
           <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-            Add custom text fields for character details like Class, Race, or Background.
+            {t('campaign:fieldsDescription')}
           </p>
-          <div className="space-y-2 mt-1">{(props.newTemplateFields || []).map((f, idx) => <div key={idx} className="flex items-center gap-1.5"><input className="input-field flex-1" value={f.key} onChange={e => props.onUpdateField?.(idx, 'key', e.target.value)} placeholder="Key (e.g. class)" /><input className="input-field flex-1" value={f.label} onChange={e => props.onUpdateField?.(idx, 'label', e.target.value)} placeholder="Label (e.g. Class)" /><button type="button" onClick={() => props.onRemoveField?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0 px-1">✕</button></div>)}</div>
+          <div className="space-y-2 mt-1">{(props.newTemplateFields || []).map((f, idx) => <div key={idx} className="flex items-center gap-1.5"><input className="input-field flex-1" value={f.key} onChange={e => props.onUpdateField?.(idx, 'key', e.target.value)} placeholder={t('campaign:fieldKeyPlaceholderClass')} /><input className="input-field flex-1" value={f.label} onChange={e => props.onUpdateField?.(idx, 'label', e.target.value)} placeholder={t('campaign:fieldLabelPlaceholder')} /><button type="button" onClick={() => props.onRemoveField?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0 px-1">✕</button></div>)}</div>
           <button type="button" onClick={props.onAddField} className="btn-ghost text-xs mt-3 flex items-center gap-1">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-            Add Field
+            {t('campaign:addField')}
           </button>
         </div>}
 
         {activeTab === 'coreResources' && <div>
           <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-            Core resources are trackable values like Hit Points, Mana, or Stamina that appear on your character sheet.
+            {t('campaign:coreResourcesDescription')}
           </p>
           <div className="space-y-2 mt-1">{(props.newCoreResources || []).map((cr, crIdx) => <div key={crIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
-            <div className="flex items-center gap-1.5"><input className="input-field flex-1" value={cr.displayName} onChange={e => props.onUpdateCoreResource?.(crIdx, 'displayName', e.target.value)} placeholder="Display Name (e.g. Hit Points)" /><input className="input-field flex-[0.35]" value={cr.slug} onChange={e => props.onUpdateCoreResource?.(crIdx, 'slug', e.target.value)} placeholder="Slug (e.g. hit_points)" /><input type="color" value={cr.color || '#f59e0b'} onChange={e => props.onUpdateCoreResource?.(crIdx, 'color', e.target.value)} className="w-7 h-7 p-0.5 rounded cursor-pointer shrink-0 bg-transparent" /><button type="button" onClick={() => props.onRemoveCoreResource?.(crIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0 px-1">✕</button></div>
-            <div className="flex items-center gap-4 flex-wrap"><label className="flex items-center gap-1 text-xs text-muted cursor-pointer"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.enabled} onChange={e => props.onUpdateCoreResourceEnabled?.(crIdx, e.target.checked)} />Enabled</label><label className="flex items-center gap-1 text-xs text-muted cursor-pointer"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.editableByPlayer} onChange={e => props.onUpdateCoreResourceEditable?.(crIdx, e.target.checked)} />Editable by Player</label><label className="flex items-center gap-1 text-xs text-muted cursor-pointer"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.showNotes} onChange={e => props.onUpdateCoreResourceShowNotes?.(crIdx, e.target.checked)} />Show Notes</label></div>
+            <div className="flex items-center gap-1.5"><input className="input-field flex-1" value={cr.displayName} onChange={e => props.onUpdateCoreResource?.(crIdx, 'displayName', e.target.value)} placeholder={t('campaign:displayNamePlaceholder')} /><input className="input-field flex-[0.35]" value={cr.slug} onChange={e => props.onUpdateCoreResource?.(crIdx, 'slug', e.target.value)} placeholder={t('campaign:slugPlaceholder')} /><input type="color" value={cr.color || '#f59e0b'} onChange={e => props.onUpdateCoreResource?.(crIdx, 'color', e.target.value)} className="w-7 h-7 p-0.5 rounded cursor-pointer shrink-0 bg-transparent" /><button type="button" onClick={() => props.onRemoveCoreResource?.(crIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0 px-1">✕</button></div>
+            <div className="flex items-center gap-4 flex-wrap"><label className="flex items-center gap-1 text-xs text-muted cursor-pointer"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.enabled} onChange={e => props.onUpdateCoreResourceEnabled?.(crIdx, e.target.checked)} />{t('campaign:enabled')}</label><label className="flex items-center gap-1 text-xs text-muted cursor-pointer"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.editableByPlayer} onChange={e => props.onUpdateCoreResourceEditable?.(crIdx, e.target.checked)} />{t('campaign:editableByPlayer')}</label><label className="flex items-center gap-1 text-xs text-muted cursor-pointer"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.showNotes} onChange={e => props.onUpdateCoreResourceShowNotes?.(crIdx, e.target.checked)} />{t('campaign:showNotes')}</label></div>
           </div>)}</div>
           <button type="button" onClick={props.onAddCoreResource} className="btn-ghost text-xs mt-3 flex items-center gap-1">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-            Add Resource
+            {t('campaign:addResource')}
           </button>
         </div>}
 
         {activeTab === 'characterSections' && <div>
           <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-            Create free-form sections where players can write about their character&apos;s unique abilities and traits.
+            {t('campaign:characterSectionsDescription')}
           </p>
-          <div className="space-y-2 mt-1">{(props.newCharacterSections || []).map((s, idx) => (<div key={idx} className="flex items-center gap-1.5"><input className="input-field flex-1" value={s.name} onChange={e => props.onUpdateNewCharacterSection?.(idx, e.target.value)} placeholder="Section name (e.g. Talents)" /><button type="button" onClick={() => props.onRemoveNewCharacterSection?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0 px-1">✕</button></div>))}</div>
+          <div className="space-y-2 mt-1">{(props.newCharacterSections || []).map((s, idx) => (<div key={idx} className="flex items-center gap-1.5"><input className="input-field flex-1" value={s.name} onChange={e => props.onUpdateNewCharacterSection?.(idx, e.target.value)} placeholder={t('campaign:sectionNamePlaceholder')} /><button type="button" onClick={() => props.onRemoveNewCharacterSection?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0 px-1">✕</button></div>))}</div>
           <button type="button" onClick={props.onAddNewCharacterSection} className="btn-ghost text-xs mt-3 flex items-center gap-1">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-            Add Section
+            {t('campaign:addSection')}
           </button>
         </div>}
 
@@ -484,14 +486,14 @@ export function TemplateForm(props: {
 
         {activeTab === 'profiles' && <div className="space-y-2 mt-1">
           {(props.newTemplateProfiles || []).map((p, pIdx) => <div key={pIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
-            <div className="flex items-center gap-1.5"><input className="input-field flex-1" value={p.name} onChange={e => props.onUpdateProfile?.(pIdx, e.target.value)} placeholder="Profile name (e.g. mastery)" /><button type="button" onClick={() => props.onRemoveProfile?.(pIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div>
-            <div className="rounded border border-border/50 bg-background/20 p-2 space-y-2"><label className="text-xs font-semibold text-muted uppercase tracking-wider">Applies To</label><div className="flex gap-2">{(['ALL_SKILLS', 'SELECTED_SKILLS'] as const).map(mode => <button key={mode} type="button" onClick={() => { props.onUpdateProfileTargetMode?.(pIdx, mode) }} className={`px-3 py-1 rounded text-xs font-medium transition-colors ${((p as any).targetMode ?? 'ALL_SKILLS') === mode ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground border border-transparent'}`}>{mode === 'ALL_SKILLS' ? 'All Skills' : 'Selected Skills'}</button>)}</div>{(p as any).targetMode === 'SELECTED_SKILLS' && <div className="space-y-1 max-h-40 overflow-y-auto">{props.newTemplateSkills?.filter((s: any) => s.name.trim()).map((s: any) => { const sid = s.name.trim(); const selected = ((p as any).targetSkillIds ?? []).includes(sid); return (<label key={sid} className="flex items-center gap-2 text-xs text-foreground cursor-pointer py-0.5"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={selected} onChange={() => { props.onToggleProfileSkill?.(pIdx, sid) }} /><span>{s.name.trim()}</span></label>) })}{(props.newTemplateSkills || []).filter((s: any) => s.name.trim()).length === 0 && <p className="text-xs text-muted italic">Add skills to the template first.</p>}</div>}</div>
-            <div className="space-y-1 pl-2">{p.options.map((o, oIdx) => <div key={oIdx} className="flex items-center gap-1.5"><input className="input-field flex-1 text-xs" value={o.label} onChange={e => props.onUpdateProfileOption?.(pIdx, oIdx, 'label', e.target.value)} placeholder="Option label (e.g. Expert)" /><NumericInput className="input-field w-20 text-xs" value={o.value} onChange={e => props.onUpdateProfileOption?.(pIdx, oIdx, 'value', e.target.value)} placeholder="Value" wrapperClassName="w-20" inputClassName="!text-xs" /><button type="button" onClick={() => props.onRemoveProfileOption?.(pIdx, oIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div>)}</div>
-            <button type="button" onClick={() => props.onAddProfileOption?.(pIdx)} className="btn-ghost text-xs">+ Add Option</button>
+            <div className="flex items-center gap-1.5"><input className="input-field flex-1" value={p.name} onChange={e => props.onUpdateProfile?.(pIdx, e.target.value)} placeholder={t('campaign:profileNamePlaceholder')} /><button type="button" onClick={() => props.onRemoveProfile?.(pIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div>
+            <div className="rounded border border-border/50 bg-background/20 p-2 space-y-2"><label className="text-xs font-semibold text-muted uppercase tracking-wider">{t('campaign:appliesTo')}</label><div className="flex gap-2">{(['ALL_SKILLS', 'SELECTED_SKILLS'] as const).map(mode => <button key={mode} type="button" onClick={() => { props.onUpdateProfileTargetMode?.(pIdx, mode) }} className={`px-3 py-1 rounded text-xs font-medium transition-colors ${((p as any).targetMode ?? 'ALL_SKILLS') === mode ? 'bg-primary/15 text-primary border border-primary/20' : 'text-muted hover:text-foreground border border-transparent'}`}>{mode === 'ALL_SKILLS' ? t('campaign:allSkills') : t('campaign:selectedSkills')}</button>)}</div>{(p as any).targetMode === 'SELECTED_SKILLS' && <div className="space-y-1 max-h-40 overflow-y-auto">{props.newTemplateSkills?.filter((s: any) => s.name.trim()).map((s: any) => { const sid = s.name.trim(); const selected = ((p as any).targetSkillIds ?? []).includes(sid); return (<label key={sid} className="flex items-center gap-2 text-xs text-foreground cursor-pointer py-0.5"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={selected} onChange={() => { props.onToggleProfileSkill?.(pIdx, sid) }} /><span>{s.name.trim()}</span></label>) })}{(props.newTemplateSkills || []).filter((s: any) => s.name.trim()).length === 0 && <p className="text-xs text-muted italic">{t('campaign:addSkillsToTemplateFirst')}</p>}</div>}</div>
+            <div className="space-y-1 pl-2">{p.options.map((o, oIdx) => <div key={oIdx} className="flex items-center gap-1.5"><input className="input-field flex-1 text-xs" value={o.label} onChange={e => props.onUpdateProfileOption?.(pIdx, oIdx, 'label', e.target.value)} placeholder={t('campaign:optionLabelPlaceholder')} /><NumericInput className="input-field w-20 text-xs" value={o.value} onChange={e => props.onUpdateProfileOption?.(pIdx, oIdx, 'value', e.target.value)} placeholder={t('campaign:value')} wrapperClassName="w-20" inputClassName="!text-xs" /><button type="button" onClick={() => props.onRemoveProfileOption?.(pIdx, oIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button></div>)}</div>
+            <button type="button" onClick={() => props.onAddProfileOption?.(pIdx)} className="btn-ghost text-xs">{t('campaign:addOption')}</button>
           </div>)}
           <button type="button" onClick={props.onAddProfile} className="btn-ghost text-xs mt-2 flex items-center gap-1">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-            Add Skill Profile
+            {t('campaign:addSkillProfile')}
           </button>
         </div>}
 
@@ -504,11 +506,11 @@ export function TemplateForm(props: {
           <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">{props.templateError}</div>
         )}
         <div className="flex gap-3 justify-end pt-2 border-t border-border/40">
-          <button type="button" onClick={props.onCancelNew} disabled={props.templateCreating} className="btn-ghost text-sm">Cancel</button>
+          <button type="button" onClick={props.onCancelNew} disabled={props.templateCreating} className="btn-ghost text-sm">{t('common:cancel')}</button>
           <button type="submit" disabled={props.templateCreating || !props.newTemplateName.trim() || props.newTemplateAttrs.length === 0} className="btn-primary text-sm">
             {props.templateCreating ? (
-              <><div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />Creating...</>
-            ) : 'Create Template'}
+              <><div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />{t('campaign:creating')}</>
+            ) : t('campaign:createTemplate')}
           </button>
         </div>
       </form>

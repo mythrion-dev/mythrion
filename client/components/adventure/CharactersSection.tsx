@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation } from 'react-i18next'
 import type { SubmitEvent } from 'react'
 
 interface CampaignCharacter {
@@ -60,12 +61,13 @@ export function CharactersSection({
   onRemoveCharacter: (id: string) => void
   onViewCharacter: (id: string) => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className="space-y-4">
       {/* Character list */}
       {characters.length === 0 && !showNewCharForm && !showLinkCharForm ? (
         <div className="text-center py-6 text-muted-foreground text-sm italic">
-          No characters in this campaign yet.
+          {t('campaign:noCharactersYet')}
         </div>
       ) : (
         <div className="space-y-2">
@@ -87,14 +89,14 @@ export function CharactersSection({
                   onClick={() => onViewCharacter(c.id)}
                   className="btn-ghost text-xs px-2 py-1"
                 >
-                  View
+                  {t('common:view')}
                 </button>
                 {isGM && (c.owner?.id ?? '') !== userId && (
                   <button
                     onClick={() => onRemoveCharacter(c.id)}
                     className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors"
                   >
-                    Remove
+                    {t('common:remove')}
                   </button>
                 )}
               </div>
@@ -107,10 +109,10 @@ export function CharactersSection({
       {!showNewCharForm && !showLinkCharForm && (
         <div className="flex gap-2">
           <button onClick={onNewCharClick} className="btn-primary text-sm">
-            + New Character
+            {t('campaign:newCharacter')}
           </button>
           <button onClick={onLinkCharClick} className="btn-ghost text-sm">
-            Link Existing Character
+            {t('campaign:linkExistingCharacter')}
           </button>
         </div>
       )}
@@ -121,15 +123,15 @@ export function CharactersSection({
           onSubmit={onCreateCharacter}
           className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3"
         >
-          <h4 className="text-sm font-semibold text-primary">Create New Character</h4>
+          <h4 className="text-sm font-semibold text-primary">{t('campaign:createNewCharacter')}</h4>
 
           <div>
-            <label className="label">Character Name</label>
+            <label className="label">{t('campaign:characterName')}</label>
             <input
               className="input-field"
               value={newCharName}
               onChange={e => onNewCharNameChange(e.target.value)}
-              placeholder="e.g. Aragorn"
+              placeholder={t('campaign:charNamePlaceholder')}
               maxLength={100}
               required
             />
@@ -137,7 +139,7 @@ export function CharactersSection({
 
           {/* Snapshot-based template info */}
           <div>
-            <label className="label">Template</label>
+            <label className="label">{t('campaign:template')}</label>
             {snapshotName ? (
               <div className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-secondary/40 border border-border/40 text-sm text-foreground">
                 <svg className="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -147,7 +149,7 @@ export function CharactersSection({
               </div>
             ) : (
               <p className="text-sm text-muted italic">
-                No template is attached to this campaign. Ask the GM to attach one before creating a character.
+                {t('campaign:noTemplateAttached')}
               </p>
             )}
           </div>
@@ -165,14 +167,14 @@ export function CharactersSection({
               disabled={newCharCreating}
               className="btn-ghost text-sm"
             >
-              Cancel
+              {t('common:cancel')}
             </button>
             <button
               type="submit"
               disabled={newCharCreating || !newCharName.trim() || !snapshotName}
               className="btn-primary text-sm"
             >
-              {newCharCreating ? 'Creating...' : 'Create'}
+              {newCharCreating ? t('campaign:creating') : t('campaign:create')}
             </button>
           </div>
         </form>
@@ -184,19 +186,19 @@ export function CharactersSection({
           onSubmit={onLinkCharacter}
           className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3"
         >
-          <h4 className="text-sm font-semibold text-primary">Link Existing Character</h4>
+          <h4 className="text-sm font-semibold text-primary">{t('campaign:linkExistingCharacter')}</h4>
 
           <div>
-            <label className="label">Select Character</label>
+            <label className="label">{t('campaign:selectCharacter')}</label>
             {userSheets.length === 0 ? (
-              <p className="text-sm text-muted italic">No unlinked characters available.</p>
+              <p className="text-sm text-muted italic">{t('campaign:noUnlinkedCharacters')}</p>
             ) : (
               <select
                 className="input-field"
                 value={linkSheetId}
                 onChange={e => onLinkSheetChange(e.target.value)}
               >
-                <option value="">Select a character...</option>
+                <option value="">{t('campaign:selectCharacterPlaceholder')}</option>
                 {userSheets.map(s => (
                   <option key={s.id} value={s.id}>
                     {s.characterName} ({s.template.name})
@@ -219,14 +221,14 @@ export function CharactersSection({
               disabled={linkCharLinking}
               className="btn-ghost text-sm"
             >
-              Cancel
+              {t('common:cancel')}
             </button>
             <button
               type="submit"
               disabled={linkCharLinking || !linkSheetId}
               className="btn-primary text-sm"
             >
-              {linkCharLinking ? 'Linking...' : 'Link'}
+              {linkCharLinking ? t('campaign:linking') : t('campaign:link')}
             </button>
           </div>
         </form>

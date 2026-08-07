@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, type SubmitEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { api, API_URL, authFetch } from '@/lib/api'
@@ -23,6 +24,7 @@ import {
 export default function CharacterSheetDetailPage() {
   const router = useRouter(); const params = useParams(); const id = params.id as string
   const { user } = useAuth()
+  const { t } = useTranslation()
   const [sheet, setSheet] = useState<CharacterSheet | null>(null); const [fetching, setFetching] = useState(true)
   const [modifierResults, setModifierResults] = useState<Record<string, number | null>>({})
   const [skillResults, setSkillResults] = useState<Record<string, number | null>>({})
@@ -469,7 +471,7 @@ export default function CharacterSheetDetailPage() {
       const a = await api.post<Ability>(`/character-sheets/${sheet.id}/abilities/${summonId}/summon-abilities`, body)
       setAbilities(prev => prev.map(ab => ab.id === summonId ? { ...ab, childAbilities: [...(ab.childAbilities ?? []), a] } : ab))
       resetNewAbility()
-    } catch (err) { setAbilityError(err instanceof Error ? err.message : 'Failed to create') }
+    } catch (err) { setAbilityError(err instanceof Error ? err.message : t('character:failedToCreate')) }
     finally { setAbilitySaving(false) }
   }
 
@@ -508,10 +510,10 @@ export default function CharacterSheetDetailPage() {
       }
       setExpandedAbilities(prev => ({ ...prev, [a.id]: true }))
       resetNewAbility()
-    } catch (err) { setAbilityError(err instanceof Error ? err.message : 'Failed to create entry') } finally { setAbilitySaving(false) } }
+    } catch (err) { setAbilityError(err instanceof Error ? err.message : t('character:failedToCreateEntry')) } finally { setAbilitySaving(false) } }
   function resetNewItem() { setShowNewItem(false); setNewItem({ name: '', weight: '', cost: '', description: '' }); setItemError(null) }
   async function handleCreateItem(e: SubmitEvent) { e.preventDefault(); if (!newItem.name.trim() || !sheet) return; setItemSaving(true)
-    try { const i = await api.post<InventoryItem>(`/character-sheets/${sheet.id}/inventory`, { name: newItem.name.trim(), weight: newItem.weight.trim() ? Number.parseFloat(newItem.weight) : undefined, cost: newItem.cost.trim() || undefined, description: newItem.description.trim() || undefined }); setInventoryItems(p => [...p, i]); resetNewItem() } catch (err) { setItemError(err instanceof Error ? err.message : 'Failed to create item') } finally { setItemSaving(false) } }
+    try { const i = await api.post<InventoryItem>(`/character-sheets/${sheet.id}/inventory`, { name: newItem.name.trim(), weight: newItem.weight.trim() ? Number.parseFloat(newItem.weight) : undefined, cost: newItem.cost.trim() || undefined, description: newItem.description.trim() || undefined }); setInventoryItems(p => [...p, i]); resetNewItem() } catch (err) { setItemError(err instanceof Error ? err.message : t('character:failedToCreateItem')) } finally { setItemSaving(false) } }
   async function handleDeleteItem(iid: string) { if (!sheet) return; try { await api.delete(`/character-sheets/${sheet.id}/inventory/${iid}`); setInventoryItems(p => p.filter(i => i.id !== iid)) } catch {} }
   async function saveStoryField(field: string, value: string) { if (!sheet) return; try { const s = await api.patch<Story>(`/character-sheets/${sheet.id}/story`, { [field]: value.trim() || null }); setStory(s) } catch {} }
 
@@ -544,7 +546,7 @@ export default function CharacterSheetDetailPage() {
     try { await api.delete(`/character-sheets/${sheet.id}/section-entries/${entryId}`); setSectionEntries(p => p.filter(e => e.id !== entryId)) } catch {}
   }
 
-  async function handleDelete() { setDeleting(true); try { await api.delete(`/character-sheets/${id}`); router.push('/dashboard?tab=character-sheets') } catch (err) { setDeleteError(err instanceof Error ? err.message : 'Failed to delete'); setDeleting(false); setConfirmDelete(false) } }
+  async function handleDelete() { setDeleting(true); try { await api.delete(`/character-sheets/${id}`); router.push('/dashboard?tab=character-sheets') } catch (err) { setDeleteError(err instanceof Error ? err.message : t('character:failedToDelete')); setDeleting(false); setConfirmDelete(false) } }
 
   async function handleAvatarUpload(file: File) {
     if (!file || !sheet) return
@@ -574,44 +576,44 @@ export default function CharacterSheetDetailPage() {
     } catch { /* delete failed */ }
   }
 
-  if (fetching) return <div className="flex items-center justify-center py-20"><div className="flex flex-col items-center gap-3 text-muted-foreground"><div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"/><span className="text-sm">Loading...</span></div></div>
-  if (!sheet) return <div className="flex items-center justify-center py-20"><div className="text-sm text-muted-foreground">Character sheet not found.</div></div>
+  if (fetching) return <div className="flex items-center justify-center py-20"><div className="flex flex-col items-center gap-3 text-muted-foreground"><div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"/><span className="text-sm">{t('common:loading')}</span></div></div>
+  if (!sheet) return <div className="flex items-center justify-center py-20"><div className="text-sm text-muted-foreground">{t('character:characterSheetNotFound')}</div></div>
 
   const allProfiles: SkillModifierProfile[] = sheet?.template.skillModifierProfiles ?? []
   const armorClasses = sheet?.template.armorClasses?.filter(ac => ac.enabled) ?? []
   const modifiersEnabled = sheet.template.attributeModifiersEnabled !== false
   const totalWeight = inventoryItems.reduce((s, i) => s + (i.weight ?? 0), 0)
-  const tabClass = (t: Tab) => `flex items-center gap-2 px-5 py-3 text-base font-medium transition-colors border-b-2 ${activeTab === t ? 'border-[#c9a84c] text-white' : 'border-transparent text-gray-400 hover:text-white'}`
+  const tabClass = (t: Tab) => `flex items-center gap-2 px-3 py-2 text-sm sm:px-5 sm:py-3 sm:text-base font-medium transition-colors border-b-2 ${activeTab === t ? 'border-[#c9a84c] text-white' : 'border-transparent text-gray-400 hover:text-white'}`
   const enabledCoreResources = (sheet.template.coreResources || []).filter(cr => cr.enabled)
 
   return (<div className="w-full">
     <PageNav crumbs={[
-      { label: 'Dashboard', href: '/dashboard' },
+      { label: t('common:dashboard'), href: '/dashboard' },
       ...(sheet.adventure ? [{ label: sheet.adventure.name, href: `/dashboard/adventures/${sheet.adventure.id}` }] : []),
       { label: sheet.characterName },
     ]} />
 
     <div className="space-y-6">
       <div className="card !p-6">
-        <div className="flex gap-6 items-start" style={{ minHeight: '170px' }}>
-          {/* Avatar - 160x160 */}
-          <div className="shrink-0">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+          {/* Avatar - responsive */}
+          <div className="shrink-0 w-full max-w-[10rem]">
             {avatarUrl ? (
-              <div className="relative group">
-                <img src={avatarUrl} alt="Avatar" className="w-40 h-40 rounded-xl object-cover border border-border" />
+              <div className="relative group aspect-square w-full">
+                <img src={avatarUrl} alt={t('character:avatar')} className="w-full h-full rounded-xl object-cover border border-border" />
                 {isOwner && (
                   <button
                     type="button"
                     onClick={handleAvatarDelete}
                     className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-danger text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove avatar"
+                    title={t('character:removeAvatar')}
                   >
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                   </button>
                 )}
               </div>
             ) : isOwner ? (
-              <label className={`w-40 h-40 rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/30 transition-colors ${avatarUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+              <label className={`aspect-square w-full max-w-[10rem] rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/30 transition-colors ${avatarUploading ? 'opacity-50 pointer-events-none' : ''}`}>
                 {avatarUploading ? (
                   <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 ) : (
@@ -623,7 +625,7 @@ export default function CharacterSheetDetailPage() {
           </div>
 
           {/* Info - center column */}
-          <div className="flex-1 min-w-0 flex flex-col justify-between" style={{ minHeight: '170px' }}>
+          <div className="flex-1 min-w-0 flex flex-col justify-between">
             <div>
               {isOwner ? (
                 <InlineText value={sheet.characterName} onSave={saveCharacterName} maxLength={100} className="text-2xl font-bold text-gradient truncate block" />
@@ -633,25 +635,25 @@ export default function CharacterSheetDetailPage() {
               <div className="flex flex-wrap items-center gap-2 mt-2">
                 {isOwner ? (
                   <>
-                    <span className="badge badge-gold inline-flex items-center gap-1">Player: <InlineText value={sheet.playerName ?? ''} onSave={savePlayerName} maxLength={100} emptyDisplay="—" /></span>
-                    <span className="badge badge-gold inline-flex items-center gap-1">Level: <InlineNumber value={sheet.level} onSave={saveLevel} min={1} /></span>
+                    <span className="badge badge-gold inline-flex items-center gap-1">{t('character:playerLabel')}<InlineText value={sheet.playerName ?? ''} onSave={savePlayerName} maxLength={100} emptyDisplay="—" /></span>
+                    <span className="badge badge-gold inline-flex items-center gap-1">{t('character:levelField')}<InlineNumber value={sheet.level} onSave={saveLevel} min={1} /></span>
                   </>
                 ) : (
                   <>
-                    {sheet.playerName && <span className="badge badge-gold">Player: {sheet.playerName}</span>}
-                    {sheet.level && <span className="badge badge-gold">Level: {sheet.level}</span>}
+                    {sheet.playerName && <span className="badge badge-gold">{t('character:playerLabel')}{sheet.playerName}</span>}
+                    {sheet.level && <span className="badge badge-gold">{t('character:levelField')}{sheet.level}</span>}
                   </>
                 )}
                 {sheet.adventure && <span className="badge badge-gold">{sheet.adventure.campaign}</span>}
                 <span className="badge badge-gold">{sheet.template.name}</span>
               </div>
               <p className="text-xs text-muted mt-1.5">
-                Created {new Date(sheet.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                {t('character:createdDate', { date: new Date(sheet.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) })}
               </p>
             </div>
             {sheet.adventure && (
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-xs text-muted uppercase tracking-wider">Adventure:</span>
+                <span className="text-xs text-muted uppercase tracking-wider">{t('character:adventureLabel')}</span>
                 <span className="font-medium">{sheet.adventure.name}</span>
               </div>
             )}
@@ -659,9 +661,9 @@ export default function CharacterSheetDetailPage() {
 
           {/* Actions - delete button vertically centered */}
           {isOwner && (
-            <div className="flex flex-col gap-3 justify-center shrink-0" style={{ minHeight: '170px' }}>
-              <button onClick={() => setConfirmDelete(true)} className="btn-danger text-sm px-6 py-2.5">
-                <svg className="w-4 h-4 inline mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>Delete
+            <div className="flex flex-col gap-3 justify-center shrink-0 sm:min-h-[170px]">
+              <button onClick={() => setConfirmDelete(true)} className="btn-danger text-sm px-6 py-2.5 w-full sm:w-auto">
+                <svg className="w-4 h-4 inline mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>{t('common:delete')}
               </button>
             </div>
           )}
@@ -669,12 +671,12 @@ export default function CharacterSheetDetailPage() {
       </div>
 
       <nav className="flex gap-1 flex-wrap border-b border-border/60">
-        <button onClick={()=>setActiveTab('character')} className={tabClass('character')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Character</button>
-        <button onClick={()=>setActiveTab('abilities')} className={tabClass('abilities')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/><path strokeLinecap="round" strokeLinejoin="round" d="M8 2l.5 1.5L10 4l-1.5.5L8 6l-.5-1.5L6 4l1.5-.5L8 2z"/><path strokeLinecap="round" strokeLinejoin="round" d="M16 1l.3 1.2L18 3l-1.7.8L16 5l-.3-1.2L14 3l1.7-.8L16 1z"/></svg>Abilities</button>
-        <button onClick={()=>setActiveTab('inventory')} className={tabClass('inventory')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M6 10a2 2 0 012-2h8a2 2 0 012 2v7a2 2 0 01-2 2H8a2 2 0 01-2-2V10z"/><path d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2"/><rect x="9" y="12" width="6" height="3" rx="1"/><path d="M6 11l-2 1"/><path d="M18 11l2 1"/><path d="M11 6v-1"/><path d="M13 6v-1"/><path d="M10.5 5h3"/></svg>Inventory</button>
-        <button onClick={()=>setActiveTab('story')} className={tabClass('story')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>Story</button>
-        <button onClick={()=>setActiveTab('personal-abilities')} className={tabClass('personal-abilities')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>Personal Abilities</button>
-        <button onClick={()=>setActiveTab('resistances')} className={tabClass('resistances')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3C7 3 4 6 4 9v1c0 2 1.5 3.5 3 4l1 3h8l1-3c1.5-.5 3-2 3-4V9c0-3-3-6-8-6z"/><path strokeLinecap="round" strokeLinejoin="round" d="M8 9h8"/><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6"/><path strokeLinecap="round" strokeLinejoin="round" d="M12 3V1"/></svg>Resistances</button>
+        <button onClick={()=>setActiveTab('character')} className={tabClass('character')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>{t('character:tabCharacter')}</button>
+        <button onClick={()=>setActiveTab('abilities')} className={tabClass('abilities')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/><path strokeLinecap="round" strokeLinejoin="round" d="M8 2l.5 1.5L10 4l-1.5.5L8 6l-.5-1.5L6 4l1.5-.5L8 2z"/><path strokeLinecap="round" strokeLinejoin="round" d="M16 1l.3 1.2L18 3l-1.7.8L16 5l-.3-1.2L14 3l1.7-.8L16 1z"/></svg>{t('character:tabAbilities')}</button>
+        <button onClick={()=>setActiveTab('inventory')} className={tabClass('inventory')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M6 10a2 2 0 012-2h8a2 2 0 012 2v7a2 2 0 01-2 2H8a2 2 0 01-2-2V10z"/><path d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2"/><rect x="9" y="12" width="6" height="3" rx="1"/><path d="M6 11l-2 1"/><path d="M18 11l2 1"/><path d="M11 6v-1"/><path d="M13 6v-1"/><path d="M10.5 5h3"/></svg>{t('character:tabInventory')}</button>
+        <button onClick={()=>setActiveTab('story')} className={tabClass('story')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>{t('character:tabStory')}</button>
+        <button onClick={()=>setActiveTab('personal-abilities')} className={tabClass('personal-abilities')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>{t('character:tabPersonalAbilities')}</button>
+        <button onClick={()=>setActiveTab('resistances')} className={tabClass('resistances')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3C7 3 4 6 4 9v1c0 2 1.5 3.5 3 4l1 3h8l1-3c1.5-.5 3-2 3-4V9c0-3-3-6-8-6z"/><path strokeLinecap="round" strokeLinejoin="round" d="M8 9h8"/><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6"/><path strokeLinecap="round" strokeLinejoin="round" d="M12 3V1"/></svg>{t('character:tabResistances')}</button>
       </nav>
 
       {activeTab === 'character' && <CharacterTab
@@ -810,4 +812,6 @@ export default function CharacterSheetDetailPage() {
 
 
 
-function DeleteModal({ name, error, loading, onCancel, onConfirm }: { name: string; error: string | null; loading: boolean; onCancel: () => void; onConfirm: () => void }) { return <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in"><div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center"><svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg></div><div><h2 className="font-semibold">Delete Character Sheet</h2><p className="text-sm text-muted-foreground">This action cannot be undone.</p></div></div><p className="text-sm text-muted-foreground">Are you sure you want to delete "{name}"?</p>{error && <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">{error}</div>}<div className="flex gap-3 justify-end"><button onClick={onCancel} disabled={loading} className="btn-ghost">Cancel</button><button onClick={onConfirm} disabled={loading} className="btn-danger-solid">{loading ? 'Deleting...' : 'Delete forever'}</button></div></div></div> }
+function DeleteModal({ name, error, loading, onCancel, onConfirm }: { name: string; error: string | null; loading: boolean; onCancel: () => void; onConfirm: () => void }) {
+  const { t } = useTranslation()
+  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in"><div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center"><svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg></div><div><h2 className="font-semibold">{t('character:deleteCharacterSheetTitle')}</h2><p className="text-sm text-muted-foreground">{t('character:deleteActionCannotBeUndone')}</p></div></div><p className="text-sm text-muted-foreground">{t('character:deleteConfirm', { name })}</p>{error && <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">{error}</div>}<div className="flex gap-3 justify-end"><button onClick={onCancel} disabled={loading} className="btn-ghost">{t('common:cancel')}</button><button onClick={onConfirm} disabled={loading} className="btn-danger-solid">{loading ? t('character:deleting') : t('character:deleteForever')}</button></div></div></div> }

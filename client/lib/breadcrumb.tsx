@@ -5,24 +5,26 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useNavigation } from './navigation-context'
 import type { BreadcrumbSegment } from './navigation-context'
+import { useTranslation } from 'react-i18next'
 
 export function BreadcrumbNav() {
   const { breadcrumbs } = useNavigation()
   const router = useRouter()
+  const { t } = useTranslation()
 
   if (breadcrumbs.length === 0) return null
 
   return (
     <nav
       className="mb-6 flex items-center gap-2 text-sm flex-wrap"
-      aria-label="Breadcrumb"
+      aria-label={t('dashboard:breadcrumb')}
     >
       {/* Back Button */}
       <button
         type="button"
         onClick={() => router.back()}
         className="inline-flex items-center gap-1.5 text-muted hover:text-foreground transition-colors shrink-0"
-        aria-label="Go back"
+        aria-label={t('dashboard:goBack')}
       >
         <svg
           className="w-4 h-4"
@@ -37,7 +39,7 @@ export function BreadcrumbNav() {
             d="M15 19l-7-7 7-7"
           />
         </svg>
-        <span>Back</span>
+        <span>{t('common:back')}</span>
       </button>
 
       {/* Separator and Breadcrumbs */}

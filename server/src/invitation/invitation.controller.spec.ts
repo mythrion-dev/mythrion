@@ -15,6 +15,7 @@ import { InvitationController } from './invitation.controller.js'
 import { InvitationService } from './invitation.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 
 describe('InvitationController', () => {
   let controller: InvitationController
@@ -22,6 +23,7 @@ describe('InvitationController', () => {
 
   const mockUserReq = {
     user: { sub: 'user-1', email: 'gm@test.com' },
+    headers: { origin: 'http://localhost:3001' },
   } as unknown as AuthenticatedRequest
 
   const pendingValidateResponse = {
@@ -94,6 +96,7 @@ describe('InvitationController', () => {
         adventureId: 'adv-1',
         invitedEmail: 'player@test.com',
         createdById: 'user-1',
+        origin: 'http://localhost:3001',
       })
       expect(result).toEqual({ success: true, invitationId: 'inv-123' })
     })
@@ -113,6 +116,7 @@ describe('InvitationController', () => {
         adventureId: 'adv-1',
         invitedEmail: '',
         createdById: 'user-1',
+        origin: 'http://localhost:3001',
       })
     })
 
@@ -140,6 +144,7 @@ describe('InvitationController', () => {
       expect(mockInvitationService.inviteByLink).toHaveBeenCalledWith({
         adventureId: 'adv-1',
         createdById: 'user-1',
+        origin: 'http://localhost:3001',
       })
       expect(result).toEqual({
         inviteUrl: 'http://localhost:3001/invite/token-abc',
@@ -328,7 +333,10 @@ describe('InvitationController', () => {
   describe('JwtAuthGuard rejection', () => {
     it('should throw UnauthorizedException and match snapshot when no token is provided', () => {
       const mockJwtService = { verify: jest.fn() }
-      const guard = new JwtAuthGuard(mockJwtService as any)
+      const guard = new JwtAuthGuard(
+        mockJwtService as any,
+        createI18nServiceMock(),
+      )
 
       const mockContext = {
         switchToHttp: () => ({
@@ -346,7 +354,10 @@ describe('InvitationController', () => {
           throw new Error('jwt expired')
         }),
       }
-      const guard = new JwtAuthGuard(mockJwtService as any)
+      const guard = new JwtAuthGuard(
+        mockJwtService as any,
+        createI18nServiceMock(),
+      )
 
       const mockContext = {
         switchToHttp: () => ({

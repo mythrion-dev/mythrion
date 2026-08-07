@@ -1,4 +1,5 @@
 import { Injectable, OnModuleInit, Logger, NotFoundException } from '@nestjs/common'
+import { I18nService } from 'nestjs-i18n'
 import { MongoClient, GridFSBucket, type Db, type ObjectId } from 'mongodb'
 import { Readable } from 'node:stream'
 
@@ -14,6 +15,8 @@ interface GridFsFile {
 
 @Injectable()
 export class ImageService implements OnModuleInit {
+  constructor(private readonly i18n: I18nService) {}
+
   private readonly logger = new Logger(ImageService.name)
   private client: MongoClient | null = null
   private db: Db | null = null
@@ -40,7 +43,7 @@ export class ImageService implements OnModuleInit {
   /** Guard: throw if not connected */
   private ensureReady() {
     if (!this.bucket || !this.db) {
-      throw new NotFoundException('Image storage is not available')
+      throw new NotFoundException(this.i18n.t('image.storageUnavailable'))
     }
   }
 
@@ -100,7 +103,7 @@ export class ImageService implements OnModuleInit {
       .toArray()
 
     if (files.length === 0) {
-      throw new NotFoundException('Avatar not found')
+      throw new NotFoundException(this.i18n.t('image.avatarNotFound'))
     }
 
     const file = files[0] as unknown as GridFsFile

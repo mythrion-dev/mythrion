@@ -5,6 +5,7 @@ import {
   UnprocessableEntityException,
   Inject,
 } from '@nestjs/common'
+import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
 import { createHash, randomBytes } from 'node:crypto'
 import type {
@@ -78,6 +79,7 @@ export class SubscriptionService {
     private readonly prisma: PrismaService,
     @Inject(PAYMENT_GATEWAY)
     private readonly gateway: PaymentGateway,
+    private readonly i18n: I18nService,
   ) {}
 
   /** Return all subscription plans (sorted by price ascending). */
@@ -116,7 +118,7 @@ export class SubscriptionService {
       ['AUTHORIZED', 'ACTIVE', 'GRACE'].includes(existing.status)
     ) {
       throw new UnprocessableEntityException(
-        'You already have an active subscription. Cancel it first before creating a new one.',
+        this.i18n.t('subscription.alreadyActive'),
       )
     }
 
@@ -125,7 +127,9 @@ export class SubscriptionService {
       where: { id: planId },
     })
     if (!plan) {
-      throw new NotFoundException(`Subscription plan "${planId}" not found`)
+      throw new NotFoundException(
+        this.i18n.t('subscription.planNotFound', { args: { planId } }),
+      )
     }
 
     this.logger.log(
@@ -348,16 +352,20 @@ export class SubscriptionService {
       where: { userId },
     })
     if (!sub) {
-      throw new NotFoundException('No subscription found to cancel')
+      throw new NotFoundException(
+        this.i18n.t('subscription.noSubscriptionToCancel'),
+      )
     }
     if (sub.status === 'CANCELLED' || sub.status === 'EXPIRED') {
       throw new UnprocessableEntityException(
-        `Subscription is already ${sub.status.toLowerCase()}`,
+        this.i18n.t('subscription.alreadyStatus', {
+          args: { status: sub.status.toLowerCase() },
+        }),
       )
     }
     if (sub.cancelAtPeriodEnd) {
       throw new UnprocessableEntityException(
-        'Subscription is already scheduled for cancellation at period end',
+        this.i18n.t('subscription.alreadyScheduledForCancellation'),
       )
     }
 
@@ -410,21 +418,23 @@ export class SubscriptionService {
       where: { userId },
     })
     if (!sub) {
-      throw new NotFoundException('No subscription found')
+      throw new NotFoundException(this.i18n.t('subscription.noSubscription'))
     }
     if (sub.status === 'CANCELLED' || sub.status === 'EXPIRED') {
       throw new UnprocessableEntityException(
-        `Cannot update payment method on a ${sub.status.toLowerCase()} subscription.`,
+        this.i18n.t('subscription.cannotUpdatePaymentOnStatus', {
+          args: { status: sub.status.toLowerCase() },
+        }),
       )
     }
     if (!sub.pgSubscriptionId) {
       throw new UnprocessableEntityException(
-        'Subscription has no PagBank reference — cannot update payment method.',
+        this.i18n.t('subscription.noPgSubscriptionId'),
       )
     }
     if (!sub.pgCustomerId) {
       throw new UnprocessableEntityException(
-        'Subscription has no PagBank customer ID — cannot update payment method.',
+        this.i18n.t('subscription.noPgCustomerId'),
       )
     }
 

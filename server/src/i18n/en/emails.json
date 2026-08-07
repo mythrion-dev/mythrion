@@ -1,0 +1,12 @@
+{
+  "verifyEmailSubject": "Verify your Mythrion account",
+  "verifyEmailTitle": "Welcome to Mythrion",
+  "verifyEmailBody": "You're almost there! Verify your email address to activate your account.",
+  "verifyEmailCta": "Verify Email",
+  "verifyEmailFooter": "If you didn't create an account with Mythrion, you can safely ignore this email.",
+  "resetPasswordSubject": "Reset your Mythrion password",
+  "resetPasswordTitle": "Reset your password",
+  "resetPasswordBody": "We received a request to reset your password. Click the button below to choose a new one. This link is valid for 1 hour.",
+  "resetPasswordCta": "Reset Password",
+  "resetPasswordFooter": "If you didn't request this, you can safely ignore this email. Your password won't change unless you use the link above."
+}

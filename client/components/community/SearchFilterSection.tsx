@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 
 export interface ActiveFilter {
   id: string
@@ -47,6 +48,7 @@ export function SearchFilterSection({
   sortValue,
   onSortChange,
 }: Readonly<SearchFilterSectionProps>) {
+  const { t } = useTranslation()
   const [showFilters, setShowFilters] = useState(false)
 
   return (
@@ -102,7 +104,7 @@ export function SearchFilterSection({
               d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
             />
           </svg>
-          <span>Filters</span>
+          <span>{t('community:filters')}</span>
           {activeFilters.length > 0 && (
             <span
               className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.625rem] font-semibold leading-none"
@@ -119,7 +121,7 @@ export function SearchFilterSection({
 
         {/* Sort */}
         <div className="flex items-center gap-2 self-end sm:self-auto">
-          <span className="text-xs text-muted hidden sm:inline">Sort by</span>
+          <span className="text-xs text-muted hidden sm:inline">{t('common:sortBy')}</span>
           <select
             value={sortValue}
             onChange={(e) => onSortChange(e.target.value)}
@@ -177,7 +179,7 @@ export function SearchFilterSection({
             onClick={onRemoveAll}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors ml-1 underline underline-offset-2 decoration-border hover:decoration-muted-foreground"
           >
-            Remove All
+            {t('community:removeAll')}
           </button>
         </div>
       )}

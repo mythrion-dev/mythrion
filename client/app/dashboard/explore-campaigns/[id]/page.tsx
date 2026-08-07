@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { PageNav } from '@/lib/breadcrumb'
@@ -38,6 +39,7 @@ interface JoinRequest {
 }
 
 function AdventureDetailContent() {
+  const { t } = useTranslation()
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
@@ -70,11 +72,11 @@ function AdventureDetailContent() {
       const data = await api.get<Adventure>(`/public/adventures/${id}`)
       setAdventure(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load adventure')
+      setError(err instanceof Error ? err.message : t('community:failedToLoadAdventure'))
     } finally {
       setFetching(false)
     }
-  }, [id])
+  }, [id, t])
 
   const fetchMembers = useCallback(async () => {
     if (!user) return
@@ -127,7 +129,7 @@ function AdventureDetailContent() {
       setPendingRequest(true)
       setShowJoinForm(false)
     } catch (err) {
-      setJoinError(err instanceof Error ? err.message : 'Failed to send join request')
+      setJoinError(err instanceof Error ? err.message : t('community:failedToSendJoinRequest'))
     } finally {
       setSubmittingJoin(false)
     }
@@ -140,11 +142,11 @@ function AdventureDetailContent() {
   if (error || !adventure) {
     return (
       <div className="space-y-6">
-        <PageNav crumbs={[{ label: 'Community', href: '/dashboard/explore-campaigns' }, { label: 'Not found' }]} />
+        <PageNav crumbs={[{ label: t('community:community'), href: '/dashboard/explore-campaigns' }, { label: t('community:notFound') }]} />
         <EmptyState
           icon="🔍"
-          title="Campaign not found"
-          description="The campaign you're looking for doesn't exist or has been removed."
+          title={t('community:campaignNotFound')}
+          description={t('community:campaignNotFoundDescription')}
         />
       </div>
     )
@@ -157,7 +159,7 @@ function AdventureDetailContent() {
     <>
       <PageNav
         crumbs={[
-          { label: 'Community', href: '/dashboard/explore-campaigns' },
+          { label: t('community:community'), href: '/dashboard/explore-campaigns' },
           { label: adventure.name },
         ]}
       />
@@ -179,11 +181,11 @@ function AdventureDetailContent() {
                 href={`/dashboard/adventures/${adventure.id}`}
                 className="btn-primary"
               >
-                Go to Dashboard
+                {t('community:goToDashboard')}
               </Link>
             ) : pendingRequest ? (
               <span className="badge" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.2)' }}>
-                Request Pending
+                {t('community:requestPending')}
               </span>
             ) : user ? (
               <div className="space-y-2">
@@ -191,18 +193,18 @@ function AdventureDetailContent() {
                   onClick={() => setShowJoinForm(true)}
                   className="btn-primary"
                 >
-                  Request to Join
+                  {t('community:requestToJoin')}
                 </button>
               </div>
             ) : (
               <Link href="/login" className="btn-primary">
-                Sign in to join
+                {t('community:signInToJoin')}
               </Link>
             )}
 
             {joinSuccess && (
               <p className="text-sm text-green-400 mt-2">
-                Join request sent successfully!
+                {t('community:joinRequestSent')}
               </p>
             )}
           </div>
@@ -211,55 +213,55 @@ function AdventureDetailContent() {
         {/* Synopsis */}
         <div>
           <h3 className="text-sm font-semibold text-muted-foreground mb-1">
-            Synopsis
+            {t('community:synopsis')}
           </h3>
           <p className="text-sm text-foreground">
-            {adventure.synopsis || 'No synopsis provided.'}
+            {adventure.synopsis || t('community:noSynopsisProvided')}
           </p>
         </div>
 
         {/* Session Information */}
         {adventure.sessionWeekday || adventure.sessionTime || adventure.sessionType ? (
           <div className="card p-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Session Information</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{t('community:sessionInformation')}</h3>
             <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
               {adventure.sessionWeekday && (
-                <><span className="text-muted">Day:</span><span>{adventure.sessionWeekday}</span></>
+                <><span className="text-muted">{t('community:day')}:</span><span>{adventure.sessionWeekday}</span></>
               )}
               {adventure.sessionTime && (
-                <><span className="text-muted">Time:</span><span>{adventure.sessionTime}</span></>
+                <><span className="text-muted">{t('community:time')}:</span><span>{adventure.sessionTime}</span></>
               )}
               {adventure.sessionType && (
-                <><span className="text-muted">Format:</span><span>{adventure.sessionType === 'ONLINE' ? '🌐 Online' : '📍 In Person'}</span></>
+                <><span className="text-muted">{t('community:format')}:</span><span>{adventure.sessionType === 'ONLINE' ? '🌐 ' + t('community:online') : '📍 ' + t('community:inPerson')}</span></>
               )}
             </div>
           </div>
         ) : (
           <p className="text-gray-400 italic text-sm mt-2">
-            Session schedule not defined
+            {t('community:sessionScheduleNotDefined')}
           </p>
         )}
 
         {/* Details grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-border">
           <div>
-            <span className="text-xs text-muted-foreground block">Players</span>
+            <span className="text-xs text-muted-foreground block">{t('community:players')}</span>
             <span className="text-sm font-medium">
               {adventure.playerCount ?? '?'} / {adventure.maxPlayers}
             </span>
           </div>
           <div>
-            <span className="text-xs text-muted-foreground block">GM</span>
+            <span className="text-xs text-muted-foreground block">{t('community:gm')}</span>
             <span className="text-sm font-medium">
-              {adventure.gmDisplayName || 'Unknown'}
+              {adventure.gmDisplayName || t('community:unknown')}
             </span>
           </div>
           <div>
-            <span className="text-xs text-muted-foreground block">Campaign</span>
+            <span className="text-xs text-muted-foreground block">{t('community:campaignLabel')}</span>
             <span className="text-sm font-medium">{adventure.campaign}</span>
           </div>
           <div>
-            <span className="text-xs text-muted-foreground block">Created</span>
+            <span className="text-xs text-muted-foreground block">{t('common:created')}</span>
             <span className="text-sm font-medium">
               {new Date(adventure.createdAt).toLocaleDateString('en-US', {
                 month: 'short',

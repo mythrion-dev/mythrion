@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import { api, API_URL, authFetch } from '@/lib/api'
 import { NpcEditDrawer } from './NpcEditDrawer'
 
@@ -37,6 +38,7 @@ export function CampaignCreatureSidebar({
   refreshKey,
   onCreaturesChange,
 }: CampaignCreatureSidebarProps) {
+  const { t } = useTranslation()
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [npcs, setNpcs] = useState<NpcSheet[]>([])
@@ -69,7 +71,7 @@ export function CampaignCreatureSidebar({
   async function handleCreate(type: 'NPC' | 'MOB') {
     setCreating(type)
     try {
-      const name = type === 'MOB' ? 'New Mob' : 'New NPC'
+      const name = type === 'MOB' ? t('campaign:newMob') : t('campaign:newNpc')
       const created = await api.post<NpcSheet>(`/adventures/${adventureId}/npcs`, { name, type })
       await fetchNpcs()
       onCreaturesChange?.()
@@ -164,7 +166,7 @@ export function CampaignCreatureSidebar({
           if (isOpen) setEditingNpcId(null) // close sidebar → exit edit mode
         }}
         className="fixed top-24 right-0 z-40 flex items-center gap-2 px-3 py-2 rounded-l-lg bg-surface border border-r-0 border-border text-sm font-medium text-foreground hover:bg-hover transition-colors shadow-lg"
-        aria-label={isOpen ? 'Close NPC sidebar' : 'Open NPC sidebar'}
+        aria-label={isOpen ? t('campaign:closeNpcSidebar') : t('campaign:openNpcSidebar')}
       >
         <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -220,11 +222,11 @@ export function CampaignCreatureSidebar({
           <>
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-              <h2 className="text-lg font-semibold text-foreground">NPCs &amp; Mobs</h2>
+              <h2 className="text-lg font-semibold text-foreground">{t('campaign:npcsAndMobs')}</h2>
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
-                aria-label="Close sidebar"
+                aria-label={t('campaign:closeSidebar')}
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -242,7 +244,7 @@ export function CampaignCreatureSidebar({
                   type="text"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="Search creatures..."
+                  placeholder={t('campaign:searchCreaturesPlaceholder', { type: 'creatures' })}
                   className="w-full pl-9 pr-3 py-2 rounded-lg bg-input border border-border text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 transition-shadow"
                 />
               </div>
@@ -252,16 +254,16 @@ export function CampaignCreatureSidebar({
             <div className="px-4 py-3 border-b border-border space-y-3 shrink-0">
               {/* Filter pills */}
               <div className="flex gap-1">
-                {(['all', 'NPC', 'MOB'] as const).map(t => (
+                {(['all', 'NPC', 'MOB'] as const).map(filterType => (
                   <button
-                    key={t}
-                    onClick={() => setFilter(t)}
-                    className={`tab-pill text-xs ${filter === t ? 'tab-pill-active' : ''}`}
+                    key={filterType}
+                    onClick={() => setFilter(filterType)}
+                    className={`tab-pill text-xs ${filter === filterType ? 'tab-pill-active' : ''}`}
                   >
-                    {t === 'all' ? 'All' : t === 'NPC' ? 'NPCs' : 'Mobs'}
-                    {t !== 'all' && (
+                    {filterType === 'all' ? t('campaign:all') : filterType === 'NPC' ? t('campaign:npcs') : t('campaign:mobs')}
+                    {filterType !== 'all' && (
                       <span className="ml-1 opacity-70">
-                        ({npcs.filter(n => n.npcType === (t === 'NPC' ? 'NPC' : 'MOB')).length})
+                        ({npcs.filter(n => n.npcType === (filterType === 'NPC' ? 'NPC' : 'MOB')).length})
                       </span>
                     )}
                   </button>
@@ -281,14 +283,14 @@ export function CampaignCreatureSidebar({
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
-                      Creating...
+                      {t('campaign:creating')}
                     </span>
                   ) : (
                     <span className="flex items-center gap-1.5 justify-center">
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                       </svg>
-                      + New NPC
+                      {t('campaign:newNpcButton')}
                     </span>
                   )}
                 </button>
@@ -303,14 +305,14 @@ export function CampaignCreatureSidebar({
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
-                      Creating...
+                      {t('campaign:creating')}
                     </span>
                   ) : (
                     <span className="flex items-center gap-1.5 justify-center">
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      + New Mob
+                      {t('campaign:newMobButton')}
                     </span>
                   )}
                 </button>
@@ -340,8 +342,8 @@ export function CampaignCreatureSidebar({
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {search
-                      ? 'No creatures match your search.'
-                      : 'No NPCs or Mobs yet. Create one above!'}
+                      ? t('campaign:noCreaturesMatchSearch', { type: 'creatures' })
+                      : t('campaign:noNpcsMobsYet')}
                   </p>
                 </div>
               )}
@@ -417,8 +419,8 @@ export function CampaignCreatureSidebar({
                           <button
                             onClick={() => setEditingNpcId(npc.id)}
                             className="p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all"
-                            aria-label={`Edit ${npc.characterName}`}
-                            title="Edit inline"
+                            aria-label={t('campaign:editCreature', { name: npc.characterName })}
+                            title={t('campaign:editInline')}
                           >
                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -428,8 +430,8 @@ export function CampaignCreatureSidebar({
                           <button
                             onClick={() => handleSelect(npc.id)}
                             className="p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all"
-                            aria-label={`View ${npc.characterName}`}
-                            title="Open full sheet"
+                            aria-label={t('campaign:viewCreature', { name: npc.characterName })}
+                            title={t('campaign:openFullSheet')}
                           >
                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -443,7 +445,7 @@ export function CampaignCreatureSidebar({
                             }}
                             disabled={deleting === npc.id}
                             className="p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all shrink-0"
-                            aria-label={`Delete ${npc.characterName}`}
+                            aria-label={t('campaign:deleteCreature', { name: npc.characterName })}
                           >
                             {deleting === npc.id ? (
                               <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -466,7 +468,7 @@ export function CampaignCreatureSidebar({
 
             {/* Footer */}
             <div className="px-4 py-2.5 border-t border-border shrink-0 text-[11px] text-muted-foreground">
-              {npcs.length} creature{npcs.length !== 1 ? 's' : ''} · click name to open full sheet
+              {t('campaign:creatureCountFooter', { count: npcs.length })}
             </div>
           </>
         )}

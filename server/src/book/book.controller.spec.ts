@@ -5,6 +5,8 @@ import request from 'supertest'
 import { BookController } from './book.controller'
 import { BookService } from './book.service'
 import { BookVisibility } from '../generated/prisma/client'
+import { I18nService } from 'nestjs-i18n'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 import type { Response } from 'express'
 
 // ---------------------------------------------------------------------------
@@ -68,6 +70,7 @@ describe('BookController', () => {
       controllers: [BookController],
       providers: [
         { provide: BookService, useValue: mockBookService },
+        { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     }).compile()
 

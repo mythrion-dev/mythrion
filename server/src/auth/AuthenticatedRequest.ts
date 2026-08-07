@@ -1,5 +1,5 @@
 import type { Request } from 'express'
 
 export interface AuthenticatedRequest extends Request {
-  user: { sub: string; email: string; role: 'admin' | 'user' }
+  user: { sub: string; email: string; role: 'admin' | 'early_access' | 'user' }
 }

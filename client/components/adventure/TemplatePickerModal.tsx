@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
 
 interface TemplateSummary {
@@ -37,6 +38,7 @@ export function TemplatePickerModal({
   onSelect,
   adventureId,
 }: Readonly<TemplatePickerModalProps>) {
+  const { t } = useTranslation()
   const [tab, setTab] = useState<'my-templates' | 'community'>('my-templates')
   const [search, setSearch] = useState('')
 
@@ -63,7 +65,7 @@ export function TemplatePickerModal({
       const data = await api.get<TemplateSummary[]>('/templates')
       setMyTemplates(data)
     } catch (err) {
-      setMineError(err instanceof Error ? err.message : 'Failed to load templates')
+      setMineError(err instanceof Error ? err.message : t('campaign:failedToLoadTemplates'))
     } finally {
       setFetchingMine(false)
     }
@@ -76,7 +78,7 @@ export function TemplatePickerModal({
       const data = await api.get<{ data: CommunityTemplate[] }>('/public/templates')
       setCommunity(data.data ?? data)
     } catch (err) {
-      setCommunityError(err instanceof Error ? err.message : 'Failed to load community templates')
+      setCommunityError(err instanceof Error ? err.message : t('campaign:failedToLoadCommunityTemplates'))
     } finally {
       setFetchingCommunity(false)
     }
@@ -141,7 +143,7 @@ export function TemplatePickerModal({
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-foreground">
-              Select Template
+              {t('campaign:selectTemplate')}
             </h3>
             <button onClick={onClose} className="btn-ghost text-xs !px-2 !py-1">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -161,7 +163,7 @@ export function TemplatePickerModal({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="input-field !pl-9"
-              placeholder="Search templates..."
+              placeholder={t('campaign:searchTemplatesPlaceholder')}
             />
           </div>
 
@@ -171,7 +173,7 @@ export function TemplatePickerModal({
               onClick={() => handleTabChange('my-templates')}
               className={`tab-pill text-xs ${tab === 'my-templates' ? 'tab-pill-active' : ''}`}
             >
-              My Templates
+              {t('campaign:myTemplates')}
               {!fetchingMine && myTemplates.length > 0 && (
                 <span className="badge badge-gold ml-1 text-[0.5rem]">{myTemplates.length}</span>
               )}
@@ -180,7 +182,7 @@ export function TemplatePickerModal({
               onClick={() => handleTabChange('community')}
               className={`tab-pill text-xs ${tab === 'community' ? 'tab-pill-active' : ''}`}
             >
-              Community
+              {t('campaign:community')}
             </button>
           </div>
         </div>
@@ -198,7 +200,7 @@ export function TemplatePickerModal({
                 <div className="flex flex-col items-center py-6 space-y-2">
                   <p className="text-xs text-red-400">{mineError}</p>
                   <button onClick={fetchMyTemplates} className="btn-ghost text-xs">
-                    Retry
+                    {t('campaign:retry')}
                   </button>
                 </div>
               )}
@@ -206,11 +208,11 @@ export function TemplatePickerModal({
                 <div className="flex flex-col items-center py-8 text-center">
                   <span className="text-2xl mb-2">📄</span>
                   <p className="text-sm text-muted-foreground">
-                    {search ? 'No templates match your search.' : 'No templates yet.'}
+                    {search ? t('campaign:noTemplatesMatchSearch') : t('campaign:noTemplatesYet')}
                   </p>
                   {!search && (
                     <p className="text-xs text-muted mt-1">
-                      Create templates in your library first.
+                      {t('campaign:createTemplatesInLibraryFirst')}
                     </p>
                   )}
                 </div>
@@ -242,7 +244,7 @@ export function TemplatePickerModal({
                 <div className="flex flex-col items-center py-6 space-y-2">
                   <p className="text-xs text-red-400">{communityError}</p>
                   <button onClick={fetchCommunityTemplates} className="btn-ghost text-xs">
-                    Retry
+                    {t('campaign:retry')}
                   </button>
                 </div>
               )}
@@ -250,7 +252,7 @@ export function TemplatePickerModal({
                 <div className="flex flex-col items-center py-8 text-center">
                   <span className="text-2xl mb-2">🌐</span>
                   <p className="text-sm text-muted-foreground">
-                    {search ? 'No community templates match your search.' : 'No community templates available.'}
+                    {search ? t('campaign:noCommunityTemplatesMatchSearch') : t('campaign:noCommunityTemplatesAvailable')}
                   </p>
                 </div>
               )}
@@ -273,7 +275,7 @@ export function TemplatePickerModal({
         {/* Footer */}
         <div className="p-4 border-t border-border flex items-center justify-between">
           <button onClick={onClose} className="btn-ghost text-sm">
-            Cancel
+            {t('common:cancel')}
           </button>
           <button
             onClick={handleConfirm}
@@ -283,10 +285,10 @@ export function TemplatePickerModal({
             {confirming ? (
               <>
                 <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                Attaching...
+                {t('campaign:attaching')}
               </>
             ) : (
-              'Attach Template'
+              t('campaign:attachTemplate')
             )}
           </button>
         </div>
@@ -310,6 +312,7 @@ interface TemplatePickerRowProps {
 }
 
 function TemplatePickerRow(props: Readonly<TemplatePickerRowProps>) {
+  const { t } = useTranslation()
   return (
     <button
       onClick={props.onSelect}
@@ -338,16 +341,16 @@ function TemplatePickerRow(props: Readonly<TemplatePickerRowProps>) {
 
       <div className="flex items-center gap-2 text-[0.6rem] text-muted">
         {props.attrCount !== undefined && props.attrCount > 0 && (
-          <span>{props.attrCount} attr</span>
+          <span>{t('campaign:attrCount', { count: props.attrCount })}</span>
         )}
         {props.skillCount !== undefined && props.skillCount > 0 && (
-          <span>{props.skillCount} skills</span>
+          <span>{t('campaign:skillCount', { count: props.skillCount })}</span>
         )}
         {props.useCount !== undefined && props.useCount > 0 && (
-          <span>Used {props.useCount}x</span>
+          <span>{t('campaign:usedX', { count: props.useCount })}</span>
         )}
         {props.creatorName && (
-          <span className="truncate max-w-[100px]">by {props.creatorName}</span>
+          <span className="truncate max-w-[100px]">{t('campaign:byCreator', { name: props.creatorName })}</span>
         )}
       </div>
     </button>

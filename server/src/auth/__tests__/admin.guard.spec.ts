@@ -2,6 +2,7 @@ import { ForbiddenException } from '@nestjs/common'
 import { AdminGuard } from '../admin.guard'
 import { AdminService } from '../admin.service'
 import type { ExecutionContext } from '@nestjs/common'
+import { createI18nServiceMock } from '../../i18n/i18n-testing.js'
 
 function createMockContext(overrides?: {
   user?: { sub: string; email: string; role: string }
@@ -27,7 +28,7 @@ describe('AdminGuard', () => {
       isAdmin: jest.fn(),
     } as unknown as jest.Mocked<AdminService>
 
-    guard = new AdminGuard(adminService)
+    guard = new AdminGuard(adminService, createI18nServiceMock())
   })
 
   it('allows access when user is an admin', () => {
