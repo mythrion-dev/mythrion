@@ -353,6 +353,16 @@ export default function NewAdventurePage() {
           </div>
         </form>
       </div>
+
+      <TemplatePickerModal
+        isOpen={showTemplatePicker}
+        onClose={() => setShowTemplatePicker(false)}
+        onSelect={(selectedId, selectedName) => {
+          setTemplateId(selectedId)
+          setTemplateName(selectedName)
+          setShowTemplatePicker(false)
+        }}
+      />
     </div>
   )
 }
