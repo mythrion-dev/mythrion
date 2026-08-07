@@ -437,7 +437,7 @@ describe('DeleteModal', () => {
     render(
       <DeleteModal name="Test" error={null} loading={false} onCancel={() => {}} onConfirm={() => {}} />,
     )
-    expect(screen.getByText('Delete Adventure')).toBeInTheDocument()
+    expect(screen.getByText('Delete Campaign')).toBeInTheDocument()
   })
 
   it('shows warning text about irreversible action', () => {

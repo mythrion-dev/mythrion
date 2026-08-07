@@ -153,7 +153,7 @@ describe('InvitationController', () => {
 
     it('should propagate NotFoundException when adventure does not exist', async () => {
       mockInvitationService.inviteByLink.mockRejectedValue(
-        new NotFoundException('Adventure not found'),
+        new NotFoundException('Campaign not found'),
       )
 
       await expect(
@@ -163,7 +163,7 @@ describe('InvitationController', () => {
 
     it('should propagate BadRequestException when adventure is at max player capacity', async () => {
       mockInvitationService.inviteByLink.mockRejectedValue(
-        new BadRequestException('Adventure is at maximum player capacity'),
+        new BadRequestException('Campaign is at maximum player capacity'),
       )
 
       await expect(

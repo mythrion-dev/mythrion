@@ -359,7 +359,7 @@ export class EmailService {
             <img src="${EMAIL_LOGO_URL}" alt="Mythrion" style="max-width: 200px; width: 100%; height: auto; display: inline-block;" />
           </div>
           <h1>${params.inviterName} invited you</h1>
-          <p class="subtitle">You've been invited to join an adventure.</p>
+          <p class="subtitle">You've been invited to join a campaign.</p>
           <p class="detail"><span class="detail-label">Campaign: </span>${params.campaignName}</p>
           <p class="detail"><span class="detail-label">Role: </span>${params.role}</p>
           <p class="detail"><span class="detail-label">Expires: </span>${expiryDate}</p>

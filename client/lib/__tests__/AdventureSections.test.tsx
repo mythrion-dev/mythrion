@@ -401,7 +401,7 @@ describe('AdventureHeader', () => {
     )
     expect(screen.getByText('No synopsis yet.')).toBeInTheDocument()
     expect(
-      screen.getByText('Click edit to add an adventure synopsis.'),
+      screen.getByText('Click edit to add a campaign synopsis.'),
     ).toBeInTheDocument()
   })
 

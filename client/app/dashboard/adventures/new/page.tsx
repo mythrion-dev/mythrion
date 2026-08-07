@@ -7,6 +7,7 @@ import { api } from '@/lib/api'
 import Link from 'next/link'
 import { PageNav } from '@/lib/breadcrumb'
 import { TemplatePickerModal } from '@/components/adventure/TemplatePickerModal'
+import { TimePicker } from '@/components/shared/TimePicker'
 import { useSubscription } from '@/lib/subscription-context'
 
 export default function NewAdventurePage() {
@@ -222,12 +223,10 @@ export default function NewAdventurePage() {
               </div>
               <div>
                 <label htmlFor="sessionTime" className="text-xs text-muted mb-1 block">{t('campaign:time')}</label>
-                <input
+                <TimePicker
                   id="sessionTime"
-                  type="time"
                   value={sessionTime}
-                  onChange={(e) => setSessionTime(e.target.value)}
-                  className="input-field"
+                  onChange={setSessionTime}
                 />
               </div>
               <div>

@@ -1659,14 +1659,30 @@ export class TemplateService {
 
     const templates = await this.prisma.template.findMany({
       where: { ownerId: userId },
-      include: templateInclude,
+      include: {
+        ...templateInclude,
+        // Summary counts for the picker rows / library cards.
+        _count: { select: { attributes: true, templateSkills: true } },
+        // Campaign info for the picker's system tag.
+        adventure: { select: { id: true, name: true, campaign: true } },
+      },
       orderBy: { createdAt: 'desc' },
     })
 
-    // Cache the list
-    await this.redis.cacheSet(this.userListCacheKey(userId), templates, this.LIST_CACHE_TTL).catch(() => {})
+    // Top-level convenience fields (nested `adventure` kept for compat), same
+    // shape the public listing exposes. Cache the mapped result so cache hits
+    // return the same fields as cache misses.
+    const mapped = templates.map((t: any) => ({
+      ...t,
+      campaign: t.adventure?.campaign ?? null,
+      adventureName: t.adventure?.name ?? null,
+      adventureId: t.adventure?.id ?? null,
+    }))
 
-    return templates
+    // Cache the list
+    await this.redis.cacheSet(this.userListCacheKey(userId), mapped, this.LIST_CACHE_TTL).catch(() => {})
+
+    return mapped
   }
 
   /**
