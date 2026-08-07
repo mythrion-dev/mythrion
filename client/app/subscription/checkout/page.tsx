@@ -103,6 +103,10 @@ function CheckoutContent() {
       router.replace('/login?redirect=/subscription/checkout?planId=' + (planId ?? ''))
       return
     }
+    if (!user.emailVerified) {
+      router.replace('/verify-email')
+      return
+    }
     if (!planId) {
       setState('error')
       setErrorMessage(t('billing:noPlanSelected'))

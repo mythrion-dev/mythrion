@@ -58,7 +58,8 @@ function LoginForm() {
     try {
       if (isRegister) {
         await register(email, password)
-        router.push(redirect)
+        // New accounts must verify their email before entering the app.
+        router.push('/verify-email')
       } else {
         const outcome = await login(email, password)
         if (outcome.requiresTwoFactor) {

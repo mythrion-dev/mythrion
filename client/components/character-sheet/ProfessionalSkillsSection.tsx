@@ -203,7 +203,7 @@ export function ProfessionalSkillsSection({
     const initialSelections: Record<string, string | null> = {}
     for (const profile of allProfiles) {
       if (profile.options.length > 0) {
-        const lowest = profile.options.reduce((a, b) => a.value <= b.value ? a : b)
+        const lowest = profile.options.reduce((a, b) => a.value <= b.value ? a : b, profile.options[0])
         initialSelections[profile.id] = lowest.id
       }
     }

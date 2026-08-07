@@ -57,7 +57,7 @@ export function CollapsibleSkillRow({
               <span className="text-xs text-muted truncate hidden sm:inline">— {skill.skill.description}</span>
             )}
           </div>
-          <div className="flex items-center gap-2 shrink-0 ml-3" onClick={e => e.stopPropagation()}>
+          <div role="presentation" className="flex items-center gap-2 shrink-0 ml-3" onClick={e => e.stopPropagation()}>
             {hasAttrDropdown && modifiersEnabled !== false ? (
               <Select
                 options={skill.skill.allowedAttributeIds.map(attrId => {

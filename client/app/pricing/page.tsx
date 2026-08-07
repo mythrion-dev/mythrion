@@ -53,6 +53,13 @@ export default function PricingPage() {
       .finally(() => setPlansLoading(false))
   }, [])
 
+  // Redirect unverified users to the verification waiting page
+  useEffect(() => {
+    if (!authLoading && user && !user.emailVerified) {
+      router.replace('/verify-email')
+    }
+  }, [authLoading, user, router])
+
   // If user has active subscription, redirect to dashboard
   useEffect(() => {
     if (!authLoading && !subLoading && hasActiveSubscription) {

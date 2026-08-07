@@ -325,6 +325,6 @@ export async function computeSummonModifiers(
 export function computeSummonAC(ability: Ability): number | null {
   const acv = ability.summonAcValues?.[0]
   if (!acv) return null
-  const v = parseFloat(acv.value)
-  return isNaN(v) ? null : v
+  const v = Number.parseFloat(acv.value)
+  return Number.isNaN(v) ? null : v
 }

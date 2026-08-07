@@ -12,16 +12,17 @@ const REQUEST_TIMEOUT_MS = 10_000;
  * with an absolute HTTPS URL instead. FRONTEND_URL is the canonical production
  * frontend base the server already uses for redirects and CORS.
  */
-const FRONTEND_URL = (
-  process.env.FRONTEND_URL ?? 'https://mythrion.com.br'
-).replace(/\/+$/, '');
+const rawFrontendUrl = process.env.FRONTEND_URL ?? 'https://mythrion.com.br';
+let frontendUrlEnd = rawFrontendUrl.length;
+while (frontendUrlEnd > 0 && rawFrontendUrl[frontendUrlEnd - 1] === '/') frontendUrlEnd--;
+const FRONTEND_URL = rawFrontendUrl.slice(0, frontendUrlEnd);
 const EMAIL_LOGO_URL = `${FRONTEND_URL}/logo.png`;
 
 /** Extract the display-name portion of a "Name <addr>" From string. */
 function parseDisplayName(from: string | undefined): string {
   if (!from) return 'Mythrion';
-  const match = /^\s*(.*?)\s*<[^>]+>/.exec(from);
-  return match?.[1] || 'Mythrion';
+  const match = /^([^<]*?)<[^>]+>/.exec(from);
+  return match?.[1].trim() || 'Mythrion';
 }
 
 @Injectable()

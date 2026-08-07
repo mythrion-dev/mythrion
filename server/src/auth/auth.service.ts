@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ConflictException,
   BadRequestException,
+  NotFoundException,
   Logger,
 } from '@nestjs/common'
 import * as bcrypt from 'bcrypt'
@@ -25,11 +26,13 @@ import { ResendVerificationDto } from './dto/resend-verification.dto.js'
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js'
 import { ResetPasswordDto } from './dto/reset-password.dto.js'
 import { ChangePasswordDto } from './dto/change-password.dto.js'
+import { ChangeEmailDto } from './dto/change-email.dto.js'
 import { Request } from 'express'
 
-const FRONTEND_URL = (
-  process.env.FRONTEND_URL ?? 'https://mythrion.com.br'
-).replace(/\/+$/, '')
+const rawFrontendUrl = process.env.FRONTEND_URL ?? 'https://mythrion.com.br'
+let frontendUrlEnd = rawFrontendUrl.length
+while (frontendUrlEnd > 0 && rawFrontendUrl[frontendUrlEnd - 1] === '/') frontendUrlEnd--
+const FRONTEND_URL = rawFrontendUrl.slice(0, frontendUrlEnd)
 
 // Token hashes use cost 10 (matching the refresh-token / 2FA challenge
 // pattern) — the secrets are high-entropy hex strings, so a lower cost is
@@ -483,6 +486,65 @@ export class AuthService {
     return { ...profile, hasPassword: !!passwordHash, language }
   }
 
+  /**
+   * Thin read used by JwtAuthGuard to enforce email verification. Deliberately
+   * returns a found/verified pair instead of throwing, so the guard can map
+   * "account deleted" to Unauthorized while "unverified" stays Forbidden.
+   */
+  async assertEmailVerified(
+    userId: string,
+  ): Promise<{ found: boolean; emailVerified: boolean }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { emailVerified: true },
+    })
+    if (!user) return { found: false, emailVerified: false }
+    return { found: true, emailVerified: user.emailVerified }
+  }
+
+  async changeEmail(userId: string, dto: ChangeEmailDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } })
+    if (!user) {
+      throw new NotFoundException(this.i18n.t('auth.userNotFound'))
+    }
+    if (dto.email.toLowerCase() === user.email.toLowerCase()) {
+      throw new BadRequestException(this.i18n.t('auth.sameEmail'))
+    }
+
+    const taken = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    })
+    if (taken) {
+      throw new ConflictException(this.i18n.t('auth.emailRegistered'))
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        email: dto.email,
+        emailVerified: false,
+        emailVerifiedAt: null,
+        // Any in-flight verification or password-reset link to the old address
+        // is dead on arrival once these hashes/expiries are cleared.
+        verificationTokenHash: null,
+        verificationTokenExpiresAt: null,
+        passwordResetTokenHash: null,
+        passwordResetTokenExpiresAt: null,
+      },
+    })
+
+    // Emails the new address and overwrites the token hash, so any prior link
+    // (to either address) no longer verifies the account.
+    await this.issueVerificationToken({
+      id: userId,
+      email: dto.email,
+      language: user.language,
+    })
+    await this.recordAudit(userId, 'email_changed')
+
+    return { success: true }
+  }
+
   getRequestIp(req: Request) {
     const forwarded = req.headers ['x-forwarded-for']
     if (typeof forwarded === 'string') {
@@ -490,7 +552,6 @@ export class AuthService {
     }
     return req.socket.remoteAddress ?? 'unknown'
   }
-
   async getLocationFromIp(ip: string) {
     try {
       const geoip = await this.loadGeoip()
