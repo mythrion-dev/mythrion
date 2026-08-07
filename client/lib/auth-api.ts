@@ -14,6 +14,10 @@ export async function resendVerification(
   return api.post<SuccessResponse>('/auth/resend-verification', { email })
 }
 
+export async function changeEmail(email: string): Promise<SuccessResponse> {
+  return api.post<SuccessResponse>('/auth/change-email', { email })
+}
+
 export async function forgotPassword(email: string): Promise<SuccessResponse> {
   return api.post<SuccessResponse>('/auth/forgot-password', { email })
 }

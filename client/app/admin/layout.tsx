@@ -116,6 +116,10 @@ export default function AdminLayout({
     if (loading) return
     if (!user || !user.isAdmin) {
       router.replace('/dashboard')
+      return
+    }
+    if (!user.emailVerified) {
+      router.replace('/verify-email')
     }
   }, [user, loading, router])
 
@@ -127,7 +131,7 @@ export default function AdminLayout({
     )
   }
 
-  if (!user || !user.isAdmin) {
+  if (!user || !user.isAdmin || !user.emailVerified) {
     return null
   }
 

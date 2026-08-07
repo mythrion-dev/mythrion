@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { Sidebar, GracePeriodBanner, VerificationBanner } from '@/components/dashboard'
+import { Sidebar, GracePeriodBanner } from '@/components/dashboard'
 import { useTranslation } from 'react-i18next'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -15,6 +15,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     if (loading) return
     if (!user) {
       router.replace('/login')
+      return
+    }
+    if (!user.emailVerified) {
+      router.replace('/verify-email')
       return
     }
     if (!user.onboardingComplete) {
@@ -36,7 +40,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (!user || !user.onboardingComplete) {
+  if (!user || !user.emailVerified || !user.onboardingComplete) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-screen bg-background">
         <div className="animate-fade-in text-sm text-muted-foreground">
@@ -63,7 +67,6 @@ export default function DashboardLayout({
         {/* Main content area */}
         <main className="flex-1 min-h-screen bg-pattern overflow-auto">
           <GracePeriodBanner />
-          <VerificationBanner />
           <div className="px-8 py-6 w-full animate-fade-in">
             {children}
           </div>

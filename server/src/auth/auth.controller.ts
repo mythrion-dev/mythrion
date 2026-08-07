@@ -14,7 +14,9 @@ import { ResendVerificationDto } from './dto/resend-verification.dto.js'
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js'
 import { ResetPasswordDto } from './dto/reset-password.dto.js'
 import { ChangePasswordDto } from './dto/change-password.dto.js'
+import { ChangeEmailDto } from './dto/change-email.dto.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
+import { SkipEmailVerificationCheck } from './skip-email-verification.decorator.js'
 import { AuthGuard } from '@nestjs/passport'
 import { GoogleAuthGuard } from './google-auth.guard.js'
 import { isAllowedOrigin, normalizeOrigin } from '../config/allowed-origins.js'
@@ -88,9 +90,18 @@ export class AuthController {
 
   @Post('change-password')
   @UseGuards(JwtAuthGuard)
+  @SkipEmailVerificationCheck()
   @RateLimit({ windowSeconds: 300, maxRequests: 5 })
   changePassword(@Req() req: AuthenticatedRequest, @Body() dto: ChangePasswordDto) {
     return this.authService.changePassword(req.user.sub, dto, req)
+  }
+
+  @Post('change-email')
+  @UseGuards(JwtAuthGuard)
+  @SkipEmailVerificationCheck()
+  @RateLimit({ windowSeconds: 300, maxRequests: 5 })
+  changeEmail(@Req() req: AuthenticatedRequest, @Body() dto: ChangeEmailDto) {
+    return this.authService.changeEmail(req.user.sub, dto)
   }
 
   @Post('2fa/resend')
@@ -101,6 +112,7 @@ export class AuthController {
 
   @Post('2fa/send')
   @UseGuards(JwtAuthGuard)
+  @SkipEmailVerificationCheck()
   @RateLimit({ windowSeconds: 300, maxRequests: 5 })
   sendTwoFactorCode(@Req() req: AuthenticatedRequest, @Body() dto: TwoFactorSendDto) {
     return this.authService.sendTwoFactorCode(req.user.sub, dto.purpose)
@@ -108,6 +120,7 @@ export class AuthController {
 
   @Post('2fa/confirm')
   @UseGuards(JwtAuthGuard)
+  @SkipEmailVerificationCheck()
   @RateLimit({ windowSeconds: 300, maxRequests: 10 })
   confirmTwoFactor(@Req() req: AuthenticatedRequest, @Body() dto: TwoFactorConfirmDto) {
     return this.authService.confirmTwoFactor(req.user.sub, dto.purpose, dto)
@@ -120,18 +133,21 @@ export class AuthController {
 
   @Post('logout')
   @UseGuards(JwtAuthGuard)
+  @SkipEmailVerificationCheck()
   async logout(@Req() req: AuthenticatedRequest) {
     return this.authService.logout(req.user.sub)
   }
 
   @Get('profile')
   @UseGuards(JwtAuthGuard)
+  @SkipEmailVerificationCheck()
   getProfile(@Req() req: AuthenticatedRequest) {
     return this.authService.getProfile(req.user.sub)
   }
 
   @Patch('language')
   @UseGuards(JwtAuthGuard)
+  @SkipEmailVerificationCheck()
   updateLanguage(@Req() req: AuthenticatedRequest, @Body() dto: LanguageDto) {
     return this.languageService.updateLanguage(req.user.sub, dto.language)
   }
@@ -144,6 +160,7 @@ export class AuthController {
 
   @Get('current-user')
   @UseGuards(JwtAuthGuard)
+  @SkipEmailVerificationCheck()
   async currentUser(@Req() req: AuthenticatedRequest) {
     const userId = req.user.sub
     const profile = await this.authService.getProfile(userId)

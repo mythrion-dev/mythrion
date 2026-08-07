@@ -3,7 +3,7 @@ jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
 jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
 jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }))
 import { Test, TestingModule } from '@nestjs/testing'
-import { ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common'
+import { ConflictException, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common'
 import { AuthService } from './auth.service.js'
 import { PrismaService } from '../prisma.service.js'
 import { TokenService } from './token.service.js'
@@ -787,6 +787,104 @@ describe('AuthService', () => {
       const result = await service.getLocationFromIp('8.8.8.8')
 
       expect(result).toEqual({ country: null, region: null, city: null })
+    })
+  })
+
+  describe('changeEmail', () => {
+    it('should update email, reset verification, clear reset tokens, and email the new address', async () => {
+      mockPrisma.user.findUnique
+        .mockResolvedValueOnce(mockUser)
+        .mockResolvedValueOnce(null)
+      ;(bcrypt.hash as jest.Mock).mockResolvedValue('hashed-token')
+
+      const dto = { email: 'new@test.com' }
+      const result = await service.changeEmail('user-1', dto)
+
+      expect(mockPrisma.user.findUnique).toHaveBeenNthCalledWith(1, {
+        where: { id: 'user-1' },
+      })
+      expect(mockPrisma.user.findUnique).toHaveBeenNthCalledWith(2, {
+        where: { email: dto.email },
+      })
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: {
+          email: 'new@test.com',
+          emailVerified: false,
+          emailVerifiedAt: null,
+          verificationTokenHash: null,
+          verificationTokenExpiresAt: null,
+          passwordResetTokenHash: null,
+          passwordResetTokenExpiresAt: null,
+        },
+      })
+      expect(mockEmailService.sendEmailVerification).toHaveBeenCalledWith(
+        expect.objectContaining({ to: 'new@test.com' }),
+      )
+      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ userId: 'user-1', event: 'email_changed' }),
+      })
+      expect(result).toEqual({ success: true })
+    })
+
+    it('should throw BadRequestException when the email is unchanged (case-insensitive)', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+
+      const dto = { email: 'TEST@TEST.COM' }
+
+      await expect(service.changeEmail('user-1', dto)).rejects.toThrow(BadRequestException)
+      expect(mockPrisma.user.findUnique).toHaveBeenCalledTimes(1)
+      expect(mockPrisma.user.update).not.toHaveBeenCalled()
+    })
+
+    it('should throw ConflictException when the email belongs to another user', async () => {
+      mockPrisma.user.findUnique
+        .mockResolvedValueOnce(mockUser)
+        .mockResolvedValueOnce({ id: 'other-user', email: 'other@test.com' })
+
+      const dto = { email: 'other@test.com' }
+
+      await expect(service.changeEmail('user-1', dto)).rejects.toThrow(ConflictException)
+      expect(mockPrisma.user.update).not.toHaveBeenCalled()
+    })
+
+    it('should throw NotFoundException when the user does not exist', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null)
+
+      const dto = { email: 'new@test.com' }
+
+      await expect(service.changeEmail('user-1', dto)).rejects.toThrow(NotFoundException)
+      expect(mockPrisma.user.update).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('assertEmailVerified', () => {
+    it('should return found + verified when the user exists and is verified', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ emailVerified: true })
+
+      const result = await service.assertEmailVerified('user-1')
+
+      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        select: { emailVerified: true },
+      })
+      expect(result).toEqual({ found: true, emailVerified: true })
+    })
+
+    it('should return found + unverified when the user exists but has not verified', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ emailVerified: false })
+
+      const result = await service.assertEmailVerified('user-1')
+
+      expect(result).toEqual({ found: true, emailVerified: false })
+    })
+
+    it('should return not-found when the user does not exist', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null)
+
+      const result = await service.assertEmailVerified('missing-user')
+
+      expect(result).toEqual({ found: false, emailVerified: false })
     })
   })
 })

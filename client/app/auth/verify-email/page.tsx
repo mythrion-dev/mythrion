@@ -5,12 +5,14 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { verifyEmail, resendVerification } from '@/lib/auth-api'
+import { useAuth } from '@/lib/auth-context'
 
 type VerifyStatus = 'verifying' | 'success' | 'invalid'
 
 function VerifyEmailInner() {
   const searchParams = useSearchParams()
   const { t } = useTranslation()
+  const { user } = useAuth()
   const [status, setStatus] = useState<VerifyStatus>('verifying')
   const [email, setEmail] = useState('')
   const [resent, setResent] = useState(false)
@@ -92,9 +94,15 @@ function VerifyEmailInner() {
               </p>
             </div>
           </div>
-          <Link href="/login" className="btn-primary w-full flex items-center justify-center">
-            {t('auth:continueToLogin')}
-          </Link>
+          {user ? (
+            <Link href="/dashboard" className="btn-primary w-full flex items-center justify-center">
+              {t('auth:continueToDashboard')}
+            </Link>
+          ) : (
+            <Link href="/login" className="btn-primary w-full flex items-center justify-center">
+              {t('auth:continueToLogin')}
+            </Link>
+          )}
         </div>
       )}
 

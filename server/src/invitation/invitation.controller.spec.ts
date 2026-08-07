@@ -331,11 +331,16 @@ describe('InvitationController', () => {
   /* ------------------------------------------------------------------ */
 
   describe('JwtAuthGuard rejection', () => {
-    it('should throw UnauthorizedException and match snapshot when no token is provided', () => {
+    const reflectorMock = { getAllAndOverride: jest.fn(() => false) }
+    const authServiceMock = { assertEmailVerified: jest.fn() }
+
+    it('should throw UnauthorizedException and match snapshot when no token is provided', async () => {
       const mockJwtService = { verify: jest.fn() }
       const guard = new JwtAuthGuard(
         mockJwtService as any,
         createI18nServiceMock(),
+        reflectorMock as any,
+        authServiceMock as any,
       )
 
       const mockContext = {
@@ -344,11 +349,11 @@ describe('InvitationController', () => {
         }),
       } as any
 
-      expect(() => guard.canActivate(mockContext)).toThrow(UnauthorizedException)
-      expect(() => guard.canActivate(mockContext)).toThrowErrorMatchingSnapshot()
+      await expect(guard.canActivate(mockContext)).rejects.toThrow(UnauthorizedException)
+      await expect(guard.canActivate(mockContext)).rejects.toThrowErrorMatchingSnapshot()
     })
 
-    it('should throw UnauthorizedException when token is expired', () => {
+    it('should throw UnauthorizedException when token is expired', async () => {
       const mockJwtService = {
         verify: jest.fn(() => {
           throw new Error('jwt expired')
@@ -357,6 +362,8 @@ describe('InvitationController', () => {
       const guard = new JwtAuthGuard(
         mockJwtService as any,
         createI18nServiceMock(),
+        reflectorMock as any,
+        authServiceMock as any,
       )
 
       const mockContext = {
@@ -365,7 +372,7 @@ describe('InvitationController', () => {
         }),
       } as any
 
-      expect(() => guard.canActivate(mockContext)).toThrow(UnauthorizedException)
+      await expect(guard.canActivate(mockContext)).rejects.toThrow(UnauthorizedException)
     })
   })
 
