@@ -3,10 +3,10 @@
 import { useTranslation } from 'react-i18next'
 
 interface VisibilityToggleProps {
-  isPublic: boolean
-  loading: boolean
-  onToggle: () => void
-  disabled?: boolean
+  readonly isPublic: boolean
+  readonly loading: boolean
+  readonly onToggle: () => void
+  readonly disabled?: boolean
 }
 
 export function VisibilityToggle({

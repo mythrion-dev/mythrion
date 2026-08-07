@@ -373,9 +373,7 @@ describe('JoinRequestModal', () => {
     // Shift+Tab should wrap to the last element (Send Request button)
     await user.keyboard('{Shift>}{Tab}{/Shift}')
     const sendButton = screen.getByText('Send Request').closest('button')!
-    expect(
-      document.activeElement === sendButton,
-    ).toBe(true)
+    expect(document.activeElement).toBe(sendButton)
   })
 
   // ── Edge cases ──

@@ -21,12 +21,12 @@ interface SnapshotSummary {
 }
 
 interface TemplateAttachmentPanelProps {
-  adventureId: string
-  originalTemplateId: string | null
-  templateSnapshot: SnapshotSummary | null
-  isGM: boolean
-  onAttached?: () => void
-  onDetached?: () => void
+  readonly adventureId: string
+  readonly originalTemplateId: string | null
+  readonly templateSnapshot: SnapshotSummary | null
+  readonly isGM: boolean
+  readonly onAttached?: () => void
+  readonly onDetached?: () => void
 }
 
 export function TemplateAttachmentPanel({

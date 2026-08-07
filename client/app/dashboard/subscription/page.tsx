@@ -8,6 +8,7 @@ import { useSubscription } from '@/lib/subscription-context'
 import {
   cancelSubscription,
   updatePaymentMethod,
+  type MySubscription,
 } from '@/lib/subscription-api'
 import { PageHeader } from '@/components/shared/PageHeader'
 
@@ -51,7 +52,7 @@ const STATUS_CONFIG: Record<string, { labelKey: string; color: string }> = {
 
 /* ─── status badge ─────────────────────────────────────────────── */
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status }: { readonly status: string }) {
   const { t } = useTranslation()
   const cfg = STATUS_CONFIG[status] ?? {
     labelKey: '',
@@ -61,6 +62,106 @@ function StatusBadge({ status }: { status: string }) {
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${cfg.color}`}>
       {cfg.labelKey ? t(cfg.labelKey) : status}
     </span>
+  )
+}
+
+/* ─── plan overview + details ──────────────────────────────────── */
+
+function SubscriptionOverview({
+  subscription,
+  subscriberLabel,
+}: {
+  readonly subscription: MySubscription
+  readonly subscriberLabel: string
+}) {
+  const { t } = useTranslation()
+  const statusLabel = STATUS_CONFIG[subscription.status]?.labelKey
+    ? t(STATUS_CONFIG[subscription.status]!.labelKey)
+    : subscription.status.toLowerCase()
+
+  return (
+    <>
+      {/* Plan overview */}
+      <div className="mt-6 rounded-xl border border-border bg-surface p-6">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-foreground">{subscription.plan.name}</h2>
+              <StatusBadge status={subscription.status} />
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {formatBRL(subscription.plan.price)}
+              {subscription.plan.slug === 'annual' ? t('billing:periodYear') : t('billing:periodMonth')}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Details */}
+      <div className="mt-4 rounded-xl border border-border bg-surface p-6">
+        <h3 className="text-sm font-semibold text-foreground mb-4">{t('common:details')}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-xs text-muted-foreground">{t('common:status')}</p>
+            <p className="mt-0.5 font-medium text-foreground capitalize">
+              {statusLabel}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">{t('billing:subscriber')}</p>
+            <p className="mt-0.5 font-medium text-foreground truncate">
+              {subscriberLabel}
+            </p>
+          </div>
+          {subscription.currentPeriodStart && (
+            <div>
+              <p className="text-xs text-muted-foreground">{t('billing:currentPeriodStart')}</p>
+              <p className="mt-0.5 font-medium text-foreground">
+                {formatDate(subscription.currentPeriodStart)}
+              </p>
+            </div>
+          )}
+          {subscription.currentPeriodEnd && (
+            <div>
+              <p className="text-xs text-muted-foreground">{t('billing:currentPeriodEnd')}</p>
+              <p className="mt-0.5 font-medium text-foreground">
+                {formatDate(subscription.currentPeriodEnd)}
+              </p>
+            </div>
+          )}
+          {subscription.graceEndsAt && subscription.status === 'GRACE' && (
+            <div>
+              <p className="text-xs text-muted-foreground">{t('billing:gracePeriodEnds')}</p>
+              <p className="mt-0.5 font-medium text-amber-600 dark:text-amber-400">
+                {formatDate(subscription.graceEndsAt)}
+              </p>
+            </div>
+          )}
+          {subscription.cancelledAt && (
+            <div>
+              <p className="text-xs text-muted-foreground">{t('billing:cancelledAt')}</p>
+              <p className="mt-0.5 font-medium text-foreground">
+                {formatDateTime(subscription.cancelledAt)}
+              </p>
+            </div>
+          )}
+          {subscription.cancelAtPeriodEnd && subscription.currentPeriodEnd && (
+            <div className="sm:col-span-2">
+              <p className="text-xs text-amber-500 font-medium">{t('billing:cancellationScheduled')}</p>
+              <p className="mt-0.5 text-sm text-amber-600 dark:text-amber-400">
+                {t('billing:expiryMessage', { date: formatDate(subscription.currentPeriodEnd) })}
+              </p>
+            </div>
+          )}
+          <div>
+            <p className="text-xs text-muted-foreground">{t('billing:createdAt')}</p>
+            <p className="mt-0.5 font-medium text-foreground">
+              {formatDateTime(subscription.createdAt)}
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
   )
 }
 
@@ -299,7 +400,6 @@ export default function DashboardSubscriptionPage() {
     )
   }
 
-  const isActive = ['AUTHORIZED', 'ACTIVE', 'GRACE'].includes(subscription.status)
   const isUpdatable = ['AUTHORIZED', 'ACTIVE', 'GRACE'].includes(subscription.status)
   const isCancellable = isUpdatable && !subscription.cancelAtPeriodEnd
   const periodEnd = subscription.currentPeriodEnd
@@ -310,9 +410,8 @@ export default function DashboardSubscriptionPage() {
       })
     : t('billing:endOfBillingPeriod')
 
-  const statusLabel = STATUS_CONFIG[subscription.status]?.labelKey
-    ? t(STATUS_CONFIG[subscription.status]!.labelKey)
-    : subscription.status.toLowerCase()
+  const pgStateLabel = !pgReady ? t('billing:preparing') : t('billing:updateCard')
+  const updateCardLabel = updatingCard ? t('billing:updating') : pgStateLabel
 
   return (
     <div>
@@ -354,88 +453,11 @@ export default function DashboardSubscriptionPage() {
         </div>
       )}
 
-      {/* ─── Plan overview ─────────────────────────────────────── */}
-      <div className="mt-6 rounded-xl border border-border bg-surface p-6">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-foreground">{subscription.plan.name}</h2>
-              <StatusBadge status={subscription.status} />
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {formatBRL(subscription.plan.price)}
-              {subscription.plan.slug === 'annual' ? t('billing:periodYear') : t('billing:periodMonth')}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── Details ──────────────────────────────────────────── */}
-      <div className="mt-4 rounded-xl border border-border bg-surface p-6">
-        <h3 className="text-sm font-semibold text-foreground mb-4">{t('common:details')}</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-xs text-muted-foreground">{t('common:status')}</p>
-            <p className="mt-0.5 font-medium text-foreground capitalize">
-              {statusLabel}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">{t('billing:subscriber')}</p>
-            <p className="mt-0.5 font-medium text-foreground truncate">
-              {user?.displayName ?? user?.email ?? '—'}
-            </p>
-          </div>
-          {subscription.currentPeriodStart && (
-            <div>
-              <p className="text-xs text-muted-foreground">{t('billing:currentPeriodStart')}</p>
-              <p className="mt-0.5 font-medium text-foreground">
-                {formatDate(subscription.currentPeriodStart)}
-              </p>
-            </div>
-          )}
-          {subscription.currentPeriodEnd && (
-            <div>
-              <p className="text-xs text-muted-foreground">{t('billing:currentPeriodEnd')}</p>
-              <p className="mt-0.5 font-medium text-foreground">
-                {formatDate(subscription.currentPeriodEnd)}
-              </p>
-            </div>
-          )}
-          {subscription.graceEndsAt && subscription.status === 'GRACE' && (
-            <>
-              <div>
-                <p className="text-xs text-muted-foreground">{t('billing:gracePeriodEnds')}</p>
-                <p className="mt-0.5 font-medium text-amber-600 dark:text-amber-400">
-                  {formatDate(subscription.graceEndsAt)}
-                </p>
-              </div>
-            </>
-          )}
-          {subscription.cancelledAt && (
-            <div>
-              <p className="text-xs text-muted-foreground">{t('billing:cancelledAt')}</p>
-              <p className="mt-0.5 font-medium text-foreground">
-                {formatDateTime(subscription.cancelledAt)}
-              </p>
-            </div>
-          )}
-          {subscription.cancelAtPeriodEnd && subscription.currentPeriodEnd && (
-            <div className="sm:col-span-2">
-              <p className="text-xs text-amber-500 font-medium">{t('billing:cancellationScheduled')}</p>
-              <p className="mt-0.5 text-sm text-amber-600 dark:text-amber-400">
-                {t('billing:expiryMessage', { date: formatDate(subscription.currentPeriodEnd) })}
-              </p>
-            </div>
-          )}
-          <div>
-            <p className="text-xs text-muted-foreground">{t('billing:createdAt')}</p>
-            <p className="mt-0.5 font-medium text-foreground">
-              {formatDateTime(subscription.createdAt)}
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* ─── Plan overview + details ──────────────────────────── */}
+      <SubscriptionOverview
+        subscription={subscription}
+        subscriberLabel={user?.displayName ?? user?.email ?? '—'}
+      />
 
       {/* ─── Actions ──────────────────────────────────────────── */}
       <div className="mt-4 rounded-xl border border-border bg-surface p-6 space-y-4">
@@ -602,7 +624,7 @@ export default function DashboardSubscriptionPage() {
                 disabled={updatingCard || !pgReady}
                 className="flex-1 py-2 rounded-lg bg-primary text-background text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {updatingCard ? t('billing:updating') : !pgReady ? t('billing:preparing') : t('billing:updateCard')}
+                {updateCardLabel}
               </button>
             </div>
           </div>
@@ -656,29 +678,27 @@ export default function DashboardSubscriptionPage() {
           <p className="text-sm text-muted-foreground">{t('billing:noInvoices')}</p>
         ) : (
           <div className="divide-y divide-border">
-            {subscription.invoices.map((invoice) => (
-              <div key={invoice.id} className="flex items-center justify-between py-3 text-sm">
-                <div>
-                  <p className="font-medium text-foreground">
-                    {formatBRL(invoice.amount)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(invoice.createdAt)}
-                  </p>
+            {subscription.invoices.map((invoice) => {
+              const pendingStatusClass = invoice.status === 'pending' ? 'text-amber-500 bg-amber-500/10' : 'text-muted bg-surface'
+              const invoiceStatusClass = invoice.status === 'paid' ? 'text-emerald-500 bg-emerald-500/10' : pendingStatusClass
+              const pendingStatusLabel = invoice.status === 'pending' ? t('common:pending') : invoice.status
+              const invoiceStatusLabel = invoice.status === 'paid' ? t('billing:invoicePaid') : pendingStatusLabel
+              return (
+                <div key={invoice.id} className="flex items-center justify-between py-3 text-sm">
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {formatBRL(invoice.amount)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(invoice.createdAt)}
+                    </p>
+                  </div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${invoiceStatusClass}`}>
+                    {invoiceStatusLabel}
+                  </span>
                 </div>
-                <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${
-                    invoice.status === 'paid'
-                      ? 'text-emerald-500 bg-emerald-500/10'
-                      : invoice.status === 'pending'
-                        ? 'text-amber-500 bg-amber-500/10'
-                        : 'text-muted bg-surface'
-                  }`}
-                >
-                  {invoice.status === 'paid' ? t('billing:invoicePaid') : invoice.status === 'pending' ? t('common:pending') : invoice.status}
-                </span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

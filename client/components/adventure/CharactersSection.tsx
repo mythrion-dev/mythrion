@@ -37,29 +37,29 @@ export function CharactersSection({
   onRemoveCharacter,
   onViewCharacter,
 }: {
-  characters: CampaignCharacter[]
-  isGM: boolean
-  userId: string
-  snapshotName: string | null
-  userSheets: UserSheet[]
-  showNewCharForm: boolean
-  showLinkCharForm: boolean
-  newCharName: string
-  newCharError: string | null
-  newCharCreating: boolean
-  linkSheetId: string
-  linkCharError: string | null
-  linkCharLinking: boolean
-  onNewCharClick: () => void
-  onLinkCharClick: () => void
-  onCancelNewChar: () => void
-  onCancelLinkChar: () => void
-  onCreateCharacter: (e: SubmitEvent) => void
-  onLinkCharacter: (e: SubmitEvent) => void
-  onNewCharNameChange: (v: string) => void
-  onLinkSheetChange: (v: string) => void
-  onRemoveCharacter: (id: string) => void
-  onViewCharacter: (id: string) => void
+  readonly characters: CampaignCharacter[]
+  readonly isGM: boolean
+  readonly userId: string
+  readonly snapshotName: string | null
+  readonly userSheets: UserSheet[]
+  readonly showNewCharForm: boolean
+  readonly showLinkCharForm: boolean
+  readonly newCharName: string
+  readonly newCharError: string | null
+  readonly newCharCreating: boolean
+  readonly linkSheetId: string
+  readonly linkCharError: string | null
+  readonly linkCharLinking: boolean
+  readonly onNewCharClick: () => void
+  readonly onLinkCharClick: () => void
+  readonly onCancelNewChar: () => void
+  readonly onCancelLinkChar: () => void
+  readonly onCreateCharacter: (e: SubmitEvent) => void
+  readonly onLinkCharacter: (e: SubmitEvent) => void
+  readonly onNewCharNameChange: (v: string) => void
+  readonly onLinkSheetChange: (v: string) => void
+  readonly onRemoveCharacter: (id: string) => void
+  readonly onViewCharacter: (id: string) => void
 }) {
   const { t } = useTranslation()
   return (

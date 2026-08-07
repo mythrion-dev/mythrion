@@ -166,35 +166,17 @@ export class AdminPlansController {
 
     // Check slug uniqueness if changing
     if (body.slug && body.slug !== plan.slug) {
-      const slugConflict = await this.prisma.subscriptionPlan.findUnique({
-        where: { slug: body.slug },
-      })
-      if (slugConflict) {
-        throw new UnprocessableEntityException(
-          this.i18n.t('subscription.slugInUse', { args: { slug: body.slug } }),
-        )
-      }
+      await this.assertSlugUnique(body.slug)
     }
 
     // Check pgPlanId uniqueness if changing
     if (body.pgPlanId && body.pgPlanId !== plan.pgPlanId) {
-      const mpPlanConflict = await this.prisma.subscriptionPlan.findFirst({
-        where: { pgPlanId: body.pgPlanId },
-      })
-      if (mpPlanConflict) {
-        throw new UnprocessableEntityException(
-          this.i18n.t('subscription.pgPlanIdInUse', {
-            args: { pgPlanId: body.pgPlanId },
-          }),
-        )
-      }
+      await this.assertPgPlanIdUnique(body.pgPlanId)
     }
 
     // Validate price if provided
-    if (body.price != null && (!Number.isInteger(body.price) || body.price <= 0)) {
-      throw new UnprocessableEntityException(
-        this.i18n.t('subscription.priceMustBePositiveInt'),
-      )
+    if (body.price != null) {
+      this.assertPriceValid(body.price)
     }
 
     return this.prisma.subscriptionPlan.update({
@@ -207,6 +189,41 @@ export class AdminPlansController {
         ...(body.pgPlanId !== undefined && { pgPlanId: body.pgPlanId }),
       },
     })
+  }
+
+  /** Throw 422 if another plan already uses this slug. */
+  private async assertSlugUnique(slug: string): Promise<void> {
+    const slugConflict = await this.prisma.subscriptionPlan.findUnique({
+      where: { slug },
+    })
+    if (slugConflict) {
+      throw new UnprocessableEntityException(
+        this.i18n.t('subscription.slugInUse', { args: { slug } }),
+      )
+    }
+  }
+
+  /** Throw 422 if another plan already uses this PagBank plan id. */
+  private async assertPgPlanIdUnique(pgPlanId: string): Promise<void> {
+    const mpPlanConflict = await this.prisma.subscriptionPlan.findFirst({
+      where: { pgPlanId },
+    })
+    if (mpPlanConflict) {
+      throw new UnprocessableEntityException(
+        this.i18n.t('subscription.pgPlanIdInUse', {
+          args: { pgPlanId },
+        }),
+      )
+    }
+  }
+
+  /** Throw 422 if the price is not a positive integer (cents). */
+  private assertPriceValid(price: number): void {
+    if (!Number.isInteger(price) || price <= 0) {
+      throw new UnprocessableEntityException(
+        this.i18n.t('subscription.priceMustBePositiveInt'),
+      )
+    }
   }
 
   /**

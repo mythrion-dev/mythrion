@@ -14,6 +14,8 @@ import { TemplateService } from '../template/template.service.js'
 import { CreateAdventureDto } from './dto/create-adventure.dto.js'
 import { UpdateAdventureDto } from './dto/update-adventure.dto.js'
 
+type TimePeriod = 'morning' | 'afternoon' | 'night'
+
 @Injectable()
 export class AdventureService {
   private readonly logger = new Logger(AdventureService.name)
@@ -140,7 +142,7 @@ export class AdventureService {
     search?: string
     sessionWeekday?: string
     sessionType?: string
-    timePeriod?: 'morning' | 'afternoon' | 'night'
+    timePeriod?: TimePeriod
   }) {
     const page = params.page ?? 1
     const limit = params.limit ?? 10
@@ -197,7 +199,7 @@ export class AdventureService {
     campaign?: string
     sessionWeekday?: string
     sessionType?: string
-    timePeriod?: 'morning' | 'afternoon' | 'night'
+    timePeriod?: TimePeriod
   }) {
     const where: any = { isPublic: true }
 
@@ -264,7 +266,7 @@ export class AdventureService {
     search: string
     sessionWeekday?: string
     sessionType?: string
-    timePeriod?: 'morning' | 'afternoon' | 'night'
+    timePeriod?: TimePeriod
   }) {
     const { limit, skip } = params
     const tokens = splitSearchTokens(params.search).map((t) => escapeLike(t))
@@ -304,8 +306,10 @@ export class AdventureService {
         night: { gte: '18:00', lt: '24:00' },
       }
       const filter = timeFilters[params.timePeriod]
-      ands.push(Prisma.sql`a."sessionTime" >= ${filter.gte}`)
-      ands.push(Prisma.sql`a."sessionTime" < ${filter.lt}`)
+      ands.push(
+        Prisma.sql`a."sessionTime" >= ${filter.gte}`,
+        Prisma.sql`a."sessionTime" < ${filter.lt}`,
+      )
     }
 
     const query = Prisma.sql`
@@ -414,41 +418,7 @@ export class AdventureService {
    * No auth required.
    */
   async findOnePublic(id: string) {
-    const adventure = await this.prisma.adventure.findFirst({
-      where: { id, isPublic: true },
-      select: {
-        id: true,
-        name: true,
-        campaign: true,
-        synopsis: true,
-        maxPlayers: true,
-        isPublic: true,
-        createdAt: true,
-        updatedAt: true,
-        sessionWeekday: true,
-        sessionTime: true,
-        sessionType: true,
-        owner: { select: { id: true, displayName: true } },
-        _count: { select: { members: { where: { role: 'PLAYER' } } } },
-      },
-    })
-
-    if (!adventure) {
-      throw new NotFoundException(this.i18n.t('adventure.notFoundOrNotPublic'))
-    }
-
-    // Hide campaigns that have reached maximum player capacity
-    if (adventure._count.members >= adventure.maxPlayers) {
-      throw new NotFoundException(this.i18n.t('adventure.notFoundOrNotPublic'))
-    }
-
-    const { owner, _count, ...rest } = adventure
-    return {
-      ...rest,
-      ownerId: owner.id,
-      gmDisplayName: owner.displayName,
-      playerCount: _count.members,
-    }
+    return this.findPublicById(id)
   }
 
   async remove(id: string, userId: string) {
@@ -501,7 +471,7 @@ export class AdventureService {
       )
       this.logger.debug(
         `[DIAGNOSTIC] listNpcs raw: "${npc.characterName}" | ` +
-        `hpCrv: ${hpCrv ? `current=${hpCrv.current}, maximum=${hpCrv.maximum}` : 'NOT FOUND'} | ` +
+        `hpCrv: ${hpCrv ? 'current=' + hpCrv.current + ', maximum=' + hpCrv.maximum : 'NOT FOUND'} | ` +
         `legacy hpActual=${npc.hpActual}, hpMax=${npc.hpMax}`,
       )
     }

@@ -19,19 +19,28 @@ export interface SelectOption {
 }
 
 interface SelectProps {
-  options: SelectOption[]
-  value: string | null
-  onChange: (val: string) => void
-  disabled?: boolean
-  showBadge?: boolean
-  size?: 'sm' | 'md'
-  className?: string
-  id?: string
+  readonly options: SelectOption[]
+  readonly value: string | null
+  readonly onChange: (val: string) => void
+  readonly disabled?: boolean
+  readonly showBadge?: boolean
+  readonly size?: 'sm' | 'md'
+  readonly className?: string
+  readonly id?: string
 }
 
 const sizeClasses: Record<string, string> = {
   sm: 'py-0.5 text-[0.6rem]',
   md: 'py-1.5 text-sm',
+}
+
+function getInitialHighlightIndex(value: string | null, options: SelectOption[]): number {
+  const idx = value ? options.findIndex((o) => o.id === value) : -1
+  return Math.max(idx, 0)
+}
+
+function nextHighlightIndex(prev: number, lastIndex: number, step: 1 | -1): number {
+  return step === 1 ? (prev < lastIndex ? prev + 1 : 0) : prev > 0 ? prev - 1 : lastIndex
 }
 
 export function Select({
@@ -125,6 +134,28 @@ export function Select({
 
   // ── Keyboard navigation ──
 
+  const activateHighlightedOption = useCallback(() => {
+    if (open && highlightIndex >= 0 && highlightIndex < options.length) {
+      onChange(options[highlightIndex].id)
+      setOpen(false)
+    } else if (!open) {
+      setOpen(true)
+      setHighlightIndex(getInitialHighlightIndex(value, options))
+    }
+  }, [open, highlightIndex, options, value, onChange])
+
+  const moveHighlight = useCallback(
+    (step: 1 | -1) => {
+      if (!open) {
+        setOpen(true)
+        setHighlightIndex(step === 1 ? 0 : options.length - 1)
+      } else {
+        setHighlightIndex((prev) => nextHighlightIndex(prev, options.length - 1, step))
+      }
+    },
+    [open, options],
+  )
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (disabled) return
@@ -133,32 +164,15 @@ export function Select({
         case 'Enter':
         case ' ':
           e.preventDefault()
-          if (open && highlightIndex >= 0 && highlightIndex < options.length) {
-            onChange(options[highlightIndex].id)
-            setOpen(false)
-          } else if (!open) {
-            setOpen(true)
-            const idx = value ? options.findIndex(o => o.id === value) : -1
-            setHighlightIndex(idx >= 0 ? idx : 0)
-          }
+          activateHighlightedOption()
           break
         case 'ArrowDown':
           e.preventDefault()
-          if (!open) {
-            setOpen(true)
-            setHighlightIndex(0)
-          } else {
-            setHighlightIndex(prev => (prev < options.length - 1 ? prev + 1 : 0))
-          }
+          moveHighlight(1)
           break
         case 'ArrowUp':
           e.preventDefault()
-          if (!open) {
-            setOpen(true)
-            setHighlightIndex(options.length - 1)
-          } else {
-            setHighlightIndex(prev => (prev > 0 ? prev - 1 : options.length - 1))
-          }
+          moveHighlight(-1)
           break
         case 'Escape':
           e.preventDefault()
@@ -167,7 +181,7 @@ export function Select({
           break
       }
     },
-    [disabled, open, highlightIndex, options, value, onChange],
+    [disabled, activateHighlightedOption, moveHighlight],
   )
 
   // ── Event handlers ──
@@ -177,8 +191,7 @@ export function Select({
     const nextOpen = !open
     setOpen(nextOpen)
     if (nextOpen) {
-      const idx = value ? options.findIndex(o => o.id === value) : -1
-      setHighlightIndex(idx >= 0 ? idx : 0)
+      setHighlightIndex(getInitialHighlightIndex(value, options))
     }
   }
 
@@ -188,10 +201,11 @@ export function Select({
     triggerRef.current?.focus()
   }
 
-  const badgeValue =
-    showBadge && selectedOption?.value != null
-      ? (selectedOption.value >= 0 ? '+' : '') + selectedOption.value
-      : null
+  let badgeValue: string | null = null
+  if (showBadge && selectedOption?.value != null) {
+    const sign = selectedOption.value >= 0 ? '+' : ''
+    badgeValue = sign + selectedOption.value
+  }
 
   // ── Render ──
 

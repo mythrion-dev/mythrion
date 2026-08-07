@@ -12,7 +12,7 @@ const mockCursor = {
   toArray: jest.fn<() => Promise<any[]>>().mockResolvedValue([]),
 }
 
-const mockFind = jest.fn<() => typeof mockCursor>().mockReturnValue(mockCursor)
+const mockFind = jest.fn<(...args: any[]) => typeof mockCursor>().mockReturnValue(mockCursor)
 const mockCollection = jest.fn<() => { find: typeof mockFind }>().mockReturnValue({
   find: mockFind,
 })
@@ -27,12 +27,12 @@ let mockGridFSBucketCtor: jest.Mock
 const mockBucketInstance = {
   openUploadStream: jest.fn(),
   openDownloadStream: jest.fn(),
-  delete: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  delete: jest.fn<(...args: any[]) => Promise<void>>().mockResolvedValue(undefined),
 }
 
 jest.mock('mongodb', () => {
   const MongoClient = jest.fn().mockImplementation(() => ({
-    connect: jest.fn().mockResolvedValue(undefined),
+    connect: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
     db: jest.fn().mockReturnValue(mockDb),
   }))
   const GridFSBucket = jest.fn().mockImplementation(() => mockBucketInstance)

@@ -11,6 +11,8 @@ import { CollapsibleAttrCard } from '@/components/adventure/CollapsibleAttrCard'
 import { CollapsibleSkillCard } from '@/components/adventure/CollapsibleSkillCard'
 import { NumericInput } from '@/components/shared/NumericInput'
 
+const genId = () => Math.random().toString(36).slice(2)
+
 interface TemplateSummary {
   id: string
   name: string
@@ -24,44 +26,46 @@ interface TemplateSummary {
 }
 
 export function TemplateRow(props: {
-  template: TemplateSummary; isGM: boolean; isEditing: boolean; editName: string; editDescription: string; editAttrs: { key: string; name: string }[]; editAttrModifierFormula: string; editSkillFormula: string; editFields?: { key: string; label: string }[]; editSkills?: { name: string; description: string; attributeId: string; allowedAttributeIds?: string[]; defaultAttributeId?: string }[]; editError: string | null; saving: boolean
-  onStartEdit: () => void; onCancelEdit: () => void; onUpdate: (e: SubmitEvent) => void; onDelete: () => void; onEditNameChange: (v: string) => void; onEditDescriptionChange: (v: string) => void
-  onAddAttr: () => void; onRemoveAttr: (i: number) => void; onUpdateAttr: (i: number, f: 'key' | 'name', v: string) => void
-  onAddField?: () => void; onRemoveField?: (i: number) => void; onUpdateField?: (i: number, f: 'key' | 'label', v: string) => void
-  onAddSkill?: () => void; onRemoveSkill?: (i: number) => void; onUpdateSkill?: (i: number, f: string, v: string) => void
-  onToggleSkillAllowedAttr?: (i: number, attrKey: string) => void
-  editProfiles?: { name: string; targetMode?: string; targetSkillIds?: string[]; options: { label: string; value: number }[] }[]; onAddProfile?: () => void; onRemoveProfile?: (i: number) => void; onUpdateProfile?: (i: number, n: string) => void
-  onAddProfileOption?: (pIdx: number) => void; onRemoveProfileOption?: (pIdx: number, oIdx: number) => void; onUpdateProfileOption?: (pIdx: number, oIdx: number, f: 'label' | 'value', v: string | number) => void
-  onUpdateProfileTargetMode?: (i: number, mode: string) => void; onToggleProfileSkill?: (i: number, skillId: string) => void
-  editCoreResources?: CoreResource[]
-  onAddCoreResource?: () => void; onRemoveCoreResource?: (i: number) => void; onUpdateCoreResource?: (i: number, f: 'displayName' | 'slug' | 'color', v: string) => void
-  onUpdateCoreResourceEnabled?: (i: number, v: boolean) => void; onUpdateCoreResourceEditable?: (i: number, v: boolean) => void; onUpdateCoreResourceShowNotes?: (i: number, v: boolean) => void
-  editAcConfigs?: AcConfigDraft[]
-  editAttrsForAc?: { key: string; name: string }[]
-  editAttrModifiersEnabled?: boolean
-  onAddEditAcConfig?: () => void; onRemoveEditAcConfig?: (i: number) => void; onUpdateEditAcConfig?: (i: number, patch: Partial<AcConfigDraft>) => void
-  onAddEditAcFieldForConfig?: (configIdx: number) => void; onRemoveEditAcFieldForConfig?: (configIdx: number, fieldIdx: number) => void
-  onUpdateEditAcFieldForConfig?: (configIdx: number, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string) => void; onUpdateEditAcFieldEditableForConfig?: (configIdx: number, fieldIdx: number, v: boolean) => void
-  onToggleEditAcAttributeIdForConfig?: (configIdx: number, attrId: string) => void
-  onUpdateEditAcAttributeModifierForConfig?: (configIdx: number, attrId: string, patch: Partial<ArmorClassAttributeModifierDraft>) => void
-  onEditAttrModifiersEnabledChange?: (v: boolean) => void
-  onEditAttrModifierFormulaChange?: (v: string) => void
-  onEditSkillFormulaChange?: (v: string) => void
-  editCharacterSections?: { id?: string; name: string }[]
-  onAddEditCharacterSection?: () => void; onRemoveEditCharacterSection?: (i: number) => void; onUpdateEditCharacterSection?: (i: number, v: string) => void
-  onEditResistancesChange?: (v: ResistanceDef[]) => void
-  editResistances?: ResistanceDef[]
-  attrsForEditResistance: { key: string; name: string; id?: string }[]
+  readonly template: TemplateSummary; readonly isGM: boolean; readonly isEditing: boolean; readonly editName: string; readonly editDescription: string; readonly editAttrs: { key: string; name: string }[]; readonly editAttrModifierFormula: string; readonly editSkillFormula: string; readonly editFields?: { key: string; label: string }[]; readonly editSkills?: { name: string; description: string; attributeId: string; allowedAttributeIds?: string[]; defaultAttributeId?: string }[]; readonly editError: string | null; readonly saving: boolean
+  readonly onStartEdit: () => void; readonly onCancelEdit: () => void; readonly onUpdate: (e: SubmitEvent) => void; readonly onDelete: () => void; readonly onEditNameChange: (v: string) => void; readonly onEditDescriptionChange: (v: string) => void
+  readonly onAddAttr: () => void; readonly onRemoveAttr: (i: number) => void; readonly onUpdateAttr: (i: number, f: 'key' | 'name', v: string) => void
+  readonly onAddField?: () => void; readonly onRemoveField?: (i: number) => void; readonly onUpdateField?: (i: number, f: 'key' | 'label', v: string) => void
+  readonly onAddSkill?: () => void; readonly onRemoveSkill?: (i: number) => void; readonly onUpdateSkill?: (i: number, f: string, v: string) => void
+  readonly onToggleSkillAllowedAttr?: (i: number, attrKey: string) => void
+  readonly editProfiles?: { name: string; targetMode?: string; targetSkillIds?: string[]; options: { label: string; value: number }[] }[]; readonly onAddProfile?: () => void; readonly onRemoveProfile?: (i: number) => void; readonly onUpdateProfile?: (i: number, n: string) => void
+  readonly onAddProfileOption?: (pIdx: number) => void; readonly onRemoveProfileOption?: (pIdx: number, oIdx: number) => void; readonly onUpdateProfileOption?: (pIdx: number, oIdx: number, f: 'label' | 'value', v: string | number) => void
+  readonly onUpdateProfileTargetMode?: (i: number, mode: string) => void; readonly onToggleProfileSkill?: (i: number, skillId: string) => void
+  readonly editCoreResources?: CoreResource[]
+  readonly onAddCoreResource?: () => void; readonly onRemoveCoreResource?: (i: number) => void; readonly onUpdateCoreResource?: (i: number, f: 'displayName' | 'slug' | 'color', v: string) => void
+  readonly onUpdateCoreResourceEnabled?: (i: number, v: boolean) => void; readonly onUpdateCoreResourceEditable?: (i: number, v: boolean) => void; readonly onUpdateCoreResourceShowNotes?: (i: number, v: boolean) => void
+  readonly editAcConfigs?: AcConfigDraft[]
+  readonly editAttrsForAc?: { key: string; name: string }[]
+  readonly editAttrModifiersEnabled?: boolean
+  readonly onAddEditAcConfig?: () => void; readonly onRemoveEditAcConfig?: (i: number) => void; readonly onUpdateEditAcConfig?: (i: number, patch: Partial<AcConfigDraft>) => void
+  readonly onAddEditAcFieldForConfig?: (configIdx: number) => void; readonly onRemoveEditAcFieldForConfig?: (configIdx: number, fieldIdx: number) => void
+  readonly onUpdateEditAcFieldForConfig?: (configIdx: number, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string) => void; readonly onUpdateEditAcFieldEditableForConfig?: (configIdx: number, fieldIdx: number, v: boolean) => void
+  readonly onToggleEditAcAttributeIdForConfig?: (configIdx: number, attrId: string) => void
+  readonly onUpdateEditAcAttributeModifierForConfig?: (configIdx: number, attrId: string, patch: Partial<ArmorClassAttributeModifierDraft>) => void
+  readonly onEditAttrModifiersEnabledChange?: (v: boolean) => void
+  readonly onEditAttrModifierFormulaChange?: (v: string) => void
+  readonly onEditSkillFormulaChange?: (v: string) => void
+  readonly editCharacterSections?: { id?: string; name: string }[]
+  readonly onAddEditCharacterSection?: () => void; readonly onRemoveEditCharacterSection?: (i: number) => void; readonly onUpdateEditCharacterSection?: (i: number, v: string) => void
+  readonly onEditResistancesChange?: (v: ResistanceDef[]) => void
+  readonly editResistances?: ResistanceDef[]
+  readonly attrsForEditResistance: { key: string; name: string; id?: string }[]
   // Feature selection toggles
-  editFeatureSkills: boolean; onEditFeatureSkillsChange: (v: boolean) => void
-  editFeatureCustomFields: boolean; onEditFeatureCustomFieldsChange: (v: boolean) => void
-  editFeatureCoreResources: boolean; onEditFeatureCoreResourcesChange: (v: boolean) => void
-  editFeatureArmorClass: boolean; onEditFeatureArmorClassChange: (v: boolean) => void
-  editFeatureCharacterSections: boolean; onEditFeatureCharacterSectionsChange: (v: boolean) => void
-  editFeatureSkillProfiles: boolean; onEditFeatureSkillProfilesChange: (v: boolean) => void
-  editFeatureResistance: boolean; onEditFeatureResistanceChange: (v: boolean) => void
+  readonly editFeatureSkills: boolean
+  readonly editFeatureCustomFields: boolean
+  readonly editFeatureCoreResources: boolean
+  readonly editFeatureArmorClass: boolean
+  readonly editFeatureCharacterSections: boolean
+  readonly editFeatureSkillProfiles: boolean
+  readonly editFeatureResistance: boolean
 }) {
   const { t } = useTranslation()
+  const itemKeys = useRef<Record<string, string>>({})
+  const keyFor = (k: string | number) => (itemKeys.current[k] ??= genId())
   const [expandedEditAttrs, setExpandedEditAttrs] = useState<Record<number, boolean>>({})
   const prevEditCount = useRef(0)
   const [editTab, setEditTab] = useState<string>('attrs')
@@ -197,7 +201,7 @@ export function TemplateRow(props: {
             {(props.editAttrModifiersEnabled ?? false) && (
               <div className="mb-3"><AttributeModifierConfig value={props.editAttrModifierFormula} onChange={v => props.onEditAttrModifierFormulaChange?.(v)} placeholder={t('campaign:attrModifierFormulaPlaceholder')} /></div>
             )}
-            <div className="space-y-2 mt-1">{props.editAttrs.map((attr, idx) => <CollapsibleAttrCard key={idx} index={idx} attr={attr} isExpanded={!!expandedEditAttrs[idx]} onToggle={() => setExpandedEditAttrs(p => ({ ...p, [idx]: !p[idx] }))} onUpdateAttr={props.onUpdateAttr} onRemove={() => props.onRemoveAttr(idx)} />)}</div>
+            <div className="space-y-2 mt-1">{props.editAttrs.map((attr, idx) => <CollapsibleAttrCard key={keyFor(idx)} index={idx} attr={attr} isExpanded={!!expandedEditAttrs[idx]} onToggle={() => setExpandedEditAttrs(p => ({ ...p, [idx]: !p[idx] }))} onUpdateAttr={props.onUpdateAttr} onRemove={() => props.onRemoveAttr(idx)} />)}</div>
             <button type="button" onClick={props.onAddAttr} className="btn-ghost text-xs mt-3 flex items-center gap-1">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
               {t('campaign:addAttribute')}
@@ -208,7 +212,7 @@ export function TemplateRow(props: {
           <div>
             <p className="text-xs text-muted-foreground mb-3 leading-relaxed">{t('campaign:skillsDescriptionShort')}</p>
             <div className="mb-3"><SkillCalculationConfig value={props.editSkillFormula} onChange={v => props.onEditSkillFormulaChange?.(v)} customFields={(props.editFields || []).filter(f => f.key.trim() && f.label.trim()).map(f => ({ key: f.key.trim(), label: f.label.trim() }))} placeholder={t('campaign:skillFormulaPlaceholder')} disabled={!(props.editAttrModifiersEnabled ?? false)} /></div>
-            <div className="space-y-2 mt-1">{(props.editSkills || []).map((s: any, idx) => <CollapsibleSkillCard key={idx} index={idx} skill={s} onUpdateSkill={props.onUpdateSkill} onRemove={() => props.onRemoveSkill?.(idx)} attributes={allAttrs} onToggleAllowedAttr={props.onToggleSkillAllowedAttr} onUpdateDefaultAttr={(i, v) => { props.onUpdateSkill?.(i, 'defaultAttributeId', v) }} />)}</div>
+            <div className="space-y-2 mt-1">{(props.editSkills || []).map((s: any, idx) => <CollapsibleSkillCard key={keyFor(idx)} index={idx} skill={s} onUpdateSkill={props.onUpdateSkill} onRemove={() => props.onRemoveSkill?.(idx)} attributes={allAttrs} onToggleAllowedAttr={props.onToggleSkillAllowedAttr} onUpdateDefaultAttr={(i, v) => { props.onUpdateSkill?.(i, 'defaultAttributeId', v) }} />)}</div>
             <button type="button" onClick={props.onAddSkill} className="btn-ghost text-xs mt-3 flex items-center gap-1">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
               {t('campaign:addSkill')}
@@ -218,7 +222,7 @@ export function TemplateRow(props: {
         {editTab === 'fields' && (
           <div>
             <p className="text-xs text-muted-foreground mb-3 leading-relaxed">{t('campaign:fieldsDescription')}</p>
-            <div className="space-y-2 mt-1">{(props.editFields || []).map((f: any, idx) => <div key={idx} className="flex items-center gap-1.5"><input className="input-field flex-1" value={f.key} onChange={e => props.onUpdateField?.(idx, 'key', e.target.value)} placeholder={t('campaign:fieldKeyPlaceholderClass')} /><input className="input-field flex-1" value={f.label} onChange={e => props.onUpdateField?.(idx, 'label', e.target.value)} placeholder={t('campaign:fieldLabelPlaceholder')} /><button type="button" onClick={() => props.onRemoveField?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0 px-1">✕</button></div>)}</div>
+            <div className="space-y-2 mt-1">{(props.editFields || []).map((f: any, idx) => <div key={keyFor(idx)} className="flex items-center gap-1.5"><input className="input-field flex-1" value={f.key} onChange={e => props.onUpdateField?.(idx, 'key', e.target.value)} placeholder={t('campaign:fieldKeyPlaceholderClass')} /><input className="input-field flex-1" value={f.label} onChange={e => props.onUpdateField?.(idx, 'label', e.target.value)} placeholder={t('campaign:fieldLabelPlaceholder')} /><button type="button" onClick={() => props.onRemoveField?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0 px-1">✕</button></div>)}</div>
             <button type="button" onClick={props.onAddField} className="btn-ghost text-xs mt-3 flex items-center gap-1">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
               {t('campaign:addField')}
@@ -228,7 +232,7 @@ export function TemplateRow(props: {
         {editTab === 'coreResources' && (
           <div>
             <p className="text-xs text-muted-foreground mb-3 leading-relaxed">{t('campaign:coreResourcesDescriptionShort')}</p>
-            <div className="space-y-2 mt-1">{(props.editCoreResources || []).map((cr: CoreResource, crIdx: number) => <div key={crIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
+            <div className="space-y-2 mt-1">{(props.editCoreResources || []).map((cr: CoreResource, crIdx: number) => <div key={keyFor(crIdx)} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
               <div className="flex items-center gap-1.5"><input className="input-field flex-1" value={cr.displayName} onChange={e => props.onUpdateCoreResource?.(crIdx, 'displayName', e.target.value)} placeholder={t('campaign:displayNamePlaceholderHealth')} /><input className="input-field flex-[0.35]" value={cr.slug} onChange={e => props.onUpdateCoreResource?.(crIdx, 'slug', e.target.value)} placeholder={t('campaign:slugPlaceholderHealth')} /><input type="color" value={cr.color || '#f59e0b'} onChange={e => props.onUpdateCoreResource?.(crIdx, 'color', e.target.value)} className="w-7 h-7 p-0.5 rounded cursor-pointer shrink-0 bg-transparent" /><button type="button" onClick={() => props.onRemoveCoreResource?.(crIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0 px-1">✕</button></div>
               <div className="flex items-center gap-4 flex-wrap"><label className="flex items-center gap-1 text-xs text-muted cursor-pointer"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.enabled} onChange={e => props.onUpdateCoreResourceEnabled?.(crIdx, e.target.checked)} />{t('campaign:enabled')}</label><label className="flex items-center gap-1 text-xs text-muted cursor-pointer"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.editableByPlayer} onChange={e => props.onUpdateCoreResourceEditable?.(crIdx, e.target.checked)} />{t('campaign:editable')}</label><label className="flex items-center gap-1 text-xs text-muted cursor-pointer"><input type="checkbox" className="w-3 h-3 rounded accent-primary" checked={cr.showNotes} onChange={e => props.onUpdateCoreResourceShowNotes?.(crIdx, e.target.checked)} />{t('campaign:showNotes')}</label></div>
             </div>)}</div>
@@ -241,7 +245,7 @@ export function TemplateRow(props: {
         {editTab === 'characterSections' && (
           <div>
             <p className="text-xs text-muted-foreground mb-3 leading-relaxed">{t('campaign:characterSectionsDescriptionShort')}</p>
-            <div className="space-y-2 mt-1">{(props.editCharacterSections || []).map((s, idx) => (<div key={idx} className="flex items-center gap-1.5"><input className="input-field flex-1" value={s.name} onChange={e => props.onUpdateEditCharacterSection?.(idx, e.target.value)} placeholder={t('campaign:sectionNamePlaceholder')} /><button type="button" onClick={() => props.onRemoveEditCharacterSection?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0 px-1">✕</button></div>))}</div>
+            <div className="space-y-2 mt-1">{(props.editCharacterSections || []).map((s, idx) => (<div key={keyFor(idx)} className="flex items-center gap-1.5"><input className="input-field flex-1" value={s.name} onChange={e => props.onUpdateEditCharacterSection?.(idx, e.target.value)} placeholder={t('campaign:sectionNamePlaceholder')} /><button type="button" onClick={() => props.onRemoveEditCharacterSection?.(idx)} className="text-xs text-danger hover:text-danger/80 shrink-0 px-1">✕</button></div>))}</div>
             <button type="button" onClick={props.onAddEditCharacterSection} className="btn-ghost text-xs mt-3 flex items-center gap-1">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
               {t('campaign:addSection')}
@@ -269,7 +273,7 @@ export function TemplateRow(props: {
         {editTab === 'profiles' && (
           <div className="space-y-2 mt-1">
             {(props.editProfiles || []).map((p: any, pIdx: number) => (
-              <div key={pIdx} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
+              <div key={keyFor(pIdx)} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
                 <div className="flex items-center gap-1.5">
                   <input className="input-field flex-1" value={p.name} onChange={e => props.onUpdateProfile?.(pIdx, e.target.value)} placeholder={t('campaign:profileNamePlaceholder')} />
                   <button type="button" onClick={() => props.onRemoveProfile?.(pIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
@@ -304,7 +308,7 @@ export function TemplateRow(props: {
                 </div>
                 <div className="space-y-1 pl-2">
                   {p.options.map((o: any, oIdx: number) => (
-                    <div key={oIdx} className="flex items-center gap-1.5">
+                    <div key={keyFor(`p${pIdx}:o${oIdx}`)} className="flex items-center gap-1.5">
                       <input className="input-field flex-1 text-xs" value={o.label} onChange={e => props.onUpdateProfileOption?.(pIdx, oIdx, 'label', e.target.value)} placeholder={t('campaign:optionLabelPlaceholder')} />
                       <NumericInput className="input-field w-20 text-xs" value={o.value} onChange={e => props.onUpdateProfileOption?.(pIdx, oIdx, 'value', e.target.value)} placeholder={t('campaign:value')} wrapperClassName="w-20" inputClassName="!text-xs" />
                       <button type="button" onClick={() => props.onRemoveProfileOption?.(pIdx, oIdx)} className="text-xs text-danger hover:text-danger/80 shrink-0">✕</button>
@@ -340,10 +344,6 @@ export function TemplateRow(props: {
   }
 
   // ── READ-ONLY CARD VIEW ──
-  const hasSkills = props.template.skills && props.template.skills.length > 0
-  const hasSections = props.template.sections && props.template.sections.length > 0
-  const hasProfiles = props.template.profiles && props.template.profiles.length > 0
-
   return (
     <div className="relative group">
       {/* Gold accent line at top */}

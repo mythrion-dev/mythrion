@@ -309,7 +309,7 @@ describe('ProfessionalSkillsSection', () => {
   })
 
   it('creates a new skill via API and adds it to the list', async () => {
-    const deferred = createDeferred()
+    const deferred = createDeferred<ProfessionalSkill>()
     mockPost.mockReturnValue(deferred.promise)
     render(<ProfessionalSkillsSection {...defaultProps} />)
     await waitFor(() => {
@@ -446,7 +446,7 @@ describe('ProfessionalSkillsSection', () => {
   })
 
   it('saves edited skill via API', async () => {
-    const deferred = createDeferred()
+    const deferred = createDeferred<ProfessionalSkill>()
     mockPatch.mockReturnValue(deferred.promise)
     const skills = [makeSkill()]
     mockGet.mockResolvedValue(skills)
@@ -477,6 +477,7 @@ describe('ProfessionalSkillsSection', () => {
       attributeId: 'attr-2',
       attribute: { id: 'attr-2', key: 'dex', name: 'Dexterity' },
       order: 0,
+      profileValues: [],
     }
     deferred.resolve(updatedSkill)
     await waitFor(() => {
@@ -1030,9 +1031,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1043,9 +1042,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1059,9 +1056,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={{ ...defaultValue, current: null, maximum: null }}
-        isOwner={false}
-        permissions={{ ...defaultPermissions, canEditResources: false }}
+        value={{ ...defaultValue, current: null, maximum: null }}        permissions={{ ...defaultPermissions, canEditResources: false }}
         onSave={mockOnSave}
       />,
     )
@@ -1075,9 +1070,7 @@ describe('CoreResourceCard', () => {
     const { container } = render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1091,9 +1084,7 @@ describe('CoreResourceCard', () => {
     const { container } = render(
       <CoreResourceCard
         resource={defaultResource}
-        value={{ ...defaultValue, current: 50, maximum: null }}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={{ ...defaultValue, current: 50, maximum: null }}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1105,9 +1096,7 @@ describe('CoreResourceCard', () => {
     const { container } = render(
       <CoreResourceCard
         resource={defaultResource}
-        value={{ ...defaultValue, current: 0, maximum: 0 }}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={{ ...defaultValue, current: 0, maximum: 0 }}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1119,9 +1108,7 @@ describe('CoreResourceCard', () => {
     const { container } = render(
       <CoreResourceCard
         resource={defaultResource}
-        value={{ ...defaultValue, current: 150, maximum: 100 }}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={{ ...defaultValue, current: 150, maximum: 100 }}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1133,9 +1120,7 @@ describe('CoreResourceCard', () => {
     const { container } = render(
       <CoreResourceCard
         resource={defaultResource}
-        value={{ ...defaultValue, current: -10, maximum: 100 }}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={{ ...defaultValue, current: -10, maximum: 100 }}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1147,9 +1132,7 @@ describe('CoreResourceCard', () => {
     const { container } = render(
       <CoreResourceCard
         resource={{ ...defaultResource, color: '#ff0000' }}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1161,9 +1144,7 @@ describe('CoreResourceCard', () => {
     const { container } = render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1177,9 +1158,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={{ ...defaultResource, showNotes: true }}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1190,9 +1169,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={{ ...defaultResource, showNotes: true }}
-        value={{ ...defaultValue, notes: 'Emergency only' }}
-        isOwner={false}
-        permissions={{ ...defaultPermissions, canEditResources: false }}
+        value={{ ...defaultValue, notes: 'Emergency only' }}        permissions={{ ...defaultPermissions, canEditResources: false }}
         onSave={mockOnSave}
       />,
     )
@@ -1203,9 +1180,7 @@ describe('CoreResourceCard', () => {
     const { container } = render(
       <CoreResourceCard
         resource={{ ...defaultResource, showNotes: true }}
-        value={defaultValue}
-        isOwner={false}
-        permissions={{ ...defaultPermissions, canEditResources: false }}
+        value={defaultValue}        permissions={{ ...defaultPermissions, canEditResources: false }}
         onSave={mockOnSave}
       />,
     )
@@ -1217,9 +1192,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1236,9 +1209,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1250,9 +1221,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={false}
-        permissions={{ ...defaultPermissions, canEditResources: false }}
+        value={defaultValue}        permissions={{ ...defaultPermissions, canEditResources: false }}
         onSave={mockOnSave}
       />,
     )
@@ -1266,9 +1235,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={{ ...defaultResource, editableByPlayer: false }}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1283,9 +1250,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1299,9 +1264,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1314,9 +1277,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={false}
-        permissions={{ ...defaultPermissions, canEditResources: false }}
+        value={defaultValue}        permissions={{ ...defaultPermissions, canEditResources: false }}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1329,9 +1290,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1347,9 +1306,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1365,9 +1322,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1383,9 +1338,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1404,9 +1357,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1429,9 +1380,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={{ ...defaultResource, showNotes: true }}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1445,9 +1394,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1462,9 +1409,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,

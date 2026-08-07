@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -15,11 +16,11 @@ interface JoinRequest {
 }
 
 interface JoinRequestPanelProps {
-  requests: JoinRequest[]
-  loading: boolean
-  onAccept: (requestId: string) => void
-  onReject: (requestId: string) => void
-  processingIds: string[]
+  readonly requests: JoinRequest[]
+  readonly loading: boolean
+  readonly onAccept: (requestId: string) => void
+  readonly onReject: (requestId: string) => void
+  readonly processingIds: string[]
 }
 
 export function JoinRequestPanel({
@@ -42,6 +43,96 @@ export function JoinRequestPanel({
     : requests
 
   const pendingCount = requests.length
+
+  let content: ReactNode
+  if (loading) {
+    content = <LoadingSkeleton count={2} />
+  } else if (requests.length === 0) {
+    content = (
+      <EmptyState
+        icon="📋"
+        title={t('campaign:noPendingRequests')}
+        description={t('campaign:noPendingRequestsDescription')}
+      />
+    )
+  } else if (filteredRequests.length === 0) {
+    content = (
+      <EmptyState
+        icon="🔍"
+        title={t('campaign:noResults')}
+        description={t('campaign:noResultsDescription')}
+      />
+    )
+  } else {
+    content = (
+      <div className="space-y-3">
+        {filteredRequests.map(req => {
+          const isProcessing = processingIds.includes(req.id)
+
+          return (
+            <div
+              key={req.id}
+              className="data-row flex-col items-start gap-2"
+            >
+              <div className="flex items-center gap-2 w-full min-w-0">
+                {/* Avatar initial */}
+                <span className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
+                  {(req.userDisplayName ?? 'U').charAt(0).toUpperCase()}
+                </span>
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {req.userDisplayName ?? t('campaign:unknownUser')}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(req.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Message */}
+              {req.message && (
+                <p className="text-xs text-muted-foreground pl-10 leading-relaxed">
+                  {req.message}
+                </p>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-2 pl-10">
+                <button
+                  onClick={() => onAccept(req.id)}
+                  disabled={isProcessing}
+                  className={`btn-primary text-xs px-3 py-1 ${
+                    isProcessing ? '!opacity-50 !cursor-not-allowed' : ''
+                  }`}
+                >
+                  {isProcessing ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                      {t('campaign:accepting')}
+                    </>
+                  ) : (
+                    t('campaign:accept')
+                  )}
+                </button>
+                <button
+                  onClick={() => onReject(req.id)}
+                  disabled={isProcessing}
+                  className="btn-ghost text-xs px-3 py-1"
+                >
+                  {t('campaign:reject')}
+                </button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
 
   return (
     <div className="card !p-5 space-y-4">
@@ -112,88 +203,7 @@ export function JoinRequestPanel({
             </div>
           )}
 
-          {loading ? (
-            <LoadingSkeleton count={2} />
-          ) : requests.length === 0 ? (
-            <EmptyState
-              icon="📋"
-              title={t('campaign:noPendingRequests')}
-              description={t('campaign:noPendingRequestsDescription')}
-            />
-          ) : filteredRequests.length === 0 ? (
-            <EmptyState
-              icon="🔍"
-              title={t('campaign:noResults')}
-              description={t('campaign:noResultsDescription')}
-            />
-          ) : (
-            <div className="space-y-3">
-              {filteredRequests.map(req => {
-                const isProcessing = processingIds.includes(req.id)
-
-                return (
-                  <div
-                    key={req.id}
-                    className="data-row flex-col items-start gap-2"
-                  >
-                    <div className="flex items-center gap-2 w-full min-w-0">
-                      {/* Avatar initial */}
-                      <span className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
-                        {(req.userDisplayName ?? 'U').charAt(0).toUpperCase()}
-                      </span>
-
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">
-                          {req.userDisplayName ?? t('campaign:unknownUser')}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(req.createdAt).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Message */}
-                    {req.message && (
-                      <p className="text-xs text-muted-foreground pl-10 leading-relaxed">
-                        {req.message}
-                      </p>
-                    )}
-
-                    {/* Action buttons */}
-                    <div className="flex gap-2 pl-10">
-                      <button
-                        onClick={() => onAccept(req.id)}
-                        disabled={isProcessing}
-                        className={`btn-primary text-xs px-3 py-1 ${
-                          isProcessing ? '!opacity-50 !cursor-not-allowed' : ''
-                        }`}
-                      >
-                        {isProcessing ? (
-                          <>
-                            <div className="w-3 h-3 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                            {t('campaign:accepting')}
-                          </>
-                        ) : (
-                          t('campaign:accept')
-                        )}
-                      </button>
-                      <button
-                        onClick={() => onReject(req.id)}
-                        disabled={isProcessing}
-                        className="btn-ghost text-xs px-3 py-1"
-                      >
-                        {t('campaign:reject')}
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+          {content}
         </div>
       )}
     </div>

@@ -10,12 +10,12 @@ export function CollapsibleSection({
   icon,
   children,
 }: {
-  title: string
-  expanded: boolean
-  onToggle: () => void
-  accent?: boolean
-  icon?: ReactNode
-  children: ReactNode
+  readonly title: string
+  readonly expanded: boolean
+  readonly onToggle: () => void
+  readonly accent?: boolean
+  readonly icon?: ReactNode
+  readonly children: ReactNode
 }) {
   return (
     <div className="card !p-6">

@@ -655,64 +655,21 @@ describe('SubscriptionService', () => {
   // ─── hasActiveSubscription ──────────────────────────────────────────
 
   describe('hasActiveSubscription', () => {
-    it('returns true for AUTHORIZED status', async () => {
+    it.each([
+      [true, 'AUTHORIZED'],
+      [true, 'ACTIVE'],
+      [true, 'GRACE'],
+      [false, 'PENDING'],
+      [false, 'EXPIRED'],
+      [false, 'CANCELLED'],
+    ])('returns %s for %s status', async (expected, status) => {
       prisma.userSubscription.findUnique.mockResolvedValue({
-        status: 'AUTHORIZED',
+        status,
       })
 
       const result = await service.hasActiveSubscription('user-1')
 
-      expect(result).toBe(true)
-    })
-
-    it('returns true for ACTIVE status', async () => {
-      prisma.userSubscription.findUnique.mockResolvedValue({
-        status: 'ACTIVE',
-      })
-
-      const result = await service.hasActiveSubscription('user-1')
-
-      expect(result).toBe(true)
-    })
-
-    it('returns true for GRACE status', async () => {
-      prisma.userSubscription.findUnique.mockResolvedValue({
-        status: 'GRACE',
-      })
-
-      const result = await service.hasActiveSubscription('user-1')
-
-      expect(result).toBe(true)
-    })
-
-    it('returns false for PENDING status', async () => {
-      prisma.userSubscription.findUnique.mockResolvedValue({
-        status: 'PENDING',
-      })
-
-      const result = await service.hasActiveSubscription('user-1')
-
-      expect(result).toBe(false)
-    })
-
-    it('returns false for EXPIRED status', async () => {
-      prisma.userSubscription.findUnique.mockResolvedValue({
-        status: 'EXPIRED',
-      })
-
-      const result = await service.hasActiveSubscription('user-1')
-
-      expect(result).toBe(false)
-    })
-
-    it('returns false for CANCELLED status', async () => {
-      prisma.userSubscription.findUnique.mockResolvedValue({
-        status: 'CANCELLED',
-      })
-
-      const result = await service.hasActiveSubscription('user-1')
-
-      expect(result).toBe(false)
+      expect(result).toBe(expected)
     })
 
     it('returns false when no subscription exists', async () => {

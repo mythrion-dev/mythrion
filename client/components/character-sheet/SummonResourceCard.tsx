@@ -1,12 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
 import { InlineClickEdit } from '@/components/character-sheet'
 import { NumericInput } from '@/components/shared/NumericInput'
 import { HealthBar } from './HealthBar'
 import type { Ability, SheetPermissions } from './types'
+
+function formatModifier(mod: number | null): string {
+  if (mod === null || mod === undefined) return '—'
+  const rounded = Math.floor(mod)
+  return rounded >= 0 ? `+${rounded}` : `${rounded}`
+}
+
+function attributeModifierClass(modifier: number | null): string {
+  if (modifier === null) return 'text-muted'
+  if (modifier < 0) return 'text-red-400'
+  return 'text-green-400'
+}
 
 export interface AttributeDisplay {
   key: string
@@ -17,24 +29,24 @@ export interface AttributeDisplay {
 }
 
 interface SummonResourceCardProps {
-  ability: Ability
-  attributeDisplays: AttributeDisplay[]
-  acResult: number | null
-  permissions: SheetPermissions
-  saveSummonAttribute: (abilityId: string, attributeId: string, value: string) => Promise<void>
-  saveSummonAcValue: (abilityId: string, value: string) => Promise<void>
-  saveSummonHealth: (abilityId: string, field: 'current' | 'maximum', value: number | null) => void
-  handleAddSummonSkill: (abilityId: string, name: string, manualValue: number) => Promise<void>
-  handleUpdateSummonSkill: (abilityId: string, skillId: string, name: string, manualValue: number) => Promise<void>
-  handleRemoveSummonSkill: (abilityId: string, summonSkillId: string) => Promise<void>
+  readonly ability: Ability
+  readonly attributeDisplays: AttributeDisplay[]
+  readonly acResult: number | null
+  readonly permissions: SheetPermissions
+  readonly saveSummonAttribute: (abilityId: string, attributeId: string, value: string) => Promise<void>
+  readonly saveSummonAcValue: (abilityId: string, value: string) => Promise<void>
+  readonly saveSummonHealth: (abilityId: string, field: 'current' | 'maximum', value: number | null) => void
+  readonly handleAddSummonSkill: (abilityId: string, name: string, manualValue: number) => Promise<void>
+  readonly handleUpdateSummonSkill: (abilityId: string, skillId: string, name: string, manualValue: number) => Promise<void>
+  readonly handleRemoveSummonSkill: (abilityId: string, summonSkillId: string) => Promise<void>
   /** Optional: resistance handlers — render the Resistances card when provided */
-  handleAddSummonResistance?: (abilityId: string, name: string, value: string) => Promise<void>
-  handleUpdateSummonResistance?: (abilityId: string, summonResistanceId: string, name: string, value: string) => Promise<void>
-  handleRemoveSummonResistance?: (abilityId: string, summonResistanceId: string) => Promise<void>
+  readonly handleAddSummonResistance?: (abilityId: string, name: string, value: string) => Promise<void>
+  readonly handleUpdateSummonResistance?: (abilityId: string, summonResistanceId: string, name: string, value: string) => Promise<void>
+  readonly handleRemoveSummonResistance?: (abilityId: string, summonResistanceId: string) => Promise<void>
   /** Optional: save callback for summon description (moved from AbilitiesTab) */
-  saveDescription?: (abilityId: string, value: string) => Promise<void>
+  readonly saveDescription?: (abilityId: string, value: string) => Promise<void>
   /** Optional: save callback for summon notes (moved from AbilitiesTab) */
-  saveNotes?: (abilityId: string, value: string) => Promise<void>
+  readonly saveNotes?: (abilityId: string, value: string) => Promise<void>
 }
 
 export function SummonResourceCard({
@@ -140,19 +152,65 @@ export function SummonResourceCard({
     setNewResistanceValue('')
   }
 
-  // ── Attribute modifier display ──
-  function formatModifier(mod: number | null): string {
-    if (mod === null || mod === undefined) return '—'
-    const rounded = Math.floor(mod)
-    return rounded >= 0 ? `+${rounded}` : `${rounded}`
-  }
-
   // ── Computed AC display value ──
-  const acDisplay = acResult !== null ? acResult : acValue?.value ?? null
+  const acDisplay = acResult ?? acValue?.value ?? null
 
   // ── Card class shared across sections ──
   const sectionCardClass = 'card !p-4 transition-shadow duration-200 hover:shadow-md'
   const sectionTitleClass = 'text-[0.65rem] font-semibold text-muted uppercase tracking-wider mb-3'
+
+  // ── Notes card content (Description + Notes) ──
+  let descriptionContent: ReactNode = null
+  if (canEdit && saveDescription) {
+    descriptionContent = (
+      <div>
+        <h5 className="text-xs font-medium text-muted mb-1">{t('common:description')}</h5>
+        <InlineClickEdit
+          value={ability.description ?? ''}
+          onSave={async (v) => {
+            await saveDescription(ability.id, v)
+          }}
+          as="textarea"
+          rows={2}
+          className="text-sm text-muted-foreground whitespace-pre-wrap"
+          emptyDisplay={t('character:addDescription')}
+        />
+      </div>
+    )
+  } else if (ability.description) {
+    descriptionContent = (
+      <div>
+        <h5 className="text-xs font-medium text-muted mb-1">{t('common:description')}</h5>
+        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{ability.description}</p>
+      </div>
+    )
+  }
+
+  let notesContent: ReactNode = null
+  if (canEdit && saveNotes) {
+    notesContent = (
+      <div>
+        <h5 className="text-xs font-medium text-muted mb-1">{t('character:notes')}</h5>
+        <InlineClickEdit
+          value={ability.notes ?? ''}
+          onSave={async (v) => {
+            await saveNotes(ability.id, v)
+          }}
+          as="textarea"
+          rows={2}
+          className="text-xs text-muted italic whitespace-pre-wrap"
+          emptyDisplay={t('character:addNotes')}
+        />
+      </div>
+    )
+  } else if (ability.notes) {
+    notesContent = (
+      <div>
+        <h5 className="text-xs font-medium text-muted mb-1">{t('character:notes')}</h5>
+        <p className="text-xs text-muted italic whitespace-pre-wrap">{ability.notes}</p>
+      </div>
+    )
+  }
 
   return (
     <div className="summon-resource-card space-y-4 animate-fade-in">
@@ -193,11 +251,7 @@ export function SummonResourceCard({
                   </div>
                   <span
                     className={`text-xs font-bold tabular-nums shrink-0 ml-1 ${
-                      attr.modifier === null
-                        ? 'text-muted'
-                        : attr.modifier < 0
-                        ? 'text-red-400'
-                        : 'text-green-400'
+                      attributeModifierClass(attr.modifier)
                     }`}
                   >
                     {formatModifier(attr.modifier)}
@@ -213,7 +267,7 @@ export function SummonResourceCard({
           <h4 className={sectionTitleClass}>{t('character:combat')}</h4>
           <div className="flex flex-col items-center justify-center py-3">
             <span className="text-3xl font-bold tabular-nums text-foreground leading-none">
-              {acDisplay !== null ? acDisplay : '—'}
+              {acDisplay ?? '—'}
             </span>
             <span className="text-[0.6rem] text-muted uppercase tracking-wider mt-2">{t('character:acLabel')}</span>
             {canEdit && (
@@ -460,49 +514,8 @@ export function SummonResourceCard({
         <div className={sectionCardClass}>
           <h4 className={sectionTitleClass}>{t('character:notes')}</h4>
           <div className="space-y-3">
-            {/* Description */}
-            {canEdit && saveDescription ? (
-              <div>
-                <h5 className="text-xs font-medium text-muted mb-1">{t('common:description')}</h5>
-                <InlineClickEdit
-                  value={ability.description ?? ''}
-                  onSave={async (v) => {
-                    await saveDescription(ability.id, v)
-                  }}
-                  as="textarea"
-                  rows={2}
-                  className="text-sm text-muted-foreground whitespace-pre-wrap"
-                  emptyDisplay={t('character:addDescription')}
-                />
-              </div>
-            ) : ability.description ? (
-              <div>
-                <h5 className="text-xs font-medium text-muted mb-1">{t('common:description')}</h5>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{ability.description}</p>
-              </div>
-            ) : null}
-
-            {/* Notes */}
-            {canEdit && saveNotes ? (
-              <div>
-                <h5 className="text-xs font-medium text-muted mb-1">{t('character:notes')}</h5>
-                <InlineClickEdit
-                  value={ability.notes ?? ''}
-                  onSave={async (v) => {
-                    await saveNotes(ability.id, v)
-                  }}
-                  as="textarea"
-                  rows={2}
-                  className="text-xs text-muted italic whitespace-pre-wrap"
-                  emptyDisplay={t('character:addNotes')}
-                />
-              </div>
-            ) : ability.notes ? (
-              <div>
-                <h5 className="text-xs font-medium text-muted mb-1">{t('character:notes')}</h5>
-                <p className="text-xs text-muted italic whitespace-pre-wrap">{ability.notes}</p>
-              </div>
-            ) : null}
+            {descriptionContent}
+            {notesContent}
           </div>
         </div>
       )}

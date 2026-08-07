@@ -51,7 +51,6 @@ export class RateLimitGuard implements CanActivate {
     // Clean IP (strip IPv6 prefix)
     const cleanIp = ip.replace(/^::ffff:/, '')
     const rateKey = `ratelimit:${route}:${cleanIp}`
-    const now = Math.floor(Date.now() / 1000)
 
     try {
       // Get current count and TTL

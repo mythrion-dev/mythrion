@@ -139,7 +139,7 @@ describe('InvitationController', () => {
 
   describe('inviteByLink', () => {
     it('should delegate to invitationService.inviteByLink with correct args', async () => {
-      const result = await controller.inviteByLink(mockUserReq, 'adv-1', {})
+      const result = await controller.inviteByLink(mockUserReq, 'adv-1')
 
       expect(mockInvitationService.inviteByLink).toHaveBeenCalledWith({
         adventureId: 'adv-1',
@@ -157,7 +157,7 @@ describe('InvitationController', () => {
       )
 
       await expect(
-        controller.inviteByLink(mockUserReq, 'nonexistent-adv', {}),
+        controller.inviteByLink(mockUserReq, 'nonexistent-adv'),
       ).rejects.toThrow(NotFoundException)
     })
 
@@ -167,7 +167,7 @@ describe('InvitationController', () => {
       )
 
       await expect(
-        controller.inviteByLink(mockUserReq, 'adv-1', {}),
+        controller.inviteByLink(mockUserReq, 'adv-1'),
       ).rejects.toThrow(BadRequestException)
     })
   })

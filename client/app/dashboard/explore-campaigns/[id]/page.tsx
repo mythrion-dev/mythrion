@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback, Suspense, type ReactNode } from 'react'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
@@ -41,7 +41,6 @@ interface JoinRequest {
 function AdventureDetailContent() {
   const { t } = useTranslation()
   const params = useParams()
-  const router = useRouter()
   const id = params.id as string
 
   const { user } = useAuth()
@@ -51,13 +50,13 @@ function AdventureDetailContent() {
   const [error, setError] = useState<string | null>(null)
 
   // Membership state
-  const [members, setMembers] = useState<AdventureMember[]>([])
-  const [fetchingMembers, setFetchingMembers] = useState(false)
+  const [, setMembers] = useState<AdventureMember[]>([])
+  const [, setFetchingMembers] = useState(false)
   const [userMembership, setUserMembership] = useState<AdventureMember | null>(null)
 
   // Join request state
-  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([])
-  const [fetchingJoinRequests, setFetchingJoinRequests] = useState(false)
+  const [, setJoinRequests] = useState<JoinRequest[]>([])
+  const [, setFetchingJoinRequests] = useState(false)
   const [pendingRequest, setPendingRequest] = useState(false)
   const [showJoinForm, setShowJoinForm] = useState(false)
   const [joinMessage, setJoinMessage] = useState('')
@@ -153,7 +152,41 @@ function AdventureDetailContent() {
   }
 
   const isMember = !!userMembership
-  const canJoin = !isMember && !pendingRequest && !joinSuccess
+
+  let actionArea: ReactNode
+  if (isMember) {
+    actionArea = (
+      <Link
+        href={`/dashboard/adventures/${adventure.id}`}
+        className="btn-primary"
+      >
+        {t('community:goToDashboard')}
+      </Link>
+    )
+  } else if (pendingRequest) {
+    actionArea = (
+      <span className="badge" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.2)' }}>
+        {t('community:requestPending')}
+      </span>
+    )
+  } else if (user) {
+    actionArea = (
+      <div className="space-y-2">
+        <button
+          onClick={() => setShowJoinForm(true)}
+          className="btn-primary"
+        >
+          {t('community:requestToJoin')}
+        </button>
+      </div>
+    )
+  } else {
+    actionArea = (
+      <Link href="/login" className="btn-primary">
+        {t('community:signInToJoin')}
+      </Link>
+    )
+  }
 
   return (
     <>
@@ -176,31 +209,7 @@ function AdventureDetailContent() {
 
           {/* Action area */}
           <div className="shrink-0">
-            {isMember ? (
-              <Link
-                href={`/dashboard/adventures/${adventure.id}`}
-                className="btn-primary"
-              >
-                {t('community:goToDashboard')}
-              </Link>
-            ) : pendingRequest ? (
-              <span className="badge" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.2)' }}>
-                {t('community:requestPending')}
-              </span>
-            ) : user ? (
-              <div className="space-y-2">
-                <button
-                  onClick={() => setShowJoinForm(true)}
-                  className="btn-primary"
-                >
-                  {t('community:requestToJoin')}
-                </button>
-              </div>
-            ) : (
-              <Link href="/login" className="btn-primary">
-                {t('community:signInToJoin')}
-              </Link>
-            )}
+            {actionArea}
 
             {joinSuccess && (
               <p className="text-sm text-green-400 mt-2">

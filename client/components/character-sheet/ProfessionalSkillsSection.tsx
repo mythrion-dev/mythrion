@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, type SubmitEvent } from 'react'
+import { useState, useEffect, useMemo, type ReactNode, type SubmitEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
 import { Select } from '@/components/shared/Select'
@@ -9,17 +9,17 @@ import type { ProfessionalSkill, SkillModifierProfile, SheetPermissions } from '
 // ── Props ──
 
 interface Props {
-  sheetId: string
-  permissions: SheetPermissions
-  modifierResults: Record<string, number | null>
-  templateAttributes: { id: string; key: string; name: string }[]
-  allProfiles: SkillModifierProfile[]
+  readonly sheetId: string
+  readonly permissions: SheetPermissions
+  readonly modifierResults: Record<string, number | null>
+  readonly templateAttributes: { id: string; key: string; name: string }[]
+  readonly allProfiles: SkillModifierProfile[]
   /** When true, all CRUD operations operate on localSkills state instead of API calls. */
-  localMode?: boolean
+  readonly localMode?: boolean
   /** Skills state used in localMode (required when localMode is true). */
-  localSkills?: ProfessionalSkill[]
+  readonly localSkills?: ProfessionalSkill[]
   /** Called when skills change in localMode. */
-  onLocalSkillsChange?: (skills: ProfessionalSkill[]) => void
+  readonly onLocalSkillsChange?: (skills: ProfessionalSkill[]) => void
 }
 
 // ── Helpers ──
@@ -63,6 +63,43 @@ function computeSkillResults(
     r[skill.id] = { total, modSum }
   }
   return r
+}
+
+/**
+ * Update a skill's selected option for one modifier profile, returning a new skills array.
+ * Shared by both localMode and optimistic (server-backed) update paths in handleProfileChange.
+ * `idPrefix` controls the generated id for newly created profile values (e.g. 'local' or '__optimistic').
+ */
+function applyProfileChange(
+  skills: ProfessionalSkill[],
+  skillId: string,
+  profileId: string,
+  optionId: string | null,
+  allProfiles: SkillModifierProfile[],
+  idPrefix: string,
+): ProfessionalSkill[] {
+  return skills.map(s => {
+    if (s.id !== skillId) return s
+    const existing = s.profileValues ?? []
+    const idx = existing.findIndex(pv => pv.profileId === profileId)
+    const profile = allProfiles.find(p => p.id === profileId)
+    const option = profile?.options.find(o => o.id === optionId) ?? null
+    const newPv: ProfessionalSkill['profileValues'][number] = idx >= 0
+      ? { ...existing[idx], optionId, option: option ? { id: option.id, label: option.label, value: option.value } : null }
+      : {
+          id: `${idPrefix}_${profileId}`,
+          profileId,
+          optionId,
+          profile: { id: profileId, name: profile?.name ?? '' },
+          option: option ? { id: option.id, label: option.label, value: option.value } : null,
+        }
+    return {
+      ...s,
+      profileValues: idx >= 0
+        ? existing.map((pv, i) => i === idx ? newPv : pv)
+        : [...existing, newPv],
+    }
+  })
 }
 
 // ── Component ──
@@ -129,28 +166,7 @@ export function ProfessionalSkillsSection({
 
   async function handleProfileChange(skillId: string, profileId: string, optionId: string | null) {
     if (localMode) {
-      const updated = skills.map(s => {
-        if (s.id !== skillId) return s
-        const existing = s.profileValues ?? []
-        const idx = existing.findIndex(pv => pv.profileId === profileId)
-        const profile = allProfiles.find(p => p.id === profileId)
-        const option = profile?.options.find(o => o.id === optionId) ?? null
-        const newPv = idx >= 0
-          ? { ...existing[idx], optionId, option: option ? { id: option.id, label: option.label, value: option.value } : null }
-          : {
-              id: `local_${profileId}`,
-              profileId,
-              optionId,
-              profile: { id: profileId, name: profile?.name ?? '' },
-              option: option ? { id: option.id, label: option.label, value: option.value } : null,
-            }
-        return {
-          ...s,
-          profileValues: idx >= 0
-            ? existing.map((pv, i) => i === idx ? newPv : pv)
-            : [...existing, newPv],
-        }
-      })
+      const updated = applyProfileChange(skills, skillId, profileId, optionId, allProfiles, 'local')
       setSkills(updated)
       onLocalSkillsChange?.(updated)
       return
@@ -158,30 +174,7 @@ export function ProfessionalSkillsSection({
 
     // Optimistic update: update profileValues in local state
     const prevSkills = skills
-    setSkills(prev =>
-      prev.map(s => {
-        if (s.id !== skillId) return s
-        const existing = s.profileValues ?? []
-        const idx = existing.findIndex(pv => pv.profileId === profileId)
-        const profile = allProfiles.find(p => p.id === profileId)
-        const option = profile?.options.find(o => o.id === optionId) ?? null
-        const newPv: ProfessionalSkill['profileValues'][number] = idx >= 0
-          ? { ...existing[idx], optionId, option: option ? { id: option.id, label: option.label, value: option.value } : null }
-          : {
-              id: `__optimistic_${profileId}`,
-              profileId,
-              optionId,
-              profile: { id: profileId, name: profile?.name ?? '' },
-              option: option ? { id: option.id, label: option.label, value: option.value } : null,
-            }
-        return {
-          ...s,
-          profileValues: idx >= 0
-            ? existing.map((pv, i) => i === idx ? newPv : pv)
-            : [...existing, newPv],
-        }
-      }),
-    )
+    setSkills(prev => applyProfileChange(prev, skillId, profileId, optionId, allProfiles, '__optimistic'))
 
     try {
       await api.patch(
@@ -379,6 +372,129 @@ export function ProfessionalSkillsSection({
 
   // ── Render ──
 
+  let content: ReactNode
+  if (loading) {
+    content = <p className="text-sm text-muted italic">{t('common:loading')}</p>
+  } else if (skills.length === 0) {
+    content = (
+      <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
+        <svg className="w-10 h-10 text-muted/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        <div>
+          <p className="text-sm text-muted font-medium">{t('character:noProfessionalSkillsAddedYet')}</p>
+          <p className="text-xs text-muted/60 mt-0.5">{t('character:clickAddProfessionalSkill')}</p>
+        </div>
+      </div>
+    )
+  } else {
+    content = (
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border text-left text-xs text-muted uppercase tracking-wider">
+              <th className="py-2 pr-2 font-medium">{t('character:professionColumn')}</th>
+              <th className="py-2 pr-2 font-medium">{t('character:attribute')}</th>
+              <th className="py-2 pr-2 font-medium text-right">{t('character:total')}</th>
+              <th className="py-2 pr-2 font-medium text-right">{t('character:modColumn')}</th>
+              <th className="py-2 pr-2 font-medium">{t('character:profilesColumn')}</th>
+              {canEdit && <th className="py-2 font-medium text-right">{t('character:actions')}</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {skills.map(skill => {
+              const skillResult = results[skill.id]
+              const total = skillResult?.total ?? null
+              const modSum = skillResult?.modSum ?? 0
+              const modDisplay = modSum !== 0 ? (modSum > 0 ? `+${modSum}` : `${modSum}`) : '—'
+              const isEditing = editingId === skill.id
+              return (
+                <tr key={skill.id} className="border-b border-border/50">
+                  {isEditing ? (
+                    <>
+                      <td className="py-2 pr-2">
+                        <input
+                          className="input-field text-sm w-full"
+                          value={editName}
+                          onChange={e => setEditName(e.target.value)}
+                          maxLength={100}
+                        />
+                      </td>
+                      <td className="py-2 pr-2">
+                        <Select
+                          options={[{ id: '', label: t('common:none') }, ...templateAttributes.map(attr => ({ id: attr.id, label: attr.name }))]}
+                          value={editAttributeId ?? ''}
+                          onChange={val => setEditAttributeId(val)}
+                          size="sm"
+                          className="w-full text-sm"
+                        />
+                      </td>
+                      <td className="py-2 pr-2 text-right">{total ?? '—'}</td>
+                      <td className="py-2 pr-2 text-right text-muted whitespace-nowrap">
+                        {modDisplay}
+                      </td>
+                      <td className="py-2 pr-2">
+                        {renderProfileSelectors(skill.id)}
+                      </td>
+                      <td className="py-2 text-right">
+                        <div className="flex gap-1 justify-end">
+                          <button
+                            onClick={() => handleUpdate(skill.id)}
+                            className="text-xs text-primary hover:text-primary/80 px-2 py-1 transition-colors"
+                          >
+                            {t('common:save')}
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="text-xs text-muted hover:text-foreground px-2 py-1 transition-colors"
+                          >
+                            {t('common:cancel')}
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="py-2 pr-2 font-medium">{skill.name}</td>
+                      <td className="py-2 pr-2 text-muted">{skill.attribute?.name ?? '—'}</td>
+                      <td className="py-2 pr-2 text-right font-semibold">
+                        {total ?? '—'}
+                      </td>
+                      <td className="py-2 pr-2 text-right text-muted whitespace-nowrap">
+                        {modDisplay}
+                      </td>
+                      <td className="py-2 pr-2">
+                        {renderProfileSelectors(skill.id, !canEdit)}
+                      </td>
+                      {canEdit && (
+                        <td className="py-2 text-right">
+                          <div className="flex gap-1 justify-end">
+                            <button
+                              onClick={() => startEdit(skill)}
+                              className="text-xs text-primary hover:text-primary/80 px-2 py-1 transition-colors"
+                            >
+                              {t('common:edit')}
+                            </button>
+                            <button
+                              onClick={() => handleDelete(skill.id)}
+                              className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors"
+                            >
+                              {t('common:delete')}
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </>
+                  )}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+
   return (
     <div className="card !p-6">
       <div className="flex items-center justify-between mb-4">
@@ -401,126 +517,7 @@ export function ProfessionalSkillsSection({
         </div>
       )}
 
-      {loading ? (
-        <p className="text-sm text-muted italic">{t('common:loading')}</p>
-      ) : skills.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
-          <svg className="w-10 h-10 text-muted/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-          </svg>
-          <div>
-            <p className="text-sm text-muted font-medium">{t('character:noProfessionalSkillsAddedYet')}</p>
-            <p className="text-xs text-muted/60 mt-0.5">{t('character:clickAddProfessionalSkill')}</p>
-          </div>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs text-muted uppercase tracking-wider">
-                <th className="py-2 pr-2 font-medium">{t('character:professionColumn')}</th>
-                <th className="py-2 pr-2 font-medium">{t('character:attribute')}</th>
-                <th className="py-2 pr-2 font-medium text-right">{t('character:total')}</th>
-                <th className="py-2 pr-2 font-medium text-right">{t('character:modColumn')}</th>
-                <th className="py-2 pr-2 font-medium">{t('character:profilesColumn')}</th>
-                {canEdit && <th className="py-2 font-medium text-right">{t('character:actions')}</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {skills.map(skill => {
-                const skillResult = results[skill.id]
-                const total = skillResult?.total ?? null
-                const modSum = skillResult?.modSum ?? 0
-                const isEditing = editingId === skill.id
-                return (
-                  <tr key={skill.id} className="border-b border-border/50">
-                    {isEditing ? (
-                      <>
-                        <td className="py-2 pr-2">
-                          <input
-                            className="input-field text-sm w-full"
-                            value={editName}
-                            onChange={e => setEditName(e.target.value)}
-                            maxLength={100}
-                          />
-                        </td>
-                        <td className="py-2 pr-2">
-                          <Select
-                            options={[{ id: '', label: t('common:none') }, ...templateAttributes.map(attr => ({ id: attr.id, label: attr.name }))]}
-                            value={editAttributeId ?? ''}
-                            onChange={val => setEditAttributeId(val)}
-                            size="sm"
-                            className="w-full text-sm"
-                          />
-                        </td>
-                        <td className="py-2 pr-2 text-right">{total !== null ? total : '—'}</td>
-                        <td className="py-2 pr-2 text-right text-muted whitespace-nowrap">
-                          {modSum !== 0
-                            ? (modSum > 0 ? `+${modSum}` : `${modSum}`)
-                            : '—'}
-                        </td>
-                        <td className="py-2 pr-2">
-                          {renderProfileSelectors(skill.id)}
-                        </td>
-                        <td className="py-2 text-right">
-                          <div className="flex gap-1 justify-end">
-                            <button
-                              onClick={() => handleUpdate(skill.id)}
-                              className="text-xs text-primary hover:text-primary/80 px-2 py-1 transition-colors"
-                            >
-                              {t('common:save')}
-                            </button>
-                            <button
-                              onClick={cancelEdit}
-                              className="text-xs text-muted hover:text-foreground px-2 py-1 transition-colors"
-                            >
-                              {t('common:cancel')}
-                            </button>
-                          </div>
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td className="py-2 pr-2 font-medium">{skill.name}</td>
-                        <td className="py-2 pr-2 text-muted">{skill.attribute?.name ?? '—'}</td>
-                        <td className="py-2 pr-2 text-right font-semibold">
-                          {total !== null ? total : '—'}
-                        </td>
-                        <td className="py-2 pr-2 text-right text-muted whitespace-nowrap">
-                          {modSum !== 0
-                            ? (modSum > 0 ? `+${modSum}` : `${modSum}`)
-                            : '—'}
-                        </td>
-                        <td className="py-2 pr-2">
-                          {renderProfileSelectors(skill.id, !canEdit)}
-                        </td>
-                        {canEdit && (
-                          <td className="py-2 text-right">
-                            <div className="flex gap-1 justify-end">
-                              <button
-                                onClick={() => startEdit(skill)}
-                                className="text-xs text-primary hover:text-primary/80 px-2 py-1 transition-colors"
-                              >
-                                {t('common:edit')}
-                              </button>
-                              <button
-                                onClick={() => handleDelete(skill.id)}
-                                className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors"
-                              >
-                                {t('common:delete')}
-                              </button>
-                            </div>
-                          </td>
-                        )}
-                      </>
-                    )}
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {content}
 
       {/* ── Create Modal ── */}
       {showCreateModal && (

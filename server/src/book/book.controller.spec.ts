@@ -13,13 +13,13 @@ import type { Response } from 'express'
 // Mocks
 // ---------------------------------------------------------------------------
 const mockBookService = {
-  list: jest.fn<() => Promise<any>>(),
-  create: jest.fn<() => Promise<any>>(),
-  getStream: jest.fn<() => Promise<any>>(),
-  getStreamRange: jest.fn<() => Promise<any>>(),
-  update: jest.fn<() => Promise<any>>(),
-  replaceFile: jest.fn<() => Promise<any>>(),
-  delete: jest.fn<() => Promise<void>>(),
+  list: jest.fn<(...args: any[]) => Promise<any>>(),
+  create: jest.fn<(...args: any[]) => Promise<any>>(),
+  getStream: jest.fn<(...args: any[]) => Promise<any>>(),
+  getStreamRange: jest.fn<(...args: any[]) => Promise<any>>(),
+  update: jest.fn<(...args: any[]) => Promise<any>>(),
+  replaceFile: jest.fn<(...args: any[]) => Promise<any>>(),
+  delete: jest.fn<(...args: any[]) => Promise<void>>(),
 }
 
 function createMockResponse(): Response {

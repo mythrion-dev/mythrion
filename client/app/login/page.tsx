@@ -35,6 +35,7 @@ function LoginForm() {
   const [twoFactorId, setTwoFactorId] = useState<string | null>(null)
   const [emailMasked, setEmailMasked] = useState('')
   const [forgotOpen, setForgotOpen] = useState(false)
+  const submitLabel = isRegister ? t('auth:createAccount') : t('auth:enterTheRealm')
 
   const handleOAuthClick = (e: MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault()
@@ -167,11 +168,7 @@ function LoginForm() {
           disabled={submitting}
           className="btn-primary w-full"
         >
-          {submitting
-            ? t('auth:pleaseWait')
-            : isRegister
-              ? t('auth:createAccount')
-              : t('auth:enterTheRealm')}
+          {submitting ? t('auth:pleaseWait') : submitLabel}
         </button>
       </form>
 

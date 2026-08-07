@@ -5,7 +5,7 @@ import { ForbiddenException } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { SubscriptionGuard } from '../subscription.guard'
 import { AdminService } from '../admin.service'
-import { SubscriptionService } from '../subscription/subscription.service'
+import { SubscriptionService } from '../../subscription/subscription.service'
 import type { ExecutionContext } from '@nestjs/common'
 import { createI18nServiceMock } from '../../i18n/i18n-testing.js'
 
@@ -181,7 +181,7 @@ describe('SubscriptionGuard', () => {
             user: { sub: 'u1', email: 'user@test.com', role: 'user' },
           }),
         )
-        expect(true).toBe(false) // should not reach here
+        throw new Error('should not reach here')
       } catch (err) {
         expect(err).toBeInstanceOf(ForbiddenException)
         expect((err as ForbiddenException).message).toMatch(/\/pricing/)

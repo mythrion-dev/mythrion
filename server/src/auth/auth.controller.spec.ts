@@ -270,7 +270,7 @@ describe('AuthController', () => {
 
   describe('sendTwoFactorCode', () => {
     it('should delegate to authService.sendTwoFactorCode with userId and purpose', async () => {
-      const dto = { purpose: 'ENABLE' }
+      const dto = { purpose: 'ENABLE' as const }
       const result = await controller.sendTwoFactorCode(mockUserReq, dto)
       expect(mockAuthService.sendTwoFactorCode).toHaveBeenCalledWith('user-1', 'ENABLE')
       expect(result).toEqual({ twoFactorId: 'challenge-1' })
@@ -279,7 +279,7 @@ describe('AuthController', () => {
 
   describe('confirmTwoFactor', () => {
     it('should delegate to authService.confirmTwoFactor with userId, purpose and dto', async () => {
-      const dto = { purpose: 'ENABLE', twoFactorId: 'challenge-1', code: '123456' }
+      const dto = { purpose: 'ENABLE' as const, twoFactorId: 'challenge-1', code: '123456' }
       const result = await controller.confirmTwoFactor(mockUserReq, dto)
       expect(mockAuthService.confirmTwoFactor).toHaveBeenCalledWith('user-1', 'ENABLE', dto)
       expect(result).toEqual({ recoveryCodes: ['AAAA'] })

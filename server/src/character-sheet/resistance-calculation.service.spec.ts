@@ -518,7 +518,7 @@ describe('ResistanceCalculationService', () => {
 
       // Mock calculateResistances to return an array with our result
       jest.spyOn(service as any, 'calculateResistances').mockResolvedValue([
-        { resistanceId: 'other', ...singleRes },
+        { ...singleRes, resistanceId: 'other' },
         singleRes,
       ])
 

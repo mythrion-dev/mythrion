@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
 import Link from 'next/link'
 import { PageNav } from '@/lib/breadcrumb'
-import { TemplatePickerModal } from '@/components/adventure/TemplatePickerModal'
 import { useSubscription } from '@/lib/subscription-context'
 
 export default function NewAdventurePage() {
@@ -26,7 +25,6 @@ export default function NewAdventurePage() {
   const [submitting, setSubmitting] = useState(false)
   const [templateId, setTemplateId] = useState<string | null>(null)
   const [templateName, setTemplateName] = useState<string | null>(null)
-  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
 
   if (!hasActiveSubscription) {
     return (
@@ -294,7 +292,6 @@ export default function NewAdventurePage() {
               ) : (
                 <button
                   type="button"
-                  onClick={() => setShowTemplatePicker(true)}
                   className="btn-ghost text-xs"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

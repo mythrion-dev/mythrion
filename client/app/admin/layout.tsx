@@ -22,7 +22,7 @@ const breadcrumbMap: Record<string, Crumb[]> = {
   ],
 }
 
-function Breadcrumbs({ pathname }: { pathname: string }) {
+function Breadcrumbs({ pathname }: { readonly pathname: string }) {
   const { t } = useTranslation()
   const crumbs = useMemo<Crumb[]>(() => {
     // Exact match first
@@ -39,7 +39,7 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
     <nav aria-label={t('billing:breadcrumb')} className="mb-6">
       <ol className="flex items-center gap-2 text-sm text-muted-foreground">
         {crumbs.map((crumb, i) => (
-          <li key={i} className="flex items-center gap-2">
+          <li key={crumb.href ?? crumb.labelKey ?? crumb.label} className="flex items-center gap-2">
             {i > 0 && (
               <svg className="w-3.5 h-3.5 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -76,7 +76,7 @@ const adminNavLinks = [
   },
 ]
 
-function AdminNav({ pathname }: { pathname: string }) {
+function AdminNav({ pathname }: { readonly pathname: string }) {
   const { t } = useTranslation()
   return (
     <nav className="flex gap-1 mb-6 p-1 rounded-xl bg-surface border border-border">
@@ -106,7 +106,7 @@ function AdminNav({ pathname }: { pathname: string }) {
 export default function AdminLayout({
   children,
 }: {
-  children: React.ReactNode
+  readonly children: React.ReactNode
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -114,7 +114,7 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (loading) return
-    if (!user || !user.isAdmin) {
+    if (!user?.isAdmin) {
       router.replace('/dashboard')
       return
     }

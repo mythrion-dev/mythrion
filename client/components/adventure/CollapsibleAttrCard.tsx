@@ -3,12 +3,12 @@
 import { useTranslation } from 'react-i18next'
 
 export function CollapsibleAttrCard({ index, attr, isExpanded, onToggle, onUpdateAttr, onRemove }: {
-  index: number
-  attr: { key: string; name: string }
-  isExpanded: boolean
-  onToggle: () => void
-  onUpdateAttr: (i: number, f: 'key' | 'name', v: string) => void
-  onRemove: () => void
+  readonly index: number
+  readonly attr: { key: string; name: string }
+  readonly isExpanded: boolean
+  readonly onToggle: () => void
+  readonly onUpdateAttr: (i: number, f: 'key' | 'name', v: string) => void
+  readonly onRemove: () => void
 }) {
   const { t } = useTranslation()
   return (

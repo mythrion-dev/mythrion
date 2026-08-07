@@ -188,9 +188,15 @@ function validateTemplateForm(args: {
       return t('campaign:profileSelectedSkillsError', { name: p.name || t('campaign:unnamed') })
     }
   }
-  const acNames = args.acConfigs.filter(ac => ac.enabled && ac.name.trim()).map(ac => ac.name.trim().toLowerCase())
+  const acVe = validateAcConfigs(args.acConfigs, t)
+  if (acVe) return acVe
+  return null
+}
+
+function validateAcConfigs(acConfigs: AcConfigDraft[], t: TFunction): string | null {
+  const acNames = acConfigs.filter(ac => ac.enabled && ac.name.trim()).map(ac => ac.name.trim().toLowerCase())
   if (new Set(acNames).size !== acNames.length) return t('campaign:acNamesMustBeUnique')
-  for (const ac of args.acConfigs) {
+  for (const ac of acConfigs) {
     if (!ac.enabled || !ac.name.trim()) continue
     for (const f of ac.fields) {
       if (f.name.trim() && !f.key.trim()) {
@@ -199,6 +205,86 @@ function validateTemplateForm(args: {
     }
   }
   return null
+}
+
+interface SkillModifierProfileDraft {
+  name: string
+  targetMode?: string
+  targetSkillIds?: string[]
+  options: { label: string; value: number }[]
+}
+interface TemplateSkillDraft {
+  name: string
+  description: string
+  attributeId: string
+  allowedAttributeIds: string[]
+  defaultAttributeId: string
+}
+
+function tabPillClass(activeTab: string, target: string): string {
+  return `tab-pill ${activeTab === target ? 'tab-pill-active' : ''}`
+}
+
+function withAddedAcField(ac: AcConfigDraft): AcConfigDraft {
+  return { ...ac, fields: [...ac.fields, { name: '', key: '', defaultValue: '0', editableByPlayer: false, description: '' }] }
+}
+
+function withRemovedAcField(ac: AcConfigDraft, fieldIdx: number): AcConfigDraft {
+  return { ...ac, fields: ac.fields.filter((_, j) => j !== fieldIdx) }
+}
+
+function withUpdatedAcField(ac: AcConfigDraft, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string): AcConfigDraft {
+  return {
+    ...ac,
+    fields: ac.fields.map((field, j) => {
+      if (j !== fieldIdx) return field
+      const updated = { ...field, [f]: v }
+      if (f === 'name' && v.trim() && !field.key.trim()) updated.key = slugify(v.trim())
+      return updated
+    }),
+  }
+}
+
+function withUpdatedAcFieldEditable(ac: AcConfigDraft, fieldIdx: number, v: boolean): AcConfigDraft {
+  return { ...ac, fields: ac.fields.map((field, j) => (j === fieldIdx ? { ...field, editableByPlayer: v } : field)) }
+}
+
+function withToggledAcAttributeId(ac: AcConfigDraft, attrId: string): AcConfigDraft {
+  const exists = ac.attributeModifiers.some(am => am.attributeId === attrId)
+  return {
+    ...ac,
+    attributeModifiers: exists
+      ? ac.attributeModifiers.filter(am => am.attributeId !== attrId)
+      : [...ac.attributeModifiers, { attributeId: attrId, allowPlayerSelection: false, defaultAttributeId: attrId }],
+  }
+}
+
+function withUpdatedAcAttributeModifier(ac: AcConfigDraft, attrId: string, patch: Partial<ArmorClassAttributeModifierDraft>): AcConfigDraft {
+  return { ...ac, attributeModifiers: ac.attributeModifiers.map(am => (am.attributeId === attrId ? { ...am, ...patch } : am)) }
+}
+
+function withRemovedProfileOption(a: SkillModifierProfileDraft, oIdx: number): SkillModifierProfileDraft {
+  return { ...a, options: a.options.filter((_, j) => j !== oIdx) }
+}
+
+function withUpdatedProfileOption(a: SkillModifierProfileDraft, oIdx: number, f: 'label' | 'value', v: string | number): SkillModifierProfileDraft {
+  return { ...a, options: a.options.map((o, j) => (j === oIdx ? { ...o, [f]: f === 'value' ? Number(v) : v } : o)) }
+}
+
+function withToggledProfileSkill(a: SkillModifierProfileDraft, skillId: string): SkillModifierProfileDraft {
+  const current = a.targetSkillIds ?? []
+  return { ...a, targetSkillIds: current.includes(skillId) ? current.filter(x => x !== skillId) : [...current, skillId] }
+}
+
+function withToggledSkillAllowedAttr(s: TemplateSkillDraft, attrKey: string): TemplateSkillDraft {
+  return { ...s, allowedAttributeIds: s.allowedAttributeIds.includes(attrKey) ? s.allowedAttributeIds.filter(k => k !== attrKey) : [...s.allowedAttributeIds, attrKey] }
+}
+
+function resolveAllowedAttributeKeys(allowedIds: string[] | undefined, attributes: Template['attributes']): string[] {
+  return (allowedIds || []).map((x: string) => {
+    const a = attributes.find(attr => attr.id === x)
+    return a?.key ?? ''
+  }).filter(Boolean)
 }
 
 export default function AdventureDetailPage() {
@@ -262,70 +348,32 @@ export default function AdventureDetailPage() {
   function addNewAcConfig() { setNewAcConfigs(p => [...p, emptyAcConfig()]) }
   function removeNewAcConfig(i: number) { setNewAcConfigs(p => p.filter((_, j) => j !== i)) }
   function updateNewAcConfig(i: number, patch: Partial<AcConfigDraft>) { setNewAcConfigs(p => p.map((ac, j) => j === i ? { ...ac, ...patch } : ac)) }
-  function addNewAcFieldForConfig(configIdx: number) { setNewAcConfigs(p => p.map((ac, i) => i === configIdx ? { ...ac, fields: [...ac.fields, { name: '', key: '', defaultValue: '0', editableByPlayer: false, description: '' }] } : ac)) }
-  function removeNewAcFieldForConfig(configIdx: number, fieldIdx: number) { setNewAcConfigs(p => p.map((ac, i) => i === configIdx ? { ...ac, fields: ac.fields.filter((_, j) => j !== fieldIdx) } : ac)) }
+  function addNewAcFieldForConfig(configIdx: number) { setNewAcConfigs(p => p.map((ac, i) => i === configIdx ? withAddedAcField(ac) : ac)) }
+  function removeNewAcFieldForConfig(configIdx: number, fieldIdx: number) { setNewAcConfigs(p => p.map((ac, i) => i === configIdx ? withRemovedAcField(ac, fieldIdx) : ac)) }
   function updateNewAcFieldForConfig(configIdx: number, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string) {
-    setNewAcConfigs(p => p.map((ac, i) => {
-      if (i !== configIdx) return ac
-      return {
-        ...ac, fields: ac.fields.map((field, j) => {
-          if (j !== fieldIdx) return field
-          const updated = { ...field, [f]: v }
-          if (f === 'name' && v.trim() && !field.key.trim()) updated.key = slugify(v.trim())
-          return updated
-        })
-      }
-    }))
+    setNewAcConfigs(p => p.map((ac, i) => i === configIdx ? withUpdatedAcField(ac, fieldIdx, f, v) : ac))
   }
-  function updateNewAcFieldEditableForConfig(configIdx: number, fieldIdx: number, v: boolean) { setNewAcConfigs(p => p.map((ac, i) => i === configIdx ? { ...ac, fields: ac.fields.map((field, j) => j === fieldIdx ? { ...field, editableByPlayer: v } : field) } : ac)) }
+  function updateNewAcFieldEditableForConfig(configIdx: number, fieldIdx: number, v: boolean) { setNewAcConfigs(p => p.map((ac, i) => i === configIdx ? withUpdatedAcFieldEditable(ac, fieldIdx, v) : ac)) }
   function toggleNewAcAttributeIdForConfig(configIdx: number, attrId: string) {
-    setNewAcConfigs(p => p.map((ac, i) => {
-      if (i !== configIdx) return ac
-      const exists = ac.attributeModifiers.some(am => am.attributeId === attrId)
-      return {
-        ...ac,
-        attributeModifiers: exists
-          ? ac.attributeModifiers.filter(am => am.attributeId !== attrId)
-          : [...ac.attributeModifiers, { attributeId: attrId, allowPlayerSelection: false, defaultAttributeId: attrId }],
-      }
-    }))
+    setNewAcConfigs(p => p.map((ac, i) => i === configIdx ? withToggledAcAttributeId(ac, attrId) : ac))
   }
   function updateNewAcAttributeModifierForConfig(configIdx: number, attrId: string, patch: Partial<ArmorClassAttributeModifierDraft>) {
-    setNewAcConfigs(p => p.map((ac, i) => i === configIdx ? { ...ac, attributeModifiers: ac.attributeModifiers.map(am => am.attributeId === attrId ? { ...am, ...patch } : am) } : ac))
+    setNewAcConfigs(p => p.map((ac, i) => i === configIdx ? withUpdatedAcAttributeModifier(ac, attrId, patch) : ac))
   }
   function addEditAcConfig() { setEditAcConfigs(p => [...p, emptyAcConfig()]) }
   function removeEditAcConfig(i: number) { setEditAcConfigs(p => p.filter((_, j) => j !== i)) }
   function updateEditAcConfig(i: number, patch: Partial<AcConfigDraft>) { setEditAcConfigs(p => p.map((ac, j) => j === i ? { ...ac, ...patch } : ac)) }
-  function addEditAcFieldForConfig(configIdx: number) { setEditAcConfigs(p => p.map((ac, i) => i === configIdx ? { ...ac, fields: [...ac.fields, { name: '', key: '', defaultValue: '0', editableByPlayer: false, description: '' }] } : ac)) }
-  function removeEditAcFieldForConfig(configIdx: number, fieldIdx: number) { setEditAcConfigs(p => p.map((ac, i) => i === configIdx ? { ...ac, fields: ac.fields.filter((_, j) => j !== fieldIdx) } : ac)) }
+  function addEditAcFieldForConfig(configIdx: number) { setEditAcConfigs(p => p.map((ac, i) => i === configIdx ? withAddedAcField(ac) : ac)) }
+  function removeEditAcFieldForConfig(configIdx: number, fieldIdx: number) { setEditAcConfigs(p => p.map((ac, i) => i === configIdx ? withRemovedAcField(ac, fieldIdx) : ac)) }
   function updateEditAcFieldForConfig(configIdx: number, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string) {
-    setEditAcConfigs(p => p.map((ac, i) => {
-      if (i !== configIdx) return ac
-      return {
-        ...ac, fields: ac.fields.map((field, j) => {
-          if (j !== fieldIdx) return field
-          const updated = { ...field, [f]: v }
-          if (f === 'name' && v.trim() && !field.key.trim()) updated.key = slugify(v.trim())
-          return updated
-        })
-      }
-    }))
+    setEditAcConfigs(p => p.map((ac, i) => i === configIdx ? withUpdatedAcField(ac, fieldIdx, f, v) : ac))
   }
-  function updateEditAcFieldEditableForConfig(configIdx: number, fieldIdx: number, v: boolean) { setEditAcConfigs(p => p.map((ac, i) => i === configIdx ? { ...ac, fields: ac.fields.map((field, j) => j === fieldIdx ? { ...field, editableByPlayer: v } : field) } : ac)) }
+  function updateEditAcFieldEditableForConfig(configIdx: number, fieldIdx: number, v: boolean) { setEditAcConfigs(p => p.map((ac, i) => i === configIdx ? withUpdatedAcFieldEditable(ac, fieldIdx, v) : ac)) }
   function toggleEditAcAttributeIdForConfig(configIdx: number, attrId: string) {
-    setEditAcConfigs(p => p.map((ac, i) => {
-      if (i !== configIdx) return ac
-      const exists = ac.attributeModifiers.some(am => am.attributeId === attrId)
-      return {
-        ...ac,
-        attributeModifiers: exists
-          ? ac.attributeModifiers.filter(am => am.attributeId !== attrId)
-          : [...ac.attributeModifiers, { attributeId: attrId, allowPlayerSelection: false, defaultAttributeId: attrId }],
-      }
-    }))
+    setEditAcConfigs(p => p.map((ac, i) => i === configIdx ? withToggledAcAttributeId(ac, attrId) : ac))
   }
   function updateEditAcAttributeModifierForConfig(configIdx: number, attrId: string, patch: Partial<ArmorClassAttributeModifierDraft>) {
-    setEditAcConfigs(p => p.map((ac, i) => i === configIdx ? { ...ac, attributeModifiers: ac.attributeModifiers.map(am => am.attributeId === attrId ? { ...am, ...patch } : am) } : ac))
+    setEditAcConfigs(p => p.map((ac, i) => i === configIdx ? withUpdatedAcAttributeModifier(ac, attrId, patch) : ac))
   }
 
   // Clear AC attribute modifiers when attribute modifiers disabled
@@ -356,22 +404,22 @@ export default function AdventureDetailPage() {
   function removeNewProfile(i: number) { setNewTemplateProfiles(p => p.filter((_, j) => j !== i)) }
   function updateNewProfile(i: number, n: string) { setNewTemplateProfiles(p => p.map((a, j) => j === i ? { ...a, name: n } : a)) }
   function addNewProfileOption(pIdx: number) { setNewTemplateProfiles(p => p.map((a, i) => i === pIdx ? { ...a, options: [...a.options, { label: '', value: 0 }] } : a)) }
-  function removeNewProfileOption(pIdx: number, oIdx: number) { setNewTemplateProfiles(p => p.map((a, i) => i === pIdx ? { ...a, options: a.options.filter((_, j) => j !== oIdx) } : a)) }
-  function updateNewProfileOption(pIdx: number, oIdx: number, f: 'label' | 'value', v: string | number) { setNewTemplateProfiles(p => p.map((a, i) => i === pIdx ? { ...a, options: a.options.map((o, j) => j === oIdx ? { ...o, [f]: f === 'value' ? Number(v) : v } : o) } : a)) }
+  function removeNewProfileOption(pIdx: number, oIdx: number) { setNewTemplateProfiles(p => p.map((a, i) => i === pIdx ? withRemovedProfileOption(a, oIdx) : a)) }
+  function updateNewProfileOption(pIdx: number, oIdx: number, f: 'label' | 'value', v: string | number) { setNewTemplateProfiles(p => p.map((a, i) => i === pIdx ? withUpdatedProfileOption(a, oIdx, f, v) : a)) }
   function updateNewProfileTargetMode(i: number, mode: string) { setNewTemplateProfiles(p => p.map((a, j) => j === i ? { ...a, targetMode: mode, targetSkillIds: mode === 'ALL_SKILLS' ? [] : (a.targetSkillIds ?? []) } : a)) }
-  function toggleNewProfileSkill(i: number, skillId: string) { setNewTemplateProfiles(p => p.map((a, j) => j === i ? { ...a, targetSkillIds: (a.targetSkillIds ?? []).includes(skillId) ? (a.targetSkillIds ?? []).filter(x => x !== skillId) : [...(a.targetSkillIds ?? []), skillId] } : a)) }
+  function toggleNewProfileSkill(i: number, skillId: string) { setNewTemplateProfiles(p => p.map((a, j) => j === i ? withToggledProfileSkill(a, skillId) : a)) }
   function addEditProfile() { setEditTemplateProfiles(p => [...p, { name: '', options: [{ label: '', value: 0 }] }]) }
   function removeEditProfile(i: number) { setEditTemplateProfiles(p => p.filter((_, j) => j !== i)) }
   function updateEditProfile(i: number, n: string) { setEditTemplateProfiles(p => p.map((a, j) => j === i ? { ...a, name: n } : a)) }
   function updateEditProfileTargetMode(i: number, mode: string) { setEditTemplateProfiles(p => p.map((a, j) => j === i ? { ...a, targetMode: mode, targetSkillIds: mode === 'ALL_SKILLS' ? [] : (a.targetSkillIds ?? []) } : a)) }
-  function toggleEditProfileSkill(i: number, skillId: string) { setEditTemplateProfiles(p => p.map((a, j) => j === i ? { ...a, targetSkillIds: (a.targetSkillIds ?? []).includes(skillId) ? (a.targetSkillIds ?? []).filter(x => x !== skillId) : [...(a.targetSkillIds ?? []), skillId] } : a)) }
+  function toggleEditProfileSkill(i: number, skillId: string) { setEditTemplateProfiles(p => p.map((a, j) => j === i ? withToggledProfileSkill(a, skillId) : a)) }
   function addEditProfileOption(pIdx: number) { setEditTemplateProfiles(p => p.map((a, i) => i === pIdx ? { ...a, options: [...a.options, { label: '', value: 0 }] } : a)) }
-  function removeEditProfileOption(pIdx: number, oIdx: number) { setEditTemplateProfiles(p => p.map((a, i) => i === pIdx ? { ...a, options: a.options.filter((_, j) => j !== oIdx) } : a)) }
-  function updateEditProfileOption(pIdx: number, oIdx: number, f: 'label' | 'value', v: string | number) { setEditTemplateProfiles(p => p.map((a, i) => i === pIdx ? { ...a, options: a.options.map((o, j) => j === oIdx ? { ...o, [f]: f === 'value' ? Number(v) : v } : o) } : a)) }
+  function removeEditProfileOption(pIdx: number, oIdx: number) { setEditTemplateProfiles(p => p.map((a, i) => i === pIdx ? withRemovedProfileOption(a, oIdx) : a)) }
+  function updateEditProfileOption(pIdx: number, oIdx: number, f: 'label' | 'value', v: string | number) { setEditTemplateProfiles(p => p.map((a, i) => i === pIdx ? withUpdatedProfileOption(a, oIdx, f, v) : a)) }
   function addNewSkillRow() { setNewTemplateSkills(p => [...p, { name: '', description: '', attributeId: '', allowedAttributeIds: [], defaultAttributeId: '' }]) }; function removeNewSkillRow(i: number) { setNewTemplateSkills(p => p.filter((_, j) => j !== i)) }; function updateNewSkill(i: number, f: string, v: string) { setNewTemplateSkills(p => p.map((s, j) => j === i ? { ...s, [f]: v } : s)) }
-  function toggleNewSkillAllowedAttr(i: number, attrKey: string) { setNewTemplateSkills(p => p.map((s, j) => j === i ? { ...s, allowedAttributeIds: s.allowedAttributeIds.includes(attrKey) ? s.allowedAttributeIds.filter(k => k !== attrKey) : [...s.allowedAttributeIds, attrKey] } : s)) }
+  function toggleNewSkillAllowedAttr(i: number, attrKey: string) { setNewTemplateSkills(p => p.map((s, j) => j === i ? withToggledSkillAllowedAttr(s, attrKey) : s)) }
   function addEditSkillRow() { setEditTemplateSkills(p => [...p, { name: '', description: '', attributeId: '', allowedAttributeIds: [], defaultAttributeId: '' }]) }; function removeEditSkillRow(i: number) { setEditTemplateSkills(p => p.filter((_, j) => j !== i)) }; function updateEditSkill(i: number, f: string, v: string) { setEditTemplateSkills(p => p.map((s, j) => j === i ? { ...s, [f]: v } : s)) }
-  function toggleEditSkillAllowedAttr(i: number, attrKey: string) { setEditTemplateSkills(p => p.map((s, j) => j === i ? { ...s, allowedAttributeIds: s.allowedAttributeIds.includes(attrKey) ? s.allowedAttributeIds.filter(k => k !== attrKey) : [...s.allowedAttributeIds, attrKey] } : s)) }
+  function toggleEditSkillAllowedAttr(i: number, attrKey: string) { setEditTemplateSkills(p => p.map((s, j) => j === i ? withToggledSkillAllowedAttr(s, attrKey) : s)) }
   const [editingTemplateError, setEditingTemplateError] = useState<string | null>(null)
 
   // Snapshot attachment state
@@ -504,7 +552,7 @@ export default function AdventureDetailPage() {
       name: s.name,
       description: s.description ?? '',
       attributeId: s.attribute?.key ?? '',
-      allowedAttributeIds: (s.allowedAttributeIds || []).map((x: string) => { const a = tmpl.attributes.find(attr => attr.id === x); return a?.key ?? ''; }).filter(Boolean),
+      allowedAttributeIds: resolveAllowedAttributeKeys(s.allowedAttributeIds, tmpl.attributes),
       defaultAttributeId: s.defaultAttribute?.key ?? (s.attribute?.key ?? ''),
     })));
     setEditTemplateProfiles((tmpl.skillModifierProfiles || []).map(p => ({ name: p.name, targetMode: (p as any).targetMode ?? 'ALL_SKILLS', targetSkillIds: (p as any).targetSkillIds ?? [], options: p.options.map(o => ({ label: o.label, value: o.value })) })));
@@ -546,7 +594,7 @@ export default function AdventureDetailPage() {
   function cancelEditTemplate() { setEditingTemplateId(null); setEditingTemplateError(null) }
 
   async function handleUpdateTemplate(e: SubmitEvent) {
-    e.preventDefault(); if (!editingTemplateId) return; setEditingTemplateError(null)
+    e.preventDefault(); if (!editingTemplateId) { return } setEditingTemplateError(null)
     const ve = validateTemplateForm({ attrs: editTemplateAttrs, coreResources: editCoreResources, profiles: editTemplateProfiles, acConfigs: editAcConfigs }, t)
     if (ve) { setEditingTemplateError(ve); return }
     setTemplateSaving(true)
@@ -574,7 +622,7 @@ export default function AdventureDetailPage() {
     try { const s = await api.post<{ id: string }>('/character-sheets/from-campaign', { characterName: newCharName.trim(), adventureId: id }); router.push(`/dashboard/character-sheets/${s.id}`) } catch (err) { setNewCharError(err instanceof Error ? err.message : t('campaign:failedToCreateCharacter')) } finally { setNewCharCreating(false) }
   }
   async function handleLinkCharacter(e: SubmitEvent) {
-    e.preventDefault(); setLinkCharError(null); if (!linkSheetId) return; setLinkCharLinking(true)
+    e.preventDefault(); setLinkCharError(null); if (!linkSheetId) { return } setLinkCharLinking(true)
     try { await api.post(`/character-sheets/${linkSheetId}/link`, { adventureId: id }); setShowLinkCharForm(false); setLinkSheetId(''); fetchCampaignCharacters() } catch (err) { setLinkCharError(err instanceof Error ? err.message : t('campaign:failedToLinkCharacter')) } finally { setLinkCharLinking(false) }
   }
   async function handleRemoveCharacter(sid: string) { try { await api.post(`/character-sheets/${sid}/unlink`); fetchCampaignCharacters() } catch { } }
@@ -625,7 +673,7 @@ export default function AdventureDetailPage() {
       <AdventureHeader adventure={adventure} isGM={isGM} userRole={userRole} onEdit={() => setEditing(true)} onDelete={() => setConfirmDelete(true)} />
       {!editing ? (<div className="space-y-6 mt-8">
         <div className="flex items-center justify-between gap-4">
-          <nav className="flex gap-1"><button onClick={() => setActiveTab('campaign')} className={`tab-pill ${activeTab === 'campaign' ? 'tab-pill-active' : ''}`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>{t('campaign:campaignTab')}</button><button onClick={() => setActiveTab('books')} className={`tab-pill ${activeTab === 'books' ? 'tab-pill-active' : ''}`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>{t('campaign:booksTab')}</button><button onClick={() => setActiveTab('templates')} className={`tab-pill ${activeTab === 'templates' ? 'tab-pill-active' : ''}`}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>{t('campaign:templatesTab')}</button></nav>
+          <nav className="flex gap-1"><button onClick={() => setActiveTab('campaign')} className={tabPillClass(activeTab, 'campaign')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>{t('campaign:campaignTab')}</button><button onClick={() => setActiveTab('books')} className={tabPillClass(activeTab, 'books')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>{t('campaign:booksTab')}</button><button onClick={() => setActiveTab('templates')} className={tabPillClass(activeTab, 'templates')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>{t('campaign:templatesTab')}</button></nav>
         </div>
         <hr className="divider" />
         {activeTab === 'campaign' && (<div className="space-y-6">

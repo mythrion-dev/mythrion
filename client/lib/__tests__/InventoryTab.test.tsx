@@ -24,6 +24,7 @@ function mockItem(overrides = {}) {
     weight: 3,
     cost: '150 gp',
     description: 'A finely crafted steel longsword',
+    order: 0,
     ...overrides,
   }
 }

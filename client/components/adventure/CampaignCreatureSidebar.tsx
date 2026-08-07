@@ -6,6 +6,14 @@ import { useTranslation } from 'react-i18next'
 import { api, API_URL, authFetch } from '@/lib/api'
 import { NpcEditDrawer } from './NpcEditDrawer'
 
+/* ── Module helpers ── */
+
+const SKELETON_KEYS = ['a', 'b', 'c', 'd']
+
+function avatarUrl(npcId: string) {
+  return `${API_URL}/images/character-sheets/${npcId}/avatar`
+}
+
 /* ── Types ── */
 
 interface NpcSheet {
@@ -23,11 +31,11 @@ interface NpcSheet {
 /* ── Props ── */
 
 interface CampaignCreatureSidebarProps {
-  adventureId: string
-  isGM: boolean
-  refreshKey?: number
+  readonly adventureId: string
+  readonly isGM: boolean
+  readonly refreshKey?: number
   /** Called after an NPC/MOB is created or deleted so parent components can re-fetch */
-  onCreaturesChange?: () => void
+  readonly onCreaturesChange?: () => void
 }
 
 /* ── Component ── */
@@ -149,11 +157,6 @@ export function CampaignCreatureSidebar({
     return `${n.hpActual ?? '?'} / ${n.hpMax}`
   }
 
-  /* ── Avatar URL ── */
-  function avatarUrl(npcId: string) {
-    return `${API_URL}/images/character-sheets/${npcId}/avatar`
-  }
-
   /* ── Render ── */
   if (!isGM) return null
 
@@ -257,20 +260,26 @@ export function CampaignCreatureSidebar({
             <div className="px-4 py-3 border-b border-border space-y-3 shrink-0">
               {/* Filter pills */}
               <div className="flex gap-1">
-                {(['all', 'NPC', 'MOB'] as const).map(filterType => (
-                  <button
-                    key={filterType}
-                    onClick={() => setFilter(filterType)}
-                    className={`tab-pill text-xs ${filter === filterType ? 'tab-pill-active' : ''}`}
-                  >
-                    {filterType === 'all' ? t('campaign:all') : filterType === 'NPC' ? t('campaign:npcs') : t('campaign:mobs')}
-                    {filterType !== 'all' && (
-                      <span className="ml-1 opacity-70">
-                        ({npcs.filter(n => n.npcType === (filterType === 'NPC' ? 'NPC' : 'MOB')).length})
-                      </span>
-                    )}
-                  </button>
-                ))}
+                {(['all', 'NPC', 'MOB'] as const).map(filterType => {
+                  let filterLabel: string
+                  if (filterType === 'all') filterLabel = t('campaign:all')
+                  else if (filterType === 'NPC') filterLabel = t('campaign:npcs')
+                  else filterLabel = t('campaign:mobs')
+                  return (
+                    <button
+                      key={filterType}
+                      onClick={() => setFilter(filterType)}
+                      className={`tab-pill text-xs ${filter === filterType ? 'tab-pill-active' : ''}`}
+                    >
+                      {filterLabel}
+                      {filterType !== 'all' && (
+                        <span className="ml-1 opacity-70">
+                          ({npcs.filter(n => n.npcType === (filterType === 'NPC' ? 'NPC' : 'MOB')).length})
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
 
               {/* Create buttons */}
@@ -326,8 +335,8 @@ export function CampaignCreatureSidebar({
             <div className="flex-1 overflow-y-auto">
               {loading && (
                 <div className="p-4 space-y-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="card !p-3 flex items-center gap-3">
+                  {SKELETON_KEYS.map(k => (
+                    <div key={k} className="card !p-3 flex items-center gap-3">
                       <div className="skeleton w-10 h-10 rounded-lg shrink-0" />
                       <div className="flex-1 space-y-1.5">
                         <div className="skeleton h-4 w-28" />

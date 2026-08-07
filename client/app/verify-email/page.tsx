@@ -71,7 +71,7 @@ function VerifyEmailWaiting() {
     }
   }
 
-  async function handleChangeEmail(e: React.FormEvent<HTMLFormElement>) {
+  async function handleChangeEmail(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (changingEmail) return
     setChangingEmail(true)

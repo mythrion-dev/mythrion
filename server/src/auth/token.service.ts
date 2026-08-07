@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { I18nService } from 'nestjs-i18n'
@@ -27,11 +28,14 @@ export class TokenService {
 
   /** Generate access token (short-lived) and refresh token (long-lived, stored in DB) */
   async generateTokens(userId: string, email: string) {
-    const role = this.adminService.isAdmin(email)
-      ? 'admin'
-      : this.adminService.isEarlyAccess(email)
-        ? 'early_access'
-        : 'user'
+    let role: 'admin' | 'early_access' | 'user'
+    if (this.adminService.isAdmin(email)) {
+      role = 'admin'
+    } else if (this.adminService.isEarlyAccess(email)) {
+      role = 'early_access'
+    } else {
+      role = 'user'
+    }
     const accessToken = this.jwtService.sign(
       { sub: userId, email, role },
       { expiresIn: ACCESS_TOKEN_EXPIRY },
@@ -211,13 +215,23 @@ export class TokenService {
               exemptId = stored.id
               break
             }
-          } catch {
+          } catch (err) {
             // Corrupt stored hash — treat as non-matching and keep scanning.
+            Logger.warn(
+              `Failed to compare refresh token hash for user ${userId}: ${
+                err instanceof Error ? err.message : String(err)
+              }`,
+            )
           }
         }
       }
-    } catch {
+    } catch (err) {
       // Unparseable token envelope — fall through to revoking everything.
+      Logger.warn(
+        `Failed to parse refresh token envelope: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      )
     }
 
     await this.prisma.refreshToken.updateMany({

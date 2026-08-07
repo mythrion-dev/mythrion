@@ -30,7 +30,7 @@ describe('TokenService', () => {
   let service: TokenService
   let mockPrisma: ReturnType<typeof createMockPrismaService>
   let mockJwtService: Record<string, jest.Mock>
-  let mockRedis: Record<string, jest.Mock>
+  let mockRedis: Record<string, any>
   let mockAdminService: { isAdmin: jest.Mock; isEarlyAccess: jest.Mock }
 
   beforeEach(async () => {

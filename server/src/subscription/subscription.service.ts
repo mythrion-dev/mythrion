@@ -7,11 +7,7 @@ import {
 } from '@nestjs/common'
 import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
-import { createHash, randomBytes } from 'node:crypto'
-import type {
-  PaymentGateway,
-  CreateSubscriptionResult as GatewayCreateResult,
-} from './payment-gateway.interface.js'
+import type { PaymentGateway } from './payment-gateway.interface.js'
 import { PAYMENT_GATEWAY } from './payment-gateway.interface.js'
 
 type SubscriptionStatus =
@@ -38,6 +34,31 @@ export interface MySubscriptionResult {
   }
   status: string
   pgSubscriptionId: string | null
+  graceEndsAt: Date | null
+  currentPeriodStart: Date | null
+  currentPeriodEnd: Date | null
+  cancelledAt: Date | null
+  cancelAtPeriodEnd: boolean
+  createdAt: Date
+  invoices: Array<{
+    id: string
+    amount: number
+    currency: string
+    status: string
+    paidAt: Date | null
+    dueDate: Date | null
+    createdAt: Date
+  }>
+}
+
+/** A userSubscription row with the plan + recent invoices eagerly loaded. */
+type SubscriptionWithDetails = {
+  id: string
+  userId: string
+  plan: { slug: string; name: string; price: number }
+  status: SubscriptionStatus
+  pgSubscriptionId: string | null
+  pgCustomerId: string | null
   graceEndsAt: Date | null
   currentPeriodStart: Date | null
   currentPeriodEnd: Date | null
@@ -226,8 +247,144 @@ export class SubscriptionService {
   async getMySubscription(
     userId: string,
   ): Promise<MySubscriptionResult | null> {
-    let sub = await this.prisma.userSubscription.findUnique({
+    let sub: SubscriptionWithDetails | null =
+      await this.prisma.userSubscription.findUnique({
+        where: { userId },
+        include: {
+          plan: { select: { slug: true, name: true, price: true } },
+          invoices: {
+            orderBy: { createdAt: 'desc' },
+            take: 10,
+            select: {
+              id: true,
+              amount: true,
+              currency: true,
+              status: true,
+              paidAt: true,
+              dueDate: true,
+              createdAt: true,
+            },
+          },
+        },
+      })
+
+    if (!sub) return null
+
+    // Auto-repair: when we have a pgSubscriptionId but the local record is
+    // missing data the gateway can supply, refresh it. This covers:
+    //  - PENDING/GRACE stuck local status (the gateway may have advanced the
+    //    subscription via webhook or recurring payment)
+    //  - ACTIVE subscriptions whose currentPeriodEnd is null (e.g. created
+    //    before next_invoice_at was stored, or no webhook round-trip yet)
+    sub = await this.maybeRepairSubscription(userId, sub)
+
+    return {
+      id: sub.id,
+      plan: sub.plan,
+      status: sub.status,
+      pgSubscriptionId: sub.pgSubscriptionId,
+      graceEndsAt: sub.graceEndsAt,
+      currentPeriodStart: sub.currentPeriodStart,
+      currentPeriodEnd: sub.currentPeriodEnd,
+      cancelledAt: sub.cancelledAt,
+      cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
+      createdAt: sub.createdAt,
+      invoices: sub.invoices,
+    }
+  }
+
+  /**
+   * Auto-repair a local subscription by refreshing status/period data from the
+   * gateway when the local record looks stale (PENDING/GRACE stuck, or an
+   * ACTIVE subscription with no currentPeriodEnd). Returns the (possibly
+   * updated) subscription.
+   */
+  private async maybeRepairSubscription(
+    userId: string,
+    sub: SubscriptionWithDetails,
+  ): Promise<SubscriptionWithDetails> {
+    if (!sub.pgSubscriptionId) return sub
+
+    const needsRepair =
+      sub.status === 'PENDING' ||
+      sub.status === 'GRACE' ||
+      (!sub.currentPeriodEnd &&
+        sub.status !== 'CANCELLED' &&
+        sub.status !== 'EXPIRED')
+
+    if (!needsRepair) return sub
+
+    try {
+      const gatewaySub = await this.gateway.getSubscription(
+        sub.pgSubscriptionId,
+      )
+      const mappedStatus = mapGatewayStatus(gatewaySub.status)
+      const nextPayment = gatewaySub.nextPaymentDate
+        ? new Date(gatewaySub.nextPaymentDate)
+        : null
+
+      const statusChanged = mappedStatus !== 'PENDING'
+      const periodEndMissing = !sub.currentPeriodEnd && !!nextPayment
+      const customerIdMissing = !!gatewaySub.customerId && !sub.pgCustomerId
+
+      if (statusChanged || periodEndMissing || customerIdMissing) {
+        const now = new Date()
+        const repaired = await this.applyRepair(userId, sub, {
+          statusChanged,
+          periodEndMissing,
+          customerIdMissing,
+          mappedStatus,
+          nextPayment,
+          now,
+          gatewayCustomerId: gatewaySub.customerId ?? null,
+        })
+        this.logger.log(
+          `Auto-repaired subscription ${repaired.pgSubscriptionId} (status: ${repaired.status}, period end: ${repaired.currentPeriodEnd?.toISOString() ?? 'n/a'})`,
+        )
+        return repaired
+      }
+
+      return sub
+    } catch (err) {
+      // Gateway API failure — just serve stale data, don't block the user
+      this.logger.warn(
+        `Failed to check gateway status for subscription ${sub.pgSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
+      )
+      return sub
+    }
+  }
+
+  /** Persist the auto-repair computed by maybeRepairSubscription. */
+  private async applyRepair(
+    userId: string,
+    sub: SubscriptionWithDetails,
+    repair: {
+      statusChanged: boolean
+      periodEndMissing: boolean
+      customerIdMissing: boolean
+      mappedStatus: SubscriptionStatus
+      nextPayment: Date | null
+      now: Date
+      gatewayCustomerId: string | null
+    },
+  ): Promise<SubscriptionWithDetails> {
+    return this.prisma.userSubscription.update({
       where: { userId },
+      data: {
+        status: repair.statusChanged ? repair.mappedStatus : sub.status,
+        currentPeriodStart:
+          repair.statusChanged &&
+          (sub.status === 'PENDING' || sub.status === 'GRACE')
+            ? repair.now
+            : sub.currentPeriodStart,
+        currentPeriodEnd:
+          repair.statusChanged || repair.periodEndMissing
+            ? repair.nextPayment
+            : sub.currentPeriodEnd,
+        pgCustomerId: repair.customerIdMissing
+          ? repair.gatewayCustomerId
+          : sub.pgCustomerId,
+      },
       include: {
         plan: { select: { slug: true, name: true, price: true } },
         invoices: {
@@ -245,97 +402,6 @@ export class SubscriptionService {
         },
       },
     })
-
-    if (!sub) return null
-
-    // Auto-repair: when we have a pgSubscriptionId but the local record is
-    // missing data the gateway can supply, refresh it. This covers:
-    //  - PENDING/GRACE stuck local status (the gateway may have advanced the
-    //    subscription via webhook or recurring payment)
-    //  - ACTIVE subscriptions whose currentPeriodEnd is null (e.g. created
-    //    before next_invoice_at was stored, or no webhook round-trip yet)
-    if (
-      sub.pgSubscriptionId &&
-      (sub.status === 'PENDING' ||
-        sub.status === 'GRACE' ||
-        (!sub.currentPeriodEnd &&
-          sub.status !== 'CANCELLED' &&
-          sub.status !== 'EXPIRED'))
-    ) {
-      try {
-        const gatewaySub = await this.gateway.getSubscription(
-          sub.pgSubscriptionId,
-        )
-        const mappedStatus = mapGatewayStatus(gatewaySub.status)
-        const nextPayment = gatewaySub.nextPaymentDate
-          ? new Date(gatewaySub.nextPaymentDate)
-          : null
-
-        const statusChanged = mappedStatus !== 'PENDING'
-        const periodEndMissing = !sub.currentPeriodEnd && !!nextPayment
-        const customerIdMissing = !!gatewaySub.customerId && !sub.pgCustomerId
-
-        if (statusChanged || periodEndMissing || customerIdMissing) {
-          const now = new Date()
-          sub = await this.prisma.userSubscription.update({
-            where: { userId },
-            data: {
-              status: statusChanged ? mappedStatus : sub.status,
-              currentPeriodStart:
-                statusChanged &&
-                (sub.status === 'PENDING' || sub.status === 'GRACE')
-                  ? now
-                  : sub.currentPeriodStart,
-              currentPeriodEnd:
-                statusChanged || periodEndMissing
-                  ? nextPayment
-                  : sub.currentPeriodEnd,
-              pgCustomerId: customerIdMissing
-                ? gatewaySub.customerId
-                : sub.pgCustomerId,
-            },
-            include: {
-              plan: { select: { slug: true, name: true, price: true } },
-              invoices: {
-                orderBy: { createdAt: 'desc' },
-                take: 10,
-                select: {
-                  id: true,
-                  amount: true,
-                  currency: true,
-                  status: true,
-                  paidAt: true,
-                  dueDate: true,
-                  createdAt: true,
-                },
-              },
-            },
-          })
-          this.logger.log(
-            `Auto-repaired subscription ${sub.pgSubscriptionId} (status: ${sub.status}, period end: ${sub.currentPeriodEnd?.toISOString() ?? 'n/a'})`,
-          )
-        }
-      } catch (err) {
-        // Gateway API failure — just serve stale data, don't block the user
-        this.logger.warn(
-          `Failed to check gateway status for subscription ${sub.pgSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
-        )
-      }
-    }
-
-    return {
-      id: sub.id,
-      plan: sub.plan,
-      status: sub.status,
-      pgSubscriptionId: sub.pgSubscriptionId,
-      graceEndsAt: sub.graceEndsAt,
-      currentPeriodStart: sub.currentPeriodStart,
-      currentPeriodEnd: sub.currentPeriodEnd,
-      cancelledAt: sub.cancelledAt,
-      cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
-      createdAt: sub.createdAt,
-      invoices: sub.invoices,
-    }
   }
 
   /**
@@ -648,7 +714,7 @@ export class SubscriptionService {
         select: { status: true },
       })
 
-      if (localSub && localSub.status === 'PENDING' && mappedStatus !== 'PENDING') {
+      if (localSub?.status === 'PENDING' && mappedStatus !== 'PENDING') {
         // Advance from PENDING
         const nextPayment = gatewaySub.nextPaymentDate
           ? new Date(gatewaySub.nextPaymentDate)

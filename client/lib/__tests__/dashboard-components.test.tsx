@@ -73,9 +73,9 @@ describe('Sidebar', () => {
     expect(aside).toBeInTheDocument()
   })
 
-  it('renders the logo text (Mythrion)', () => {
+  it.each(['Mythrion', 'AJ', 'Sign out'])('renders %s', (text) => {
     render(<Sidebar />)
-    expect(screen.getByText('Mythrion')).toBeInTheDocument()
+    expect(screen.getByText(text)).toBeInTheDocument()
   })
 
   it('renders all navigation links', () => {
@@ -89,16 +89,6 @@ describe('Sidebar', () => {
     render(<Sidebar />)
     expect(screen.getByText('Alice Johnson')).toBeInTheDocument()
     expect(screen.getByText('alice@example.com')).toBeInTheDocument()
-  })
-
-  it('renders user initials avatar', () => {
-    render(<Sidebar />)
-    expect(screen.getByText('AJ')).toBeInTheDocument()
-  })
-
-  it('renders sign out button', () => {
-    render(<Sidebar />)
-    expect(screen.getByText('Sign out')).toBeInTheDocument()
   })
 
   it('renders collapse toggle button', () => {

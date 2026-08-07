@@ -17,7 +17,10 @@ describe('CommunityTemplateController', () => {
         data: [
           { id: 't1', name: 'Public Template', description: 'A public template' },
         ],
-        meta: { total: 1, page: 1, limit: 10, totalPages: 1 },
+        total: 1,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
       }),
       findOnePublic: jest.fn().mockResolvedValue({
         id: 't1',
@@ -53,7 +56,7 @@ describe('CommunityTemplateController', () => {
         search: undefined,
       })
       expect(result.data).toHaveLength(1)
-      expect(result.meta.total).toBe(1)
+      expect(result.total).toBe(1)
     })
 
     it('passes query parameters when provided', async () => {

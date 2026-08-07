@@ -15,10 +15,10 @@ export function MemberRow({
   isSelf,
   onRemove,
 }: {
-  member: Member
-  isGM: boolean
-  isSelf: boolean
-  onRemove: () => void
+  readonly member: Member
+  readonly isGM: boolean
+  readonly isSelf: boolean
+  readonly onRemove: () => void
 }) {
   const { t } = useTranslation()
   return (

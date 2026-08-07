@@ -18,9 +18,11 @@ import { LoginDto } from './dto/login.dto.js'
 import { RegisterDto } from './dto/register.dto.js'
 import { OnboardingDto } from './dto/onboarding.dto.js'
 import { Language } from './dto/language.dto.js'
-import { VerifyTwoFactorDto } from './dto/two-factor.dto.js'
-import { ResendTwoFactorDto } from './dto/two-factor.dto.js'
-import { TwoFactorConfirmDto } from './dto/two-factor.dto.js'
+import {
+  VerifyTwoFactorDto,
+  ResendTwoFactorDto,
+  TwoFactorConfirmDto,
+} from './dto/two-factor.dto.js'
 import { VerifyEmailDto } from './dto/verify-email.dto.js'
 import { ResendVerificationDto } from './dto/resend-verification.dto.js'
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js'
@@ -58,10 +60,8 @@ export class AuthService {
   /** Lazily load geoip-lite only when first requested to avoid loading
    *  the ~150MB MaxMind database into memory at startup. */
   private async loadGeoip(): Promise<typeof import('geoip-lite')> {
-    if (!this._geoip) {
-      // Dynamic import ensures the database file is only read when actually needed
-      this._geoip = await import('geoip-lite')
-    }
+    // Dynamic import ensures the database file is only read when actually needed
+    this._geoip ??= await import('geoip-lite')
     return this._geoip
   }
 
@@ -279,9 +279,8 @@ export class AuthService {
       where: { id: payload.userId },
     })
     if (
-      !user ||
-      !user.verificationTokenHash ||
-      !user.verificationTokenExpiresAt
+      !user?.verificationTokenHash ||
+      !user?.verificationTokenExpiresAt
     ) {
       throw new BadRequestException(this.i18n.t('auth.invalidOrExpiredToken'))
     }
@@ -340,7 +339,7 @@ export class AuthService {
     })
     // Only accounts with a password can reset it; social-only accounts silently
     // get the same generic response (no enumeration).
-    if (user && user.passwordHash) {
+    if (user?.passwordHash) {
       await this.issuePasswordResetToken(user)
     }
     return { success: true }
@@ -356,9 +355,8 @@ export class AuthService {
       where: { id: payload.userId },
     })
     if (
-      !user ||
-      !user.passwordResetTokenHash ||
-      !user.passwordResetTokenExpiresAt
+      !user?.passwordResetTokenHash ||
+      !user?.passwordResetTokenExpiresAt
     ) {
       throw new BadRequestException(this.i18n.t('auth.invalidOrExpiredToken'))
     }

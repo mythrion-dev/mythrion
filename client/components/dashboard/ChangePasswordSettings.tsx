@@ -27,7 +27,7 @@ export function ChangePasswordSettings() {
   // Google-only accounts have no password set to change.
   if (user?.hasPassword === false) return null
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     setSuccess(null)

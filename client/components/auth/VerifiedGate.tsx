@@ -3,12 +3,10 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { useTranslation } from 'react-i18next'
 
-export function VerifiedGate({ children }: { children: React.ReactNode }) {
+export function VerifiedGate({ children }: { readonly children: React.ReactNode }) {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { t } = useTranslation()
 
   useEffect(() => {
     if (loading) return
@@ -29,7 +27,7 @@ export function VerifiedGate({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (!user || !user.emailVerified) {
+  if (!user?.emailVerified) {
     return null
   }
 

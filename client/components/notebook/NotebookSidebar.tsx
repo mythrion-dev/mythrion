@@ -37,14 +37,14 @@ interface Notebook {
 }
 
 interface NotebookSidebarProps {
-  adventureId: string
-  isGM: boolean
+  readonly adventureId: string
+  readonly isGM: boolean
   /** Force-open the sidebar (from tab button click) */
-  forceOpen?: boolean
+  readonly forceOpen?: boolean
   /** Called when sidebar should close (from tab button) */
-  onClose?: () => void
+  readonly onClose?: () => void
   /** Hide floating toggle button (adventure page already has tab) */
-  hideToggle?: boolean
+  readonly hideToggle?: boolean
 }
 
 interface ContextMenuState {
@@ -108,6 +108,20 @@ function stripHtml(html: string): string {
   return result
 }
 
+/* ── Folder helpers (extracted to avoid deeply nested callbacks) ── */
+
+function removePageFromFolder(folder: Folder, pageId: string): Folder {
+  return { ...folder, pages: folder.pages.filter((p) => p.id !== pageId) }
+}
+
+function findAndRemovePageFromFolder(
+  folder: Folder,
+  pageId: string,
+): { folder: Folder; page: Page | null } {
+  const page = folder.pages.find((p) => p.id === pageId) ?? null
+  return { folder: removePageFromFolder(folder, pageId), page }
+}
+
 /* ── Component ── */
 
 export function NotebookSidebar({
@@ -140,7 +154,7 @@ export function NotebookSidebar({
   const [folderDeleteDialog, setFolderDeleteDialog] = useState<FolderDeleteDialogState | null>(null)
 
   // Drag-over tracking
-  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
+  const [, setDragOverFolderId] = useState<string | null>(null)
   const [dragOverRoot, setDragOverRoot] = useState(false)
 
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -452,10 +466,7 @@ export function NotebookSidebar({
           return {
             ...prev,
             pages: prev.pages.filter((p) => p.id !== pageId),
-            folders: prev.folders.map((f) => ({
-              ...f,
-              pages: f.pages.filter((p) => p.id !== pageId),
-            })),
+            folders: prev.folders.map((f) => removePageFromFolder(f, pageId)),
           }
         })
         if (activePageId === pageId) {
@@ -485,12 +496,9 @@ export function NotebookSidebar({
 
           // Remove from its current location
           const updatedFolders = prev.folders.map((f) => {
-            const page = f.pages.find((p) => p.id === pageId)
+            const { folder, page } = findAndRemovePageFromFolder(f, pageId)
             if (page) movedPage = page
-            return {
-              ...f,
-              pages: f.pages.filter((p) => p.id !== pageId),
-            }
+            return folder
           })
 
           if (!movedPage) {
@@ -758,11 +766,9 @@ export function NotebookSidebar({
           <h2 className="text-sm font-semibold text-foreground">{t('notebook:campaignNotebook')}</h2>
           <div className="flex items-center gap-1">
             {notebook && !activePage && (
-              <>
-                <span className="text-[10px] text-muted-foreground bg-hover px-1.5 py-0.5 rounded">
-                  {isGM ? t('notebook:gmOnly') : t('common:private')}
-                </span>
-              </>
+              <span className="text-[10px] text-muted-foreground bg-hover px-1.5 py-0.5 rounded">
+                {isGM ? t('notebook:gmOnly') : t('common:private')}
+              </span>
             )}
             <button
               type="button"
@@ -904,14 +910,14 @@ export function NotebookSidebar({
               {/* ── Folders section ── */}
               {!searchQuery.trim() && notebook.folders.length > 0 && (
                 <div>
-                  {notebook.folders
+                  {[...notebook.folders]
                     .sort((a, b) => a.sortOrder - b.sortOrder)
                     .map((folder) => (
                       <NotebookFolder
                         key={folder.id}
                         id={folder.id}
                         name={folder.name}
-                        pages={folder.pages.sort((a, b) => a.sortOrder - b.sortOrder)}
+                        pages={[...folder.pages].sort((a, b) => a.sortOrder - b.sortOrder)}
                         activePageId={activePageId}
                         isExpanded={expandedFolders.includes(folder.id)}
                         onToggle={() => toggleFolder(folder.id)}
@@ -948,7 +954,7 @@ export function NotebookSidebar({
                         </p>
                       )}
                       <div className="space-y-0.5">
-                        {notebook.pages
+                        {[...notebook.pages]
                           .sort((a, b) => a.sortOrder - b.sortOrder)
                           .map((page) => (
                             <NotebookPageItem

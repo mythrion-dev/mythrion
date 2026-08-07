@@ -78,8 +78,26 @@ describe('SubscriptionController', () => {
   describe('GET /api/subscriptions/plans', () => {
     it('returns all plans from the subscription service', async () => {
       const plans = [
-        { id: 'monthly', slug: 'monthly', name: 'Monthly', price: 12000 },
-        { id: 'annual', slug: 'annual', name: 'Annual', price: 120000 },
+        {
+          id: 'monthly',
+          slug: 'monthly',
+          name: 'Monthly',
+          price: 12000,
+          description: 'Monthly plan',
+          pgPlanId: 'pg-monthly',
+          createdAt: new Date('2025-01-01'),
+          updatedAt: new Date('2025-01-01'),
+        },
+        {
+          id: 'annual',
+          slug: 'annual',
+          name: 'Annual',
+          price: 120000,
+          description: 'Annual plan',
+          pgPlanId: 'pg-annual',
+          createdAt: new Date('2025-01-01'),
+          updatedAt: new Date('2025-01-01'),
+        },
       ]
       subscriptionService.listPlans.mockResolvedValue(plans)
 
@@ -160,7 +178,7 @@ describe('SubscriptionController', () => {
 
     it('throws UnprocessableEntityException when planId is undefined', async () => {
       await expect(
-        controller.createSubscription({}, createRequest()),
+        controller.createSubscription({} as any, createRequest()),
       ).rejects.toThrow(UnprocessableEntityException)
     })
 
@@ -183,6 +201,13 @@ describe('SubscriptionController', () => {
         id: 'sub-1',
         status: 'ACTIVE',
         plan: { slug: 'monthly', name: 'Monthly', price: 12000 },
+        pgSubscriptionId: 'pg-sub-1',
+        graceEndsAt: null,
+        currentPeriodStart: new Date('2025-01-01'),
+        currentPeriodEnd: new Date('2025-02-01'),
+        cancelledAt: null,
+        cancelAtPeriodEnd: false,
+        createdAt: new Date('2025-01-01'),
         invoices: [],
       }
       subscriptionService.getMySubscription.mockResolvedValue(subData)

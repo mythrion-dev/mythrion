@@ -24,6 +24,38 @@ export interface RangeResult {
  *
  * Returns `null` when the header is absent, malformed, or unsatisfiable.
  */
+function parseSuffixRange(
+  endStr: string,
+  fileSize: number,
+): { start: number; end: number } | null {
+  // Suffix range: bytes=-N → last N bytes
+  const suffixLen = Number.parseInt(endStr, 10)
+  if (Number.isNaN(suffixLen) || suffixLen <= 0) return null
+  return { start: Math.max(0, fileSize - suffixLen), end: fileSize - 1 }
+}
+
+function parseOpenEndedRange(
+  startStr: string,
+  fileSize: number,
+): { start: number; end: number } | null {
+  // Open-ended: bytes=N-
+  const start = Number.parseInt(startStr, 10)
+  if (Number.isNaN(start) || start < 0) return null
+  return { start, end: fileSize - 1 }
+}
+
+function parseExplicitRange(
+  startStr: string,
+  endStr: string,
+): { start: number; end: number } | null {
+  // Explicit range: bytes=N-M
+  const start = Number.parseInt(startStr, 10)
+  const end = Number.parseInt(endStr, 10)
+  if (Number.isNaN(start) || Number.isNaN(end) || start < 0 || end < 0) return null
+  if (start > end) return null
+  return { start, end }
+}
+
 export function parseRange(
   rangeHeader: string | undefined,
   fileSize: number,
@@ -31,35 +63,24 @@ export function parseRange(
   if (!rangeHeader || fileSize <= 0) return null
 
   // Only handle single ranges — grab the first one
-  const match = rangeHeader.match(/^bytes=(\d*)-(\d*)/i)
+  const match = /^bytes=(\d*)-(\d*)/i.exec(rangeHeader)
   if (!match) return null
 
-  const suffix = match[1] === '' && match[2] !== ''
-  const openEnded = match[1] !== '' && match[2] === ''
   const startStr = match[1]
   const endStr = match[2]
 
-  let start: number
-  let end: number
-
-  if (suffix) {
-    // Suffix range: bytes=-N → last N bytes
-    const suffixLen = Number.parseInt(endStr, 10)
-    if (Number.isNaN(suffixLen) || suffixLen <= 0) return null
-    start = Math.max(0, fileSize - suffixLen)
-    end = fileSize - 1
-  } else if (openEnded) {
-    // Open-ended: bytes=N-
-    start = Number.parseInt(startStr, 10)
-    if (Number.isNaN(start) || start < 0) return null
-    end = fileSize - 1
+  let range: { start: number; end: number } | null
+  if (startStr === '' && endStr !== '') {
+    range = parseSuffixRange(endStr, fileSize)
+  } else if (startStr !== '' && endStr === '') {
+    range = parseOpenEndedRange(startStr, fileSize)
   } else {
-    // Explicit range: bytes=N-M
-    start = Number.parseInt(startStr, 10)
-    end = Number.parseInt(endStr, 10)
-    if (Number.isNaN(start) || Number.isNaN(end) || start < 0 || end < 0) return null
-    if (start > end) return null
+    range = parseExplicitRange(startStr, endStr)
   }
+
+  if (!range) return null
+
+  let { start, end } = range
 
   // Clamp end to file size
   if (end >= fileSize) {

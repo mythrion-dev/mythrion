@@ -17,7 +17,6 @@ import {
   setRefreshToken,
   removeRefreshToken,
   decodeJwtPayload,
-  getInvitationToken,
   removeInvitationToken,
   refreshAccessToken,
   isAccessTokenExpiringSoon,
@@ -60,7 +59,7 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 

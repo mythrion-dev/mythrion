@@ -17,7 +17,7 @@ import type { SubmitEvent } from 'react'
  * No use of Function() constructor or eval(), so no SonarQube hotspot.
  */
 export function evaluateSummonFormula(formula: string, variables: Record<string, number>): number {
-  if (!formula || !formula.trim()) return 0
+  if (!formula?.trim()) return 0
 
   // ---------- tokenizer ----------
   type Token =
@@ -55,47 +55,61 @@ export function evaluateSummonFormula(formula: string, variables: Record<string,
     return { token: { t: 'num', v: variables[word] ?? 0 }, next: i }
   }
 
+  function isNumberStart(src: string, i: number): boolean {
+    return /\d/.test(src[i]) || (src[i] === '.' && i + 1 < src.length && /\d/.test(src[i + 1]))
+  }
+
+  function isPowerOperator(src: string, i: number): boolean {
+    return src[i] === '*' && i + 1 < src.length && src[i + 1] === '*'
+  }
+
+  function scanToken(src: string, i: number): { token: Token | null; next: number } {
+    const ch = src[i]
+    // Skip whitespace
+    if (/\s/.test(ch)) return { token: null, next: i + 1 }
+
+    // Number
+    if (isNumberStart(src, i)) {
+      const r = readNumber(src, i)
+      return { token: r.token, next: r.next }
+    }
+
+    // ** (two-char operator)
+    if (isPowerOperator(src, i)) {
+      return { token: { t: 'op', v: '**' }, next: i + 2 }
+    }
+    // ^ (shorthand for **)
+    if (ch === '^') {
+      return { token: { t: 'op', v: '**' }, next: i + 1 }
+    }
+
+    // Single-char operators
+    if (ops.has(ch)) {
+      return { token: { t: 'op', v: ch }, next: i + 1 }
+    }
+
+    // Parens / comma
+    if (ch === '(') return { token: { t: 'lparen' }, next: i + 1 }
+    if (ch === ')') return { token: { t: 'rparen' }, next: i + 1 }
+    if (ch === ',') return { token: { t: 'comma' }, next: i + 1 }
+
+    // Identifier (function name or variable)
+    if (/[a-zA-Z_]/.test(ch)) {
+      const r = readIdentifier(src, i)
+      return { token: r.token, next: r.next }
+    }
+
+    // Skip anything else
+    return { token: null, next: i + 1 }
+  }
+
   function tokenize(src: string): Token[] {
     const tokens: Token[] = []
     let i = 0
     while (i < src.length) {
-      const ch = src[i]
-      // Skip whitespace
-      if (/\s/.test(ch)) { i++; continue }
-
-      // Number
-      if (/\d/.test(ch) || (ch === '.' && i + 1 < src.length && /\d/.test(src[i + 1]))) {
-        const r = readNumber(src, i)
-        tokens.push(r.token); i = r.next; continue
-      }
-
-      // ** (two-char operator)
-      if (ch === '*' && i + 1 < src.length && src[i + 1] === '*') {
-        tokens.push({ t: 'op', v: '**' }); i += 2; continue
-      }
-      // ^ (shorthand for **)
-      if (ch === '^') {
-        tokens.push({ t: 'op', v: '**' }); i += 1; continue
-      }
-
-      // Single-char operators
-      if (ops.has(ch)) {
-        tokens.push({ t: 'op', v: ch }); i += 1; continue
-      }
-
-      // Parens / comma
-      if (ch === '(') { tokens.push({ t: 'lparen' }); i += 1; continue }
-      if (ch === ')') { tokens.push({ t: 'rparen' }); i += 1; continue }
-      if (ch === ',') { tokens.push({ t: 'comma' }); i += 1; continue }
-
-      // Identifier (function name or variable)
-      if (/[a-zA-Z_]/.test(ch)) {
-        const r = readIdentifier(src, i)
-        tokens.push(r.token); i = r.next; continue
-      }
-
-      // Skip anything else
-      i++
+      const r = scanToken(src, i)
+      if (r.token) tokens.push(r.token)
+      i = r.next
     }
     return tokens
   }
@@ -245,6 +259,24 @@ function levelNumberById(abilities: Ability[], levelId: string): number | string
   return '?'
 }
 
+function removeLevelFromAbilities(abilities: Ability[], levelId: string): Ability[] {
+  return abilities.map(a => ({ ...a, levels: a.levels.filter(l => l.id !== levelId) }))
+}
+
+function fixSelectedLevelsAfterDelete(selected: Record<string, string>, abilities: Ability[], levelId: string): Record<string, string> {
+  const next = { ...selected }
+  for (const a of abilities) {
+    if (a.levels.some(l => l.id === levelId)) {
+      const remaining = a.levels.filter(l => l.id !== levelId)
+      if (next[a.id] === levelId) {
+        next[a.id] = remaining.at(-1)?.id ?? ''
+      }
+      break
+    }
+  }
+  return next
+}
+
 // ---------- extracted render subcomponents (each stays under the S3776 threshold of 15) ----------
 
 function AbilityCardHeader({
@@ -276,7 +308,7 @@ function AbilityCardHeader({
           <span className="text-[0.65rem] text-muted">{t('character:levelWithNumber', { level: selLevel.level })}</span>
         )}
       </div>
-      <div className="flex items-center gap-2 shrink-0" role="presentation" onClick={stopPropagation} onKeyDown={stopPropagation}>
+      <div className="flex items-center gap-2 shrink-0" onClick={stopPropagation} onKeyDown={stopPropagation}>
         {isAbility && ability.levels.length > 0 && (
           <Select
             options={ability.levels.map(l => ({ id: l.id, label: t('character:levelWithNumber', { level: l.level }) }))}
@@ -502,7 +534,7 @@ function SummonCardSection({
   const attributeDisplays: AttributeDisplay[] = (ability.summonAttributes ?? []).map(sa => {
     const attr = template.attributes.find(at => at.id === sa.attributeId)
     if (!attr) return null
-    const modResult = (summonModifierResults[ability.id] ?? {})[attr.id]
+    const modResult = summonModifierResults[ability.id]?.[attr.id]
     return {
       key: attr.key,
       name: attr.name,
@@ -675,6 +707,7 @@ export function AbilitiesTab({
   const [showNewSummonAbility, setShowNewSummonAbility] = useState<string | null>(null)
 
   const toggleExpand = (aid: string) => setExpandedAbilities(prev => ({ ...prev, [aid]: !prev[aid] }))
+  const selectLevel = (abilityId: string, val: string) => setSelectedLevels(prev => ({ ...prev, [abilityId]: val }))
 
   function getSelectedLevel(ability: Ability): AbilityLevel | undefined {
     const selId = selectedLevels[ability.id]
@@ -702,6 +735,20 @@ export function AbilitiesTab({
       setShowAddLevelModal(null)
     } catch (err) { setLevelModalError(err instanceof Error ? err.message : t('character:failedToCreateLevel')) }
     finally { setLevelModalSaving(false) }
+  }
+
+  async function handleConfirmDeleteLevel(levelId: string) {
+    if (!sheetId) return
+    setDeletingLevel(true)
+    try {
+      await api.delete(`/character-sheets/${sheetId}/abilities/x/levels/${levelId}`)
+      setAbilities(prev => removeLevelFromAbilities(prev, levelId))
+      setSelectedLevels(prev => fixSelectedLevelsAfterDelete(prev, abilities, levelId))
+    } catch {}
+    finally {
+      setDeletingLevel(false)
+      setConfirmDeleteLevel(null)
+    }
   }
 
   const q = searchQuery.toLowerCase()
@@ -824,7 +871,7 @@ export function AbilitiesTab({
                                   <div key={ca.id} className={`rounded-lg border transition-all duration-200 ${caExpanded ? 'border-primary/20 bg-background/40' : 'border-border bg-background/20'}`}>
                                     <button
                                       type="button"
-                                      onClick={() => setExpandedAbilities(prev => ({ ...prev, [ca.id]: !prev[ca.id] }))}
+                                      onClick={() => toggleExpand(ca.id)}
                                       className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-foreground/5 transition-colors"
                                     >
                                       <svg className={`w-3.5 h-3.5 text-muted transition-transform duration-200 shrink-0 ${caExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -832,18 +879,18 @@ export function AbilitiesTab({
                                       </svg>
                                       <span className="text-sm font-medium text-foreground truncate flex-1">{ca.name}</span>
                                       {canEditAbilities && ca.levels.length > 0 && (
-                                        <div role="presentation" onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
+                                        <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
                                           <Select
                                             options={ca.levels.map(l => ({ id: l.id, label: t('character:levelWithNumber', { level: l.level }) }))}
                                             value={caSelLevel?.id ?? ''}
-                                            onChange={val => setSelectedLevels(prev => ({ ...prev, [ca.id]: val }))}
+                                            onChange={val => selectLevel(ca.id, val)}
                                             size="sm"
                                             className="min-w-[70px] text-[0.6rem]"
                                           />
                                         </div>
                                       )}
                                       {canEditAbilities && (
-                                        <div role="presentation" onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
+                                        <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
                                           <button onClick={() => handleDeleteAbility(ca.id)} className="text-muted hover:text-danger p-0.5 transition-colors shrink-0">
                                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -872,12 +919,7 @@ export function AbilitiesTab({
                                                 {t('character:manaField')}
                                                 <InlineClickEdit
                                                   value={caSelLevel.manaCost?.toString() ?? ''}
-                                                  onSave={async (v) => {
-                                                    try {
-                                                      await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { manaCost: v.trim() ? Number.parseInt(v, 10) : null })
-                                                      setAbilities(prev => patchChildAbilityLevel(prev, ca.id, caSelLevel.id, { manaCost: v.trim() ? Number.parseInt(v, 10) : null }))
-                                                    } catch {}
-                                                  }}
+                                                  onSave={(v) => saveLevelPatch(setAbilities, sheetId, caSelLevel.id, { manaCost: v.trim() ? Number.parseInt(v, 10) : null }, ca.id)}
                                                   className="!text-xs"
                                                   inputClassName="!text-xs w-16"
                                                   emptyDisplay="—"
@@ -887,12 +929,7 @@ export function AbilitiesTab({
                                                 {t('character:rangeField')}
                                                 <InlineClickEdit
                                                   value={caSelLevel.range ?? ''}
-                                                  onSave={async (v) => {
-                                                    try {
-                                                      await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { range: v.trim() || null })
-                                                      setAbilities(prev => patchChildAbilityLevel(prev, ca.id, caSelLevel.id, { range: v.trim() || null }))
-                                                    } catch {}
-                                                  }}
+                                                  onSave={(v) => saveLevelPatch(setAbilities, sheetId, caSelLevel.id, { range: v.trim() || null }, ca.id)}
                                                   className="!text-xs"
                                                   inputClassName="!text-xs w-20"
                                                   emptyDisplay="—"
@@ -903,12 +940,7 @@ export function AbilitiesTab({
                                                   {t('character:damageField')}
                                                   <InlineClickEdit
                                                     value={caSelLevel.damage ?? ''}
-                                                    onSave={async (v) => {
-                                                      try {
-                                                        await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { damage: v.trim() || null })
-                                                        setAbilities(prev => patchChildAbilityLevel(prev, ca.id, caSelLevel.id, { damage: v.trim() || null }))
-                                                      } catch {}
-                                                    }}
+                                                    onSave={(v) => saveLevelPatch(setAbilities, sheetId, caSelLevel.id, { damage: v.trim() || null }, ca.id)}
                                                     className="!text-xs"
                                                     inputClassName="!text-xs w-16"
                                                     emptyDisplay="—"
@@ -930,12 +962,7 @@ export function AbilitiesTab({
                                               <h5 className="text-xs font-medium text-muted mb-1">{t('common:description')}</h5>
                                               <InlineClickEdit
                                                 value={caSelLevel.description ?? ''}
-                                                onSave={async (v) => {
-                                                  try {
-                                                    await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { description: v.trim() || null })
-                                                    setAbilities(prev => patchChildAbilityLevel(prev, ca.id, caSelLevel.id, { description: v.trim() || null }))
-                                                  } catch {}
-                                                }}
+                                                onSave={(v) => saveLevelPatch(setAbilities, sheetId, caSelLevel.id, { description: v.trim() || null }, ca.id)}
                                                 as="textarea"
                                                 className="text-xs text-muted-foreground whitespace-pre-wrap"
                                                 emptyDisplay={t('character:addDescription')}
@@ -945,12 +972,7 @@ export function AbilitiesTab({
                                               <h5 className="text-xs font-medium text-muted mb-1">{t('character:notes')}</h5>
                                               <InlineClickEdit
                                                 value={caSelLevel.notes ?? ''}
-                                                onSave={async (v) => {
-                                                  try {
-                                                    await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${caSelLevel.id}`, { notes: v.trim() || null })
-                                                    setAbilities(prev => patchChildAbilityLevel(prev, ca.id, caSelLevel.id, { notes: v.trim() || null }))
-                                                  } catch {}
-                                                }}
+                                                onSave={(v) => saveLevelPatch(setAbilities, sheetId, caSelLevel.id, { notes: v.trim() || null }, ca.id)}
                                                 as="textarea"
                                                 className="text-xs text-muted italic whitespace-pre-wrap"
                                                 emptyDisplay={t('character:addNotes')}
@@ -1282,7 +1304,7 @@ export function AbilitiesTab({
             </p>
             <div className="flex gap-3 justify-end">
               <button onClick={() => setConfirmDeleteLevel(null)} disabled={deletingLevel} className="btn-ghost">{t('common:cancel')}</button>
-              <button onClick={async () => { setDeletingLevel(true); try { await api.delete(`/character-sheets/${sheetId}/abilities/x/levels/${confirmDeleteLevel}`); setAbilities(prev => prev.map(a => ({ ...a, levels: a.levels.filter(l => l.id !== confirmDeleteLevel) }))); setSelectedLevels(prev => { const next = { ...prev }; for (const a of abilities) { if (a.levels.some(l => l.id === confirmDeleteLevel)) { const remaining = a.levels.filter(l => l.id !== confirmDeleteLevel); if (next[a.id] === confirmDeleteLevel) { next[a.id] = remaining.at(-1)?.id ?? ''; } break } } return next }) } catch {} finally { setDeletingLevel(false); setConfirmDeleteLevel(null) } }} disabled={deletingLevel} className="btn-danger-solid">{deletingLevel ? t('character:deleting') : t('common:delete')}</button>
+              <button onClick={() => handleConfirmDeleteLevel(confirmDeleteLevel)} disabled={deletingLevel} className="btn-danger-solid">{deletingLevel ? t('character:deleting') : t('common:delete')}</button>
             </div>
           </div>
         </div>

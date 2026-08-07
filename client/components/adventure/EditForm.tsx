@@ -27,24 +27,24 @@ export function EditForm({
   onCancel,
   onSubmit,
 }: {
-  name: string
-  campaign: string
-  synopsis: string
-  maxPlayers: number
-  sessionWeekday: string
-  sessionTime: string
-  sessionType: string
-  error: string | null
-  saving: boolean
-  onNameChange: (v: string) => void
-  onCampaignChange: (v: string) => void
-  onSynopsisChange: (v: string) => void
-  onMaxPlayersChange: (v: number) => void
-  onSessionWeekdayChange: (v: string) => void
-  onSessionTimeChange: (v: string) => void
-  onSessionTypeChange: (v: string) => void
-  onCancel: () => void
-  onSubmit: (e: SubmitEvent) => void
+  readonly name: string
+  readonly campaign: string
+  readonly synopsis: string
+  readonly maxPlayers: number
+  readonly sessionWeekday: string
+  readonly sessionTime: string
+  readonly sessionType: string
+  readonly error: string | null
+  readonly saving: boolean
+  readonly onNameChange: (v: string) => void
+  readonly onCampaignChange: (v: string) => void
+  readonly onSynopsisChange: (v: string) => void
+  readonly onMaxPlayersChange: (v: number) => void
+  readonly onSessionWeekdayChange: (v: string) => void
+  readonly onSessionTimeChange: (v: string) => void
+  readonly onSessionTypeChange: (v: string) => void
+  readonly onCancel: () => void
+  readonly onSubmit: (e: SubmitEvent) => void
 }) {
   const { t } = useTranslation()
   return (
