@@ -13,7 +13,7 @@ const OPTIONS: ReadonlyArray<{ code: Language; flag: string; labelKey: 'common:e
   { code: 'pt-BR', flag: '🇧🇷', labelKey: 'common:portuguese' },
 ]
 
-export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
+export function LanguageSwitcher({ compact = false }: { readonly compact?: boolean }) {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
@@ -114,7 +114,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
           void handleSelect(OPTIONS[highlightIndex].code)
         } else if (!open) {
           setOpen(true)
-          setHighlightIndex(currentIndex >= 0 ? currentIndex : 0)
+          setHighlightIndex(Math.max(currentIndex, 0))
         }
         break
       case 'ArrowDown':
@@ -161,7 +161,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
         onClick={() => {
           const nextOpen = !open
           setOpen(nextOpen)
-          if (nextOpen) setHighlightIndex(currentIndex >= 0 ? currentIndex : 0)
+          if (nextOpen) setHighlightIndex(Math.max(currentIndex, 0))
         }}
         onKeyDown={handleKeyDown}
         className={`flex items-center rounded-lg text-sm text-muted hover:text-foreground hover:bg-background/40 transition-colors ${

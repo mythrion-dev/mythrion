@@ -45,41 +45,17 @@ describe('GracePeriodBanner', () => {
 
   // ─── Not shown for non-GRACE statuses ───────────────────────────────
 
-  it('returns null when subscription is ACTIVE', () => {
-    mockUseSubscription.mockReturnValue({
-      subscription: fakeSubscription('ACTIVE'),
-    })
+  it.each(['ACTIVE', 'PENDING', 'EXPIRED', 'CANCELLED'])(
+    'returns null when subscription is %s',
+    (status) => {
+      mockUseSubscription.mockReturnValue({
+        subscription: fakeSubscription(status),
+      })
 
-    const { container } = render(<GracePeriodBanner />)
-    expect(container.innerHTML).toBe('')
-  })
-
-  it('returns null when subscription is PENDING', () => {
-    mockUseSubscription.mockReturnValue({
-      subscription: fakeSubscription('PENDING'),
-    })
-
-    const { container } = render(<GracePeriodBanner />)
-    expect(container.innerHTML).toBe('')
-  })
-
-  it('returns null when subscription is EXPIRED', () => {
-    mockUseSubscription.mockReturnValue({
-      subscription: fakeSubscription('EXPIRED'),
-    })
-
-    const { container } = render(<GracePeriodBanner />)
-    expect(container.innerHTML).toBe('')
-  })
-
-  it('returns null when subscription is CANCELLED', () => {
-    mockUseSubscription.mockReturnValue({
-      subscription: fakeSubscription('CANCELLED'),
-    })
-
-    const { container } = render(<GracePeriodBanner />)
-    expect(container.innerHTML).toBe('')
-  })
+      const { container } = render(<GracePeriodBanner />)
+      expect(container.innerHTML).toBe('')
+    },
+  )
 
   it('returns null when subscription is null', () => {
     mockUseSubscription.mockReturnValue({ subscription: null })

@@ -8,7 +8,7 @@ import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 
 describe('RateLimitGuard', () => {
   let guard: RateLimitGuard
-  let mockRedis: Record<string, jest.Mock>
+  let mockRedis: Record<string, any>
   let mockReflector: Record<string, jest.Mock>
 
   beforeEach(async () => {

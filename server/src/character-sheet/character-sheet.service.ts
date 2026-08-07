@@ -10,11 +10,21 @@ import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { RedisService } from '../redis/redis.service.js'
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
 import { CreateCharacterFromCampaignDto } from './dto/create-character-from-campaign.dto.js'
 import { templateInclude } from '../template/template.service.js'
-import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
+import {
+  UpdateCharacterSheetDto,
+  AttributeValueDto,
+  FieldValueDto,
+  SkillValueDto,
+  SkillProfileValueDto,
+  CoreResourceValueDto,
+  ArmorClassValueDto,
+  ArmorClassAttributeValueDto,
+  ResistanceValueDto,
+  ResistanceComponentValueDto,
+} from './dto/update-character-sheet.dto.js'
 
 const sheetInclude = {
   adventure: { select: { id: true, name: true, campaign: true, originalTemplateId: true, templateSnapshot: true } },
@@ -211,24 +221,11 @@ export class CharacterSheetService {
       if (!isMember) throw new ForbiddenException(this.i18n.t('character-sheet.notMemberAdventure'))
     }
 
-    const skillProfileValues: Array<{
-      skillId: string; profileId: string; optionId?: string | null
-    }> = []
-    const globalSkillFormula = template.skillFormula
-    if (globalSkillFormula) {
-      const formulaVars = this.extractVariableNames(globalSkillFormula)
-      for (const skill of template.templateSkills) {
-        for (const profile of template.skillModifierProfiles) {
-          if (!formulaVars.includes(profile.name)) continue
-          const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
-          const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
-          if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(skill.name)) {
-            continue
-          }
-          skillProfileValues.push({ skillId: skill.id, profileId: profile.id, optionId: profile.options[0]?.id ?? null })
-        }
-      }
-    }
+    const skillProfileValues = this.buildSkillProfileValues(
+      template.templateSkills as any[],
+      template.skillModifierProfiles as any[],
+      template.skillFormula,
+    )
 
     // Fetch AC configs for this template (all enabled)
     const armorClasses = await this.prisma.templateArmorClass.findMany({
@@ -370,27 +367,11 @@ export class CharacterSheetService {
     if (!isMember) throw new ForbiddenException(this.i18n.t('character-sheet.notMemberCampaign'))
 
     // 5. Build skill profile values from snapshot data
-    const skillProfileValues: Array<{
-      skillId: string; profileId: string; optionId?: string | null
-    }> = []
-    const globalSkillFormula = snapshot.skillFormula as string | undefined
-    if (globalSkillFormula) {
-      const formulaVars = this.extractVariableNames(globalSkillFormula)
-      const profiles: any[] = snapshot.skillModifierProfiles ?? []
-      const skills: any[] = snapshot.templateSkills ?? []
-      for (const skill of skills) {
-        for (const profile of profiles) {
-          if (!formulaVars.includes(profile.name)) continue
-          const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
-          const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
-          if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(skill.name)) {
-            continue
-          }
-          const firstOption: any = (profile.options ?? [])[0]
-          skillProfileValues.push({ skillId: skill.id, profileId: profile.id, optionId: firstOption?.id ?? null })
-        }
-      }
-    }
+    const skillProfileValues = this.buildSkillProfileValues(
+      snapshot.templateSkills ?? [],
+      snapshot.skillModifierProfiles ?? [],
+      snapshot.skillFormula as string | undefined,
+    )
 
     // 6. Build armor class and resistance data from snapshot
     const armorClasses: any[] = (snapshot.armorClasses ?? []).filter((ac: any) => ac.enabled !== false)
@@ -533,27 +514,13 @@ export class CharacterSheetService {
     // Try cache first
     const cached = await this.redis.cacheGet<any>(this.cacheKey(id))
     if (cached) {
-      if (cached.ownerId !== userId) {
-        if (!cached.adventureId) throw new ForbiddenException(this.i18n.t('character-sheet.noAccess'))
-        try {
-          await this.membership.requireRole(cached.adventureId, userId, 'GM')
-        } catch {
-          throw new ForbiddenException(this.i18n.t('character-sheet.noAccess'))
-        }
-      }
+      await this.assertSheetAccess(cached, userId)
       return cached
     }
 
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id }, include: sheetInclude })
     if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
-    if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) throw new ForbiddenException(this.i18n.t('character-sheet.noAccess'))
-      try {
-        await this.membership.requireRole(sheet.adventureId, userId, 'GM')
-      } catch {
-        throw new ForbiddenException(this.i18n.t('character-sheet.noAccess'))
-      }
-    }
+    await this.assertSheetAccess(sheet, userId)
 
     // If the original template was deleted, reconstruct template data from the snapshot
     if (!sheet.template && (sheet.adventure as any)?.templateSnapshot) {
@@ -571,144 +538,21 @@ export class CharacterSheetService {
   async update(id: string, userId: string, dto: UpdateCharacterSheetDto) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id } })
     if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
-    if (sheet.ownerId !== userId) {
-      // Only allow GM bypass for NPC sheets; player sheets are owner-only
-      if (sheet.isNpc && sheet.adventureId) {
-        try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
-        catch { throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission')) }
-      } else {
-        throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
-      }
-    }
+    await this.assertCanModify(sheet, userId)
 
-    if (dto.values) {
-      for (const v of dto.values)
-        await this.prisma.characterSheetValue.upsert({
-          where: { sheetId_attributeId: { sheetId: id, attributeId: v.attributeId } },
-          create: { sheetId: id, attributeId: v.attributeId, value: v.value },
-          update: { value: v.value },
-        })
-    }
-    if (dto.fieldValues) {
-      for (const fv of dto.fieldValues)
-        await this.prisma.characterSheetFieldValue.upsert({
-          where: { sheetId_templateFieldId: { sheetId: id, templateFieldId: fv.templateFieldId } },
-          create: { sheetId: id, templateFieldId: fv.templateFieldId, value: fv.value },
-          update: { value: fv.value },
-        })
-    }
-    if (dto.skillValues) {
-      for (const sv of dto.skillValues)
-        await this.prisma.characterSheetSkillValue.upsert({
-          where: { sheetId_skillId: { sheetId: id, skillId: sv.skillId } },
-          create: { sheetId: id, skillId: sv.skillId, value: sv.value, selectedAttributeId: sv.selectedAttributeId ?? null },
-          update: { value: sv.value, ...(sv.selectedAttributeId !== undefined ? { selectedAttributeId: sv.selectedAttributeId } : {}) },
-        })
-    }
-    if (dto.skillProfileValues) {
-      for (const spv of dto.skillProfileValues)
-        await this.prisma.characterSheetSkillProfileValue.upsert({
-          where: { sheetId_skillId_profileId: { sheetId: id, skillId: spv.skillId, profileId: spv.profileId } },
-          create: { sheetId: id, skillId: spv.skillId, profileId: spv.profileId, optionId: spv.optionId },
-          update: { optionId: spv.optionId },
-        })
-    }
-    if (dto.coreResourceValues) {
-      for (const crv of dto.coreResourceValues) {
-        await this.prisma.characterSheetCoreResourceValue.upsert({
-          where: { sheetId_coreResourceId: { sheetId: id, coreResourceId: crv.coreResourceId } },
-          create: { sheetId: id, coreResourceId: crv.coreResourceId, current: crv.current ?? null, maximum: crv.maximum ?? null, notes: crv.notes ?? null },
-          update: { current: crv.current, maximum: crv.maximum, notes: crv.notes },
-        })
-      }
-    }
-    if (dto.acValues) {
-      for (const acv of dto.acValues)
-        await this.prisma.characterSheetArmorClassValue.upsert({
-          where: { sheetId_fieldId: { sheetId: id, fieldId: acv.fieldId } },
-          create: { sheetId: id, fieldId: acv.fieldId, value: acv.value },
-          update: { value: acv.value },
-        })
-    }
-    if (dto.acAttributeValues) {
-      for (const acav of dto.acAttributeValues)
-        await this.prisma.characterSheetArmorClassAttributeValue.upsert({
-          where: { sheetId_acAttributeModifierId: { sheetId: id, acAttributeModifierId: acav.acAttributeModifierId } },
-          create: { sheetId: id, acAttributeModifierId: acav.acAttributeModifierId, selectedAttributeId: acav.selectedAttributeId ?? null },
-          update: { selectedAttributeId: acav.selectedAttributeId ?? null },
-        })
-    }
-    if (dto.resistanceValues) {
-      for (const rv of dto.resistanceValues) {
-        // Check if this resistanceId belongs to a sheet-specific resistance
-        const sheetRes = await this.prisma.sheetResistance.findUnique({
-          where: { id: rv.resistanceId },
-          select: { id: true, calculationType: true },
-        })
-        if (sheetRes) {
-          // Sheet resistance: upsert a "Value" component with the manual value
-          const existingComp = await this.prisma.sheetResistanceComponent.findFirst({
-            where: { sheetResistanceId: sheetRes.id },
-            orderBy: { order: 'asc' },
-          })
-          if (existingComp) {
-            await this.prisma.sheetResistanceComponent.update({
-              where: { id: existingComp.id },
-              data: { value: rv.manualValue ?? '0' },
-            })
-          } else {
-            await this.prisma.sheetResistanceComponent.create({
-              data: {
-                sheetResistanceId: sheetRes.id,
-                name: 'Value',
-                value: rv.manualValue ?? '0',
-                order: 0,
-              },
-            })
-          }
-        } else {
-          // Template resistance: use existing junction table
-          await this.prisma.characterSheetResistanceValue.upsert({
-            where: { sheetId_resistanceId: { sheetId: id, resistanceId: rv.resistanceId } },
-            create: { sheetId: id, resistanceId: rv.resistanceId, manualValue: rv.manualValue ?? null },
-            update: { manualValue: rv.manualValue ?? null },
-          })
-        }
-      }
-    }
-    if (dto.resistanceComponentValues) {
-      for (const rcv of dto.resistanceComponentValues) {
-        // Check if this componentId belongs to a sheet resistance component
-        const sheetComp = await this.prisma.sheetResistanceComponent.findUnique({
-          where: { id: rcv.componentId },
-          select: { id: true },
-        })
-        if (sheetComp) {
-          await this.prisma.sheetResistanceComponent.update({
-            where: { id: rcv.componentId },
-            data: { value: rcv.value },
-          })
-        } else {
-          // Template resistance component: use existing junction table
-          await this.prisma.characterSheetResistanceComponentValue.upsert({
-            where: { sheetId_componentId: { sheetId: id, componentId: rcv.componentId } },
-            create: { sheetId: id, componentId: rcv.componentId, value: rcv.value },
-            update: { value: rcv.value },
-          })
-        }
-      }
-    }
+    if (dto.values) await this.updateValues(id, dto.values)
+    if (dto.fieldValues) await this.updateFieldValues(id, dto.fieldValues)
+    if (dto.skillValues) await this.updateSkillValues(id, dto.skillValues)
+    if (dto.skillProfileValues) await this.updateSkillProfileValues(id, dto.skillProfileValues)
+    if (dto.coreResourceValues) await this.updateCoreResourceValues(id, dto.coreResourceValues)
+    if (dto.acValues) await this.updateAcValues(id, dto.acValues)
+    if (dto.acAttributeValues) await this.updateAcAttributeValues(id, dto.acAttributeValues)
+    if (dto.resistanceValues) await this.updateResistanceValues(id, dto.resistanceValues)
+    if (dto.resistanceComponentValues) await this.updateResistanceComponentValues(id, dto.resistanceComponentValues)
 
     const updated = await this.prisma.characterSheet.update({
       where: { id },
-      data: {
-        ...(dto.characterName !== undefined && { characterName: dto.characterName }),
-        ...(dto.playerName !== undefined && { playerName: dto.playerName }),
-        ...(dto.level !== undefined && { level: dto.level }),
-        ...(dto.hpActual !== undefined && { hpActual: dto.hpActual }),
-        ...(dto.hpMax !== undefined && { hpMax: dto.hpMax }),
-        ...(dto.hpNotes !== undefined && { hpNotes: dto.hpNotes }),
-      },
+      data: this.buildUpdateData(dto),
       include: sheetInclude,
     })
 
@@ -716,6 +560,160 @@ export class CharacterSheetService {
     await this.invalidateCache(sheet.id, sheet.ownerId ?? undefined, sheet.adventureId ?? undefined).catch(() => {})
 
     return updated
+  }
+
+  private async assertCanModify(
+    sheet: { ownerId: string | null; isNpc: boolean; adventureId: string | null },
+    userId: string,
+  ): Promise<void> {
+    if (sheet.ownerId === userId) return
+    // Only allow GM bypass for NPC sheets; player sheets are owner-only
+    if (sheet.isNpc && sheet.adventureId) {
+      try {
+        await this.membership.requireRole(sheet.adventureId, userId, 'GM')
+        return
+      } catch {
+        throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
+      }
+    }
+    throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
+  }
+
+  private async updateValues(id: string, values: AttributeValueDto[]): Promise<void> {
+    for (const v of values)
+      await this.prisma.characterSheetValue.upsert({
+        where: { sheetId_attributeId: { sheetId: id, attributeId: v.attributeId } },
+        create: { sheetId: id, attributeId: v.attributeId, value: v.value },
+        update: { value: v.value },
+      })
+  }
+
+  private async updateFieldValues(id: string, fieldValues: FieldValueDto[]): Promise<void> {
+    for (const fv of fieldValues)
+      await this.prisma.characterSheetFieldValue.upsert({
+        where: { sheetId_templateFieldId: { sheetId: id, templateFieldId: fv.templateFieldId } },
+        create: { sheetId: id, templateFieldId: fv.templateFieldId, value: fv.value },
+        update: { value: fv.value },
+      })
+  }
+
+  private async updateSkillValues(id: string, skillValues: SkillValueDto[]): Promise<void> {
+    for (const sv of skillValues)
+      await this.prisma.characterSheetSkillValue.upsert({
+        where: { sheetId_skillId: { sheetId: id, skillId: sv.skillId } },
+        create: { sheetId: id, skillId: sv.skillId, value: sv.value, selectedAttributeId: sv.selectedAttributeId ?? null },
+        update: { value: sv.value, ...(sv.selectedAttributeId !== undefined ? { selectedAttributeId: sv.selectedAttributeId } : {}) },
+      })
+  }
+
+  private async updateSkillProfileValues(id: string, skillProfileValues: SkillProfileValueDto[]): Promise<void> {
+    for (const spv of skillProfileValues)
+      await this.prisma.characterSheetSkillProfileValue.upsert({
+        where: { sheetId_skillId_profileId: { sheetId: id, skillId: spv.skillId, profileId: spv.profileId } },
+        create: { sheetId: id, skillId: spv.skillId, profileId: spv.profileId, optionId: spv.optionId },
+        update: { optionId: spv.optionId },
+      })
+  }
+
+  private async updateCoreResourceValues(id: string, coreResourceValues: CoreResourceValueDto[]): Promise<void> {
+    for (const crv of coreResourceValues) {
+      await this.prisma.characterSheetCoreResourceValue.upsert({
+        where: { sheetId_coreResourceId: { sheetId: id, coreResourceId: crv.coreResourceId } },
+        create: { sheetId: id, coreResourceId: crv.coreResourceId, current: crv.current ?? null, maximum: crv.maximum ?? null, notes: crv.notes ?? null },
+        update: { current: crv.current, maximum: crv.maximum, notes: crv.notes },
+      })
+    }
+  }
+
+  private async updateAcValues(id: string, acValues: ArmorClassValueDto[]): Promise<void> {
+    for (const acv of acValues)
+      await this.prisma.characterSheetArmorClassValue.upsert({
+        where: { sheetId_fieldId: { sheetId: id, fieldId: acv.fieldId } },
+        create: { sheetId: id, fieldId: acv.fieldId, value: acv.value },
+        update: { value: acv.value },
+      })
+  }
+
+  private async updateAcAttributeValues(id: string, acAttributeValues: ArmorClassAttributeValueDto[]): Promise<void> {
+    for (const acav of acAttributeValues)
+      await this.prisma.characterSheetArmorClassAttributeValue.upsert({
+        where: { sheetId_acAttributeModifierId: { sheetId: id, acAttributeModifierId: acav.acAttributeModifierId } },
+        create: { sheetId: id, acAttributeModifierId: acav.acAttributeModifierId, selectedAttributeId: acav.selectedAttributeId ?? null },
+        update: { selectedAttributeId: acav.selectedAttributeId ?? null },
+      })
+  }
+
+  private async updateResistanceValues(id: string, resistanceValues: ResistanceValueDto[]): Promise<void> {
+    for (const rv of resistanceValues) {
+      // Check if this resistanceId belongs to a sheet-specific resistance
+      const sheetRes = await this.prisma.sheetResistance.findUnique({
+        where: { id: rv.resistanceId },
+        select: { id: true, calculationType: true },
+      })
+      if (sheetRes) {
+        // Sheet resistance: upsert a "Value" component with the manual value
+        const existingComp = await this.prisma.sheetResistanceComponent.findFirst({
+          where: { sheetResistanceId: sheetRes.id },
+          orderBy: { order: 'asc' },
+        })
+        if (existingComp) {
+          await this.prisma.sheetResistanceComponent.update({
+            where: { id: existingComp.id },
+            data: { value: rv.manualValue ?? '0' },
+          })
+        } else {
+          await this.prisma.sheetResistanceComponent.create({
+            data: {
+              sheetResistanceId: sheetRes.id,
+              name: 'Value',
+              value: rv.manualValue ?? '0',
+              order: 0,
+            },
+          })
+        }
+      } else {
+        // Template resistance: use existing junction table
+        await this.prisma.characterSheetResistanceValue.upsert({
+          where: { sheetId_resistanceId: { sheetId: id, resistanceId: rv.resistanceId } },
+          create: { sheetId: id, resistanceId: rv.resistanceId, manualValue: rv.manualValue ?? null },
+          update: { manualValue: rv.manualValue ?? null },
+        })
+      }
+    }
+  }
+
+  private async updateResistanceComponentValues(id: string, resistanceComponentValues: ResistanceComponentValueDto[]): Promise<void> {
+    for (const rcv of resistanceComponentValues) {
+      // Check if this componentId belongs to a sheet resistance component
+      const sheetComp = await this.prisma.sheetResistanceComponent.findUnique({
+        where: { id: rcv.componentId },
+        select: { id: true },
+      })
+      if (sheetComp) {
+        await this.prisma.sheetResistanceComponent.update({
+          where: { id: rcv.componentId },
+          data: { value: rcv.value },
+        })
+      } else {
+        // Template resistance component: use existing junction table
+        await this.prisma.characterSheetResistanceComponentValue.upsert({
+          where: { sheetId_componentId: { sheetId: id, componentId: rcv.componentId } },
+          create: { sheetId: id, componentId: rcv.componentId, value: rcv.value },
+          update: { value: rcv.value },
+        })
+      }
+    }
+  }
+
+  private buildUpdateData(dto: UpdateCharacterSheetDto) {
+    return {
+      ...(dto.characterName !== undefined && { characterName: dto.characterName }),
+      ...(dto.playerName !== undefined && { playerName: dto.playerName }),
+      ...(dto.level !== undefined && { level: dto.level }),
+      ...(dto.hpActual !== undefined && { hpActual: dto.hpActual }),
+      ...(dto.hpMax !== undefined && { hpMax: dto.hpMax }),
+      ...(dto.hpNotes !== undefined && { hpNotes: dto.hpNotes }),
+    }
   }
 
   async remove(id: string, userId: string) {
@@ -812,7 +810,7 @@ export class CharacterSheetService {
 
   // ── Abilities & Summons (CRUD) ──
 
-  private abilityInclude = {
+  private readonly abilityInclude = {
     levels: { orderBy: { level: 'asc' as const } },
     summonAttributes: { orderBy: { createdAt: 'asc' as const } },
     summonAcValues: true,
@@ -1381,7 +1379,7 @@ export class CharacterSheetService {
       where: { id: resistanceId },
       select: { id: true, sheetId: true },
     })
-    if (sheetRes && sheetRes.sheetId === sheetId) {
+    if (sheetRes?.sheetId === sheetId) {
       const result = await this.prisma.sheetResistance.delete({ where: { id: resistanceId } })
       await this.invalidateCache(sheetId).catch(() => {})
       return result
@@ -1395,7 +1393,7 @@ export class CharacterSheetService {
 
   // ── Professional Skills (CRUD + Profiles) ──
 
-  private professionalSkillInclude = {
+  private readonly professionalSkillInclude = {
     attribute: { select: { id: true, key: true, name: true } },
     profileValues: {
       include: {
@@ -1473,6 +1471,40 @@ export class CharacterSheetService {
     return result
   }
 
+  private buildSkillProfileValues(
+    skills: any[],
+    profiles: any[],
+    formula: string | null | undefined,
+  ): Array<{ skillId: string; profileId: string; optionId?: string | null }> {
+    const skillProfileValues: Array<{ skillId: string; profileId: string; optionId?: string | null }> = []
+    if (!formula) return skillProfileValues
+    const formulaVars = this.extractVariableNames(formula)
+    for (const skill of skills) {
+      for (const profile of profiles) {
+        if (!formulaVars.includes(profile.name)) continue
+        const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
+        const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
+        if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(skill.name)) continue
+        const firstOption: any = (profile.options ?? [])[0]
+        skillProfileValues.push({ skillId: skill.id, profileId: profile.id, optionId: firstOption?.id ?? null })
+      }
+    }
+    return skillProfileValues
+  }
+
+  private async assertSheetAccess(
+    sheet: { ownerId: string | null; adventureId: string | null },
+    userId: string,
+  ): Promise<void> {
+    if (sheet.ownerId === userId) return
+    if (!sheet.adventureId) throw new ForbiddenException(this.i18n.t('character-sheet.noAccess'))
+    try {
+      await this.membership.requireRole(sheet.adventureId, userId, 'GM')
+    } catch {
+      throw new ForbiddenException(this.i18n.t('character-sheet.noAccess'))
+    }
+  }
+
   private async requireOwnership(sheetId: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
@@ -1492,7 +1524,7 @@ export class CharacterSheetService {
 
   private extractVariableNames(formula: string): string[] {
     if (!formula) return []
-    const tokens = formula.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || []
+    const tokens = formula.match(/[a-zA-Z_]\w*/g) || []
     const functions = new Set(['mod', 'floor', 'ceil', 'round', 'max', 'min', 'abs'])
     const seen = new Set<string>()
     const vars: string[] = []

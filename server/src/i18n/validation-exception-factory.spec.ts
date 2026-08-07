@@ -64,7 +64,7 @@ describe('createI18nValidationExceptionFactory', () => {
         allowedValues: 'a, b',
       },
     })
-    expect(exception.getResponse().message).toEqual(['tr(validation.isIn)'])
+    expect((exception.getResponse() as { message: string[] }).message).toEqual(['tr(validation.isIn)'])
   })
 
   it('leaves messages without the key| separator untouched', () => {
@@ -75,7 +75,7 @@ describe('createI18nValidationExceptionFactory', () => {
     ] as ValidationError[])
 
     expect(translate).not.toHaveBeenCalled()
-    expect(exception.getResponse().message).toEqual(['plain message'])
+    expect((exception.getResponse() as { message: string[] }).message).toEqual(['plain message'])
   })
 
   it('flattens nested validation children', () => {
@@ -97,7 +97,7 @@ describe('createI18nValidationExceptionFactory', () => {
       },
     ] as ValidationError[])
 
-    expect(exception.getResponse().message).toEqual([
+    expect((exception.getResponse() as { message: string[] }).message).toEqual([
       'tr(profile)',
       'tr(validation.maxLength)',
       'tr(validation.isString)',
@@ -178,6 +178,6 @@ describe('createI18nValidationExceptionFactory', () => {
         allowedValues: undefined,
       },
     })
-    expect(exception.getResponse().message).toEqual(['tr(validation.isEmail)'])
+    expect((exception.getResponse() as { message: string[] }).message).toEqual(['tr(validation.isEmail)'])
   })
 })

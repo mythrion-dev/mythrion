@@ -19,15 +19,18 @@ vi.mock('@/components/character-sheet', () => ({
 }))
 
 function mockSection(overrides = {}) {
-  return { id: 'sec-1', name: 'Features', sortOrder: 1, ...overrides }
+  return { id: 'sec-1', name: 'Features', order: 1, ...overrides }
 }
 
 function mockEntry(overrides = {}) {
   return {
     id: 'entry-1',
+    sheetId: 'sheet-1',
     sectionId: 'sec-1',
     name: 'Darkvision',
     description: 'See in darkness up to 60ft',
+    order: 0,
+    section: { id: 'sec-1', name: 'Features' },
     ...overrides,
   }
 }

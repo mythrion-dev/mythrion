@@ -50,25 +50,15 @@ describe('TemplateCard', () => {
     vi.clearAllMocks()
   })
 
-  it('renders name and campaign badge', () => {
+  it.each([
+    'Fighter Sheet',
+    'D&D 5e',
+    'A basic fighter character sheet.',
+    'Alice Johnson',
+    '5',
+  ])('renders %s', (text) => {
     render(<TemplateCard {...defaultProps} />)
-    expect(screen.getByText('Fighter Sheet')).toBeDefined()
-    expect(screen.getByText('D&D 5e')).toBeDefined()
-  })
-
-  it('renders description text', () => {
-    render(<TemplateCard {...defaultProps} />)
-    expect(screen.getByText('A basic fighter character sheet.')).toBeDefined()
-  })
-
-  it('renders creator name', () => {
-    render(<TemplateCard {...defaultProps} />)
-    expect(screen.getByText('Alice Johnson')).toBeDefined()
-  })
-
-  it('renders copy count', () => {
-    render(<TemplateCard {...defaultProps} />)
-    expect(screen.getByText('5')).toBeDefined()
+    expect(screen.getByText(text)).toBeDefined()
   })
 
   it('renders "No description." when description is null', () => {

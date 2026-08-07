@@ -7,7 +7,7 @@ interface Adventure {
 }
 
 export function AdventureHeader({ adventure, isGM, userRole, onEdit, onDelete }: {
-  adventure: Adventure; isGM: boolean; userRole: string | null; onEdit: () => void; onDelete: () => void
+  readonly adventure: Adventure; readonly isGM: boolean; readonly userRole: string | null; readonly onEdit: () => void; readonly onDelete: () => void
 }) {
   const { t } = useTranslation()
   return (

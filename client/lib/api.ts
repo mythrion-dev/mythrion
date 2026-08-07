@@ -40,6 +40,47 @@ function notifyAuthFailure() {
   authFailureHandlers.forEach((h) => h())
 }
 
+/** Build a typed HTTP error from a Response body (message may be a string or array). */
+async function toHttpError(res: Response): Promise<Error & { statusCode: number }> {
+  const body = await res.json().catch(() => ({
+    message: res.statusText,
+  }))
+  const err = new Error(
+    Array.isArray(body.message)
+      ? body.message[0]
+      : body.message ?? 'Request failed',
+  ) as Error & { statusCode: number }
+  err.statusCode = res.status
+  return err
+}
+
+/** Rotate the token proactively when it is close to expiry; otherwise return it unchanged. */
+async function maybeRefreshToken(token: string | null): Promise<string | null> {
+  if (token && typeof window !== 'undefined' && isAccessTokenExpiringSoon(token)) {
+    const fresh = await refreshAccessToken()
+    if (fresh) return fresh
+  }
+  return token
+}
+
+/** Retry a request once with a freshly-minted token after a 401. */
+async function retryRequest<T>(
+  path: string,
+  options: RequestInit,
+  headers: Record<string, string>,
+  newToken: string,
+): Promise<T> {
+  headers.Authorization = `Bearer ${newToken}`
+  const retryRes = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+  })
+  if (retryRes.ok) {
+    return retryRes.json()
+  }
+  throw await toHttpError(retryRes)
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -51,10 +92,7 @@ async function request<T>(
   // token (avoids a 401 round-trip and its retry). Failure here is non-fatal —
   // the request proceeds with the current token and the 401 path below can
   // still recover it.
-  if (token && typeof window !== 'undefined' && isAccessTokenExpiringSoon(token)) {
-    const fresh = await refreshAccessToken()
-    if (fresh) token = fresh
-  }
+  token = await maybeRefreshToken(token)
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -76,40 +114,12 @@ async function request<T>(
   if (res.status === 401 && typeof window !== 'undefined') {
     const newToken = await refreshAccessToken()
     if (newToken) {
-      headers.Authorization = `Bearer ${newToken}`
-      const retryRes = await fetch(`${API_URL}${path}`, {
-        ...options,
-        headers,
-      })
-      if (retryRes.ok) {
-        return retryRes.json()
-      }
-      if (!retryRes.ok) {
-        const body = await retryRes.json().catch(() => ({
-          message: retryRes.statusText,
-        }))
-        const err = new Error(
-          Array.isArray(body.message)
-            ? body.message[0]
-            : body.message ?? 'Request failed',
-        ) as Error & { statusCode: number }
-        err.statusCode = retryRes.status
-        throw err
-      }
+      return retryRequest<T>(path, options, headers, newToken)
     }
   }
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({
-      message: res.statusText,
-    }))
-    const err = new Error(
-      Array.isArray(body.message)
-        ? body.message[0]
-        : body.message ?? 'Request failed',
-    ) as Error & { statusCode: number }
-    err.statusCode = res.status
-    throw err
+    throw await toHttpError(res)
   }
 
   return res.json()

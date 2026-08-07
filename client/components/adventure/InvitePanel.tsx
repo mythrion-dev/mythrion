@@ -25,15 +25,15 @@ export function InvitePanel({
   onInviteByLink,
   onRevoke,
 }: {
-  inviteEmail: string
-  inviteLink: string | null
-  inviteError: string | null
-  inviteSending: boolean
-  invitations: Invitation[]
-  onEmailChange: (e: string) => void
-  onInviteByEmail: (e: SubmitEvent) => void
-  onInviteByLink: () => void
-  onRevoke: (id: string) => void
+  readonly inviteEmail: string
+  readonly inviteLink: string | null
+  readonly inviteError: string | null
+  readonly inviteSending: boolean
+  readonly invitations: Invitation[]
+  readonly onEmailChange: (e: string) => void
+  readonly onInviteByEmail: (e: SubmitEvent) => void
+  readonly onInviteByLink: () => void
+  readonly onRevoke: (id: string) => void
 }) {
   const { t } = useTranslation()
   return (

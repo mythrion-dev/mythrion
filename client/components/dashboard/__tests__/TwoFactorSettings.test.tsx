@@ -51,7 +51,7 @@ describe('TwoFactorSettings', () => {
   it('enable flow: send code → confirm → show recovery codes → saved acknowledgment', async () => {
     mockAuth(false)
     vi.mocked(sendTwoFactorCode).mockResolvedValue({ twoFactorId: 'ch-1' })
-    vi.mocked(confirmTwoFactor).mockResolvedValue({ recoveryCodes: ['ABCDE12345', 'FGHIJ67890'] })
+    vi.mocked(confirmTwoFactor).mockResolvedValue({ recoveryCodes: ['ABCDE12345', 'FGHIJ67890'] } as never)
 
     render(<TwoFactorSettings />)
 
@@ -88,7 +88,7 @@ describe('TwoFactorSettings', () => {
 
     mockAuth(false)
     vi.mocked(sendTwoFactorCode).mockResolvedValue({ twoFactorId: 'ch-1' })
-    vi.mocked(confirmTwoFactor).mockResolvedValue({ recoveryCodes: ['AAAA11111', 'BBBB22222'] })
+    vi.mocked(confirmTwoFactor).mockResolvedValue({ recoveryCodes: ['AAAA11111', 'BBBB22222'] } as never)
 
     render(<TwoFactorSettings />)
     await userEvent.click(screen.getByText('Enable two-factor authentication'))

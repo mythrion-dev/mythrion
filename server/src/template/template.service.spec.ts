@@ -503,7 +503,7 @@ describe('TemplateService', () => {
       const dto: UpdateTemplateDto = {
         skills: [
           { name: 'Athletics', description: 'Updated', attributeId: 'str', allowedAttributeIds: ['str'], defaultAttributeId: 'str' },
-          { name: 'Stealth', description: null, attributeId: 'dex', allowedAttributeIds: ['dex'] },
+          { name: 'Stealth', description: undefined, attributeId: 'dex', allowedAttributeIds: ['dex'] },
         ],
       }
 
@@ -854,7 +854,7 @@ describe('TemplateService', () => {
 
       const result = await service.clone(id, userId, 'Custom Clone')
 
-      expect(result.name).toBe('Custom Clone')
+      expect(result!.name).toBe('Custom Clone')
     })
 
     it('throws NotFoundException when template not found', async () => {
@@ -1317,10 +1317,10 @@ describe('TemplateService', () => {
         skillFormula: 'floor(str/2) + prof',
         attributes: [{ key: 'str', name: 'Strength' }, { key: 'dex', name: 'Dexterity' }],
         templateFields: [{ key: 'bio', label: 'Biography' }],
-        skills: [{ name: 'Athletics', attributeId: 'str', allowedAttributeIds: ['str'], description: null }],
+        skills: [{ name: 'Athletics', attributeId: 'str', allowedAttributeIds: ['str'], description: undefined }],
         armorClasses: [{
           name: 'Armor Class', enabled: true,
-          fields: [{ name: 'Total', key: 'total', defaultValue: '10', editableByPlayer: false, description: null }],
+          fields: [{ name: 'Total', key: 'total', defaultValue: '10', editableByPlayer: false, description: undefined }],
           attributeModifiers: [{ attributeId: 'str', allowPlayerSelection: false }],
         }],
       }
@@ -1396,10 +1396,12 @@ describe('TemplateService', () => {
       )
       expect(mockRedisService.cacheSet).toHaveBeenCalledWith(
         `templates:user:${userId}`,
-        templates,
+        templates.map((t) => ({ ...t, campaign: null, adventureName: null, adventureId: null })),
         15,
       )
-      expect(result).toEqual(templates)
+      expect(result).toEqual(
+        templates.map((t) => ({ ...t, campaign: null, adventureName: null, adventureId: null })),
+      )
     })
 
     it('returns empty array when user has no templates', async () => {
@@ -1750,7 +1752,7 @@ describe('TemplateService', () => {
 
       expect(mockMembershipService.isMember).toHaveBeenCalledWith(adventureId, userId)
       expect(result.snapshot).toBeDefined()
-      expect(result.snapshot.name).toBe('Snapshot')
+      expect(result.snapshot!.name).toBe('Snapshot')
       expect(result.originalTemplateId).toBe('tpl-1')
     })
 
@@ -1759,7 +1761,7 @@ describe('TemplateService', () => {
       prisma.adventure.findUnique.mockResolvedValue(null)
 
       await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow(NotFoundException)
-      await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow('Adventure not found')
+      await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow('Campaign not found')
     })
 
     it('returns null snapshot when no snapshot exists', async () => {
@@ -1779,7 +1781,7 @@ describe('TemplateService', () => {
       mockMembershipService.isMember.mockResolvedValue(false)
 
       await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow(ForbiddenException)
-      await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow('You are not a member of this adventure')
+      await expect(service.getTemplateSnapshot(adventureId, userId)).rejects.toThrow('You are not a member of this campaign')
       expect(prisma.adventure.findUnique).not.toHaveBeenCalled()
     })
   })

@@ -10,6 +10,103 @@ import { emptyAcConfig, slugify } from '@/components/adventure/types'
 import { useSubscription } from '@/lib/subscription-context'
 import { useTranslation } from 'react-i18next'
 
+interface NewSkillDraft {
+  name: string
+  description: string
+  attributeId: string
+  allowedAttributeIds: string[]
+  defaultAttributeId: string
+}
+
+interface NewProfileDraft {
+  name: string
+  targetMode?: string
+  targetSkillIds?: string[]
+  options: { label: string; value: number }[]
+}
+
+function toggleSkillAllowedAttr(skill: NewSkillDraft, attrKey: string): NewSkillDraft {
+  const exists = skill.allowedAttributeIds.includes(attrKey)
+  return {
+    ...skill,
+    allowedAttributeIds: exists
+      ? skill.allowedAttributeIds.filter(a => a !== attrKey)
+      : [...skill.allowedAttributeIds, attrKey],
+  }
+}
+
+function removeProfileOption(profile: NewProfileDraft, oIdx: number): NewProfileDraft {
+  return { ...profile, options: profile.options.filter((_, oi) => oi !== oIdx) }
+}
+
+function updateProfileOption(
+  profile: NewProfileDraft,
+  oIdx: number,
+  f: 'label' | 'value',
+  v: string | number,
+): NewProfileDraft {
+  return { ...profile, options: profile.options.map((o, oi) => (oi === oIdx ? { ...o, [f]: v } : o)) }
+}
+
+function toggleProfileSkill(profile: NewProfileDraft, skillId: string): NewProfileDraft {
+  const exists = (profile.targetSkillIds ?? []).includes(skillId)
+  return {
+    ...profile,
+    targetSkillIds: exists
+      ? (profile.targetSkillIds ?? []).filter(s => s !== skillId)
+      : [...(profile.targetSkillIds ?? []), skillId],
+  }
+}
+
+function removeAcField(ac: AcConfigDraft, fieldIdx: number): AcConfigDraft {
+  return { ...ac, fields: ac.fields.filter((_, j) => j !== fieldIdx) }
+}
+
+function updateAcField(
+  ac: AcConfigDraft,
+  fieldIdx: number,
+  f: 'name' | 'key' | 'defaultValue' | 'description',
+  v: string,
+): AcConfigDraft {
+  return {
+    ...ac,
+    fields: ac.fields.map((field, j) => {
+      if (j !== fieldIdx) return field
+      const updated = { ...field, [f]: v }
+      if (f === 'name' && v.trim() && !field.key.trim()) updated.key = slugify(v.trim())
+      return updated
+    }),
+  }
+}
+
+function updateAcFieldEditable(ac: AcConfigDraft, fieldIdx: number, v: boolean): AcConfigDraft {
+  return {
+    ...ac,
+    fields: ac.fields.map((field, j) => (j === fieldIdx ? { ...field, editableByPlayer: v } : field)),
+  }
+}
+
+function toggleAcAttributeId(ac: AcConfigDraft, attrId: string): AcConfigDraft {
+  const exists = ac.attributeModifiers.some(am => am.attributeId === attrId)
+  return {
+    ...ac,
+    attributeModifiers: exists
+      ? ac.attributeModifiers.filter(am => am.attributeId !== attrId)
+      : [...ac.attributeModifiers, { attributeId: attrId, allowPlayerSelection: false, defaultAttributeId: attrId }],
+  }
+}
+
+function updateAcAttributeModifier(
+  ac: AcConfigDraft,
+  attrId: string,
+  patch: Partial<ArmorClassAttributeModifierDraft>,
+): AcConfigDraft {
+  return {
+    ...ac,
+    attributeModifiers: ac.attributeModifiers.map(am => (am.attributeId === attrId ? { ...am, ...patch } : am)),
+  }
+}
+
 export default function NewTemplatePage() {
   const { hasActiveSubscription } = useSubscription()
   const { t } = useTranslation()
@@ -66,16 +163,7 @@ export default function NewTemplatePage() {
     setSkills(prev => prev.map((s, idx) => idx === i ? { ...s, [f]: v } : s))
   }, [])
   const handleToggleSkillAllowedAttr = useCallback((i: number, attrKey: string) => {
-    setSkills(prev => prev.map((s, idx) => {
-      if (idx !== i) return s
-      const exists = s.allowedAttributeIds.includes(attrKey)
-      return {
-        ...s,
-        allowedAttributeIds: exists
-          ? s.allowedAttributeIds.filter(a => a !== attrKey)
-          : [...s.allowedAttributeIds, attrKey],
-      }
-    }))
+    setSkills(prev => prev.map((s, idx) => (idx === i ? toggleSkillAllowedAttr(s, attrKey) : s)))
   }, [])
 
   // ── Field handlers ──
@@ -107,29 +195,16 @@ export default function NewTemplatePage() {
       : p))
   }, [])
   const handleRemoveProfileOption = useCallback((pIdx: number, oIdx: number) => {
-    setProfiles(prev => prev.map((p, idx) => idx === pIdx
-      ? { ...p, options: p.options.filter((_, oi) => oi !== oIdx) }
-      : p))
+    setProfiles(prev => prev.map((p, idx) => (idx === pIdx ? removeProfileOption(p, oIdx) : p)))
   }, [])
   const handleUpdateProfileOption = useCallback((pIdx: number, oIdx: number, f: 'label' | 'value', v: string | number) => {
-    setProfiles(prev => prev.map((p, idx) => idx === pIdx
-      ? { ...p, options: p.options.map((o, oi) => oi === oIdx ? { ...o, [f]: v } : o) }
-      : p))
+    setProfiles(prev => prev.map((p, idx) => (idx === pIdx ? updateProfileOption(p, oIdx, f, v) : p)))
   }, [])
   const handleUpdateProfileTargetMode = useCallback((i: number, mode: string) => {
     setProfiles(prev => prev.map((p, idx) => idx === i ? { ...p, targetMode: mode } : p))
   }, [])
   const handleToggleProfileSkill = useCallback((i: number, skillId: string) => {
-    setProfiles(prev => prev.map((p, idx) => {
-      if (idx !== i) return p
-      const exists = (p.targetSkillIds ?? []).includes(skillId)
-      return {
-        ...p,
-        targetSkillIds: exists
-          ? (p.targetSkillIds ?? []).filter(s => s !== skillId)
-          : [...(p.targetSkillIds ?? []), skillId],
-      }
-    }))
+    setProfiles(prev => prev.map((p, idx) => (idx === i ? toggleProfileSkill(p, skillId) : p)))
   }, [])
 
   // ── Core Resource handlers ──
@@ -170,44 +245,19 @@ export default function NewTemplatePage() {
       : ac))
   }, [])
   const handleRemoveNewAcFieldForConfig = useCallback((configIdx: number, fieldIdx: number) => {
-    setAcConfigs(prev => prev.map((ac, i) => i === configIdx
-      ? { ...ac, fields: ac.fields.filter((_, j) => j !== fieldIdx) }
-      : ac))
+    setAcConfigs(prev => prev.map((ac, i) => (i === configIdx ? removeAcField(ac, fieldIdx) : ac)))
   }, [])
   const handleUpdateNewAcFieldForConfig = useCallback((configIdx: number, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string) => {
-    setAcConfigs(prev => prev.map((ac, i) => {
-      if (i !== configIdx) return ac
-      return {
-        ...ac, fields: ac.fields.map((field, j) => {
-          if (j !== fieldIdx) return field
-          const updated = { ...field, [f]: v }
-          if (f === 'name' && v.trim() && !field.key.trim()) updated.key = slugify(v.trim())
-          return updated
-        })
-      }
-    }))
+    setAcConfigs(prev => prev.map((ac, i) => (i === configIdx ? updateAcField(ac, fieldIdx, f, v) : ac)))
   }, [])
   const handleUpdateNewAcFieldEditableForConfig = useCallback((configIdx: number, fieldIdx: number, v: boolean) => {
-    setAcConfigs(prev => prev.map((ac, i) => i === configIdx
-      ? { ...ac, fields: ac.fields.map((field, j) => j === fieldIdx ? { ...field, editableByPlayer: v } : field) }
-      : ac))
+    setAcConfigs(prev => prev.map((ac, i) => (i === configIdx ? updateAcFieldEditable(ac, fieldIdx, v) : ac)))
   }, [])
   const handleToggleNewAcAttributeIdForConfig = useCallback((configIdx: number, attrId: string) => {
-    setAcConfigs(prev => prev.map((ac, i) => {
-      if (i !== configIdx) return ac
-      const exists = ac.attributeModifiers.some(am => am.attributeId === attrId)
-      return {
-        ...ac,
-        attributeModifiers: exists
-          ? ac.attributeModifiers.filter(am => am.attributeId !== attrId)
-          : [...ac.attributeModifiers, { attributeId: attrId, allowPlayerSelection: false, defaultAttributeId: attrId }],
-      }
-    }))
+    setAcConfigs(prev => prev.map((ac, i) => (i === configIdx ? toggleAcAttributeId(ac, attrId) : ac)))
   }, [])
   const handleUpdateNewAcAttributeModifierForConfig = useCallback((configIdx: number, attrId: string, patch: Partial<ArmorClassAttributeModifierDraft>) => {
-    setAcConfigs(prev => prev.map((ac, i) => i === configIdx
-      ? { ...ac, attributeModifiers: ac.attributeModifiers.map(am => am.attributeId === attrId ? { ...am, ...patch } : am) }
-      : ac))
+    setAcConfigs(prev => prev.map((ac, i) => (i === configIdx ? updateAcAttributeModifier(ac, attrId, patch) : ac)))
   }, [])
 
   // ── Character Section handlers ──

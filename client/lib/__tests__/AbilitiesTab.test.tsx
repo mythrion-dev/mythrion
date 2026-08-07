@@ -115,6 +115,7 @@ vi.mock('@/components/character-sheet/SummonResourceCard', () => ({
 // ── Import component under test (after mocks) ──
 
 import { AbilitiesTab, evaluateSummonFormula } from '@/components/character-sheet/AbilitiesTab'
+import type { AbilityLevel } from '@/components/character-sheet/types'
 
 // ── Helpers ──
 
@@ -136,27 +137,14 @@ const defaultTemplate = {
     { id: 'attr-1', key: 'str', name: 'Strength' },
     { id: 'attr-2', key: 'dex', name: 'Dexterity' },
   ],
-  templateSkills: [
-    { id: 'skill-1', name: 'Athletics', allowedAttributeIds: ['attr-1', 'attr-2'] },
-    { id: 'skill-2', name: 'Stealth', allowedAttributeIds: ['attr-2'] },
-  ],
-  armorClasses: [
-    {
-      id: 'ac-1', name: 'Natural Armor', enabled: true,
-      fields: [
-        { id: 'ac-field-1', name: 'Base', defaultValue: '10', editableByPlayer: true, description: 'Base AC' },
-        { id: 'ac-field-2', name: 'Bonus', defaultValue: '0', editableByPlayer: false, description: null },
-      ],
-      attributeModifiers: [
-        { id: 'am-1', attributeId: 'attr-1', attribute: { id: 'attr-1', key: 'str', name: 'Strength' }, defaultAttributeId: 'attr-1', defaultAttribute: { id: 'attr-1', key: 'str', name: 'Strength' }, allowPlayerSelection: true, enabled: true },
-      ],
-    },
-  ],
-  resistances: [
-    { id: 'res-1', name: 'Physical', calculationType: 'CALCULATED', components: [{ id: 'comp-1', name: 'Base', defaultValue: '5', editableByPlayer: true }], attributeModifiers: [] },
-  ],
+  templateSkills: [],
+  skillModifierProfiles: [],
+  coreResources: [],
+  characterSections: [],
+  armorClasses: [],
+  resistances: [],
   _count: { attributes: 2, armorClasses: 1, coreResources: 0, resistances: 1 },
-} as const
+}
 
 function makeAbility(overrides: Record<string, unknown> = {}) {
   const base = {
@@ -309,14 +297,13 @@ describe('AbilitiesTab', () => {
     expect(screen.getByPlaceholderText('Search abilities & summons...')).toBeInTheDocument()
   })
 
-  it('shows empty state when no abilities and not creating', () => {
-    renderAbilitiesTab()
-    expect(screen.getByText('No abilities or summons yet.')).toBeInTheDocument()
-  })
-
-  it('shows "Create one below." text when owner and empty', () => {
-    renderAbilitiesTab()
-    expect(screen.getByText('Create one below.')).toBeInTheDocument()
+  it.each([
+    { name: 'shows empty state when no abilities and not creating', props: {}, text: 'No abilities or summons yet.' },
+    { name: 'shows "Create one below." text when owner and empty', props: {}, text: 'Create one below.' },
+    { name: 'shows search empty state when search yields no results', props: { abilities: [makeAbility()], searchQuery: 'zzz' }, text: 'No entries match your search.' },
+  ])('$name', ({ props, text }: { props: Record<string, unknown>; text: string }) => {
+    renderAbilitiesTab(props)
+    expect(screen.getByText(text)).toBeInTheDocument()
   })
 
   it('does not show "Create one below." when not owner and empty', () => {
@@ -325,20 +312,19 @@ describe('AbilitiesTab', () => {
     expect(screen.queryByText('Create one below.')).not.toBeInTheDocument()
   })
 
-  it('shows search empty state when search yields no results', () => {
-    renderAbilitiesTab({ abilities: [makeAbility()], searchQuery: 'zzz' })
-    expect(screen.getByText('No entries match your search.')).toBeInTheDocument()
-  })
-
   it('does not show search empty state when searchQuery is empty and no abilities', () => {
     renderAbilitiesTab({ searchQuery: '' })
     expect(screen.getByText('No abilities or summons yet.')).toBeInTheDocument()
     expect(screen.queryByText('No entries match your search.')).not.toBeInTheDocument()
   })
 
-  it('shows ability count when abilities exist', () => {
+  it.each([
+    { name: 'shows ability count when abilities exist', text: '1 entry' },
+    { name: 'renders ability names', text: 'Fireball' },
+    { name: 'renders Ability badge for ability type', text: 'Ability' },
+  ])('$name', ({ text }: { text: string }) => {
     renderAbilitiesTab({ abilities: [makeAbility()] })
-    expect(screen.getByText('1 entry')).toBeInTheDocument()
+    expect(screen.getByText(text)).toBeInTheDocument()
   })
 
   it('shows plural "entries" when multiple abilities exist', () => {
@@ -347,16 +333,6 @@ describe('AbilitiesTab', () => {
   })
 
   // ── Ability rendering ──
-
-  it('renders ability names', () => {
-    renderAbilitiesTab({ abilities: [makeAbility()] })
-    expect(screen.getByText('Fireball')).toBeInTheDocument()
-  })
-
-  it('renders Ability badge for ability type', () => {
-    renderAbilitiesTab({ abilities: [makeAbility()] })
-    expect(screen.getByText('Ability')).toBeInTheDocument()
-  })
 
   it('renders Summon badge for summon type', () => {
     renderAbilitiesTab({ abilities: [makeSummon()] })
@@ -417,32 +393,18 @@ describe('AbilitiesTab', () => {
     expect(screen.getByText(/Damage:/)).toBeInTheDocument()
   })
 
-  it('shows description section for owner when expanded', () => {
+  it.each([
+    { name: 'shows description section for owner when expanded', props: {}, text: 'Description' },
+    { name: 'shows description text for non-owner when present', props: { isOwner: false }, text: 'Level 1 fireball' },
+    { name: 'shows notes section for owner when expanded', props: {}, text: 'Notes' },
+  ])('$name', ({ props, text }: { props: Record<string, unknown>; text: string }) => {
     renderAbilitiesTab({
       abilities: [makeAbility()],
+      ...props,
       expandedAbilities: { 'abil-1': true },
       selectedLevels: { 'abil-1': 'lvl-1' },
     })
-    expect(screen.getByText('Description')).toBeInTheDocument()
-  })
-
-  it('shows description text for non-owner when present', () => {
-    renderAbilitiesTab({
-      abilities: [makeAbility()],
-      isOwner: false,
-      expandedAbilities: { 'abil-1': true },
-      selectedLevels: { 'abil-1': 'lvl-1' },
-    })
-    expect(screen.getByText('Level 1 fireball')).toBeInTheDocument()
-  })
-
-  it('shows notes section for owner when expanded', () => {
-    renderAbilitiesTab({
-      abilities: [makeAbility()],
-      expandedAbilities: { 'abil-1': true },
-      selectedLevels: { 'abil-1': 'lvl-1' },
-    })
-    expect(screen.getByText('Notes')).toBeInTheDocument()
+    expect(screen.getByText(text)).toBeInTheDocument()
   })
 
   it('shows notes for non-owner when notes exist', () => {
@@ -1080,6 +1042,7 @@ describe('AbilitiesTab', () => {
     const selects = screen.getAllByRole('combobox')
     const stopPropagation = vi.fn()
     fireEvent.click(selects[0], { stopPropagation })
+    expect(defaultSetExpandedAbilities).not.toHaveBeenCalled()
   })
 
   it('shows "No levels added yet." for owner when ability has no levels', () => {
@@ -1112,8 +1075,8 @@ describe('AbilitiesTab', () => {
   // ── handleAddLevel API success ──
 
   it('handleAddLevel calls api.post and updates state on success', async () => {
-    const newLevel = { id: 'lvl-3', level: 3, manaCost: 30, range: '50m', damage: '4d6', description: null, notes: null }
-    const deferred = createDeferred()
+    const newLevel = { id: 'lvl-3', abilityId: 'abil-1', level: '3', manaCost: 30, range: '50m', damage: '4d6', description: null, notes: null }
+    const deferred = createDeferred<AbilityLevel>()
     mockPost.mockReturnValue(deferred.promise)
     const setAbilities = vi.fn()
     const setLevels = vi.fn()
@@ -1219,9 +1182,11 @@ describe('AbilitiesTab', () => {
         levels: [{ id: 'lvl-1', level: 1, manaCost: null, range: null, damage: null, description: null, notes: null }],
       })],
       isOwner: false,
+      permissions: { canEditAbilities: false },
       expandedAbilities: { 'abil-1': true },
       selectedLevels: { 'abil-1': 'lvl-1' },
     })
+    expect(screen.queryByText('Mana:')).not.toBeInTheDocument()
   })
 
   it('includes SummonResourceCard when summon is expanded with child abilities', () => {

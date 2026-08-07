@@ -3,7 +3,6 @@ import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
 import { RedisService } from '../redis/redis.service.js'
 import { MembershipService } from '../membership/membership.service.js'
-import { MemberRole } from '../generated/prisma/client.js'
 import { CreateFolderDto } from './dto/create-folder.dto.js'
 import { CreatePageDto } from './dto/create-page.dto.js'
 import { UpdateFolderDto } from './dto/update-folder.dto.js'
@@ -183,7 +182,7 @@ export class NotebookService {
       where: { id: folderId },
       include: { notebook: true },
     })
-    if (!folder || folder.notebook.adventureId !== adventureId || folder.notebook.userId !== userId) {
+    if (folder?.notebook.adventureId !== adventureId || folder?.notebook.userId !== userId) {
       throw new NotFoundException(this.i18n.t('notebook.folderNotFound'))
     }
 
@@ -216,7 +215,7 @@ export class NotebookService {
       where: { id: folderId },
       include: { notebook: true },
     })
-    if (!folder || folder.notebook.adventureId !== adventureId || folder.notebook.userId !== userId) {
+    if (folder?.notebook.adventureId !== adventureId || folder?.notebook.userId !== userId) {
       throw new NotFoundException(this.i18n.t('notebook.folderNotFound'))
     }
 
@@ -281,7 +280,7 @@ export class NotebookService {
       where: { id: pageId },
       include: { notebook: true },
     })
-    if (!page || page.notebook.adventureId !== adventureId || page.notebook.userId !== userId) {
+    if (page?.notebook.adventureId !== adventureId || page?.notebook.userId !== userId) {
       throw new NotFoundException(this.i18n.t('notebook.pageNotFound'))
     }
 
@@ -319,7 +318,7 @@ export class NotebookService {
       where: { id: pageId },
       include: { notebook: true },
     })
-    if (!page || page.notebook.adventureId !== adventureId || page.notebook.userId !== userId) {
+    if (page?.notebook.adventureId !== adventureId || page?.notebook.userId !== userId) {
       throw new NotFoundException(this.i18n.t('notebook.pageNotFound'))
     }
 
@@ -395,7 +394,7 @@ export class NotebookService {
       const folderMatch = folderName?.toLowerCase().includes(q) ?? false
 
       // Strip HTML tags for content matching
-      const strippedContent = page.content.replace(/<[^>]*>/g, '')
+      const strippedContent = page.content.replace(/(?<!<)<[^>]*>/g, '')
       const contentMatch = strippedContent.toLowerCase().includes(q)
 
       return titleMatch || folderMatch || contentMatch

@@ -204,6 +204,9 @@ export default function ManageSubscriptionPage() {
 
         {isCancellable && (
           <>
+            <p className="text-sm text-muted-foreground">
+              {t('billing:cancellationPolicyNote', { periodEnd })}
+            </p>
             {!showCancelConfirm ? (
               <button
                 onClick={() => setShowCancelConfirm(true)}
@@ -251,29 +254,33 @@ export default function ManageSubscriptionPage() {
           <p className="mt-3 text-sm text-muted-foreground">{t('billing:noInvoices')}</p>
         ) : (
           <div className="mt-3 divide-y divide-border">
-            {subscription.invoices.map((invoice) => (
-              <div key={invoice.id} className="flex items-center justify-between py-2.5 text-sm">
-                <div>
-                  <p className="font-medium text-foreground">
-                    {formatPrice(invoice.amount)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(invoice.createdAt)}
-                  </p>
+            {subscription.invoices.map((invoice) => {
+              const pendingStatusClass =
+                invoice.status === 'pending'
+                  ? 'text-amber-500 bg-amber-500/10'
+                  : 'text-muted bg-surface'
+              const invoiceStatusClass =
+                invoice.status === 'paid'
+                  ? 'text-emerald-500 bg-emerald-500/10'
+                  : pendingStatusClass
+              return (
+                <div key={invoice.id} className="flex items-center justify-between py-2.5 text-sm">
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {formatPrice(invoice.amount)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(invoice.createdAt)}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${invoiceStatusClass}`}
+                  >
+                    {invoice.status}
+                  </span>
                 </div>
-                <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${
-                    invoice.status === 'paid'
-                      ? 'text-emerald-500 bg-emerald-500/10'
-                      : invoice.status === 'pending'
-                        ? 'text-amber-500 bg-amber-500/10'
-                        : 'text-muted bg-surface'
-                  }`}
-                >
-                  {invoice.status}
-                </span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

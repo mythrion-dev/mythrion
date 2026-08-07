@@ -453,10 +453,6 @@ describe('computeSkills', () => {
           attributes: [
             { id: 'attr-1', key: 'str', name: 'Strength' },
           ],
-          templateFields: [
-            { id: 'f-1', key: 'bonus', label: 'Bonus', fieldType: 'number' },
-            { id: 'f-2', key: 'extra', label: 'Extra', fieldType: 'number' },
-          ],
           templateSkills: [
             {
               id: 'skill-1', name: 'Test', description: null,
@@ -470,8 +466,8 @@ describe('computeSkills', () => {
           { id: 'v-1', attributeId: 'attr-1', value: '10', attribute: { id: 'attr-1', key: 'str', name: 'Strength' } },
         ],
         fieldValues: [
-          { id: 'fv-1', templateFieldId: 'f-1', value: '3', templateField: { id: 'f-1', key: 'bonus', label: 'Bonus', fieldType: 'number' } },
-          { id: 'fv-2', templateFieldId: 'f-2', value: '5', templateField: { id: 'f-2', key: 'extra', label: 'Extra', fieldType: 'number' } },
+          { id: 'fv-1', templateFieldId: 'f-1', value: '3', templateField: { id: 'f-1', key: 'bonus', label: 'Bonus' } },
+          { id: 'fv-2', templateFieldId: 'f-2', value: '5', templateField: { id: 'f-2', key: 'extra', label: 'Extra' } },
         ],
         skillValues: [
           {
@@ -518,7 +514,6 @@ describe('computeSkills', () => {
             {
               id: 'prof-1', name: 'Weapons Only',
               options: [{ id: 'opt-1', label: 'Bonus', value: 3 }],
-              // @ts-expect-error — targetMode is runtime metadata, not in the TS type
               targetMode: 'SELECTED_SKILLS',
               targetSkillIds: ['Sword', 'Axe'],
             },
@@ -571,7 +566,6 @@ describe('computeSkills', () => {
             {
               id: 'prof-1', name: 'Athletics Bonus',
               options: [{ id: 'opt-1', label: 'Bonus', value: 5 }],
-              // @ts-expect-error — runtime metadata
               targetMode: 'SELECTED_SKILLS',
               targetSkillIds: ['Athletics'],
             },
@@ -711,10 +705,11 @@ describe('computeSummonModifiers', () => {
   it('returns empty object when no modifier formula is set', async () => {
     const ability: Ability = {
       id: 'ab-1', name: 'Wolf', type: 'SUMMON',
-      description: null, range: null, notes: null, damage: null, manaCost: null,
+      description: null, notes: null,
+      order: 0,
       levels: [], childAbilities: [],
-      summonAttributes: [{ attributeId: 'attr-1', value: '14' }],
-      summonAcValues: [], summonSkills: [], summonHealth: null, level: null,
+      summonAttributes: [{ id: 'sa-1', abilityId: 'ab-1', attributeId: 'attr-1', value: '14' }],
+      summonAcValues: [], summonSkills: [], summonHealth: null,
     }
     const result = await computeSummonModifiers(ability, makeSheet(), noopEvaluate)
     expect(result).toEqual({})
@@ -723,9 +718,10 @@ describe('computeSummonModifiers', () => {
   it('returns empty object when summon has no attributes', async () => {
     const ability: Ability = {
       id: 'ab-1', name: 'Wolf', type: 'SUMMON',
-      description: null, range: null, notes: null, damage: null, manaCost: null,
+      description: null, notes: null,
+      order: 0,
       levels: [], childAbilities: [],
-      summonAttributes: [], summonAcValues: [], summonSkills: [], summonHealth: null, level: null,
+      summonAttributes: [], summonAcValues: [], summonSkills: [], summonHealth: null,
     }
     const sheet = makeSheet({
       template: { ...makeSheet().template, attributeModifierFormula: 'value' },
@@ -738,10 +734,11 @@ describe('computeSummonModifiers', () => {
     const evaluate = vi.fn(async (_f: string, vars: Record<string, number>) => Math.floor((vars.str - 10) / 2))
     const ability: Ability = {
       id: 'ab-1', name: 'Wolf', type: 'SUMMON',
-      description: null, range: null, notes: null, damage: null, manaCost: null,
+      description: null, notes: null,
+      order: 0,
       levels: [], childAbilities: [],
-      summonAttributes: [{ attributeId: 'attr-1', value: '18' }],
-      summonAcValues: [], summonSkills: [], summonHealth: null, level: null,
+      summonAttributes: [{ id: 'sa-1', abilityId: 'ab-1', attributeId: 'attr-1', value: '18' }],
+      summonAcValues: [], summonSkills: [], summonHealth: null,
     }
     const sheet = makeSheet({
       template: {
@@ -764,10 +761,11 @@ describe('computeSummonModifiers', () => {
     const evaluate = vi.fn(async () => { throw new Error('fail') })
     const ability: Ability = {
       id: 'ab-1', name: 'Wolf', type: 'SUMMON',
-      description: null, range: null, notes: null, damage: null, manaCost: null,
+      description: null, notes: null,
+      order: 0,
       levels: [], childAbilities: [],
-      summonAttributes: [{ attributeId: 'attr-1', value: '10' }],
-      summonAcValues: [], summonSkills: [], summonHealth: null, level: null,
+      summonAttributes: [{ id: 'sa-1', abilityId: 'ab-1', attributeId: 'attr-1', value: '10' }],
+      summonAcValues: [], summonSkills: [], summonHealth: null,
     }
     const sheet = makeSheet({
       template: {
@@ -789,10 +787,11 @@ describe('computeSummonAC', () => {
   it('returns parsed value from first summonAcValues entry', () => {
     const ability: Ability = {
       id: 'ab-1', name: 'Wolf', type: 'SUMMON',
-      description: null, range: null, notes: null, damage: null, manaCost: null,
+      description: null, notes: null,
+      order: 0,
       levels: [], childAbilities: [],
       summonAttributes: [], summonAcValues: [{ id: 'sac-1', abilityId: 'ab-1', value: '14' }],
-      summonSkills: [], summonHealth: null, level: null,
+      summonSkills: [], summonHealth: null,
     }
     expect(computeSummonAC(ability)).toBe(14)
   })
@@ -800,9 +799,10 @@ describe('computeSummonAC', () => {
   it('returns null when there are no summonAcValues', () => {
     const ability: Ability = {
       id: 'ab-1', name: 'Wolf', type: 'SUMMON',
-      description: null, range: null, notes: null, damage: null, manaCost: null,
+      description: null, notes: null,
+      order: 0,
       levels: [], childAbilities: [],
-      summonAttributes: [], summonAcValues: [], summonSkills: [], summonHealth: null, level: null,
+      summonAttributes: [], summonAcValues: [], summonSkills: [], summonHealth: null,
     }
     expect(computeSummonAC(ability)).toBeNull()
   })
@@ -810,10 +810,11 @@ describe('computeSummonAC', () => {
   it('returns null when value is non-numeric', () => {
     const ability: Ability = {
       id: 'ab-1', name: 'Wolf', type: 'SUMMON',
-      description: null, range: null, notes: null, damage: null, manaCost: null,
+      description: null, notes: null,
+      order: 0,
       levels: [], childAbilities: [],
       summonAttributes: [], summonAcValues: [{ id: 'sac-1', abilityId: 'ab-1', value: 'abc' }],
-      summonSkills: [], summonHealth: null, level: null,
+      summonSkills: [], summonHealth: null,
     }
     expect(computeSummonAC(ability)).toBeNull()
   })

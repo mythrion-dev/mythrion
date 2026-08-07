@@ -28,15 +28,15 @@ export class JoinRequestService {
     const existing = await this.prisma.joinRequest.findUnique({
       where: { adventureId_userId: { adventureId, userId } },
     })
-    if (existing && existing.status === 'PENDING') {
+    if (existing?.status === 'PENDING') {
       throw new ConflictException(this.i18n.t('community.alreadyPending'))
     }
-    if (existing && existing.status === 'ACCEPTED') {
+    if (existing?.status === 'ACCEPTED') {
       throw new ConflictException(this.i18n.t('community.alreadyAccepted'))
     }
 
     // If previously rejected, allow re-requesting: update the existing record
-    if (existing && existing.status === 'REJECTED') {
+    if (existing?.status === 'REJECTED') {
       return this.prisma.joinRequest.update({
         where: { id: existing.id },
         data: { status: 'PENDING', message: message ?? null },

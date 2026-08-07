@@ -49,7 +49,7 @@ describe('MembershipService', () => {
         ForbiddenException,
       )
       await expect(service.requireRole('a1', 'u1', 'GM')).rejects.toThrow(
-        'You are not a member of this adventure',
+        'You are not a member of this campaign',
       )
     })
 
@@ -172,7 +172,7 @@ describe('MembershipService', () => {
         NotFoundException,
       )
       await expect(service.assertPlayerCapacity('a1')).rejects.toThrow(
-        'Adventure not found',
+        'Campaign not found',
       )
     })
 
@@ -185,7 +185,7 @@ describe('MembershipService', () => {
         ForbiddenException,
       )
       await expect(service.assertPlayerCapacity('a1')).rejects.toThrow(
-        'Adventure is at maximum player capacity',
+        'Campaign is at maximum player capacity',
       )
     })
 

@@ -3,7 +3,7 @@
 import { useTranslation } from 'react-i18next'
 import { InlineClickEdit } from '@/components/character-sheet'
 import type { InventoryItem, SheetPermissions } from './types'
-import type { SubmitEvent } from 'react'
+import type { ReactNode, SubmitEvent } from 'react'
 
 export function InventoryTab({
   inventoryItems, permissions,
@@ -16,19 +16,19 @@ export function InventoryTab({
   handleCreateItem, resetNewItem,
   expandedItems, setExpandedItems,
 }: {
-  inventoryItems: InventoryItem[]; permissions: SheetPermissions
-  searchQuery: string; setSearchQuery: React.Dispatch<React.SetStateAction<string>>
-  totalWeight: number
-  saveItemField: (itemId: string, field: string, value: string) => Promise<void>
-  handleDeleteItem: (itemId: string) => Promise<void>
-  showNewItem: boolean; setShowNewItem: React.Dispatch<React.SetStateAction<boolean>>
-  newItem: { name: string; weight: string; cost: string; description: string }
-  setNewItem: React.Dispatch<React.SetStateAction<{ name: string; weight: string; cost: string; description: string }>>
-  itemSaving: boolean; itemError: string | null
-  handleCreateItem: (e: SubmitEvent) => Promise<void>
-  resetNewItem: () => void
-  expandedItems: Record<string, boolean>
-  setExpandedItems: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+  readonly inventoryItems: InventoryItem[]; readonly permissions: SheetPermissions
+  readonly searchQuery: string; readonly setSearchQuery: React.Dispatch<React.SetStateAction<string>>
+  readonly totalWeight: number
+  readonly saveItemField: (itemId: string, field: string, value: string) => Promise<void>
+  readonly handleDeleteItem: (itemId: string) => Promise<void>
+  readonly showNewItem: boolean; readonly setShowNewItem: React.Dispatch<React.SetStateAction<boolean>>
+  readonly newItem: { name: string; weight: string; cost: string; description: string }
+  readonly setNewItem: React.Dispatch<React.SetStateAction<{ name: string; weight: string; cost: string; description: string }>>
+  readonly itemSaving: boolean; readonly itemError: string | null
+  readonly handleCreateItem: (e: SubmitEvent) => Promise<void>
+  readonly resetNewItem: () => void
+  readonly expandedItems: Record<string, boolean>
+  readonly setExpandedItems: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
 }) {
   const { t } = useTranslation()
   const canEditInventory = permissions.canEditInventory
@@ -92,7 +92,28 @@ export function InventoryTab({
 
       {filtered.length > 0 && (
         <div className="space-y-3 stagger-children">
-          {filtered.map((item, idx) => (
+          {filtered.map((item, idx) => {
+            let descriptionContent: ReactNode
+            if (canEditInventory) {
+              descriptionContent = (
+                <InlineClickEdit
+                  value={item.description ?? ''}
+                  onSave={async (v) => saveItemField(item.id, 'description', v)}
+                  as="textarea"
+                  className="text-sm text-muted-foreground whitespace-pre-wrap"
+                  emptyDisplay={t('character:addDescriptionPlaceholder')}
+                />
+              )
+            } else if (item.description) {
+              descriptionContent = (
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{item.description}</p>
+              )
+            } else {
+              descriptionContent = (
+                <p className="text-sm text-muted italic">{t('character:noDescription')}</p>
+              )
+            }
+            return (
             <div
               key={item.id}
               className={`card !p-5 space-y-3 transition-all duration-200 hover:border-border/80 ${expandedItems[item.id] ? 'border-primary/20' : ''}`}
@@ -180,24 +201,13 @@ export function InventoryTab({
                 </button>
                 {expandedItems[item.id] && (
                   <div className="mt-2 pl-5 animate-fade-in">
-                    {canEditInventory ? (
-                      <InlineClickEdit
-                        value={item.description ?? ''}
-                        onSave={async (v) => saveItemField(item.id, 'description', v)}
-                        as="textarea"
-                        className="text-sm text-muted-foreground whitespace-pre-wrap"
-                        emptyDisplay={t('character:addDescriptionPlaceholder')}
-                      />
-                    ) : item.description ? (
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{item.description}</p>
-                    ) : (
-                      <p className="text-sm text-muted italic">{t('character:noDescription')}</p>
-                    )}
+                    {descriptionContent}
                   </div>
                 )}
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

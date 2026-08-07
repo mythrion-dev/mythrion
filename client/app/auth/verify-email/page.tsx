@@ -52,7 +52,7 @@ function VerifyEmailInner() {
       })
   }, [searchParams])
 
-  async function handleResend(e: React.FormEvent<HTMLFormElement>) {
+  async function handleResend(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     setResending(true)

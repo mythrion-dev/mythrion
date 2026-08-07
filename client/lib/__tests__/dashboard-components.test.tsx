@@ -73,15 +73,15 @@ describe('Sidebar', () => {
     expect(aside).toBeInTheDocument()
   })
 
-  it('renders the logo text (Mythrion)', () => {
+  it.each(['Mythrion', 'AJ', 'Sign out'])('renders %s', (text) => {
     render(<Sidebar />)
-    expect(screen.getByText('Mythrion')).toBeInTheDocument()
+    expect(screen.getByText(text)).toBeInTheDocument()
   })
 
   it('renders all navigation links', () => {
     render(<Sidebar />)
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
-    expect(screen.getByText('Adventures')).toBeInTheDocument()
+    expect(screen.getByText('Campaigns')).toBeInTheDocument()
     expect(screen.getByText('Character Sheets')).toBeInTheDocument()
   })
 
@@ -89,16 +89,6 @@ describe('Sidebar', () => {
     render(<Sidebar />)
     expect(screen.getByText('Alice Johnson')).toBeInTheDocument()
     expect(screen.getByText('alice@example.com')).toBeInTheDocument()
-  })
-
-  it('renders user initials avatar', () => {
-    render(<Sidebar />)
-    expect(screen.getByText('AJ')).toBeInTheDocument()
-  })
-
-  it('renders sign out button', () => {
-    render(<Sidebar />)
-    expect(screen.getByText('Sign out')).toBeInTheDocument()
   })
 
   it('renders collapse toggle button', () => {
@@ -166,7 +156,7 @@ describe('Sidebar collapsed state', () => {
     render(<Sidebar />)
     fireEvent.click(screen.getByTitle('Collapse sidebar'))
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
-    expect(screen.queryByText('Adventures')).not.toBeInTheDocument()
+    expect(screen.queryByText('Campaigns')).not.toBeInTheDocument()
     expect(screen.queryByText('Character Sheets')).not.toBeInTheDocument()
     expect(screen.queryByText('Sign out')).not.toBeInTheDocument()
     expect(screen.queryByText('Alice Johnson')).not.toBeInTheDocument()
@@ -179,7 +169,7 @@ describe('Sidebar collapsed state', () => {
     const links = screen.getAllByRole('link')
     const titles = links.map((l) => l.getAttribute('title'))
     expect(titles).toContain('Dashboard')
-    expect(titles).toContain('Adventures')
+    expect(titles).toContain('Campaigns')
     expect(titles).toContain('Character Sheets')
   })
 
@@ -214,7 +204,7 @@ describe('Sidebar active link', () => {
     mockUsePathname.mockReturnValue('/dashboard')
     render(<Sidebar />)
     const links = screen.getAllByRole('link')
-    const adventuresLink = links.find((l) => l.textContent === 'Adventures')
+    const adventuresLink = links.find((l) => l.textContent === 'Campaigns')
     expect(adventuresLink?.className).not.toContain('sidebar-link-active')
   })
 
@@ -223,7 +213,7 @@ describe('Sidebar active link', () => {
     mockUseSearchParams.mockReturnValue(new URLSearchParams('tab=adventures'))
     render(<Sidebar />)
     const links = screen.getAllByRole('link')
-    const adventuresLink = links.find((l) => l.textContent === 'Adventures')
+    const adventuresLink = links.find((l) => l.textContent === 'Campaigns')
     expect(adventuresLink?.className).toContain('sidebar-link-active')
   })
 
@@ -246,7 +236,7 @@ describe('Sidebar active link', () => {
     mockUseSearchParams.mockReturnValue(new URLSearchParams('tab=adventures'))
     render(<Sidebar />)
     const links = screen.getAllByRole('link')
-    const adventuresLink = links.find((l) => l.textContent === 'Adventures')
+    const adventuresLink = links.find((l) => l.textContent === 'Campaigns')
     expect(adventuresLink?.className).not.toContain('sidebar-link-active')
   })
 
@@ -369,7 +359,7 @@ describe('Sidebar mobile menu', () => {
     fireEvent.click(screen.getByLabelText('Open menu'))
     expect(screen.getByLabelText('Close menu')).toBeInTheDocument()
 
-    const adventuresLink = screen.getByText('Adventures')
+    const adventuresLink = screen.getByText('Campaigns')
     fireEvent.click(adventuresLink)
 
     expect(screen.getByLabelText('Open menu')).toBeInTheDocument()
@@ -436,7 +426,7 @@ describe('Sidebar nav link hrefs', () => {
   it('Adventures link points to /dashboard?tab=adventures', () => {
     render(<Sidebar />)
     const links = screen.getAllByRole('link')
-    const adventuresLink = links.find((l) => l.textContent === 'Adventures')
+    const adventuresLink = links.find((l) => l.textContent === 'Campaigns')
     expect(adventuresLink).toHaveAttribute('href', '/dashboard?tab=adventures')
   })
 

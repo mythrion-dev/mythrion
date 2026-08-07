@@ -2129,7 +2129,7 @@ describe('CharacterSheetService', () => {
         it('creates a level without copyFromPrevious', async () => {
           prisma.characterAbilityLevel.create.mockResolvedValue({ id: 'lvl-3', level: '3', abilityId })
 
-          const result = await service.createAbilityLevel(abilityId, userId, { level: 3 })
+          const result = await service.createAbilityLevel(abilityId, userId, { level: '3' })
 
           expect(result.level).toBe('3')
         })
@@ -2142,7 +2142,7 @@ describe('CharacterSheetService', () => {
           prisma.characterAbilityLevel.findFirst.mockResolvedValue(null)
           prisma.characterAbilityLevel.create.mockResolvedValue({ id: 'lvl-3', level: '3', abilityId, description: 'previous' })
 
-          const result = await service.createAbilityLevel(abilityId, userId, { level: 3, copyFromPrevious: true })
+          const result = await service.createAbilityLevel(abilityId, userId, { level: '3', copyFromPrevious: true })
 
           // Should have found the previous level and copied its description
           expect(result.level).toBe('3')
@@ -2151,7 +2151,7 @@ describe('CharacterSheetService', () => {
         it('throws ConflictException for duplicate level', async () => {
           prisma.characterAbilityLevel.findFirst.mockResolvedValue({ id: 'lvl-2', level: 2, abilityId })
 
-          await expect(service.createAbilityLevel(abilityId, userId, { level: 2 }))
+          await expect(service.createAbilityLevel(abilityId, userId, { level: '2' }))
             .rejects.toThrow('already exists')
         })
       })

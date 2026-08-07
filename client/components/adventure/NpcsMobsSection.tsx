@@ -22,13 +22,15 @@ interface NpcSheet {
 /* ── Props ── */
 
 interface NpcsMobsSectionProps {
-  adventureId: string
-  isGM: boolean
+  readonly adventureId: string
+  readonly isGM: boolean
   /** Increment to force a re-fetch (e.g. when a new NPC/MOB is created in the sidebar) */
-  refreshKey?: number
+  readonly refreshKey?: number
 }
 
 /* ── Component ── */
+
+const LOADING_SKELETON_KEYS = ['a', 'b', 'c']
 
 export function NpcsMobsSection({ adventureId, isGM, refreshKey }: NpcsMobsSectionProps) {
   const { t } = useTranslation()
@@ -123,8 +125,8 @@ export function NpcsMobsSection({ adventureId, isGM, refreshKey }: NpcsMobsSecti
       {/* Loading state */}
       {loading && (
         <div className="space-y-2">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="data-row">
+          {LOADING_SKELETON_KEYS.map(k => (
+            <div key={k} className="data-row">
               <div className="flex-1 space-y-1.5">
                 <div className="skeleton h-4 w-32" />
                 <div className="skeleton h-3 w-20" />

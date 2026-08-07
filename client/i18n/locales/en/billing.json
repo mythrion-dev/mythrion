@@ -8,6 +8,7 @@
   "browsePublicCampaigns": "Browse public campaigns",
   "buyerDetails": "Buyer details",
   "cancelAnytime": "Cancel anytime",
+  "cancellationPolicyNote": "When you cancel Mythrion Premium, your current billing period remains active and you will not be charged again after {{periodEnd}}.",
   "cancelConfirmMessage": "Are you sure you want to cancel your subscription? Your access to Mythrion Premium will remain active until {{periodEnd}}, after which your subscription will expire. No further charges will be made.",
   "cancelledAt": "Cancelled at",
   "cancelSubscription": "Cancel subscription",

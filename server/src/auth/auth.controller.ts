@@ -5,10 +5,12 @@ import { LoginDto } from './dto/login.dto.js'
 import { RegisterDto } from './dto/register.dto.js'
 import { OnboardingDto } from './dto/onboarding.dto.js'
 import { LanguageDto } from './dto/language.dto.js'
-import { TwoFactorSendDto } from './dto/two-factor.dto.js'
-import { TwoFactorConfirmDto } from './dto/two-factor.dto.js'
-import { VerifyTwoFactorDto } from './dto/two-factor.dto.js'
-import { ResendTwoFactorDto } from './dto/two-factor.dto.js'
+import {
+  TwoFactorSendDto,
+  TwoFactorConfirmDto,
+  VerifyTwoFactorDto,
+  ResendTwoFactorDto,
+} from './dto/two-factor.dto.js'
 import { VerifyEmailDto } from './dto/verify-email.dto.js'
 import { ResendVerificationDto } from './dto/resend-verification.dto.js'
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js'

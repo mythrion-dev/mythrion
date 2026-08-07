@@ -33,6 +33,7 @@ export function PersonalAbilitiesTab({
 }: Readonly<PersonalAbilitiesTabProps>) {
   const { t } = useTranslation()
   const canEditPersonalAbilities = permissions.canEditPersonalAbilities
+  const toggleEntry = (entryId: string) => setExpandedEntries(prev => ({ ...prev, [entryId]: !prev[entryId] }))
   if (sections.length === 0) {
     return (
       <div className="card !p-6 animate-slide-up">
@@ -117,7 +118,7 @@ export function PersonalAbilitiesTab({
                       {/* Entry header */}
                       <button
                         type="button"
-                        onClick={() => setExpandedEntries(p => ({ ...p, [entry.id]: !p[entry.id] }))}
+                        onClick={() => toggleEntry(entry.id)}
                         className="w-full flex items-center gap-3 px-4 py-3 text-left"
                       >
                         <svg

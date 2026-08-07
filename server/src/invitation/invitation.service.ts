@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
 } from '@nestjs/common'
 import { I18nService } from 'nestjs-i18n'
@@ -9,7 +8,6 @@ import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { EmailService } from '../email/email.service.js'
 import { v4 as uuid } from 'uuid'
-import { MemberRole, InvitationStatus } from '../generated/prisma/client.js'
 import { isAllowedOrigin, normalizeOrigin } from '../config/allowed-origins.js'
 
 const INVITATION_EXPIRY_DAYS = 7

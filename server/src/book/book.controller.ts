@@ -103,7 +103,7 @@ export class BookController {
     const userId = (req as any).user?.sub
 
     try {
-      const { stream, contentType, contentLength, fileSize, isPartial } =
+      const { stream, contentType, contentLength, fileSize } =
         await this.bookService.getStreamRange(adventureId, bookId, userId)
 
       const rangeHeader = req.headers.range

@@ -53,7 +53,7 @@ class ResizeObserverMock {
     // Fire a dummy entry so the observer's callback gets exercised
     const entry: ResizeObserverEntry = {
       target,
-      contentRect: { top: 0, left: 0, width: 400, height: 600, x: 0, y: 0, toJSON: () => {} },
+      contentRect: { top: 0, left: 0, width: 400, height: 600, x: 0, y: 0, bottom: 600, right: 400, toJSON: () => {} },
       borderBoxSize: [],
       contentBoxSize: [],
       devicePixelContentBoxSize: [],

@@ -131,6 +131,14 @@ function buildAcModifierSelections(acAttributeValues: FullSheet['acAttributeValu
   return ams
 }
 
+function findLowestOption(options: ProfileOption[]): ProfileOption {
+  let lowest = options[0]
+  for (let i = 1; i < options.length; i++) {
+    if (options[i].value <= lowest.value) lowest = options[i]
+  }
+  return lowest
+}
+
 function buildSkillProfileSelections(
   skillValues: SkillValueData[],
   profiles: SkillModifierProfileDef[] | undefined,
@@ -143,11 +151,7 @@ function buildSkillProfileSelections(
     }
     for (const profile of profiles ?? []) {
       if (!(profile.id in sps[sv.skillId]) && profile.options.length > 0) {
-        let lowest = profile.options[0]
-        for (let i = 1; i < profile.options.length; i++) {
-          if (profile.options[i].value <= lowest.value) lowest = profile.options[i]
-        }
-        sps[sv.skillId][profile.id] = lowest.id
+        sps[sv.skillId][profile.id] = findLowestOption(profile.options).id
       }
     }
   }
@@ -244,17 +248,44 @@ function buildAcAttributeValues(
     })))
 }
 
-async function computeSkillResult(
+interface ComputeSkillResultArgs {
+  readonly sv: SkillValueData
+  readonly tpl: FullSheet['template']
+  readonly attrs: Record<string, string>
+  readonly skillFormulaRaw: string
+  readonly skillConfig: { useAttributeModifier?: boolean; customFieldKeys?: string[] } | null
+  readonly modifierVars: Record<string, number>
+  readonly sps: Record<string, Record<string, string | null>>
+  readonly skillAttributeSelections: Record<string, string | null>
+  readonly level: number | null
+}
+
+async function computeSkillFormulaResult(
   sv: SkillValueData,
   tpl: FullSheet['template'],
   attrs: Record<string, string>,
   skillFormulaRaw: string,
-  skillConfig: { useAttributeModifier?: boolean; customFieldKeys?: string[] } | null,
-  modifierVars: Record<string, number>,
-  sps: Record<string, Record<string, string | null>>,
   skillAttributeSelections: Record<string, string | null>,
+  modifierVars: Record<string, number>,
   level: number | null,
 ): Promise<number> {
+  const selectedAttrId = skillAttributeSelections[sv.skillId] ?? sv.skill.defaultAttributeId ?? sv.skill.attributeId
+  const selectedAttr = tpl.attributes.find(a => a.id === selectedAttrId)
+  const skillAttrValue = selectedAttr ? Number.parseFloat(attrs[selectedAttr.id] ?? '0') : 0
+  const variables: Record<string, number> = { ...modifierVars }
+  variables['value'] = Number.isNaN(skillAttrValue) ? 0 : skillAttrValue
+  if (selectedAttr) variables['value_mod'] = modifierVars[`${selectedAttr.key}_mod`] ?? 0
+  for (const a of tpl.attributes) {
+    const v = Number.parseFloat(attrs[a.id] ?? '0')
+    variables[a.key] = Number.isNaN(v) ? 0 : v
+  }
+  variables['level'] = level ?? 1
+  const res = await api.post<{ result: number }>('/formula/evaluate', { formula: skillFormulaRaw, variables })
+  return res.result
+}
+
+async function computeSkillResult(args: ComputeSkillResultArgs): Promise<number> {
+  const { sv, tpl, attrs, skillFormulaRaw, skillConfig, modifierVars, sps, skillAttributeSelections, level } = args
   let finalResult = 0
   if (skillConfig) {
     if (skillConfig.useAttributeModifier) {
@@ -263,19 +294,7 @@ async function computeSkillResult(
       if (key) finalResult += modifierVars[`${key}_mod`] ?? 0
     }
   } else {
-    const selectedAttrId = skillAttributeSelections[sv.skillId] ?? sv.skill.defaultAttributeId ?? sv.skill.attributeId
-    const selectedAttr = tpl.attributes.find(a => a.id === selectedAttrId)
-    const skillAttrValue = selectedAttr ? Number.parseFloat(attrs[selectedAttr.id] ?? '0') : 0
-    const variables: Record<string, number> = { ...modifierVars }
-    variables['value'] = Number.isNaN(skillAttrValue) ? 0 : skillAttrValue
-    if (selectedAttr) variables['value_mod'] = modifierVars[`${selectedAttr.key}_mod`] ?? 0
-    for (const a of tpl.attributes) {
-      const v = Number.parseFloat(attrs[a.id] ?? '0')
-      variables[a.key] = Number.isNaN(v) ? 0 : v
-    }
-    variables['level'] = level ?? 1
-    const res = await api.post<{ result: number }>('/formula/evaluate', { formula: skillFormulaRaw, variables })
-    finalResult = res.result
+    finalResult = await computeSkillFormulaResult(sv, tpl, attrs, skillFormulaRaw, skillAttributeSelections, modifierVars, level)
   }
 
   const skillSps = sps[sv.skillId] ?? {}
@@ -441,7 +460,7 @@ export function NpcEditDrawer({ npcId, adventureId, onClose, onSaved }: NpcEditD
 
     for (const sv of skillVals) {
       try {
-        results[sv.id] = await computeSkillResult(sv, tpl, attrs, skillFormulaRaw, skillConfig, modifierVars, sps, skillAttributeSelections, level)
+        results[sv.id] = await computeSkillResult({ sv, tpl, attrs, skillFormulaRaw, skillConfig, modifierVars, sps, skillAttributeSelections, level })
       } catch { results[sv.id] = null }
     }
     setSkillTotals(results)

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, type SubmitEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import Link from 'next/link'
 import { useTranslation, Trans } from 'react-i18next'
 import { api } from '@/lib/api'
 import { PageNav } from '@/lib/breadcrumb'
@@ -61,6 +60,103 @@ interface StandaloneTemplate {
   attrModifiersEnabled: boolean
   createdAt: string
   updatedAt: string
+}
+
+interface EditSkillDraft {
+  name: string
+  description: string
+  attributeId: string
+  allowedAttributeIds: string[]
+  defaultAttributeId: string
+}
+
+interface EditProfileDraft {
+  name: string
+  targetMode?: string
+  targetSkillIds?: string[]
+  options: { label: string; value: number }[]
+}
+
+function toggleSkillAllowedAttr(skill: EditSkillDraft, attrKey: string): EditSkillDraft {
+  const exists = skill.allowedAttributeIds.includes(attrKey)
+  return {
+    ...skill,
+    allowedAttributeIds: exists
+      ? skill.allowedAttributeIds.filter(a => a !== attrKey)
+      : [...skill.allowedAttributeIds, attrKey],
+  }
+}
+
+function removeProfileOption(profile: EditProfileDraft, oIdx: number): EditProfileDraft {
+  return { ...profile, options: profile.options.filter((_, oi) => oi !== oIdx) }
+}
+
+function updateProfileOption(
+  profile: EditProfileDraft,
+  oIdx: number,
+  f: 'label' | 'value',
+  v: string | number,
+): EditProfileDraft {
+  return { ...profile, options: profile.options.map((o, oi) => (oi === oIdx ? { ...o, [f]: v } : o)) }
+}
+
+function toggleProfileSkill(profile: EditProfileDraft, skillId: string): EditProfileDraft {
+  const exists = (profile.targetSkillIds ?? []).includes(skillId)
+  return {
+    ...profile,
+    targetSkillIds: exists
+      ? (profile.targetSkillIds ?? []).filter(s => s !== skillId)
+      : [...(profile.targetSkillIds ?? []), skillId],
+  }
+}
+
+function removeAcField(ac: AcConfigDraft, fieldIdx: number): AcConfigDraft {
+  return { ...ac, fields: ac.fields.filter((_, j) => j !== fieldIdx) }
+}
+
+function updateAcField(
+  ac: AcConfigDraft,
+  fieldIdx: number,
+  f: 'name' | 'key' | 'defaultValue' | 'description',
+  v: string,
+): AcConfigDraft {
+  return {
+    ...ac,
+    fields: ac.fields.map((field, j) => {
+      if (j !== fieldIdx) return field
+      const updated = { ...field, [f]: v }
+      if (f === 'name' && v.trim() && !field.key.trim()) updated.key = slugify(v.trim())
+      return updated
+    }),
+  }
+}
+
+function updateAcFieldEditable(ac: AcConfigDraft, fieldIdx: number, v: boolean): AcConfigDraft {
+  return {
+    ...ac,
+    fields: ac.fields.map((field, j) => (j === fieldIdx ? { ...field, editableByPlayer: v } : field)),
+  }
+}
+
+function toggleAcAttributeId(ac: AcConfigDraft, attrId: string): AcConfigDraft {
+  const exists = ac.attributeModifiers.some(am => am.attributeId === attrId)
+  return {
+    ...ac,
+    attributeModifiers: exists
+      ? ac.attributeModifiers.filter(am => am.attributeId !== attrId)
+      : [...ac.attributeModifiers, { attributeId: attrId, allowPlayerSelection: false, defaultAttributeId: attrId }],
+  }
+}
+
+function updateAcAttributeModifier(
+  ac: AcConfigDraft,
+  attrId: string,
+  patch: Partial<ArmorClassAttributeModifierDraft>,
+): AcConfigDraft {
+  return {
+    ...ac,
+    attributeModifiers: ac.attributeModifiers.map(am => (am.attributeId === attrId ? { ...am, ...patch } : am)),
+  }
 }
 
 export default function TemplateDetailPage() {
@@ -369,16 +465,7 @@ export default function TemplateDetailPage() {
     setEditSkills(prev => prev.map((s, idx) => idx === i ? { ...s, [f]: v } : s))
   }, [])
   const handleToggleEditSkillAllowedAttr = useCallback((i: number, attrKey: string) => {
-    setEditSkills(prev => prev.map((s, idx) => {
-      if (idx !== i) return s
-      const exists = s.allowedAttributeIds.includes(attrKey)
-      return {
-        ...s,
-        allowedAttributeIds: exists
-          ? s.allowedAttributeIds.filter(a => a !== attrKey)
-          : [...s.allowedAttributeIds, attrKey],
-      }
-    }))
+    setEditSkills(prev => prev.map((s, idx) => (idx === i ? toggleSkillAllowedAttr(s, attrKey) : s)))
   }, [])
 
   // ── Profile edit helpers ──
@@ -398,29 +485,16 @@ export default function TemplateDetailPage() {
       : p))
   }, [])
   const handleRemoveEditProfileOption = useCallback((pIdx: number, oIdx: number) => {
-    setEditProfiles(prev => prev.map((p, idx) => idx === pIdx
-      ? { ...p, options: p.options.filter((_, oi) => oi !== oIdx) }
-      : p))
+    setEditProfiles(prev => prev.map((p, idx) => (idx === pIdx ? removeProfileOption(p, oIdx) : p)))
   }, [])
   const handleUpdateEditProfileOption = useCallback((pIdx: number, oIdx: number, f: 'label' | 'value', v: string | number) => {
-    setEditProfiles(prev => prev.map((p, idx) => idx === pIdx
-      ? { ...p, options: p.options.map((o, oi) => oi === oIdx ? { ...o, [f]: v } : o) }
-      : p))
+    setEditProfiles(prev => prev.map((p, idx) => (idx === pIdx ? updateProfileOption(p, oIdx, f, v) : p)))
   }, [])
   const handleUpdateEditProfileTargetMode = useCallback((i: number, mode: string) => {
     setEditProfiles(prev => prev.map((p, idx) => idx === i ? { ...p, targetMode: mode } : p))
   }, [])
   const handleToggleEditProfileSkill = useCallback((i: number, skillId: string) => {
-    setEditProfiles(prev => prev.map((p, idx) => {
-      if (idx !== i) return p
-      const exists = (p.targetSkillIds ?? []).includes(skillId)
-      return {
-        ...p,
-        targetSkillIds: exists
-          ? (p.targetSkillIds ?? []).filter(s => s !== skillId)
-          : [...(p.targetSkillIds ?? []), skillId],
-      }
-    }))
+    setEditProfiles(prev => prev.map((p, idx) => (idx === i ? toggleProfileSkill(p, skillId) : p)))
   }, [])
 
   // ── Core resource edit helpers ──
@@ -461,44 +535,19 @@ export default function TemplateDetailPage() {
       : ac))
   }, [])
   const handleRemoveEditAcFieldForConfig = useCallback((configIdx: number, fieldIdx: number) => {
-    setEditAcConfigs(prev => prev.map((ac, i) => i === configIdx
-      ? { ...ac, fields: ac.fields.filter((_, j) => j !== fieldIdx) }
-      : ac))
+    setEditAcConfigs(prev => prev.map((ac, i) => (i === configIdx ? removeAcField(ac, fieldIdx) : ac)))
   }, [])
   const handleUpdateEditAcFieldForConfig = useCallback((configIdx: number, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string) => {
-    setEditAcConfigs(prev => prev.map((ac, i) => {
-      if (i !== configIdx) return ac
-      return {
-        ...ac, fields: ac.fields.map((field, j) => {
-          if (j !== fieldIdx) return field
-          const updated = { ...field, [f]: v }
-          if (f === 'name' && v.trim() && !field.key.trim()) updated.key = slugify(v.trim())
-          return updated
-        })
-      }
-    }))
+    setEditAcConfigs(prev => prev.map((ac, i) => (i === configIdx ? updateAcField(ac, fieldIdx, f, v) : ac)))
   }, [])
   const handleUpdateEditAcFieldEditableForConfig = useCallback((configIdx: number, fieldIdx: number, v: boolean) => {
-    setEditAcConfigs(prev => prev.map((ac, i) => i === configIdx
-      ? { ...ac, fields: ac.fields.map((field, j) => j === fieldIdx ? { ...field, editableByPlayer: v } : field) }
-      : ac))
+    setEditAcConfigs(prev => prev.map((ac, i) => (i === configIdx ? updateAcFieldEditable(ac, fieldIdx, v) : ac)))
   }, [])
   const handleToggleEditAcAttributeIdForConfig = useCallback((configIdx: number, attrId: string) => {
-    setEditAcConfigs(prev => prev.map((ac, i) => {
-      if (i !== configIdx) return ac
-      const exists = ac.attributeModifiers.some(am => am.attributeId === attrId)
-      return {
-        ...ac,
-        attributeModifiers: exists
-          ? ac.attributeModifiers.filter(am => am.attributeId !== attrId)
-          : [...ac.attributeModifiers, { attributeId: attrId, allowPlayerSelection: false, defaultAttributeId: attrId }],
-      }
-    }))
+    setEditAcConfigs(prev => prev.map((ac, i) => (i === configIdx ? toggleAcAttributeId(ac, attrId) : ac)))
   }, [])
   const handleUpdateEditAcAttributeModifierForConfig = useCallback((configIdx: number, attrId: string, patch: Partial<ArmorClassAttributeModifierDraft>) => {
-    setEditAcConfigs(prev => prev.map((ac, i) => i === configIdx
-      ? { ...ac, attributeModifiers: ac.attributeModifiers.map(am => am.attributeId === attrId ? { ...am, ...patch } : am) }
-      : ac))
+    setEditAcConfigs(prev => prev.map((ac, i) => (i === configIdx ? updateAcAttributeModifier(ac, attrId, patch) : ac)))
   }, [])
 
   // ── Character section edit handlers ──
@@ -839,7 +888,7 @@ const FEATURE_ICONS: Record<string, string> = {
   resistances: 'M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01',
 }
 
-function FeatureSummaryCard({ label, count, iconKey }: { label: string; count: number; iconKey: string }) {
+function FeatureSummaryCard({ label, count, iconKey }: { readonly label: string; readonly count: number; readonly iconKey: string }) {
   const pathData = FEATURE_ICONS[iconKey] ?? ''
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg bg-surface border border-border">

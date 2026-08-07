@@ -73,24 +73,7 @@ export class AcCalculationService {
     const modifiersEnabled = template?.attributeModifiersEnabled ?? true
 
     // Calculate attribute modifiers
-    const attributeModifiers = new Map<string, number>()
-    if (formula && modifiersEnabled) {
-      for (const v of sheet.values) {
-        const attrValue = attrValues.get(v.attributeId) ?? 0
-        try {
-          const variables: Record<string, number> = {}
-          for (const sv of sheet.values) {
-            const val = attrValues.get(sv.attributeId) ?? 0
-            variables[sv.attribute.key] = val
-          }
-          variables['value'] = attrValue
-          const mod = this.formulaService.evaluate(formula, variables)
-          attributeModifiers.set(v.attributeId, mod)
-        } catch {
-          attributeModifiers.set(v.attributeId, 0)
-        }
-      }
-    }
+    const attributeModifiers = this.buildAttributeModifiers(formula, modifiersEnabled, sheet.values, attrValues)
 
     // Filter to requested AC or calculate all
     const armorClasses = armorClassId
@@ -125,6 +108,36 @@ export class AcCalculationService {
     )
   }
 
+  /**
+   * Build the attribute modifier map (attributeId -> modifier) using the template formula.
+   */
+  private buildAttributeModifiers(
+    formula: string | null,
+    modifiersEnabled: boolean,
+    values: Array<{ attributeId: string; value: string; attribute: { key: string } }>,
+    attrValues: Map<string, number>,
+  ): Map<string, number> {
+    const attributeModifiers = new Map<string, number>()
+    if (formula && modifiersEnabled) {
+      for (const v of values) {
+        const attrValue = attrValues.get(v.attributeId) ?? 0
+        try {
+          const variables: Record<string, number> = {}
+          for (const sv of values) {
+            const val = attrValues.get(sv.attributeId) ?? 0
+            variables[sv.attribute.key] = val
+          }
+          variables['value'] = attrValue
+          const mod = this.formulaService.evaluate(formula, variables)
+          attributeModifiers.set(v.attributeId, mod)
+        } catch {
+          attributeModifiers.set(v.attributeId, 0)
+        }
+      }
+    }
+    return attributeModifiers
+  }
+
   private calculateSingleAc(
     armorClass: AcConfigForCalc,
     sheetFieldValues: Array<{ fieldId: string; value: string }>,
@@ -135,15 +148,28 @@ export class AcCalculationService {
     attributeModifiers: Map<string, number>,
     modifiersEnabled: boolean,
   ): AcResult {
-    let total = 0
+    const { fieldBreakdown, total: fieldTotal } = this.calculateFieldBreakdown(armorClass, sheetFieldValues)
+    const { attributeModifierBreakdown, total: modifierTotal } = this.calculateAttributeModifierBreakdown(
+      armorClass,
+      sheetAttributeValues,
+      attributeModifiers,
+      modifiersEnabled,
+    )
 
-    // Sum AC field values
-    const fieldBreakdown: Array<{
-      fieldId: string
-      fieldName: string
-      value: number
-      editableByPlayer: boolean
-    }> = []
+    return {
+      total: fieldTotal + modifierTotal,
+      armorClassName: armorClass.name,
+      fieldBreakdown,
+      attributeModifierBreakdown,
+    }
+  }
+
+  private calculateFieldBreakdown(
+    armorClass: AcConfigForCalc,
+    sheetFieldValues: Array<{ fieldId: string; value: string }>,
+  ): { fieldBreakdown: AcResult['fieldBreakdown']; total: number } {
+    let total = 0
+    const fieldBreakdown: AcResult['fieldBreakdown'] = []
 
     for (const field of armorClass.fields) {
       if (field.editableByPlayer) {
@@ -168,18 +194,20 @@ export class AcCalculationService {
       }
     }
 
-    // Sum attribute modifiers
-    const attributeModifierBreakdown: Array<{
-      acModifierId: string
-      attributeId: string
-      attributeKey: string
-      attributeName: string
-      allowPlayerSelection: boolean
-      selectedAttributeKey: string | null
-      selectedAttributeName: string | null
-      rawModifier: number
-      effectiveModifier: number
-    }> = []
+    return { fieldBreakdown, total }
+  }
+
+  private calculateAttributeModifierBreakdown(
+    armorClass: AcConfigForCalc,
+    sheetAttributeValues: Array<{
+      acAttributeModifierId: string
+      selectedAttribute: { id: string; key: string; name: string } | null
+    }>,
+    attributeModifiers: Map<string, number>,
+    modifiersEnabled: boolean,
+  ): { attributeModifierBreakdown: AcResult['attributeModifierBreakdown']; total: number } {
+    let total = 0
+    const attributeModifierBreakdown: AcResult['attributeModifierBreakdown'] = []
 
     if (modifiersEnabled) {
       for (const am of armorClass.attributeModifiers) {
@@ -215,12 +243,7 @@ export class AcCalculationService {
       }
     }
 
-    return {
-      total,
-      armorClassName: armorClass.name,
-      fieldBreakdown,
-      attributeModifierBreakdown,
-    }
+    return { attributeModifierBreakdown, total }
   }
 }
 

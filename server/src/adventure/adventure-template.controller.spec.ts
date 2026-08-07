@@ -127,7 +127,7 @@ describe('AdventureTemplateController', () => {
     it('propagates a ForbiddenException when user is not a member', async () => {
       const { ForbiddenException } = require('@nestjs/common')
       mockTemplateService.getTemplateSnapshot.mockRejectedValue(
-        new ForbiddenException('You are not a member of this adventure'),
+        new ForbiddenException('You are not a member of this campaign'),
       )
 
       await expect(controller.getSnapshot(mockUserReq, 'adv-1')).rejects.toThrow('You are not a member')

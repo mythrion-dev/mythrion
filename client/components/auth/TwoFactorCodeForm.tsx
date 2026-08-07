@@ -37,7 +37,7 @@ export function TwoFactorCodeForm({
     return () => clearTimeout(timer)
   }, [resendCooldown])
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (code.length < 6 || submitting) return
     setError(null)

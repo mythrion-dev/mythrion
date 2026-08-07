@@ -8,11 +8,11 @@ import { EventEmitter } from 'events'
 const mockCursor = {
   sort: jest.fn().mockReturnThis(),
   limit: jest.fn().mockReturnThis(),
-  toArray: jest.fn<() => Promise<any[]>>().mockResolvedValue([]),
+  toArray: jest.fn<(...args: any[]) => Promise<any[]>>().mockResolvedValue([]),
 }
 
-const mockFind = jest.fn<() => typeof mockCursor>().mockReturnValue(mockCursor)
-const mockCollection = jest.fn<() => { find: typeof mockFind }>().mockReturnValue({
+const mockFind = jest.fn<(...args: any[]) => typeof mockCursor>().mockReturnValue(mockCursor)
+const mockCollection = jest.fn<(...args: any[]) => { find: typeof mockFind }>().mockReturnValue({
   find: mockFind,
 })
 const mockDb = { collection: mockCollection }
@@ -23,7 +23,7 @@ let mockGridFSBucketCtor: jest.Mock
 const mockBucketInstance = {
   openUploadStream: jest.fn(),
   openDownloadStream: jest.fn(),
-  delete: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  delete: jest.fn<(...args: any[]) => Promise<void>>().mockResolvedValue(undefined),
 }
 
 jest.mock('../generated/prisma/client', () => ({
@@ -34,7 +34,7 @@ jest.mock('../generated/prisma/client', () => ({
 
 jest.mock('mongodb', () => {
   const MongoClient = jest.fn().mockImplementation(() => ({
-    connect: jest.fn().mockResolvedValue(undefined),
+    connect: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
     db: jest.fn().mockReturnValue(mockDb),
   }))
   const GridFSBucket = jest.fn().mockImplementation(() => mockBucketInstance)
@@ -85,23 +85,23 @@ import { BookVisibility, MemberRole } from '../generated/prisma/client'
 // ---------------------------------------------------------------------------
 const mockPrisma = {
   book: {
-    findMany: jest.fn<() => Promise<any[]>>().mockResolvedValue([]),
-    findUnique: jest.fn<() => Promise<any | null>>().mockResolvedValue(null),
-    create: jest.fn<() => Promise<any>>().mockResolvedValue({}),
-    update: jest.fn<() => Promise<any>>().mockResolvedValue({}),
-    delete: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    findMany: jest.fn<(...args: any[]) => Promise<any[]>>().mockResolvedValue([]),
+    findUnique: jest.fn<(...args: any[]) => Promise<any | null>>().mockResolvedValue(null),
+    create: jest.fn<(...args: any[]) => Promise<any>>().mockResolvedValue({}),
+    update: jest.fn<(...args: any[]) => Promise<any>>().mockResolvedValue({}),
+    delete: jest.fn<(...args: any[]) => Promise<void>>().mockResolvedValue(undefined),
   },
 }
 
 const mockRedis = {
-  cacheGet: jest.fn<() => Promise<any>>().mockResolvedValue(null),
-  cacheSet: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
-  invalidatePattern: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  cacheGet: jest.fn<(...args: any[]) => Promise<any>>().mockResolvedValue(null),
+  cacheSet: jest.fn<(...args: any[]) => Promise<void>>().mockResolvedValue(undefined),
+  invalidatePattern: jest.fn<(...args: any[]) => Promise<void>>().mockResolvedValue(undefined),
 }
 
 const mockMembership = {
-  requireRole: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
-  isMember: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
+  requireRole: jest.fn<(...args: any[]) => Promise<void>>().mockResolvedValue(undefined),
+  isMember: jest.fn<(...args: any[]) => Promise<boolean>>().mockResolvedValue(true),
 }
 
 jest.mock('../prisma.service', () => ({

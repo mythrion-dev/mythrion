@@ -181,7 +181,7 @@ describe('StandaloneTemplateController', () => {
       const result = await controller.clone(mockUserReq, 'template-1', undefined)
 
       expect(mockTemplateService.clone).toHaveBeenCalledWith('template-1', 'user-1', undefined)
-      expect(result.name).toContain('(copy)')
+      expect(result!.name).toContain('(copy)')
     })
 
     it('delegates to templateService.clone with a custom name', async () => {
@@ -190,7 +190,7 @@ describe('StandaloneTemplateController', () => {
       const result = await controller.clone(mockUserReq, 'template-1', 'Custom Clone')
 
       expect(mockTemplateService.clone).toHaveBeenCalledWith('template-1', 'user-1', 'Custom Clone')
-      expect(result.name).toBe('Custom Clone')
+      expect(result!.name).toBe('Custom Clone')
     })
 
     it('propagates a ForbiddenException when clone is not permitted', async () => {

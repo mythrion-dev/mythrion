@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { I18nService } from 'nestjs-i18n'
 import * as bcrypt from 'bcrypt'
-import * as crypto from 'crypto'
+import * as crypto from 'node:crypto'
 import { PrismaService } from '../prisma.service.js'
 import { EmailService } from '../email/email.service.js'
 import { TwoFactorPurpose } from '../generated/prisma/client.js'
@@ -68,7 +68,7 @@ export class TwoFactorService {
     const challenge = await this.prisma.twoFactorChallenge.findUnique({
       where: { id: twoFactorId },
     })
-    if (!challenge || challenge.purpose !== 'LOGIN' || challenge.usedAt) {
+    if (challenge?.purpose !== 'LOGIN' || challenge.usedAt) {
       throw new BadRequestException(this.i18n.t('auth.invalidTwoFactorChallenge'))
     }
     if (new Date() >= challenge.expiresAt) {

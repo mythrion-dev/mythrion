@@ -101,7 +101,7 @@ describe('AuthService', () => {
       ;(bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password')
       mockPrisma.user.create.mockResolvedValue(mockUser)
 
-      const dto = { email: 'test@test.com', password: 'password123', displayName: 'Test User' }
+      const dto = { email: 'test@test.com', password: 'password123', displayName: 'Test User', acceptTerms: true }
       const result = await service.register(dto)
 
       expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
@@ -126,7 +126,7 @@ describe('AuthService', () => {
       ;(bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password')
       mockPrisma.user.create.mockResolvedValue(mockUser)
 
-      const dto = { email: 'test@test.com', password: 'password123' }
+      const dto = { email: 'test@test.com', password: 'password123', acceptTerms: true }
       await service.register(dto, 'pt-BR')
 
       expect(mockPrisma.user.create).toHaveBeenCalledWith({
@@ -143,7 +143,7 @@ describe('AuthService', () => {
     it('should throw ConflictException on duplicate email', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser)
 
-      const dto = { email: 'test@test.com', password: 'password123' }
+      const dto = { email: 'test@test.com', password: 'password123', acceptTerms: true }
       await expect(service.register(dto)).rejects.toThrow(ConflictException)
       expect(mockPrisma.user.create).not.toHaveBeenCalled()
     })
@@ -153,7 +153,7 @@ describe('AuthService', () => {
       ;(bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password')
       mockPrisma.user.create.mockResolvedValue(mockUser)
 
-      await service.register({ email: 'a@b.com', password: 'password123' })
+      await service.register({ email: 'a@b.com', password: 'password123', acceptTerms: true })
 
       expect(bcrypt.hash).toHaveBeenCalledWith('password123', 12)
     })

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { useSubscription } from '@/lib/subscription-context'
@@ -29,7 +28,6 @@ interface TemplateSummary {
 export default function DashboardTemplatesPage() {
   const { hasActiveSubscription } = useSubscription()
   const { t } = useTranslation()
-  const router = useRouter()
   const [templates, setTemplates] = useState<TemplateSummary[]>([])
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState<string | null>(null)

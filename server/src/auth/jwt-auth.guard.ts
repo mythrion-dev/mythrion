@@ -12,13 +12,13 @@ import { AuthService } from './auth.service.js'
 import type { AuthenticatedRequest } from './AuthenticatedRequest.js'
 
 function extractBearerToken(header?: string): string | null {
-  if (!header || !header.startsWith('Bearer ')) return null
+  if (!header?.startsWith('Bearer ')) return null
   return header.slice(7)
 }
 
 function extractCookieToken(cookies?: string): string | null {
   if (!cookies) return null
-  const match = cookies.match(/(?:^|;\s*)auth_token=([^;]*)/)
+  const match = /(?:^|;\s*)auth_token=([^;]*)/.exec(cookies)
   return match ? decodeURIComponent(match[1]) : null
 }
 

@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth-context'
 import { Sidebar, GracePeriodBanner } from '@/components/dashboard'
 import { useTranslation } from 'react-i18next'
 
-function AuthGuard({ children }: { children: React.ReactNode }) {
+function AuthGuard({ children }: { readonly children: React.ReactNode }) {
   const { user, loading } = useAuth()
   const router = useRouter()
   const { t } = useTranslation()
@@ -23,7 +23,6 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
     if (!user.onboardingComplete) {
       router.replace('/onboarding')
-      return
     }
   }, [user, loading, router])
 
@@ -56,7 +55,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  readonly children: React.ReactNode
 }) {
   return (
     <AuthGuard>

@@ -101,6 +101,16 @@ export default function HomePage() {
                 {t('dashboard:exploreExperience')}
               </Link>
             </div>
+            <p className="mt-6 max-w-2xl text-sm leading-6 text-muted-foreground">
+              {t('dashboard:privacyLandingNote')}{' '}
+              <Link href="/privacy" className="font-medium text-primary hover:text-primary-hover transition-colors">
+                {t('dashboard:privacyLink')}
+              </Link>
+              {' '}·{' '}
+              <Link href="/terms" className="font-medium text-primary hover:text-primary-hover transition-colors">
+                {t('dashboard:termsLink')}
+              </Link>
+            </p>
             <div className="mt-8 flex flex-wrap gap-4 text-sm text-muted">
               <span className="rounded-full border border-border/70 bg-background/50 px-3 py-1">{t('dashboard:beautifulByDesign')}</span>
               <span className="rounded-full border border-border/70 bg-background/50 px-3 py-1">{t('dashboard:flexibleForEveryTable')}</span>
@@ -191,7 +201,15 @@ export default function HomePage() {
       <footer className="border-t border-border/60 bg-background/60">
         <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-6 text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <p>{t('dashboard:footerTagline')}</p>
-          <p>{t('dashboard:footerBuiltForBoldStories')}</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/privacy" className="text-sm text-muted transition-colors hover:text-foreground">
+              {t('dashboard:privacyLink')}
+            </Link>
+            <span className="text-muted">·</span>
+            <Link href="/terms" className="text-sm text-muted transition-colors hover:text-foreground">
+              {t('dashboard:termsLink')}
+            </Link>
+          </div>
         </div>
       </footer>
     </main>

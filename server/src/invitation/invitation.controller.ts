@@ -17,9 +17,6 @@ class InviteByEmailDto {
   email!: string
 }
 
-class InviteByLinkDto {
-}
-
 @Controller()
 export class InvitationController {
   constructor(private readonly invitationService: InvitationService) {}
@@ -46,7 +43,6 @@ export class InvitationController {
   inviteByLink(
     @Req() req: AuthenticatedRequest,
     @Param('adventureId') adventureId: string,
-    @Body() dto: InviteByLinkDto,
   ) {
     return this.invitationService.inviteByLink({
       adventureId,

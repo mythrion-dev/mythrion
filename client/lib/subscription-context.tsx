@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   type ReactNode,
 } from 'react'
 import { useAuth } from './auth-context'
@@ -20,7 +21,7 @@ interface SubscriptionState {
 
 const SubscriptionContext = createContext<SubscriptionState | undefined>(undefined)
 
-export function SubscriptionProvider({ children }: { children: ReactNode }) {
+export function SubscriptionProvider({ children }: { readonly children: ReactNode }) {
   const { user, loading: authLoading } = useAuth()
   const [subscription, setSubscription] = useState<MySubscription | null>(null)
   const [loading, setLoading] = useState(true)
@@ -53,10 +54,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     user?.isAdmin === true ||
     user?.isEarlyAccess === true
 
+  const value = useMemo(
+    () => ({ subscription, loading, hasActiveSubscription, refresh }),
+    [subscription, loading, hasActiveSubscription, refresh],
+  )
+
   return (
-    <SubscriptionContext.Provider
-      value={{ subscription, loading, hasActiveSubscription, refresh }}
-    >
+    <SubscriptionContext.Provider value={value}>
       {children}
     </SubscriptionContext.Provider>
   )

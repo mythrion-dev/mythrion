@@ -107,13 +107,15 @@ import type { SheetPermissions, Ability, SummonSkillData } from '@/components/ch
 
 function editPermissions(overrides: Partial<SheetPermissions> = {}): SheetPermissions {
   return {
-    isOwner: false,
     canEditSkills: false,
     canEditAbilities: true,
-    canEditAttributes: false,
     canEditResources: false,
     canEditInventory: false,
     canEditCharacter: false,
+    canEditStory: false,
+    canEditProfessionalSkills: false,
+    canEditPersonalAbilities: false,
+    canEditResistances: false,
     ...overrides,
   }
 }
@@ -125,6 +127,7 @@ function makeAbility(overrides: Partial<Ability> = {}): Ability {
     type: 'SUMMON',
     description: 'A loyal spirit wolf',
     notes: null,
+    order: 0,
     levels: [],
     summonAttributes: [
       { id: 'sa-1', abilityId: 'summon-1', attributeId: 'attr-1', value: '14' },
@@ -304,7 +307,7 @@ describe('SummonResourceCard', () => {
 
       // No InlineNumber for attributes when canEdit is false
       const inlineNumbers = screen.queryAllByTestId('inline-number')
-      expect(inlineNumbers.length).toBe(0) // AC InlineNumber also hidden
+      expect(inlineNumbers).toHaveLength(0) // AC InlineNumber also hidden
     })
 
     it('shows dash modifier when modifier is null', () => {
@@ -655,8 +658,8 @@ describe('SummonResourceCard', () => {
       )
 
       // Should not have inline-edit buttons
-      expect(screen.queryAllByTestId('inline-text').length).toBe(0)
-      expect(screen.queryAllByTestId('inline-number').length).toBe(0)
+      expect(screen.queryAllByTestId('inline-text')).toHaveLength(0)
+      expect(screen.queryAllByTestId('inline-number')).toHaveLength(0)
     })
 
     it('calls handleUpdateSummonSkill when skill name is saved', () => {
@@ -1015,7 +1018,7 @@ describe('SummonResourceCard', () => {
       )
 
       // Should not have inline-edit buttons
-      expect(screen.queryAllByTestId('inline-text').length).toBe(0)
+      expect(screen.queryAllByTestId('inline-text')).toHaveLength(0)
     })
 
     it('calls handleUpdateSummonResistance when resistance name is saved', () => {

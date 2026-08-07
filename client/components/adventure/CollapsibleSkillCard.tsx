@@ -5,13 +5,13 @@ import { useTranslation } from 'react-i18next'
 import { Select } from '@/components/shared/Select'
 
 export function CollapsibleSkillCard({ index, skill, onUpdateSkill, onRemove, attributes, onToggleAllowedAttr, onUpdateDefaultAttr }: {
-  index: number
-  skill: { name: string; description: string; attributeId: string; allowedAttributeIds?: string[]; defaultAttributeId?: string }
-  onUpdateSkill?: (i: number, f: string, v: string) => void
-  onRemove?: () => void
-  attributes: { key: string; name: string }[]
-  onToggleAllowedAttr?: (i: number, attrKey: string) => void
-  onUpdateDefaultAttr?: (i: number, v: string) => void
+  readonly index: number
+  readonly skill: { name: string; description: string; attributeId: string; allowedAttributeIds?: string[]; defaultAttributeId?: string }
+  readonly onUpdateSkill?: (i: number, f: string, v: string) => void
+  readonly onRemove?: () => void
+  readonly attributes: { key: string; name: string }[]
+  readonly onToggleAllowedAttr?: (i: number, attrKey: string) => void
+  readonly onUpdateDefaultAttr?: (i: number, v: string) => void
 }) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)

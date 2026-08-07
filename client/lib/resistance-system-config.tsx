@@ -19,12 +19,12 @@ interface ResistanceDefinition {
 }
 
 interface Props {
-  resistances: ResistanceDefinition[]
-  attributes: { id: string; key: string; name: string }[]
-  onChange: (resistances: ResistanceDefinition[]) => void
+  readonly resistances: ResistanceDefinition[]
+  readonly attributes: { id: string; key: string; name: string }[]
+  readonly onChange: (resistances: ResistanceDefinition[]) => void
   /** When true, the global Attribute Modifier System is disabled.
    *  Attribute modifier controls are hidden and replaced with an info panel. */
-  disableAttributeModifiers?: boolean
+  readonly disableAttributeModifiers?: boolean
 }
 
 function newResistance(): ResistanceDefinition {

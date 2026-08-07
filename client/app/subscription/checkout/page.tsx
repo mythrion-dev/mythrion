@@ -57,7 +57,7 @@ function CheckoutContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuth()
-  const { refresh } = useSubscription()
+  useSubscription()
 
   const [plan, setPlan] = useState<Plan | null>(null)
   const [planLoading, setPlanLoading] = useState(true)
@@ -110,7 +110,6 @@ function CheckoutContent() {
     if (!planId) {
       setState('error')
       setErrorMessage(t('billing:noPlanSelected'))
-      return
     }
   }, [authLoading, user, planId, router, t])
 
@@ -242,12 +241,14 @@ function CheckoutContent() {
       router.push('/subscription/success')
     } catch (err: unknown) {
       console.error('[checkout] Full error:', err)
-      const message =
-        err instanceof Error
-          ? err.message
-          : typeof err === 'string'
-            ? err
-            : t('billing:subscriptionCreateFailed')
+      let message: string
+      if (err instanceof Error) {
+        message = err.message
+      } else if (typeof err === 'string') {
+        message = err
+      } else {
+        message = t('billing:subscriptionCreateFailed')
+      }
       setState('error')
       setErrorMessage(message)
     }
@@ -316,6 +317,18 @@ function CheckoutContent() {
 
   // ----- Form state -----
   const formattedPlanPrice = plan ? formatBRL(plan.price) : ''
+  const periodLabel = plan?.slug === 'monthly' ? t('billing:periodMonth') : t('billing:periodYear')
+  let subscribeLabel: string
+  if (planLoading) {
+    subscribeLabel = t('common:loading')
+  } else if (!pgReady) {
+    subscribeLabel = t('billing:preparing')
+  } else {
+    subscribeLabel = t('billing:subscribeWithPrice', {
+      price: formattedPlanPrice,
+      period: periodLabel,
+    })
+  }
 
   return (
     <div className="flex-1 flex items-start justify-center bg-background bg-pattern px-4 py-12 min-h-screen">
@@ -491,14 +504,7 @@ function CheckoutContent() {
             disabled={planLoading || !pgReady}
             className="w-full mt-6 py-3 rounded-lg bg-primary text-background font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
-            {planLoading
-              ? t('common:loading')
-              : !pgReady
-              ? t('billing:preparing')
-              : t('billing:subscribeWithPrice', {
-                  price: formattedPlanPrice,
-                  period: plan?.slug === 'monthly' ? t('billing:periodMonth') : t('billing:periodYear'),
-                })}
+            {subscribeLabel}
           </button>
         </div>
 

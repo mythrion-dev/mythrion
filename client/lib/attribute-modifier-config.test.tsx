@@ -166,7 +166,7 @@ describe('generateProgression', () => {
     })
     // startingAttribute 10: minAttr = min(1, 0) = 0, maxAttr = 20
     // So range is 0 to 20
-    expect(rows.length).toBe(21)
+    expect(rows).toHaveLength(21)
   })
 
   it('attribute 10 has modifier 0', () => {
@@ -241,7 +241,7 @@ describe('generateProgression', () => {
       startingAttribute: 5,
       modifier: 0,
     })
-    expect(rows.length).toBe(21) // min=-5, max=15 → 21 rows
+    expect(rows).toHaveLength(21) // min=-5, max=15 → 21 rows
     expect(rows[0].attribute).toBe(-5)
     expect(rows[rows.length - 1].attribute).toBe(15)
   })

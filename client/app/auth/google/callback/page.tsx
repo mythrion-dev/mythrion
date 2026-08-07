@@ -7,8 +7,6 @@ import {
   setAccessToken,
   setRefreshToken,
   getInvitationToken,
-  removeInvitationToken,
-  api,
 } from '@/lib/api'
 
 function GoogleCallbackInner() {
