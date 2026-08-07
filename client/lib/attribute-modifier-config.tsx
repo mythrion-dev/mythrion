@@ -60,9 +60,11 @@ export function parseFormula(formula: string): ConfigValues | null {
 
   if (every <= 0) return null
 
-  // Check for multiplier pattern like "2*floor" or "-2*floor" anywhere in the string
+  // Check for multiplier pattern like "2*floor" or "-2*floor" anywhere in the string.
+  // The (?:^|[^\d]) prefix anchors the number so the engine never starts mid-digit-run,
+  // which keeps the match linear (S5843) while preserving capture group 1.
   let modifierIncrease = 1
-  const multiplierPattern = /(-?\d+)\*floor/
+  const multiplierPattern = /(?:^|[^\d])(-?\d+)\*floor/
   const multiplierMatch = cleaned.match(multiplierPattern)
 
   if (multiplierMatch) {

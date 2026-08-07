@@ -29,9 +29,10 @@ import { ChangePasswordDto } from './dto/change-password.dto.js'
 import { ChangeEmailDto } from './dto/change-email.dto.js'
 import { Request } from 'express'
 
-const FRONTEND_URL = (
-  process.env.FRONTEND_URL ?? 'https://mythrion.com.br'
-).replace(/\/+$/, '')
+const rawFrontendUrl = process.env.FRONTEND_URL ?? 'https://mythrion.com.br'
+let frontendUrlEnd = rawFrontendUrl.length
+while (frontendUrlEnd > 0 && rawFrontendUrl[frontendUrlEnd - 1] === '/') frontendUrlEnd--
+const FRONTEND_URL = rawFrontendUrl.slice(0, frontendUrlEnd)
 
 // Token hashes use cost 10 (matching the refresh-token / 2FA challenge
 // pattern) — the secrets are high-entropy hex strings, so a lower cost is

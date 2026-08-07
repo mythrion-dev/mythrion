@@ -2127,11 +2127,11 @@ describe('CharacterSheetService', () => {
 
       describe('createAbilityLevel', () => {
         it('creates a level without copyFromPrevious', async () => {
-          prisma.characterAbilityLevel.create.mockResolvedValue({ id: 'lvl-3', level: 3, abilityId })
+          prisma.characterAbilityLevel.create.mockResolvedValue({ id: 'lvl-3', level: '3', abilityId })
 
           const result = await service.createAbilityLevel(abilityId, userId, { level: 3 })
 
-          expect(result.level).toBe(3)
+          expect(result.level).toBe('3')
         })
 
         it('creates a level with copyFromPrevious', async () => {

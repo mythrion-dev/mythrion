@@ -95,6 +95,16 @@ export function TemplatePickerModal({
     setTimeout(() => searchInputRef.current?.focus(), 100)
   }, [isOpen, fetchMyTemplates])
 
+  // Close on Escape (document-level, so it works regardless of focus within the dialog)
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
   const handleTabChange = (newTab: 'my-templates' | 'community') => {
     setTab(newTab)
     setSearch('')
@@ -136,8 +146,6 @@ export function TemplatePickerModal({
         className="card !p-0 max-w-lg w-full mx-4 max-h-[80vh] flex flex-col"
         role="dialog"
         aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}
       >
         {/* Header */}
         <div className="p-4 border-b border-border">

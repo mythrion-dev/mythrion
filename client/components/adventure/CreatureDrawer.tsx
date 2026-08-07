@@ -373,7 +373,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
   return (
     <>
       {/* Overlay */}
-      <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose} />
+      <button type="button" className="fixed inset-0 z-50 bg-black/40" onClick={onClose} aria-label={t('common:close')} />
 
       {/* Drawer panel */}
       <div className="fixed top-0 right-0 z-50 h-full w-[70vw] max-w-[900px] min-w-[400px] bg-surface border-l border-border shadow-2xl flex flex-col">
@@ -388,7 +388,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
                 className="w-full h-full object-cover"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
               />
-              <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 cursor-pointer transition-opacity">
+              <label aria-label={t('campaign:uploadAvatar')} className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 cursor-pointer transition-opacity">
                 {uploading ? (
                   <svg className="w-5 h-5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />

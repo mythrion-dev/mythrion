@@ -248,9 +248,10 @@ export default function CharacterSheetDetailPage() {
   async function handleCoreResourceChange(coreResourceId: string, field: 'current' | 'maximum' | 'notes', value: string) {
     if (!sheet) return
     const numVal = value.trim() === '' ? null : (field === 'notes' ? value : Number.parseInt(value, 10))
+    const originalSheet = sheet
     const optimisticSheet = {
-      ...sheet,
-      coreResourceValues: sheet.coreResourceValues.map(v =>
+      ...originalSheet,
+      coreResourceValues: originalSheet.coreResourceValues.map(v =>
         v.coreResourceId === coreResourceId ? { ...v, [field]: numVal } : v
       ),
     }
@@ -258,7 +259,7 @@ export default function CharacterSheetDetailPage() {
     try {
       await updateSheet({ coreResourceValues: [{ coreResourceId, [field]: numVal }] })
     } catch {
-      setSheet(sheet)
+      setSheet(originalSheet)
     }
   }
 
@@ -266,10 +267,11 @@ export default function CharacterSheetDetailPage() {
     if (!sheet) return
     const crv = sheet.coreResourceValues.find(v => v.coreResourceId === coreResourceId)
     if (!crv) return
+    const originalSheet = sheet
     const newVal = Math.max(0, (crv.current ?? 0) + delta)
     const optimisticSheet = {
-      ...sheet,
-      coreResourceValues: sheet.coreResourceValues.map(v =>
+      ...originalSheet,
+      coreResourceValues: originalSheet.coreResourceValues.map(v =>
         v.coreResourceId === coreResourceId ? { ...v, current: newVal } : v
       ),
     }
@@ -277,32 +279,34 @@ export default function CharacterSheetDetailPage() {
     try {
       await updateSheet({ coreResourceValues: [{ coreResourceId, current: newVal }] })
     } catch {
-      setSheet(sheet)
+      setSheet(originalSheet)
     }
   }
 
   async function handleAcFieldChange(fieldId: string, value: string) {
     if (!sheet) return
-    const optimisticSheet = { ...sheet, acValues: sheet.acValues.map(acv => acv.fieldId === fieldId ? { ...acv, value } : acv) }
+    const originalSheet = sheet
+    const optimisticSheet = { ...originalSheet, acValues: originalSheet.acValues.map(acv => acv.fieldId === fieldId ? { ...acv, value } : acv) }
     setSheet(optimisticSheet)
-    try { const updated = await updateSheet({ acValues: [{ fieldId, value }] }); computeAC(updated, modifierResults) } catch { setSheet(sheet) }
+    try { const updated = await updateSheet({ acValues: [{ fieldId, value }] }); computeAC(updated, modifierResults) } catch { setSheet(originalSheet) }
   }
   async function handleAcAttributeModifierChange(acAttributeModifierId: string, selectedAttributeId: string | null) {
     if (!sheet) return
+    const originalSheet = sheet
     const selectedAttribute = selectedAttributeId
-      ? (sheet.template.attributes.find(a => a.id === selectedAttributeId) ?? null)
+      ? (originalSheet.template.attributes.find(a => a.id === selectedAttributeId) ?? null)
       : null
-    const existing = sheet.acAttributeValues.find(v => v.acAttributeModifierId === acAttributeModifierId)
+    const existing = originalSheet.acAttributeValues.find(v => v.acAttributeModifierId === acAttributeModifierId)
     const optimisticSheet: CharacterSheet = {
-      ...sheet,
+      ...originalSheet,
       acAttributeValues: existing
-        ? sheet.acAttributeValues.map(v => v.acAttributeModifierId === acAttributeModifierId ? { ...v, selectedAttributeId, selectedAttribute } : v)
-        : [...sheet.acAttributeValues, {
+        ? originalSheet.acAttributeValues.map(v => v.acAttributeModifierId === acAttributeModifierId ? { ...v, selectedAttributeId, selectedAttribute } : v)
+        : [...originalSheet.acAttributeValues, {
           id: `temp-${acAttributeModifierId}`,
-          sheetId: sheet.id,
+          sheetId: originalSheet.id,
           acAttributeModifierId,
           selectedAttributeId,
-          acAttributeModifier: (sheet.template.armorClasses?.flatMap(ac => ac.attributeModifiers ?? []) ?? []).find(am => am.id === acAttributeModifierId) as ArmorClassAttributeModifierDef,
+          acAttributeModifier: (originalSheet.template.armorClasses?.flatMap(ac => ac.attributeModifiers ?? []) ?? []).find(am => am.id === acAttributeModifierId) as ArmorClassAttributeModifierDef,
           selectedAttribute,
         }],
     }
@@ -312,8 +316,8 @@ export default function CharacterSheetDetailPage() {
       const updated = await updateSheet({ acAttributeValues: [{ acAttributeModifierId, selectedAttributeId }] })
       computeAC(updated, modifierResults)
     } catch {
-      setSheet(sheet)
-      computeAC(sheet, modifierResults)
+      setSheet(originalSheet)
+      computeAC(originalSheet, modifierResults)
     }
   }
   async function handleProfileChange(skillId: string, profileId: string, optionId: string | null) {
