@@ -373,7 +373,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
   return (
     <>
       {/* Overlay */}
-      <button type="button" className="fixed inset-0 z-50 bg-black/40" onClick={onClose} aria-label={t('common:close')} />
+      <button type="button" tabIndex={-1} aria-hidden="true" className="fixed inset-0 z-50 bg-black/40" onClick={onClose} />
 
       {/* Drawer panel */}
       <div className="fixed top-0 right-0 z-50 h-full w-[70vw] max-w-[900px] min-w-[400px] bg-surface border-l border-border shadow-2xl flex flex-col">

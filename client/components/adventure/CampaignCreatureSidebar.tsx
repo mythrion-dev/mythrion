@@ -199,7 +199,8 @@ export function CampaignCreatureSidebar({
           type="button"
           className="fixed inset-0 z-40 bg-black/40 sm:hidden"
           onClick={() => { setIsOpen(false); setEditingNpcId(null) }}
-          aria-label={t('campaign:closeSidebar')}
+          tabIndex={-1}
+          aria-hidden="true"
         />
       )}
 

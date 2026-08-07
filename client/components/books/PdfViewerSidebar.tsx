@@ -262,8 +262,9 @@ export function PdfViewerSidebar({
         <button
           type="button"
           onClick={handleMinimize}
+          tabIndex={-1}
+          aria-hidden="true"
           className="fixed inset-0 z-40 bg-black/40 sm:hidden"
-          aria-label={t('books:minimizeBooksSidebar')}
         />
       )}
 
