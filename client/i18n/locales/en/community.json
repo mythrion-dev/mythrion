@@ -29,6 +29,7 @@
   "inPerson": "In Person",
   "joinRequestSent": "Join request sent successfully!",
   "messageToGmLabel": "Message to Game Master (optional)",
+  "messageHelpText": "Keep it brief and friendly.",
   "monday": "Monday",
   "morning": "Morning",
   "mostPlayers": "Most Players",

@@ -26,7 +26,7 @@ export function JoinRequestModal({
 }: Readonly<JoinRequestModalProps>) {
   const { t } = useTranslation()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const cardRef = useRef<HTMLDialogElement>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   // Focus trap — keep focus within the modal while open
   const handleKeyDown = useCallback(
@@ -91,28 +91,24 @@ export function JoinRequestModal({
   const isOverLimit = remaining < 0
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
       <button
         type="button"
-        className="absolute inset-0 bg-black/50 border-0"
+        className="absolute inset-0 bg-transparent"
         onClick={onCancel}
         aria-label={t('community:closeModal')}
       />
 
-      {/* Card */}
-      <dialog
+      <div
         ref={cardRef}
-        open
-        className="card !p-6 max-w-sm w-full space-y-4 relative z-10 m-0"
+        className="card !p-6 max-w-md w-full space-y-6 border-border/20 shadow-[0_24px_80px_rgba(0,0,0,0.45)] relative z-10"
         aria-modal="true"
         aria-labelledby="join-modal-title"
       >
-        {/* Icon + Title */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary-muted flex items-center justify-center">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-inner shadow-primary/10">
             <svg
-              className="w-5 h-5 text-primary"
+              className="w-6 h-6"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -126,47 +122,46 @@ export function JoinRequestModal({
             </svg>
           </div>
           <div>
-            <h2 id="join-modal-title" className="font-semibold">
+            <h2 id="join-modal-title" className="text-xl font-semibold text-foreground">
               {t('community:requestToJoinTitle')}
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
               {t('community:requestToJoinDescription')}
             </p>
           </div>
         </div>
 
-        {/* Message textarea */}
-        <div className="space-y-1.5">
+        <div className="space-y-3">
+          <label htmlFor="join-request-message" className="text-sm font-medium text-foreground">
+            {t('community:messageToGmLabel')}
+          </label>
           <textarea
+            id="join-request-message"
             ref={textareaRef}
             placeholder={t('community:optionalMessagePlaceholder')}
             value={message}
             onChange={(e) => onMessageChange(e.target.value.slice(0, MAX_MESSAGE_LENGTH))}
-            className="input w-full h-24 resize-none"
+            className="input-field min-h-[12rem] resize-none"
             disabled={loading}
             aria-label={t('community:messageToGmLabel')}
           />
-          <div className="flex justify-end">
-            <span
-              className={`text-xs ${
-                remaining <= 20 ? 'text-danger' : 'text-muted'
-              }`}
-            >
+          <div className="flex items-center justify-between text-xs text-muted">
+            <span>{t('community:messageHelpText')}</span>
+            <span className={remaining <= 20 ? 'text-danger' : 'text-muted'}>
               {remaining} / {MAX_MESSAGE_LENGTH}
             </span>
           </div>
         </div>
 
-        {/* Error */}
         {error && (
-          <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">
+          <div className="rounded-2xl border border-danger/30 bg-danger-muted/80 px-4 py-3 text-sm text-danger">
             {error}
           </div>
         )}
 
-        {/* Buttons */}
-        <div className="flex gap-3 justify-end">
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
           <button
+            type="button"
             onClick={onCancel}
             disabled={loading}
             className="btn-ghost"
@@ -174,13 +169,14 @@ export function JoinRequestModal({
             {t('common:cancel')}
           </button>
           <button
+            type="button"
             onClick={onConfirm}
             disabled={loading || isOverLimit}
             className="btn-primary"
           >
             {loading ? (
-              <span className="flex items-center gap-2">
-                <div className="w-3 h-3 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+              <span className="flex items-center justify-center gap-2">
+                <span className="h-3 w-3 rounded-full border-2 border-background/30 border-t-background animate-spin" />
                 {t('community:sending')}
               </span>
             ) : (
@@ -188,7 +184,7 @@ export function JoinRequestModal({
             )}
           </button>
         </div>
-      </dialog>
+      </div>
     </div>
   )
 }
