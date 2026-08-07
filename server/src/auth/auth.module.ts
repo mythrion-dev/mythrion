@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common'
+import { Global, Module, forwardRef } from '@nestjs/common'
 import { JwtModule } from '@nestjs/jwt'
 import { PassportModule } from '@nestjs/passport'
 import { AuthService } from './auth.service.js'
@@ -18,6 +18,7 @@ import { SubscriptionModule } from '../subscription/subscription.module.js'
 import { EmailModule } from '../email/email.module.js'
 import { TwoFactorService } from './two-factor.service.js'
 
+@Global()
 @Module({
   imports: [
     JwtModule.register({
