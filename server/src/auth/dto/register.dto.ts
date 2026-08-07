@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional, MaxLength } from 'class-validator'
+import { IsEmail, IsString, MinLength, IsOptional, MaxLength, IsBoolean, Equals } from 'class-validator'
 import { i18nValidationMessage } from 'nestjs-i18n'
 
 export class RegisterDto {
@@ -13,4 +13,8 @@ export class RegisterDto {
   @IsOptional()
   @MaxLength(50, { message: i18nValidationMessage('validation.maxLength') })
   displayName?: string
+
+  @IsBoolean({ message: i18nValidationMessage('validation.isBoolean') })
+  @Equals(true, { message: i18nValidationMessage('auth.acceptTermsRequired') })
+  acceptTerms!: boolean
 }
