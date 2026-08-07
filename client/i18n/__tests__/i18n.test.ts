@@ -22,8 +22,8 @@ describe('i18n exports', () => {
     expect(LANGUAGE_STORAGE_KEY).toBe('mythrion_language')
   })
 
-  it('exposes all 19 namespaces', () => {
-    expect(NAMESPACES).toHaveLength(19)
+  it('exposes all 20 namespaces', () => {
+    expect(NAMESPACES).toHaveLength(20)
     for (const ns of ['common', 'auth', 'errors', 'billing', 'combat', 'templates']) {
       expect(NAMESPACES).toContain(ns)
     }

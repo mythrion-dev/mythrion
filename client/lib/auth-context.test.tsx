@@ -419,6 +419,7 @@ describe('register', () => {
         email: 'test@test.com',
         password: 'pass',
         displayName: 'Test',
+        acceptTerms: false,
       })
     })
   })

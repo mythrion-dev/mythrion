@@ -101,6 +101,7 @@ export function JoinRequestModal({
 
       <div
         ref={cardRef}
+        role="dialog"
         className="card !p-6 max-w-md w-full space-y-6 border-border/20 shadow-[0_24px_80px_rgba(0,0,0,0.45)] relative z-10"
         aria-modal="true"
         aria-labelledby="join-modal-title"

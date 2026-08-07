@@ -100,10 +100,12 @@ describe('LoginPage', () => {
     await userEvent.click(screen.getByText('Create an account'))
     await userEvent.type(screen.getByPlaceholderText('adventurer@example.com'), 'test@test.com')
     await userEvent.type(screen.getByPlaceholderText('At least 8 characters'), 'password123')
+    // Registration is gated on accepting the terms — check the box first.
+    await userEvent.click(screen.getByRole('checkbox'))
     await userEvent.click(screen.getByText('Create account'))
 
     await waitFor(() => {
-      expect(mockRegister).toHaveBeenCalledWith('test@test.com', 'password123')
+      expect(mockRegister).toHaveBeenCalledWith('test@test.com', 'password123', undefined, true)
       expect(mockRouterPush).toHaveBeenCalledWith('/verify-email')
     })
   })
