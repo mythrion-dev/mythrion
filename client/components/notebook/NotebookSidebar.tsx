@@ -1217,9 +1217,9 @@ export function NotebookSidebar({
                 }
                 className="mt-0.5 accent-accent"
               />
-              <div>
-                <span className="text-sm text-secondary-foreground font-medium">{t('notebook:movePagesToRoot')}</span>
-                <p className="text-xs text-muted-foreground mt-0.5">
+              <div className="text-sm text-secondary-foreground font-medium">
+                {t('notebook:movePagesToRoot')}
+                <p className="text-xs text-muted-foreground mt-0.5 font-normal">
                   {t('notebook:pagesBecomeUncategorized')}
                 </p>
               </div>
@@ -1247,8 +1247,8 @@ export function NotebookSidebar({
                 }}
                 className="mt-0.5 accent-accent"
               />
-              <div className="flex-1">
-                <span className="text-sm text-secondary-foreground font-medium">{t('notebook:moveToAnotherFolder')}</span>
+              <div className="flex-1 text-sm text-secondary-foreground font-medium">
+                {t('notebook:moveToAnotherFolder')}
                 {folderDeleteDialog.moveToFolderId !== null && otherFoldersForDelete.length > 0 && (
                   <select
                     value={folderDeleteDialog.moveToFolderId ?? ''}
@@ -1258,7 +1258,7 @@ export function NotebookSidebar({
                         moveToFolderId: e.target.value || null,
                       })
                     }
-                    className="w-full mt-1.5 px-2 py-1 text-sm rounded-lg bg-input border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-accent/50"
+                    className="w-full mt-1.5 px-2 py-1 text-sm rounded-lg bg-input border border-border text-foreground font-normal focus:outline-none focus:ring-1 focus:ring-accent/50"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {otherFoldersForDelete.map((f) => (
@@ -1269,7 +1269,7 @@ export function NotebookSidebar({
                   </select>
                 )}
                 {otherFoldersForDelete.length === 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">{t('notebook:noOtherFoldersAvailable')}</p>
+                  <p className="text-xs text-muted-foreground mt-1 font-normal">{t('notebook:noOtherFoldersAvailable')}</p>
                 )}
               </div>
             </label>
