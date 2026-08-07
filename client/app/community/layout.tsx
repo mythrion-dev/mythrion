@@ -1,3 +1,11 @@
+'use client'
+
+import { VerifiedGate } from '@/components/auth/VerifiedGate'
+
 export default function CommunityLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>
+  return (
+    <VerifiedGate>
+      {children}
+    </VerifiedGate>
+  )
 }

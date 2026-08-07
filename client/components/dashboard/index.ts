@@ -1,5 +1,4 @@
 export { Sidebar } from './Sidebar'
 export { GracePeriodBanner } from './GracePeriodBanner'
-export { VerificationBanner } from './VerificationBanner'
 export { TwoFactorSettings } from './TwoFactorSettings'
 export { ChangePasswordSettings } from './ChangePasswordSettings'

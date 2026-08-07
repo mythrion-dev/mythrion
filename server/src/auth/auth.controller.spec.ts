@@ -48,6 +48,7 @@ describe('AuthController', () => {
       forgotPassword: jest.fn().mockResolvedValue({ success: true }),
       resetPassword: jest.fn().mockResolvedValue({ success: true }),
       changePassword: jest.fn().mockResolvedValue({ success: true }),
+      changeEmail: jest.fn().mockResolvedValue({ success: true }),
     }
     mockLanguageService = {
       normalize: jest.fn().mockReturnValue('en'),
@@ -216,6 +217,45 @@ describe('AuthController', () => {
         mockUserReq,
       )
       expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('changeEmail', () => {
+    it('should delegate to authService.changeEmail with userId and dto', async () => {
+      const dto = { email: 'new@test.com' }
+      const result = await controller.changeEmail(mockUserReq, dto)
+      expect(mockAuthService.changeEmail).toHaveBeenCalledWith('user-1', dto)
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('email verification gating', () => {
+    const skipKey = 'skipEmailVerificationCheck'
+
+    it('should apply @SkipEmailVerificationCheck to the change-email route', () => {
+      expect(Reflect.getMetadata(skipKey, AuthController.prototype.changeEmail)).toBe(true)
+    })
+
+    it('should apply @SkipEmailVerificationCheck to all pre-verification routes', () => {
+      const exempt = [
+        'changePassword',
+        'changeEmail',
+        'sendTwoFactorCode',
+        'confirmTwoFactor',
+        'logout',
+        'getProfile',
+        'updateLanguage',
+        'currentUser',
+      ]
+      for (const method of exempt) {
+        expect(Reflect.getMetadata(skipKey, AuthController.prototype[method])).toBe(true)
+      }
+    })
+
+    it('should NOT apply @SkipEmailVerificationCheck to onboarding', () => {
+      expect(
+        Reflect.getMetadata(skipKey, AuthController.prototype.completeOnboarding),
+      ).toBeUndefined()
     })
   })
 

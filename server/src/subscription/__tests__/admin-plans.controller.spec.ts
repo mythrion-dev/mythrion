@@ -1,6 +1,7 @@
 jest.mock("../../generated/prisma/client", () => ({ PrismaClient: class {} }))
 jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
 jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
+jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }))
 import { Test } from '@nestjs/testing'
 import { UnprocessableEntityException, NotFoundException } from '@nestjs/common'
 import { AdminPlansController } from '../admin-plans.controller'

@@ -3,9 +3,12 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common'
+import { Reflector } from '@nestjs/core'
 import { JwtService } from '@nestjs/jwt'
 import { I18nService } from 'nestjs-i18n'
+import { AuthService } from './auth.service.js'
 import type { AuthenticatedRequest } from './AuthenticatedRequest.js'
 
 function extractBearerToken(header?: string): string | null {
@@ -24,9 +27,11 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly i18n: I18nService,
+    private readonly reflector: Reflector,
+    private readonly authService: AuthService,
   ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<AuthenticatedRequest>()
 
     // 1. Try Authorization header first
@@ -55,9 +60,28 @@ export class JwtAuthGuard implements CanActivate {
     try {
       const payload = this.jwtService.verify<AuthenticatedRequest['user']>(token)
       req.user = payload
-      return true
     } catch {
       throw new UnauthorizedException(this.i18n.t('auth.invalidOrExpiredToken'))
     }
+
+    // Routes decorated with @SkipEmailVerificationCheck() (verify email, resend,
+    // change email, logout, 2FA, profile, language) work while unverified.
+    const skipCheck = this.reflector.getAllAndOverride<boolean>(
+      'skipEmailVerificationCheck',
+      [context.getHandler(), context.getClass()],
+    )
+    if (skipCheck) return true
+
+    const { found, emailVerified } = await this.authService.assertEmailVerified(
+      req.user.sub,
+    )
+    if (!found) {
+      throw new UnauthorizedException(this.i18n.t('auth.invalidOrExpiredToken'))
+    }
+    if (!emailVerified) {
+      throw new ForbiddenException(this.i18n.t('auth.emailVerificationRequired'))
+    }
+
+    return true
   }
 }

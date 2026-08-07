@@ -18,10 +18,14 @@ export default function SuccessPage() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Redirect unauthenticated users
+  // Redirect unauthenticated / unverified users
   useEffect(() => {
     if (!authLoading && !user) {
       router.replace('/login')
+      return
+    }
+    if (!authLoading && user && !user.emailVerified) {
+      router.replace('/verify-email')
     }
   }, [authLoading, user, router])
 
