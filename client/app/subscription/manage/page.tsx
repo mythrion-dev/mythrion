@@ -204,6 +204,9 @@ export default function ManageSubscriptionPage() {
 
         {isCancellable && (
           <>
+            <p className="text-sm text-muted-foreground">
+              {t('billing:cancellationPolicyNote', { periodEnd })}
+            </p>
             {!showCancelConfirm ? (
               <button
                 onClick={() => setShowCancelConfirm(true)}

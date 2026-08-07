@@ -8,6 +8,7 @@
   "browsePublicCampaigns": "Navegar por campanhas públicas",
   "buyerDetails": "Dados do comprador",
   "cancelAnytime": "Cancele quando quiser",
+  "cancellationPolicyNote": "Ao cancelar o Mythrion Premium, seu período de faturamento atual continua ativo e você não será cobrado novamente após {{periodEnd}}.",
   "cancelConfirmMessage": "Tem certeza que deseja cancelar sua assinatura? Seu acesso ao Mythrion Premium permanecerá ativo até {{periodEnd}}, quando a assinatura expirará. Nenhuma nova cobrança será feita.",
   "cancelledAt": "Cancelada em",
   "cancelSubscription": "Cancelar assinatura",

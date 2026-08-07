@@ -173,6 +173,12 @@ function LoginForm() {
               ? t('auth:createAccount')
               : t('auth:enterTheRealm')}
         </button>
+
+        {isRegister && (
+          <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+            {t('auth:accountTermsNote')}
+          </p>
+        )}
       </form>
 
       <div className="relative">
