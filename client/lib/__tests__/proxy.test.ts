@@ -45,22 +45,14 @@ describe('proxy', () => {
     expect(res.headers.get('location')).toBeNull()
   })
 
-  it('allows sub-paths under a public whitelist entry', async () => {
-    const res = await proxy(makeRequest('/login/forgot-password'))
-    expect(res.status).toBe(200)
-    expect(res.headers.get('location')).toBeNull()
-  })
-
   // The '/' entry in publicPaths makes every leading-slash pathname public,
   // so real protected routes like /dashboard pass through too.
-  it('passes through an authenticated protected route (real pathname)', async () => {
-    const res = await proxy(makeRequest('/dashboard'))
-    expect(res.status).toBe(200)
-    expect(res.headers.get('location')).toBeNull()
-  })
-
-  it('passes through protected routes even without a token because "/" is whitelisted', async () => {
-    const res = await proxy(makeRequest('/dashboard'))
+  it.each([
+    ['allows sub-paths under a public whitelist entry', '/login/forgot-password'],
+    ['passes through an authenticated protected route (real pathname)', '/dashboard'],
+    ['passes through protected routes even without a token because "/" is whitelisted', '/dashboard'],
+  ])('%s', async (_name, path) => {
+    const res = await proxy(makeRequest(path))
     expect(res.status).toBe(200)
     expect(res.headers.get('location')).toBeNull()
   })
