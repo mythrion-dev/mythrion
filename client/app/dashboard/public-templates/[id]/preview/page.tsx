@@ -35,7 +35,6 @@ import type {
   Story,
   SectionEntry,
   SheetPermissions,
-  Tab,
   SummonSkillData,
   SummonResistanceData,
 } from '@/components/character-sheet/types'
@@ -66,7 +65,7 @@ function ErrorState({ message }: { readonly message: string }) {
 
 // ── Tab class helper ──
 
-function tabClass(activeTab: Tab, tab: Tab) {
+function tabClass(activeTab: string, tab: string) {
   return `flex items-center gap-2 px-5 py-3 text-base font-medium transition-colors border-b-2 ${
     activeTab === tab
       ? 'border-[#c9a84c] text-white'
@@ -174,7 +173,7 @@ export default function TemplatePreviewPage() {
 
   // ── UI-only state (not persisted to reducer) ──
 
-  const [activeTab, setActiveTab] = useState<Tab>('character')
+  const [activeTab, setActiveTab] = useState<string>('character')
 
   // AbilitiesTab UI state
   const [selectedLevels, setSelectedLevels] = useState<Record<string, string>>({})

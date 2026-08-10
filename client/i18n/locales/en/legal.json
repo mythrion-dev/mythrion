@@ -4,7 +4,7 @@
   "privacyDataUse": "We collect only the information necessary to create and manage your account, provide the service, and process payments.",
   "privacySecurity": "Your account information is protected using industry-standard security measures, and we limit access to trusted personnel.",
   "privacyRetention": "We retain your information only as long as needed to operate the service, comply with legal obligations, and support your account.",
-  "privacyContact": "If you have questions about this policy, contact support at privacy@mythrion.com.",
+  "privacyContact": "If you have questions about this policy, contact support at portal@mythrion.com.",
 
   "termsTitle": "Terms of Service",
   "termsOfService": "Terms of Service",
@@ -12,5 +12,5 @@
   "termsSubscription": "Subscription cancellations take effect at the end of the current billing period. You will retain access for the remainder of your paid term and will not be charged again.",
   "termsUserConduct": "You agree not to misuse the service, infringe on others' rights, or engage in abusive behavior.",
   "termsTermination": "Mythrion may suspend or terminate accounts for violation of these terms or for activity that harms the platform.",
-  "termsContact": "For questions about these terms, please contact support at support@mythrion.com."
+  "termsContact": "For questions about these terms, please contact support at portal@mythrion.com."
 }

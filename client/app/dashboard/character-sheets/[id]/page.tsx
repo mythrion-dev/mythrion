@@ -10,7 +10,7 @@ import { StoryTab, CharacterTab, InventoryTab, PersonalAbilitiesTab, AbilitiesTa
 import { PageNav } from '@/lib/breadcrumb'
 import { PdfViewerSidebar } from '@/components/books/PdfViewerSidebar'
 import { NotebookSidebar } from '@/components/notebook/NotebookSidebar'
-import type { SkillModifierProfile, ArmorClassAttributeModifierDef, SectionEntry, SummonSkillData, SummonResistanceData, Ability, AbilityLevel, InventoryItem, Story, CharacterSheet, Tab, AcResultMap, SheetPermissions } from '@/components/character-sheet/types'
+import type { SkillModifierProfile, ArmorClassAttributeModifierDef, SectionEntry, SummonSkillData, SummonResistanceData, Ability, AbilityLevel, InventoryItem, Story, CharacterSheet, AcResultMap, SheetPermissions } from '@/components/character-sheet/types'
 import {
   computeModifiers as engineComputeModifiers,
   computeSkills as engineComputeSkills,
@@ -117,7 +117,7 @@ export default function CharacterSheetDetailPage() {
   modifierResultsRef.current = modifierResults
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null)
   const [notebookOpen, setNotebookOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<Tab>('character')
+  const [activeTab, setActiveTab] = useState<string>('character')
   const isOwner = sheet?.ownerId === user?.id || (sheet?.isNpc === true)
   const permissions: SheetPermissions = {
     canEditCharacter: isOwner,
@@ -636,7 +636,7 @@ export default function CharacterSheetDetailPage() {
   const armorClasses = sheet?.template.armorClasses?.filter(ac => ac.enabled) ?? []
   const modifiersEnabled = sheet.template.attributeModifiersEnabled !== false
   const totalWeight = inventoryItems.reduce((s, i) => s + (i.weight ?? 0), 0)
-  const tabClass = (t: Tab) => `flex items-center gap-2 px-3 py-2 text-sm sm:px-5 sm:py-3 sm:text-base font-medium transition-colors border-b-2 ${activeTab === t ? 'border-[#c9a84c] text-white' : 'border-transparent text-gray-400 hover:text-white'}`
+  const tabClass = (t: string) => `flex items-center gap-2 px-3 py-2 text-sm sm:px-5 sm:py-3 sm:text-base font-medium transition-colors border-b-2 ${activeTab === t ? 'border-[#c9a84c] text-white' : 'border-transparent text-gray-400 hover:text-white'}`
   const enabledCoreResources = (sheet.template.coreResources || []).filter(cr => cr.enabled)
 
   return (<div className="w-full">

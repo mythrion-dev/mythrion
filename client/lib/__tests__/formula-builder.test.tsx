@@ -147,7 +147,7 @@ function restoreRAF() {
  * Uses act() so React flushes state updates synchronously.
  */
 function openViaMouseEnter(triggerText: string) {
-  const trigger = screen.getByText(triggerText).closest('div')!
+  const trigger = screen.getByText(triggerText).closest('button')!
   act(() => {
     fireEvent.mouseOver(trigger)
   })
@@ -159,7 +159,7 @@ function openViaMouseEnter(triggerText: string) {
  * so fireEvent.mouseLeave is NOT sufficient — we must fire mouseOut.
  */
 function leaveTrigger(triggerText: string) {
-  const trigger = screen.getByText(triggerText).closest('div')!
+  const trigger = screen.getByText(triggerText).closest('button')!
   act(() => {
     fireEvent.mouseOut(trigger)
   })
@@ -267,7 +267,7 @@ describe('MythrionPopover', () => {
     openViaMouseEnter('trigger')
     expect(screen.getByText('hover content')).toBeInTheDocument()
 
-    const triggerEl = screen.getByText('trigger').closest('div')!
+    const triggerEl = screen.getByText('trigger').closest('button')!
 
     // Leave the trigger — starts the 150ms close timeout
     act(() => {
@@ -322,7 +322,7 @@ describe('MythrionPopover', () => {
 
       expect(screen.queryByText('touch content')).not.toBeInTheDocument()
 
-      const triggerContainer = screen.getByText('trigger').closest('div')!
+      const triggerContainer = screen.getByText('trigger').closest('button')!
       act(() => {
         fireEvent.click(triggerContainer)
       })
@@ -344,7 +344,7 @@ describe('MythrionPopover', () => {
         </MythrionPopover>,
       )
 
-      const triggerContainer = screen.getByText('trigger').closest('div')!
+      const triggerContainer = screen.getByText('trigger').closest('button')!
       // React 18 implements onMouseEnter via native mouseover, not mouseenter
       fireEvent.mouseOver(triggerContainer)
 
@@ -358,7 +358,7 @@ describe('MythrionPopover', () => {
         </MythrionPopover>,
       )
 
-      const triggerContainer = screen.getByText('trigger').closest('div')!
+      const triggerContainer = screen.getByText('trigger').closest('button')!
       // React 18 implements onMouseLeave via native mouseout, not mouseleave
       fireEvent.mouseOut(triggerContainer)
 
@@ -417,7 +417,7 @@ describe('MythrionPopover', () => {
       openViaMouseEnter('trigger')
       expect(screen.getByText('stay content')).toBeInTheDocument()
 
-      const triggerContainer = screen.getByText('trigger').closest('div')!
+      const triggerContainer = screen.getByText('trigger').closest('button')!
       act(() => {
         fireEvent.mouseDown(triggerContainer)
       })
@@ -1073,7 +1073,7 @@ describe('MythrionPopover', () => {
       </MythrionPopover>,
     )
 
-    const triggerContainer = screen.getByText('trigger').closest('div')!
+    const triggerContainer = screen.getByText('trigger').closest('button')!
 
     // Click to open
     act(() => {

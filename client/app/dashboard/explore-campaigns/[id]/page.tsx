@@ -52,13 +52,13 @@ function AdventureDetailContent() {
   const [error, setError] = useState<string | null>(null)
 
   // Membership state
-  const [, setMembers] = useState<AdventureMember[]>([])
-  const [, setFetchingMembers] = useState(false)
+  const [_members, setMembers] = useState<AdventureMember[]>([])
+  const [_fetchingMembers, setFetchingMembers] = useState(false)
   const [userMembership, setUserMembership] = useState<AdventureMember | null>(null)
 
   // Join request state
-  const [, setJoinRequests] = useState<JoinRequest[]>([])
-  const [, setFetchingJoinRequests] = useState(false)
+  const [_joinRequests, setJoinRequests] = useState<JoinRequest[]>([])
+  const [_fetchingJoinRequests, setFetchingJoinRequests] = useState(false)
   const [pendingRequest, setPendingRequest] = useState(false)
   const [showJoinForm, setShowJoinForm] = useState(false)
   const [joinMessage, setJoinMessage] = useState('')

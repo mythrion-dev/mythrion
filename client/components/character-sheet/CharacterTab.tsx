@@ -500,11 +500,14 @@ function SkillTable({
 
   const hasSearch = skills.length > 0
 
-  const emptyText = search.trim()
-    ? t('character:noSkillsMatchSearch')
-    : isActiveSide
-      ? t('character:noActiveSkills')
-      : t('character:noInactiveSkills')
+  let emptyText: string
+  if (search.trim()) {
+    emptyText = t('character:noSkillsMatchSearch')
+  } else if (isActiveSide) {
+    emptyText = t('character:noActiveSkills')
+  } else {
+    emptyText = t('character:noInactiveSkills')
+  }
 
   return (
     <div className="card !p-0 max-h-[400px] overflow-hidden flex flex-col">

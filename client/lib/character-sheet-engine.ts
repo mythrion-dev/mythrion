@@ -179,56 +179,76 @@ function addProfileOptionValues(
   return add
 }
 
-async function computeSkillValue(
-  sv: SkillValue,
-  sheet: CharacterSheet,
-  skillConfig: { useAttributeModifier?: boolean; customFieldKeys?: string[] } | null,
-  skillFormulaRaw: string,
-  modifierVars: Record<string, number>,
-  othersValues: Record<string, number>,
-  profileSelections: Record<string, Record<string, string | null>>,
-  evaluate: FormulaEvaluator,
-): Promise<number> {
+interface SkillValueContext {
+  readonly sv: SkillValue
+  readonly sheet: CharacterSheet
+  readonly skillConfig: { useAttributeModifier?: boolean; customFieldKeys?: string[] } | null
+  readonly skillFormulaRaw: string
+  readonly modifierVars: Record<string, number>
+  readonly othersValues: Record<string, number>
+  readonly profileSelections: Record<string, Record<string, string | null>>
+  readonly evaluate: FormulaEvaluator
+}
+
+/** Config-mode evaluation: attribute modifier + custom field keys. */
+function computeConfigModeValue(ctx: SkillValueContext): number {
+  const { sv, sheet, skillConfig, modifierVars } = ctx
+  let result = 0
+
+  if (skillConfig?.useAttributeModifier) {
+    const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
+    if (selectedAttr) {
+      result += modifierVars[`${selectedAttr.key}_mod`] ?? 0
+    }
+  }
+
+  const customKeys = skillConfig?.customFieldKeys || []
+  for (const key of customKeys) {
+    const fv = sheet.fieldValues.find(f => f.templateField.key === key)
+    if (fv) {
+      result += parseFloatSafe(fv.value, 0)
+    }
+  }
+
+  return result
+}
+
+/** Raw-formula evaluation: builds variables and delegates to the evaluator. */
+async function evaluateRawFormula(ctx: SkillValueContext): Promise<number> {
+  const { sv, sheet, skillFormulaRaw, modifierVars, evaluate } = ctx
+  const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
+  const skillAttrValue = selectedAttr
+    ? parseFloatSafe(sheet.values.find(v => v.attributeId === selectedAttr.id)?.value, 0)
+    : 0
+
+  const variables: Record<string, number> = { ...modifierVars }
+  variables['value'] = skillAttrValue
+  if (selectedAttr) {
+    variables['value_mod'] = modifierVars[`${selectedAttr.key}_mod`] ?? 0
+  }
+
+  for (const a of sheet.template.attributes) {
+    const v = sheet.values.find(sv2 => sv2.attributeId === a.id)
+    variables[a.key] = parseFloatSafe(v?.value, 0)
+  }
+  for (const fv of sheet.fieldValues) {
+    variables[fv.templateField.key] = parseFloatSafe(fv.value, 0)
+  }
+  variables['level'] = sheet.level ?? 1
+
+  return evaluate(skillFormulaRaw, variables)
+}
+
+async function computeSkillValue(ctx: SkillValueContext): Promise<number> {
+  const { sv, sheet, skillConfig, othersValues, profileSelections } = ctx
   let finalResult = 0
 
   if (skillConfig) {
     // Config mode
-    if (skillConfig.useAttributeModifier) {
-      const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
-      if (selectedAttr) {
-        finalResult += modifierVars[`${selectedAttr.key}_mod`] ?? 0
-      }
-    }
-    const customKeys = skillConfig.customFieldKeys || []
-    for (const key of customKeys) {
-      const fv = sheet.fieldValues.find(f => f.templateField.key === key)
-      if (fv) {
-        finalResult += parseFloatSafe(fv.value, 0)
-      }
-    }
+    finalResult += computeConfigModeValue(ctx)
   } else {
     // Raw formula mode
-    const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
-    const skillAttrValue = selectedAttr
-      ? parseFloatSafe(sheet.values.find(v => v.attributeId === selectedAttr.id)?.value, 0)
-      : 0
-
-    const variables: Record<string, number> = { ...modifierVars }
-    variables['value'] = skillAttrValue
-    if (selectedAttr) {
-      variables['value_mod'] = modifierVars[`${selectedAttr.key}_mod`] ?? 0
-    }
-
-    for (const a of sheet.template.attributes) {
-      const v = sheet.values.find(sv2 => sv2.attributeId === a.id)
-      variables[a.key] = parseFloatSafe(v?.value, 0)
-    }
-    for (const fv of sheet.fieldValues) {
-      variables[fv.templateField.key] = parseFloatSafe(fv.value, 0)
-    }
-    variables['level'] = sheet.level ?? 1
-
-    finalResult = await evaluate(skillFormulaRaw, variables)
+    finalResult += await evaluateRawFormula(ctx)
   }
 
   // Add others value AFTER formula evaluation
@@ -260,7 +280,7 @@ export async function computeSkills(
 
   for (const sv of sheet.skillValues) {
     try {
-      results[sv.skillId] = await computeSkillValue(
+      results[sv.skillId] = await computeSkillValue({
         sv,
         sheet,
         skillConfig,
@@ -269,7 +289,7 @@ export async function computeSkills(
         othersValues,
         profileSelections,
         evaluate,
-      )
+      })
     } catch {
       results[sv.skillId] = null
     }

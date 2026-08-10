@@ -75,7 +75,7 @@ function DashboardExploreCampaignsContent() {
   )
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1)
   const [adventures, setAdventures] = useState<Adventure[]>([])
-  const [, setTotal] = useState(0)
+  const [_total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState<string | null>(null)

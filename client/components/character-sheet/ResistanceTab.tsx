@@ -43,7 +43,7 @@ interface NewResistanceDraft {
   attributeModifiers: { attributeId: string; attributeKey: string; attributeName: string; enabled: boolean }[]
 }
 
-const genId = () => Math.random().toString(36).slice(2)
+const genId = () => crypto.randomUUID()
 
 function emptyDraft(): NewResistanceDraft {
   return { name: '', calculationType: 'MANUAL', components: [], attributeModifiers: [] }

@@ -40,7 +40,7 @@ export function TemplatePickerModal({
   onSelect,
   adventureId,
 }: Readonly<TemplatePickerModalProps>) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const [tab, setTab] = useState<'my-templates' | 'community'>('my-templates')
   const [search, setSearch] = useState('')
   const [systemFilter, setSystemFilter] = useState('')
@@ -60,6 +60,7 @@ export function TemplatePickerModal({
   const [confirming, setConfirming] = useState(false)
 
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const dialogRef = useRef<HTMLDialogElement>(null)
 
   const fetchMyTemplates = useCallback(async () => {
     setFetchingMine(true)
@@ -99,15 +100,11 @@ export function TemplatePickerModal({
     setTimeout(() => searchInputRef.current?.focus(), 100)
   }, [isOpen, fetchMyTemplates])
 
-  // Close on Escape (document-level, so it works regardless of focus within the dialog)
+  // Open the native dialog in modal mode (jsdom throws "Not implemented" for showModal)
   useEffect(() => {
     if (!isOpen) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
+    try { dialogRef.current?.showModal() } catch { /* jsdom */ }
+  }, [isOpen])
 
   const handleTabChange = (newTab: 'my-templates' | 'community') => {
     setTab(newTab)
@@ -137,7 +134,7 @@ export function TemplatePickerModal({
         .map(t => t.campaign)
         .filter((c): c is string => !!c),
     ),
-  ).sort()
+  ).sort((a, b) => a.localeCompare(b))
 
   const filteredMine = myTemplates.filter(
     t =>
@@ -158,11 +155,15 @@ export function TemplatePickerModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <dialog
+        ref={dialogRef}
         className="card !p-0 max-w-lg w-full mx-4 max-h-[80vh] flex flex-col"
-        role="dialog"
         aria-modal="true"
+        onCancel={(e) => { e.preventDefault(); onClose() }}
       >
         {/* Header */}
         <div className="p-4 border-b border-border">
@@ -342,7 +343,7 @@ export function TemplatePickerModal({
             )}
           </button>
         </div>
-      </div>
+      </dialog>
     </div>
   )
 }

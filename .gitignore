@@ -15,3 +15,4 @@ images/
 
 # SonarQube bulk-fix session scratch
 sonarqube_tmp/
+.pagbank-api-requests-responses.md

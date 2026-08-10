@@ -16,6 +16,14 @@ import type { SubmitEvent } from 'react'
  * Supports arithmetic, parentheses, and Math.* functions.
  * No use of Function() constructor or eval(), so no SonarQube hotspot.
  */
+function isNumberStart(src: string, i: number): boolean {
+  return /\d/.test(src[i]) || (src[i] === '.' && i + 1 < src.length && /\d/.test(src[i + 1]))
+}
+
+function isPowerOperator(src: string, i: number): boolean {
+  return src[i] === '*' && i + 1 < src.length && src[i + 1] === '*'
+}
+
 export function evaluateSummonFormula(formula: string, variables: Record<string, number>): number {
   if (!formula?.trim()) return 0
 
@@ -53,14 +61,6 @@ export function evaluateSummonFormula(formula: string, variables: Record<string,
     if (funcNames.has(word)) return { token: { t: 'func', v: word }, next: i }
     // Unknown identifiers become 0 to avoid crashing
     return { token: { t: 'num', v: variables[word] ?? 0 }, next: i }
-  }
-
-  function isNumberStart(src: string, i: number): boolean {
-    return /\d/.test(src[i]) || (src[i] === '.' && i + 1 < src.length && /\d/.test(src[i + 1]))
-  }
-
-  function isPowerOperator(src: string, i: number): boolean {
-    return src[i] === '*' && i + 1 < src.length && src[i + 1] === '*'
   }
 
   function scanToken(src: string, i: number): { token: Token | null; next: number } {
@@ -231,10 +231,6 @@ async function saveLevelPatch(
   } catch {}
 }
 
-function stopPropagation(e: { stopPropagation(): void }) {
-  e.stopPropagation()
-}
-
 function patchAbilityLevel(abilities: Ability[], levelId: string, patch: Partial<AbilityLevel>): Ability[] {
   return abilities.map(ab => ({ ...ab, levels: ab.levels.map(l => l.id === levelId ? { ...l, ...patch } : l) }))
 }
@@ -308,7 +304,7 @@ function AbilityCardHeader({
           <span className="text-[0.65rem] text-muted">{t('character:levelWithNumber', { level: selLevel.level })}</span>
         )}
       </div>
-      <div className="flex items-center gap-2 shrink-0" onClick={stopPropagation} onKeyDown={stopPropagation}>
+      <div className="flex items-center gap-2 shrink-0">
         {isAbility && ability.levels.length > 0 && (
           <Select
             options={ability.levels.map(l => ({ id: l.id, label: t('character:levelWithNumber', { level: l.level }) }))}
@@ -320,7 +316,10 @@ function AbilityCardHeader({
         )}
         {canEditAbilities && (
           <button
-            onClick={() => setConfirmDeleteAbility(ability.id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              setConfirmDeleteAbility(ability.id)
+            }}
             className="text-muted hover:text-danger p-1 transition-colors"
             title={isAbility ? t('character:deleteAbilityTitle') : t('character:deleteSummonTitle')}
           >
@@ -879,7 +878,7 @@ export function AbilitiesTab({
                                       </svg>
                                       <span className="text-sm font-medium text-foreground truncate flex-1">{ca.name}</span>
                                       {canEditAbilities && ca.levels.length > 0 && (
-                                        <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
+                                        <div>
                                           <Select
                                             options={ca.levels.map(l => ({ id: l.id, label: t('character:levelWithNumber', { level: l.level }) }))}
                                             value={caSelLevel?.id ?? ''}
@@ -890,8 +889,11 @@ export function AbilitiesTab({
                                         </div>
                                       )}
                                       {canEditAbilities && (
-                                        <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
-                                          <button onClick={() => handleDeleteAbility(ca.id)} className="text-muted hover:text-danger p-0.5 transition-colors shrink-0">
+                                        <div>
+                                          <button onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleDeleteAbility(ca.id)
+                                          }} className="text-muted hover:text-danger p-0.5 transition-colors shrink-0">
                                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
                                             </svg>

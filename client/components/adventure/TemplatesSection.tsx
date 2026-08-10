@@ -83,13 +83,13 @@ export function TemplatesSection(props: {
   readonly newFeatureSkillProfiles: boolean; readonly onNewFeatureSkillProfilesChange: (v: boolean) => void
   readonly newFeatureResistance: boolean; readonly onNewFeatureResistanceChange: (v: boolean) => void
   // Feature selection toggles — edit template
-  readonly editFeatureSkills: boolean; readonly onEditFeatureSkillsChange: (v: boolean) => void
-  readonly editFeatureCustomFields: boolean; readonly onEditFeatureCustomFieldsChange: (v: boolean) => void
-  readonly editFeatureCoreResources: boolean; readonly onEditFeatureCoreResourcesChange: (v: boolean) => void
-  readonly editFeatureArmorClass: boolean; readonly onEditFeatureArmorClassChange: (v: boolean) => void
-  readonly editFeatureCharacterSections: boolean; readonly onEditFeatureCharacterSectionsChange: (v: boolean) => void
-  readonly editFeatureSkillProfiles: boolean; readonly onEditFeatureSkillProfilesChange: (v: boolean) => void
-  readonly editFeatureResistance: boolean; readonly onEditFeatureResistanceChange: (v: boolean) => void
+  readonly editFeatureSkills: boolean
+  readonly editFeatureCustomFields: boolean
+  readonly editFeatureCoreResources: boolean
+  readonly editFeatureArmorClass: boolean
+  readonly editFeatureCharacterSections: boolean
+  readonly editFeatureSkillProfiles: boolean
+  readonly editFeatureResistance: boolean
   /** When true, hides the "+ New Template" button when a campaign-owned template already exists */
   readonly hideCreateButton?: boolean
 }) {

@@ -3,6 +3,20 @@ import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { JoinRequestModal } from '@/components/community/JoinRequestModal'
 
+// jsdom does not implement HTMLDialogElement.showModal/close (it throws
+// "Not implemented"), and its default stylesheet hides <dialog> elements
+// without an [open] attribute. Polyfill the methods so the native dialog
+// reflects an open state — matching real-browser behavior — and remains
+// queryable via getByRole('dialog').
+if (typeof HTMLDialogElement !== 'undefined') {
+  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+    this.setAttribute('open', '')
+  }
+  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+    this.removeAttribute('open')
+  }
+}
+
 describe('JoinRequestModal', () => {
   const defaultProps = {
     open: false,

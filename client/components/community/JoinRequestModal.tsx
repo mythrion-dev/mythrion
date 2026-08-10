@@ -26,13 +26,24 @@ export function JoinRequestModal({
 }: Readonly<JoinRequestModalProps>) {
   const { t } = useTranslation()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const cardRef = useRef<HTMLDivElement>(null)
+  const cardRef = useRef<HTMLDialogElement>(null)
+  const cancelFiredRef = useRef(false)
+
+  // Route Escape closes through this so onCancel fires exactly once per press:
+  // native <dialog> dispatches a cancel event in real browsers in addition to the
+  // manual keydown listener below (which is needed for jsdom).
+  const handleCancel = useCallback(() => {
+    if (cancelFiredRef.current) return
+    cancelFiredRef.current = true
+    setTimeout(() => { cancelFiredRef.current = false }, 0)
+    onCancel()
+  }, [onCancel])
 
   // Focus trap — keep focus within the modal while open
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onCancel()
+        handleCancel()
         return
       }
 
@@ -54,7 +65,7 @@ export function JoinRequestModal({
         }
       }
     },
-    [onCancel],
+    [handleCancel],
   )
 
   // ESC and focus trap listener
@@ -73,12 +84,14 @@ export function JoinRequestModal({
     }
   }, [open])
 
-  // Prevent body scroll while modal is open
+  // Prevent body scroll while modal is open and open/close the native dialog
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden'
+      try { cardRef.current?.showModal() } catch { /* jsdom */ }
     } else {
       document.body.style.overflow = ''
+      try { cardRef.current?.close() } catch { /* jsdom */ }
     }
     return () => {
       document.body.style.overflow = ''
@@ -99,12 +112,13 @@ export function JoinRequestModal({
         aria-label={t('community:closeModal')}
       />
 
-      <div
+      <dialog
         ref={cardRef}
-        role="dialog"
         className="card !p-6 max-w-md w-full space-y-6 border-border/20 shadow-[0_24px_80px_rgba(0,0,0,0.45)] relative z-10"
         aria-modal="true"
         aria-labelledby="join-modal-title"
+        onCancel={(e) => { e.preventDefault(); handleCancel() }}
+        onClick={(e) => { if (e.target === e.currentTarget) handleCancel() }}
       >
         <div className="flex items-start gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-inner shadow-primary/10">
@@ -185,7 +199,7 @@ export function JoinRequestModal({
             )}
           </button>
         </div>
-      </div>
+      </dialog>
     </div>
   )
 }

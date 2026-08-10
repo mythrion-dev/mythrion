@@ -28,7 +28,7 @@ interface Props {
 }
 
 function newResistance(): ResistanceDefinition {
-  return { name: '', calculationType: 'MANUAL', components: [], attributeModifiers: [] }
+  return { id: crypto.randomUUID(), name: '', calculationType: 'MANUAL', components: [], attributeModifiers: [] }
 }
 
 export default function ResistanceSystemConfig({ resistances, attributes, onChange, disableAttributeModifiers = false }: Props) {
@@ -67,7 +67,7 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
 
   function addComponent(resistanceIndex: number) {
     const r = resistances[resistanceIndex]
-    const components = [...r.components, { name: '', editableByPlayer: false, defaultValue: '0' }]
+    const components = [...r.components, { id: crypto.randomUUID(), name: '', editableByPlayer: false, defaultValue: '0' }]
     updateResistance(resistanceIndex, { components })
   }
 
@@ -118,7 +118,7 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
       {resistances.map((r, rIdx) => {
         const isExpanded = !!expandedResistances[rIdx]
         return (
-          <div key={rIdx} className="rounded-lg border border-border bg-background/30 overflow-hidden">
+          <div key={r.id} className="rounded-lg border border-border bg-background/30 overflow-hidden">
             {/* Collapsible Header */}
             <button
               type="button"
@@ -187,7 +187,7 @@ export default function ResistanceSystemConfig({ resistances, attributes, onChan
                           <p className="text-xs text-muted italic text-center py-2">{t('campaign:noComponentsAddedYet')}</p>
                         )}
                         {r.components.map((c, cIdx) => (
-                          <div key={cIdx} className="rounded-lg border border-border/50 bg-background/20 p-2 space-y-2">
+                          <div key={c.id} className="rounded-lg border border-border/50 bg-background/20 p-2 space-y-2">
                             <div className="flex items-center gap-1.5">
                               <input
                                 className="input-field flex-1"

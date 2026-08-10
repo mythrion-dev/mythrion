@@ -64,29 +64,30 @@ function applyAlignment(
     } else {
       left = trigger.right - popover.width + alignOffset
     }
+  } else if (align === 'start') {
+    top = trigger.top + alignOffset
+  } else if (align === 'center') {
+    top = trigger.top + trigger.height / 2 - popover.height / 2 + alignOffset
   } else {
-    if (align === 'start') {
-      top = trigger.top + alignOffset
-    } else if (align === 'center') {
-      top = trigger.top + trigger.height / 2 - popover.height / 2 + alignOffset
-    } else {
-      top = trigger.bottom - popover.height + alignOffset
-    }
+    top = trigger.bottom - popover.height + alignOffset
   }
   return { top, left }
 }
 
-function flipHorizontal(
-  side: PopoverSide,
-  align: PopoverAlign,
-  trigger: PopoverRect,
-  popover: PopoverRect,
-  sideOffset: number,
-  alignOffset: number,
-  viewportWidth: number,
-  margin: number,
-  pos: { top: number; left: number },
-): { top: number; left: number } {
+interface FlipHorizontalOptions {
+  readonly side: PopoverSide
+  readonly align: PopoverAlign
+  readonly trigger: PopoverRect
+  readonly popover: PopoverRect
+  readonly sideOffset: number
+  readonly alignOffset: number
+  readonly viewportWidth: number
+  readonly margin: number
+  readonly pos: { top: number; left: number }
+}
+
+function flipHorizontal(options: FlipHorizontalOptions): { top: number; left: number } {
+  const { side, align, trigger, popover, sideOffset, alignOffset, viewportWidth, margin, pos } = options
   let { top, left } = pos
   if (left + popover.width > viewportWidth - margin) {
     if (side === 'bottom' || side === 'top') {
@@ -157,7 +158,7 @@ export default function MythrionPopover({
   const isControlled = controlledOpen !== undefined
   const isOpen = isControlled ? controlledOpen : internalOpen
 
-  const triggerRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
   const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({})
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -189,7 +190,7 @@ export default function MythrionPopover({
 
     let pos = getBasePosition(side, trigger, popover, sideOffset)
     pos = applyAlignment(side, align, trigger, popover, alignOffset, pos)
-    pos = flipHorizontal(side, align, trigger, popover, sideOffset, alignOffset, viewportWidth, margin, pos)
+    pos = flipHorizontal({ side, align, trigger, popover, sideOffset, alignOffset, viewportWidth, margin, pos })
     const top = flipVertical(side, trigger, popover, sideOffset, viewportHeight, margin, pos.top)
 
     setPopoverStyle({
@@ -303,10 +304,9 @@ export default function MythrionPopover({
 
   return (
     <>
-      <div
+      <button
         ref={triggerRef}
-        role="button"
-        tabIndex={0}
+        type="button"
         className="inline-flex items-center cursor-help"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -314,7 +314,7 @@ export default function MythrionPopover({
         onKeyDown={handleTriggerKeyDown}
       >
         {children}
-      </div>
+      </button>
 
       {isOpen && (
         <div
