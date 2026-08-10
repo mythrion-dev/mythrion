@@ -44,7 +44,7 @@ export default function PricingPage() {
             slug: 'annual',
             name: 'Plano Anual',
             description:
-              'Acesso completo à plataforma Mythrion com o melhor custo-benefício (equivalente a R$100/mês).',
+              'Acesso completo à plataforma Mythrion com o melhor custo-benefício.',
             price: 120000,
             pgPlanId: '',
           },
