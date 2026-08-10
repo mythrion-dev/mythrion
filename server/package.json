@@ -100,10 +100,8 @@
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s",
-      "!main.ts",
       "!**/generated/**",
       "!**/*.module.ts",
-      "!**/*.dto.ts",
       "!auth/google.service.ts",
       "!auth/google.strategy.ts",
       "!auth/rate-limit.decorator.ts",

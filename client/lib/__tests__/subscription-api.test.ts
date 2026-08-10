@@ -5,6 +5,7 @@ import {
   createSubscription,
   fetchMySubscription,
   cancelSubscription,
+  updatePaymentMethod,
 } from '@/lib/subscription-api'
 
 /* ── Mock api module ── */
@@ -68,6 +69,53 @@ describe('subscription-api', () => {
 
       await expect(createSubscription('invalid-plan')).rejects.toThrow('Plan not found')
     })
+
+    it('sends only planId when no optional card fields are provided', async () => {
+      vi.mocked(api.post).mockResolvedValue({ initPoint: '', subscriptionId: 'sub-1' })
+
+      await createSubscription('monthly')
+
+      expect(api.post).toHaveBeenCalledWith('/subscriptions', { planId: 'monthly' })
+      // No optional keys should be present in the payload
+      const payload = vi.mocked(api.post).mock.calls[0][1] as Record<string, unknown>
+      expect(Object.keys(payload)).toEqual(['planId'])
+    })
+
+    it('sends every optional card field when all are provided', async () => {
+      vi.mocked(api.post).mockResolvedValue({ initPoint: '', subscriptionId: 'sub-1' })
+
+      await createSubscription(
+        'monthly',
+        'card-token-1',
+        '123',
+        'Alice Johnson',
+        '12345678901',
+        'device-42',
+        'card-token-id-9',
+      )
+
+      expect(api.post).toHaveBeenCalledWith('/subscriptions', {
+        planId: 'monthly',
+        cardToken: 'card-token-1',
+        cardTokenId: 'card-token-id-9',
+        securityCode: '123',
+        payerName: 'Alice Johnson',
+        payerDocument: '12345678901',
+        deviceId: 'device-42',
+      })
+    })
+
+    it('sends a subset of optional fields when only some are provided', async () => {
+      vi.mocked(api.post).mockResolvedValue({ initPoint: '', subscriptionId: 'sub-2' })
+
+      await createSubscription('annual', 'card-token-2', undefined, 'Bob')
+
+      expect(api.post).toHaveBeenCalledWith('/subscriptions', {
+        planId: 'annual',
+        cardToken: 'card-token-2',
+        payerName: 'Bob',
+      })
+    })
   })
 
   describe('fetchMySubscription', () => {
@@ -125,6 +173,48 @@ describe('subscription-api', () => {
       vi.mocked(api.post).mockRejectedValue(err)
 
       await expect(cancelSubscription()).rejects.toThrow('Subscription not found')
+    })
+  })
+
+  describe('updatePaymentMethod', () => {
+    it('calls api.post with cardToken only', async () => {
+      vi.mocked(api.post).mockResolvedValue(undefined)
+
+      await updatePaymentMethod('card-token-1')
+
+      expect(api.post).toHaveBeenCalledWith('/subscriptions/update-payment-method', {
+        cardToken: 'card-token-1',
+      })
+    })
+
+    it('calls api.post with cardToken, payerName and payerDocument', async () => {
+      vi.mocked(api.post).mockResolvedValue(undefined)
+
+      await updatePaymentMethod('card-token-1', 'Alice Johnson', '12345678901')
+
+      expect(api.post).toHaveBeenCalledWith('/subscriptions/update-payment-method', {
+        cardToken: 'card-token-1',
+        payerName: 'Alice Johnson',
+        payerDocument: '12345678901',
+      })
+    })
+
+    it('omits payerName when only payerDocument is provided', async () => {
+      vi.mocked(api.post).mockResolvedValue(undefined)
+
+      await updatePaymentMethod('card-token-1', undefined, '12345678901')
+
+      expect(api.post).toHaveBeenCalledWith('/subscriptions/update-payment-method', {
+        cardToken: 'card-token-1',
+        payerDocument: '12345678901',
+      })
+    })
+
+    it('propagates errors from api.post', async () => {
+      const err = new Error('Card token invalid')
+      vi.mocked(api.post).mockRejectedValue(err)
+
+      await expect(updatePaymentMethod('bad-token')).rejects.toThrow('Card token invalid')
     })
   })
 })

@@ -722,6 +722,377 @@ describe('TemplateService', () => {
         }),
       )
     })
+
+    it('update: handles template fields (update, create, delete, sheet backfill)', async () => {
+      const existing = mockTemplateWithInclude()
+      prisma.template.findUnique.mockResolvedValue(existing)
+
+      const existingFields = [
+        { id: 'tf-1', key: 'bio', label: 'Biography', templateId: id, order: 0 },
+        { id: 'tf-2', key: 'old', label: 'Old', templateId: id, order: 1 },
+      ]
+      prisma.templateField.findMany
+        .mockResolvedValueOnce(existingFields)
+        .mockResolvedValueOnce([{ id: 'tf-3', key: 'notes', templateId: id, order: 1 }])
+      prisma.characterSheet.findMany.mockResolvedValue([{ id: 'sheet-1' }])
+
+      const dto: UpdateTemplateDto = {
+        templateFields: [
+          { key: 'bio', label: 'Biography Updated' },
+          { key: 'notes', label: 'Notes' },
+        ],
+      }
+
+      await service.update(id, userId, dto as any)
+
+      // Field removed because it is no longer in the DTO
+      expect(prisma.templateField.deleteMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ key: { in: ['old'] } }),
+        }),
+      )
+      // Update existing field
+      expect(prisma.templateField.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'tf-1' },
+          data: expect.objectContaining({ label: 'Biography Updated' }),
+        }),
+      )
+      // Create new field
+      expect(prisma.templateField.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ key: 'notes', label: 'Notes' }),
+        }),
+      )
+      // Backfill sheet values for the new field
+      expect(prisma.characterSheetFieldValue.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { sheetId_templateFieldId: { sheetId: 'sheet-1', templateFieldId: 'tf-3' } },
+        }),
+      )
+    })
+
+    it('update: handles skill modifier profiles (update, create, sync options and sheet values)', async () => {
+      const existing = mockTemplateWithInclude()
+      prisma.template.findUnique
+        .mockResolvedValueOnce(existing)
+        .mockResolvedValue({ skillFormula: 'floor(str/2) + Expertise' })
+
+      const existingProfiles = [
+        {
+          id: 'prof-1', name: 'Proficiency', templateId: id, order: 0,
+          targetMode: 'ALL_SKILLS', targetSkillIds: [],
+          options: [
+            { id: 'opt-1', label: 'Half', value: 0.5, order: 0 },
+            { id: 'opt-2', label: 'Full', value: 1, order: 1 },
+          ],
+        },
+        { id: 'prof-2', name: 'Legacy', templateId: id, order: 1, targetMode: 'ALL_SKILLS', targetSkillIds: [], options: [] },
+      ]
+      const newProfiles = [
+        { id: 'prof-3', name: 'Expertise', templateId: id, order: 1, targetMode: 'SELECTED_SKILLS', targetSkillIds: ['Athletics'] },
+        { id: 'prof-4', name: 'Mastery', templateId: id, order: 2, targetMode: 'ALL_SKILLS', targetSkillIds: [] },
+      ]
+      prisma.skillModifierProfile.findMany
+        .mockResolvedValueOnce(existingProfiles)
+        .mockResolvedValueOnce(newProfiles)
+      prisma.templateSkill.findMany.mockResolvedValue([
+        { id: 'skill-1', name: 'Athletics', templateId: id, order: 0 },
+        { id: 'skill-2', name: 'Stealth', templateId: id, order: 1 },
+      ])
+      prisma.characterSheet.findMany.mockResolvedValue([{ id: 'sheet-1' }])
+      prisma.profileOption.findFirst.mockResolvedValue(null)
+
+      const dto: UpdateTemplateDto = {
+        skillModifierProfiles: [
+          { name: 'Proficiency', targetMode: 'ALL_SKILLS', targetSkillIds: [], options: [{ label: 'Half', value: 0.5 }, { label: 'Double', value: 2 }] },
+          { name: 'Expertise', targetMode: 'SELECTED_SKILLS', targetSkillIds: ['Athletics'], options: [{ label: 'Double', value: 2 }] },
+          { name: 'Mastery', targetMode: 'ALL_SKILLS', targetSkillIds: [], options: [{ label: 'Pro', value: 1 }] },
+        ],
+      }
+
+      await service.update(id, userId, dto as any)
+
+      // Old profile removed
+      expect(prisma.skillModifierProfile.deleteMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ name: { in: ['Legacy'] } }),
+        }),
+      )
+      // Existing profile updated
+      expect(prisma.skillModifierProfile.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'prof-1' } }),
+      )
+      // New profiles created (Expertise is the first created profile)
+      expect(prisma.skillModifierProfile.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ name: 'Expertise' }),
+        }),
+      )
+      // Sync options: delete removed option, update kept option, create new option
+      expect(prisma.profileOption.deleteMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ label: { in: ['Full'] } }),
+        }),
+      )
+      expect(prisma.profileOption.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'opt-1' } }),
+      )
+      expect(prisma.profileOption.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ label: 'Double' }) }),
+      )
+      // Sheet value upsert for the SELECTED_SKILLS profile against Athletics
+      expect(prisma.characterSheetSkillProfileValue.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            sheetId_skillId_profileId: { sheetId: 'sheet-1', skillId: 'skill-1', profileId: 'prof-3' },
+          },
+        }),
+      )
+    })
+
+    it('update: handles armor class update/create/delete with field and modifier sync', async () => {
+      const existing = mockTemplateWithInclude()
+      prisma.template.findUnique.mockResolvedValue(existing)
+
+      const existingAcs = [
+        {
+          id: 'ac-1', name: 'Armor Class', templateId: id, enabled: true, order: 0,
+          attributeModifiers: [{ id: 'am-1', attributeId: 'attr-1', allowPlayerSelection: false, defaultAttributeId: null }],
+          fields: [{ id: 'acf-1', name: 'Total', key: 'total', defaultValue: '10', editableByPlayer: false, description: null, order: 0, armorClassId: 'ac-1' }],
+        },
+        { id: 'ac-2', name: 'Flat-Footed', templateId: id, enabled: true, order: 1, attributeModifiers: [], fields: [] },
+        { id: 'ac-3', name: 'Touch', templateId: id, enabled: true, order: 2, attributeModifiers: [], fields: [] },
+      ]
+      prisma.templateArmorClass.findMany.mockResolvedValue(existingAcs)
+      prisma.templateAttribute.findMany.mockResolvedValue([
+        { id: 'attr-1', key: 'str', name: 'Strength', templateId: id, order: 0 },
+        { id: 'attr-2', key: 'dex', name: 'Dexterity', templateId: id, order: 1 },
+      ])
+      prisma.armorClassField.findMany
+        .mockResolvedValueOnce([{ id: 'acf-2', name: 'Shield', key: 'shield', defaultValue: '2', armorClassId: 'ac-1', order: 0 }])
+        .mockResolvedValueOnce([{ id: 'acf-3', name: 'Total', key: 'total', defaultValue: '5', armorClassId: 'ac-4', order: 0 }])
+      prisma.armorClassAttributeModifier.create.mockResolvedValue({ id: 'am-created-1' })
+      prisma.armorClassAttributeModifier.findMany.mockResolvedValue([{ id: 'am-2', armorClassId: 'ac-4' }])
+      prisma.templateArmorClass.create.mockResolvedValue({ id: 'ac-4', name: 'Shield', templateId: id, enabled: true })
+      prisma.characterSheet.findMany.mockResolvedValue([{ id: 'sheet-1' }])
+
+      const dto: UpdateTemplateDto = {
+        armorClasses: [
+          {
+            name: 'Armor Class', enabled: true,
+            fields: [{ name: 'Shield', key: 'shield', defaultValue: '2', editableByPlayer: false }],
+            attributeModifiers: [{ attributeId: 'str', allowPlayerSelection: true }],
+          },
+          { name: 'Flat-Footed', enabled: false }, // existing AC disabled → delete
+          { name: 'Shield', enabled: true, fields: [{ name: 'Total', key: 'total', defaultValue: '5' }], attributeModifiers: [{ attributeId: 'dex', allowPlayerSelection: false }] }, // → create
+          // 'Touch' is absent from the DTO → deleteMany
+        ],
+      }
+
+      await service.update(id, userId, dto as any)
+
+      // Removed AC name
+      expect(prisma.templateArmorClass.deleteMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: { in: ['ac-3'] } }),
+        }),
+      )
+      // Disabled existing AC → delete
+      expect(prisma.templateArmorClass.delete).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'ac-2' } }),
+      )
+      // Field removed from existing AC
+      expect(prisma.armorClassField.deleteMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ armorClassId: 'ac-1', key: { in: ['total'] } }),
+        }),
+      )
+      // New AC created
+      expect(prisma.templateArmorClass.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ name: 'Shield' }) }),
+      )
+      // Sheet value syncs for new/updated AC fields and modifiers
+      expect(prisma.characterSheetArmorClassValue.upsert).toHaveBeenCalled()
+      expect(prisma.characterSheetArmorClassAttributeValue.upsert).toHaveBeenCalled()
+    })
+
+    it('update: creates new resistance components and new resistances with sheet sync', async () => {
+      const existing = mockTemplateWithInclude()
+      prisma.template.findUnique.mockResolvedValue(existing)
+
+      const existingResistances = [
+        {
+          id: 'res-1', name: 'Damage Resistances', templateId: id, calculationType: 'MANUAL', order: 0,
+          components: [
+            { id: 'rc-1', name: 'Slashing', resistanceId: 'res-1', editableByPlayer: true, defaultValue: '0', order: 0 },
+            { id: 'rc-2', name: 'Piercing', resistanceId: 'res-1', editableByPlayer: true, defaultValue: '0', order: 1 },
+          ],
+          attributeModifiers: [],
+        },
+      ]
+      prisma.templateResistance.findMany.mockResolvedValue(existingResistances)
+      prisma.resistanceComponent.create.mockResolvedValue({ id: 'rc-3', defaultValue: '0' })
+      prisma.templateResistance.create.mockResolvedValue({ id: 'res-3' })
+      prisma.resistanceComponent.findMany.mockResolvedValue([{ id: 'rc-4', defaultValue: '0' }])
+      prisma.characterSheet.findMany.mockResolvedValue([{ id: 'sheet-1' }])
+
+      const dto: UpdateTemplateDto = {
+        resistances: [
+          {
+            id: 'res-1', name: 'Damage Resistances', calculationType: 'MANUAL',
+            components: [
+              { id: 'rc-1', name: 'Slashing', editableByPlayer: false, defaultValue: '1' },
+              { id: 'rc-2', name: 'Piercing', editableByPlayer: true, defaultValue: '0' },
+              { name: 'Bludgeoning', editableByPlayer: false, defaultValue: '0' }, // no id, all comps kept → fallback undefined → create
+            ],
+            attributeModifiers: [{ attributeId: 'str', enabled: true }],
+          },
+          {
+            name: 'Condition Immunities', calculationType: 'MANUAL',
+            components: [{ name: 'Charmed', editableByPlayer: false, defaultValue: '0' }],
+            attributeModifiers: [{ attributeId: 'dex', enabled: false }],
+          },
+        ],
+      }
+
+      await service.update(id, userId, dto as any)
+
+      // Existing resistance updated
+      expect(prisma.templateResistance.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'res-1' } }),
+      )
+      // New component created for the fully-kept resistance
+      expect(prisma.resistanceComponent.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ name: 'Bludgeoning' }) }),
+      )
+      // New resistance created
+      expect(prisma.templateResistance.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ name: 'Condition Immunities' }) }),
+      )
+      // Attribute modifier sync (delete + create) ran for both resistances
+      expect(prisma.resistanceAttributeModifier.deleteMany).toHaveBeenCalled()
+      expect(prisma.resistanceAttributeModifier.create).toHaveBeenCalled()
+      // Sheet value syncs ran for the new component and the new resistance
+      expect(prisma.characterSheetResistanceComponentValue.upsert).toHaveBeenCalled()
+      expect(prisma.characterSheetResistanceValue.upsert).toHaveBeenCalled()
+    })
+
+    it('update: removes deleted character sections, core resources and resistances', async () => {
+      const existing = mockTemplateWithInclude()
+      prisma.template.findUnique.mockResolvedValue(existing)
+
+      prisma.templateCharacterSection.findMany.mockResolvedValue([
+        { id: 'cs-1', name: 'Equipment', templateId: id, order: 0 },
+        { id: 'cs-2', name: 'Old Section', templateId: id, order: 1 },
+      ])
+      prisma.templateCoreResource.findMany.mockResolvedValue([
+        { id: 'cr-1', slug: 'hp', displayName: 'Hit Points', templateId: id, order: 0 },
+        { id: 'cr-2', slug: 'old', displayName: 'Old Resource', templateId: id, order: 1 },
+      ])
+      prisma.templateResistance.findMany.mockResolvedValue([
+        { id: 'res-1', name: 'Damage Resistances', templateId: id, calculationType: 'MANUAL', order: 0, components: [], attributeModifiers: [] },
+      ])
+
+      const dto: UpdateTemplateDto = {
+        characterSections: [{ id: 'cs-1', name: 'Equipment' }, { name: 'Notes' }],
+        coreResources: [{ slug: 'hp', displayName: 'Hit Points' }],
+        resistances: [],
+      }
+
+      await service.update(id, userId, dto as any)
+
+      expect(prisma.templateCharacterSection.deleteMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: { in: ['cs-2'] } }),
+        }),
+      )
+      expect(prisma.templateCoreResource.deleteMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ slug: { in: ['old'] } }),
+        }),
+      )
+      expect(prisma.templateResistance.deleteMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: { in: ['res-1'] } }),
+        }),
+      )
+    })
+
+    it('throws when a non-owner tries to change visibility', async () => {
+      const existing = mockTemplateWithInclude({ ownerId: 'other-owner' })
+      prisma.template.findUnique.mockResolvedValue(existing)
+
+      await expect(
+        service.update(id, userId, { isPublic: true } as any),
+      ).rejects.toThrow('Only the template owner can change visibility')
+    })
+
+    it('update: resolves skill attribute refs for legacy and empty branches', async () => {
+      const existing = mockTemplateWithInclude()
+      prisma.template.findUnique.mockResolvedValue(existing)
+
+      const existingSkills = [
+        { id: 'skill-1', name: 'Athletics', templateId: id, order: 0 },
+      ]
+      prisma.templateSkill.findMany
+        .mockResolvedValueOnce(existingSkills)
+        .mockResolvedValueOnce([{ id: 'skill-2', name: 'Stealth', templateId: id, order: 1, defaultAttributeId: null }])
+      prisma.templateAttribute.findMany.mockResolvedValue([
+        { id: 'attr-1', key: 'str', name: 'Strength', templateId: id, order: 0 },
+      ])
+      prisma.characterSheet.findMany.mockResolvedValue([])
+
+      const dto: UpdateTemplateDto = {
+        skills: [
+          { name: 'Athletics', attributeId: 'str' },
+          { name: 'Stealth' },
+        ],
+      }
+
+      await service.update(id, userId, dto as any)
+
+      // Athletics: legacyAttrId resolves, effectiveAllowed = [attr-1], defaultAttrId = attr-1
+      expect(prisma.templateSkill.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'skill-1' },
+          data: expect.objectContaining({ attributeId: 'attr-1', allowedAttributeIds: ['attr-1'], defaultAttributeId: 'attr-1' }),
+        }),
+      )
+      // Stealth: no attributeId / allowedAttributeIds → effectiveAllowed = [], defaultAttrId = null
+      expect(prisma.templateSkill.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ name: 'Stealth', attributeId: null, allowedAttributeIds: [], defaultAttributeId: null }),
+        }),
+      )
+    })
+
+    it('logs and swallows cache invalidation errors', async () => {
+      const existing = mockTemplateWithInclude({ name: 'Old Name' })
+      prisma.template.findUnique.mockResolvedValue(existing)
+      prisma.template.update.mockResolvedValue({ ...existing, name: 'New Name' })
+      prisma.characterSheet.findMany.mockResolvedValue([])
+      mockRedisService.del.mockRejectedValue(new Error('redis down'))
+
+      await expect(
+        service.update(id, userId, { name: 'New Name' } as any),
+      ).resolves.toBeDefined()
+
+      // Reset the shared module-level mock so the rejection does not leak
+      mockRedisService.del.mockReset()
+    })
+
+    it('logs and swallows sheet cache invalidation errors', async () => {
+      const existing = mockTemplateWithInclude({ name: 'Old Name' })
+      prisma.template.findUnique.mockResolvedValue(existing)
+      prisma.template.update.mockResolvedValue({ ...existing, name: 'New Name' })
+      prisma.characterSheet.findMany.mockRejectedValue(new Error('db down'))
+      mockRedisService.del.mockResolvedValue(undefined)
+
+      await expect(
+        service.update(id, userId, { name: 'New Name' } as any),
+      ).resolves.toBeDefined()
+    })
   })
 
   // ──────────────────────────────────────────────
@@ -857,6 +1228,42 @@ describe('TemplateService', () => {
       expect(result!.name).toBe('Custom Clone')
     })
 
+    it('deep copies template fields and skill modifier profiles', async () => {
+      const original = mockTemplateWithInclude({
+        name: 'Original',
+        templateFields: [
+          { id: 'tf-1', key: 'bio', label: 'Biography', templateId: id, order: 0 },
+        ],
+        skillModifierProfiles: [
+          {
+            id: 'prof-1', name: 'Proficiency', templateId: id, order: 0,
+            targetMode: 'ALL_SKILLS', targetSkillIds: [],
+            options: [{ id: 'opt-1', label: 'Half', value: 0.5, order: 0 }],
+          },
+        ],
+      })
+      const cloned = mockTemplateWithInclude({ name: 'Original (copy)' })
+
+      prisma.template.findUnique
+        .mockResolvedValueOnce(original)
+        .mockResolvedValueOnce(cloned)
+      prisma.template.create.mockResolvedValue(cloned)
+      prisma.templateAttribute.findMany.mockResolvedValue([])
+      prisma.templateArmorClass.findMany.mockResolvedValue([])
+
+      const result = await service.clone(id, userId)
+
+      expect(prisma.template.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            templateFields: { create: [expect.objectContaining({ key: 'bio', label: 'Biography' })] },
+            skillModifierProfiles: { create: [expect.objectContaining({ name: 'Proficiency' })] },
+          }),
+        }),
+      )
+      expect(result).toBeDefined()
+    })
+
     it('throws NotFoundException when template not found', async () => {
       prisma.template.findUnique.mockResolvedValue(null)
 
@@ -987,6 +1394,15 @@ describe('TemplateService', () => {
       prisma.$queryRaw.mockResolvedValue([{ total: 0, ids: [] }])
 
       await service.findPublicAll({ search: 'warrior', campaign: 'Camp' })
+
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
+      expect(prisma.template.findMany).not.toHaveBeenCalled()
+    })
+
+    it('combines search with adventure filter on the ranked path', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ total: 0, ids: [] }])
+
+      await service.findPublicAll({ search: 'warrior', adventureId: 'adv-1' })
 
       expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
       expect(prisma.template.findMany).not.toHaveBeenCalled()
@@ -1322,6 +1738,16 @@ describe('TemplateService', () => {
           name: 'Armor Class', enabled: true,
           fields: [{ name: 'Total', key: 'total', defaultValue: '10', editableByPlayer: false, description: undefined }],
           attributeModifiers: [{ attributeId: 'str', allowPlayerSelection: false }],
+        }],
+        skillModifierProfiles: [{
+          name: 'Proficiency', targetMode: 'ALL_SKILLS', targetSkillIds: [],
+          options: [{ label: 'Half', value: 0.5 }],
+        }],
+        coreResources: [{ slug: 'hp', displayName: 'Hit Points', enabled: true, editableByPlayer: true, showNotes: true }],
+        characterSections: [{ name: 'Equipment' }],
+        resistances: [{
+          name: 'Damage Resistances', calculationType: 'MANUAL',
+          components: [{ name: 'Slashing', editableByPlayer: false, defaultValue: '0' }],
         }],
       }
       const created = mockTemplateWithInclude({
