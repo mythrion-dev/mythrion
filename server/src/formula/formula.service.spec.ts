@@ -58,6 +58,12 @@ describe('FormulaService', () => {
     it('should wrap non-BadRequestException errors', () => {
       expect(() => service.evaluate('unknownVar', {})).toThrow(BadRequestException)
     })
+
+    it('should wrap unexpected mathjs evaluation errors', () => {
+      // floor("a") passes the AST validation but throws a TypeError at runtime
+      // (wrong argument type), which is not a BadRequestException.
+      expect(() => service.evaluate('floor("a")', {})).toThrow(BadRequestException)
+    })
   })
 
   describe('validate', () => {
@@ -96,6 +102,12 @@ describe('FormulaService', () => {
 
     it('should validate content node (parenthesized expressions)', () => {
       expect(() => service.validate('(str + dex)', ['str', 'dex'])).not.toThrow()
+    })
+
+    it('should throw BadRequestException for a variable name with invalid characters', () => {
+      // "café" parses as a valid mathjs symbol but fails the [a-zA-Z_]\w*
+      // whitelist, so it must be rejected by the invalid-name guard.
+      expect(() => service.validate('café', ['café'])).toThrow(BadRequestException)
     })
   })
 

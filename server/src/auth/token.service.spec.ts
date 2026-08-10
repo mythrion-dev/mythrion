@@ -290,6 +290,17 @@ describe('TokenService', () => {
         service.rotateRefreshToken(encodedToken),
       ).rejects.toThrow(UnauthorizedException)
     })
+
+    it('should throw an Error when the token envelope is not valid JSON', async () => {
+      // Base64 that decodes to a non-JSON string ("not-json")
+      const badToken = Buffer.from('not-json').toString('base64')
+
+      await expect(service.rotateRefreshToken(badToken)).rejects.toThrow(
+        'Invalid refresh token format',
+      )
+
+      expect(mockRedis.get).not.toHaveBeenCalled()
+    })
   })
 
   describe('revokeAllTokens', () => {
@@ -310,6 +321,103 @@ describe('TokenService', () => {
         expect.any(String),
         30 * 24 * 60 * 60,
       )
+    })
+  })
+
+  describe('revokeAllTokensExcept', () => {
+    it('should revoke all tokens when no refresh token is provided', async () => {
+      await service.revokeAllTokensExcept('user-1')
+
+      expect(mockPrisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', revoked: false },
+        data: { revoked: true },
+      })
+      // Falls back to revokeAllTokens, which also sets the Redis blacklist marker.
+      expect(mockRedis.set).toHaveBeenCalledWith(
+        'token_blacklist:user-1',
+        expect.any(String),
+        30 * 24 * 60 * 60,
+      )
+    })
+
+    it('should revoke all tokens except the one presented', async () => {
+      const encodedToken = buildEncodedToken('user-1', 'raw-token')
+      mockPrisma.refreshToken.findMany.mockResolvedValue([
+        { id: 'rt-keep', token: 'hash-keep', userId: 'user-1', revoked: false },
+      ])
+      ;(bcrypt.compare as jest.Mock).mockResolvedValue(true)
+
+      await service.revokeAllTokensExcept('user-1', encodedToken)
+
+      expect(mockPrisma.refreshToken.findMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', revoked: false },
+        select: { id: true, token: true },
+      })
+      expect(mockPrisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', revoked: false, id: { not: 'rt-keep' } },
+        data: { revoked: true },
+      })
+    })
+
+    it('should revoke all tokens when the presented token matches no stored hash', async () => {
+      const encodedToken = buildEncodedToken('user-1', 'raw-token')
+      mockPrisma.refreshToken.findMany.mockResolvedValue([
+        { id: 'rt-1', token: 'hash-1', userId: 'user-1', revoked: false },
+      ])
+      ;(bcrypt.compare as jest.Mock).mockResolvedValue(false)
+
+      await service.revokeAllTokensExcept('user-1', encodedToken)
+
+      expect(mockPrisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', revoked: false, id: undefined },
+        data: { revoked: true },
+      })
+    })
+
+    it('should ignore a token envelope that belongs to a different user', async () => {
+      const encodedToken = buildEncodedToken('other-user', 'raw-token')
+
+      await service.revokeAllTokensExcept('user-1', encodedToken)
+
+      // findMatchingRefreshTokenId is never consulted for another user's token.
+      expect(mockPrisma.refreshToken.findMany).not.toHaveBeenCalled()
+      expect(mockPrisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', revoked: false, id: undefined },
+        data: { revoked: true },
+      })
+    })
+
+    it('should revoke everything when the token envelope is corrupt', async () => {
+      // Base64 that decodes to "{{{" — not valid JSON.
+      const badToken = Buffer.from('{{{').toString('base64')
+
+      await service.revokeAllTokensExcept('user-1', badToken)
+
+      expect(mockPrisma.refreshToken.findMany).not.toHaveBeenCalled()
+      expect(mockPrisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', revoked: false, id: undefined },
+        data: { revoked: true },
+      })
+    })
+
+    it('should keep scanning when a stored hash fails to compare', async () => {
+      const encodedToken = buildEncodedToken('user-1', 'raw-token')
+      mockPrisma.refreshToken.findMany.mockResolvedValue([
+        { id: 'rt-corrupt', token: 'hash-bad', userId: 'user-1', revoked: false },
+        { id: 'rt-keep', token: 'hash-good', userId: 'user-1', revoked: false },
+      ])
+      // First stored hash is corrupt (bcrypt.compare rejects); the scan continues
+      // and matches the second token.
+      ;(bcrypt.compare as jest.Mock)
+        .mockRejectedValueOnce(new Error('corrupt hash'))
+        .mockResolvedValueOnce(true)
+
+      await service.revokeAllTokensExcept('user-1', encodedToken)
+
+      expect(mockPrisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', revoked: false, id: { not: 'rt-keep' } },
+        data: { revoked: true },
+      })
     })
   })
 })
