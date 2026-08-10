@@ -133,17 +133,17 @@ describe('SubscriptionController', () => {
       )
 
       expect(result).toEqual(expectedResult)
-      expect(subscriptionService.createSubscription).toHaveBeenCalledWith(
-        'user-1',
+      expect(subscriptionService.createSubscription).toHaveBeenCalledWith({
+        userId: 'user-1',
         planId,
-        'user@test.com',
-        undefined, // cardToken
-        undefined, // securityCode
-        undefined, // payerName
-        undefined, // payerDocument
-        undefined, // deviceId
-        undefined, // cardTokenId
-      )
+        email: 'user@test.com',
+        cardToken: undefined,
+        securityCode: undefined,
+        payerName: undefined,
+        payerDocument: undefined,
+        deviceId: undefined,
+        cardTokenId: undefined,
+      })
     })
 
     it('passes cardToken when provided', async () => {
@@ -157,17 +157,17 @@ describe('SubscriptionController', () => {
         createRequest(),
       )
 
-      expect(subscriptionService.createSubscription).toHaveBeenCalledWith(
-        'user-1',
-        'monthly',
-        'user@test.com',
-        'encrypted-card-abc',
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined, // cardTokenId
-      )
+      expect(subscriptionService.createSubscription).toHaveBeenCalledWith({
+        userId: 'user-1',
+        planId: 'monthly',
+        email: 'user@test.com',
+        cardToken: 'encrypted-card-abc',
+        securityCode: undefined,
+        payerName: undefined,
+        payerDocument: undefined,
+        deviceId: undefined,
+        cardTokenId: undefined,
+      })
     })
 
     it('throws UnprocessableEntityException when planId is missing', async () => {
