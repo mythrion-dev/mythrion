@@ -154,7 +154,6 @@ export function NotebookSidebar({
   const [folderDeleteDialog, setFolderDeleteDialog] = useState<FolderDeleteDialogState | null>(null)
 
   // Drag-over tracking
-  const [_dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
   const [dragOverRoot, setDragOverRoot] = useState(false)
 
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -225,7 +224,6 @@ export function NotebookSidebar({
     setCreatingPage(false)
     setContextMenu(null)
     setFolderDeleteDialog(null)
-    setDragOverFolderId(null)
     setDragOverRoot(false)
     setIsOpen(false)
     onClose?.()
@@ -928,7 +926,6 @@ export function NotebookSidebar({
                         onCreatePage={handleCreatePage}
                         onPageContextMenu={handlePageContextMenu}
                         onDropOnFolder={handleDropOnFolder}
-                        onDragOverFolder={setDragOverFolderId}
                       />
                     ))}
                 </div>
