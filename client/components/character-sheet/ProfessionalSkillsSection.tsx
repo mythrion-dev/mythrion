@@ -406,7 +406,12 @@ export function ProfessionalSkillsSection({
               const skillResult = results[skill.id]
               const total = skillResult?.total ?? null
               const modSum = skillResult?.modSum ?? 0
-              const modDisplay = modSum !== 0 ? (modSum > 0 ? `+${modSum}` : `${modSum}`) : '—'
+              let modDisplay: string
+              if (modSum !== 0) {
+                modDisplay = modSum > 0 ? `+${modSum}` : `${modSum}`
+              } else {
+                modDisplay = '—'
+              }
               const isEditing = editingId === skill.id
               return (
                 <tr key={skill.id} className="border-b border-border/50">

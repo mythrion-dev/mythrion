@@ -111,7 +111,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
   })
   const [childAbilitySaving, setChildAbilitySaving] = useState(false)
   const [childAbilityError, setChildAbilityError] = useState<string | null>(null)
-  const [, setSavingChildField] = useState<Record<string, boolean>>({})
+  const [_savingChildField, setSavingChildField] = useState<Record<string, boolean>>({})
   const [addingLevel, setAddingLevel] = useState<string | null>(null)
 
   /* ── Copy ability data into local state when it changes ── */

@@ -418,9 +418,7 @@ export class BookService implements OnModuleInit {
         },
       })
 
-      const readable = new Readable()
-      readable.push(file.buffer)
-      readable.push(null)
+      const readable = Readable.from([file.buffer])
 
       readable
         .pipe(uploadStream)

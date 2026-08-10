@@ -11,7 +11,7 @@ import { CollapsibleAttrCard } from '@/components/adventure/CollapsibleAttrCard'
 import { CollapsibleSkillCard } from '@/components/adventure/CollapsibleSkillCard'
 import { NumericInput } from '@/components/shared/NumericInput'
 
-const genId = () => Math.random().toString(36).slice(2)
+const genId = () => crypto.randomUUID()
 
 interface FeatureCard {
   key: string; label: string; description: string; icon: string; enabled: boolean; onToggle: (v: boolean) => void; disabled?: boolean; disabledReason?: string
@@ -478,7 +478,7 @@ export function TemplateForm(props: {
 
 /* ── Feature card ── */
 
-function FeatureCard({ f }: { f: FeatureCard }) {
+function FeatureCard({ f }: Readonly<{ f: FeatureCard }>) {
   const isDisabled = f.disabled
   const isOn = f.enabled
   let cardClass: string

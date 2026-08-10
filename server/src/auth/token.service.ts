@@ -130,6 +130,14 @@ export class TokenService {
       try {
         isValid = await bcrypt.compare(rawToken, stored.token)
       } catch (err) {
+        // bcrypt.compare can reject on a corrupt stored hash or a DB/connection
+        // failure. Log the root cause (the original error must not be silently
+        // discarded) and reject with a typed error for the client.
+        Logger.error(
+          `Failed to verify refresh token hash for user ${userId}: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        )
         throw new InternalServerErrorException(this.i18n.t('auth.tokenVerificationFailed'))
       }
       if (isValid) {
@@ -205,25 +213,7 @@ export class TokenService {
         Buffer.from(encodedRefreshToken, 'base64').toString('utf-8'),
       ) as { userId?: string; token?: string }
       if (payload?.userId === userId && payload.token) {
-        const liveTokens = await this.prisma.refreshToken.findMany({
-          where: { userId, revoked: false },
-          select: { id: true, token: true },
-        })
-        for (const stored of liveTokens) {
-          try {
-            if (await bcrypt.compare(payload.token, stored.token)) {
-              exemptId = stored.id
-              break
-            }
-          } catch (err) {
-            // Corrupt stored hash — treat as non-matching and keep scanning.
-            Logger.warn(
-              `Failed to compare refresh token hash for user ${userId}: ${
-                err instanceof Error ? err.message : String(err)
-              }`,
-            )
-          }
-        }
+        exemptId = await this.findMatchingRefreshTokenId(userId, payload.token)
       }
     } catch (err) {
       // Unparseable token envelope — fall through to revoking everything.
@@ -242,5 +232,35 @@ export class TokenService {
       },
       data: { revoked: true },
     })
+  }
+
+  /**
+   * Find the id of the live refresh token whose stored hash matches `rawToken`,
+   * or null when no live token matches. A corrupt stored hash is logged and
+   * treated as a non-match so the scan continues.
+   */
+  private async findMatchingRefreshTokenId(
+    userId: string,
+    rawToken: string,
+  ): Promise<string | null> {
+    const liveTokens = await this.prisma.refreshToken.findMany({
+      where: { userId, revoked: false },
+      select: { id: true, token: true },
+    })
+    for (const stored of liveTokens) {
+      try {
+        if (await bcrypt.compare(rawToken, stored.token)) {
+          return stored.id
+        }
+      } catch (err) {
+        // Corrupt stored hash — treat as non-matching and keep scanning.
+        Logger.warn(
+          `Failed to compare refresh token hash for user ${userId}: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        )
+      }
+    }
+    return null
   }
 }

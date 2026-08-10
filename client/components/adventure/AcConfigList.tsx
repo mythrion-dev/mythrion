@@ -9,7 +9,7 @@ const draftKeyCache = new WeakMap<object, string>()
 function draftKey(obj: object): string {
   let key = draftKeyCache.get(obj)
   if (!key) {
-    key = Math.random().toString(36).slice(2)
+    key = crypto.randomUUID()
     draftKeyCache.set(obj, key)
   }
   return key

@@ -11,7 +11,7 @@ import { CollapsibleAttrCard } from '@/components/adventure/CollapsibleAttrCard'
 import { CollapsibleSkillCard } from '@/components/adventure/CollapsibleSkillCard'
 import { NumericInput } from '@/components/shared/NumericInput'
 
-const genId = () => Math.random().toString(36).slice(2)
+const genId = () => crypto.randomUUID()
 
 interface TemplateSummary {
   id: string

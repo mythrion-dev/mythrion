@@ -108,7 +108,6 @@ export interface SheetPermissions {
   canEditAbilities: boolean
 }
 
-export type Tab = string
 export type AcResultMap = Record<string, { total: number; name: string }>
 
 export interface ResistanceComponentDef {

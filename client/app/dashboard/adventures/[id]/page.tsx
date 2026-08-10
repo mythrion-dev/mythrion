@@ -235,7 +235,9 @@ function withRemovedAcField(ac: AcConfigDraft, fieldIdx: number): AcConfigDraft 
   return { ...ac, fields: ac.fields.filter((_, j) => j !== fieldIdx) }
 }
 
-function withUpdatedAcField(ac: AcConfigDraft, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string): AcConfigDraft {
+type AcFieldKey = 'name' | 'key' | 'defaultValue' | 'description'
+
+function withUpdatedAcField(ac: AcConfigDraft, fieldIdx: number, f: AcFieldKey, v: string): AcConfigDraft {
   return {
     ...ac,
     fields: ac.fields.map((field, j) => {
@@ -352,7 +354,7 @@ export default function AdventureDetailPage() {
   function updateNewAcConfig(i: number, patch: Partial<AcConfigDraft>) { setNewAcConfigs(p => p.map((ac, j) => j === i ? { ...ac, ...patch } : ac)) }
   function addNewAcFieldForConfig(configIdx: number) { setNewAcConfigs(p => p.map((ac, i) => i === configIdx ? withAddedAcField(ac) : ac)) }
   function removeNewAcFieldForConfig(configIdx: number, fieldIdx: number) { setNewAcConfigs(p => p.map((ac, i) => i === configIdx ? withRemovedAcField(ac, fieldIdx) : ac)) }
-  function updateNewAcFieldForConfig(configIdx: number, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string) {
+  function updateNewAcFieldForConfig(configIdx: number, fieldIdx: number, f: AcFieldKey, v: string) {
     setNewAcConfigs(p => p.map((ac, i) => i === configIdx ? withUpdatedAcField(ac, fieldIdx, f, v) : ac))
   }
   function updateNewAcFieldEditableForConfig(configIdx: number, fieldIdx: number, v: boolean) { setNewAcConfigs(p => p.map((ac, i) => i === configIdx ? withUpdatedAcFieldEditable(ac, fieldIdx, v) : ac)) }
@@ -367,7 +369,7 @@ export default function AdventureDetailPage() {
   function updateEditAcConfig(i: number, patch: Partial<AcConfigDraft>) { setEditAcConfigs(p => p.map((ac, j) => j === i ? { ...ac, ...patch } : ac)) }
   function addEditAcFieldForConfig(configIdx: number) { setEditAcConfigs(p => p.map((ac, i) => i === configIdx ? withAddedAcField(ac) : ac)) }
   function removeEditAcFieldForConfig(configIdx: number, fieldIdx: number) { setEditAcConfigs(p => p.map((ac, i) => i === configIdx ? withRemovedAcField(ac, fieldIdx) : ac)) }
-  function updateEditAcFieldForConfig(configIdx: number, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string) {
+  function updateEditAcFieldForConfig(configIdx: number, fieldIdx: number, f: AcFieldKey, v: string) {
     setEditAcConfigs(p => p.map((ac, i) => i === configIdx ? withUpdatedAcField(ac, fieldIdx, f, v) : ac))
   }
   function updateEditAcFieldEditableForConfig(configIdx: number, fieldIdx: number, v: boolean) { setEditAcConfigs(p => p.map((ac, i) => i === configIdx ? withUpdatedAcFieldEditable(ac, fieldIdx, v) : ac)) }
@@ -847,13 +849,13 @@ export default function AdventureDetailPage() {
                 newFeatureCharacterSections={newFeatureCharacterSections} onNewFeatureCharacterSectionsChange={setNewFeatureCharacterSections}
                 newFeatureSkillProfiles={newFeatureSkillProfiles} onNewFeatureSkillProfilesChange={setNewFeatureSkillProfiles}
                 newFeatureResistance={newFeatureResistance} onNewFeatureResistanceChange={setNewFeatureResistance}
-                editFeatureSkills={editFeatureSkills} onEditFeatureSkillsChange={setEditFeatureSkills}
-                editFeatureCustomFields={editFeatureCustomFields} onEditFeatureCustomFieldsChange={setEditFeatureCustomFields}
-                editFeatureCoreResources={editFeatureCoreResources} onEditFeatureCoreResourcesChange={setEditFeatureCoreResources}
-                editFeatureArmorClass={editFeatureArmorClass} onEditFeatureArmorClassChange={setEditFeatureArmorClass}
-                editFeatureCharacterSections={editFeatureCharacterSections} onEditFeatureCharacterSectionsChange={setEditFeatureCharacterSections}
-                editFeatureSkillProfiles={editFeatureSkillProfiles} onEditFeatureSkillProfilesChange={setEditFeatureSkillProfiles}
-                editFeatureResistance={editFeatureResistance} onEditFeatureResistanceChange={setEditFeatureResistance}
+                editFeatureSkills={editFeatureSkills}
+                editFeatureCustomFields={editFeatureCustomFields}
+                editFeatureCoreResources={editFeatureCoreResources}
+                editFeatureArmorClass={editFeatureArmorClass}
+                editFeatureCharacterSections={editFeatureCharacterSections}
+                editFeatureSkillProfiles={editFeatureSkillProfiles}
+                editFeatureResistance={editFeatureResistance}
               />
             )}
           </div>

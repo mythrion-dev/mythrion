@@ -154,7 +154,7 @@ export function NotebookSidebar({
   const [folderDeleteDialog, setFolderDeleteDialog] = useState<FolderDeleteDialogState | null>(null)
 
   // Drag-over tracking
-  const [, setDragOverFolderId] = useState<string | null>(null)
+  const [_dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
   const [dragOverRoot, setDragOverRoot] = useState(false)
 
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null)

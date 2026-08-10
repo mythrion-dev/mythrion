@@ -100,7 +100,7 @@ describe('SubscriptionService', () => {
         status: 'PENDING',
       })
 
-      const result = await service.createSubscription(userId, planId, email)
+      const result = await service.createSubscription({ userId, planId, email })
 
       expect(result).toEqual({
         initPoint: '',
@@ -133,7 +133,14 @@ describe('SubscriptionService', () => {
         status: 'ACTIVE',
       })
 
-      await service.createSubscription(userId, planId, email, 'encrypted-card-123', 'João Silva', '12345678909')
+      await service.createSubscription({
+        userId,
+        planId,
+        email,
+        cardToken: 'encrypted-card-123',
+        payerName: 'João Silva',
+        payerDocument: '12345678909',
+      })
 
       const upsertCall = prisma.userSubscription.upsert.mock.calls[0][0]
       expect(upsertCall.create.status).toBe('ACTIVE')
@@ -160,7 +167,7 @@ describe('SubscriptionService', () => {
         status: 'ACTIVE',
       })
 
-      await service.createSubscription(userId, planId, email)
+      await service.createSubscription({ userId, planId, email })
 
       const upsertCall = prisma.userSubscription.upsert.mock.calls[0][0]
       expect(upsertCall.create.currentPeriodEnd).toBeInstanceOf(Date)
@@ -186,7 +193,7 @@ describe('SubscriptionService', () => {
         status: 'PENDING',
       })
 
-      await service.createSubscription(userId, planId, email)
+      await service.createSubscription({ userId, planId, email })
 
       const upsertCall = prisma.userSubscription.upsert.mock.calls[0][0]
       expect(upsertCall.create.currentPeriodEnd).toBeNull()
@@ -201,7 +208,7 @@ describe('SubscriptionService', () => {
       })
 
       await expect(
-        service.createSubscription(userId, planId, email),
+        service.createSubscription({ userId, planId, email }),
       ).rejects.toThrow(UnprocessableEntityException)
     })
 
@@ -210,7 +217,7 @@ describe('SubscriptionService', () => {
       prisma.subscriptionPlan.findUnique.mockResolvedValue(null)
 
       await expect(
-        service.createSubscription(userId, planId, email),
+        service.createSubscription({ userId, planId, email }),
       ).rejects.toThrow(NotFoundException)
     })
 
@@ -234,7 +241,7 @@ describe('SubscriptionService', () => {
         status: 'PENDING',
       })
 
-      const result = await service.createSubscription(userId, planId, email)
+      const result = await service.createSubscription({ userId, planId, email })
 
       expect(result.initPoint).toBe('')
       expect(prisma.userSubscription.upsert).toHaveBeenCalledWith(

@@ -172,29 +172,36 @@ export class AcCalculationService {
     const fieldBreakdown: AcResult['fieldBreakdown'] = []
 
     for (const field of armorClass.fields) {
-      if (field.editableByPlayer) {
-        const sheetVal = sheetFieldValues.find(sv => sv.fieldId === field.id)
-        const val = Number.parseFloat(sheetVal?.value ?? field.defaultValue)
-        fieldBreakdown.push({
-          fieldId: field.id,
-          fieldName: field.name,
-          value: Number.isNaN(val) ? 0 : val,
-          editableByPlayer: true,
-        })
-        total += Number.isNaN(val) ? 0 : val
-      } else {
-        const defaultVal = Number.parseFloat(field.defaultValue)
-        fieldBreakdown.push({
-          fieldId: field.id,
-          fieldName: field.name,
-          value: Number.isNaN(defaultVal) ? 0 : defaultVal,
-          editableByPlayer: false,
-        })
-        total += Number.isNaN(defaultVal) ? 0 : defaultVal
-      }
+      const item = this.buildFieldBreakdownItem(field, sheetFieldValues)
+      fieldBreakdown.push(item)
+      total += item.value
     }
 
     return { fieldBreakdown, total }
+  }
+
+  private buildFieldBreakdownItem(
+    field: AcConfigForCalc['fields'][number],
+    sheetFieldValues: Array<{ fieldId: string; value: string }>,
+  ): AcResult['fieldBreakdown'][number] {
+    if (field.editableByPlayer) {
+      const sheetVal = sheetFieldValues.find(sv => sv.fieldId === field.id)
+      const val = Number.parseFloat(sheetVal?.value ?? field.defaultValue)
+      return {
+        fieldId: field.id,
+        fieldName: field.name,
+        value: Number.isNaN(val) ? 0 : val,
+        editableByPlayer: true,
+      }
+    }
+
+    const defaultVal = Number.parseFloat(field.defaultValue)
+    return {
+      fieldId: field.id,
+      fieldName: field.name,
+      value: Number.isNaN(defaultVal) ? 0 : defaultVal,
+      editableByPlayer: false,
+    }
   }
 
   private calculateAttributeModifierBreakdown(

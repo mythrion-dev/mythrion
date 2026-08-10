@@ -74,7 +74,7 @@
 
   ::selection {
     background: rgba(201, 164, 75, 0.3);
-    color: #fff;
+    color: #1a1a2e;
   }
 
   ::-webkit-scrollbar {
@@ -149,7 +149,7 @@
     transition: all 0.2s ease;
   }
   .btn-ghost:hover:not(:disabled) {
-    color: #e8e2d9;
+    color: #f5f2ec;
     background: rgba(255, 255, 255, 0.04);
     border-color: #3d3260;
   }
@@ -344,7 +344,7 @@
   }
   .badge-gold {
     background: rgba(201, 164, 75, 0.15);
-    color: #d4b35e;
+    color: #a8873d;
     border: 1px solid rgba(201, 164, 75, 0.2);
   }
 

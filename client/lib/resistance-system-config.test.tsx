@@ -61,6 +61,7 @@ describe('adding resistances', () => {
     const newResistances = onChange.mock.calls[0][0]
     expect(newResistances).toHaveLength(1)
     expect(newResistances[0]).toEqual({
+      id: expect.any(String),
       name: '',
       calculationType: 'MANUAL',
       components: [],

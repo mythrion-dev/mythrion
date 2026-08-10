@@ -25,6 +25,18 @@ export interface CreateSubscriptionResult {
   subscriptionId: string
 }
 
+export interface CreateSubscriptionInput {
+  userId: string
+  planId: string
+  email: string
+  cardToken?: string
+  securityCode?: string
+  payerName?: string
+  payerDocument?: string
+  deviceId?: string
+  cardTokenId?: string
+}
+
 export interface MySubscriptionResult {
   id: string
   plan: {
@@ -120,16 +132,20 @@ export class SubscriptionService {
    *   5. Return the result
    */
   async createSubscription(
-    userId: string,
-    planId: string,
-    email: string,
-    cardToken?: string,
-    securityCode?: string,
-    payerName?: string,
-    payerDocument?: string,
-    deviceId?: string,
-    cardTokenId?: string,
+    input: CreateSubscriptionInput,
   ): Promise<CreateSubscriptionResult> {
+    const {
+      userId,
+      planId,
+      email,
+      cardToken,
+      securityCode,
+      payerName,
+      payerDocument,
+      deviceId,
+      cardTokenId,
+    } = input
+
     // Check for existing active subscription
     const existing = await this.prisma.userSubscription.findUnique({
       where: { userId },

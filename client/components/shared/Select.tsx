@@ -40,7 +40,10 @@ function getInitialHighlightIndex(value: string | null, options: SelectOption[])
 }
 
 function nextHighlightIndex(prev: number, lastIndex: number, step: 1 | -1): number {
-  return step === 1 ? (prev < lastIndex ? prev + 1 : 0) : prev > 0 ? prev - 1 : lastIndex
+  if (step === 1) {
+    return prev < lastIndex ? prev + 1 : 0
+  }
+  return prev > 0 ? prev - 1 : lastIndex
 }
 
 export function Select({
@@ -224,7 +227,10 @@ export function Select({
             ? `select-opt-${options[highlightIndex]?.id}`
             : undefined
         }
-        onClick={handleClickTrigger}
+        onClick={(e) => {
+          e.stopPropagation()
+          handleClickTrigger()
+        }}
         onKeyDown={handleKeyDown}
         disabled={disabled}
         className={`
