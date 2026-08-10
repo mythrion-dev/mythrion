@@ -14,6 +14,11 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  if (!loading && user && !user.emailVerified) {
+    router.replace('/verify-email')
+    return null
+  }
+
   if (!loading && user?.onboardingComplete) {
     router.replace('/dashboard')
     return null

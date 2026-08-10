@@ -34,14 +34,187 @@ interface CharacterSheetSummary {
 /* ── Tab type ── */
 type Tab = 'adventures' | 'character-sheets'
 
+function initialTab(param: string | null): Tab {
+  return param === 'character-sheets' ? 'character-sheets' : 'adventures'
+}
+
+function DashboardHeaderActions({
+  activeTab,
+  hasActiveSubscription,
+}: {
+  readonly activeTab: Tab
+  readonly hasActiveSubscription: boolean
+}) {
+  const { t } = useTranslation()
+  if (activeTab !== 'adventures') {
+    return (
+      <Link href="/dashboard/character-sheets/new" className="btn-primary">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+        <span className="hidden sm:inline">{t('dashboard:newCharacterSheet')}</span>
+      </Link>
+    )
+  }
+  if (!hasActiveSubscription) {
+    return (
+      <Link
+        href="/pricing"
+        className="btn-ghost text-xs border border-accent/30 bg-accent/10 text-accent hover:bg-accent/15"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        <span className="hidden sm:inline">{t('dashboard:upgradeToCreate')}</span>
+      </Link>
+    )
+  }
+  return (
+    <Link href="/dashboard/adventures/new" className="btn-primary">
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+      </svg>
+      <span className="hidden sm:inline">{t('dashboard:newAdventure')}</span>
+    </Link>
+  )
+}
+
+function DashboardTabNav({
+  activeTab,
+  fetchingAdv,
+  adventureCount,
+  fetchingSheets,
+  sheetCount,
+  switchTab,
+}: {
+  readonly activeTab: Tab
+  readonly fetchingAdv: boolean
+  readonly adventureCount: number
+  readonly fetchingSheets: boolean
+  readonly sheetCount: number
+  readonly switchTab: (tab: Tab) => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <nav className="flex gap-1 mt-4 mb-6">
+      <button
+        onClick={() => switchTab('adventures')}
+        className={`tab-pill ${activeTab === 'adventures' ? 'tab-pill-active' : ''}`}
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+        {t('common:adventures')}
+        {!fetchingAdv && adventureCount > 0 && (
+          <span className="badge badge-gold ml-1">{adventureCount}</span>
+        )}
+      </button>
+      <button
+        onClick={() => switchTab('character-sheets')}
+        className={`tab-pill ${activeTab === 'character-sheets' ? 'tab-pill-active' : ''}`}
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        {t('common:characterSheets')}
+        {!fetchingSheets && sheetCount > 0 && (
+          <span className="badge badge-gold ml-1">{sheetCount}</span>
+        )}
+      </button>
+    </nav>
+  )
+}
+
+function AdventuresTabContent({
+  fetching,
+  adventures,
+  hasActiveSubscription,
+}: {
+  readonly fetching: boolean
+  readonly adventures: Adventure[]
+  readonly hasActiveSubscription: boolean
+}) {
+  const { t } = useTranslation()
+  if (fetching) {
+    return (
+      <section className="flex-1">
+        <LoadingSkeleton variant="card" count={3} />
+      </section>
+    )
+  }
+  if (adventures.length === 0) {
+    return (
+      <section className="flex-1">
+        <EmptyState
+          icon="🗡️"
+          title={t('dashboard:noAdventuresYet')}
+          description={hasActiveSubscription ? t('dashboard:noAdventuresDescriptionActive') : t('dashboard:noAdventuresDescriptionUpgrade')}
+          actionLabel={hasActiveSubscription ? t('dashboard:createFirstAdventure') : t('dashboard:viewPlans')}
+          actionHref={hasActiveSubscription ? "/dashboard/adventures/new" : "/pricing"}
+        />
+      </section>
+    )
+  }
+  return (
+    <section className="flex-1">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {adventures.map((adventure, i) => (
+          <AdventureCard
+            key={adventure.id}
+            adventure={adventure}
+            index={i}
+          />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function SheetsTabContent({
+  fetching,
+  sheets,
+}: {
+  readonly fetching: boolean
+  readonly sheets: CharacterSheetSummary[]
+}) {
+  const { t } = useTranslation()
+  if (fetching) {
+    return (
+      <section className="flex-1">
+        <LoadingSkeleton variant="card" count={3} />
+      </section>
+    )
+  }
+  if (sheets.length === 0) {
+    return (
+      <section className="flex-1">
+        <EmptyState
+          icon="📜"
+          title={t('dashboard:noSheetsYet')}
+          description={t('dashboard:noSheetsDescription')}
+          actionLabel={t('dashboard:createFirstSheet')}
+          actionHref="/dashboard/character-sheets/new"
+        />
+      </section>
+    )
+  }
+  return (
+    <section className="flex-1">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {sheets.map((sheet, i) => (
+          <CharacterSheetCard key={sheet.id} sheet={sheet} index={i} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function DashboardContent() {
   const { hasActiveSubscription } = useSubscription()
   const searchParams = useSearchParams()
   const { t } = useTranslation()
   const tabParam = searchParams.get('tab')
-  const [activeTab, setActiveTab] = useState<Tab>(
-    tabParam === 'character-sheets' ? 'character-sheets' : 'adventures',
-  )
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab(tabParam))
 
   const [adventures, setAdventures] = useState<Adventure[]>([])
   const [fetchingAdv, setFetchingAdv] = useState(true)
@@ -103,109 +276,32 @@ function DashboardContent() {
         subtitle={t('dashboard:subtitle')}
         icon="⚔️"
         actions={
-          activeTab === 'adventures' ? (
-            hasActiveSubscription ? (
-              <Link href="/dashboard/adventures/new" className="btn-primary">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-                <span className="hidden sm:inline">{t('dashboard:newAdventure')}</span>
-              </Link>
-            ) : (
-              <Link
-                href="/pricing"
-                className="btn-ghost text-xs border border-accent/30 bg-accent/10 text-accent hover:bg-accent/15"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span className="hidden sm:inline">{t('dashboard:upgradeToCreate')}</span>
-              </Link>
-            )
-          ) : (
-            <Link href="/dashboard/character-sheets/new" className="btn-primary">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              <span className="hidden sm:inline">{t('dashboard:newCharacterSheet')}</span>
-            </Link>
-          )
+          <DashboardHeaderActions
+            activeTab={activeTab}
+            hasActiveSubscription={hasActiveSubscription}
+          />
         }
       />
 
       {/* Tab Navigation */}
-      <nav className="flex gap-1 mt-4 mb-6">
-        <button
-          onClick={() => switchTab('adventures')}
-          className={`tab-pill ${activeTab === 'adventures' ? 'tab-pill-active' : ''}`}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-          </svg>
-          {t('common:adventures')}
-          {!fetchingAdv && adventures.length > 0 && (
-            <span className="badge badge-gold ml-1">{adventures.length}</span>
-          )}
-        </button>
-        <button
-          onClick={() => switchTab('character-sheets')}
-          className={`tab-pill ${activeTab === 'character-sheets' ? 'tab-pill-active' : ''}`}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          {t('common:characterSheets')}
-          {!fetchingSheets && sheets.length > 0 && (
-            <span className="badge badge-gold ml-1">{sheets.length}</span>
-          )}
-        </button>
-      </nav>
+      <DashboardTabNav
+        activeTab={activeTab}
+        fetchingAdv={fetchingAdv}
+        adventureCount={adventures.length}
+        fetchingSheets={fetchingSheets}
+        sheetCount={sheets.length}
+        switchTab={switchTab}
+      />
 
       {/* Content */}
       {activeTab === 'adventures' ? (
-        <section className="flex-1">
-          {fetchingAdv ? (
-            <LoadingSkeleton variant="card" count={3} />
-          ) : adventures.length === 0 ? (
-            <EmptyState
-              icon="🗡️"
-              title={t('dashboard:noAdventuresYet')}
-              description={hasActiveSubscription ? t('dashboard:noAdventuresDescriptionActive') : t('dashboard:noAdventuresDescriptionUpgrade')}
-              actionLabel={hasActiveSubscription ? t('dashboard:createFirstAdventure') : t('dashboard:viewPlans')}
-              actionHref={hasActiveSubscription ? "/dashboard/adventures/new" : "/pricing"}
-            />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {adventures.map((adventure, i) => (
-                <AdventureCard
-                  key={adventure.id}
-                  adventure={adventure}
-                  index={i}
-                />
-              ))}
-            </div>
-          )}
-        </section>
+        <AdventuresTabContent
+          fetching={fetchingAdv}
+          adventures={adventures}
+          hasActiveSubscription={hasActiveSubscription}
+        />
       ) : (
-        <section className="flex-1">
-          {fetchingSheets ? (
-            <LoadingSkeleton variant="card" count={3} />
-          ) : sheets.length === 0 ? (
-            <EmptyState
-              icon="📜"
-              title={t('dashboard:noSheetsYet')}
-              description={t('dashboard:noSheetsDescription')}
-              actionLabel={t('dashboard:createFirstSheet')}
-              actionHref="/dashboard/character-sheets/new"
-            />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {sheets.map((sheet, i) => (
-                <CharacterSheetCard key={sheet.id} sheet={sheet} index={i} />
-              ))}
-            </div>
-          )}
-        </section>
+        <SheetsTabContent fetching={fetchingSheets} sheets={sheets} />
       )}
     </>
   )
@@ -215,8 +311,8 @@ function AdventureCard({
   adventure,
   index,
 }: {
-  adventure: Adventure
-  index: number
+  readonly adventure: Adventure
+  readonly index: number
 }) {
   const { t } = useTranslation()
   return (
@@ -298,8 +394,8 @@ function CharacterSheetCard({
   sheet,
   index,
 }: {
-  sheet: CharacterSheetSummary
-  index: number
+  readonly sheet: CharacterSheetSummary
+  readonly index: number
 }) {
   const { t } = useTranslation()
   return (

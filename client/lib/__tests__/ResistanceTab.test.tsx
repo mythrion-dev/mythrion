@@ -110,7 +110,6 @@ describe('ResistanceTab', () => {
 
   const baseProps = {
     resistances: [] as any[],
-    isOwner: false,
     permissions: {
       canEditResistances: true,
       canEditAbilities: false,
@@ -142,12 +141,12 @@ describe('ResistanceTab', () => {
   })
 
   it('shows New Resistance button when isOwner=true and onCreateResistance provided', () => {
-    render(<ResistanceTab {...baseProps} isOwner={true} />)
+    render(<ResistanceTab {...baseProps} />)
     expect(screen.getByText('New Resistance')).toBeInTheDocument()
   })
 
   it('does NOT show New Resistance button when onCreateResistance is undefined', () => {
-    render(<ResistanceTab {...baseProps} isOwner={true} onCreateResistance={undefined} />)
+    render(<ResistanceTab {...baseProps} onCreateResistance={undefined} />)
     expect(screen.queryByText('New Resistance')).not.toBeInTheDocument()
   })
 
@@ -194,9 +193,7 @@ describe('ResistanceTab', () => {
     render(
       <ResistanceTab
         {...baseProps}
-        resistances={[manualResistance]}
-        isOwner={true}
-        onSaveManual={onSaveManual}
+        resistances={[manualResistance]}        onSaveManual={onSaveManual}
         sheetResistanceValues={sheetResistanceValues}
       />,
     )
@@ -223,10 +220,8 @@ describe('ResistanceTab', () => {
     render(
       <ResistanceTab
         {...baseProps}
-        resistances={[manualResistance]}
-        isOwner={false}
-        sheetResistanceValues={sheetResistanceValues}
-        permissions={{ canEditResistances: false }}
+        resistances={[manualResistance]}        sheetResistanceValues={sheetResistanceValues}
+        permissions={{ ...baseProps.permissions, canEditResistances: false }}
       />,
     )
     // Auto-expanded on mount — collapse then re-expand for a clean state
@@ -246,10 +241,8 @@ describe('ResistanceTab', () => {
     render(
       <ResistanceTab
         {...baseProps}
-        resistances={[manualResistance]}
-        isOwner={false}
-        sheetResistanceValues={{ r1: null }}
-        permissions={{ canEditResistances: false }}
+        resistances={[manualResistance]}        sheetResistanceValues={{ r1: null }}
+        permissions={{ ...baseProps.permissions, canEditResistances: false }}
       />,
     )
     // Auto-expanded on mount — collapse then re-expand for a clean state
@@ -269,9 +262,7 @@ describe('ResistanceTab', () => {
     render(
       <ResistanceTab
         {...baseProps}
-        resistances={[calculatedResistance]}
-        isOwner={true}
-      />,
+        resistances={[calculatedResistance]}      />,
     )
     // Auto-expanded on mount — content is already visible
 
@@ -287,9 +278,7 @@ describe('ResistanceTab', () => {
     render(
       <ResistanceTab
         {...baseProps}
-        resistances={[calculatedResistance]}
-        isOwner={true}
-        onSaveComponent={onSaveComponent}
+        resistances={[calculatedResistance]}        onSaveComponent={onSaveComponent}
       />,
     )
     // Auto-expanded on mount — content is already visible
@@ -306,9 +295,7 @@ describe('ResistanceTab', () => {
     render(
       <ResistanceTab
         {...baseProps}
-        resistances={[calculatedResistance]}
-        isOwner={true}
-      />,
+        resistances={[calculatedResistance]}      />,
     )
     // Auto-expanded on mount — content is already visible
 
@@ -323,9 +310,7 @@ describe('ResistanceTab', () => {
     render(
       <ResistanceTab
         {...baseProps}
-        resistances={[calculatedResistanceWithRawDiff]}
-        isOwner={false}
-      />,
+        resistances={[calculatedResistanceWithRawDiff]}      />,
     )
     // Auto-expanded on mount — content is already visible
 
@@ -344,9 +329,7 @@ describe('ResistanceTab', () => {
     render(
       <ResistanceTab
         {...baseProps}
-        resistances={[manualResistance]}
-        isOwner={true}
-        onDeleteResistance={onDeleteResistance}
+        resistances={[manualResistance]}        onDeleteResistance={onDeleteResistance}
       />,
     )
 
@@ -366,9 +349,7 @@ describe('ResistanceTab', () => {
     render(
       <ResistanceTab
         {...baseProps}
-        resistances={[manualResistance]}
-        isOwner={true}
-        onDeleteResistance={onDeleteResistance}
+        resistances={[manualResistance]}        onDeleteResistance={onDeleteResistance}
       />,
     )
 
@@ -382,9 +363,7 @@ describe('ResistanceTab', () => {
     render(
       <ResistanceTab
         {...baseProps}
-        resistances={[manualResistance]}
-        isOwner={true}
-        onDeleteResistance={undefined}
+        resistances={[manualResistance]}        onDeleteResistance={undefined}
       />,
     )
     expect(screen.queryByTitle('Delete resistance')).not.toBeInTheDocument()
@@ -394,9 +373,7 @@ describe('ResistanceTab', () => {
     render(
       <ResistanceTab
         {...baseProps}
-        resistances={[manualResistance]}
-        isOwner={false}
-        permissions={{ canEditResistances: false }}
+        resistances={[manualResistance]}        permissions={{ ...baseProps.permissions, canEditResistances: false }}
       />,
     )
     expect(screen.queryByTitle('Delete resistance')).not.toBeInTheDocument()
@@ -406,7 +383,7 @@ describe('ResistanceTab', () => {
 
   it('opens new resistance form when clicking New Resistance', async () => {
     const user = userEvent.setup()
-    render(<ResistanceTab {...baseProps} isOwner={true} />)
+    render(<ResistanceTab {...baseProps} />)
     await user.click(screen.getByText('New Resistance'))
 
     expect(screen.getByPlaceholderText('e.g. Fire Resistance')).toBeInTheDocument()
@@ -419,9 +396,7 @@ describe('ResistanceTab', () => {
     const user = userEvent.setup()
     render(
       <ResistanceTab
-        {...baseProps}
-        isOwner={true}
-        onCreateResistance={onCreateResistance}
+        {...baseProps}        onCreateResistance={onCreateResistance}
       />,
     )
 
@@ -444,9 +419,7 @@ describe('ResistanceTab', () => {
     const user = userEvent.setup()
     render(
       <ResistanceTab
-        {...baseProps}
-        isOwner={true}
-        onCreateResistance={onCreateResistance}
+        {...baseProps}        onCreateResistance={onCreateResistance}
         templateAttributes={[
           { id: 'a1', key: 'con', name: 'Constitution' },
           { id: 'a2', key: 'str', name: 'Strength' },
@@ -479,9 +452,9 @@ describe('ResistanceTab', () => {
       const callArg = onCreateResistance.mock.calls[0][0]
       expect(callArg.name).toBe('Ice Resistance')
       expect(callArg.calculationType).toBe('CALCULATED')
-      expect(callArg.components.length).toBe(1)
+      expect(callArg.components).toHaveLength(1)
       expect(callArg.components[0].name).toBe('Natural')
-      expect(callArg.attributeModifiers.length).toBe(1)
+      expect(callArg.attributeModifiers).toHaveLength(1)
       expect(callArg.attributeModifiers[0].attributeId).toBe('a1')
     })
   })
@@ -490,9 +463,7 @@ describe('ResistanceTab', () => {
     const user = userEvent.setup()
     render(
       <ResistanceTab
-        {...baseProps}
-        isOwner={true}
-        templateAttributes={[{ id: 'a1', key: 'con', name: 'Constitution' }]}
+        {...baseProps}        templateAttributes={[{ id: 'a1', key: 'con', name: 'Constitution' }]}
       />,
     )
 
@@ -509,7 +480,7 @@ describe('ResistanceTab', () => {
     const d = deferred()
     const onCreateResistance = vi.fn().mockReturnValue(d.promise)
     const user = userEvent.setup()
-    render(<ResistanceTab {...baseProps} isOwner={true} onCreateResistance={onCreateResistance} />)
+    render(<ResistanceTab {...baseProps} onCreateResistance={onCreateResistance} />)
 
     await user.click(screen.getByText('New Resistance'))
     await user.type(screen.getByPlaceholderText('e.g. Fire Resistance'), 'Test')
@@ -525,7 +496,7 @@ describe('ResistanceTab', () => {
 
   it('disables Create button when name is empty', async () => {
     const user = userEvent.setup()
-    render(<ResistanceTab {...baseProps} isOwner={true} />)
+    render(<ResistanceTab {...baseProps} />)
 
     await user.click(screen.getByText('New Resistance'))
     expect(screen.getByText('Create Resistance')).toBeDisabled()
@@ -533,7 +504,7 @@ describe('ResistanceTab', () => {
 
   it('resets form when Cancel is clicked', async () => {
     const user = userEvent.setup()
-    render(<ResistanceTab {...baseProps} isOwner={true} />)
+    render(<ResistanceTab {...baseProps} />)
 
     await user.click(screen.getByText('New Resistance'))
     await user.type(screen.getByPlaceholderText('e.g. Fire Resistance'), 'Test')
@@ -547,7 +518,7 @@ describe('ResistanceTab', () => {
 
   it('adds and removes components in the new form', async () => {
     const user = userEvent.setup()
-    render(<ResistanceTab {...baseProps} isOwner={true} />)
+    render(<ResistanceTab {...baseProps} />)
 
     await user.click(screen.getByText('New Resistance'))
     await user.click(screen.getByText('Calculated'))
@@ -563,7 +534,7 @@ describe('ResistanceTab', () => {
 
   it('toggles editableByPlayer checkbox on a component', async () => {
     const user = userEvent.setup()
-    render(<ResistanceTab {...baseProps} isOwner={true} />)
+    render(<ResistanceTab {...baseProps} />)
 
     await user.click(screen.getByText('New Resistance'))
     await user.click(screen.getByText('Calculated'))
@@ -579,9 +550,7 @@ describe('ResistanceTab', () => {
     const user = userEvent.setup()
     render(
       <ResistanceTab
-        {...baseProps}
-        isOwner={true}
-        templateAttributes={[
+        {...baseProps}        templateAttributes={[
           { id: 'a1', key: 'con', name: 'Constitution' },
           { id: 'a2', key: 'str', name: 'Strength' },
         ]}
@@ -613,9 +582,7 @@ describe('ResistanceTab', () => {
     const user = userEvent.setup()
     render(
       <ResistanceTab
-        {...baseProps}
-        isOwner={true}
-        templateAttributes={[{ id: 'a1', key: 'con', name: 'Constitution' }]}
+        {...baseProps}        templateAttributes={[{ id: 'a1', key: 'con', name: 'Constitution' }]}
       />,
     )
 
@@ -626,16 +593,14 @@ describe('ResistanceTab', () => {
     await user.click(select)
     await user.click(screen.getByRole('option', { name: 'Constitution' }))
     // Only one "Constitution" badge
-    expect(screen.getAllByText('Constitution').length).toBe(1)
+    expect(screen.getAllByText('Constitution')).toHaveLength(1)
   })
 
   it('shows disabled attribute modifiers section when disableAttributeModifiers is true', async () => {
     const user = userEvent.setup()
     render(
       <ResistanceTab
-        {...baseProps}
-        isOwner={true}
-        disableAttributeModifiers={true}
+        {...baseProps}        disableAttributeModifiers={true}
       />,
     )
 
@@ -666,9 +631,7 @@ describe('ResistanceTab', () => {
     render(
       <ResistanceTab
         {...baseProps}
-        resistances={[manualResistance]}
-        isOwner={true}
-        onDeleteResistance={onDeleteResistance}
+        resistances={[manualResistance]}        onDeleteResistance={onDeleteResistance}
       />,
     )
 
@@ -690,7 +653,6 @@ describe('InventoryTab', () => {
 
   const defaultProps = {
     inventoryItems: baseItems,
-    isOwner: false,
     permissions: {
       canEditInventory: true,
       canEditAbilities: false,
@@ -750,7 +712,7 @@ describe('InventoryTab', () => {
   })
 
   it('shows hint for owner when empty', () => {
-    render(<InventoryTab {...defaultProps} inventoryItems={[]} isOwner={true} />)
+    render(<InventoryTab {...defaultProps} inventoryItems={[]} />)
     expect(screen.getByText('Add your first item below.')).toBeInTheDocument()
   })
 
@@ -794,34 +756,34 @@ describe('InventoryTab', () => {
   // ---------- Owner vs non-owner ----------
 
   it('shows InlineClickEdit for item name when owner', () => {
-    render(<InventoryTab {...defaultProps} isOwner={true} />)
+    render(<InventoryTab {...defaultProps} />)
     const editSpans = screen.getAllByTestId('inline-click-edit')
     expect(editSpans.length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows plain name text when not owner', () => {
-    render(<InventoryTab {...defaultProps} isOwner={false} />)
+    render(<InventoryTab {...defaultProps} />)
     expect(screen.getByText('Long Sword')).toBeInTheDocument()
   })
 
   it('shows delete button for owner', () => {
-    render(<InventoryTab {...defaultProps} isOwner={true} />)
+    render(<InventoryTab {...defaultProps} />)
     const deleteBtns = screen.getAllByTitle('Delete item')
-    expect(deleteBtns.length).toBe(2)
+    expect(deleteBtns).toHaveLength(2)
   })
 
   it('hides delete button for non-owner', () => {
-    render(<InventoryTab {...defaultProps} isOwner={false} permissions={{ ...defaultProps.permissions, canEditInventory: false }} />)
+    render(<InventoryTab {...defaultProps} permissions={{ ...defaultProps.permissions, canEditInventory: false }} />)
     expect(screen.queryByTitle('Delete item')).not.toBeInTheDocument()
   })
 
   it('shows Add Item button for owner', () => {
-    render(<InventoryTab {...defaultProps} isOwner={true} />)
+    render(<InventoryTab {...defaultProps} />)
     expect(screen.getByText('Add Item')).toBeInTheDocument()
   })
 
   it('hides Add Item button for non-owner', () => {
-    render(<InventoryTab {...defaultProps} isOwner={false} permissions={{ ...defaultProps.permissions, canEditInventory: false }} />)
+    render(<InventoryTab {...defaultProps} permissions={{ ...defaultProps.permissions, canEditInventory: false }} />)
     expect(screen.queryByText('Add Item')).not.toBeInTheDocument()
   })
 
@@ -869,9 +831,7 @@ describe('InventoryTab', () => {
     const user = userEvent.setup()
     render(
       <InventoryTab
-        {...defaultProps}
-        isOwner={true}
-        saveItemField={saveItemField}
+        {...defaultProps}        saveItemField={saveItemField}
       />,
     )
 
@@ -885,9 +845,7 @@ describe('InventoryTab', () => {
   it('shows new item form when showNewItem is true and owner', () => {
     render(
       <InventoryTab
-        {...defaultProps}
-        isOwner={true}
-        showNewItem={true}
+        {...defaultProps}        showNewItem={true}
       />,
     )
     expect(screen.getByText('New Item')).toBeInTheDocument()
@@ -899,9 +857,7 @@ describe('InventoryTab', () => {
     const user = userEvent.setup()
     render(
       <InventoryTab
-        {...defaultProps}
-        isOwner={true}
-        showNewItem={true}
+        {...defaultProps}        showNewItem={true}
         handleCreateItem={handleCreateItem}
         newItem={{ name: 'Test Item', weight: '', cost: '', description: '' }}
       />,
@@ -914,9 +870,7 @@ describe('InventoryTab', () => {
   it('shows saving spinner on submit button when itemSaving', () => {
     render(
       <InventoryTab
-        {...defaultProps}
-        isOwner={true}
-        showNewItem={true}
+        {...defaultProps}        showNewItem={true}
         itemSaving={true}
       />,
     )
@@ -927,9 +881,7 @@ describe('InventoryTab', () => {
   it('shows item error when present', () => {
     render(
       <InventoryTab
-        {...defaultProps}
-        isOwner={true}
-        showNewItem={true}
+        {...defaultProps}        showNewItem={true}
         itemError="Something went wrong"
       />,
     )
@@ -941,9 +893,7 @@ describe('InventoryTab', () => {
     const user = userEvent.setup()
     render(
       <InventoryTab
-        {...defaultProps}
-        isOwner={true}
-        showNewItem={true}
+        {...defaultProps}        showNewItem={true}
         resetNewItem={resetNewItem}
       />,
     )
@@ -955,9 +905,7 @@ describe('InventoryTab', () => {
   it('disables submit when name is empty in new item form', () => {
     render(
       <InventoryTab
-        {...defaultProps}
-        isOwner={true}
-        showNewItem={true}
+        {...defaultProps}        showNewItem={true}
         newItem={{ name: '', weight: '', cost: '', description: '' }}
       />,
     )
@@ -969,9 +917,7 @@ describe('InventoryTab', () => {
     const user = userEvent.setup()
     render(
       <InventoryTab
-        {...defaultProps}
-        isOwner={true}
-        showNewItem={true}
+        {...defaultProps}        showNewItem={true}
         setNewItem={setNewItem}
       />,
     )
@@ -987,9 +933,7 @@ describe('InventoryTab', () => {
     const user = userEvent.setup()
     render(
       <InventoryTab
-        {...defaultProps}
-        isOwner={true}
-        handleDeleteItem={handleDeleteItem}
+        {...defaultProps}        handleDeleteItem={handleDeleteItem}
       />,
     )
 
@@ -1017,7 +961,6 @@ describe('PersonalAbilitiesTab', () => {
   const defaultProps = {
     sections,
     entries,
-    isOwner: false,
     permissions: {
       canEditPersonalAbilities: true,
       canEditAbilities: false,
@@ -1112,24 +1055,24 @@ describe('PersonalAbilitiesTab', () => {
   // ---------- Owner interactions ----------
 
   it('shows InlineClickEdit for entry name when owner', () => {
-    render(<PersonalAbilitiesTab {...defaultProps} isOwner={true} />)
+    render(<PersonalAbilitiesTab {...defaultProps} />)
     const editSpans = screen.getAllByTestId('inline-click-edit')
     expect(editSpans.length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows plain name when not owner', () => {
-    render(<PersonalAbilitiesTab {...defaultProps} isOwner={false} permissions={{ ...defaultProps.permissions, canEditPersonalAbilities: false }} />)
+    render(<PersonalAbilitiesTab {...defaultProps} permissions={{ ...defaultProps.permissions, canEditPersonalAbilities: false }} />)
     expect(screen.getByText('Brave')).toBeInTheDocument()
   })
 
   it('shows delete button for owner', () => {
-    render(<PersonalAbilitiesTab {...defaultProps} isOwner={true} />)
+    render(<PersonalAbilitiesTab {...defaultProps} />)
     const deleteBtns = screen.getAllByTitle('Delete entry')
-    expect(deleteBtns.length).toBe(3)
+    expect(deleteBtns).toHaveLength(3)
   })
 
   it('hides delete button for non-owner', () => {
-    render(<PersonalAbilitiesTab {...defaultProps} isOwner={false} permissions={{ ...defaultProps.permissions, canEditPersonalAbilities: false }} />)
+    render(<PersonalAbilitiesTab {...defaultProps} permissions={{ ...defaultProps.permissions, canEditPersonalAbilities: false }} />)
     expect(screen.queryByTitle('Delete entry')).not.toBeInTheDocument()
   })
 
@@ -1138,9 +1081,7 @@ describe('PersonalAbilitiesTab', () => {
     const user = userEvent.setup()
     render(
       <PersonalAbilitiesTab
-        {...defaultProps}
-        isOwner={true}
-        handleUpdateEntry={handleUpdateEntry}
+        {...defaultProps}        handleUpdateEntry={handleUpdateEntry}
       />,
     )
 
@@ -1154,9 +1095,7 @@ describe('PersonalAbilitiesTab', () => {
     const user = userEvent.setup()
     render(
       <PersonalAbilitiesTab
-        {...defaultProps}
-        isOwner={true}
-        handleDeleteEntry={handleDeleteEntry}
+        {...defaultProps}        handleDeleteEntry={handleDeleteEntry}
       />,
     )
 
@@ -1171,9 +1110,7 @@ describe('PersonalAbilitiesTab', () => {
       <PersonalAbilitiesTab
         {...defaultProps}
         sections={[{ id: 's3', name: 'Bonds', order: 3 }]}
-        entries={[]}
-        isOwner={true}
-      />,
+        entries={[]}      />,
     )
     expect(screen.getByText('Add Bond')).toBeInTheDocument()
   })
@@ -1181,9 +1118,7 @@ describe('PersonalAbilitiesTab', () => {
   it('shows New button for section with entries when owner', () => {
     render(
       <PersonalAbilitiesTab
-        {...defaultProps}
-        isOwner={true}
-      />,
+        {...defaultProps}      />,
     )
     expect(screen.getByText('New Personality Trait')).toBeInTheDocument()
     expect(screen.getByText('New Ideal')).toBeInTheDocument()
@@ -1192,9 +1127,7 @@ describe('PersonalAbilitiesTab', () => {
   it('shows new entry form when showNewEntry matches a section id', () => {
     render(
       <PersonalAbilitiesTab
-        {...defaultProps}
-        isOwner={true}
-        showNewEntry="s1"
+        {...defaultProps}        showNewEntry="s1"
       />,
     )
     expect(screen.getByText('New Personality Trait')).toBeInTheDocument()
@@ -1206,9 +1139,7 @@ describe('PersonalAbilitiesTab', () => {
     const user = userEvent.setup()
     render(
       <PersonalAbilitiesTab
-        {...defaultProps}
-        isOwner={true}
-        showNewEntry="s1"
+        {...defaultProps}        showNewEntry="s1"
         handleCreateEntry={handleCreateEntry}
         newEntryForm={{ name: 'Test', description: '' }}
       />,
@@ -1221,9 +1152,7 @@ describe('PersonalAbilitiesTab', () => {
   it('disables submit when new entry name is empty', () => {
     render(
       <PersonalAbilitiesTab
-        {...defaultProps}
-        isOwner={true}
-        showNewEntry="s1"
+        {...defaultProps}        showNewEntry="s1"
         newEntryForm={{ name: '', description: 'test' }}
       />,
     )
@@ -1233,9 +1162,7 @@ describe('PersonalAbilitiesTab', () => {
   it('shows saving spinner during create', () => {
     render(
       <PersonalAbilitiesTab
-        {...defaultProps}
-        isOwner={true}
-        showNewEntry="s1"
+        {...defaultProps}        showNewEntry="s1"
         saving={true}
       />,
     )
@@ -1247,9 +1174,7 @@ describe('PersonalAbilitiesTab', () => {
     const user = userEvent.setup()
     render(
       <PersonalAbilitiesTab
-        {...defaultProps}
-        isOwner={true}
-        showNewEntry="s1"
+        {...defaultProps}        showNewEntry="s1"
         resetForm={resetForm}
       />,
     )
@@ -1265,9 +1190,7 @@ describe('PersonalAbilitiesTab', () => {
       <PersonalAbilitiesTab
         {...defaultProps}
         sections={[{ id: 's3', name: 'Ideals', order: 3 }]}
-        entries={[]}
-        isOwner={true}
-        toSingular={(name) => name.replace(/s$/, '')}
+        entries={[]}        toSingular={(name) => name.replace(/s$/, '')}
       />,
     )
     expect(screen.getByText('Add Ideal')).toBeInTheDocument()
@@ -1278,9 +1201,7 @@ describe('PersonalAbilitiesTab', () => {
   it('shows description for non-owner when entry is expanded', () => {
     render(
       <PersonalAbilitiesTab
-        {...defaultProps}
-        isOwner={false}
-        permissions={{ ...defaultProps.permissions, canEditPersonalAbilities: false }}
+        {...defaultProps}        permissions={{ ...defaultProps.permissions, canEditPersonalAbilities: false }}
         expandedEntries={{ e1: true }}
       />,
     )
@@ -1304,7 +1225,6 @@ describe('StoryTab', () => {
 
   const defaultProps = {
     story: mockStory,
-    isOwner: false,
     permissions: {
       canEditStory: true,
       canEditAbilities: false,
@@ -1328,17 +1248,17 @@ describe('StoryTab', () => {
   it('renders all five story section headers', () => {
     render(<StoryTab {...defaultProps} />)
     // With canEditStory:true, only <h2> card headers appear (no StoryField <h4>)
-    expect(screen.getAllByText('Appearance').length).toBe(1)
-    expect(screen.getAllByText('Backstory').length).toBe(1)
-    expect(screen.getAllByText('Personality').length).toBe(1)
-    expect(screen.getAllByText('Goals').length).toBe(1)
-    expect(screen.getAllByText('Notes').length).toBe(1)
+    expect(screen.getAllByText('Appearance')).toHaveLength(1)
+    expect(screen.getAllByText('Backstory')).toHaveLength(1)
+    expect(screen.getAllByText('Personality')).toHaveLength(1)
+    expect(screen.getAllByText('Goals')).toHaveLength(1)
+    expect(screen.getAllByText('Notes')).toHaveLength(1)
   })
 
   it('renders story values for non-owner via StoryField', () => {
-    render(<StoryTab {...defaultProps} isOwner={false} permissions={{ ...defaultProps.permissions, canEditStory: false }} />)
+    render(<StoryTab {...defaultProps} permissions={{ ...defaultProps.permissions, canEditStory: false }} />)
     const storyFields = screen.getAllByTestId('story-field')
-    expect(storyFields.length).toBe(5)
+    expect(storyFields).toHaveLength(5)
     expect(screen.getByText('Tall and fair.')).toBeInTheDocument()
     expect(screen.getByText('Born in a small village.')).toBeInTheDocument()
     expect(screen.getByText('Brave and kind.')).toBeInTheDocument()
@@ -1349,9 +1269,9 @@ describe('StoryTab', () => {
   // ---------- Owner editing ----------
 
   it('shows InlineTextarea for owner', () => {
-    render(<StoryTab {...defaultProps} isOwner={true} />)
+    render(<StoryTab {...defaultProps} />)
     const textareas = screen.getAllByTestId('inline-textarea')
-    expect(textareas.length).toBe(5)
+    expect(textareas).toHaveLength(5)
   })
 
   it('calls onSaveField when owner clicks InlineTextarea', async () => {
@@ -1359,9 +1279,7 @@ describe('StoryTab', () => {
     const user = userEvent.setup()
     render(
       <StoryTab
-        {...defaultProps}
-        isOwner={true}
-        onSaveField={onSaveField}
+        {...defaultProps}        onSaveField={onSaveField}
       />,
     )
 
@@ -1387,9 +1305,9 @@ describe('StoryTab', () => {
       goals: null,
       notes: 'Likes cats.',
     }
-    render(<StoryTab {...defaultProps} story={partialStory} isOwner={false} permissions={{ ...defaultProps.permissions, canEditStory: false }} />)
+    render(<StoryTab {...defaultProps} story={partialStory} permissions={{ ...defaultProps.permissions, canEditStory: false }} />)
     const storyFields = screen.getAllByTestId('story-field')
-    expect(storyFields.length).toBe(2)
+    expect(storyFields).toHaveLength(2)
     expect(screen.getByText('Friendly.')).toBeInTheDocument()
     expect(screen.getByText('Likes cats.')).toBeInTheDocument()
   })
@@ -1400,12 +1318,10 @@ describe('StoryTab', () => {
     render(
       <StoryTab
         {...defaultProps}
-        story={null}
-        isOwner={true}
-      />,
+        story={null}      />,
     )
     const textareas = screen.getAllByTestId('inline-textarea')
-    expect(textareas.length).toBe(5)
+    expect(textareas).toHaveLength(5)
   })
 
   // ---------- onSaveField callback ----------
@@ -1415,9 +1331,7 @@ describe('StoryTab', () => {
     const user = userEvent.setup()
     render(
       <StoryTab
-        {...defaultProps}
-        isOwner={true}
-        onSaveField={onSaveField}
+        {...defaultProps}        onSaveField={onSaveField}
       />,
     )
 

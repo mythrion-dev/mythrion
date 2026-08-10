@@ -1,5 +1,7 @@
 import { Test } from '@nestjs/testing';
+import { I18nService } from 'nestjs-i18n';
 import { EmailService } from './email.service';
+import { createI18nServiceMock } from '../i18n/i18n-testing.js';
 
 const mockFetch = jest.fn();
 const mockJson = jest.fn();
@@ -29,9 +31,12 @@ function mockResponse({
   return { ok, status, json: mockJson } as unknown as Response;
 }
 
-async function buildService() {
+async function buildService(i18nMock: I18nService = createI18nServiceMock()) {
   const module = await Test.createTestingModule({
-    providers: [EmailService],
+    providers: [
+      EmailService,
+      { provide: I18nService, useValue: i18nMock },
+    ],
   }).compile();
   return module.get<EmailService>(EmailService);
 }
@@ -308,6 +313,150 @@ describe('EmailService', () => {
         await expect(service.sendTwoFactorCode(twoFactorParams)).rejects.toThrow(
           'network down',
         );
+      });
+    });
+  });
+
+  describe('sendEmailVerification', () => {
+    const verificationParams = {
+      to: 'player@test.com',
+      verificationUrl: 'https://mythrion.com/auth/verify-email?token=abc123',
+      language: 'en',
+    };
+
+    it('logs [DEV] and does not call fetch when env vars are unset', async () => {
+      service = await buildService();
+
+      await expect(
+        service.sendEmailVerification(verificationParams),
+      ).resolves.toBeUndefined();
+
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    describe('when Hostinger env vars are set', () => {
+      beforeEach(() => {
+        process.env.HOSTINGER_MAIL_API_TOKEN = 'secret-token';
+        process.env.HOSTINGER_MAILBOX_ID = 'AC1a2b3c4d5e6f7g';
+      });
+
+      it('sends the localized verification email', async () => {
+        service = await buildService();
+
+        await service.sendEmailVerification(verificationParams);
+
+        const [, init] = fetchCall();
+        const body = JSON.parse(init.body!) as {
+          subject: string;
+          html: string;
+          text: string;
+        };
+        expect(body.subject).toBe('Verify your Mythrion account');
+        expect(body.html).toContain('Welcome to Mythrion');
+        expect(body.html).toContain(
+          'Verify your email address to activate your account.',
+        );
+        expect(body.html).toContain(
+          'https://mythrion.com/auth/verify-email?token=abc123',
+        );
+        // Logo must be an absolute HTTPS URL — Gmail breaks on data: URIs.
+        expect(body.html).toMatch(/<img src="https:\/\/[^"]+\/logo\.png"/);
+        expect(body.html).not.toContain('data:image');
+        expect(body.text).toContain(
+          'https://mythrion.com/auth/verify-email?token=abc123',
+        );
+      });
+
+      it('passes the requested language through to the translator', async () => {
+        const i18nMock = createI18nServiceMock();
+        const tSpy = jest.spyOn(i18nMock, 't');
+        service = await buildService(i18nMock);
+
+        await service.sendEmailVerification({
+          ...verificationParams,
+          language: 'pt-BR',
+        });
+
+        expect(tSpy).toHaveBeenCalledWith(
+          'emails.verifyEmailSubject',
+          expect.objectContaining({ lang: 'pt-BR' }),
+        );
+      });
+    });
+  });
+
+  describe('sendPasswordReset', () => {
+    const resetParams = {
+      to: 'player@test.com',
+      resetUrl: 'https://mythrion.com/auth/reset-password?token=xyz789',
+      language: 'en',
+    };
+
+    it('logs [DEV] and does not call fetch when env vars are unset', async () => {
+      service = await buildService();
+
+      await expect(
+        service.sendPasswordReset(resetParams),
+      ).resolves.toBeUndefined();
+
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    describe('when Hostinger env vars are set', () => {
+      beforeEach(() => {
+        process.env.HOSTINGER_MAIL_API_TOKEN = 'secret-token';
+        process.env.HOSTINGER_MAILBOX_ID = 'AC1a2b3c4d5e6f7g';
+      });
+
+      it('sends the localized password-reset email', async () => {
+        service = await buildService();
+
+        await service.sendPasswordReset(resetParams);
+
+        const [, init] = fetchCall();
+        const body = JSON.parse(init.body!) as {
+          subject: string;
+          html: string;
+          text: string;
+        };
+        expect(body.subject).toBe('Reset your Mythrion password');
+        expect(body.html).toContain('Reset your password');
+        expect(body.html).toContain('Your password won\'t change unless');
+        expect(body.html).toContain(
+          'https://mythrion.com/auth/reset-password?token=xyz789',
+        );
+        // Logo must be an absolute HTTPS URL — Gmail breaks on data: URIs.
+        expect(body.html).toMatch(/<img src="https:\/\/[^"]+\/logo\.png"/);
+        expect(body.html).not.toContain('data:image');
+        expect(body.text).toContain(
+          'https://mythrion.com/auth/reset-password?token=xyz789',
+        );
+      });
+
+      it('passes the requested language through to the translator', async () => {
+        const i18nMock = createI18nServiceMock();
+        const tSpy = jest.spyOn(i18nMock, 't');
+        service = await buildService(i18nMock);
+
+        await service.sendPasswordReset({
+          ...resetParams,
+          language: 'en',
+        });
+
+        expect(tSpy).toHaveBeenCalledWith(
+          'emails.resetPasswordSubject',
+          expect.objectContaining({ lang: 'en' }),
+        );
+      });
+
+      it('rejects when the API call fails', async () => {
+        mockFetch.mockRejectedValue(new Error('network down'));
+
+        service = await buildService();
+
+        await expect(
+          service.sendPasswordReset(resetParams),
+        ).rejects.toThrow('network down');
       });
     });
   });

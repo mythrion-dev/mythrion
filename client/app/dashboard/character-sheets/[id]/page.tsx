@@ -10,7 +10,7 @@ import { StoryTab, CharacterTab, InventoryTab, PersonalAbilitiesTab, AbilitiesTa
 import { PageNav } from '@/lib/breadcrumb'
 import { PdfViewerSidebar } from '@/components/books/PdfViewerSidebar'
 import { NotebookSidebar } from '@/components/notebook/NotebookSidebar'
-import type { SkillModifierProfile, ArmorClassAttributeModifierDef, SectionEntry, SummonSkillData, SummonResistanceData, Ability, AbilityLevel, InventoryItem, Story, CharacterSheet, Tab, AcResultMap, SheetPermissions } from '@/components/character-sheet/types'
+import type { SkillModifierProfile, ArmorClassAttributeModifierDef, SectionEntry, SummonSkillData, SummonResistanceData, Ability, AbilityLevel, InventoryItem, Story, CharacterSheet, AcResultMap, SheetPermissions } from '@/components/character-sheet/types'
 import {
   computeModifiers as engineComputeModifiers,
   computeSkills as engineComputeSkills,
@@ -19,6 +19,79 @@ import {
   computeSummonAC as engineComputeSummonAC,
   type FormulaEvaluator,
 } from '@/lib/character-sheet-engine'
+
+
+// ── Module-scope helpers (extracted to reduce function nesting / cognitive complexity) ──
+
+function toSingular(name: string) {
+  if (name.endsWith('ies')) { return name.slice(0, -3) + 'y' }
+  if (name.endsWith('s') && !name.endsWith('ss') && !name.endsWith('us')) { return name.slice(0, -1) }
+  return name
+}
+
+function buildProfileSelections(d: CharacterSheet): Record<string, Record<string, string | null>> {
+  const selMap: Record<string, Record<string, string | null>> = {}
+  d.skillProfileValues.forEach(spv => {
+    if (!selMap[spv.skillId]) { selMap[spv.skillId] = {} }
+    selMap[spv.skillId][spv.profileId] = spv.optionId
+  })
+  const skillModifierProfiles = d.template?.skillModifierProfiles || []
+  for (const sv of d.skillValues) {
+    if (!selMap[sv.skillId]) selMap[sv.skillId] = {}
+    for (const profile of skillModifierProfiles) {
+      const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
+      const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
+      if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(sv.skill.name)) continue
+      if (selMap[sv.skillId][profile.id] === undefined && profile.options.length > 0) {
+        const lowest = profile.options.reduce((a, b) => a.value <= b.value ? a : b, profile.options[0])
+        selMap[sv.skillId][profile.id] = lowest.id
+      }
+    }
+  }
+  return selMap
+}
+
+async function createInitialLevel(sheet: CharacterSheet, ability: Ability, levelValue: string): Promise<void> {
+  if (ability.levels?.length) {
+    await api.patch(`/character-sheets/${sheet.id}/abilities/${ability.id}/levels/${ability.levels[0].id}`, { level: levelValue })
+    ability.levels[0].level = levelValue
+  } else {
+    const nl = await api.post<AbilityLevel>(`/character-sheets/${sheet.id}/abilities/${ability.id}/levels`, { level: levelValue, copyFromPrevious: false })
+    ability.levels = [nl]
+  }
+}
+
+function applySkillAttributeSelection(prev: CharacterSheet, skillId: string, attributeId: string | null): CharacterSheet {
+  return { ...prev, skillValues: prev.skillValues.map(sv => sv.skillId === skillId ? { ...sv, selectedAttributeId: attributeId, selectedAttribute: attributeId ? { id: attributeId, key: prev.template.attributes.find(a => a.id === attributeId)?.key ?? '', name: prev.template.attributes.find(a => a.id === attributeId)?.name ?? '' } : null } : sv) }
+}
+
+function updateAbilityLevel(abilities: Ability[], levelId: string, body: Record<string, unknown>): Ability[] {
+  return abilities.map(a => ({ ...a, levels: a.levels.map(l => l.id === levelId ? { ...l, ...body } : l) }))
+}
+
+function updateSummonAttribute(abilities: Ability[], abilityId: string, attributeId: string, value: string): Ability[] {
+  return abilities.map(a => a.id === abilityId ? { ...a, summonAttributes: a.summonAttributes.map(sa => sa.attributeId === attributeId ? { ...sa, value } : sa) } : a)
+}
+
+function updateSummonSkill(abilities: Ability[], abilityId: string, summonSkillId: string, name: string, manualValue: number): Ability[] {
+  return abilities.map(a => a.id === abilityId ? { ...a, summonSkills: (a.summonSkills ?? []).map(s => s.id === summonSkillId ? { ...s, name, manualValue } : s) } : a)
+}
+
+function removeSummonSkill(abilities: Ability[], abilityId: string, summonSkillId: string): Ability[] {
+  return abilities.map(a => a.id === abilityId ? { ...a, summonSkills: (a.summonSkills ?? []).filter(s => s.id !== summonSkillId) } : a)
+}
+
+function updateSummonResistance(abilities: Ability[], abilityId: string, summonResistanceId: string, name: string, value: string): Ability[] {
+  return abilities.map(a => a.id === abilityId ? { ...a, summonResistances: (a.summonResistances ?? []).map(r => r.id === summonResistanceId ? { ...r, name, value } : r) } : a)
+}
+
+function removeSummonResistance(abilities: Ability[], abilityId: string, summonResistanceId: string): Ability[] {
+  return abilities.map(a => a.id === abilityId ? { ...a, summonResistances: (a.summonResistances ?? []).filter(r => r.id !== summonResistanceId) } : a)
+}
+
+function deleteAbility(abilities: Ability[], abilityId: string): Ability[] {
+  return abilities.filter(a => a.id !== abilityId).map(a => ({ ...a, childAbilities: (a.childAbilities ?? []).filter(c => c.id !== abilityId) }))
+}
 
 
 export default function CharacterSheetDetailPage() {
@@ -44,7 +117,7 @@ export default function CharacterSheetDetailPage() {
   modifierResultsRef.current = modifierResults
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null)
   const [notebookOpen, setNotebookOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<Tab>('character')
+  const [activeTab, setActiveTab] = useState<string>('character')
   const isOwner = sheet?.ownerId === user?.id || (sheet?.isNpc === true)
   const permissions: SheetPermissions = {
     canEditCharacter: isOwner,
@@ -182,21 +255,7 @@ export default function CharacterSheetDetailPage() {
       const actives: Record<string, boolean> = {}; const others: Record<string, number> = {}
       d.skillValues.forEach(sv => { const parts = (sv.value || '').split('|'); actives[sv.skillId] = parts[0] === '1'; others[sv.skillId] = Number.parseInt(parts[1] || '0', 10) || 0 })
       setActiveSkills(actives); setOthersValues(others)
-      const selMap: Record<string, Record<string, string | null>> = {}; d.skillProfileValues.forEach(spv => { if (!selMap[spv.skillId]) { selMap[spv.skillId] = {}; } selMap[spv.skillId][spv.profileId] = spv.optionId })
-      // Auto-select lowest-value option for profiles without a saved selection
-      const skillModifierProfiles = d.template?.skillModifierProfiles || []
-      for (const sv of d.skillValues) {
-        if (!selMap[sv.skillId]) selMap[sv.skillId] = {}
-        for (const profile of skillModifierProfiles) {
-          const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
-          const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
-          if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(sv.skill.name)) continue
-          if (selMap[sv.skillId][profile.id] === undefined && profile.options.length > 0) {
-            const lowest = profile.options.reduce((a, b) => a.value <= b.value ? a : b, profile.options[0])
-            selMap[sv.skillId][profile.id] = lowest.id
-          }
-        }
-      }
+      const selMap = buildProfileSelections(d)
       setProfileSelections(selMap)
       setAbilities(d.abilities || []); setInventoryItems(d.inventoryItems || []); setStory(d.story || null)
       setSectionEntries(d.sectionEntries || [])
@@ -247,10 +306,12 @@ export default function CharacterSheetDetailPage() {
 
   async function handleCoreResourceChange(coreResourceId: string, field: 'current' | 'maximum' | 'notes', value: string) {
     if (!sheet) return
-    const numVal = value.trim() === '' ? null : (field === 'notes' ? value : Number.parseInt(value, 10))
+    const parsedNumVal = field === 'notes' ? value : Number.parseInt(value, 10)
+    const numVal = value.trim() === '' ? null : parsedNumVal
+    const originalSheet = sheet
     const optimisticSheet = {
-      ...sheet,
-      coreResourceValues: sheet.coreResourceValues.map(v =>
+      ...originalSheet,
+      coreResourceValues: originalSheet.coreResourceValues.map(v =>
         v.coreResourceId === coreResourceId ? { ...v, [field]: numVal } : v
       ),
     }
@@ -258,7 +319,7 @@ export default function CharacterSheetDetailPage() {
     try {
       await updateSheet({ coreResourceValues: [{ coreResourceId, [field]: numVal }] })
     } catch {
-      setSheet(sheet)
+      setSheet(originalSheet)
     }
   }
 
@@ -266,10 +327,11 @@ export default function CharacterSheetDetailPage() {
     if (!sheet) return
     const crv = sheet.coreResourceValues.find(v => v.coreResourceId === coreResourceId)
     if (!crv) return
+    const originalSheet = sheet
     const newVal = Math.max(0, (crv.current ?? 0) + delta)
     const optimisticSheet = {
-      ...sheet,
-      coreResourceValues: sheet.coreResourceValues.map(v =>
+      ...originalSheet,
+      coreResourceValues: originalSheet.coreResourceValues.map(v =>
         v.coreResourceId === coreResourceId ? { ...v, current: newVal } : v
       ),
     }
@@ -277,32 +339,34 @@ export default function CharacterSheetDetailPage() {
     try {
       await updateSheet({ coreResourceValues: [{ coreResourceId, current: newVal }] })
     } catch {
-      setSheet(sheet)
+      setSheet(originalSheet)
     }
   }
 
   async function handleAcFieldChange(fieldId: string, value: string) {
     if (!sheet) return
-    const optimisticSheet = { ...sheet, acValues: sheet.acValues.map(acv => acv.fieldId === fieldId ? { ...acv, value } : acv) }
+    const originalSheet = sheet
+    const optimisticSheet = { ...originalSheet, acValues: originalSheet.acValues.map(acv => acv.fieldId === fieldId ? { ...acv, value } : acv) }
     setSheet(optimisticSheet)
-    try { const updated = await updateSheet({ acValues: [{ fieldId, value }] }); computeAC(updated, modifierResults) } catch { setSheet(sheet) }
+    try { const updated = await updateSheet({ acValues: [{ fieldId, value }] }); computeAC(updated, modifierResults) } catch { setSheet(originalSheet) }
   }
   async function handleAcAttributeModifierChange(acAttributeModifierId: string, selectedAttributeId: string | null) {
     if (!sheet) return
+    const originalSheet = sheet
     const selectedAttribute = selectedAttributeId
-      ? (sheet.template.attributes.find(a => a.id === selectedAttributeId) ?? null)
+      ? (originalSheet.template.attributes.find(a => a.id === selectedAttributeId) ?? null)
       : null
-    const existing = sheet.acAttributeValues.find(v => v.acAttributeModifierId === acAttributeModifierId)
+    const existing = originalSheet.acAttributeValues.some(v => v.acAttributeModifierId === acAttributeModifierId)
     const optimisticSheet: CharacterSheet = {
-      ...sheet,
+      ...originalSheet,
       acAttributeValues: existing
-        ? sheet.acAttributeValues.map(v => v.acAttributeModifierId === acAttributeModifierId ? { ...v, selectedAttributeId, selectedAttribute } : v)
-        : [...sheet.acAttributeValues, {
+        ? originalSheet.acAttributeValues.map(v => v.acAttributeModifierId === acAttributeModifierId ? { ...v, selectedAttributeId, selectedAttribute } : v)
+        : [...originalSheet.acAttributeValues, {
           id: `temp-${acAttributeModifierId}`,
-          sheetId: sheet.id,
+          sheetId: originalSheet.id,
           acAttributeModifierId,
           selectedAttributeId,
-          acAttributeModifier: (sheet.template.armorClasses?.flatMap(ac => ac.attributeModifiers ?? []) ?? []).find(am => am.id === acAttributeModifierId) as ArmorClassAttributeModifierDef,
+          acAttributeModifier: (originalSheet.template.armorClasses?.flatMap(ac => ac.attributeModifiers ?? []) ?? []).find(am => am.id === acAttributeModifierId) as ArmorClassAttributeModifierDef,
           selectedAttribute,
         }],
     }
@@ -312,26 +376,23 @@ export default function CharacterSheetDetailPage() {
       const updated = await updateSheet({ acAttributeValues: [{ acAttributeModifierId, selectedAttributeId }] })
       computeAC(updated, modifierResults)
     } catch {
-      setSheet(sheet)
-      computeAC(sheet, modifierResults)
+      setSheet(originalSheet)
+      computeAC(originalSheet, modifierResults)
     }
   }
   async function handleProfileChange(skillId: string, profileId: string, optionId: string | null) {
     if (!sheet) return
-    setProfileSelections(p => { const n = { ...p }; if (!n[skillId]) n[skillId] = {}; n[skillId] = { ...n[skillId], [profileId]: optionId }; return n })
+    setProfileSelections(p => { const n = { ...p }; if (!n[skillId]) { n[skillId] = {}; } n[skillId] = { ...n[skillId], [profileId]: optionId }; return n })
     try { await api.patch(`/character-sheets/${sheet.id}/skills/${skillId}/profiles/${profileId}`, { optionId }) } catch {
       const s = sheet.skillProfileValues.find(spv => spv.skillId === skillId && spv.profileId === profileId)
-      setProfileSelections(p => { const n = { ...p }; if (!n[skillId]) n[skillId] = {}; n[skillId] = { ...n[skillId], [profileId]: s?.optionId ?? null }; return n })
+      setProfileSelections(p => { const n = { ...p }; if (!n[skillId]) { n[skillId] = {}; } n[skillId] = { ...n[skillId], [profileId]: s?.optionId ?? null }; return n })
       return
     }
     computeSkills(sheet, { ...profileSelections, [skillId]: { ...profileSelections[skillId], [profileId]: optionId } })
   }
   async function handleSkillAttributeChange(skillId: string, attributeId: string | null) {
     if (!sheet) return
-    setSheet(prev => {
-      if (!prev) return prev
-      return { ...prev, skillValues: prev.skillValues.map(sv => sv.skillId === skillId ? { ...sv, selectedAttributeId: attributeId, selectedAttribute: attributeId ? { id: attributeId, key: prev.template.attributes.find(a => a.id === attributeId)?.key ?? '', name: prev.template.attributes.find(a => a.id === attributeId)?.name ?? '' } : null } : sv) }
-    })
+    setSheet(prev => prev ? applySkillAttributeSelection(prev, skillId, attributeId) : prev)
     try { await api.patch(`/character-sheets/${sheet.id}/skills/${skillId}/attribute`, { attributeId }) } catch { fetchSheet(); return }
     const updated = await api.get<CharacterSheet>(`/character-sheets/${sheet.id}`)
     setSheet(updated); computeSkills(updated, profileSelections)
@@ -355,7 +416,7 @@ export default function CharacterSheetDetailPage() {
     else if (field === 'range') body.range = value.trim() || null
     else if (field === 'notes') body.notes = value.trim() || null
     else if (field === 'damage') body.damage = value.trim() || null
-    try { await api.patch(`/character-sheets/${sheet.id}/abilities/x/levels/${levelId}`, body); setAbilities(prev => prev.map(a => ({ ...a, levels: a.levels.map(l => l.id === levelId ? { ...l, ...body } : l) }))) } catch {}
+    try { await api.patch(`/character-sheets/${sheet.id}/abilities/x/levels/${levelId}`, body); setAbilities(prev => updateAbilityLevel(prev, levelId, body)) } catch {}
   }
   async function saveItemField(itemId: string, field: string, value: string) {
     if (!sheet) return
@@ -373,14 +434,14 @@ export default function CharacterSheetDetailPage() {
     if (!sheet) return
     try {
       await api.patch(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-attributes/${attributeId}`, { value })
-      setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, summonAttributes: a.summonAttributes.map(sa => sa.attributeId === attributeId ? { ...sa, value } : sa) } : a))
+      setAbilities(prev => updateSummonAttribute(prev, abilityId, attributeId, value))
       // Recompute summon modifiers & skills
-      const updatedAbilities = abilities.map(a => a.id === abilityId ? { ...a, summonAttributes: a.summonAttributes.map(sa => sa.attributeId === attributeId ? { ...sa, value } : sa) } : a)
+      const updatedAbilities = updateSummonAttribute(abilities, abilityId, attributeId, value)
       const ability = updatedAbilities.find(a => a.id === abilityId)
       if (ability) {
         const sm = await computeSummonModifiers(ability, sheet)
         setSummonModifierResults(prev => ({ ...prev, [abilityId]: sm }))
-        setSummonAcResults(prev => ({ ...prev, [abilityId]: computeSummonAC({ ...ability, summonAttributes: ability.summonAttributes.map(sa => sa.attributeId === attributeId ? { ...sa, value } : sa) }, sheet, sm) }))
+        setSummonAcResults(prev => ({ ...prev, [abilityId]: computeSummonAC(ability, sheet, sm) }))
       }
     } catch {}
   }
@@ -420,7 +481,7 @@ export default function CharacterSheetDetailPage() {
     if (!sheet) return
     try {
       await api.delete(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-skills/${summonSkillId}`)
-      setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, summonSkills: (a.summonSkills ?? []).filter(s => s.id !== summonSkillId) } : a))
+      setAbilities(prev => removeSummonSkill(prev, abilityId, summonSkillId))
     } catch {}
   }
 
@@ -429,7 +490,7 @@ export default function CharacterSheetDetailPage() {
     if (!sheet) return
     try {
       await api.patch(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-skills/${summonSkillId}`, { name, manualValue })
-      setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, summonSkills: (a.summonSkills ?? []).map(s => s.id === summonSkillId ? { ...s, name, manualValue } : s) } : a))
+      setAbilities(prev => updateSummonSkill(prev, abilityId, summonSkillId, name, manualValue))
     } catch {}
   }
 
@@ -446,7 +507,7 @@ export default function CharacterSheetDetailPage() {
     if (!sheet) return
     try {
       await api.delete(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-resistances/${summonResistanceId}`)
-      setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, summonResistances: (a.summonResistances ?? []).filter(r => r.id !== summonResistanceId) } : a))
+      setAbilities(prev => removeSummonResistance(prev, abilityId, summonResistanceId))
     } catch {}
   }
 
@@ -454,7 +515,7 @@ export default function CharacterSheetDetailPage() {
     if (!sheet) return
     try {
       await api.patch(`/character-sheets/${sheet.id}/abilities/${abilityId}/summon-resistances/${summonResistanceId}`, { name, value })
-      setAbilities(prev => prev.map(a => a.id === abilityId ? { ...a, summonResistances: (a.summonResistances ?? []).map(r => r.id === summonResistanceId ? { ...r, name, value } : r) } : a))
+      setAbilities(prev => updateSummonResistance(prev, abilityId, summonResistanceId, name, value))
     } catch {}
   }
 
@@ -475,10 +536,10 @@ export default function CharacterSheetDetailPage() {
     finally { setAbilitySaving(false) }
   }
 
-  async function handleDeleteAbility(abilityId: string) { if (!sheet) return; try { await api.delete(`/character-sheets/${sheet.id}/abilities/${abilityId}`); setAbilities(p => p.filter(a => a.id !== abilityId).map(a => ({ ...a, childAbilities: (a.childAbilities ?? []).filter(c => c.id !== abilityId) }))) } catch {} }
+  async function handleDeleteAbility(abilityId: string) { if (!sheet) { return } try { await api.delete(`/character-sheets/${sheet.id}/abilities/${abilityId}`); setAbilities(p => deleteAbility(p, abilityId)) } catch {} }
 
   function resetNewAbility() { setShowNewAbility(false); setNewAbility({ name: '', description: '', manaCost: '', range: '', notes: '', damage: '', level: '', hpCurrent: '', hpMax: '' }); setNewAbilityType(null); setAbilityError(null) }
-  async function handleCreateAbility(e: SubmitEvent) { e.preventDefault(); if (!newAbility.name.trim() || !sheet) return; setAbilitySaving(true)
+  async function handleCreateAbility(e: SubmitEvent) { e.preventDefault(); if (!newAbility.name.trim() || !sheet) { return } setAbilitySaving(true)
     try {
       const body: Record<string, unknown> = { name: newAbility.name.trim(), type: newAbilityType ?? 'ABILITY', description: newAbility.description.trim() || undefined, notes: newAbility.notes.trim() || undefined }
       if (newAbilityType === 'ABILITY') {
@@ -493,13 +554,7 @@ export default function CharacterSheetDetailPage() {
       const a = await api.post<Ability>(`/character-sheets/${sheet.id}/abilities`, body)
       // Create/update initial level if user specified one
       if (newAbility.level.trim()) {
-        if (a.levels?.length) {
-          await api.patch(`/character-sheets/${sheet.id}/abilities/${a.id}/levels/${a.levels[0].id}`, { level: newAbility.level.trim() })
-          a.levels[0].level = newAbility.level.trim()
-        } else {
-          const nl = await api.post<AbilityLevel>(`/character-sheets/${sheet.id}/abilities/${a.id}/levels`, { level: newAbility.level.trim(), copyFromPrevious: false })
-          a.levels = [nl]
-        }
+        await createInitialLevel(sheet, a, newAbility.level.trim())
       }
       setAbilities(p => [...p, a])
       // Compute summon data if summon
@@ -512,14 +567,12 @@ export default function CharacterSheetDetailPage() {
       resetNewAbility()
     } catch (err) { setAbilityError(err instanceof Error ? err.message : t('character:failedToCreateEntry')) } finally { setAbilitySaving(false) } }
   function resetNewItem() { setShowNewItem(false); setNewItem({ name: '', weight: '', cost: '', description: '' }); setItemError(null) }
-  async function handleCreateItem(e: SubmitEvent) { e.preventDefault(); if (!newItem.name.trim() || !sheet) return; setItemSaving(true)
+  async function handleCreateItem(e: SubmitEvent) { e.preventDefault(); if (!newItem.name.trim() || !sheet) { return } setItemSaving(true)
     try { const i = await api.post<InventoryItem>(`/character-sheets/${sheet.id}/inventory`, { name: newItem.name.trim(), weight: newItem.weight.trim() ? Number.parseFloat(newItem.weight) : undefined, cost: newItem.cost.trim() || undefined, description: newItem.description.trim() || undefined }); setInventoryItems(p => [...p, i]); resetNewItem() } catch (err) { setItemError(err instanceof Error ? err.message : t('character:failedToCreateItem')) } finally { setItemSaving(false) } }
-  async function handleDeleteItem(iid: string) { if (!sheet) return; try { await api.delete(`/character-sheets/${sheet.id}/inventory/${iid}`); setInventoryItems(p => p.filter(i => i.id !== iid)) } catch {} }
-  async function saveStoryField(field: string, value: string) { if (!sheet) return; try { const s = await api.patch<Story>(`/character-sheets/${sheet.id}/story`, { [field]: value.trim() || null }); setStory(s) } catch {} }
+  async function handleDeleteItem(iid: string) { if (!sheet) { return } try { await api.delete(`/character-sheets/${sheet.id}/inventory/${iid}`); setInventoryItems(p => p.filter(i => i.id !== iid)) } catch {} }
+  async function saveStoryField(field: string, value: string) { if (!sheet) { return } try { const s = await api.patch<Story>(`/character-sheets/${sheet.id}/story`, { [field]: value.trim() || null }); setStory(s) } catch {} }
 
   // ── Section entry handlers ──
-  function toSingular(name: string) { if (name.endsWith('ies')) return name.slice(0, -3) + 'y'; if (name.endsWith('s') && !name.endsWith('ss') && !name.endsWith('us')) return name.slice(0, -1); return name }
-
   function resetSectionEntryForm() { setNewSectionEntryForm({ name: '', description: '' }); setShowNewSectionEntry(null); setSectionEntrySaving(false) }
   async function handleCreateSectionEntry(sectionId: string, e: SubmitEvent) {
     e.preventDefault()
@@ -583,7 +636,7 @@ export default function CharacterSheetDetailPage() {
   const armorClasses = sheet?.template.armorClasses?.filter(ac => ac.enabled) ?? []
   const modifiersEnabled = sheet.template.attributeModifiersEnabled !== false
   const totalWeight = inventoryItems.reduce((s, i) => s + (i.weight ?? 0), 0)
-  const tabClass = (t: Tab) => `flex items-center gap-2 px-3 py-2 text-sm sm:px-5 sm:py-3 sm:text-base font-medium transition-colors border-b-2 ${activeTab === t ? 'border-[#c9a84c] text-white' : 'border-transparent text-gray-400 hover:text-white'}`
+  const tabClass = (t: string) => `flex items-center gap-2 px-3 py-2 text-sm sm:px-5 sm:py-3 sm:text-base font-medium transition-colors border-b-2 ${activeTab === t ? 'border-[#c9a84c] text-white' : 'border-transparent text-gray-400 hover:text-white'}`
   const enabledCoreResources = (sheet.template.coreResources || []).filter(cr => cr.enabled)
 
   return (<div className="w-full">
@@ -612,16 +665,18 @@ export default function CharacterSheetDetailPage() {
                   </button>
                 )}
               </div>
-            ) : isOwner ? (
-              <label className={`aspect-square w-full max-w-[10rem] rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/30 transition-colors ${avatarUploading ? 'opacity-50 pointer-events-none' : ''}`}>
-                {avatarUploading ? (
-                  <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                ) : (
-                  <span className="text-2xl text-muted">+</span>
-                )}
-                <input type="file" accept="image/*" className="hidden" disabled={avatarUploading} onChange={e=>{const f=e.target.files?.[0];if(f)handleAvatarUpload(f)}}/>
-              </label>
-            ) : null}
+            ) : (
+              isOwner && (
+                <label className={`aspect-square w-full max-w-[10rem] rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/30 transition-colors ${avatarUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                  {avatarUploading ? (
+                    <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  ) : (
+                    <span className="text-2xl text-muted">+</span>
+                  )}
+                  <input type="file" accept="image/*" className="hidden" disabled={avatarUploading} onChange={e=>{const f=e.target.files?.[0];if(f)handleAvatarUpload(f)}}/>
+                </label>
+              )
+            )}
           </div>
 
           {/* Info - center column */}
@@ -812,6 +867,6 @@ export default function CharacterSheetDetailPage() {
 
 
 
-function DeleteModal({ name, error, loading, onCancel, onConfirm }: { name: string; error: string | null; loading: boolean; onCancel: () => void; onConfirm: () => void }) {
+function DeleteModal({ name, error, loading, onCancel, onConfirm }: { readonly name: string; readonly error: string | null; readonly loading: boolean; readonly onCancel: () => void; readonly onConfirm: () => void }) {
   const { t } = useTranslation()
   return <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-fade-in"><div className="card !p-6 max-w-sm w-full space-y-4 border-danger/20"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center"><svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg></div><div><h2 className="font-semibold">{t('character:deleteCharacterSheetTitle')}</h2><p className="text-sm text-muted-foreground">{t('character:deleteActionCannotBeUndone')}</p></div></div><p className="text-sm text-muted-foreground">{t('character:deleteConfirm', { name })}</p>{error && <div className="rounded-lg bg-danger-muted border border-danger/30 px-4 py-2.5 text-sm text-danger">{error}</div>}<div className="flex gap-3 justify-end"><button onClick={onCancel} disabled={loading} className="btn-ghost">{t('common:cancel')}</button><button onClick={onConfirm} disabled={loading} className="btn-danger-solid">{loading ? t('character:deleting') : t('character:deleteForever')}</button></div></div></div> }

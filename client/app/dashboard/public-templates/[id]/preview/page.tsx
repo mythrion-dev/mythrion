@@ -30,15 +30,13 @@ import type { CalculatedResistance } from '@/lib/preview-computations'
 import type {
   Ability,
   AbilityLevel,
+  CharacterSheet,
   InventoryItem,
   Story,
   SectionEntry,
-  SkillModifierProfile,
   SheetPermissions,
-  Tab,
   SummonSkillData,
   SummonResistanceData,
-  ArmorClassAttributeModifierDef,
 } from '@/components/character-sheet/types'
 
 // ── Loading spinner ──
@@ -57,7 +55,7 @@ function LoadingSpinner() {
 
 // ── Error state ──
 
-function ErrorState({ message }: { message: string }) {
+function ErrorState({ message }: { readonly message: string }) {
   return (
     <div className="flex items-center justify-center py-20">
       <div className="text-sm text-danger">{message}</div>
@@ -67,7 +65,7 @@ function ErrorState({ message }: { message: string }) {
 
 // ── Tab class helper ──
 
-function tabClass(activeTab: Tab, tab: Tab) {
+function tabClass(activeTab: string, tab: string) {
   return `flex items-center gap-2 px-5 py-3 text-base font-medium transition-colors border-b-2 ${
     activeTab === tab
       ? 'border-[#c9a84c] text-white'
@@ -87,6 +85,59 @@ const ALL_PERMISSIONS: SheetPermissions = {
   canEditPersonalAbilities: true,
   canEditResistances: true,
   canEditAbilities: true,
+}
+
+// ── Shared computation helpers ──
+
+function buildSkillResultsMap(
+  s: PreviewSheetState,
+  skills: Record<string, number | null>,
+  modsNoNull: Record<string, number>,
+): Record<string, SkillResult> {
+  const skillResultsMap: Record<string, SkillResult> = {}
+  for (const skill of s.template.templateSkills ?? []) {
+    const total = skills[skill.id]
+    const selectedAttributeId = s.skillAttributes[skill.id] ?? null
+    const selectedAttribute = selectedAttributeId
+      ? s.template.attributes.find(a => a.id === selectedAttributeId)
+      : null
+    skillResultsMap[skill.id] = {
+      total: total ?? 0,
+      name: skill.name,
+      selectedAttribute: selectedAttributeId,
+      selectedAttributeName: selectedAttribute?.name ?? null,
+      attributeValue: selectedAttributeId ? (modsNoNull[selectedAttributeId] ?? null) : null,
+      selectedProfileValue: null,
+    }
+  }
+  return skillResultsMap
+}
+
+async function computeSummonResults(
+  s: PreviewSheetState,
+  previewSheet: CharacterSheet,
+  evaluateFormula: FormulaEvaluator,
+): Promise<{
+  newSummonModResults: Record<string, Record<string, number | null>>
+  newSummonAcResults: Record<string, number | null>
+}> {
+  const newSummonModResults: Record<string, Record<string, number | null>> = {}
+  const newSummonAcResults: Record<string, number | null> = {}
+  for (const ability of s.abilities ?? []) {
+    if (ability.type === 'SUMMON') {
+      if (ability.summonAttributes?.length) {
+        const sm = await engineComputeSummonModifiers(ability, previewSheet, evaluateFormula)
+        if (Object.keys(sm).length > 0) {
+          newSummonModResults[ability.id] = sm
+        }
+      }
+      const sac = engineComputeSummonAC(ability)
+      if (sac !== null) {
+        newSummonAcResults[ability.id] = sac
+      }
+    }
+  }
+  return { newSummonModResults, newSummonAcResults }
 }
 
 // ── Default export ──
@@ -122,7 +173,7 @@ export default function TemplatePreviewPage() {
 
   // ── UI-only state (not persisted to reducer) ──
 
-  const [activeTab, setActiveTab] = useState<Tab>('character')
+  const [activeTab, setActiveTab] = useState<string>('character')
 
   // AbilitiesTab UI state
   const [selectedLevels, setSelectedLevels] = useState<Record<string, string>>({})
@@ -241,51 +292,20 @@ export default function TemplatePreviewPage() {
           s.othersValues,
           evaluateFormula,
         )
-
-        // Build SkillResult map from flat skills results + state
-        const skillResultsMap: Record<string, SkillResult> = {}
-        for (const skill of s.template.templateSkills ?? []) {
-          const total = skills[skill.id]
-          const selectedAttributeId = s.skillAttributes[skill.id] ?? null
-          const selectedAttribute = selectedAttributeId
-            ? s.template.attributes.find(a => a.id === selectedAttributeId)
-            : null
-          skillResultsMap[skill.id] = {
-            total: total ?? 0,
-            name: skill.name,
-            selectedAttribute: selectedAttributeId,
-            selectedAttributeName: selectedAttribute?.name ?? null,
-            attributeValue: selectedAttributeId ? (modsNoNull[selectedAttributeId] ?? null) : null,
-            selectedProfileValue: null,
-          }
-        }
-        setSkillResults(skillResultsMap)
+        setSkillResults(buildSkillResultsMap(s, skills, modsNoNull))
 
         // Compute AC (from shared engine, depends on modifiers) — synchronous
-        const ac = engineComputeAC(previewSheet, mods)
-        setAcResults(ac)
+        setAcResults(engineComputeAC(previewSheet, mods))
 
         // Compute resistances (stays from preview-computations) — synchronous
-        const res = computeResistances(s, modsNoNull)
-        setResistances(res)
+        setResistances(computeResistances(s, modsNoNull))
 
         // Compute summon modifiers & AC (from shared engine)
-        const newSummonModResults: Record<string, Record<string, number | null>> = {}
-        const newSummonAcResults: Record<string, number | null> = {}
-        for (const ability of s.abilities ?? []) {
-          if (ability.type === 'SUMMON') {
-            if (ability.summonAttributes?.length) {
-              const sm = await engineComputeSummonModifiers(ability, previewSheet, evaluateFormula)
-              if (Object.keys(sm).length > 0) {
-                newSummonModResults[ability.id] = sm
-              }
-            }
-            const sac = engineComputeSummonAC(ability)
-            if (sac !== null) {
-              newSummonAcResults[ability.id] = sac
-            }
-          }
-        }
+        const { newSummonModResults, newSummonAcResults } = await computeSummonResults(
+          s,
+          previewSheet,
+          evaluateFormula,
+        )
         if (Object.keys(newSummonModResults).length > 0) {
           setSummonModifierResults(prev => ({ ...prev, ...newSummonModResults }))
         }
@@ -348,20 +368,6 @@ export default function TemplatePreviewPage() {
       ? (valueOrFn as (prev: Ability[]) => Ability[])(abilitiesRef.current)
       : valueOrFn
     dispatch({ type: 'UPDATE_ABILITIES', payload: newValue })
-  }, [dispatch])
-
-  const setInventoryItems: React.Dispatch<React.SetStateAction<InventoryItem[]>> = useCallback((valueOrFn) => {
-    const newValue = typeof valueOrFn === 'function'
-      ? (valueOrFn as (prev: InventoryItem[]) => InventoryItem[])(itemsRef.current)
-      : valueOrFn
-    dispatch({ type: 'UPDATE_INVENTORY', payload: newValue })
-  }, [dispatch])
-
-  const setSectionEntries: React.Dispatch<React.SetStateAction<SectionEntry[]>> = useCallback((valueOrFn) => {
-    const newValue = typeof valueOrFn === 'function'
-      ? (valueOrFn as (prev: SectionEntry[]) => SectionEntry[])(entriesRef.current)
-      : valueOrFn
-    dispatch({ type: 'UPDATE_SECTION_ENTRIES', payload: newValue })
   }, [dispatch])
 
   // ── AbilitiesTab callbacks (preview mode — update local state only) ──
@@ -433,23 +439,6 @@ export default function TemplatePreviewPage() {
 
   const handleDeleteAbility = useCallback(async (abilityId: string) => {
     const updated = abilitiesRef.current.filter(a => a.id !== abilityId)
-    dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
-  }, [dispatch])
-
-  const saveLevelField = useCallback(async (levelId: string, field: string, value: string) => {
-    const updated = abilitiesRef.current.map(a => ({
-      ...a,
-      levels: a.levels.map(l => {
-        if (l.id !== levelId) return l
-        const body: Record<string, unknown> = {}
-        if (field === 'description') body.description = value.trim() || null
-        else if (field === 'manaCost') body.manaCost = value.trim() ? Number.parseInt(value, 10) : null
-        else if (field === 'range') body.range = value.trim() || null
-        else if (field === 'notes') body.notes = value.trim() || null
-        else if (field === 'damage') body.damage = value.trim() || null
-        return { ...l, ...body }
-      }),
-    }))
     dispatch({ type: 'UPDATE_ABILITIES', payload: updated })
   }, [dispatch])
 
@@ -737,10 +726,7 @@ export default function TemplatePreviewPage() {
   const sectionEntries = state.sectionEntries ?? []
   const resistanceData = adapterResult.resistanceData
   const totalWeight = inventoryItems.reduce((s, i) => s + (i.weight ?? 0), 0)
-  const allProfiles: SkillModifierProfile[] = (state.template.skillModifierProfiles ?? []) as SkillModifierProfile[]
-  const armorClasses = state.template.armorClasses?.filter(ac => ac.enabled) ?? []
   const modifiersEnabled = state.template.attributeModifiersEnabled !== false
-  const enabledCoreResources = state.template.coreResources.filter(cr => cr.enabled)
 
   return (
     <div className="w-full">

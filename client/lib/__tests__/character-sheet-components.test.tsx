@@ -309,7 +309,7 @@ describe('ProfessionalSkillsSection', () => {
   })
 
   it('creates a new skill via API and adds it to the list', async () => {
-    const deferred = createDeferred()
+    const deferred = createDeferred<ProfessionalSkill>()
     mockPost.mockReturnValue(deferred.promise)
     render(<ProfessionalSkillsSection {...defaultProps} />)
     await waitFor(() => {
@@ -446,7 +446,7 @@ describe('ProfessionalSkillsSection', () => {
   })
 
   it('saves edited skill via API', async () => {
-    const deferred = createDeferred()
+    const deferred = createDeferred<ProfessionalSkill>()
     mockPatch.mockReturnValue(deferred.promise)
     const skills = [makeSkill()]
     mockGet.mockResolvedValue(skills)
@@ -477,6 +477,7 @@ describe('ProfessionalSkillsSection', () => {
       attributeId: 'attr-2',
       attribute: { id: 'attr-2', key: 'dex', name: 'Dexterity' },
       order: 0,
+      profileValues: [],
     }
     deferred.resolve(updatedSkill)
     await waitFor(() => {
@@ -706,6 +707,285 @@ describe('ProfessionalSkillsSection', () => {
     // Profile column should show dash since no profiles
     const dashes = screen.getAllByText('—')
     expect(dashes.length).toBeGreaterThanOrEqual(1)
+  })
+
+  // ── localMode ──
+
+  it('uses localSkills in localMode and skips the API fetch', async () => {
+    const localSkills = [makeSkill({ id: 'local-1', name: 'Local Skill' })]
+    render(
+      <ProfessionalSkillsSection
+        {...defaultProps}
+        localMode
+        localSkills={localSkills}
+        onLocalSkillsChange={vi.fn()}
+      />,
+    )
+    await waitFor(() => {
+      expect(screen.getByText('Local Skill')).toBeInTheDocument()
+    })
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+
+  it('creates a skill locally in localMode without calling the API', async () => {
+    const onLocalSkillsChange = vi.fn()
+    render(
+      <ProfessionalSkillsSection
+        {...defaultProps}
+        localMode
+        localSkills={[]}
+        onLocalSkillsChange={onLocalSkillsChange}
+      />,
+    )
+    await waitFor(() => {
+      expect(screen.getByText('+ Add Professional Skill')).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByText('+ Add Professional Skill'))
+    await userEvent.type(screen.getByRole('textbox'), 'Mining')
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }))
+
+    await waitFor(() => {
+      expect(onLocalSkillsChange).toHaveBeenCalledTimes(1)
+    })
+    const updated = onLocalSkillsChange.mock.calls[0][0] as ProfessionalSkill[]
+    expect(updated).toHaveLength(1)
+    expect(updated[0].name).toBe('Mining')
+    expect(updated[0].attributeId).toBeNull()
+    expect(mockPost).not.toHaveBeenCalled()
+    // Modal closes after local create
+    expect(screen.queryByText('Add Professional Skill')).not.toBeInTheDocument()
+  })
+
+  it('updates a skill locally in localMode', async () => {
+    const onLocalSkillsChange = vi.fn()
+    const localSkills = [makeSkill({ id: 'local-1', name: 'Blacksmith' })]
+    render(
+      <ProfessionalSkillsSection
+        {...defaultProps}
+        localMode
+        localSkills={localSkills}
+        onLocalSkillsChange={onLocalSkillsChange}
+      />,
+    )
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByText('Edit'))
+    const input = screen.getByDisplayValue('Blacksmith')
+    fireEvent.change(input, { target: { value: 'Master Blacksmith' } })
+    await userEvent.click(screen.getByText('Save'))
+
+    await waitFor(() => {
+      expect(onLocalSkillsChange).toHaveBeenCalledTimes(1)
+    })
+    const updated = onLocalSkillsChange.mock.calls[0][0] as ProfessionalSkill[]
+    expect(updated[0].name).toBe('Master Blacksmith')
+    expect(mockPatch).not.toHaveBeenCalled()
+  })
+
+  it('deletes a skill locally in localMode', async () => {
+    const onLocalSkillsChange = vi.fn()
+    const localSkills = [makeSkill({ id: 'local-1', name: 'Blacksmith' })]
+    render(
+      <ProfessionalSkillsSection
+        {...defaultProps}
+        localMode
+        localSkills={localSkills}
+        onLocalSkillsChange={onLocalSkillsChange}
+      />,
+    )
+    await waitFor(() => {
+      expect(screen.getByText('Delete')).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByText('Delete'))
+
+    await waitFor(() => {
+      expect(onLocalSkillsChange).toHaveBeenCalledWith([])
+    })
+    expect(mockDelete).not.toHaveBeenCalled()
+    expect(screen.getByText('No Professional Skills added yet.')).toBeInTheDocument()
+  })
+
+  it('changes a profile option locally in localMode', async () => {
+    const onLocalSkillsChange = vi.fn()
+    const localSkills = [makeSkill({ id: 'local-1', name: 'Blacksmith', profileValues: [] })]
+    render(
+      <ProfessionalSkillsSection
+        {...defaultProps}
+        localMode
+        localSkills={localSkills}
+        onLocalSkillsChange={onLocalSkillsChange}
+        allProfiles={testProfiles}
+      />,
+    )
+    await waitFor(() => {
+      expect(screen.getByText('Blacksmith')).toBeInTheDocument()
+    })
+    const selects = screen.getAllByRole('combobox')
+    const profileSelect = selects[selects.length - 1]
+    fireEvent.click(profileSelect)
+    fireEvent.click(screen.getByRole('option', { name: /Trained/ }))
+
+    await waitFor(() => {
+      expect(onLocalSkillsChange).toHaveBeenCalledTimes(1)
+    })
+    const updated = onLocalSkillsChange.mock.calls[0][0] as ProfessionalSkill[]
+    expect(updated[0].profileValues).toHaveLength(1)
+    expect(updated[0].profileValues[0].optionId).toBe('opt-2')
+    expect(updated[0].profileValues[0].id).toBe('local_prof-1')
+    expect(mockPatch).not.toHaveBeenCalled()
+  })
+
+  // ── Profile change: optimistic update / rollback / new value creation ──
+
+  it('creates a new profile value when changing an unset profile in API mode', async () => {
+    mockPatch.mockResolvedValue({})
+    const skills = [makeSkill({ profileValues: [] })]
+    mockGet.mockResolvedValue(skills)
+    render(<ProfessionalSkillsSection {...defaultProps} allProfiles={testProfiles} />)
+    await waitFor(() => {
+      expect(screen.getByText('Blacksmith')).toBeInTheDocument()
+    })
+    const profileSelect = screen.getAllByRole('combobox')[0]
+    fireEvent.click(profileSelect)
+    fireEvent.click(screen.getByRole('option', { name: /Trained/ }))
+    await waitFor(() => {
+      expect(mockPatch).toHaveBeenCalledWith(
+        '/character-sheets/sheet-1/professional-skills/sk-1/profiles/prof-1',
+        { optionId: 'opt-2' },
+      )
+    })
+  })
+
+  it('rolls back the optimistic profile change when the PATCH fails', async () => {
+    mockPatch.mockRejectedValue(new Error('Save failed'))
+    const pv: ProfessionalSkillProfileValue = {
+      id: 'pv-1',
+      profileId: 'prof-1',
+      optionId: 'opt-2',
+      profile: { id: 'prof-1', name: 'Expertise' },
+      option: { id: 'opt-2', label: 'Trained', value: 2 },
+    }
+    const skills = [makeSkill({ profileValues: [pv] })]
+    mockGet.mockResolvedValue(skills)
+    render(<ProfessionalSkillsSection {...defaultProps} allProfiles={testProfiles} />)
+    await waitFor(() => {
+      expect(screen.getByText('Blacksmith')).toBeInTheDocument()
+    })
+    const profileSelect = screen.getAllByRole('combobox')[0]
+    fireEvent.click(profileSelect)
+    fireEvent.click(screen.getByRole('option', { name: /Specialized/ }))
+    await waitFor(() => {
+      expect(mockPatch).toHaveBeenCalledWith(
+        '/character-sheets/sheet-1/professional-skills/sk-1/profiles/prof-1',
+        { optionId: 'opt-3' },
+      )
+    })
+    // After rollback the DOM reverts to the previous option (Trained, +2)
+    await waitFor(() => {
+      expect(screen.queryByText('+4')).not.toBeInTheDocument()
+      expect(screen.getAllByText('+2').length).toBeGreaterThanOrEqual(1)
+    })
+  })
+
+  // ── Create with profile selections ──
+
+  it('creates a skill with profile selections and patches the profile', async () => {
+    mockPost.mockResolvedValue({
+      id: 'sk-new',
+      name: 'Mining',
+      attributeId: null,
+      attribute: null,
+      order: 0,
+      profileValues: [],
+    })
+    mockPatch.mockResolvedValue({})
+    mockGet.mockResolvedValue([])
+    render(<ProfessionalSkillsSection {...defaultProps} allProfiles={testProfiles} />)
+    await waitFor(() => {
+      expect(screen.getByText('+ Add Professional Skill')).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByText('+ Add Professional Skill'))
+    await userEvent.type(screen.getByRole('textbox'), 'Mining')
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }))
+
+    await waitFor(() => {
+      expect(mockPost).toHaveBeenCalledWith(
+        '/character-sheets/sheet-1/professional-skills',
+        { name: 'Mining', attributeId: null },
+      )
+      expect(mockPatch).toHaveBeenCalledWith(
+        '/character-sheets/sheet-1/professional-skills/sk-new/profiles/prof-1',
+        { optionId: 'opt-1' },
+      )
+    })
+  })
+
+  it('updates the profile selection inside the create modal', async () => {
+    render(<ProfessionalSkillsSection {...defaultProps} allProfiles={testProfiles} />)
+    await waitFor(() => {
+      expect(screen.getByText('+ Add Professional Skill')).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByText('+ Add Professional Skill'))
+    // Create modal has an attribute select plus one profile select
+    const selects = screen.getAllByRole('combobox')
+    const profileSelect = selects[selects.length - 1]
+    fireEvent.click(profileSelect)
+    fireEvent.click(screen.getByRole('option', { name: /Trained/ }))
+    // The profile select now shows "Trained" (opt-2)
+    await waitFor(() => {
+      expect(screen.getByText('Trained')).toBeInTheDocument()
+    })
+  })
+
+  it('creates a skill locally in localMode with profile selections', async () => {
+    const onLocalSkillsChange = vi.fn()
+    render(
+      <ProfessionalSkillsSection
+        {...defaultProps}
+        localMode
+        localSkills={[]}
+        onLocalSkillsChange={onLocalSkillsChange}
+        allProfiles={testProfiles}
+      />,
+    )
+    await waitFor(() => {
+      expect(screen.getByText('+ Add Professional Skill')).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByText('+ Add Professional Skill'))
+    await userEvent.type(screen.getByRole('textbox'), 'Mining')
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }))
+
+    await waitFor(() => {
+      expect(onLocalSkillsChange).toHaveBeenCalledTimes(1)
+    })
+    const updated = onLocalSkillsChange.mock.calls[0][0] as ProfessionalSkill[]
+    expect(updated).toHaveLength(1)
+    expect(updated[0].name).toBe('Mining')
+    // Auto-selected lowest option (Untrained / opt-1) becomes a profile value
+    expect(updated[0].profileValues).toHaveLength(1)
+    expect(updated[0].profileValues[0].profileId).toBe('prof-1')
+    expect(updated[0].profileValues[0].optionId).toBe('opt-1')
+    expect(mockPost).not.toHaveBeenCalled()
+  })
+
+  // ── Update error fallback ──
+
+  it('shows "Failed to update" when update fails with a string error', async () => {
+    mockPatch.mockRejectedValue('string failure')
+    const skills = [makeSkill()]
+    mockGet.mockResolvedValue(skills)
+    render(<ProfessionalSkillsSection {...defaultProps} />)
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByText('Edit'))
+    const input = screen.getByDisplayValue('Blacksmith')
+    fireEvent.change(input, { target: { value: 'Changed' } })
+    await userEvent.click(screen.getByText('Save'))
+    await waitFor(() => {
+      expect(screen.getByText('Failed to update')).toBeInTheDocument()
+    })
   })
 })
 
@@ -1030,9 +1310,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1043,9 +1321,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1059,9 +1335,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={{ ...defaultValue, current: null, maximum: null }}
-        isOwner={false}
-        permissions={{ ...defaultPermissions, canEditResources: false }}
+        value={{ ...defaultValue, current: null, maximum: null }}        permissions={{ ...defaultPermissions, canEditResources: false }}
         onSave={mockOnSave}
       />,
     )
@@ -1075,9 +1349,7 @@ describe('CoreResourceCard', () => {
     const { container } = render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1091,9 +1363,7 @@ describe('CoreResourceCard', () => {
     const { container } = render(
       <CoreResourceCard
         resource={defaultResource}
-        value={{ ...defaultValue, current: 50, maximum: null }}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={{ ...defaultValue, current: 50, maximum: null }}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1105,9 +1375,7 @@ describe('CoreResourceCard', () => {
     const { container } = render(
       <CoreResourceCard
         resource={defaultResource}
-        value={{ ...defaultValue, current: 0, maximum: 0 }}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={{ ...defaultValue, current: 0, maximum: 0 }}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1119,9 +1387,7 @@ describe('CoreResourceCard', () => {
     const { container } = render(
       <CoreResourceCard
         resource={defaultResource}
-        value={{ ...defaultValue, current: 150, maximum: 100 }}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={{ ...defaultValue, current: 150, maximum: 100 }}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1133,9 +1399,7 @@ describe('CoreResourceCard', () => {
     const { container } = render(
       <CoreResourceCard
         resource={defaultResource}
-        value={{ ...defaultValue, current: -10, maximum: 100 }}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={{ ...defaultValue, current: -10, maximum: 100 }}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1147,9 +1411,7 @@ describe('CoreResourceCard', () => {
     const { container } = render(
       <CoreResourceCard
         resource={{ ...defaultResource, color: '#ff0000' }}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1161,9 +1423,7 @@ describe('CoreResourceCard', () => {
     const { container } = render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1177,9 +1437,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={{ ...defaultResource, showNotes: true }}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1190,9 +1448,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={{ ...defaultResource, showNotes: true }}
-        value={{ ...defaultValue, notes: 'Emergency only' }}
-        isOwner={false}
-        permissions={{ ...defaultPermissions, canEditResources: false }}
+        value={{ ...defaultValue, notes: 'Emergency only' }}        permissions={{ ...defaultPermissions, canEditResources: false }}
         onSave={mockOnSave}
       />,
     )
@@ -1203,9 +1459,7 @@ describe('CoreResourceCard', () => {
     const { container } = render(
       <CoreResourceCard
         resource={{ ...defaultResource, showNotes: true }}
-        value={defaultValue}
-        isOwner={false}
-        permissions={{ ...defaultPermissions, canEditResources: false }}
+        value={defaultValue}        permissions={{ ...defaultPermissions, canEditResources: false }}
         onSave={mockOnSave}
       />,
     )
@@ -1217,9 +1471,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1236,9 +1488,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1250,9 +1500,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={false}
-        permissions={{ ...defaultPermissions, canEditResources: false }}
+        value={defaultValue}        permissions={{ ...defaultPermissions, canEditResources: false }}
         onSave={mockOnSave}
       />,
     )
@@ -1266,9 +1514,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={{ ...defaultResource, editableByPlayer: false }}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1283,9 +1529,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1299,9 +1543,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1314,9 +1556,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={false}
-        permissions={{ ...defaultPermissions, canEditResources: false }}
+        value={defaultValue}        permissions={{ ...defaultPermissions, canEditResources: false }}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1329,9 +1569,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1347,9 +1585,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1365,9 +1601,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1383,9 +1617,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1404,9 +1636,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1429,9 +1659,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={{ ...defaultResource, showNotes: true }}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
       />,
     )
@@ -1445,9 +1673,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,
@@ -1462,9 +1688,7 @@ describe('CoreResourceCard', () => {
     render(
       <CoreResourceCard
         resource={defaultResource}
-        value={defaultValue}
-        isOwner={true}
-        permissions={defaultPermissions}
+        value={defaultValue}        permissions={defaultPermissions}
         onSave={mockOnSave}
         onModify={mockOnModify}
       />,

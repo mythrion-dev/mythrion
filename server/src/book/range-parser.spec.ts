@@ -10,7 +10,7 @@ describe('parseRange', () => {
 
   it('parses a normal byte range', () => {
     const result = parseRange('bytes=0-1023', FILE_SIZE)
-    expect(result).toEqual<RangeResult>({
+    expect(result).toEqual({
       start: 0,
       end: 1023,
       contentLength: FILE_SIZE,
@@ -20,7 +20,7 @@ describe('parseRange', () => {
 
   it('parses a range starting at non-zero offset', () => {
     const result = parseRange('bytes=500-1499', FILE_SIZE)
-    expect(result).toEqual<RangeResult>({
+    expect(result).toEqual({
       start: 500,
       end: 1499,
       contentLength: FILE_SIZE,
@@ -30,7 +30,7 @@ describe('parseRange', () => {
 
   it('parses a single-byte range', () => {
     const result = parseRange('bytes=42-42', FILE_SIZE)
-    expect(result).toEqual<RangeResult>({
+    expect(result).toEqual({
       start: 42,
       end: 42,
       contentLength: FILE_SIZE,
@@ -40,7 +40,7 @@ describe('parseRange', () => {
 
   it('parses a range at the very end of the file', () => {
     const result = parseRange('bytes=9999-9999', FILE_SIZE)
-    expect(result).toEqual<RangeResult>({
+    expect(result).toEqual({
       start: 9999,
       end: 9999,
       contentLength: FILE_SIZE,
@@ -54,7 +54,7 @@ describe('parseRange', () => {
 
   it('parses an open-ended range (bytes=N-)', () => {
     const result = parseRange('bytes=9000-', FILE_SIZE)
-    expect(result).toEqual<RangeResult>({
+    expect(result).toEqual({
       start: 9000,
       end: 9999,
       contentLength: FILE_SIZE,
@@ -64,7 +64,7 @@ describe('parseRange', () => {
 
   it('parses bytes=0- as the full file', () => {
     const result = parseRange('bytes=0-', FILE_SIZE)
-    expect(result).toEqual<RangeResult>({
+    expect(result).toEqual({
       start: 0,
       end: 9999,
       contentLength: FILE_SIZE,
@@ -78,7 +78,7 @@ describe('parseRange', () => {
 
   it('parses a suffix range (bytes=-N)', () => {
     const result = parseRange('bytes=-2048', FILE_SIZE)
-    expect(result).toEqual<RangeResult>({
+    expect(result).toEqual({
       start: 7952,
       end: 9999,
       contentLength: FILE_SIZE,
@@ -88,7 +88,7 @@ describe('parseRange', () => {
 
   it('clamps suffix larger than file to entire file', () => {
     const result = parseRange('bytes=-99999', FILE_SIZE)
-    expect(result).toEqual<RangeResult>({
+    expect(result).toEqual({
       start: 0,
       end: 9999,
       contentLength: FILE_SIZE,
@@ -102,7 +102,7 @@ describe('parseRange', () => {
 
   it('clamps end to file size when range exceeds file', () => {
     const result = parseRange('bytes=9000-20000', FILE_SIZE)
-    expect(result).toEqual<RangeResult>({
+    expect(result).toEqual({
       start: 9000,
       end: 9999,
       contentLength: FILE_SIZE,
@@ -160,7 +160,7 @@ describe('parseRange', () => {
 
   it('parses only the first range of a multi-range header', () => {
     const result = parseRange('bytes=0-1023,2048-4095', FILE_SIZE)
-    expect(result).toEqual<RangeResult>({
+    expect(result).toEqual({
       start: 0,
       end: 1023,
       contentLength: FILE_SIZE,
@@ -174,7 +174,7 @@ describe('parseRange', () => {
 
   it('handles case-insensitive Bytes prefix', () => {
     const result = parseRange('BYTES=100-199', FILE_SIZE)
-    expect(result).toEqual<RangeResult>({
+    expect(result).toEqual({
       start: 100,
       end: 199,
       contentLength: FILE_SIZE,

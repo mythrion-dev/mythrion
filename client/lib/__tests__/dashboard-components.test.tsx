@@ -32,9 +32,22 @@ const defaultUser = {
   onboardingComplete: true,
 }
 
+// Mutable state referenced lazily inside the mocked hooks so each test can
+// simulate different user roles / subscription states.
+let currentUser: {
+  id?: string
+  email?: string
+  displayName?: string | null
+  onboardingComplete?: boolean
+  isAdmin?: boolean
+  isEarlyAccess?: boolean
+} = { ...defaultUser }
+let currentSubscription: { plan?: { name?: string } } | null = null
+let currentHasActiveSubscription = false
+
 vi.mock('@/lib/auth-context', () => ({
   useAuth: () => ({
-    user: defaultUser,
+    user: currentUser,
     loading: false,
     login: vi.fn(),
     register: vi.fn(),
@@ -47,13 +60,19 @@ vi.mock('@/lib/auth-context', () => ({
 
 vi.mock('@/lib/subscription-context', () => ({
   useSubscription: () => ({
-    subscription: null,
-    hasActiveSubscription: false,
+    subscription: currentSubscription,
+    hasActiveSubscription: currentHasActiveSubscription,
     loading: false,
     refresh: vi.fn(),
     hasEverHadSubscription: false,
   }),
 }))
+
+beforeEach(() => {
+  currentUser = { ...defaultUser }
+  currentSubscription = null
+  currentHasActiveSubscription = false
+})
 
 // ════════════════════════════════════════════════════════════
 // Sidebar — rendering
@@ -73,15 +92,15 @@ describe('Sidebar', () => {
     expect(aside).toBeInTheDocument()
   })
 
-  it('renders the logo text (Mythrion)', () => {
+  it.each(['Mythrion', 'AJ', 'Sign out'])('renders %s', (text) => {
     render(<Sidebar />)
-    expect(screen.getByText('Mythrion')).toBeInTheDocument()
+    expect(screen.getByText(text)).toBeInTheDocument()
   })
 
   it('renders all navigation links', () => {
     render(<Sidebar />)
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
-    expect(screen.getByText('Adventures')).toBeInTheDocument()
+    expect(screen.getByText('Campaigns')).toBeInTheDocument()
     expect(screen.getByText('Character Sheets')).toBeInTheDocument()
   })
 
@@ -89,16 +108,6 @@ describe('Sidebar', () => {
     render(<Sidebar />)
     expect(screen.getByText('Alice Johnson')).toBeInTheDocument()
     expect(screen.getByText('alice@example.com')).toBeInTheDocument()
-  })
-
-  it('renders user initials avatar', () => {
-    render(<Sidebar />)
-    expect(screen.getByText('AJ')).toBeInTheDocument()
-  })
-
-  it('renders sign out button', () => {
-    render(<Sidebar />)
-    expect(screen.getByText('Sign out')).toBeInTheDocument()
   })
 
   it('renders collapse toggle button', () => {
@@ -166,7 +175,7 @@ describe('Sidebar collapsed state', () => {
     render(<Sidebar />)
     fireEvent.click(screen.getByTitle('Collapse sidebar'))
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
-    expect(screen.queryByText('Adventures')).not.toBeInTheDocument()
+    expect(screen.queryByText('Campaigns')).not.toBeInTheDocument()
     expect(screen.queryByText('Character Sheets')).not.toBeInTheDocument()
     expect(screen.queryByText('Sign out')).not.toBeInTheDocument()
     expect(screen.queryByText('Alice Johnson')).not.toBeInTheDocument()
@@ -179,7 +188,7 @@ describe('Sidebar collapsed state', () => {
     const links = screen.getAllByRole('link')
     const titles = links.map((l) => l.getAttribute('title'))
     expect(titles).toContain('Dashboard')
-    expect(titles).toContain('Adventures')
+    expect(titles).toContain('Campaigns')
     expect(titles).toContain('Character Sheets')
   })
 
@@ -214,7 +223,7 @@ describe('Sidebar active link', () => {
     mockUsePathname.mockReturnValue('/dashboard')
     render(<Sidebar />)
     const links = screen.getAllByRole('link')
-    const adventuresLink = links.find((l) => l.textContent === 'Adventures')
+    const adventuresLink = links.find((l) => l.textContent === 'Campaigns')
     expect(adventuresLink?.className).not.toContain('sidebar-link-active')
   })
 
@@ -223,7 +232,7 @@ describe('Sidebar active link', () => {
     mockUseSearchParams.mockReturnValue(new URLSearchParams('tab=adventures'))
     render(<Sidebar />)
     const links = screen.getAllByRole('link')
-    const adventuresLink = links.find((l) => l.textContent === 'Adventures')
+    const adventuresLink = links.find((l) => l.textContent === 'Campaigns')
     expect(adventuresLink?.className).toContain('sidebar-link-active')
   })
 
@@ -246,7 +255,7 @@ describe('Sidebar active link', () => {
     mockUseSearchParams.mockReturnValue(new URLSearchParams('tab=adventures'))
     render(<Sidebar />)
     const links = screen.getAllByRole('link')
-    const adventuresLink = links.find((l) => l.textContent === 'Adventures')
+    const adventuresLink = links.find((l) => l.textContent === 'Campaigns')
     expect(adventuresLink?.className).not.toContain('sidebar-link-active')
   })
 
@@ -369,7 +378,7 @@ describe('Sidebar mobile menu', () => {
     fireEvent.click(screen.getByLabelText('Open menu'))
     expect(screen.getByLabelText('Close menu')).toBeInTheDocument()
 
-    const adventuresLink = screen.getByText('Adventures')
+    const adventuresLink = screen.getByText('Campaigns')
     fireEvent.click(adventuresLink)
 
     expect(screen.getByLabelText('Open menu')).toBeInTheDocument()
@@ -436,7 +445,7 @@ describe('Sidebar nav link hrefs', () => {
   it('Adventures link points to /dashboard?tab=adventures', () => {
     render(<Sidebar />)
     const links = screen.getAllByRole('link')
-    const adventuresLink = links.find((l) => l.textContent === 'Adventures')
+    const adventuresLink = links.find((l) => l.textContent === 'Campaigns')
     expect(adventuresLink).toHaveAttribute('href', '/dashboard?tab=adventures')
   })
 
@@ -480,5 +489,95 @@ describe('Sidebar nav link hrefs', () => {
     const links = screen.getAllByRole('link')
     const settingsLink = links.find((l) => l.textContent === 'Settings')
     expect(settingsLink).toHaveAttribute('href', '/dashboard/settings')
+  })
+})
+
+// ════════════════════════════════════════════════════════════
+// Sidebar — user role / subscription variants
+// ════════════════════════════════════════════════════════════
+
+describe('Sidebar user variants', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    mockUsePathname.mockReturnValue('/')
+    mockUseSearchParams.mockReturnValue(new URLSearchParams())
+  })
+
+  it('renders Admin nav link and badge for admin users', () => {
+    currentUser = { ...defaultUser, isAdmin: true }
+    render(<Sidebar />)
+    const adminTexts = screen.getAllByText('Admin')
+    // Appears in both the nav link and the user-section badge
+    expect(adminTexts.length).toBeGreaterThanOrEqual(2)
+    const adminNavLink = adminTexts[0].closest('a')
+    expect(adminNavLink).toHaveAttribute('href', '/admin/plans')
+    // Amber indicator dot on the avatar
+    const dots = document.querySelectorAll('span.bg-amber-500')
+    expect(dots.length).toBeGreaterThanOrEqual(1)
+    // Admin users do not see the Free badge or View Plans CTA
+    expect(screen.queryByText('Free')).not.toBeInTheDocument()
+    expect(screen.queryByText('View Plans')).not.toBeInTheDocument()
+  })
+
+  it('renders Early Access badge and violet dot for early access users', () => {
+    currentUser = { ...defaultUser, isEarlyAccess: true }
+    render(<Sidebar />)
+    expect(screen.getByText('Early Access')).toBeInTheDocument()
+    const dots = document.querySelectorAll('span.bg-violet-500')
+    expect(dots.length).toBeGreaterThanOrEqual(1)
+    expect(screen.queryByText('Free')).not.toBeInTheDocument()
+    expect(screen.queryByText('View Plans')).not.toBeInTheDocument()
+  })
+
+  it('renders the plan name badge for active subscribers', () => {
+    currentHasActiveSubscription = true
+    currentSubscription = { plan: { name: 'Pro' } }
+    render(<Sidebar />)
+    expect(screen.getByText('Pro')).toBeInTheDocument()
+    expect(screen.queryByText('Free')).not.toBeInTheDocument()
+    expect(screen.queryByText('View Plans')).not.toBeInTheDocument()
+  })
+
+  it('shows the Free badge and View Plans CTA for free users', () => {
+    render(<Sidebar />)
+    expect(screen.getByText('Free')).toBeInTheDocument()
+    expect(screen.getByText('View Plans')).toBeInTheDocument()
+  })
+
+  it('shows a collapsed View Plans icon link for free users when collapsed', () => {
+    render(<Sidebar />)
+    fireEvent.click(screen.getByTitle('Collapse sidebar'))
+    expect(screen.queryByText('View Plans')).not.toBeInTheDocument()
+    const pricingLink = screen.getAllByRole('link').find((l) => l.getAttribute('href') === '/pricing')
+    expect(pricingLink).toBeInTheDocument()
+    expect(pricingLink?.getAttribute('title')).toBe('View Plans')
+  })
+})
+
+// ════════════════════════════════════════════════════════════
+// Sidebar — getInitials avatar variants
+// ════════════════════════════════════════════════════════════
+
+describe('Sidebar getInitials', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    mockUsePathname.mockReturnValue('/')
+    mockUseSearchParams.mockReturnValue(new URLSearchParams())
+  })
+
+  it('shows "?" in the avatar when the user has no display name', () => {
+    currentUser = { ...defaultUser, displayName: null }
+    render(<Sidebar />)
+    expect(screen.getByText('?')).toBeInTheDocument()
+    // Falls back to the generic "User" label in the name row
+    expect(screen.getByText('User')).toBeInTheDocument()
+  })
+
+  it('shows the first two letters uppercase for a single-word display name', () => {
+    currentUser = { ...defaultUser, displayName: 'alice' }
+    render(<Sidebar />)
+    expect(screen.getByText('AL')).toBeInTheDocument()
   })
 })

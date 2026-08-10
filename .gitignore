@@ -8,3 +8,11 @@ Thumbs.db
 test_logs/
 sonar-config.json
 images/
+
+# IDE / tooling local config
+.sonarlint/
+.vscode/
+
+# SonarQube bulk-fix session scratch
+sonarqube_tmp/
+.pagbank-api-requests-responses.md

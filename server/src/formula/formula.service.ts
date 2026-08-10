@@ -13,9 +13,9 @@ const allowedFunctions = [
 
 function transformModSyntax(formula: string): string {
   // Transform mod(key) -> key_mod (a safe variable we'll pre-compute)
-  return formula.replace(/mod\(([a-zA-Z_][a-zA-Z0-9_]*)\)/g, (_, key) => `${key}_mod`)
+  return formula.replace(/mod\(([a-zA-Z_]\w*)\)/g, (_, key) => `${key}_mod`)
 }
-const allowedOperators = ['+', '-', '*', '/', '(', ')', '^']
+const allowedOperators = new Set(['+', '-', '*', '/', '(', ')', '^'])
 
 @Injectable()
 export class FormulaService {
@@ -94,7 +94,7 @@ export class FormulaService {
     if (n.isSymbolNode) {
       const name = n.name as string
       // Check if variable is known and uses only valid characters
-      if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+      if (!/^[a-zA-Z_]\w*$/.test(name)) {
         throw new BadRequestException(this.i18n.t('formula.invalidVarName', { args: { name } }))
       }
       // Only allow known variables (attributes, profiles, mod-suffixed, bonus, penalty, etc.)
@@ -112,11 +112,15 @@ export class FormulaService {
 
     if (n.isOperatorNode) {
       const op = n.op as string
-      if (!allowedOperators.includes(op) && !['and', 'or', 'not', 'xor', '==', '!=', '<', '>', '<=', '>='].includes(op)) {
+      if (!allowedOperators.has(op) && !['and', 'or', 'not', 'xor', '==', '!=', '<', '>', '<=', '>='].includes(op)) {
         throw new BadRequestException(this.i18n.t('formula.operatorNotAllowed', { args: { op } }))
       }
     }
 
+    this.validateNodeChildren(n, knownVariables)
+  }
+
+  private validateNodeChildren(n: Record<string, unknown>, knownVariables: string[]): void {
     // Recursively validate child nodes
     if (n.args && Array.isArray(n.args)) {
       for (const arg of n.args) {
@@ -160,7 +164,7 @@ export class FormulaService {
   extractVariables(formula: string): string[] {
     if (!formula || formula.trim().length === 0) return []
     const transformed = transformModSyntax(formula)
-    const tokens = transformed.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || []
+    const tokens = transformed.match(/[a-zA-Z_]\w*/g) || []
     const functionNames = new Set([
       'mod', 'floor', 'ceil', 'round', 'max', 'min', 'abs',
       'add', 'subtract', 'multiply', 'divide', 'pow', 'sqrt',

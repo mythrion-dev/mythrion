@@ -1,6 +1,6 @@
 'use client'
 
-export function StoryField({ label, value }: { label: string; value: string | null | undefined }) {
+export function StoryField({ label, value }: { readonly label: string; readonly value: string | null | undefined }) {
   const text = value?.trim()
   if (!text) return null
   return (

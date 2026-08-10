@@ -21,25 +21,26 @@ export function CollapsibleSkillRow({
   onToggleActive, onOthersChange, onProfileChange, onAttributeChange,
   templateAttributes, expandedSkillId, onExpandToggle, modifiersEnabled,
 }: {
-  skill: SkillValue
-  result: number | null
-  profiles: SkillModifierProfile[]
-  selections: Record<string, string | null>
-  active: boolean
-  others: number
-  onToggleActive: () => void
-  onOthersChange: (v: number) => void
-  onProfileChange: (profileId: string, optionId: string | null) => void
-  onAttributeChange?: (attributeId: string | null) => void
-  templateAttributes?: { id: string; key: string; name: string }[]
-  expandedSkillId: string | null
-  onExpandToggle: (id: string) => void
-  modifiersEnabled?: boolean
+  readonly skill: SkillValue
+  readonly result: number | null
+  readonly profiles: SkillModifierProfile[]
+  readonly selections: Record<string, string | null>
+  readonly active: boolean
+  readonly others: number
+  readonly onToggleActive: () => void
+  readonly onOthersChange: (v: number) => void
+  readonly onProfileChange: (profileId: string, optionId: string | null) => void
+  readonly onAttributeChange?: (attributeId: string | null) => void
+  readonly templateAttributes?: { id: string; key: string; name: string }[]
+  readonly expandedSkillId: string | null
+  readonly onExpandToggle: (id: string) => void
+  readonly modifiersEnabled?: boolean
 }) {
   const { t } = useTranslation()
   const expanded = expandedSkillId === skill.skillId
   const skillId = skill.skillId
   const hasAttrDropdown = (skill.skill.allowedAttributeIds?.length ?? 0) > 0 && !!templateAttributes && !!onAttributeChange
+  const resultDisplay = active ? (result ?? '—') : '0'
 
   return (
     <div className={`rounded-lg border border-border bg-background/30 overflow-hidden transition-opacity ${active ? '' : 'opacity-40'}`}>
@@ -57,7 +58,7 @@ export function CollapsibleSkillRow({
               <span className="text-xs text-muted truncate hidden sm:inline">— {skill.skill.description}</span>
             )}
           </div>
-          <div className="flex items-center gap-2 shrink-0 ml-3" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center gap-2 shrink-0 ml-3">
             {hasAttrDropdown && modifiersEnabled !== false ? (
               <Select
                 options={skill.skill.allowedAttributeIds.map(attrId => {
@@ -76,7 +77,7 @@ export function CollapsibleSkillRow({
                   : (skill.skill.defaultAttribute?.name || skill.skill.attribute?.name || '—')}
               </span>
             )}
-            <span className="text-base font-bold text-primary">{active ? (result != null ? result : '—') : '0'}</span>
+            <span className="text-base font-bold text-primary">{resultDisplay}</span>
             <svg className={`w-4 h-4 text-muted transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/>
             </svg>

@@ -158,25 +158,20 @@ describe('TemplateDetailPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders campaign badge', async () => {
-    ;(api.get as any).mockResolvedValue(mockTemplate)
-    render(<TemplateDetailPage />)
-    expect(await screen.findByText('D&D 5e')).toBeInTheDocument()
-  })
-
-  it('renders use count', async () => {
-    ;(api.get as any).mockResolvedValue(mockTemplate)
-    render(<TemplateDetailPage />)
-    expect(await screen.findByText('Used 3 times')).toBeInTheDocument()
-  })
-
-  it('renders edit, clone, and delete buttons', async () => {
+  it.each([
+    { label: 'campaign badge', texts: ['D&D 5e'] },
+    { label: 'use count', texts: ['Used 3 times'] },
+    {
+      label: 'edit, clone, and delete buttons',
+      texts: ['Edit', 'Clone', 'Delete'],
+    },
+  ])('renders $label', async ({ texts }: { texts: string[] }) => {
     ;(api.get as any).mockResolvedValue(mockTemplate)
     render(<TemplateDetailPage />)
     await screen.findByText('Fighter Sheet')
-    expect(screen.getByText('Edit')).toBeInTheDocument()
-    expect(screen.getByText('Clone')).toBeInTheDocument()
-    expect(screen.getByText('Delete')).toBeInTheDocument()
+    texts.forEach((text) => {
+      expect(screen.getByText(text)).toBeInTheDocument()
+    })
   })
 
   /* ── Feature summary cards ── */

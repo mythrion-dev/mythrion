@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo, type ReactNode } from 'react'
 
 export interface BreadcrumbSegment {
   label: string
@@ -16,7 +16,7 @@ interface NavigationContextValue {
 
 const NavigationContext = createContext<NavigationContextValue | null>(null)
 
-export function NavigationProvider({ children }: { children: ReactNode }) {
+export function NavigationProvider({ children }: { readonly children: ReactNode }) {
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbSegment[]>([])
   // Use a ref to track mounted segments per location to avoid stale closures
   const segmentsRef = useRef<BreadcrumbSegment[]>([])
@@ -24,8 +24,8 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const pushSegment = useCallback((segment: BreadcrumbSegment) => {
     setBreadcrumbs(prev => {
       // Avoid duplicates - if the same segment is already the last one, skip
-      if (prev.length > 0 && prev[prev.length - 1].label === segment.label &&
-          prev[prev.length - 1].href === segment.href) {
+      if (prev.length > 0 && prev.at(-1)?.label === segment.label &&
+          prev.at(-1)?.href === segment.href) {
         return prev
       }
       const next = [...prev, segment]
@@ -47,8 +47,13 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     setBreadcrumbs(segments)
   }, [])
 
+  const value = useMemo(
+    () => ({ breadcrumbs, setBreadcrumbs: setCrumbs, pushSegment, popSegment }),
+    [breadcrumbs, setCrumbs, pushSegment, popSegment],
+  )
+
   return (
-    <NavigationContext.Provider value={{ breadcrumbs, setBreadcrumbs: setCrumbs, pushSegment, popSegment }}>
+    <NavigationContext.Provider value={value}>
       {children}
     </NavigationContext.Provider>
   )

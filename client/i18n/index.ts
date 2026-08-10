@@ -23,6 +23,7 @@ import errors from './locales/en/errors.json'
 import community from './locales/en/community.json'
 import templates from './locales/en/templates.json'
 import billing from './locales/en/billing.json'
+import legal from './locales/en/legal.json'
 
 export const SUPPORTED_LANGUAGES = ['en', 'pt-BR'] as const
 export type Language = (typeof SUPPORTED_LANGUAGES)[number]
@@ -50,6 +51,7 @@ export const NAMESPACES = [
   'community',
   'templates',
   'billing',
+  'legal',
 ] as const
 
 /** Map any detected/input code to one of our supported languages. */
@@ -117,6 +119,7 @@ const enResources = {
   community,
   templates,
   billing,
+  legal,
 }
 
 const ptBrLoaders: Record<string, () => Promise<ResourceKey>> = {
@@ -139,6 +142,7 @@ const ptBrLoaders: Record<string, () => Promise<ResourceKey>> = {
   community: () => import('./locales/pt-BR/community.json').then((m) => m.default),
   templates: () => import('./locales/pt-BR/templates.json').then((m) => m.default),
   billing: () => import('./locales/pt-BR/billing.json').then((m) => m.default),
+  legal: () => import('./locales/pt-BR/legal.json').then((m) => m.default),
 }
 
 // `lng` is pinned to the default so the language detector does NOT run during

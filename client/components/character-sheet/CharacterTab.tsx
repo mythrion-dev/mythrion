@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { InlineText, InlineNumber } from '@/lib/inline-editable'
-import { NumericInput } from '@/components/shared/NumericInput'
 import { Select } from '@/components/shared/Select'
 import { ProfessionalSkillsSection } from './ProfessionalSkillsSection'
 import type { CharacterSheet, AcResultMap, SkillModifierProfile, SheetPermissions } from './types'
@@ -21,37 +20,37 @@ function getAttrModifier(
 // ── Props ──
 
 interface CharacterTabProps {
-  sheet: CharacterSheet
-  permissions: SheetPermissions
-  enabledCoreResources: CharacterSheet['template']['coreResources']
-  handleCoreResourceChange: (coreResourceId: string, field: 'current' | 'maximum' | 'notes', value: string) => Promise<void>
-  handleCoreResourceModify?: (coreResourceId: string, delta: number) => void
-  saveFieldValue: (fieldId: string, value: string) => Promise<void>
-  modifierResults: Record<string, number | null>
-  saveAttributeValue: (attributeId: string, value: string) => Promise<void>
-  modifiersEnabled: boolean | undefined
-  armorClasses: CharacterSheet['template']['armorClasses']
-  acResults: AcResultMap
-  handleAcFieldChange: (fieldId: string, value: string) => void
-  handleAcAttributeModifierChange: (acModifierId: string, attributeId: string | null) => Promise<void>
-  allProfiles: SkillModifierProfile[]
-  profileSelections: Record<string, Record<string, string | null>>
-  activeSkills: Record<string, boolean>
-  othersValues: Record<string, number>
-  handleSkillToggle: (skillId: string) => void
-  handleOthersChange: (skillId: string, value: number) => void
-  handleProfileChange: (skillId: string, profileId: string, optionId: string | null) => void
-  handleSkillAttributeChange: (skillId: string, attributeId: string | null) => void
-  expandedSkillId: string | null
-  setExpandedSkillId: React.Dispatch<React.SetStateAction<string | null>>
-  skillResults: Record<string, number | null>
-  sheetId: string
+  readonly sheet: CharacterSheet
+  readonly permissions: SheetPermissions
+  readonly enabledCoreResources: CharacterSheet['template']['coreResources']
+  readonly handleCoreResourceChange: (coreResourceId: string, field: 'current' | 'maximum' | 'notes', value: string) => Promise<void>
+  readonly handleCoreResourceModify?: (coreResourceId: string, delta: number) => void
+  readonly saveFieldValue: (fieldId: string, value: string) => Promise<void>
+  readonly modifierResults: Record<string, number | null>
+  readonly saveAttributeValue: (attributeId: string, value: string) => Promise<void>
+  readonly modifiersEnabled: boolean | undefined
+  readonly armorClasses: CharacterSheet['template']['armorClasses']
+  readonly acResults: AcResultMap
+  readonly handleAcFieldChange: (fieldId: string, value: string) => void
+  readonly handleAcAttributeModifierChange: (acModifierId: string, attributeId: string | null) => Promise<void>
+  readonly allProfiles: SkillModifierProfile[]
+  readonly profileSelections: Record<string, Record<string, string | null>>
+  readonly activeSkills: Record<string, boolean>
+  readonly othersValues: Record<string, number>
+  readonly handleSkillToggle: (skillId: string) => void
+  readonly handleOthersChange: (skillId: string, value: number) => void
+  readonly handleProfileChange: (skillId: string, profileId: string, optionId: string | null) => void
+  readonly handleSkillAttributeChange: (skillId: string, attributeId: string | null) => void
+  readonly expandedSkillId: string | null
+  readonly setExpandedSkillId: React.Dispatch<React.SetStateAction<string | null>>
+  readonly skillResults: Record<string, number | null>
+  readonly sheetId: string
   /** When true, ProfessionalSkillsSection operates in local mode (no API calls). */
-  localMode?: boolean
+  readonly localMode?: boolean
   /** Professional skills state for local mode (required when localMode is true). */
-  localSkills?: import('./types').ProfessionalSkill[]
+  readonly localSkills?: import('./types').ProfessionalSkill[]
   /** Called when professional skills change in local mode. */
-  onLocalSkillsChange?: (skills: import('./types').ProfessionalSkill[]) => void
+  readonly onLocalSkillsChange?: (skills: import('./types').ProfessionalSkill[]) => void
 }
 
 export function CharacterTab(props: CharacterTabProps) {
@@ -310,7 +309,7 @@ export function CharacterTab(props: CharacterTabProps) {
                   </h4>
                   <div className="w-16 h-16 rounded-full border-[2px] border-primary/25 flex items-center justify-center bg-background/40">
                     <span className="text-2xl font-bold text-primary tracking-tight tabular-nums">
-                      {acResults[ac.id]?.total !== undefined ? acResults[ac.id].total : '—'}
+                      {acResults[ac.id]?.total ?? '—'}
                     </span>
                   </div>
                   <div className="w-full space-y-1 mt-1">
@@ -342,6 +341,8 @@ export function CharacterTab(props: CharacterTabProps) {
                           const selectedAttribute = sheet.template.attributes.find(a => a.id === selectedAttributeId) ?? am.defaultAttribute ?? am.attribute
                           const modResult = selectedAttribute ? modifierResults[selectedAttribute.id] : null
                           const canChangeAttribute = canEditCharacter && am.allowPlayerSelection
+                          const sign = modResult != null && modResult >= 0 ? '+' : ''
+                          const modDisplay = modResult != null ? `${sign}${modResult}` : '—'
                           return (
                             <div key={am.id} className="flex items-center justify-between gap-1 text-[0.7rem]">
                               {canChangeAttribute ? (
@@ -358,9 +359,7 @@ export function CharacterTab(props: CharacterTabProps) {
                                 </span>
                               )}
                               <span className="font-semibold tabular-nums text-muted-foreground">
-                                {modResult !== null && modResult !== undefined
-                                  ? `${modResult >= 0 ? '+' : ''}${modResult}`
-                                  : '—'}
+                                {modDisplay}
                               </span>
                             </div>
                           )
@@ -452,23 +451,23 @@ export function CharacterTab(props: CharacterTabProps) {
 // ── Skill Table Sub-component (with internal search + sticky header) ──
 
 interface SkillTableProps {
-  title: string
-  skills: CharacterSheet['skillValues']
-  isActiveSide: boolean
-  canEditSkills: boolean
-  allProfiles: SkillModifierProfile[]
-  profileSelections: Record<string, Record<string, string | null>>
-  othersValues: Record<string, number>
-  skillResults: Record<string, number | null>
-  modifierResults: Record<string, number | null>
-  modifiersEnabled: boolean
-  expandedSkillId: string | null
-  onExpandToggle: React.Dispatch<React.SetStateAction<string | null>>
-  onToggle: (skillId: string) => void
-  onOthersChange: (skillId: string, value: number) => void
-  onProfileChange: (skillId: string, profileId: string, optionId: string | null) => void
-  onAttributeChange: (skillId: string, attributeId: string | null) => void
-  templateAttributes: { id: string; key: string; name: string }[]
+  readonly title: string
+  readonly skills: CharacterSheet['skillValues']
+  readonly isActiveSide: boolean
+  readonly canEditSkills: boolean
+  readonly allProfiles: SkillModifierProfile[]
+  readonly profileSelections: Record<string, Record<string, string | null>>
+  readonly othersValues: Record<string, number>
+  readonly skillResults: Record<string, number | null>
+  readonly modifierResults: Record<string, number | null>
+  readonly modifiersEnabled: boolean
+  readonly expandedSkillId: string | null
+  readonly onExpandToggle: React.Dispatch<React.SetStateAction<string | null>>
+  readonly onToggle: (skillId: string) => void
+  readonly onOthersChange: (skillId: string, value: number) => void
+  readonly onProfileChange: (skillId: string, profileId: string, optionId: string | null) => void
+  readonly onAttributeChange: (skillId: string, attributeId: string | null) => void
+  readonly templateAttributes: { id: string; key: string; name: string }[]
 }
 
 function SkillTable({
@@ -500,6 +499,15 @@ function SkillTable({
   }, [skills, search])
 
   const hasSearch = skills.length > 0
+
+  let emptyText: string
+  if (search.trim()) {
+    emptyText = t('character:noSkillsMatchSearch')
+  } else if (isActiveSide) {
+    emptyText = t('character:noActiveSkills')
+  } else {
+    emptyText = t('character:noInactiveSkills')
+  }
 
   return (
     <div className="card !p-0 max-h-[400px] overflow-hidden flex flex-col">
@@ -546,11 +554,7 @@ function SkillTable({
 
         {filteredSkills.length === 0 ? (
           <div className="px-4 py-6 text-center text-xs text-muted">
-            {search.trim()
-              ? t('character:noSkillsMatchSearch')
-              : isActiveSide
-                ? t('character:noActiveSkills')
-                : t('character:noInactiveSkills')}
+            {emptyText}
           </div>
         ) : (
           <div className="divide-y divide-border/40">
@@ -560,9 +564,9 @@ function SkillTable({
               const attrMod = isActiveSide
                 ? getAttrModifier(selectedAttr?.id, modifierResults)
                 : null
-              const total = isActiveSide
-                ? (skillResults[sv.skillId] != null ? skillResults[sv.skillId] : '—')
-                : 0
+              const result = skillResults[sv.skillId]
+              const activeTotal = result ?? '—'
+              const total = isActiveSide ? activeTotal : 0
 
               const skillProfiles = allProfiles.filter(p => {
                 const tm = (p as any).targetMode ?? 'ALL_SKILLS'

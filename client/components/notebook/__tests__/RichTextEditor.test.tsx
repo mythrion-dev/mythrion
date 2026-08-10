@@ -40,8 +40,9 @@ function safeClientRects(this: { getClientRects?: () => DOMRectList }) {
 }
 const NON_ELEMENT_TYPES = [Text, Comment, CDATASection, ProcessingInstruction, DocumentFragment]
 NON_ELEMENT_TYPES.forEach((ctor) => {
-  if (ctor && typeof ctor === 'function' && !ctor.prototype.getClientRects) {
-    ctor.prototype.getClientRects = safeClientRects
+  const proto = ctor.prototype as unknown as { getClientRects?: () => DOMRectList }
+  if (ctor && typeof ctor === 'function' && !proto.getClientRects) {
+    proto.getClientRects = safeClientRects
   }
 })
 
@@ -403,7 +404,7 @@ describe('Table CSS class structure (programmatic editor)', () => {
     editor.commands.insertTable({ rows: 2, cols: 2, withHeaderRow: true })
 
     const cells = editor.view.dom.querySelectorAll('th, td')
-    expect(cells.length).toBe(4)
+    expect(cells).toHaveLength(4)
 
     cells.forEach((cell) => {
       // Cells should trivially have the default table layout

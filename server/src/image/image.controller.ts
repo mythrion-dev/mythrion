@@ -5,7 +5,6 @@ import {
   Delete,
   Param,
   Res,
-  Req,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -16,7 +15,7 @@ import { FileInterceptor } from '@nestjs/platform-express'
 import { I18nService } from 'nestjs-i18n'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { ImageService } from './image.service.js'
-import type { Response, Request } from 'express'
+import type { Response } from 'express'
 
 @Controller('images')
 export class ImageController {

@@ -259,7 +259,13 @@ export function PdfViewerSidebar({
     <>
       {/* Mobile overlay — tapping the scrim minimizes (preserves state), never destroys */}
       {panelVisible && (
-        <div className="fixed inset-0 z-40 bg-black/40 sm:hidden" onClick={handleMinimize} />
+        <button
+          type="button"
+          onClick={handleMinimize}
+          tabIndex={-1}
+          aria-hidden="true"
+          className="fixed inset-0 z-40 bg-black/40 sm:hidden"
+        />
       )}
 
       {/* Sidebar panel */}

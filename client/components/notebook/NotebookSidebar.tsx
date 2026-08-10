@@ -37,14 +37,14 @@ interface Notebook {
 }
 
 interface NotebookSidebarProps {
-  adventureId: string
-  isGM: boolean
+  readonly adventureId: string
+  readonly isGM: boolean
   /** Force-open the sidebar (from tab button click) */
-  forceOpen?: boolean
+  readonly forceOpen?: boolean
   /** Called when sidebar should close (from tab button) */
-  onClose?: () => void
+  readonly onClose?: () => void
   /** Hide floating toggle button (adventure page already has tab) */
-  hideToggle?: boolean
+  readonly hideToggle?: boolean
 }
 
 interface ContextMenuState {
@@ -86,7 +86,40 @@ function persistState(adventureId: string, userId: string | null, state: { activ
 
 function stripHtml(html: string): string {
   if (!html) return ''
-  return html.replace(/<[^>]*>/g, '')
+  // Strip tags in linear time: find each '<' and its matching '>'. This avoids
+  // the super-linear backtracking of /<[^>]*>/ on malformed input (e.g. many '<').
+  let result = ''
+  let cursor = 0
+  while (cursor < html.length) {
+    const open = html.indexOf('<', cursor)
+    if (open === -1) {
+      result += html.slice(cursor)
+      break
+    }
+    result += html.slice(cursor, open)
+    const close = html.indexOf('>', open + 1)
+    if (close === -1) {
+      // Unclosed tag — keep the remainder, matching the regex behavior
+      result += html.slice(open)
+      break
+    }
+    cursor = close + 1
+  }
+  return result
+}
+
+/* ── Folder helpers (extracted to avoid deeply nested callbacks) ── */
+
+function removePageFromFolder(folder: Folder, pageId: string): Folder {
+  return { ...folder, pages: folder.pages.filter((p) => p.id !== pageId) }
+}
+
+function findAndRemovePageFromFolder(
+  folder: Folder,
+  pageId: string,
+): { folder: Folder; page: Page | null } {
+  const page = folder.pages.find((p) => p.id === pageId) ?? null
+  return { folder: removePageFromFolder(folder, pageId), page }
 }
 
 /* ── Component ── */
@@ -121,7 +154,6 @@ export function NotebookSidebar({
   const [folderDeleteDialog, setFolderDeleteDialog] = useState<FolderDeleteDialogState | null>(null)
 
   // Drag-over tracking
-  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
   const [dragOverRoot, setDragOverRoot] = useState(false)
 
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -192,7 +224,6 @@ export function NotebookSidebar({
     setCreatingPage(false)
     setContextMenu(null)
     setFolderDeleteDialog(null)
-    setDragOverFolderId(null)
     setDragOverRoot(false)
     setIsOpen(false)
     onClose?.()
@@ -433,10 +464,7 @@ export function NotebookSidebar({
           return {
             ...prev,
             pages: prev.pages.filter((p) => p.id !== pageId),
-            folders: prev.folders.map((f) => ({
-              ...f,
-              pages: f.pages.filter((p) => p.id !== pageId),
-            })),
+            folders: prev.folders.map((f) => removePageFromFolder(f, pageId)),
           }
         })
         if (activePageId === pageId) {
@@ -466,12 +494,9 @@ export function NotebookSidebar({
 
           // Remove from its current location
           const updatedFolders = prev.folders.map((f) => {
-            const page = f.pages.find((p) => p.id === pageId)
+            const { folder, page } = findAndRemovePageFromFolder(f, pageId)
             if (page) movedPage = page
-            return {
-              ...f,
-              pages: f.pages.filter((p) => p.id !== pageId),
-            }
+            return folder
           })
 
           if (!movedPage) {
@@ -733,18 +758,15 @@ export function NotebookSidebar({
             : 'translate-x-full w-1/2 max-sm:w-full sm:max-w-[95vw] lg:w-1/2 xl:w-[45%]'
         }`}
         aria-label={t('notebook:campaignNotebookSidebar')}
-        role="complementary"
       >
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
           <h2 className="text-sm font-semibold text-foreground">{t('notebook:campaignNotebook')}</h2>
           <div className="flex items-center gap-1">
             {notebook && !activePage && (
-              <>
-                <span className="text-[10px] text-muted-foreground bg-hover px-1.5 py-0.5 rounded">
-                  {isGM ? t('notebook:gmOnly') : t('common:private')}
-                </span>
-              </>
+              <span className="text-[10px] text-muted-foreground bg-hover px-1.5 py-0.5 rounded">
+                {isGM ? t('notebook:gmOnly') : t('common:private')}
+              </span>
             )}
             <button
               type="button"
@@ -886,14 +908,14 @@ export function NotebookSidebar({
               {/* ── Folders section ── */}
               {!searchQuery.trim() && notebook.folders.length > 0 && (
                 <div>
-                  {notebook.folders
+                  {[...notebook.folders]
                     .sort((a, b) => a.sortOrder - b.sortOrder)
                     .map((folder) => (
                       <NotebookFolder
                         key={folder.id}
                         id={folder.id}
                         name={folder.name}
-                        pages={folder.pages.sort((a, b) => a.sortOrder - b.sortOrder)}
+                        pages={[...folder.pages].sort((a, b) => a.sortOrder - b.sortOrder)}
                         activePageId={activePageId}
                         isExpanded={expandedFolders.includes(folder.id)}
                         onToggle={() => toggleFolder(folder.id)}
@@ -904,7 +926,6 @@ export function NotebookSidebar({
                         onCreatePage={handleCreatePage}
                         onPageContextMenu={handlePageContextMenu}
                         onDropOnFolder={handleDropOnFolder}
-                        onDragOverFolder={setDragOverFolderId}
                       />
                     ))}
                 </div>
@@ -930,7 +951,7 @@ export function NotebookSidebar({
                         </p>
                       )}
                       <div className="space-y-0.5">
-                        {notebook.pages
+                        {[...notebook.pages]
                           .sort((a, b) => a.sortOrder - b.sortOrder)
                           .map((page) => (
                             <NotebookPageItem
@@ -1185,9 +1206,13 @@ export function NotebookSidebar({
             </p>
 
             {/* Move to Root */}
-            <label className="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-hover transition-colors mb-1">
+            <label
+              htmlFor="delete-move-root"
+              className="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-hover transition-colors mb-1"
+            >
               <input
                 type="radio"
+                id="delete-move-root"
                 name="delete-move-option"
                 checked={folderDeleteDialog.moveToFolderId === null}
                 onChange={() =>
@@ -1195,20 +1220,24 @@ export function NotebookSidebar({
                 }
                 className="mt-0.5 accent-accent"
               />
-              <div>
-                <span className="text-sm text-secondary-foreground font-medium">{t('notebook:movePagesToRoot')}</span>
-                <p className="text-xs text-muted-foreground mt-0.5">
+              <div className="text-sm text-secondary-foreground font-medium">
+                {t('notebook:movePagesToRoot')}
+                <p className="text-xs text-muted-foreground mt-0.5 font-normal">
                   {t('notebook:pagesBecomeUncategorized')}
                 </p>
               </div>
             </label>
 
             {/* Move to another folder */}
-            <label className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-hover transition-colors mb-3 ${
-              otherFoldersForDelete.length === 0 ? 'opacity-50' : ''
-            }`}>
+            <label
+              htmlFor="delete-move-folder"
+              className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-hover transition-colors mb-3 ${
+                otherFoldersForDelete.length === 0 ? 'opacity-50' : ''
+              }`}
+            >
               <input
                 type="radio"
+                id="delete-move-folder"
                 name="delete-move-option"
                 checked={folderDeleteDialog.moveToFolderId !== null}
                 disabled={otherFoldersForDelete.length === 0}
@@ -1221,8 +1250,8 @@ export function NotebookSidebar({
                 }}
                 className="mt-0.5 accent-accent"
               />
-              <div className="flex-1">
-                <span className="text-sm text-secondary-foreground font-medium">{t('notebook:moveToAnotherFolder')}</span>
+              <div className="flex-1 text-sm text-secondary-foreground font-medium">
+                {t('notebook:moveToAnotherFolder')}
                 {folderDeleteDialog.moveToFolderId !== null && otherFoldersForDelete.length > 0 && (
                   <select
                     value={folderDeleteDialog.moveToFolderId ?? ''}
@@ -1232,7 +1261,7 @@ export function NotebookSidebar({
                         moveToFolderId: e.target.value || null,
                       })
                     }
-                    className="w-full mt-1.5 px-2 py-1 text-sm rounded-lg bg-input border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-accent/50"
+                    className="w-full mt-1.5 px-2 py-1 text-sm rounded-lg bg-input border border-border text-foreground font-normal focus:outline-none focus:ring-1 focus:ring-accent/50"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {otherFoldersForDelete.map((f) => (
@@ -1243,7 +1272,7 @@ export function NotebookSidebar({
                   </select>
                 )}
                 {otherFoldersForDelete.length === 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">{t('notebook:noOtherFoldersAvailable')}</p>
+                  <p className="text-xs text-muted-foreground mt-1 font-normal">{t('notebook:noOtherFoldersAvailable')}</p>
                 )}
               </div>
             </label>

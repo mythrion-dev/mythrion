@@ -644,7 +644,7 @@ describe('NpcEditDrawer', () => {
         expect(screen.getByText('Proficiency:')).toBeInTheDocument()
       })
       // Find the Proficiency profile Select by its label
-      const profRow = screen.getByText('Proficiency:').closest('.flex')!
+      const profRow = screen.getByText('Proficiency:').closest('.flex')! as HTMLElement
       const trigger = within(profRow).getByRole('combobox')
       fireEvent.click(trigger)
       fireEvent.click(screen.getByRole('option', { name: /Expert/ }))

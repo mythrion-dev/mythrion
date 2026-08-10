@@ -268,13 +268,14 @@ export default function NewCharacterSheetPage() {
         </div>
 
         <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
-          {fetchingTemplates ? (
+          {fetchingTemplates && (
             <div className="grid grid-cols-1 gap-2">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="skeleton h-20 w-full rounded-lg" />
               ))}
             </div>
-          ) : filteredTemplates.length === 0 ? (
+          )}
+          {!fetchingTemplates && filteredTemplates.length === 0 && (
             <div className="flex flex-col items-center py-8 text-center space-y-2">
               <svg
                 className="w-10 h-10 text-muted/40"
@@ -303,8 +304,8 @@ export default function NewCharacterSheetPage() {
                 </Link>
               )}
             </div>
-          ) : (
-            filteredTemplates.map((tmpl) => {
+          )}
+          {!fetchingTemplates && filteredTemplates.length > 0 && filteredTemplates.map((tmpl) => {
               const isSelected = selectedTemplateId === tmpl.id
               const attrCount = tmpl.attributes?.length ?? 0
               const skillCount = tmpl.templateSkills?.length ?? 0
@@ -359,8 +360,7 @@ export default function NewCharacterSheetPage() {
                   </div>
                 </button>
               )
-            })
-          )}
+            })}
         </div>
 
         <div className="flex gap-3 justify-end pt-2">

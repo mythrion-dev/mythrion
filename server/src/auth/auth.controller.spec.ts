@@ -43,6 +43,12 @@ describe('AuthController', () => {
       resendTwoFactorCode: jest.fn().mockResolvedValue({ twoFactorId: 'challenge-2' }),
       sendTwoFactorCode: jest.fn().mockResolvedValue({ twoFactorId: 'challenge-1' }),
       confirmTwoFactor: jest.fn().mockResolvedValue({ recoveryCodes: ['AAAA'] }),
+      verifyEmail: jest.fn().mockResolvedValue({ success: true }),
+      resendVerification: jest.fn().mockResolvedValue({ success: true }),
+      forgotPassword: jest.fn().mockResolvedValue({ success: true }),
+      resetPassword: jest.fn().mockResolvedValue({ success: true }),
+      changePassword: jest.fn().mockResolvedValue({ success: true }),
+      changeEmail: jest.fn().mockResolvedValue({ success: true }),
     }
     mockLanguageService = {
       normalize: jest.fn().mockReturnValue('en'),
@@ -72,10 +78,11 @@ describe('AuthController', () => {
         email: 'test@test.com',
         password: 'password123',
         displayName: 'Test User',
+        acceptTerms: true,
       }
       const result = await controller.register(dto, mockUserReq)
       expect(mockLanguageService.normalize).toHaveBeenCalledWith(undefined)
-      expect(mockAuthService.register).toHaveBeenCalledWith(dto, 'en')
+      expect(mockAuthService.register).toHaveBeenCalledWith(dto, 'en', mockUserReq)
       expect(result).toEqual({ accessToken: 'mock-access', refreshToken: 'mock-refresh' })
     })
 
@@ -83,6 +90,7 @@ describe('AuthController', () => {
       const dto: RegisterDto = {
         email: 'test@test.com',
         password: 'password123',
+        acceptTerms: true,
       }
       const req = {
         headers: { 'accept-language': 'pt-BR,pt;q=0.9' },
@@ -92,15 +100,15 @@ describe('AuthController', () => {
       await controller.register(dto, req)
 
       expect(mockLanguageService.normalize).toHaveBeenCalledWith('pt-BR,pt;q=0.9')
-      expect(mockAuthService.register).toHaveBeenCalledWith(dto, 'pt-BR')
+      expect(mockAuthService.register).toHaveBeenCalledWith(dto, 'pt-BR', req)
     })
   })
 
   describe('login', () => {
     it('should delegate to authService.login with the dto', async () => {
       const dto: LoginDto = { email: 'test@test.com', password: 'password123' }
-      const result = await controller.login(dto)
-      expect(mockAuthService.login).toHaveBeenCalledWith(dto)
+      const result = await controller.login(dto, mockUserReq)
+      expect(mockAuthService.login).toHaveBeenCalledWith(dto, mockUserReq)
       expect(result).toEqual({ accessToken: 'mock-access', refreshToken: 'mock-refresh' })
     })
   })
@@ -155,9 +163,101 @@ describe('AuthController', () => {
   describe('verifyTwoFactor', () => {
     it('should delegate to authService.verifyTwoFactor with the dto', async () => {
       const dto = { twoFactorId: 'challenge-1', code: '123456' }
-      const result = await controller.verifyTwoFactor(dto)
-      expect(mockAuthService.verifyTwoFactor).toHaveBeenCalledWith(dto)
+      const result = await controller.verifyTwoFactor(dto, mockUserReq)
+      expect(mockAuthService.verifyTwoFactor).toHaveBeenCalledWith(dto, mockUserReq)
       expect(result).toEqual({ accessToken: 'mock-access', refreshToken: 'mock-refresh' })
+    })
+  })
+
+  describe('verifyEmail', () => {
+    it('should delegate to authService.verifyEmail with the dto', async () => {
+      const dto = { token: 'signed-verification-token' }
+      const result = await controller.verifyEmail(dto)
+      expect(mockAuthService.verifyEmail).toHaveBeenCalledWith(dto)
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('resendVerification', () => {
+    it('should delegate to authService.resendVerification with the dto', async () => {
+      const dto = { email: 'test@test.com' }
+      const result = await controller.resendVerification(dto)
+      expect(mockAuthService.resendVerification).toHaveBeenCalledWith(dto)
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('forgotPassword', () => {
+    it('should delegate to authService.forgotPassword with the dto', async () => {
+      const dto = { email: 'test@test.com' }
+      const result = await controller.forgotPassword(dto)
+      expect(mockAuthService.forgotPassword).toHaveBeenCalledWith(dto)
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('resetPassword', () => {
+    it('should delegate to authService.resetPassword with the dto', async () => {
+      const dto = { token: 'signed-reset-token', password: 'NewPassword1!' }
+      const result = await controller.resetPassword(dto)
+      expect(mockAuthService.resetPassword).toHaveBeenCalledWith(dto)
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('changePassword', () => {
+    it('should delegate to authService.changePassword with userId, dto and request', async () => {
+      const dto = {
+        currentPassword: 'OldPassword1!',
+        newPassword: 'NewPassword1!',
+        logoutOtherDevices: true,
+      }
+      const result = await controller.changePassword(mockUserReq, dto)
+      expect(mockAuthService.changePassword).toHaveBeenCalledWith(
+        'user-1',
+        dto,
+        mockUserReq,
+      )
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('changeEmail', () => {
+    it('should delegate to authService.changeEmail with userId and dto', async () => {
+      const dto = { email: 'new@test.com' }
+      const result = await controller.changeEmail(mockUserReq, dto)
+      expect(mockAuthService.changeEmail).toHaveBeenCalledWith('user-1', dto)
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('email verification gating', () => {
+    const skipKey = 'skipEmailVerificationCheck'
+
+    it('should apply @SkipEmailVerificationCheck to the change-email route', () => {
+      expect(Reflect.getMetadata(skipKey, AuthController.prototype.changeEmail)).toBe(true)
+    })
+
+    it('should apply @SkipEmailVerificationCheck to all pre-verification routes', () => {
+      const exempt = [
+        'changePassword',
+        'changeEmail',
+        'sendTwoFactorCode',
+        'confirmTwoFactor',
+        'logout',
+        'getProfile',
+        'updateLanguage',
+        'currentUser',
+      ]
+      for (const method of exempt) {
+        expect(Reflect.getMetadata(skipKey, AuthController.prototype[method])).toBe(true)
+      }
+    })
+
+    it('should NOT apply @SkipEmailVerificationCheck to onboarding', () => {
+      expect(
+        Reflect.getMetadata(skipKey, AuthController.prototype.completeOnboarding),
+      ).toBeUndefined()
     })
   })
 
@@ -172,7 +272,7 @@ describe('AuthController', () => {
 
   describe('sendTwoFactorCode', () => {
     it('should delegate to authService.sendTwoFactorCode with userId and purpose', async () => {
-      const dto = { purpose: 'ENABLE' }
+      const dto = { purpose: 'ENABLE' as const }
       const result = await controller.sendTwoFactorCode(mockUserReq, dto)
       expect(mockAuthService.sendTwoFactorCode).toHaveBeenCalledWith('user-1', 'ENABLE')
       expect(result).toEqual({ twoFactorId: 'challenge-1' })
@@ -181,7 +281,7 @@ describe('AuthController', () => {
 
   describe('confirmTwoFactor', () => {
     it('should delegate to authService.confirmTwoFactor with userId, purpose and dto', async () => {
-      const dto = { purpose: 'ENABLE', twoFactorId: 'challenge-1', code: '123456' }
+      const dto = { purpose: 'ENABLE' as const, twoFactorId: 'challenge-1', code: '123456' }
       const result = await controller.confirmTwoFactor(mockUserReq, dto)
       expect(mockAuthService.confirmTwoFactor).toHaveBeenCalledWith('user-1', 'ENABLE', dto)
       expect(result).toEqual({ recoveryCodes: ['AAAA'] })

@@ -61,6 +61,7 @@ describe('adding resistances', () => {
     const newResistances = onChange.mock.calls[0][0]
     expect(newResistances).toHaveLength(1)
     expect(newResistances[0]).toEqual({
+      id: expect.any(String),
       name: '',
       calculationType: 'MANUAL',
       components: [],
@@ -370,7 +371,7 @@ describe('CALCULATED mode', () => {
       (c: any) => c[0][0]?.attributeModifiers?.length === 1,
     )
     expect(addCall).toBeTruthy()
-    expect(addCall[0][0].attributeModifiers[0]).toEqual({
+    expect(addCall![0][0].attributeModifiers[0]).toEqual({
       attributeId: 'attr-1',
       attributeKey: 'strength',
       attributeName: 'Strength',

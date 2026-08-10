@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import Link from 'next/link'
 import { api } from '@/lib/api'
 
 interface TemplateSummary {
@@ -10,6 +11,7 @@ interface TemplateSummary {
   description: string | null
   campaign: string | null
   useCount: number
+  createdAt: string
   _count?: {
     attributes: number
     templateSkills: number
@@ -41,6 +43,7 @@ export function TemplatePickerModal({
   const { t } = useTranslation()
   const [tab, setTab] = useState<'my-templates' | 'community'>('my-templates')
   const [search, setSearch] = useState('')
+  const [systemFilter, setSystemFilter] = useState('')
 
   // My templates
   const [myTemplates, setMyTemplates] = useState<TemplateSummary[]>([])
@@ -57,6 +60,7 @@ export function TemplatePickerModal({
   const [confirming, setConfirming] = useState(false)
 
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const dialogRef = useRef<HTMLDialogElement>(null)
 
   const fetchMyTemplates = useCallback(async () => {
     setFetchingMine(true)
@@ -89,15 +93,23 @@ export function TemplatePickerModal({
     setSelectedId(null)
     setConfirming(false)
     setSearch('')
+    setSystemFilter('')
     setTab('my-templates')
     fetchMyTemplates()
     // Focus search input after modal mounts
     setTimeout(() => searchInputRef.current?.focus(), 100)
   }, [isOpen, fetchMyTemplates])
 
+  // Open the native dialog in modal mode (jsdom throws "Not implemented" for showModal)
+  useEffect(() => {
+    if (!isOpen) return
+    try { dialogRef.current?.showModal() } catch { /* jsdom */ }
+  }, [isOpen])
+
   const handleTabChange = (newTab: 'my-templates' | 'community') => {
     setTab(newTab)
     setSearch('')
+    setSystemFilter('')
     setSelectedId(null)
     if (newTab === 'community' && community.length === 0) {
       fetchCommunityTemplates()
@@ -116,28 +128,45 @@ export function TemplatePickerModal({
 
   // ── Filtered lists ──
 
-  const filteredMine = myTemplates.filter(t =>
-    !search ||
-    t.name.toLowerCase().includes(search.toLowerCase()) ||
-    (t.campaign ?? '').toLowerCase().includes(search.toLowerCase()),
+  const systems = Array.from(
+    new Set(
+      (tab === 'my-templates' ? myTemplates : community)
+        .map(t => t.campaign)
+        .filter((c): c is string => !!c),
+    ),
+  ).sort((a, b) => a.localeCompare(b))
+
+  const filteredMine = myTemplates.filter(
+    t =>
+      (!search ||
+        t.name.toLowerCase().includes(search.toLowerCase()) ||
+        (t.campaign ?? '').toLowerCase().includes(search.toLowerCase())) &&
+      (!systemFilter || t.campaign === systemFilter),
   )
 
-  const filteredCommunity = community.filter(t =>
-    !search ||
-    t.name.toLowerCase().includes(search.toLowerCase()) ||
-    (t.campaign ?? '').toLowerCase().includes(search.toLowerCase()),
+  const filteredCommunity = community.filter(
+    t =>
+      (!search ||
+        t.name.toLowerCase().includes(search.toLowerCase()) ||
+        (t.campaign ?? '').toLowerCase().includes(search.toLowerCase())) &&
+      (!systemFilter || t.campaign === systemFilter),
   )
 
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div
-        className="card !p-0 max-w-lg w-full mx-4 max-h-[80vh] flex flex-col"
-        role="dialog"
+      <button
+        type="button"
+        className="absolute inset-0 cursor-default"
+        onClick={onClose}
+        aria-label={t('community:closeModal')}
+      />
+      <dialog
+        ref={dialogRef}
+        className="card !p-0 max-w-lg w-full mx-4 max-h-[80vh] flex flex-col relative z-10"
         aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}
+        onCancel={(e) => { e.preventDefault(); onClose() }}
       >
         {/* Header */}
         <div className="p-4 border-b border-border">
@@ -185,6 +214,21 @@ export function TemplatePickerModal({
               {t('campaign:community')}
             </button>
           </div>
+
+          {/* System filter */}
+          {systems.length > 0 && (
+            <select
+              value={systemFilter}
+              onChange={(e) => setSystemFilter(e.target.value)}
+              aria-label={t('campaign:filterBySystem')}
+              className="input-field text-xs mt-2"
+            >
+              <option value="">{t('campaign:allSystems')}</option>
+              {systems.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* List */}
@@ -210,10 +254,19 @@ export function TemplatePickerModal({
                   <p className="text-sm text-muted-foreground">
                     {search ? t('campaign:noTemplatesMatchSearch') : t('campaign:noTemplatesYet')}
                   </p>
-                  {!search && (
-                    <p className="text-xs text-muted mt-1">
-                      {t('campaign:createTemplatesInLibraryFirst')}
-                    </p>
+                  {!search && !systemFilter && (
+                    <>
+                      <p className="text-xs text-muted mt-1">
+                        {t('campaign:createTemplatesInLibraryFirst')}
+                      </p>
+                      <Link
+                        href="/dashboard/templates/new"
+                        onClick={onClose}
+                        className="btn-primary text-xs !px-3 !py-1.5 mt-3"
+                      >
+                        {t('templates:newTemplate')}
+                      </Link>
+                    </>
                   )}
                 </div>
               )}
@@ -224,6 +277,7 @@ export function TemplatePickerModal({
                   description={t.description}
                   campaign={t.campaign}
                   useCount={t.useCount}
+                  createdAt={t.createdAt}
                   attrCount={t._count?.attributes ?? 0}
                   skillCount={t._count?.templateSkills ?? 0}
                   selected={selectedId === t.id}
@@ -292,7 +346,7 @@ export function TemplatePickerModal({
             )}
           </button>
         </div>
-      </div>
+      </dialog>
     </div>
   )
 }
@@ -307,12 +361,13 @@ interface TemplatePickerRowProps {
   readonly attrCount?: number
   readonly skillCount?: number
   readonly creatorName?: string
+  readonly createdAt?: string
   readonly selected: boolean
   readonly onSelect: () => void
 }
 
 function TemplatePickerRow(props: Readonly<TemplatePickerRowProps>) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   return (
     <button
       onClick={props.onSelect}
@@ -351,6 +406,13 @@ function TemplatePickerRow(props: Readonly<TemplatePickerRowProps>) {
         )}
         {props.creatorName && (
           <span className="truncate max-w-[100px]">{t('campaign:byCreator', { name: props.creatorName })}</span>
+        )}
+        {props.createdAt && (
+          <span>
+            {t('templates:createdDate', {
+              date: new Date(props.createdAt).toLocaleDateString(i18n.language, { month: 'long', day: 'numeric', year: 'numeric' }),
+            })}
+          </span>
         )}
       </div>
     </button>

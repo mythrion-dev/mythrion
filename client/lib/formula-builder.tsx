@@ -2,22 +2,11 @@
 
 import { useTranslation } from 'react-i18next'
 
-interface SkillModifierProfile {
-  id: string
-  name: string
-  options: { id: string; label: string; value: number }[]
-}
-
 interface FormulaBuilderProps {
-  value: string
-  onChange: (formula: string) => void
-  attributes: { key: string; name: string }[]
-  customFields?: { key: string; label: string }[]
-  skillModifierProfiles?: SkillModifierProfile[]
-  pointPools?: { slug: string; name: string }[]
-  acFields?: { key: string; name: string }[]
-  placeholder?: string
-  useModPrefix?: boolean
+  readonly value: string
+  readonly onChange: (formula: string) => void
+  readonly attributes: { key: string; name: string }[]
+  readonly placeholder?: string
 }
 
 export default function FormulaBuilder({

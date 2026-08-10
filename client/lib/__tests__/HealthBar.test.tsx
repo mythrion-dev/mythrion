@@ -35,13 +35,15 @@ import type { SheetPermissions } from '@/components/character-sheet/types'
 
 function editPermissions(overrides: Partial<SheetPermissions> = {}): SheetPermissions {
   return {
-    isOwner: false,
     canEditSkills: false,
     canEditAbilities: true,
-    canEditAttributes: false,
     canEditResources: false,
     canEditInventory: false,
     canEditCharacter: false,
+    canEditStory: false,
+    canEditProfessionalSkills: false,
+    canEditPersonalAbilities: false,
+    canEditResistances: false,
     ...overrides,
   }
 }
@@ -234,34 +236,23 @@ describe('HealthBar', () => {
       expect(screen.getByText('Heal')).toBeTruthy()
     })
 
-    it('calls onChange with adjusted value when Damage is clicked with an amount', () => {
+    it.each([
+      { name: 'calls onChange with adjusted value when Damage is clicked with an amount', current: 50, button: 'Damage', expected: 40 },
+      { name: 'calls onChange with adjusted value when Heal is clicked with an amount', current: 50, button: 'Heal', expected: 60 },
+      { name: 'clamps current to 0 when damage would make it negative', current: 5, button: 'Damage', expected: 0 },
+    ])('$name', ({ current, button, expected }) => {
       const onChange = vi.fn()
-      render(<HealthBar current={50} maximum={100} onChange={onChange} permissions={editPermissions({ canEditAbilities: true })} />)
+      render(<HealthBar current={current} maximum={100} onChange={onChange} permissions={editPermissions({ canEditAbilities: true })} />)
 
       // Set the amount input to 10
       const amountInput = screen.getByTestId('numeric-input-amount') as HTMLInputElement
       fireEvent.change(amountInput, { target: { value: '10' } })
 
-      // Click Damage
-      fireEvent.click(screen.getByText('Damage'))
+      // Click the button (Damage or Heal)
+      fireEvent.click(screen.getByText(button))
 
-      // onChange should be called with ('current', 40)
-      expect(onChange).toHaveBeenCalledWith('current', 40)
-    })
-
-    it('calls onChange with adjusted value when Heal is clicked with an amount', () => {
-      const onChange = vi.fn()
-      render(<HealthBar current={50} maximum={100} onChange={onChange} permissions={editPermissions({ canEditAbilities: true })} />)
-
-      // Set the amount input to 10
-      const amountInput = screen.getByTestId('numeric-input-amount') as HTMLInputElement
-      fireEvent.change(amountInput, { target: { value: '10' } })
-
-      // Click Heal
-      fireEvent.click(screen.getByText('Heal'))
-
-      // onChange should be called with ('current', 60)
-      expect(onChange).toHaveBeenCalledWith('current', 60)
+      // onChange should be called with the adjusted value
+      expect(onChange).toHaveBeenCalledWith('current', expected)
     })
 
     it('does not call onChange when Damage is clicked with empty amount', () => {
@@ -347,17 +338,6 @@ describe('HealthBar', () => {
       // After clicking, the amount should be cleared
       expect(amountInput.value).toBe('')
     })
-
-    it('clamps current to 0 when damage would make it negative', () => {
-      const onChange = vi.fn()
-      render(<HealthBar current={5} maximum={100} onChange={onChange} permissions={editPermissions({ canEditAbilities: true })} />)
-
-      const amountInput = screen.getByTestId('numeric-input-amount') as HTMLInputElement
-      fireEvent.change(amountInput, { target: { value: '10' } })
-      fireEvent.click(screen.getByText('Damage'))
-
-      expect(onChange).toHaveBeenCalledWith('current', 0)
-    })
   })
 
   describe('Read-only mode (canEdit = false)', () => {
@@ -366,7 +346,7 @@ describe('HealthBar', () => {
       render(<HealthBar current={50} maximum={100} onChange={onChange} permissions={editPermissions({ canEditAbilities: false })} />)
 
       const inputs = screen.queryAllByTestId('numeric-input')
-      expect(inputs.length).toBe(0)
+      expect(inputs).toHaveLength(0)
     })
 
     it('does not render Damage button', () => {

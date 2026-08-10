@@ -19,11 +19,11 @@ interface CoreResourceValue {
 }
 
 export function CoreResourceCard({ resource, value, permissions, onSave, onModify }: {
-  resource: CoreResourceDef
-  value: CoreResourceValue
-  permissions: SheetPermissions
-  onSave: (coreResourceId: string, field: 'current' | 'maximum' | 'notes', val: string) => Promise<void>
-  onModify?: (coreResourceId: string, delta: number) => void
+  readonly resource: CoreResourceDef
+  readonly value: CoreResourceValue
+  readonly permissions: SheetPermissions
+  readonly onSave: (coreResourceId: string, field: 'current' | 'maximum' | 'notes', val: string) => Promise<void>
+  readonly onModify?: (coreResourceId: string, delta: number) => void
 }) {
   const { t } = useTranslation()
   const [modifier, setModifier] = useState(0)

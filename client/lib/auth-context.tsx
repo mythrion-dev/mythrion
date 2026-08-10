@@ -17,7 +17,6 @@ import {
   setRefreshToken,
   removeRefreshToken,
   decodeJwtPayload,
-  getInvitationToken,
   removeInvitationToken,
   refreshAccessToken,
   isAccessTokenExpiringSoon,
@@ -33,6 +32,8 @@ interface User {
   language: string
   isEarlyAccess: boolean
   twoFactorEnabled: boolean
+  emailVerified: boolean
+  hasPassword: boolean
 }
 
 /** Result of a password login: either the session is established, or the
@@ -49,7 +50,7 @@ interface AuthState {
   user: User | null
   loading: boolean
   login: (email: string, password: string) => Promise<LoginOutcome>
-  register: (email: string, password: string, displayName?: string) => Promise<void>
+  register: (email: string, password: string, displayName?: string, acceptTerms?: boolean) => Promise<void>
   logout: () => Promise<void>
   completeOnboarding: (displayName: string) => Promise<void>
   verifyTwoFactor: (twoFactorId: string, code: string) => Promise<void>
@@ -58,7 +59,7 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -205,11 +206,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile])
 
   const register = useCallback(
-    async (email: string, password: string, displayName?: string) => {
+    async (email: string, password: string, displayName?: string, acceptTerms = false) => {
       const res = await api.post<{ accessToken: string; refreshToken: string }>('/auth/register', {
         email,
         password,
         displayName,
+        acceptTerms,
       })
       setAccessToken(res.accessToken)
       setRefreshToken(res.refreshToken)
@@ -232,16 +234,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const completeOnboarding = useCallback(
     async (displayName: string) => {
-      const updated = await api.post<Omit<User, 'isAdmin' | 'isEarlyAccess'>>('/auth/onboarding', {
-        displayName,
-      })
-      setUser({
-        ...updated,
-        isAdmin: isAdminFromToken(),
-        isEarlyAccess: isEarlyAccessFromToken(),
-      })
+      // The server returns only { id, email, displayName, onboardingComplete },
+      // so merging it would silently drop emailVerified/twoFactorEnabled/language.
+      // Re-fetch the full profile instead.
+      await api.post('/auth/onboarding', { displayName })
+      await fetchProfile()
     },
-    [isAdminFromToken, isEarlyAccessFromToken],
+    [fetchProfile],
   )
 
   return (

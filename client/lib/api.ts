@@ -7,7 +7,11 @@ export function normalizeApiUrl(raw: string | undefined): string {
   }
   // Add /api suffix if missing
   if (!url.endsWith('/api')) {
-    url = url.replace(/\/+$/, '') + '/api'
+    // Strip trailing slashes before appending /api. A quantified regex such as
+    // /\/+$/ backtracks super-linearly on slash-heavy input (S5843), so do it
+    // with a linear loop instead.
+    while (url.endsWith('/')) url = url.slice(0, -1)
+    url += '/api'
   }
   return url
 }
@@ -36,6 +40,47 @@ function notifyAuthFailure() {
   authFailureHandlers.forEach((h) => h())
 }
 
+/** Build a typed HTTP error from a Response body (message may be a string or array). */
+async function toHttpError(res: Response): Promise<Error & { statusCode: number }> {
+  const body = await res.json().catch(() => ({
+    message: res.statusText,
+  }))
+  const err = new Error(
+    Array.isArray(body.message)
+      ? body.message[0]
+      : body.message ?? 'Request failed',
+  ) as Error & { statusCode: number }
+  err.statusCode = res.status
+  return err
+}
+
+/** Rotate the token proactively when it is close to expiry; otherwise return it unchanged. */
+async function maybeRefreshToken(token: string | null): Promise<string | null> {
+  if (token && typeof window !== 'undefined' && isAccessTokenExpiringSoon(token)) {
+    const fresh = await refreshAccessToken()
+    if (fresh) return fresh
+  }
+  return token
+}
+
+/** Retry a request once with a freshly-minted token after a 401. */
+async function retryRequest<T>(
+  path: string,
+  options: RequestInit,
+  headers: Record<string, string>,
+  newToken: string,
+): Promise<T> {
+  headers.Authorization = `Bearer ${newToken}`
+  const retryRes = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+  })
+  if (retryRes.ok) {
+    return retryRes.json()
+  }
+  throw await toHttpError(retryRes)
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -47,10 +92,7 @@ async function request<T>(
   // token (avoids a 401 round-trip and its retry). Failure here is non-fatal —
   // the request proceeds with the current token and the 401 path below can
   // still recover it.
-  if (token && typeof window !== 'undefined' && isAccessTokenExpiringSoon(token)) {
-    const fresh = await refreshAccessToken()
-    if (fresh) token = fresh
-  }
+  token = await maybeRefreshToken(token)
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -72,40 +114,12 @@ async function request<T>(
   if (res.status === 401 && typeof window !== 'undefined') {
     const newToken = await refreshAccessToken()
     if (newToken) {
-      headers.Authorization = `Bearer ${newToken}`
-      const retryRes = await fetch(`${API_URL}${path}`, {
-        ...options,
-        headers,
-      })
-      if (retryRes.ok) {
-        return retryRes.json()
-      }
-      if (!retryRes.ok) {
-        const body = await retryRes.json().catch(() => ({
-          message: retryRes.statusText,
-        }))
-        const err = new Error(
-          Array.isArray(body.message)
-            ? body.message[0]
-            : body.message ?? 'Request failed',
-        ) as Error & { statusCode: number }
-        err.statusCode = retryRes.status
-        throw err
-      }
+      return retryRequest<T>(path, options, headers, newToken)
     }
   }
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({
-      message: res.statusText,
-    }))
-    const err = new Error(
-      Array.isArray(body.message)
-        ? body.message[0]
-        : body.message ?? 'Request failed',
-    ) as Error & { statusCode: number }
-    err.statusCode = res.status
-    throw err
+    throw await toHttpError(res)
   }
 
   return res.json()
@@ -117,22 +131,49 @@ async function request<T>(
  *  requests revoke each other's newly-issued tokens. */
 let refreshPromise: Promise<string | null> | null = null
 
+/**
+ * Named Web Locks key. Two tabs share the same localStorage tokens but have
+ * independent JS runtimes, so a per-tab single-flight promise cannot prevent
+ * them from racing the same single-use refresh token. Serializing the refresh
+ * under a cross-tab lock (plus re-reading the tokens inside it) means only one
+ * tab ever sends a given refresh token to the server.
+ */
+const REFRESH_LOCK_NAME = 'mythrion-auth-refresh'
+
 export async function refreshAccessToken(): Promise<string | null> {
-  // If a refresh is already in-flight, wait for it instead of firing a second one
+  // If a refresh is already in-flight in THIS tab, wait for it instead of
+  // firing a second one.
   if (refreshPromise) {
     return refreshPromise
   }
-  const refreshToken = getRefreshToken()
-  if (!refreshToken) {
-    // No refresh token means there is nothing to refresh — the session is
-    // definitively over.
-    removeAccessToken()
-    removeRefreshToken()
-    notifyAuthFailure()
-    return null
-  }
 
-  refreshPromise = (async () => {
+  const doRefresh = async (): Promise<string | null> => {
+    // Re-read inside the lock: another tab may have already rotated the tokens
+    // while we were waiting. If the stored access token is a valid, fresh JWT
+    // there is nothing to do — returning it avoids a doomed refresh of an
+    // already-revoked refresh token (which the server would answer 401, killing
+    // the session). The `decodeJwtPayload` guard matters: a plain/non-JWT token
+    // (or one whose session was server-side revoked) falls through to a real
+    // refresh attempt, which either self-heals it or surfaces a genuine 401.
+    const existing = getAccessToken()
+    if (
+      existing &&
+      decodeJwtPayload(existing) &&
+      !isAccessTokenExpiringSoon(existing)
+    ) {
+      return existing
+    }
+
+    const refreshToken = getRefreshToken()
+    if (!refreshToken) {
+      // No refresh token means there is nothing to refresh — the session is
+      // definitively over.
+      removeAccessToken()
+      removeRefreshToken()
+      notifyAuthFailure()
+      return null
+    }
+
     try {
       const res = await fetch(`${API_URL}/auth/refresh`, {
         method: 'POST',
@@ -141,6 +182,12 @@ export async function refreshAccessToken(): Promise<string | null> {
       })
 
       if (res.status === 401 || res.status === 403) {
+        // A 401 here means the token we sent was rejected. If another tab
+        // already stored a replacement, this is the stale token losing the
+        // race — not a real session loss. Re-check before nuking the session.
+        if (getRefreshToken() !== refreshToken) {
+          return getAccessToken()
+        }
         // The server definitively rejected the refresh token (revoked,
         // expired, or invalid). The session is over — clear it.
         removeAccessToken()
@@ -164,7 +211,20 @@ export async function refreshAccessToken(): Promise<string | null> {
       // (or the focus listener) retry the refresh.
       return null
     }
-  })()
+  }
+
+  const canLock =
+    typeof navigator !== 'undefined' && 'locks' in navigator
+
+  // navigator.locks.request resolves with the callback's return value, and the
+  // callback returns a promise (doRefresh). The installed DOM lib types that as
+  // Promise<Promise<string | null>>; awaiting it through this async wrapper
+  // flattens the layers so refreshPromise stays a single promise.
+  async function withRefreshLock(): Promise<string | null> {
+    return await navigator.locks.request(REFRESH_LOCK_NAME, doRefresh)
+  }
+
+  refreshPromise = canLock ? withRefreshLock() : doRefresh()
 
   try {
     return await refreshPromise
@@ -193,7 +253,16 @@ export function decodeJwtPayload(token: string): Record<string, unknown> | null 
   try {
     const payload = token.split('.')[1]
     if (!payload) return null
-    return JSON.parse(atob(payload.replaceAll('-/', '+').replaceAll('_/', '/')))
+    // JWT payloads are base64url: `-`/`_` replace `+`/`/` and padding `=` is
+    // stripped. atob() expects standard base64, so swap the alphabet and
+    // re-add padding before decoding — otherwise decoding silently fails and
+    // proactive refresh / role checks are disabled.
+    const base64 = payload.replaceAll('-', '+').replaceAll('_', '/')
+    const padded = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      '=',
+    )
+    return JSON.parse(atob(padded))
   } catch {
     return null
   }

@@ -17,6 +17,7 @@
   "isUrl": "{property} deve ser uma URL",
   "isUUID": "{property} deve ser um UUID",
   "matches": "{property} deve corresponder ao formato {constraints.0}",
+  "passwordPolicy": "A senha deve ter pelo menos 8 caracteres e incluir uma letra maiúscula, uma letra minúscula, um número e um caractere especial.",
   "max": "{property} não deve ser maior que {constraints.0}",
   "maxLength": "{property} deve ser mais curto que ou igual a {constraints.0} caracteres",
   "min": "{property} não deve ser menor que {constraints.0}",

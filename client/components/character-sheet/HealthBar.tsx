@@ -6,10 +6,10 @@ import { NumericInput } from '@/components/shared/NumericInput'
 import type { SheetPermissions } from './types'
 
 interface HealthBarProps {
-  current: number | null
-  maximum: number | null
-  onChange: (field: 'current' | 'maximum', value: number | null) => void
-  permissions: SheetPermissions
+  readonly current: number | null
+  readonly maximum: number | null
+  readonly onChange: (field: 'current' | 'maximum', value: number | null) => void
+  readonly permissions: SheetPermissions
 }
 
 export function HealthBar({ current, maximum, onChange, permissions }: HealthBarProps) {
@@ -20,11 +20,11 @@ export function HealthBar({ current, maximum, onChange, permissions }: HealthBar
   const pct = max > 0 ? Math.min(100, Math.max(0, (cur / max) * 100)) : 0
   const [hpAmount, setHpAmount] = useState('')
 
-  const barColor =
-    pct > 60 ? 'bg-green-600' :
-    pct > 30 ? 'bg-yellow-500' :
-    pct > 0  ? 'bg-red-600' :
-    'bg-gray-600'
+  let barColor: string
+  if (pct > 60) barColor = 'bg-green-600'
+  else if (pct > 30) barColor = 'bg-yellow-500'
+  else if (pct > 0) barColor = 'bg-red-600'
+  else barColor = 'bg-gray-600'
 
   const showBar = max > 0
 

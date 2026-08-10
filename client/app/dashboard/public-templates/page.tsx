@@ -64,14 +64,12 @@ function DashboardPublicTemplatesContent() {
   )
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1)
   const [templates, setTemplates] = useState<Template[]>([])
-  const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Clone state
   const [cloningId, setCloningId] = useState<string | null>(null)
-  const [cloneSuccess, setCloneSuccess] = useState<string | null>(null)
   const [showSignInPrompt, setShowSignInPrompt] = useState(false)
 
   const activeTab =
@@ -125,7 +123,6 @@ function DashboardPublicTemplatesContent() {
         `/public/templates?${params.toString()}`,
       )
       setTemplates(res.data)
-      setTotal(res.total)
       setTotalPages(res.totalPages)
     } catch (err) {
       setError(
@@ -175,11 +172,6 @@ function DashboardPublicTemplatesContent() {
     }
   }, [templates, sortValue, debouncedSearch])
 
-  const handleCampaignChange = (value: string) => {
-    setCampaign(value)
-    setPage(1)
-  }
-
   // ── Active filters ──
 
   const activeFilters: ActiveFilter[] = useMemo(() => {
@@ -215,10 +207,8 @@ function DashboardPublicTemplatesContent() {
     }
 
     setCloningId(templateId)
-    setCloneSuccess(null)
     try {
       await api.post(`/templates/${templateId}/clone`)
-      setCloneSuccess(templateId)
     } catch (err) {
       setError(
         err instanceof Error ? err.message : t('templates:failedToClone'),

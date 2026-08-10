@@ -5,9 +5,9 @@ import { useTranslation, Trans } from 'react-i18next'
 import MythrionPopover from '@/lib/mythrion-popover'
 
 interface AttributeModifierConfigProps {
-  value: string
-  onChange: (formula: string) => void
-  placeholder?: string
+  readonly value: string
+  readonly onChange: (formula: string) => void
+  readonly placeholder?: string
 }
 
 interface ConfigValues {
@@ -51,7 +51,7 @@ export function parseFormula(formula: string): ConfigValues | null {
 
   // Pattern: floor((value - start) / every)
   const floorPattern = /floor\(\(value-(-?\d+)\)\/(-?\d+)\)/
-  const floorMatch = cleaned.match(floorPattern)
+  const floorMatch = floorPattern.exec(cleaned)
 
   if (!floorMatch) return null
 
@@ -60,10 +60,12 @@ export function parseFormula(formula: string): ConfigValues | null {
 
   if (every <= 0) return null
 
-  // Check for multiplier pattern like "2*floor" or "-2*floor" anywhere in the string
+  // Check for multiplier pattern like "2*floor" or "-2*floor" anywhere in the string.
+  // The (?:^|[^\d]) prefix anchors the number so the engine never starts mid-digit-run,
+  // which keeps the match linear (S5843) while preserving capture group 1.
   let modifierIncrease = 1
-  const multiplierPattern = /(-?\d+)\*floor/
-  const multiplierMatch = cleaned.match(multiplierPattern)
+  const multiplierPattern = /(?:^|[^\d])(-?\d+)\*floor/
+  const multiplierMatch = multiplierPattern.exec(cleaned)
 
   if (multiplierMatch) {
     const mult = Number.parseInt(multiplierMatch[1], 10)
@@ -83,7 +85,7 @@ export function parseFormula(formula: string): ConfigValues | null {
     // Match pattern: optional number, optional sign
     // The prefix may have a multiplier before floor, e.g. "5+3*" or "-2+1*".
     // Only match the base modifier (the leading number and its sign operator).
-    const prefixMatch = prefix.match(/^(-?\d+)\s*[+-]/)
+    const prefixMatch = /^(-?\d+)\s*[+-]/.exec(prefix)
     if (prefixMatch) {
       modifier = Number.parseInt(prefixMatch[1], 10)
     }
@@ -169,12 +171,6 @@ export default function AttributeModifierConfig({
     // Enforce min of 1 for 'every'
     const clamped = field === 'every' ? Math.max(1, numValue) : numValue
     setConfig(prev => ({ ...prev, [field]: clamped }))
-  }
-
-  const handleSwitchToCustom = () => {
-    setIsCustomFormula(true)
-    setCustomFormula(generatedFormula)
-    onChange(generatedFormula)
   }
 
   const handleCustomFormulaChange = (newFormula: string) => {

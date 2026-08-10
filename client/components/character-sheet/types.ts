@@ -1,5 +1,3 @@
-import type { SubmitEvent } from 'react'
-
 export interface SheetAttribute { id: string; attributeId: string; value: string; attribute: { id: string; key: string; name: string } }
 export interface FieldValue { id: string; templateFieldId: string; value: string; templateField: { id: string; key: string; label: string } }
 export interface SkillValue { id: string; skillId: string; value: string; selectedAttributeId: string | null; selectedAttribute: { id: string; key: string; name: string } | null; skill: { id: string; name: string; description: string | null; attributeId: string | null; allowedAttributeIds: string[]; defaultAttributeId: string | null; attribute: { id: string; key: string; name: string } | null; defaultAttribute: { id: string; key: string; name: string } | null } }
@@ -110,7 +108,6 @@ export interface SheetPermissions {
   canEditAbilities: boolean
 }
 
-export type Tab = string
 export type AcResultMap = Record<string, { total: number; name: string }>
 
 export interface ResistanceComponentDef {

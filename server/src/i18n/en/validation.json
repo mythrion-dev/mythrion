@@ -17,6 +17,7 @@
   "isUrl": "{property} must be a URL",
   "isUUID": "{property} must be a UUID",
   "matches": "{property} must match the format {constraints.0}",
+  "passwordPolicy": "Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number and a special character.",
   "max": "{property} must not be greater than {constraints.0}",
   "maxLength": "{property} must be shorter than or equal to {constraints.0} characters",
   "min": "{property} must not be less than {constraints.0}",

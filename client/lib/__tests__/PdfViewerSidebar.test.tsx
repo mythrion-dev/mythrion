@@ -353,7 +353,7 @@ describe('PdfViewerSidebar', () => {
     renderSidebar({ isGM: true })
 
     fireEvent.click(screen.getByLabelText('Open books sidebar'))
-    expect(await screen.findByText(/Upload one from the adventure page!/)).toBeInTheDocument()
+    expect(await screen.findByText(/Upload one from the campaign page!/)).toBeInTheDocument()
   })
 
   it('shows empty state when no books are available (Player)', async () => {

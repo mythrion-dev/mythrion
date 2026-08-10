@@ -9,7 +9,7 @@
  * the engine itself is identical for both.
  */
 
-import type { CharacterSheet, Ability, AcResultMap } from '@/components/character-sheet/types'
+import type { CharacterSheet, Ability, AcResultMap, SkillValue } from '@/components/character-sheet/types'
 
 // ── Formula Evaluator type ──
 
@@ -100,16 +100,25 @@ export async function computeModifiers(
  * - Profile selections with fallback to skillProfileValues.
  * - SELECTED_SKILLS targetMode filtering.
  */
-export async function computeSkills(
+function parseSkillConfig(
+  raw: string,
+): { useAttributeModifier?: boolean; customFieldKeys?: string[] } | null {
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && typeof parsed.useAttributeModifier === 'boolean') {
+      return parsed
+    }
+  } catch {
+    // Not JSON — treat as raw formula
+  }
+  return null
+}
+
+async function buildModifierVars(
   sheet: CharacterSheet,
   modifierResults: Record<string, number | null>,
-  profileSelections: Record<string, Record<string, string | null>>,
-  othersValues: Record<string, number>,
   evaluate: FormulaEvaluator,
-): Promise<Record<string, number | null>> {
-  const results: Record<string, number | null> = {}
-
-  // Build modifierVars: {attr_key}_mod
+): Promise<Record<string, number>> {
   const modifierVars: Record<string, number> = {}
   const globalFormula = getModifierFormula(sheet)
 
@@ -136,92 +145,151 @@ export async function computeSkills(
     }
   }
 
+  return modifierVars
+}
+
+function addProfileOptionValues(
+  sheet: CharacterSheet,
+  sv: SkillValue,
+  profileSelections: Record<string, Record<string, string | null>>,
+): number {
+  let add = 0
+  const skillSelections = profileSelections[sv.skillId] || {}
+  for (const profile of sheet.template.skillModifierProfiles) {
+    const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
+    const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
+    if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(sv.skill.name)) {
+      continue
+    }
+
+    const selId = skillSelections[profile.id]
+    if (selId) {
+      const opt = profile.options.find(o => o.id === selId)
+      if (opt) add += opt.value
+    } else {
+      // Fallback to stored skillProfileValues
+      const stored = sheet.skillProfileValues.find(
+        spv => spv.skillId === sv.skillId && spv.profileId === profile.id,
+      )
+      if (stored?.option?.value !== undefined) {
+        add += stored.option.value
+      }
+    }
+  }
+  return add
+}
+
+interface SkillValueContext {
+  readonly sv: SkillValue
+  readonly sheet: CharacterSheet
+  readonly skillConfig: { useAttributeModifier?: boolean; customFieldKeys?: string[] } | null
+  readonly skillFormulaRaw: string
+  readonly modifierVars: Record<string, number>
+  readonly othersValues: Record<string, number>
+  readonly profileSelections: Record<string, Record<string, string | null>>
+  readonly evaluate: FormulaEvaluator
+}
+
+/** Config-mode evaluation: attribute modifier + custom field keys. */
+function computeConfigModeValue(ctx: SkillValueContext): number {
+  const { sv, sheet, skillConfig, modifierVars } = ctx
+  let result = 0
+
+  if (skillConfig?.useAttributeModifier) {
+    const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
+    if (selectedAttr) {
+      result += modifierVars[`${selectedAttr.key}_mod`] ?? 0
+    }
+  }
+
+  const customKeys = skillConfig?.customFieldKeys || []
+  for (const key of customKeys) {
+    const fv = sheet.fieldValues.find(f => f.templateField.key === key)
+    if (fv) {
+      result += parseFloatSafe(fv.value, 0)
+    }
+  }
+
+  return result
+}
+
+/** Raw-formula evaluation: builds variables and delegates to the evaluator. */
+async function evaluateRawFormula(ctx: SkillValueContext): Promise<number> {
+  const { sv, sheet, skillFormulaRaw, modifierVars, evaluate } = ctx
+  const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
+  const skillAttrValue = selectedAttr
+    ? parseFloatSafe(sheet.values.find(v => v.attributeId === selectedAttr.id)?.value, 0)
+    : 0
+
+  const variables: Record<string, number> = { ...modifierVars }
+  variables['value'] = skillAttrValue
+  if (selectedAttr) {
+    variables['value_mod'] = modifierVars[`${selectedAttr.key}_mod`] ?? 0
+  }
+
+  for (const a of sheet.template.attributes) {
+    const v = sheet.values.find(sv2 => sv2.attributeId === a.id)
+    variables[a.key] = parseFloatSafe(v?.value, 0)
+  }
+  for (const fv of sheet.fieldValues) {
+    variables[fv.templateField.key] = parseFloatSafe(fv.value, 0)
+  }
+  variables['level'] = sheet.level ?? 1
+
+  return evaluate(skillFormulaRaw, variables)
+}
+
+async function computeSkillValue(ctx: SkillValueContext): Promise<number> {
+  const { sv, sheet, skillConfig, othersValues, profileSelections } = ctx
+  let finalResult = 0
+
+  if (skillConfig) {
+    // Config mode
+    finalResult += computeConfigModeValue(ctx)
+  } else {
+    // Raw formula mode
+    finalResult += await evaluateRawFormula(ctx)
+  }
+
+  // Add others value AFTER formula evaluation
+  finalResult += othersValues[sv.skillId] ?? 0
+
+  // Add profile option values AFTER formula evaluation
+  finalResult += addProfileOptionValues(sheet, sv, profileSelections)
+
+  return finalResult
+}
+
+export async function computeSkills(
+  sheet: CharacterSheet,
+  modifierResults: Record<string, number | null>,
+  profileSelections: Record<string, Record<string, string | null>>,
+  othersValues: Record<string, number>,
+  evaluate: FormulaEvaluator,
+): Promise<Record<string, number | null>> {
+  const results: Record<string, number | null> = {}
+
+  // Build modifierVars: {attr_key}_mod
+  const modifierVars = await buildModifierVars(sheet, modifierResults, evaluate)
+
   const skillFormulaRaw = getSkillFormula(sheet)
   if (!skillFormulaRaw) return results
 
-  // Detect JSON config mode
-  let skillConfig: { useAttributeModifier?: boolean; customFieldKeys?: string[] } | null = null
-  try {
-    const parsed = JSON.parse(skillFormulaRaw)
-    if (parsed && typeof parsed === 'object' && typeof parsed.useAttributeModifier === 'boolean') {
-      skillConfig = parsed
-    }
-  } catch {
-    // Not JSON — treat as raw formula
-  }
+  // Detect JSON config mode (or null for raw formula mode)
+  const skillConfig = parseSkillConfig(skillFormulaRaw)
 
   for (const sv of sheet.skillValues) {
     try {
-      let finalResult = 0
-
-      if (skillConfig) {
-        // Config mode
-        if (skillConfig.useAttributeModifier) {
-          const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
-          if (selectedAttr) {
-            finalResult += modifierVars[`${selectedAttr.key}_mod`] ?? 0
-          }
-        }
-        const customKeys = skillConfig.customFieldKeys || []
-        for (const key of customKeys) {
-          const fv = sheet.fieldValues.find(f => f.templateField.key === key)
-          if (fv) {
-            finalResult += parseFloatSafe(fv.value, 0)
-          }
-        }
-      } else {
-        // Raw formula mode
-        const selectedAttr = sv.selectedAttribute || sv.skill.defaultAttribute || sv.skill.attribute
-        const skillAttrValue = selectedAttr
-          ? parseFloatSafe(sheet.values.find(v => v.attributeId === selectedAttr.id)?.value, 0)
-          : 0
-
-        const variables: Record<string, number> = { ...modifierVars }
-        variables['value'] = skillAttrValue
-        if (selectedAttr) {
-          variables['value_mod'] = modifierVars[`${selectedAttr.key}_mod`] ?? 0
-        }
-
-        for (const a of sheet.template.attributes) {
-          const v = sheet.values.find(sv2 => sv2.attributeId === a.id)
-          variables[a.key] = parseFloatSafe(v?.value, 0)
-        }
-        for (const fv of sheet.fieldValues) {
-          variables[fv.templateField.key] = parseFloatSafe(fv.value, 0)
-        }
-        variables['level'] = sheet.level ?? 1
-
-        finalResult = await evaluate(skillFormulaRaw, variables)
-      }
-
-      // Add others value AFTER formula evaluation
-      finalResult += othersValues[sv.skillId] ?? 0
-
-      // Add profile option values AFTER formula evaluation
-      const skillSelections = profileSelections[sv.skillId] || {}
-      for (const profile of sheet.template.skillModifierProfiles) {
-        const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
-        const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
-        if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(sv.skill.name)) {
-          continue
-        }
-
-        const selId = skillSelections[profile.id]
-        if (selId) {
-          const opt = profile.options.find(o => o.id === selId)
-          if (opt) finalResult += opt.value
-        } else {
-          // Fallback to stored skillProfileValues
-          const stored = sheet.skillProfileValues.find(
-            spv => spv.skillId === sv.skillId && spv.profileId === profile.id,
-          )
-          if (stored?.option?.value !== undefined) {
-            finalResult += stored.option.value
-          }
-        }
-      }
-
-      results[sv.skillId] = finalResult
+      results[sv.skillId] = await computeSkillValue({
+        sv,
+        sheet,
+        skillConfig,
+        skillFormulaRaw,
+        modifierVars,
+        othersValues,
+        profileSelections,
+        evaluate,
+      })
     } catch {
       results[sv.skillId] = null
     }
@@ -325,6 +393,6 @@ export async function computeSummonModifiers(
 export function computeSummonAC(ability: Ability): number | null {
   const acv = ability.summonAcValues?.[0]
   if (!acv) return null
-  const v = parseFloat(acv.value)
-  return isNaN(v) ? null : v
+  const v = Number.parseFloat(acv.value)
+  return Number.isNaN(v) ? null : v
 }

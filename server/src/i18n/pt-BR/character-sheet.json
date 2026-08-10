@@ -1,6 +1,6 @@
 {
   "templateNotFound": "Modelo não encontrado",
-  "notMemberAdventure": "Você não é membro desta aventura",
+  "notMemberAdventure": "Você não é membro desta campanha",
   "campaignNotFound": "Campanha não encontrada",
   "noTemplateAttached": "Nenhum modelo está anexado a esta campanha. O Mestre deve anexar um modelo antes que os personagens possam ser criados.",
   "templateReferenceMissing": "A referência do modelo está ausente. O Mestre deve reanexar o modelo a esta campanha.",

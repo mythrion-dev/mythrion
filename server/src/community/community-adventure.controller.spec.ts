@@ -17,7 +17,9 @@ describe('CommunityAdventureController', () => {
         data: [
           { id: 'adv-1', name: 'Public Adventure', campaign: 'Camp', synopsis: 'Fun!' },
         ],
-        meta: { total: 1, page: 1, limit: 10, totalPages: 1 },
+        total: 1,
+        page: 1,
+        totalPages: 1,
       }),
       findOnePublic: jest.fn().mockResolvedValue({
         id: 'adv-1',
@@ -25,8 +27,9 @@ describe('CommunityAdventureController', () => {
         campaign: 'Camp',
         synopsis: 'Fun!',
         maxPlayers: 4,
-        owner: { id: 'u1', displayName: 'Owner' },
-        memberCount: 2,
+        ownerId: 'u1',
+        gmDisplayName: 'Owner',
+        playerCount: 2,
       }),
     }
 
@@ -56,7 +59,7 @@ describe('CommunityAdventureController', () => {
         timePeriod: undefined,
       })
       expect(result.data).toHaveLength(1)
-      expect(result.meta.total).toBe(1)
+      expect(result.total).toBe(1)
     })
 
     it('passes query parameters when provided', async () => {
@@ -126,7 +129,7 @@ describe('CommunityAdventureController', () => {
 
       expect(mockAdventureService.findOnePublic).toHaveBeenCalledWith('adv-1')
       expect(result.name).toBe('Public Adventure')
-      expect(result.memberCount).toBe(2)
+      expect(result.playerCount).toBe(2)
     })
   })
 })

@@ -50,7 +50,7 @@ export function BreadcrumbNav() {
             {breadcrumbs.map((crumb, index) => {
               const isLast = index === breadcrumbs.length - 1
               return (
-                <span key={index} className="flex items-center gap-1">
+                <span key={`${crumb.label}-${crumb.href ?? ''}`} className="flex items-center gap-1">
                   {crumb.href && !isLast ? (
                     <Link
                       href={crumb.href}
@@ -86,7 +86,7 @@ export function BreadcrumbNav() {
  *     { label: 'My Adventure' },
  *   ]} />
  */
-export function PageNav({ crumbs }: { crumbs: BreadcrumbSegment[] }) {
+export function PageNav({ crumbs }: { readonly crumbs: BreadcrumbSegment[] }) {
   const { setBreadcrumbs } = useNavigation()
 
   useEffect(() => {

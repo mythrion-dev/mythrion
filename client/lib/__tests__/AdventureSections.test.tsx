@@ -220,19 +220,12 @@ function defaultTemplatesProps(overrides = {}) {
     newFeatureResistance: false,
     onNewFeatureResistanceChange: vi.fn(),
     editFeatureSkills: false,
-    onEditFeatureSkillsChange: vi.fn(),
     editFeatureCustomFields: false,
-    onEditFeatureCustomFieldsChange: vi.fn(),
     editFeatureCoreResources: false,
-    onEditFeatureCoreResourcesChange: vi.fn(),
     editFeatureArmorClass: false,
-    onEditFeatureArmorClassChange: vi.fn(),
     editFeatureCharacterSections: false,
-    onEditFeatureCharacterSectionsChange: vi.fn(),
     editFeatureSkillProfiles: false,
-    onEditFeatureSkillProfilesChange: vi.fn(),
     editFeatureResistance: false,
-    onEditFeatureResistanceChange: vi.fn(),
     ...overrides,
   }
 }
@@ -401,7 +394,7 @@ describe('AdventureHeader', () => {
     )
     expect(screen.getByText('No synopsis yet.')).toBeInTheDocument()
     expect(
-      screen.getByText('Click edit to add an adventure synopsis.'),
+      screen.getByText('Click edit to add a campaign synopsis.'),
     ).toBeInTheDocument()
   })
 

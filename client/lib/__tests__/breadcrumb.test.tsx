@@ -96,7 +96,7 @@ describe('BreadcrumbNav', () => {
 
     // The last crumb should be plain text, not a link
     const parentLinks = screen.getAllByText('Parent')
-    expect(parentLinks.length).toBe(1)
+    expect(parentLinks).toHaveLength(1)
 
     // Child should be plain text with text-foreground
     const childSpan = screen.getByText('Child')

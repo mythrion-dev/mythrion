@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { I18nService } from 'nestjs-i18n'
@@ -27,11 +28,14 @@ export class TokenService {
 
   /** Generate access token (short-lived) and refresh token (long-lived, stored in DB) */
   async generateTokens(userId: string, email: string) {
-    const role = this.adminService.isAdmin(email)
-      ? 'admin'
-      : this.adminService.isEarlyAccess(email)
-        ? 'early_access'
-        : 'user'
+    let role: 'admin' | 'early_access' | 'user'
+    if (this.adminService.isAdmin(email)) {
+      role = 'admin'
+    } else if (this.adminService.isEarlyAccess(email)) {
+      role = 'early_access'
+    } else {
+      role = 'user'
+    }
     const accessToken = this.jwtService.sign(
       { sub: userId, email, role },
       { expiresIn: ACCESS_TOKEN_EXPIRY },
@@ -126,6 +130,14 @@ export class TokenService {
       try {
         isValid = await bcrypt.compare(rawToken, stored.token)
       } catch (err) {
+        // bcrypt.compare can reject on a corrupt stored hash or a DB/connection
+        // failure. Log the root cause (the original error must not be silently
+        // discarded) and reject with a typed error for the client.
+        Logger.error(
+          `Failed to verify refresh token hash for user ${userId}: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        )
         throw new InternalServerErrorException(this.i18n.t('auth.tokenVerificationFailed'))
       }
       if (isValid) {
@@ -175,5 +187,80 @@ export class TokenService {
       String(Math.floor(Date.now() / 1000)),
       REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
     )
+  }
+
+  /**
+   * Revoke every live refresh token for a user EXCEPT the one presented in
+   * `encodedRefreshToken` (used by "change password → log out all other
+   * devices"). Operates on the DB only — it deliberately does NOT set the
+   * Redis `token_blacklist:{userId}` marker, because rotateRefreshToken
+   * consults that marker and would then reject the current session's next
+   * refresh too. When no token is provided (or it does not belong to the
+   * user), falls back to revoking everything.
+   */
+  async revokeAllTokensExcept(
+    userId: string,
+    encodedRefreshToken?: string,
+  ): Promise<void> {
+    if (!encodedRefreshToken) {
+      await this.revokeAllTokens(userId)
+      return
+    }
+
+    let exemptId: string | null = null
+    try {
+      const payload = JSON.parse(
+        Buffer.from(encodedRefreshToken, 'base64').toString('utf-8'),
+      ) as { userId?: string; token?: string }
+      if (payload?.userId === userId && payload.token) {
+        exemptId = await this.findMatchingRefreshTokenId(userId, payload.token)
+      }
+    } catch (err) {
+      // Unparseable token envelope — fall through to revoking everything.
+      Logger.warn(
+        `Failed to parse refresh token envelope: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      )
+    }
+
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        userId,
+        revoked: false,
+        id: exemptId ? { not: exemptId } : undefined,
+      },
+      data: { revoked: true },
+    })
+  }
+
+  /**
+   * Find the id of the live refresh token whose stored hash matches `rawToken`,
+   * or null when no live token matches. A corrupt stored hash is logged and
+   * treated as a non-match so the scan continues.
+   */
+  private async findMatchingRefreshTokenId(
+    userId: string,
+    rawToken: string,
+  ): Promise<string | null> {
+    const liveTokens = await this.prisma.refreshToken.findMany({
+      where: { userId, revoked: false },
+      select: { id: true, token: true },
+    })
+    for (const stored of liveTokens) {
+      try {
+        if (await bcrypt.compare(rawToken, stored.token)) {
+          return stored.id
+        }
+      } catch (err) {
+        // Corrupt stored hash — treat as non-matching and keep scanning.
+        Logger.warn(
+          `Failed to compare refresh token hash for user ${userId}: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        )
+      }
+    }
+    return null
   }
 }

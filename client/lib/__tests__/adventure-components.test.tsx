@@ -46,7 +46,7 @@ describe('CollapsibleSection', () => {
     )
     // The icon is rendered inside a span with class "mr-2 shrink-0"; it should not exist
     const iconSpans = container.querySelectorAll('.mr-2')
-    expect(iconSpans.length).toBe(0)
+    expect(iconSpans).toHaveLength(0)
   })
 
   it('calls onToggle when the header button is clicked', () => {
@@ -437,7 +437,7 @@ describe('DeleteModal', () => {
     render(
       <DeleteModal name="Test" error={null} loading={false} onCancel={() => {}} onConfirm={() => {}} />,
     )
-    expect(screen.getByText('Delete Adventure')).toBeInTheDocument()
+    expect(screen.getByText('Delete Campaign')).toBeInTheDocument()
   })
 
   it('shows warning text about irreversible action', () => {

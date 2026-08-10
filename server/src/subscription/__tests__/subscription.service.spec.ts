@@ -100,7 +100,7 @@ describe('SubscriptionService', () => {
         status: 'PENDING',
       })
 
-      const result = await service.createSubscription(userId, planId, email)
+      const result = await service.createSubscription({ userId, planId, email })
 
       expect(result).toEqual({
         initPoint: '',
@@ -133,7 +133,14 @@ describe('SubscriptionService', () => {
         status: 'ACTIVE',
       })
 
-      await service.createSubscription(userId, planId, email, 'encrypted-card-123', 'João Silva', '12345678909')
+      await service.createSubscription({
+        userId,
+        planId,
+        email,
+        cardToken: 'encrypted-card-123',
+        payerName: 'João Silva',
+        payerDocument: '12345678909',
+      })
 
       const upsertCall = prisma.userSubscription.upsert.mock.calls[0][0]
       expect(upsertCall.create.status).toBe('ACTIVE')
@@ -160,7 +167,7 @@ describe('SubscriptionService', () => {
         status: 'ACTIVE',
       })
 
-      await service.createSubscription(userId, planId, email)
+      await service.createSubscription({ userId, planId, email })
 
       const upsertCall = prisma.userSubscription.upsert.mock.calls[0][0]
       expect(upsertCall.create.currentPeriodEnd).toBeInstanceOf(Date)
@@ -186,7 +193,7 @@ describe('SubscriptionService', () => {
         status: 'PENDING',
       })
 
-      await service.createSubscription(userId, planId, email)
+      await service.createSubscription({ userId, planId, email })
 
       const upsertCall = prisma.userSubscription.upsert.mock.calls[0][0]
       expect(upsertCall.create.currentPeriodEnd).toBeNull()
@@ -201,7 +208,7 @@ describe('SubscriptionService', () => {
       })
 
       await expect(
-        service.createSubscription(userId, planId, email),
+        service.createSubscription({ userId, planId, email }),
       ).rejects.toThrow(UnprocessableEntityException)
     })
 
@@ -210,7 +217,7 @@ describe('SubscriptionService', () => {
       prisma.subscriptionPlan.findUnique.mockResolvedValue(null)
 
       await expect(
-        service.createSubscription(userId, planId, email),
+        service.createSubscription({ userId, planId, email }),
       ).rejects.toThrow(NotFoundException)
     })
 
@@ -234,7 +241,7 @@ describe('SubscriptionService', () => {
         status: 'PENDING',
       })
 
-      const result = await service.createSubscription(userId, planId, email)
+      const result = await service.createSubscription({ userId, planId, email })
 
       expect(result.initPoint).toBe('')
       expect(prisma.userSubscription.upsert).toHaveBeenCalledWith(
@@ -655,64 +662,21 @@ describe('SubscriptionService', () => {
   // ─── hasActiveSubscription ──────────────────────────────────────────
 
   describe('hasActiveSubscription', () => {
-    it('returns true for AUTHORIZED status', async () => {
+    it.each([
+      [true, 'AUTHORIZED'],
+      [true, 'ACTIVE'],
+      [true, 'GRACE'],
+      [false, 'PENDING'],
+      [false, 'EXPIRED'],
+      [false, 'CANCELLED'],
+    ])('returns %s for %s status', async (expected, status) => {
       prisma.userSubscription.findUnique.mockResolvedValue({
-        status: 'AUTHORIZED',
+        status,
       })
 
       const result = await service.hasActiveSubscription('user-1')
 
-      expect(result).toBe(true)
-    })
-
-    it('returns true for ACTIVE status', async () => {
-      prisma.userSubscription.findUnique.mockResolvedValue({
-        status: 'ACTIVE',
-      })
-
-      const result = await service.hasActiveSubscription('user-1')
-
-      expect(result).toBe(true)
-    })
-
-    it('returns true for GRACE status', async () => {
-      prisma.userSubscription.findUnique.mockResolvedValue({
-        status: 'GRACE',
-      })
-
-      const result = await service.hasActiveSubscription('user-1')
-
-      expect(result).toBe(true)
-    })
-
-    it('returns false for PENDING status', async () => {
-      prisma.userSubscription.findUnique.mockResolvedValue({
-        status: 'PENDING',
-      })
-
-      const result = await service.hasActiveSubscription('user-1')
-
-      expect(result).toBe(false)
-    })
-
-    it('returns false for EXPIRED status', async () => {
-      prisma.userSubscription.findUnique.mockResolvedValue({
-        status: 'EXPIRED',
-      })
-
-      const result = await service.hasActiveSubscription('user-1')
-
-      expect(result).toBe(false)
-    })
-
-    it('returns false for CANCELLED status', async () => {
-      prisma.userSubscription.findUnique.mockResolvedValue({
-        status: 'CANCELLED',
-      })
-
-      const result = await service.hasActiveSubscription('user-1')
-
-      expect(result).toBe(false)
+      expect(result).toBe(expected)
     })
 
     it('returns false when no subscription exists', async () => {

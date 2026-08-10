@@ -3,6 +3,20 @@ import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { JoinRequestModal } from '@/components/community/JoinRequestModal'
 
+// jsdom does not implement HTMLDialogElement.showModal/close (it throws
+// "Not implemented"), and its default stylesheet hides <dialog> elements
+// without an [open] attribute. Polyfill the methods so the native dialog
+// reflects an open state — matching real-browser behavior — and remains
+// queryable via getByRole('dialog').
+if (typeof HTMLDialogElement !== 'undefined') {
+  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+    this.setAttribute('open', '')
+  }
+  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+    this.removeAttribute('open')
+  }
+}
+
 describe('JoinRequestModal', () => {
   const defaultProps = {
     open: false,
@@ -67,10 +81,9 @@ describe('JoinRequestModal', () => {
 
   it('renders the user icon in the modal', () => {
     render(<JoinRequestModal {...defaultProps} open={true} />)
-    // The SVG icon should be present inside the icon circle
-    const iconContainer = document.querySelector('.bg-primary-muted')
-    expect(iconContainer).toBeDefined()
-    expect(iconContainer?.querySelector('svg')).toBeDefined()
+    // The user icon SVG renders inside the dialog
+    const dialog = screen.getByRole('dialog')
+    expect(dialog.querySelector('svg')).toBeDefined()
   })
 
   // ── Message input and character counter ──
@@ -202,12 +215,7 @@ describe('JoinRequestModal', () => {
       <JoinRequestModal {...defaultProps} open={true} onCancel={onCancel} />,
     )
     const user = userEvent.setup()
-    // The backdrop is the first child div with bg-black/50 class
-    const backdrop = document.querySelector('.bg-black\\/50')
-    expect(backdrop).toBeDefined()
-    if (backdrop) {
-      await user.click(backdrop)
-    }
+    await user.click(screen.getByRole('button', { name: 'Close modal' }))
     expect(onCancel).toHaveBeenCalledOnce()
   })
 
@@ -373,9 +381,7 @@ describe('JoinRequestModal', () => {
     // Shift+Tab should wrap to the last element (Send Request button)
     await user.keyboard('{Shift>}{Tab}{/Shift}')
     const sendButton = screen.getByText('Send Request').closest('button')!
-    expect(
-      document.activeElement === sendButton,
-    ).toBe(true)
+    expect(document.activeElement).toBe(sendButton)
   })
 
   // ── Edge cases ──
@@ -412,14 +418,9 @@ describe('JoinRequestModal', () => {
       />,
     )
     const user = userEvent.setup()
-    // The backdrop should still allow cancel since loading just disables send
-    // (per the modal's implementation, the backdrop calls onCancel directly,
-    //  not gated by loading state)
-    const backdrop = document.querySelector('.bg-black\\/50')
-    expect(backdrop).toBeDefined()
-    if (backdrop) {
-      await user.click(backdrop)
-    }
+    // The backdrop button is not gated by loading — only the Cancel/Send
+    // buttons are disabled while a request is in flight.
+    await user.click(screen.getByRole('button', { name: 'Close modal' }))
     expect(onCancel).toHaveBeenCalledOnce()
   })
 })

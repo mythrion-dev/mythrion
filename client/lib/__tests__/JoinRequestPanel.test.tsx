@@ -30,22 +30,16 @@ describe('JoinRequestPanel', () => {
     vi.clearAllMocks()
   })
 
-  it('renders the header with pending count', () => {
+  it.each([
+    'Join Requests',
+    '1 pending',
+    'Bob Smith',
+    'I would love to join!',
+    'Accept',
+    'Reject',
+  ])('renders %s', (text) => {
     render(<JoinRequestPanel {...defaultProps} />)
-    expect(screen.getByText('Join Requests')).toBeDefined()
-    expect(screen.getByText('1 pending')).toBeDefined()
-  })
-
-  it('renders user name and message', () => {
-    render(<JoinRequestPanel {...defaultProps} />)
-    expect(screen.getByText('Bob Smith')).toBeDefined()
-    expect(screen.getByText('I would love to join!')).toBeDefined()
-  })
-
-  it('shows Accept and Reject buttons for pending requests', () => {
-    render(<JoinRequestPanel {...defaultProps} />)
-    expect(screen.getByText('Accept')).toBeDefined()
-    expect(screen.getByText('Reject')).toBeDefined()
+    expect(screen.getByText(text)).toBeDefined()
   })
 
   it('calls onAccept when Accept is clicked', () => {

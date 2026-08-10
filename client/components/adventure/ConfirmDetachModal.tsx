@@ -3,10 +3,10 @@
 import { useTranslation } from 'react-i18next'
 
 interface ConfirmDetachModalProps {
-  loading: boolean
-  error: string | null
-  onCancel: () => void
-  onConfirm: () => void
+  readonly loading: boolean
+  readonly error: string | null
+  readonly onCancel: () => void
+  readonly onConfirm: () => void
 }
 
 export function ConfirmDetachModal({

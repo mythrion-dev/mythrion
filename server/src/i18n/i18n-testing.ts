@@ -43,7 +43,8 @@ function interpolate(template: string, args: Record<string, unknown>): string {
       if (typeof acc !== 'object') return undefined;
       return (acc as Record<string, unknown>)[part];
     }, args);
-    return value === null || value === undefined ? match : String(value);
+    if (value === null || value === undefined) return match;
+    return typeof value === 'string' ? value : JSON.stringify(value);
   });
 }
 

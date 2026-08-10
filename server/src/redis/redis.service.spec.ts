@@ -310,14 +310,14 @@ describe('RedisService', () => {
     describe('set', () => {
       it('should no-op when client is null', async () => {
         await service.set('key', 'value')
-        // Should not throw
+        expect(mockRedisInstance.set).not.toHaveBeenCalled()
       })
     })
 
     describe('del', () => {
       it('should no-op when client is null', async () => {
         await service.del('key')
-        // Should not throw
+        expect(mockRedisInstance.del).not.toHaveBeenCalled()
       })
     })
 
@@ -331,7 +331,7 @@ describe('RedisService', () => {
     describe('expire', () => {
       it('should no-op when client is null', async () => {
         await service.expire('k', 60)
-        // Should not throw
+        expect(mockRedisInstance.expire).not.toHaveBeenCalled()
       })
     })
 
@@ -359,14 +359,14 @@ describe('RedisService', () => {
     describe('cacheSet', () => {
       it('should no-op when client is null', async () => {
         await service.cacheSet('key', { data: 123 }, 60)
-        // Should not throw
+        expect(mockRedisInstance.setex).not.toHaveBeenCalled()
       })
     })
 
     describe('invalidatePattern', () => {
       it('should no-op when client is null', async () => {
         await service.invalidatePattern('tmp:*')
-        // Should not throw
+        expect(mockRedisInstance.del).not.toHaveBeenCalled()
       })
     })
 
@@ -380,7 +380,7 @@ describe('RedisService', () => {
     describe('onModuleDestroy', () => {
       it('should no-op when client is null', async () => {
         await service.onModuleDestroy()
-        // Should not throw
+        expect(mockRedisInstance.quit).not.toHaveBeenCalled()
       })
     })
   })

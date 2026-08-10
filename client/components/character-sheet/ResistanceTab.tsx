@@ -39,24 +39,31 @@ interface TemplateAttribute {
 interface NewResistanceDraft {
   name: string
   calculationType: 'MANUAL' | 'CALCULATED'
-  components: { name: string; editableByPlayer: boolean; defaultValue: string }[]
+  components: { id: string; name: string; editableByPlayer: boolean; defaultValue: string }[]
   attributeModifiers: { attributeId: string; attributeKey: string; attributeName: string; enabled: boolean }[]
 }
+
+const genId = () => crypto.randomUUID()
 
 function emptyDraft(): NewResistanceDraft {
   return { name: '', calculationType: 'MANUAL', components: [], attributeModifiers: [] }
 }
 
+function formatMod(n: number): string {
+  if (n > 0) return `+${n}`
+  return `${n}`
+}
+
 interface Props {
-  resistances: CalculatedResistance[]
-  permissions: SheetPermissions
-  onSaveComponent: (componentId: string, value: number) => Promise<void>
-  onSaveManual: (resistanceId: string, value: number) => Promise<void>
-  sheetResistanceValues: Record<string, string | null>
-  templateAttributes?: TemplateAttribute[]
-  disableAttributeModifiers?: boolean
-  onCreateResistance?: (draft: NewResistanceDraft) => Promise<void>
-  onDeleteResistance?: (resistanceId: string) => Promise<void>
+  readonly resistances: CalculatedResistance[]
+  readonly permissions: SheetPermissions
+  readonly onSaveComponent: (componentId: string, value: number) => Promise<void>
+  readonly onSaveManual: (resistanceId: string, value: number) => Promise<void>
+  readonly sheetResistanceValues: Record<string, string | null>
+  readonly templateAttributes?: TemplateAttribute[]
+  readonly disableAttributeModifiers?: boolean
+  readonly onCreateResistance?: (draft: NewResistanceDraft) => Promise<void>
+  readonly onDeleteResistance?: (resistanceId: string) => Promise<void>
 }
 
 export type { NewResistanceDraft }
@@ -77,16 +84,11 @@ export function ResistanceTab({
   // Auto-expand newly added resistances
   useEffect(() => {
     if (resistances.length > prevCount.current && resistances.length > 0) {
-      const last = resistances[resistances.length - 1]
+      const last = resistances.at(-1)!
       setExpanded(p => ({ ...p, [last.resistanceId]: true }))
     }
     prevCount.current = resistances.length
   }, [resistances.length])
-
-  function formatMod(n: number): string {
-    if (n > 0) return `+${n}`
-    return `${n}`
-  }
 
   function toggleExpanded(id: string) {
     setExpanded(p => ({ ...p, [id]: !p[id] }))
@@ -125,7 +127,7 @@ export function ResistanceTab({
   function addComponent() {
     setDraft(prev => ({
       ...prev,
-      components: [...prev.components, { name: '', editableByPlayer: false, defaultValue: '0' }],
+      components: [...prev.components, { id: genId(), name: '', editableByPlayer: false, defaultValue: '0' }],
     }))
   }
 
@@ -368,7 +370,7 @@ export function ResistanceTab({
                         <p className="text-xs text-muted italic text-center py-2">{t('character:noComponentsAddedYet')}</p>
                       )}
                       {draft.components.map((c, cIdx) => (
-                        <div key={cIdx} className="rounded-lg border border-border/50 bg-background/20 p-2 space-y-2">
+                        <div key={c.id} className="rounded-lg border border-border/50 bg-background/20 p-2 space-y-2">
                           <div className="flex items-center gap-1.5">
                             <input
                               className="input-field flex-1"

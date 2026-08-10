@@ -44,13 +44,40 @@ interface ChildAbility {
   levels: AbilityLevel[]
 }
 
+/* ── Module helpers ── */
+
+const ATTRIBUTE_SKELETON_KEYS = ['a', 'b', 'c', 'd', 'e', 'f']
+
+function updateChildAbilityLevel(
+  childAbilities: ChildAbility[],
+  abilityId: string,
+  levelId: string,
+  patch: Record<string, unknown>,
+): ChildAbility[] {
+  return childAbilities.map(c =>
+    c.id === abilityId
+      ? { ...c, levels: c.levels.map(l => l.id === levelId ? { ...l, ...patch } : l) }
+      : c
+  )
+}
+
+function removeChildAbilityLevel(
+  childAbilities: ChildAbility[],
+  childId: string,
+  levelId: string,
+): ChildAbility[] {
+  return childAbilities.map(c =>
+    c.id === childId ? { ...c, levels: c.levels.filter(l => l.id !== levelId) } : c
+  )
+}
+
 /* ── Prop ── */
 
 interface CreatureDrawerProps {
-  ability: CreatureAbility | null
-  sheetId: string | null
-  onClose: () => void
-  onUpdate: () => void
+  readonly ability: CreatureAbility | null
+  readonly sheetId: string | null
+  readonly onClose: () => void
+  readonly onUpdate: () => void
 }
 
 /* ── Component ── */
@@ -84,7 +111,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
   })
   const [childAbilitySaving, setChildAbilitySaving] = useState(false)
   const [childAbilityError, setChildAbilityError] = useState<string | null>(null)
-  const [savingChildField, setSavingChildField] = useState<Record<string, boolean>>({})
   const [addingLevel, setAddingLevel] = useState<string | null>(null)
 
   /* ── Copy ability data into local state when it changes ── */
@@ -271,7 +297,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
 
   async function saveChildAbilityField(childId: string, field: string, value: string) {
     if (!ability || !sheetId) return
-    setSavingChildField(prev => ({ ...prev, [`${childId}-${field}`]: true }))
     try {
       const body: Record<string, unknown> = {}
       if (field === 'name') body.name = value.trim()
@@ -282,8 +307,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
       onUpdate()
     } catch {
       /* silently fail */
-    } finally {
-      setSavingChildField(prev => ({ ...prev, [`${childId}-${field}`]: false }))
     }
   }
 
@@ -300,7 +323,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
 
   async function handleSaveLevelField(abilityId: string, levelId: string, field: string, value: string) {
     if (!ability || !sheetId) return
-    setSavingChildField(prev => ({ ...prev, [`${levelId}-${field}`]: true }))
     try {
       const body: Record<string, unknown> = {}
       if (field === 'level') body.level = value.trim()
@@ -310,15 +332,9 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
       else if (field === 'notes') body.notes = value.trim() || null
       else if (field === 'damage') body.damage = value.trim() || null
       await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${levelId}`, body)
-      setChildAbilities(prev => prev.map(c =>
-        c.id === abilityId
-          ? { ...c, levels: c.levels.map(l => l.id === levelId ? { ...l, ...body } : l) }
-          : c
-      ))
+      setChildAbilities(prev => updateChildAbilityLevel(prev, abilityId, levelId, body))
     } catch {
       /* silently fail */
-    } finally {
-      setSavingChildField(prev => ({ ...prev, [`${levelId}-${field}`]: false }))
     }
   }
 
@@ -349,9 +365,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
     if (!ability || !sheetId) return
     try {
       await api.delete(`/character-sheets/${sheetId}/abilities/x/levels/${levelId}`)
-      setChildAbilities(prev => prev.map(c =>
-        c.id === childId ? { ...c, levels: c.levels.filter(l => l.id !== levelId) } : c
-      ))
+      setChildAbilities(prev => removeChildAbilityLevel(prev, childId, levelId))
       onUpdate()
     } catch {
       /* silently fail */
@@ -373,7 +387,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
   return (
     <>
       {/* Overlay */}
-      <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose} />
+      <button type="button" tabIndex={-1} aria-hidden="true" className="fixed inset-0 z-50 bg-black/40" onClick={onClose} />
 
       {/* Drawer panel */}
       <div className="fixed top-0 right-0 z-50 h-full w-[70vw] max-w-[900px] min-w-[400px] bg-surface border-l border-border shadow-2xl flex flex-col">
@@ -388,7 +402,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
                 className="w-full h-full object-cover"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
               />
-              <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 cursor-pointer transition-opacity">
+              <label aria-label={t('campaign:uploadAvatar')} className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 cursor-pointer transition-opacity">
                 {uploading ? (
                   <svg className="w-5 h-5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -506,17 +520,18 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
               <h3 className="header-accent mb-3">{t('campaign:attributes')}</h3>
               {templateLoading ? (
                 <div className="flex gap-2 flex-wrap">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="skeleton h-24 w-20 rounded-lg" />
+                  {ATTRIBUTE_SKELETON_KEYS.map(k => (
+                    <div key={k} className="skeleton h-24 w-20 rounded-lg" />
                   ))}
                 </div>
               ) : (
                 <div className="flex gap-3 flex-wrap">
                   {template.attributes.map(attr => {
                     const mod = modifierResults[attr.id]
-                    const modDisplay = mod !== null && mod !== undefined
-                      ? (mod >= 0 ? `+${mod}` : String(mod))
-                      : null
+                    let modDisplay: string | null = null
+                    if (mod !== null && mod !== undefined) {
+                      modDisplay = mod >= 0 ? `+${mod}` : String(mod)
+                    }
                     return (
                       <div key={attr.id} className="flex flex-col items-center gap-1 min-w-[80px]">
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{attr.name}</span>

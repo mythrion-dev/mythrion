@@ -25,8 +25,10 @@ import type {
   SkillModifierProfile,
   Story,
   ProfessionalSkill,
+  Ability,
+  InventoryItem,
+  SectionEntry,
 } from '@/components/character-sheet/types'
-import type { Ability, InventoryItem, SectionEntry } from '@/components/character-sheet/types'
 
 // ── PID counter for stable synthetic IDs ──
 let _pid = 0

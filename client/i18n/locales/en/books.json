@@ -8,7 +8,7 @@
   "campaignBooks": "Campaign Books",
   "deleteBook": "Delete {{name}}",
   "deleteFailed": "Failed to delete book",
-  "emptyListGm": "No books available. Upload one from the adventure page!",
+  "emptyListGm": "No books available. Upload one from the campaign page!",
   "emptyListPlayer": "No books available. Ask your GM to upload some!",
   "errorLoadBooks": "Failed to load books",
   "failedToLoadPdf": "Failed to load PDF",

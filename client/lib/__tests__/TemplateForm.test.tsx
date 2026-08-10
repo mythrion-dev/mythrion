@@ -193,12 +193,18 @@ describe('EditForm', () => {
     campaign: 'Campaign 1',
     synopsis: 'A great adventure',
     maxPlayers: 3,
+    sessionWeekday: 'Monday',
+    sessionTime: '19:00',
+    sessionType: 'ONLINE',
     error: null as string | null,
     saving: false,
     onNameChange: vi.fn(),
     onCampaignChange: vi.fn(),
     onSynopsisChange: vi.fn(),
     onMaxPlayersChange: vi.fn(),
+    onSessionWeekdayChange: vi.fn(),
+    onSessionTimeChange: vi.fn(),
+    onSessionTypeChange: vi.fn(),
     onCancel: vi.fn(),
     onSubmit: vi.fn(),
   }
@@ -208,8 +214,8 @@ describe('EditForm', () => {
     expect(screen.getByDisplayValue('My Adventure')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Campaign 1')).toBeInTheDocument()
     expect(screen.getByDisplayValue('A great adventure')).toBeInTheDocument()
-    expect(screen.getByText('3')).toBeInTheDocument()
-    expect(screen.getByText('Edit Adventure')).toBeInTheDocument()
+    expect(screen.getByText('3', { selector: '.badge' })).toBeInTheDocument()
+    expect(screen.getByText('Edit Campaign')).toBeInTheDocument()
   })
 
   it('calls onNameChange when name input changes', async () => {
@@ -565,19 +571,12 @@ describe('TemplateRow', () => {
     onRemoveAttr: vi.fn(),
     onUpdateAttr: vi.fn(),
     editFeatureSkills: true,
-    onEditFeatureSkillsChange: vi.fn(),
     editFeatureCustomFields: true,
-    onEditFeatureCustomFieldsChange: vi.fn(),
     editFeatureCoreResources: true,
-    onEditFeatureCoreResourcesChange: vi.fn(),
     editFeatureArmorClass: true,
-    onEditFeatureArmorClassChange: vi.fn(),
     editFeatureCharacterSections: true,
-    onEditFeatureCharacterSectionsChange: vi.fn(),
     editFeatureSkillProfiles: true,
-    onEditFeatureSkillProfilesChange: vi.fn(),
     editFeatureResistance: true,
-    onEditFeatureResistanceChange: vi.fn(),
     attrsForEditResistance: defaultAttrs,
   }
 
@@ -750,24 +749,14 @@ describe('TemplateRow', () => {
       expect(screen.queryByText('Character Info')).not.toBeInTheDocument()
     })
 
-    it('does not show coreResources tab without onAddCoreResource', () => {
+    it.each([
+      { tab: 'Resources', handler: 'onAddCoreResource' },
+      { tab: 'Profiles', handler: 'onAddProfile' },
+      { tab: 'Resistances', handler: 'onEditResistancesChange' },
+      { tab: 'Armor Class', handler: 'onAddEditAcConfig' },
+    ])('does not show $tab tab without $handler', ({ tab }) => {
       render(<TemplateRow {...editProps} />)
-      expect(screen.queryByText('Resources')).not.toBeInTheDocument()
-    })
-
-    it('does not show profiles tab without onAddProfile', () => {
-      render(<TemplateRow {...editProps} />)
-      expect(screen.queryByText('Profiles')).not.toBeInTheDocument()
-    })
-
-    it('does not show resistances tab without onEditResistancesChange', () => {
-      render(<TemplateRow {...editProps} />)
-      expect(screen.queryByText('Resistances')).not.toBeInTheDocument()
-    })
-
-    it('does not show armor class tab without onAddEditAcConfig', () => {
-      render(<TemplateRow {...editProps} />)
-      expect(screen.queryByText('Armor Class')).not.toBeInTheDocument()
+      expect(screen.queryByText(tab)).not.toBeInTheDocument()
     })
 
     it('shows error when editError is set', () => {

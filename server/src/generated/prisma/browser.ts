@@ -292,3 +292,8 @@ export type TwoFactorChallenge = Prisma.TwoFactorChallengeModel
  * 
  */
 export type RecoveryCode = Prisma.RecoveryCodeModel
+/**
+ * Model AuditLog
+ * 
+ */
+export type AuditLog = Prisma.AuditLogModel

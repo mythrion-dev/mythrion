@@ -334,7 +334,7 @@ describe('previewReducer', () => {
   describe('UPDATE_ABILITIES', () => {
     it('replaces the abilities array', () => {
       const state = createState()
-      const abilities = [{ id: 'ab-1', type: 'FEATURE', name: 'Action Surge', description: 'Extra action', sheetId: 'preview', fields: [], children: [], levels: [] }]
+      const abilities = [{ id: 'ab-1', name: 'Action Surge', type: 'FEATURE', description: 'Extra action', notes: null, order: 0, levels: [], summonAttributes: [], summonAcValues: [], summonHealth: null }]
       const result = previewReducer(state, { type: 'UPDATE_ABILITIES', payload: abilities })
       expect(result.abilities).toEqual(abilities)
     })
@@ -343,7 +343,7 @@ describe('previewReducer', () => {
   describe('UPDATE_INVENTORY', () => {
     it('replaces the inventoryItems array', () => {
       const state = createState()
-      const items = [{ id: 'inv-1', name: 'Longsword', quantity: 1, weight: 3, sheetId: 'preview', fields: [] }]
+      const items = [{ id: 'inv-1', name: 'Longsword', weight: 3, cost: null, description: null, order: 0 }]
       const result = previewReducer(state, { type: 'UPDATE_INVENTORY', payload: items })
       expect(result.inventoryItems).toEqual(items)
     })
@@ -352,13 +352,13 @@ describe('previewReducer', () => {
   describe('UPDATE_STORY', () => {
     it('replaces the story with a Story object', () => {
       const state = createState()
-      const story = { id: 'story-1', sheetId: 'preview', fields: [] }
+      const story = { id: 'story-1', appearance: null, backstory: null, personality: null, goals: null, notes: null }
       const result = previewReducer(state, { type: 'UPDATE_STORY', payload: story })
       expect(result.story).toEqual(story)
     })
 
     it('accepts null to clear the story', () => {
-      const state = createState({ story: { id: 'story-1', sheetId: 'preview', fields: [] } })
+      const state = createState({ story: { id: 'story-1', appearance: null, backstory: null, personality: null, goals: null, notes: null } })
       const result = previewReducer(state, { type: 'UPDATE_STORY', payload: null })
       expect(result.story).toBeNull()
     })
@@ -367,7 +367,7 @@ describe('previewReducer', () => {
   describe('UPDATE_SECTION_ENTRIES', () => {
     it('replaces the sectionEntries array', () => {
       const state = createState()
-      const entries = [{ id: 'entry-1', sectionId: 'sec-1', sheetId: 'preview', fields: [] }]
+      const entries = [{ id: 'entry-1', sheetId: 'preview', sectionId: 'sec-1', name: 'Entry', description: '', order: 0, section: { id: 'sec-1', name: 'Section' } }]
       const result = previewReducer(state, { type: 'UPDATE_SECTION_ENTRIES', payload: entries })
       expect(result.sectionEntries).toEqual(entries)
     })
@@ -376,7 +376,7 @@ describe('previewReducer', () => {
   describe('SET_PROFESSIONAL_SKILLS', () => {
     it('replaces the professionalSkills array', () => {
       const state = createState()
-      const skills = [{ id: 'ps-1', name: 'Crafting', level: 3, sheetId: 'preview' }]
+      const skills = [{ id: 'ps-1', name: 'Crafting', attributeId: null, attribute: null, order: 0, profileValues: [] }]
       const result = previewReducer(state, { type: 'SET_PROFESSIONAL_SKILLS', payload: skills })
       expect(result.professionalSkills).toEqual(skills)
     })
@@ -385,7 +385,7 @@ describe('previewReducer', () => {
   describe('unknown action', () => {
     it('returns the state unchanged', () => {
       const state = createState({ characterName: 'Test' })
-      const result = previewReducer(state, { type: 'UNKNOWN' as any })
+      const result = previewReducer(state, { type: 'UNKNOWN' } as any)
       expect(result).toBe(state)
     })
   })

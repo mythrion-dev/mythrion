@@ -71,17 +71,17 @@ export class SubscriptionController {
         this.i18n.t('subscription.controllerPlanIdRequired'),
       )
     }
-    return this.subscriptionService.createSubscription(
-      req.user.sub,
-      body.planId,
-      req.user.email,
-      body.cardToken,
-      body.securityCode,
-      body.payerName,
-      body.payerDocument,
-      body.deviceId,
-      body.cardTokenId,
-    )
+    return this.subscriptionService.createSubscription({
+      userId: req.user.sub,
+      planId: body.planId,
+      email: req.user.email,
+      cardToken: body.cardToken,
+      securityCode: body.securityCode,
+      payerName: body.payerName,
+      payerDocument: body.payerDocument,
+      deviceId: body.deviceId,
+      cardTokenId: body.cardTokenId,
+    })
   }
 
   /**

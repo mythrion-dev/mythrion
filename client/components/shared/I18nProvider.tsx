@@ -11,7 +11,7 @@ import { applyLanguage, DEFAULT_LANGUAGE, detectLanguage, normalizeLanguage } fr
  * authenticated user's explicit DB choice → saved localStorage preference →
  * browser language → English. Applies instantly, no page refresh.
  */
-export function I18nProvider({ children }: { children: ReactNode }) {
+export function I18nProvider({ children }: { readonly children: ReactNode }) {
   const { user } = useAuth()
   const resolvedInitial = useRef(false)
 

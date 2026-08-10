@@ -9,11 +9,11 @@ export function DeleteModal({
   onCancel,
   onConfirm,
 }: {
-  name: string
-  error: string | null
-  loading: boolean
-  onCancel: () => void
-  onConfirm: () => void
+  readonly name: string
+  readonly error: string | null
+  readonly loading: boolean
+  readonly onCancel: () => void
+  readonly onConfirm: () => void
 }) {
   const { t } = useTranslation()
   return (

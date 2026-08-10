@@ -34,6 +34,10 @@ function openDropdown() {
 
 describe('LanguageSwitcher', () => {
   beforeEach(async () => {
+    // Warm the lazy-loaded pt-BR catalog (20 dynamic imports) so selection
+    // assertions resolve fast — under full-suite CPU contention the waitFor
+    // default timeout (1000ms) is too tight for the first pt-BR load.
+    await i18n.changeLanguage('pt-BR')
     await i18n.changeLanguage('en')
     window.localStorage.clear()
     mockPatch.mockClear()

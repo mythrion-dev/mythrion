@@ -69,9 +69,7 @@ export class ImageService implements OnModuleInit {
         metadata: { [keyField]: entityId, contentType: file.mimetype },
       })
 
-      const readable = new Readable()
-      readable.push(file.buffer)
-      readable.push(null)
+      const readable = Readable.from([file.buffer])
 
       readable
         .pipe(uploadStream)

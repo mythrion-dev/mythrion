@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useSubscription } from '@/lib/subscription-context'
@@ -18,10 +18,14 @@ export default function SuccessPage() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Redirect unauthenticated users
+  // Redirect unauthenticated / unverified users
   useEffect(() => {
     if (!authLoading && !user) {
       router.replace('/login')
+      return
+    }
+    if (!authLoading && user && !user.emailVerified) {
+      router.replace('/verify-email')
     }
   }, [authLoading, user, router])
 
@@ -86,60 +90,69 @@ export default function SuccessPage() {
     }
   }, [subscription, subLoading, router, t])
 
+  let statusView: ReactNode
+  if (!timedOut && !subLoading && subscription && ['AUTHORIZED', 'ACTIVE'].includes(subscription.status)) {
+    statusView = (
+      <>
+        {/* Success state */}
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-4">
+          <svg className="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h2 className="text-lg font-semibold text-foreground">{t('billing:subscriptionConfirmed')}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {t('billing:welcomePremiumRedirect')}
+        </p>
+        <div className="mt-6">
+          <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
+        </div>
+      </>
+    )
+  } else if (timedOut) {
+    statusView = (
+      <>
+        {/* Timeout state */}
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 mb-4">
+          <svg className="w-6 h-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h2 className="text-lg font-semibold text-foreground">{t('billing:stillWaitingConfirmation')}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {t('billing:paymentProcessingPagbank')}
+        </p>
+        <div className="mt-6 flex gap-3 justify-center">
+          <button
+            onClick={async () => {
+              await refresh()
+              setTimedOut(false)
+              setElapsed(0)
+            }}
+            className="btn-primary text-sm px-4 py-2"
+          >
+            {t('billing:checkAgain')}
+          </button>
+          <Link href="/dashboard" className="btn-ghost text-sm px-4 py-2">
+            {t('billing:goToDashboard')}
+          </Link>
+        </div>
+      </>
+    )
+  } else {
+    statusView = (
+      <>
+        {/* Loading state */}
+        <div className="w-10 h-10 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
+        <p className="mt-4 text-sm text-muted-foreground">{message}</p>
+      </>
+    )
+  }
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center min-h-screen bg-background bg-pattern">
       <div className="max-w-md text-center px-4">
-        {!timedOut && !subLoading && subscription && ['AUTHORIZED', 'ACTIVE'].includes(subscription.status) ? (
-          <>
-            {/* Success state */}
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-4">
-              <svg className="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-lg font-semibold text-foreground">{t('billing:subscriptionConfirmed')}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {t('billing:welcomePremiumRedirect')}
-            </p>
-            <div className="mt-6">
-              <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
-            </div>
-          </>
-        ) : timedOut ? (
-          <>
-            {/* Timeout state */}
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 mb-4">
-              <svg className="w-6 h-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h2 className="text-lg font-semibold text-foreground">{t('billing:stillWaitingConfirmation')}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {t('billing:paymentProcessingPagbank')}
-            </p>
-            <div className="mt-6 flex gap-3 justify-center">
-              <button
-                onClick={async () => {
-                  await refresh()
-                  setTimedOut(false)
-                  setElapsed(0)
-                }}
-                className="btn-primary text-sm px-4 py-2"
-              >
-                {t('billing:checkAgain')}
-              </button>
-              <Link href="/dashboard" className="btn-ghost text-sm px-4 py-2">
-                {t('billing:goToDashboard')}
-              </Link>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Loading state */}
-            <div className="w-10 h-10 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
-            <p className="mt-4 text-sm text-muted-foreground">{message}</p>
-          </>
-        )}
+        {statusView}
       </div>
     </div>
   )

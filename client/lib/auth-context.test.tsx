@@ -86,6 +86,9 @@ const mockProfile = {
   displayName: null,
   onboardingComplete: false,
   twoFactorEnabled: false,
+  emailVerified: false,
+  hasPassword: true,
+  language: 'en',
 }
 
 beforeEach(() => {
@@ -416,6 +419,7 @@ describe('register', () => {
         email: 'test@test.com',
         password: 'pass',
         displayName: 'Test',
+        acceptTerms: false,
       })
     })
   })

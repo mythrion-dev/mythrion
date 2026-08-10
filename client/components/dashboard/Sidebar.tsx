@@ -182,9 +182,9 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 w-full">
-        {navLinks.map((link: any, index: number) =>
+        {navLinks.map((link: any) =>
           link.type === 'divider' ? (
-            <hr key={`divider-${index}`} className={`divider my-2 transition-all duration-300 ${collapsed ? 'w-8 mx-auto' : ''}`} />
+            <hr key="nav-divider" className={`divider my-2 transition-all duration-300 ${collapsed ? 'w-8 mx-auto' : ''}`} />
           ) : (
             <Link
               key={link.href}

@@ -1,11 +1,12 @@
 jest.mock("../generated/prisma/client", () => ({ PrismaClient: class {} }))
 jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
 jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
+jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }))
 import { Test, TestingModule } from '@nestjs/testing'
 import { JoinRequestController } from './join-request.controller.js'
 import { JoinRequestService } from './join-request.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
-import type { AuthenticatedRequest } from '../auth/jwt-auth.guard.js'
+import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
 
 describe('JoinRequestController', () => {
   let controller: JoinRequestController
@@ -91,7 +92,7 @@ describe('JoinRequestController', () => {
         'jr-1',
         'user-1',
       )
-      expect(result.membership.role).toBe('PLAYER')
+      expect(result).toMatchObject({ membership: { role: 'PLAYER' } })
     })
 
     it('delegates to reject when action is reject', async () => {
@@ -106,7 +107,7 @@ describe('JoinRequestController', () => {
         'jr-1',
         'user-1',
       )
-      expect(result.status).toBe('REJECTED')
+      expect(result).toMatchObject({ status: 'REJECTED' })
     })
   })
 

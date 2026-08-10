@@ -157,13 +157,13 @@ describe('LoadingSkeleton', () => {
     const { container } = render(<LoadingSkeleton />)
     // Card variant renders skeleton divs with "card" class
     const cardEls = container.querySelectorAll('.card')
-    expect(cardEls.length).toBe(3) // default count is 3
+    expect(cardEls).toHaveLength(3) // default count is 3
   })
 
   it('renders correct number of cards (count prop)', () => {
     const { container } = render(<LoadingSkeleton count={5} />)
     const cardEls = container.querySelectorAll('.card')
-    expect(cardEls.length).toBe(5)
+    expect(cardEls).toHaveLength(5)
   })
 
   it('renders list variant', () => {
@@ -171,7 +171,7 @@ describe('LoadingSkeleton', () => {
     // List variant renders data-row divs
     const rows = container.querySelectorAll('.data-row')
     // SkeletonList creates 4 data-rows
-    expect(rows.length).toBe(4)
+    expect(rows).toHaveLength(4)
   })
 
   it('renders page variant', () => {
@@ -179,7 +179,7 @@ describe('LoadingSkeleton', () => {
     // Page variant renders card skeletons inside, but no top-level card grid class
     const cardEls = container.querySelectorAll('.card')
     // SkeletonPage renders 2 SkeletonCards
-    expect(cardEls.length).toBe(2)
+    expect(cardEls).toHaveLength(2)
   })
 })
 
@@ -332,7 +332,7 @@ describe('PageHeader', () => {
     // We look for the container holding the icon area - the icon div is inside a flex container
     const iconContainers = container.querySelectorAll('.w-10')
     // Without an icon, no icon container div should exist
-    expect(iconContainers.length).toBe(0)
+    expect(iconContainers).toHaveLength(0)
   })
 })
 

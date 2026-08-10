@@ -53,6 +53,13 @@ export default function PricingPage() {
       .finally(() => setPlansLoading(false))
   }, [])
 
+  // Redirect unverified users to the verification waiting page
+  useEffect(() => {
+    if (!authLoading && user && !user.emailVerified) {
+      router.replace('/verify-email')
+    }
+  }, [authLoading, user, router])
+
   // If user has active subscription, redirect to dashboard
   useEffect(() => {
     if (!authLoading && !subLoading && hasActiveSubscription) {
@@ -68,6 +75,37 @@ export default function PricingPage() {
       <main className="min-h-screen flex items-center justify-center bg-background bg-pattern">
         <div className="text-sm text-muted-foreground">{t('common:loading')}</div>
       </main>
+    )
+  }
+
+  // Free-tier CTA: depends on auth/subscription state.
+  let freeCta: React.ReactNode
+  if (!user) {
+    freeCta = (
+      <Link
+        href="/login?redirect=/pricing"
+        className="block w-full rounded-lg border border-border bg-surface hover:bg-background px-5 py-2.5 text-center text-sm font-medium text-foreground transition-colors"
+      >
+        {t('billing:getStartedSignUp')}
+      </Link>
+    )
+  } else if (!hasActiveSubscription) {
+    freeCta = (
+      <button
+        disabled
+        className="w-full rounded-lg border border-border bg-surface/50 px-5 py-2.5 text-sm font-medium text-muted cursor-default"
+      >
+        {t('billing:currentPlan')}
+      </button>
+    )
+  } else {
+    freeCta = (
+      <Link
+        href="/dashboard"
+        className="block w-full rounded-lg border border-border bg-surface hover:bg-background px-5 py-2.5 text-center text-sm font-medium text-foreground transition-colors"
+      >
+        {t('common:dashboard')}
+      </Link>
     )
   }
 
@@ -167,28 +205,7 @@ export default function PricingPage() {
               </ul>
 
               <div className="mt-8">
-                {!user ? (
-                  <Link
-                    href="/login?redirect=/pricing"
-                    className="block w-full rounded-lg border border-border bg-surface hover:bg-background px-5 py-2.5 text-center text-sm font-medium text-foreground transition-colors"
-                  >
-                    {t('billing:getStartedSignUp')}
-                  </Link>
-                ) : !hasActiveSubscription ? (
-                  <button
-                    disabled
-                    className="w-full rounded-lg border border-border bg-surface/50 px-5 py-2.5 text-sm font-medium text-muted cursor-default"
-                  >
-                    {t('billing:currentPlan')}
-                  </button>
-                ) : (
-                  <Link
-                    href="/dashboard"
-                    className="block w-full rounded-lg border border-border bg-surface hover:bg-background px-5 py-2.5 text-center text-sm font-medium text-foreground transition-colors"
-                  >
-                    {t('common:dashboard')}
-                  </Link>
-                )}
+                {freeCta}
               </div>
             </div>
 

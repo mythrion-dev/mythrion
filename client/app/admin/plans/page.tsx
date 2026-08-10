@@ -6,11 +6,11 @@ import {
   adminCreatePlan,
   adminUpdatePlan,
   adminDeletePlan,
-  type CreatePlanPayload,
   type UpdatePlanPayload,
 } from '@/lib/subscription-admin-api'
 import type { Plan } from '@/lib/subscription-api'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 
 /* ---------- helpers ---------- */
 function formatBRL(cents: number) {
@@ -61,6 +61,49 @@ function formFromPlan(plan: Plan): PlanFormData {
     price: formatCentsToBRLInput(plan.price),
     pgPlanId: plan.pgPlanId,
   }
+}
+
+function sortByPrice(a: Plan, b: Plan): number {
+  return a.price - b.price
+}
+
+function validatePlanForm(
+  form: PlanFormData,
+  editingId: string | null,
+  t: TFunction,
+): string | null {
+  if (editingId === 'new') {
+    if (!form.id.trim()) return t('billing:idRequired')
+    if (!form.slug.trim()) return t('billing:slugRequired')
+  }
+  if (!form.name.trim()) return t('billing:nameRequired')
+  if (!form.price.trim()) return t('billing:priceRequired')
+  if (!form.pgPlanId.trim()) return t('billing:pagbankPlanIdRequired')
+  if (parseBRLtoCents(form.price) <= 0) return t('billing:priceMustBePositive')
+  return null
+}
+
+function buildUpdatePayload(
+  form: PlanFormData,
+  price: number,
+): UpdatePlanPayload {
+  const payload: UpdatePlanPayload = {}
+  if (form.slug.trim()) payload.slug = form.slug.trim()
+  if (form.name.trim()) payload.name = form.name.trim()
+  if (form.description.trim()) payload.description = form.description.trim()
+  payload.price = price
+  if (form.pgPlanId.trim()) payload.pgPlanId = form.pgPlanId.trim()
+  return payload
+}
+
+function replacePlan(
+  prev: Plan[],
+  editingId: string | null,
+  updated: Plan,
+): Plan[] {
+  return prev
+    .map((p) => (p.id === editingId ? updated : p))
+    .sort(sortByPrice)
 }
 
 /* ---------- page ---------- */
@@ -136,17 +179,12 @@ export default function AdminPlansPage() {
   const handleSave = useCallback(async () => {
     setFormError(null)
 
-    // Validate
-    if (editingId === 'new') {
-      if (!form.id.trim()) { setFormError(t('billing:idRequired')); return }
-      if (!form.slug.trim()) { setFormError(t('billing:slugRequired')); return }
-    }
-    if (!form.name.trim()) { setFormError(t('billing:nameRequired')); return }
-    if (!form.price.trim()) { setFormError(t('billing:priceRequired')); return }
-    if (!form.pgPlanId.trim()) { setFormError(t('billing:pagbankPlanIdRequired')); return }
-
     const price = parseBRLtoCents(form.price)
-    if (price <= 0) { setFormError(t('billing:priceMustBePositive')); return }
+    const validationError = validatePlanForm(form, editingId, t)
+    if (validationError) {
+      setFormError(validationError)
+      return
+    }
 
     setSaving(true)
     try {
@@ -159,19 +197,13 @@ export default function AdminPlansPage() {
           price,
           pgPlanId: form.pgPlanId.trim(),
         })
-        setPlans((prev) => [...prev, created].sort((a, b) => a.price - b.price))
+        setPlans((prev) => [...prev, created].sort(sortByPrice))
       } else {
-        const payload: UpdatePlanPayload = {}
-        if (form.slug.trim()) payload.slug = form.slug.trim()
-        if (form.name.trim()) payload.name = form.name.trim()
-        if (form.description.trim()) payload.description = form.description.trim()
-        payload.price = price
-        if (form.pgPlanId.trim()) payload.pgPlanId = form.pgPlanId.trim()
-
-        const updated = await adminUpdatePlan(editingId!, payload)
-        setPlans((prev) =>
-          prev.map((p) => (p.id === editingId ? updated : p)).sort((a, b) => a.price - b.price),
+        const updated = await adminUpdatePlan(
+          editingId!,
+          buildUpdatePayload(form, price),
         )
+        setPlans((prev) => replacePlan(prev, editingId, updated))
       }
       cancelForm()
     } catch (err: unknown) {

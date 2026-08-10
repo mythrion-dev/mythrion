@@ -105,7 +105,8 @@ export const ModelName = {
   UserSubscription: 'UserSubscription',
   SubscriptionInvoice: 'SubscriptionInvoice',
   TwoFactorChallenge: 'TwoFactorChallenge',
-  RecoveryCode: 'RecoveryCode'
+  RecoveryCode: 'RecoveryCode',
+  AuditLog: 'AuditLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -131,6 +132,12 @@ export const UserScalarFieldEnum = {
   displayName: 'displayName',
   onboardingComplete: 'onboardingComplete',
   twoFactorEnabled: 'twoFactorEnabled',
+  emailVerified: 'emailVerified',
+  emailVerifiedAt: 'emailVerifiedAt',
+  verificationTokenHash: 'verificationTokenHash',
+  verificationTokenExpiresAt: 'verificationTokenExpiresAt',
+  passwordResetTokenHash: 'passwordResetTokenHash',
+  passwordResetTokenExpiresAt: 'passwordResetTokenExpiresAt',
   language: 'language',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -883,6 +890,18 @@ export const RecoveryCodeScalarFieldEnum = {
 } as const
 
 export type RecoveryCodeScalarFieldEnum = (typeof RecoveryCodeScalarFieldEnum)[keyof typeof RecoveryCodeScalarFieldEnum]
+
+
+export const AuditLogScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  event: 'event',
+  ip: 'ip',
+  userAgent: 'userAgent',
+  createdAt: 'createdAt'
+} as const
+
+export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -187,7 +187,7 @@ export class BookService implements OnModuleInit {
     }
 
     const book = await this.prisma.book.findUnique({ where: { id: bookId } })
-    if (!book || book.adventureId !== adventureId) {
+    if (book?.adventureId !== adventureId) {
       throw new NotFoundException(this.i18n.t('book.notFound'))
     }
 
@@ -280,7 +280,7 @@ export class BookService implements OnModuleInit {
     await this.membership.requireRole(adventureId, userId, MemberRole.GM)
 
     const book = await this.prisma.book.findUnique({ where: { id: bookId } })
-    if (!book || book.adventureId !== adventureId) {
+    if (book?.adventureId !== adventureId) {
       throw new NotFoundException(this.i18n.t('book.notFound'))
     }
 
@@ -316,7 +316,7 @@ export class BookService implements OnModuleInit {
     await this.membership.requireRole(adventureId, userId, MemberRole.GM)
 
     const book = await this.prisma.book.findUnique({ where: { id: bookId } })
-    if (!book || book.adventureId !== adventureId) {
+    if (book?.adventureId !== adventureId) {
       throw new NotFoundException(this.i18n.t('book.notFound'))
     }
 
@@ -358,7 +358,7 @@ export class BookService implements OnModuleInit {
     await this.membership.requireRole(adventureId, userId, MemberRole.GM)
 
     const book = await this.prisma.book.findUnique({ where: { id: bookId } })
-    if (!book || book.adventureId !== adventureId) {
+    if (book?.adventureId !== adventureId) {
       throw new NotFoundException(this.i18n.t('book.notFound'))
     }
 
@@ -418,9 +418,7 @@ export class BookService implements OnModuleInit {
         },
       })
 
-      const readable = new Readable()
-      readable.push(file.buffer)
-      readable.push(null)
+      const readable = Readable.from([file.buffer])
 
       readable
         .pipe(uploadStream)

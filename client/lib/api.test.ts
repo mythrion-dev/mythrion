@@ -13,6 +13,7 @@ import {
   refreshAccessToken,
   onAuthFailure,
   isAccessTokenExpiringSoon,
+  decodeJwtPayload,
   authFetch,
   api,
 } from './api'
@@ -353,6 +354,67 @@ describe('refreshAccessToken', () => {
   it('returns null when no refresh token exists', async () => {
     const result = await refreshAccessToken()
     expect(result).toBeNull()
+  })
+
+  it('reuses a fresh stored JWT without fetching (cross-tab rotation)', async () => {
+    // Regression: when another tab already rotated the tokens, the stored
+    // access token is fresh — refreshAccessToken must return it instead of
+    // racing the now-revoked refresh token (which the server would answer 401,
+    // killing the session).
+    const fresh = fakeJwt({ exp: Math.floor(Date.now() / 1000) + 3600 })
+    setAccessToken(fresh)
+    setRefreshToken('old-rt')
+
+    const result = await refreshAccessToken()
+
+    expect(result).toBe(fresh)
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('does not short-circuit on a non-JWT stored token (still refreshes)', async () => {
+    // The cross-tab short-circuit must only fire for valid, fresh JWTs. A
+    // plain-string token falls through to a real refresh attempt so a corrupt
+    // access token can self-heal (or surface a genuine 401) instead of being
+    // silently reused forever.
+    setAccessToken('old-at')
+    setRefreshToken('old-rt')
+    mockFetch.mockRejectedValueOnce(new Error('Network failure'))
+
+    const result = await refreshAccessToken()
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(result).toBeNull()
+    expect(localStorage.getItem('accessToken')).toBe('old-at')
+    expect(localStorage.getItem('refreshToken')).toBe('old-rt')
+  })
+
+  it('does not clear the session when a 401 answers a refresh token another tab already replaced', async () => {
+    // Regression: two tabs can race the same single-use refresh token. The
+    // loser's 401 is NOT a logout — another tab already stored the replacement
+    // tokens. Only a 401 for the token we currently hold is definitive.
+    setRefreshToken('old-rt')
+    const handler = vi.fn()
+    onAuthFailure(handler)
+
+    let resolveFetch!: (value: unknown) => void
+    mockFetch.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveFetch = resolve
+      }),
+    )
+
+    const pending = refreshAccessToken()
+
+    // While the refresh is in flight, another tab rotates the tokens.
+    setAccessToken('fresh-at')
+    setRefreshToken('fresh-rt')
+    resolveFetch({ ok: false, status: 401 })
+
+    const result = await pending
+    expect(result).toBe('fresh-at')
+    expect(handler).not.toHaveBeenCalled()
+    expect(localStorage.getItem('accessToken')).toBe('fresh-at')
+    expect(localStorage.getItem('refreshToken')).toBe('fresh-rt')
   })
 })
 
@@ -711,6 +773,35 @@ describe('isAccessTokenExpiringSoon', () => {
 
   it('returns false when the payload has no exp claim', () => {
     expect(isAccessTokenExpiringSoon(fakeJwt({ sub: 'user-1' }))).toBe(false)
+  })
+})
+
+// --------------- decodeJwtPayload ---------------
+
+describe('decodeJwtPayload', () => {
+  it('decodes a base64url payload containing standalone - and _ chars', () => {
+    // Regression: the old decoder used .replaceAll('-/', '+').replaceAll('_/', '/'),
+    // which only rewrote the 2-char sequences '-/' and '_/'. A standalone '-'
+    // or '_' — ubiquitous once base64url padding is stripped — was left in
+    // place, atob() threw, and decodeJwtPayload returned null, disabling
+    // proactive refresh and role checks.
+    const payload = {
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      role: 'admin',
+      sub: 'user~1',
+    }
+    const token = fakeJwt(payload)
+    // Guard the premise: this segment really does exercise the buggy chars.
+    expect(token.split('.')[1]).toMatch(/[-_]/)
+    expect(decodeJwtPayload(token)).toMatchObject({ role: 'admin', sub: 'user~1' })
+  })
+
+  it('returns null for a token without a payload segment', () => {
+    expect(decodeJwtPayload('header')).toBeNull()
+  })
+
+  it('returns null for garbage that is not JSON', () => {
+    expect(decodeJwtPayload(`a.${btoa('not json')}.c`)).toBeNull()
   })
 })
 

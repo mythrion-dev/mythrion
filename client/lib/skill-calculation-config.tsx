@@ -10,13 +10,13 @@ export interface SkillCalculationConfig {
 }
 
 interface SkillCalculationConfigProps {
-  value: string
-  onChange: (configJson: string) => void
-  customFields: { key: string; label: string }[]
-  placeholder?: string
+  readonly value: string
+  readonly onChange: (configJson: string) => void
+  readonly customFields: { key: string; label: string }[]
+  readonly placeholder?: string
   /** When true, the "Linked Attribute Modifier" section is disabled because
    *  the global "Enable Attribute Modifiers" feature toggle is off. */
-  disabled?: boolean
+  readonly disabled?: boolean
 }
 
 const DEFAULT_CONFIG: SkillCalculationConfig = {

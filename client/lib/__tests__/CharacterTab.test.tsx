@@ -375,7 +375,7 @@ describe('CharacterTab', () => {
 
   describe('owner vs non-owner', () => {
     it('renders inline-editable fields when isOwner', () => {
-      render(<CharacterTab {...props} isOwner={true} />)
+      render(<CharacterTab {...props} />)
       const inlineTexts = screen.getAllByTestId('inline-text')
       // field values get InlineText
       const charName = inlineTexts.find(el => el.getAttribute('data-value') === 'Test Character')
@@ -385,14 +385,14 @@ describe('CharacterTab', () => {
     })
 
     it('renders plain text for fields when not isOwner', () => {
-      render(<CharacterTab {...props} isOwner={false} />)
+      render(<CharacterTab {...props} />)
       // Non-owner: fields show plain spans
       expect(screen.getByText('Test Character')).toBeInTheDocument()
       expect(screen.getByText('Warrior')).toBeInTheDocument()
     })
 
     it('shows heal/damage UI for owner with editable core resource', () => {
-      render(<CharacterTab {...props} isOwner={true} />)
+      render(<CharacterTab {...props} />)
       const healButtons = screen.getAllByText('+ Heal')
       const damageButtons = screen.getAllByText('− Damage')
       expect(healButtons.length).toBeGreaterThanOrEqual(1)
@@ -400,7 +400,7 @@ describe('CharacterTab', () => {
     })
 
     it('hides heal/damage UI when not isOwner', () => {
-      render(<CharacterTab {...props} isOwner={false} permissions={{ ...props.permissions, canEditResources: false }} />)
+      render(<CharacterTab {...props} permissions={{ ...props.permissions, canEditResources: false }} />)
       expect(screen.queryByText('+ Heal')).not.toBeInTheDocument()
       expect(screen.queryByText('− Damage')).not.toBeInTheDocument()
     })
@@ -444,13 +444,13 @@ describe('CharacterTab', () => {
 
   describe('armor class variants', () => {
     it('shows AC attribute modifier with select when allowPlayerSelection', () => {
-      render(<CharacterTab {...props} isOwner={true} />)
+      render(<CharacterTab {...props} />)
       // Custom Select renders a button[role="combobox"] trigger (not a native <select>)
       expect(screen.getAllByRole('combobox').length).toBeGreaterThanOrEqual(1)
     })
 
     it('shows AC attribute modifier as text when not owner', () => {
-      render(<CharacterTab {...props} isOwner={false} />)
+      render(<CharacterTab {...props} />)
       // Dexterity appears both as an attribute name and as the AC modifier text
       expect(screen.getAllByText('Dexterity').length).toBeGreaterThanOrEqual(2)
     })
@@ -612,7 +612,7 @@ describe('CharacterTab', () => {
     it('calls handleProfileChange when profile option selected', async () => {
       render(<CharacterTab {...props} expandedSkillId="skill-athletics" />)
       // Find the Proficiency profile Select by its label (first match — both skills render it)
-      const profRow = screen.getAllByText('Proficiency:')[0].closest('.flex')!
+      const profRow = screen.getAllByText('Proficiency:')[0].closest('.flex') as HTMLElement
       const trigger = within(profRow).getByRole('combobox')
       fireEvent.click(trigger)
       fireEvent.click(screen.getByRole('option', { name: /Half/ }))
@@ -636,7 +636,7 @@ describe('CharacterTab', () => {
 
   describe('AC field interactions', () => {
     it('renders AC field InlineNumber with correct value for owner', () => {
-      render(<CharacterTab {...props} isOwner={true} />)
+      render(<CharacterTab {...props} />)
       // AC editable fields render as bare <input type="number">, not the mocked InlineNumber
       expect(screen.getByDisplayValue('12')).toBeInTheDocument()
       expect(screen.getByDisplayValue('2')).toBeInTheDocument()
@@ -644,7 +644,7 @@ describe('CharacterTab', () => {
 
     it('calls handleAcAttributeModifierChange when AC attribute changes', async () => {
       const user = userEvent.setup()
-      render(<CharacterTab {...props} isOwner={true} />)
+      render(<CharacterTab {...props} />)
       // Find the AC attribute modifier select
       const selects = screen.getAllByRole('combobox')
       // The AC select should have Strength, Dexterity, Constitution options
@@ -661,7 +661,7 @@ describe('CharacterTab', () => {
     })
 
     it('calls handleAcFieldChange when AC number input changes', () => {
-      render(<CharacterTab {...props} isOwner={true} />)
+      render(<CharacterTab {...props} />)
       // AC fields are bare <input type="number"> with value '12' (Base)
       const baseInput = screen.getByDisplayValue('12') as HTMLInputElement
       fireEvent.change(baseInput, { target: { value: '15' } })
@@ -675,7 +675,7 @@ describe('CharacterTab', () => {
     it('shows em dash for empty field values when not owner', () => {
       const sheet = createMockSheet()
       sheet.fieldValues[0].value = ''
-      render(<CharacterTab {...props} sheet={sheet} isOwner={false} />)
+      render(<CharacterTab {...props} sheet={sheet} />)
       // Empty value shows em dash when read-only — Select also renders '—', so use getAllByText
       expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(1)
     })
@@ -683,7 +683,7 @@ describe('CharacterTab', () => {
     it('shows em dash for null attribute values when not owner', () => {
       const sheet = createMockSheet()
       sheet.values = []
-      render(<CharacterTab {...props} sheet={sheet} isOwner={false} />)
+      render(<CharacterTab {...props} sheet={sheet} />)
       const dashes = screen.getAllByText('—')
       expect(dashes.length).toBeGreaterThanOrEqual(1)
     })
@@ -1053,7 +1053,7 @@ describe('CollapsibleSkillRow', () => {
     it('calls onProfileChange when profile option selected', () => {
       render(<CollapsibleSkillRow {...defaultRowProps} expandedSkillId="skill-1" />)
       // Find the Proficiency profile Select by its label
-      const profRow = screen.getByText('Proficiency:').closest('.flex')!
+      const profRow = screen.getByText('Proficiency:').closest('.flex') as HTMLElement
       const trigger = within(profRow).getByRole('combobox')
       fireEvent.click(trigger)
       fireEvent.click(screen.getByRole('option', { name: /Full/ }))

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useSubscription } from '@/lib/subscription-context'
@@ -26,12 +26,23 @@ function formatDate(dateStr: string | null): string {
 
 export default function ManageSubscriptionPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { subscription, loading, refresh } = useSubscription()
   const router = useRouter()
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState('')
+
+  useEffect(() => {
+    if (authLoading) return
+    if (!user) {
+      router.replace('/login')
+      return
+    }
+    if (!user.emailVerified) {
+      router.replace('/verify-email')
+    }
+  }, [authLoading, user, router])
 
   async function handleCancel() {
     setCancelling(true)
@@ -49,7 +60,7 @@ export default function ManageSubscriptionPage() {
     }
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -193,6 +204,9 @@ export default function ManageSubscriptionPage() {
 
         {isCancellable && (
           <>
+            <p className="text-sm text-muted-foreground">
+              {t('billing:cancellationPolicyNote', { periodEnd })}
+            </p>
             {!showCancelConfirm ? (
               <button
                 onClick={() => setShowCancelConfirm(true)}
@@ -240,29 +254,33 @@ export default function ManageSubscriptionPage() {
           <p className="mt-3 text-sm text-muted-foreground">{t('billing:noInvoices')}</p>
         ) : (
           <div className="mt-3 divide-y divide-border">
-            {subscription.invoices.map((invoice) => (
-              <div key={invoice.id} className="flex items-center justify-between py-2.5 text-sm">
-                <div>
-                  <p className="font-medium text-foreground">
-                    {formatPrice(invoice.amount)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(invoice.createdAt)}
-                  </p>
+            {subscription.invoices.map((invoice) => {
+              const pendingStatusClass =
+                invoice.status === 'pending'
+                  ? 'text-amber-500 bg-amber-500/10'
+                  : 'text-muted bg-surface'
+              const invoiceStatusClass =
+                invoice.status === 'paid'
+                  ? 'text-emerald-500 bg-emerald-500/10'
+                  : pendingStatusClass
+              return (
+                <div key={invoice.id} className="flex items-center justify-between py-2.5 text-sm">
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {formatPrice(invoice.amount)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(invoice.createdAt)}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${invoiceStatusClass}`}
+                  >
+                    {invoice.status}
+                  </span>
                 </div>
-                <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${
-                    invoice.status === 'paid'
-                      ? 'text-emerald-500 bg-emerald-500/10'
-                      : invoice.status === 'pending'
-                        ? 'text-amber-500 bg-amber-500/10'
-                        : 'text-muted bg-surface'
-                  }`}
-                >
-                  {invoice.status}
-                </span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

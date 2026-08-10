@@ -139,7 +139,7 @@ describe('InvitationController', () => {
 
   describe('inviteByLink', () => {
     it('should delegate to invitationService.inviteByLink with correct args', async () => {
-      const result = await controller.inviteByLink(mockUserReq, 'adv-1', {})
+      const result = await controller.inviteByLink(mockUserReq, 'adv-1')
 
       expect(mockInvitationService.inviteByLink).toHaveBeenCalledWith({
         adventureId: 'adv-1',
@@ -153,21 +153,21 @@ describe('InvitationController', () => {
 
     it('should propagate NotFoundException when adventure does not exist', async () => {
       mockInvitationService.inviteByLink.mockRejectedValue(
-        new NotFoundException('Adventure not found'),
+        new NotFoundException('Campaign not found'),
       )
 
       await expect(
-        controller.inviteByLink(mockUserReq, 'nonexistent-adv', {}),
+        controller.inviteByLink(mockUserReq, 'nonexistent-adv'),
       ).rejects.toThrow(NotFoundException)
     })
 
     it('should propagate BadRequestException when adventure is at max player capacity', async () => {
       mockInvitationService.inviteByLink.mockRejectedValue(
-        new BadRequestException('Adventure is at maximum player capacity'),
+        new BadRequestException('Campaign is at maximum player capacity'),
       )
 
       await expect(
-        controller.inviteByLink(mockUserReq, 'adv-1', {}),
+        controller.inviteByLink(mockUserReq, 'adv-1'),
       ).rejects.toThrow(BadRequestException)
     })
   })
@@ -331,11 +331,16 @@ describe('InvitationController', () => {
   /* ------------------------------------------------------------------ */
 
   describe('JwtAuthGuard rejection', () => {
-    it('should throw UnauthorizedException and match snapshot when no token is provided', () => {
+    const reflectorMock = { getAllAndOverride: jest.fn(() => false) }
+    const authServiceMock = { assertEmailVerified: jest.fn() }
+
+    it('should throw UnauthorizedException and match snapshot when no token is provided', async () => {
       const mockJwtService = { verify: jest.fn() }
       const guard = new JwtAuthGuard(
         mockJwtService as any,
         createI18nServiceMock(),
+        reflectorMock as any,
+        authServiceMock as any,
       )
 
       const mockContext = {
@@ -344,11 +349,11 @@ describe('InvitationController', () => {
         }),
       } as any
 
-      expect(() => guard.canActivate(mockContext)).toThrow(UnauthorizedException)
-      expect(() => guard.canActivate(mockContext)).toThrowErrorMatchingSnapshot()
+      await expect(guard.canActivate(mockContext)).rejects.toThrow(UnauthorizedException)
+      await expect(guard.canActivate(mockContext)).rejects.toThrowErrorMatchingSnapshot()
     })
 
-    it('should throw UnauthorizedException when token is expired', () => {
+    it('should throw UnauthorizedException when token is expired', async () => {
       const mockJwtService = {
         verify: jest.fn(() => {
           throw new Error('jwt expired')
@@ -357,6 +362,8 @@ describe('InvitationController', () => {
       const guard = new JwtAuthGuard(
         mockJwtService as any,
         createI18nServiceMock(),
+        reflectorMock as any,
+        authServiceMock as any,
       )
 
       const mockContext = {
@@ -365,7 +372,7 @@ describe('InvitationController', () => {
         }),
       } as any
 
-      expect(() => guard.canActivate(mockContext)).toThrow(UnauthorizedException)
+      await expect(guard.canActivate(mockContext)).rejects.toThrow(UnauthorizedException)
     })
   })
 

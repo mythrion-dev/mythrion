@@ -1,6 +1,7 @@
 jest.mock("../../generated/prisma/client", () => ({ PrismaClient: class {} }))
 jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
 jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
+jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }))
 import { Test } from '@nestjs/testing'
 import { UnprocessableEntityException, NotFoundException } from '@nestjs/common'
 import { AdminPlansController } from '../admin-plans.controller'
@@ -9,10 +10,11 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard'
 import { AdminGuard } from '../../auth/admin.guard'
 import { I18nService } from 'nestjs-i18n'
 import { createI18nServiceMock } from '../../i18n/i18n-testing.js'
+import { createMockPrismaService } from '../../__mocks__/prisma-service.mock'
 
 describe('AdminPlansController', () => {
   let controller: AdminPlansController
-  let prisma: jest.Mocked<PrismaService>
+  let prisma: ReturnType<typeof createMockPrismaService>
 
   const mockPlan = {
     id: 'monthly',
@@ -37,19 +39,7 @@ describe('AdminPlansController', () => {
   }
 
   beforeEach(async () => {
-    prisma = {
-      subscriptionPlan: {
-        findMany: jest.fn(),
-        findFirst: jest.fn(),
-        findUnique: jest.fn(),
-        create: jest.fn(),
-        update: jest.fn(),
-        delete: jest.fn(),
-      },
-      userSubscription: {
-        count: jest.fn(),
-      },
-    } as unknown as jest.Mocked<PrismaService>
+    prisma = createMockPrismaService()
 
     jest.clearAllMocks()
 

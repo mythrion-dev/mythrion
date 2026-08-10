@@ -10,9 +10,9 @@ export function StoryTab({
   permissions,
   onSaveField,
 }: {
-  story: Story | null
-  permissions: SheetPermissions
-  onSaveField: (field: string, value: string) => Promise<void>
+  readonly story: Story | null
+  readonly permissions: SheetPermissions
+  readonly onSaveField: (field: string, value: string) => Promise<void>
 }) {
   const { t } = useTranslation()
   const canEditStory = permissions.canEditStory

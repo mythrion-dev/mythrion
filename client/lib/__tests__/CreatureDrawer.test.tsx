@@ -741,7 +741,7 @@ describe('CreatureDrawer', () => {
 
       // Child ability name inputs have placeholder="Ability name"
       const nameInputs = screen.getAllByDisplayValue(/Sneak Attack|Poison Blade/)
-      expect(nameInputs.length).toBe(2)
+      expect(nameInputs).toHaveLength(2)
     })
 
     it('shows empty state message when no child abilities', async () => {
@@ -1253,7 +1253,7 @@ describe('CreatureDrawer', () => {
         const createCalls = mockApi.post.mock.calls.filter(
           call => call[0]?.includes('/summon-abilities'),
         )
-        expect(createCalls.length).toBe(0)
+        expect(createCalls).toHaveLength(0)
       })
     })
 

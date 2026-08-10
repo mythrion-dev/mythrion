@@ -1,6 +1,7 @@
 jest.mock("../../generated/prisma/client", () => ({ PrismaClient: class {} }))
 jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
 jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
+jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }))
 import { Test } from '@nestjs/testing'
 import {
   UnprocessableEntityException,
@@ -77,8 +78,26 @@ describe('SubscriptionController', () => {
   describe('GET /api/subscriptions/plans', () => {
     it('returns all plans from the subscription service', async () => {
       const plans = [
-        { id: 'monthly', slug: 'monthly', name: 'Monthly', price: 12000 },
-        { id: 'annual', slug: 'annual', name: 'Annual', price: 120000 },
+        {
+          id: 'monthly',
+          slug: 'monthly',
+          name: 'Monthly',
+          price: 12000,
+          description: 'Monthly plan',
+          pgPlanId: 'pg-monthly',
+          createdAt: new Date('2025-01-01'),
+          updatedAt: new Date('2025-01-01'),
+        },
+        {
+          id: 'annual',
+          slug: 'annual',
+          name: 'Annual',
+          price: 120000,
+          description: 'Annual plan',
+          pgPlanId: 'pg-annual',
+          createdAt: new Date('2025-01-01'),
+          updatedAt: new Date('2025-01-01'),
+        },
       ]
       subscriptionService.listPlans.mockResolvedValue(plans)
 
@@ -114,17 +133,17 @@ describe('SubscriptionController', () => {
       )
 
       expect(result).toEqual(expectedResult)
-      expect(subscriptionService.createSubscription).toHaveBeenCalledWith(
-        'user-1',
+      expect(subscriptionService.createSubscription).toHaveBeenCalledWith({
+        userId: 'user-1',
         planId,
-        'user@test.com',
-        undefined, // cardToken
-        undefined, // securityCode
-        undefined, // payerName
-        undefined, // payerDocument
-        undefined, // deviceId
-        undefined, // cardTokenId
-      )
+        email: 'user@test.com',
+        cardToken: undefined,
+        securityCode: undefined,
+        payerName: undefined,
+        payerDocument: undefined,
+        deviceId: undefined,
+        cardTokenId: undefined,
+      })
     })
 
     it('passes cardToken when provided', async () => {
@@ -138,17 +157,17 @@ describe('SubscriptionController', () => {
         createRequest(),
       )
 
-      expect(subscriptionService.createSubscription).toHaveBeenCalledWith(
-        'user-1',
-        'monthly',
-        'user@test.com',
-        'encrypted-card-abc',
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined, // cardTokenId
-      )
+      expect(subscriptionService.createSubscription).toHaveBeenCalledWith({
+        userId: 'user-1',
+        planId: 'monthly',
+        email: 'user@test.com',
+        cardToken: 'encrypted-card-abc',
+        securityCode: undefined,
+        payerName: undefined,
+        payerDocument: undefined,
+        deviceId: undefined,
+        cardTokenId: undefined,
+      })
     })
 
     it('throws UnprocessableEntityException when planId is missing', async () => {
@@ -159,7 +178,7 @@ describe('SubscriptionController', () => {
 
     it('throws UnprocessableEntityException when planId is undefined', async () => {
       await expect(
-        controller.createSubscription({}, createRequest()),
+        controller.createSubscription({} as any, createRequest()),
       ).rejects.toThrow(UnprocessableEntityException)
     })
 
@@ -182,6 +201,13 @@ describe('SubscriptionController', () => {
         id: 'sub-1',
         status: 'ACTIVE',
         plan: { slug: 'monthly', name: 'Monthly', price: 12000 },
+        pgSubscriptionId: 'pg-sub-1',
+        graceEndsAt: null,
+        currentPeriodStart: new Date('2025-01-01'),
+        currentPeriodEnd: new Date('2025-02-01'),
+        cancelledAt: null,
+        cancelAtPeriodEnd: false,
+        createdAt: new Date('2025-01-01'),
         invoices: [],
       }
       subscriptionService.getMySubscription.mockResolvedValue(subData)

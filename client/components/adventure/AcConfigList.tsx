@@ -4,19 +4,30 @@ import { useTranslation } from 'react-i18next'
 import { Select } from '@/components/shared/Select'
 import type { AcConfigDraft, ArmorClassAttributeModifierDraft } from '@/components/adventure/types'
 
+/* Stable keys for draft items that have no id field of their own. */
+const draftKeyCache = new WeakMap<object, string>()
+function draftKey(obj: object): string {
+  let key = draftKeyCache.get(obj)
+  if (!key) {
+    key = crypto.randomUUID()
+    draftKeyCache.set(obj, key)
+  }
+  return key
+}
+
 export function AcConfigList(props: {
-  configs?: AcConfigDraft[]
-  attrs?: { key: string; name: string }[]
-  attrModifiersEnabled?: boolean
-  onAdd?: () => void
-  onRemove?: (i: number) => void
-  onUpdateConfig?: (i: number, patch: Partial<AcConfigDraft>) => void
-  onAddField?: (configIdx: number) => void
-  onRemoveField?: (configIdx: number, fieldIdx: number) => void
-  onUpdateField?: (configIdx: number, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string) => void
-  onUpdateFieldEditable?: (configIdx: number, fieldIdx: number, v: boolean) => void
-  onToggleAttributeId?: (configIdx: number, attrId: string) => void
-  onUpdateAttributeModifier?: (configIdx: number, attrId: string, patch: Partial<ArmorClassAttributeModifierDraft>) => void
+  readonly configs?: AcConfigDraft[]
+  readonly attrs?: { key: string; name: string }[]
+  readonly attrModifiersEnabled?: boolean
+  readonly onAdd?: () => void
+  readonly onRemove?: (i: number) => void
+  readonly onUpdateConfig?: (i: number, patch: Partial<AcConfigDraft>) => void
+  readonly onAddField?: (configIdx: number) => void
+  readonly onRemoveField?: (configIdx: number, fieldIdx: number) => void
+  readonly onUpdateField?: (configIdx: number, fieldIdx: number, f: 'name' | 'key' | 'defaultValue' | 'description', v: string) => void
+  readonly onUpdateFieldEditable?: (configIdx: number, fieldIdx: number, v: boolean) => void
+  readonly onToggleAttributeId?: (configIdx: number, attrId: string) => void
+  readonly onUpdateAttributeModifier?: (configIdx: number, attrId: string, patch: Partial<ArmorClassAttributeModifierDraft>) => void
 }) {
   const configs = props.configs ?? []
   const attrs = props.attrs ?? []
@@ -34,7 +45,7 @@ export function AcConfigList(props: {
   return (
     <div className="space-y-4">
       {configs.map((ac, ci) => (
-        <div key={ci} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
+        <div key={draftKey(ac)} className="rounded-lg border border-border bg-background/30 p-3 space-y-2">
           <div className="flex items-center gap-1.5">
             <input className="input-field flex-1 text-sm" value={ac.name} onChange={e => onUpdateConfig(ci, { name: e.target.value })} placeholder={t('campaign:acNamePlaceholder')} />
             <label className="flex items-center gap-1 text-xs text-muted shrink-0">
@@ -49,7 +60,7 @@ export function AcConfigList(props: {
                 <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 block">{t('campaign:acComponents')}</label>
                 <div className="space-y-1">
                   {ac.fields.map((f, fi) => (
-                    <div key={fi} className="rounded border border-border/50 bg-background/20 p-2 space-y-1">
+                    <div key={draftKey(f)} className="rounded border border-border/50 bg-background/20 p-2 space-y-1">
                       <div className="flex items-center gap-1">
                         <input className="input-field flex-1 text-xs" value={f.name} onChange={e => onUpdateField(ci, fi, 'name', e.target.value)} placeholder={t('campaign:fieldNamePlaceholder')} />
                         <input className="input-field flex-1 text-xs" value={f.key} onChange={e => onUpdateField(ci, fi, 'key', e.target.value)} placeholder={t('campaign:fieldKeyPlaceholder')} />
