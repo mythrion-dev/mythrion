@@ -111,7 +111,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
   })
   const [childAbilitySaving, setChildAbilitySaving] = useState(false)
   const [childAbilityError, setChildAbilityError] = useState<string | null>(null)
-  const [_savingChildField, setSavingChildField] = useState<Record<string, boolean>>({})
   const [addingLevel, setAddingLevel] = useState<string | null>(null)
 
   /* ── Copy ability data into local state when it changes ── */
@@ -298,7 +297,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
 
   async function saveChildAbilityField(childId: string, field: string, value: string) {
     if (!ability || !sheetId) return
-    setSavingChildField(prev => ({ ...prev, [`${childId}-${field}`]: true }))
     try {
       const body: Record<string, unknown> = {}
       if (field === 'name') body.name = value.trim()
@@ -309,8 +307,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
       onUpdate()
     } catch {
       /* silently fail */
-    } finally {
-      setSavingChildField(prev => ({ ...prev, [`${childId}-${field}`]: false }))
     }
   }
 
@@ -327,7 +323,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
 
   async function handleSaveLevelField(abilityId: string, levelId: string, field: string, value: string) {
     if (!ability || !sheetId) return
-    setSavingChildField(prev => ({ ...prev, [`${levelId}-${field}`]: true }))
     try {
       const body: Record<string, unknown> = {}
       if (field === 'level') body.level = value.trim()
@@ -340,8 +335,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
       setChildAbilities(prev => updateChildAbilityLevel(prev, abilityId, levelId, body))
     } catch {
       /* silently fail */
-    } finally {
-      setSavingChildField(prev => ({ ...prev, [`${levelId}-${field}`]: false }))
     }
   }
 

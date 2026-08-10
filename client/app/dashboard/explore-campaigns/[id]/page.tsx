@@ -52,13 +52,9 @@ function AdventureDetailContent() {
   const [error, setError] = useState<string | null>(null)
 
   // Membership state
-  const [_members, setMembers] = useState<AdventureMember[]>([])
-  const [_fetchingMembers, setFetchingMembers] = useState(false)
   const [userMembership, setUserMembership] = useState<AdventureMember | null>(null)
 
   // Join request state
-  const [_joinRequests, setJoinRequests] = useState<JoinRequest[]>([])
-  const [_fetchingJoinRequests, setFetchingJoinRequests] = useState(false)
   const [pendingRequest, setPendingRequest] = useState(false)
   const [showJoinForm, setShowJoinForm] = useState(false)
   const [joinMessage, setJoinMessage] = useState('')
@@ -81,31 +77,23 @@ function AdventureDetailContent() {
 
   const fetchMembers = useCallback(async () => {
     if (!user) return
-    setFetchingMembers(true)
     try {
       const data = await api.get<AdventureMember[]>(`/adventures/${id}/members`)
-      setMembers(data)
       const membership = data.find((m) => m.userId === user.id)
       setUserMembership(membership ?? null)
     } catch {
       // Not authenticated or not a member — ignore
-    } finally {
-      setFetchingMembers(false)
     }
   }, [id, user])
 
   const fetchJoinRequests = useCallback(async () => {
     if (!user) return
-    setFetchingJoinRequests(true)
     try {
       const data = await api.get<JoinRequest[]>(`/adventures/${id}/join-requests`)
-      setJoinRequests(data)
       const pending = data.some((r) => r.status === 'pending')
       setPendingRequest(pending)
     } catch {
       // ignore
-    } finally {
-      setFetchingJoinRequests(false)
     }
   }, [id, user])
 

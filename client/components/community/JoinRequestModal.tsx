@@ -118,7 +118,6 @@ export function JoinRequestModal({
         aria-modal="true"
         aria-labelledby="join-modal-title"
         onCancel={(e) => { e.preventDefault(); handleCancel() }}
-        onClick={(e) => { if (e.target === e.currentTarget) handleCancel() }}
       >
         <div className="flex items-start gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-inner shadow-primary/10">

@@ -150,7 +150,7 @@
   }
   .btn-ghost:hover:not(:disabled) {
     color: #f5f2ec;
-    background: rgba(255, 255, 255, 0.04);
+    background: #241d38;
     border-color: #3d3260;
   }
 
@@ -343,8 +343,8 @@
     text-transform: uppercase;
   }
   .badge-gold {
-    background: rgba(201, 164, 75, 0.15);
-    color: #a8873d;
+    background: #292114;
+    color: #d4b25e;
     border: 1px solid rgba(201, 164, 75, 0.2);
   }
 

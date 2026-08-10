@@ -155,13 +155,16 @@ export function TemplatePickerModal({
   if (!isOpen) return null
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <button
+        type="button"
+        className="absolute inset-0 cursor-default"
+        onClick={onClose}
+        aria-label={t('community:closeModal')}
+      />
       <dialog
         ref={dialogRef}
-        className="card !p-0 max-w-lg w-full mx-4 max-h-[80vh] flex flex-col"
+        className="card !p-0 max-w-lg w-full mx-4 max-h-[80vh] flex flex-col relative z-10"
         aria-modal="true"
         onCancel={(e) => { e.preventDefault(); onClose() }}
       >
