@@ -904,8 +904,8 @@ describe('AdminPlansPage', () => {
     expect(screen.getByText('Monthly')).toBeInTheDocument()
     expect(screen.getByText('Yearly')).toBeInTheDocument()
     expect(screen.getByText('PAGBANK_PLAN_ID_...')).toBeInTheDocument()
-    expect(screen.getAllByTitle('Copy PagBank Plan ID').length).toBe(2)
-    expect(screen.getAllByRole('button', { name: 'Edit' }).length).toBe(2)
+    expect(screen.getAllByTitle('Copy PagBank Plan ID')).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: 'Edit' })).toHaveLength(2)
   })
 
   it('validates the create form field by field', async () => {

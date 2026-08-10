@@ -54,25 +54,15 @@ describe('TimePicker', () => {
       expect(screen.getByRole('button', { name: 'PM' }).className).toContain('tab-pill-active')
     })
 
-    it('emits a 24h value when the hour changes', () => {
+    it.each<[string, () => void, string]>([
+      ['the hour changes', () => fireEvent.change(hourSelect(), { target: { value: '10' } }), '10:00'],
+      ['the period changes to PM', () => fireEvent.click(screen.getByRole('button', { name: 'PM' })), '20:00'],
+      ['the minute changes', () => fireEvent.change(minuteSelect(), { target: { value: '45' } }), '08:45'],
+    ])('emits a 24h value when %s', (_desc, interaction, expected) => {
       const onChange = vi.fn()
       render(<TimePicker value="08:00" onChange={onChange} />)
-      fireEvent.change(hourSelect(), { target: { value: '10' } })
-      expect(onChange).toHaveBeenCalledWith('10:00')
-    })
-
-    it('emits a 24h value when the period changes to PM', () => {
-      const onChange = vi.fn()
-      render(<TimePicker value="08:00" onChange={onChange} />)
-      fireEvent.click(screen.getByRole('button', { name: 'PM' }))
-      expect(onChange).toHaveBeenCalledWith('20:00')
-    })
-
-    it('emits a 24h value when the minute changes', () => {
-      const onChange = vi.fn()
-      render(<TimePicker value="08:00" onChange={onChange} />)
-      fireEvent.change(minuteSelect(), { target: { value: '45' } })
-      expect(onChange).toHaveBeenCalledWith('08:45')
+      interaction()
+      expect(onChange).toHaveBeenCalledWith(expected)
     })
 
     it('maps 12 AM to 00:00 when hour is set to 12', () => {

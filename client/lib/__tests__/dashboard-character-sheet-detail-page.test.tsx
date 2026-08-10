@@ -623,11 +623,15 @@ describe('CharacterSheetDetailPage', () => {
     await waitFor(() => expect(mockApiPatch).toHaveBeenCalledTimes(2))
   })
 
-  it('reverts the profile selection when the patch fails', async () => {
+  it.each<[string, string]>([
+    ['reverts the profile selection when the patch fails', 'profile'],
+    ['reverts the skill toggle when the patch fails', 'skill-toggle-1'],
+    ['reverts the sheet when a core resource modification fails', 'cr-modify'],
+  ])('%s', async (_name, testId) => {
     renderPage()
     await screen.findByText('Aria')
     mockApiPatch.mockRejectedValueOnce(new Error('boom'))
-    fireEvent.click(screen.getByTestId('profile'))
+    fireEvent.click(screen.getByTestId(testId))
     await waitFor(() => expect(mockApiPatch).toHaveBeenCalled())
     await tick()
   })
@@ -656,15 +660,6 @@ describe('CharacterSheetDetailPage', () => {
     await waitFor(() => expect(mockApiPatch).toHaveBeenCalledWith('/character-sheets/sheet-1', { skillValues: [{ skillId: 'skill-1', value: '0|5' }] }))
     fireEvent.click(screen.getByTestId('skill-toggle-2')) // active false -> true
     await waitFor(() => expect(mockApiPatch).toHaveBeenCalledWith('/character-sheets/sheet-1', { skillValues: [{ skillId: 'skill-2', value: '1|2' }] }))
-  })
-
-  it('reverts the skill toggle when the patch fails', async () => {
-    renderPage()
-    await screen.findByText('Aria')
-    mockApiPatch.mockRejectedValueOnce(new Error('boom'))
-    fireEvent.click(screen.getByTestId('skill-toggle-1'))
-    await waitFor(() => expect(mockApiPatch).toHaveBeenCalled())
-    await tick()
   })
 
   it('changes the others value and reverts on failure', async () => {
@@ -719,12 +714,17 @@ describe('CharacterSheetDetailPage', () => {
     await waitFor(() => expect(mockApiPost).toHaveBeenCalledWith('/character-sheets/sheet-1/abilities/ab-new3/levels', { level: '1', copyFromPrevious: false }))
   })
 
-  it('does not create an ability when the name is empty', async () => {
+  it.each<[string, string, string, string]>([
+    ['does not create an ability when the name is empty', 'Abilities', 'create-ability', '/character-sheets/sheet-1/abilities'],
+    ['does not create a summon ability when the name is empty', 'Abilities', 'create-summon-ability', '/character-sheets/sheet-1/abilities/ab-2/summon-abilities'],
+    ['does not create an item when the name is empty', 'Inventory', 'create-item', '/character-sheets/sheet-1/inventory'],
+    ['does not create a section entry when the name is empty', 'Personal Abilities', 'create-entry', '/character-sheets/sheet-1/section-entries'],
+  ])('%s', async (_name, tab, testId, url) => {
     renderPage()
     await screen.findByText('Aria')
-    fireEvent.click(screen.getByRole('button', { name: 'Abilities' }))
-    fireEvent.click(screen.getByTestId('create-ability'))
-    expect(mockApiPost).not.toHaveBeenCalledWith('/character-sheets/sheet-1/abilities', expect.anything())
+    fireEvent.click(screen.getByRole('button', { name: tab }))
+    fireEvent.click(screen.getByTestId(testId))
+    expect(mockApiPost).not.toHaveBeenCalledWith(url, expect.anything())
   })
 
   it('sets an error when creating an ability fails', async () => {
@@ -755,14 +755,6 @@ describe('CharacterSheetDetailPage', () => {
       const createCalls = mockApiPost.mock.calls.filter(([url]) => url === '/character-sheets/sheet-1/abilities/ab-2/summon-abilities')
       expect(createCalls).toHaveLength(2)
     })
-  })
-
-  it('does not create a summon ability when the name is empty', async () => {
-    renderPage()
-    await screen.findByText('Aria')
-    fireEvent.click(screen.getByRole('button', { name: 'Abilities' }))
-    fireEvent.click(screen.getByTestId('create-summon-ability'))
-    expect(mockApiPost).not.toHaveBeenCalledWith('/character-sheets/sheet-1/abilities/ab-2/summon-abilities', expect.anything())
   })
 
   it('deletes an ability', async () => {
@@ -828,14 +820,6 @@ describe('CharacterSheetDetailPage', () => {
     })
   })
 
-  it('does not create an item when the name is empty', async () => {
-    renderPage()
-    await screen.findByText('Aria')
-    fireEvent.click(screen.getByRole('button', { name: 'Inventory' }))
-    fireEvent.click(screen.getByTestId('create-item'))
-    expect(mockApiPost).not.toHaveBeenCalledWith('/character-sheets/sheet-1/inventory', expect.anything())
-  })
-
   it('saves item fields for each supported field', async () => {
     renderPage()
     await screen.findByText('Aria')
@@ -883,14 +867,6 @@ describe('CharacterSheetDetailPage', () => {
       const createCalls = mockApiPost.mock.calls.filter(([url]) => url === '/character-sheets/sheet-1/section-entries')
       expect(createCalls).toHaveLength(2)
     })
-  })
-
-  it('does not create a section entry when the name is empty', async () => {
-    renderPage()
-    await screen.findByText('Aria')
-    fireEvent.click(screen.getByRole('button', { name: 'Personal Abilities' }))
-    fireEvent.click(screen.getByTestId('create-entry'))
-    expect(mockApiPost).not.toHaveBeenCalledWith('/character-sheets/sheet-1/section-entries', expect.anything())
   })
 
   it('exercises the toSingular helper for each suffix branch', async () => {
@@ -975,15 +951,6 @@ describe('CharacterSheetDetailPage', () => {
     await screen.findByText('Aria')
     fireEvent.click(screen.getByTestId('cr-modify-2'))
     await waitFor(() => expect(mockApiPatch).toHaveBeenCalledWith('/character-sheets/sheet-1', { coreResourceValues: [{ coreResourceId: 'cr-2', current: 0 }] }))
-  })
-
-  it('reverts the sheet when a core resource modification fails', async () => {
-    renderPage()
-    await screen.findByText('Aria')
-    mockApiPatch.mockRejectedValueOnce(new Error('boom'))
-    fireEvent.click(screen.getByTestId('cr-modify'))
-    await waitFor(() => expect(mockApiPatch).toHaveBeenCalled())
-    await tick()
   })
 
   it('handles an AC attribute modifier with an unknown attribute', async () => {

@@ -45,9 +45,14 @@ describe('TemplateCard', () => {
 
   // ── Basic rendering ──
 
-  it('renders the template name', () => {
+  it.each<[string, string]>([
+    ['renders the template name', 'Fighter Sheet'],
+    ['renders the description text', 'A basic fighter character sheet.'],
+    ['renders the campaign badge', 'D&D 5e'],
+    ['renders "View details" CTA', 'View details →'],
+  ])('%s', (_name, text) => {
     render(<TemplateCard {...defaultProps} />)
-    expect(screen.getByText('Fighter Sheet')).toBeInTheDocument()
+    expect(screen.getByText(text)).toBeInTheDocument()
   })
 
   it('wraps the card in a link to the template detail page', () => {
@@ -69,11 +74,6 @@ describe('TemplateCard', () => {
   })
 
   // ── Description ──
-
-  it('renders the description text', () => {
-    render(<TemplateCard {...defaultProps} />)
-    expect(screen.getByText('A basic fighter character sheet.')).toBeInTheDocument()
-  })
 
   it('renders "No description." when description is null', () => {
     render(<TemplateCard {...defaultProps} description={null} />)
@@ -105,11 +105,6 @@ describe('TemplateCard', () => {
   })
 
   // ── Campaign & public badges ──
-
-  it('renders the campaign badge', () => {
-    render(<TemplateCard {...defaultProps} />)
-    expect(screen.getByText('D&D 5e')).toBeInTheDocument()
-  })
 
   it('does not render campaign badge when null', () => {
     render(<TemplateCard {...defaultProps} campaign={null} />)
@@ -187,8 +182,4 @@ describe('TemplateCard', () => {
     expect(screen.getByText(expected)).toBeInTheDocument()
   })
 
-  it('renders "View details" CTA', () => {
-    render(<TemplateCard {...defaultProps} />)
-    expect(screen.getByText('View details →')).toBeInTheDocument()
-  })
 })
