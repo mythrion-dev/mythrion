@@ -33,6 +33,7 @@ const mockRedisService = {
   set: jest.fn().mockResolvedValue(undefined),
   setex: jest.fn().mockResolvedValue(undefined),
   del: jest.fn().mockResolvedValue(undefined),
+  invalidatePattern: jest.fn().mockResolvedValue(undefined),
   cacheGet: jest.fn().mockResolvedValue(null),
   cacheSet: jest.fn().mockResolvedValue(undefined),
   ready: true,
@@ -458,14 +459,29 @@ describe('CharacterSheetService', () => {
 
         const result = await service.findAllByAdventure(adventureId, userId)
 
+        expect(mockRedisService.cacheGet).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:player:${userId}`)
         expect(prisma.characterSheet.findMany).not.toHaveBeenCalled()
         expect(result).toEqual(cachedSheets)
       })
 
-      it('should throw ForbiddenException on cache hit when user is not a member', async () => {
+      it('should read the GM-scoped cache key when the member is a GM', async () => {
+        const cachedSheets = [{ id: sheetId, characterName: 'Cached GM view' }]
+        mockRedisService.cacheGet.mockResolvedValue(cachedSheets)
+        prisma.campaignMember.findUnique.mockResolvedValue({ userId, adventureId, role: 'GM' })
+
+        const result = await service.findAllByAdventure(adventureId, userId)
+
+        expect(mockRedisService.cacheGet).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:gm`)
+        expect(prisma.characterSheet.findMany).not.toHaveBeenCalled()
+        expect(result).toEqual(cachedSheets)
+      })
+
+      it('should throw ForbiddenException when user is not a member even with a populated cache', async () => {
         mockRedisService.cacheGet.mockResolvedValue([{ id: sheetId }])
 
         await expect(service.findAllByAdventure(adventureId, userId)).rejects.toThrow(ForbiddenException)
+
+        expect(prisma.characterSheet.findMany).not.toHaveBeenCalled()
       })
 
       it('should throw ForbiddenException on cache miss when user is not a member', async () => {
@@ -492,7 +508,7 @@ describe('CharacterSheetService', () => {
           }),
         )
         expect(result).toEqual(sheets)
-        expect(mockRedisService.cacheSet).toHaveBeenCalled()
+        expect(mockRedisService.cacheSet).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:gm`, sheets, expect.any(Number))
       })
 
       it('should return only own non-NPC sheets for non-GM', async () => {
@@ -508,7 +524,58 @@ describe('CharacterSheetService', () => {
           }),
         )
         expect(result).toEqual(sheets)
-        expect(mockRedisService.cacheSet).toHaveBeenCalled()
+        expect(mockRedisService.cacheSet).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:player:${userId}`, sheets, expect.any(Number))
+      })
+
+      it('does not reuse a player cache entry for a GM (role-scoped keys)', async () => {
+        prisma.campaignMember.findUnique.mockResolvedValue({ userId, adventureId, role: 'GM' })
+        // Only the player-scoped key holds a value — a GM must NOT read it.
+        mockRedisService.cacheGet.mockImplementation((key: string) =>
+          key === `character-sheets:adventure:${adventureId}:player:${userId}` ? [{ id: 'player-cached' }] : null,
+        )
+        const sheets = [{ ...mockSheet, ownerId: 'other-user' }]
+        prisma.characterSheet.findMany.mockResolvedValue(sheets)
+
+        const result = await service.findAllByAdventure(adventureId, userId)
+
+        expect(prisma.characterSheet.findMany).toHaveBeenCalled()
+        expect(mockRedisService.cacheGet).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:gm`)
+        expect(result).toEqual(sheets)
+      })
+    })
+
+    // ────────── assertReadAccess ──────────
+
+    describe('assertReadAccess', () => {
+      it('allows the sheet owner', async () => {
+        prisma.characterSheet.findUnique.mockResolvedValue({ ownerId: userId, adventureId })
+
+        await expect(service.assertReadAccess(sheetId, userId)).resolves.toBeUndefined()
+      })
+
+      it('allows a campaign GM for a non-owned sheet', async () => {
+        prisma.characterSheet.findUnique.mockResolvedValue({ ownerId: 'other-user', adventureId })
+
+        await expect(service.assertReadAccess(sheetId, userId)).resolves.toBeUndefined()
+      })
+
+      it('throws ForbiddenException for a non-owner, non-GM', async () => {
+        prisma.characterSheet.findUnique.mockResolvedValue({ ownerId: 'other-user', adventureId })
+        mockMembershipService.requireRole.mockRejectedValueOnce(new ForbiddenException('no access'))
+
+        await expect(service.assertReadAccess(sheetId, userId)).rejects.toThrow(ForbiddenException)
+      })
+
+      it('throws ForbiddenException for an unlinked sheet the user does not own', async () => {
+        prisma.characterSheet.findUnique.mockResolvedValue({ ownerId: 'other-user', adventureId: null })
+
+        await expect(service.assertReadAccess(sheetId, userId)).rejects.toThrow(ForbiddenException)
+      })
+
+      it('throws NotFoundException for a missing sheet', async () => {
+        prisma.characterSheet.findUnique.mockResolvedValue(null)
+
+        await expect(service.assertReadAccess(sheetId, userId)).rejects.toThrow(NotFoundException)
       })
     })
 
@@ -823,7 +890,7 @@ describe('CharacterSheetService', () => {
 
         await service.remove(sheetId, userId)
 
-        expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}`)
+        expect(mockRedisService.invalidatePattern).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:*`)
       })
     })
 
@@ -871,7 +938,7 @@ describe('CharacterSheetService', () => {
         expect(result).toEqual(linkedSheet)
         expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:${sheetId}`)
         expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:user:${userId}`)
-        expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}`)
+        expect(mockRedisService.invalidatePattern).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:*`)
       })
     })
 
@@ -937,7 +1004,7 @@ describe('CharacterSheetService', () => {
 
         expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:${sheetId}`)
         expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:user:${userId}`)
-        expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}`)
+        expect(mockRedisService.invalidatePattern).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:*`)
       })
     })
   })
@@ -1206,7 +1273,7 @@ describe('CharacterSheetService', () => {
 
       expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:${mockCreatedSheet.id}`)
       expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:user:${userId}`)
-      expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}`)
+      expect(mockRedisService.invalidatePattern).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:*`)
     })
 
     it('handles cache invalidation failure gracefully', async () => {

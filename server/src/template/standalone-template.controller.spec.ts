@@ -7,6 +7,7 @@ import { StandaloneTemplateController } from './standalone-template.controller.j
 import { TemplateService } from './template.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { SubscriptionGuard } from '../auth/subscription.guard.js'
+import { PlanLimitGuard } from '../auth/plan-limit.guard.js'
 import { CreateTemplateDto } from './dto/create-template.dto.js'
 import { UpdateTemplateDto } from './dto/update-template.dto.js'
 import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
@@ -58,6 +59,8 @@ describe('StandaloneTemplateController', () => {
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: jest.fn(() => true) })
       .overrideGuard(SubscriptionGuard)
+      .useValue({ canActivate: jest.fn(() => true) })
+      .overrideGuard(PlanLimitGuard)
       .useValue({ canActivate: jest.fn(() => true) })
       .compile()
 
@@ -173,7 +176,7 @@ describe('StandaloneTemplateController', () => {
   })
 
   // ──────────────────────────────────────────────
-  //  Subscription gating (POST/PATCH/clone require an active subscription)
+  //  Subscription gating (POST + clone require an active subscription)
   // ──────────────────────────────────────────────
 
   describe('subscription gating', () => {
@@ -181,14 +184,6 @@ describe('StandaloneTemplateController', () => {
       const guards = Reflect.getMetadata(
         '__guards__',
         StandaloneTemplateController.prototype.create,
-      )
-      expect(guards).toContain(SubscriptionGuard)
-    })
-
-    it('applies SubscriptionGuard to update (PATCH /templates/:id)', () => {
-      const guards = Reflect.getMetadata(
-        '__guards__',
-        StandaloneTemplateController.prototype.update,
       )
       expect(guards).toContain(SubscriptionGuard)
     })
@@ -201,9 +196,11 @@ describe('StandaloneTemplateController', () => {
       expect(guards).toContain(SubscriptionGuard)
     })
 
+    // Editing or deleting your own template is ownership, not a paywall (B6).
     it.each([
       ['findAll', 'findAll'],
       ['findOne', 'findOne'],
+      ['update', 'update'],
       ['remove', 'remove'],
     ])('does not gate %s with SubscriptionGuard', (_label, method) => {
       const guards = Reflect.getMetadata(

@@ -761,6 +761,58 @@ describe('SubscriptionService', () => {
       expect(prisma.userSubscription.findUnique).not.toHaveBeenCalled()
     })
 
+    it('treats a cached ISO-string currentPeriodEnd as a future date (JSON round-trip)', async () => {
+      // Regression: cacheSet stores via JSON.stringify, so a cached Date comes
+      // back as an ISO string. `string > Date` is NaN → the old code wrongly
+      // denied an ACTIVE subscriber for the whole TTL window.
+      mockRedis.cacheGet.mockResolvedValueOnce({
+        status: 'ACTIVE',
+        currentPeriodEnd: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+        graceEndsAt: null,
+      })
+
+      const result = await service.hasActiveSubscription('user-1')
+
+      expect(result).toBe(true)
+      expect(prisma.userSubscription.findUnique).not.toHaveBeenCalled()
+    })
+
+    it('rejects a cached ISO-string currentPeriodEnd in the past', async () => {
+      mockRedis.cacheGet.mockResolvedValueOnce({
+        status: 'ACTIVE',
+        currentPeriodEnd: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+        graceEndsAt: null,
+      })
+
+      const result = await service.hasActiveSubscription('user-1')
+
+      expect(result).toBe(false)
+    })
+
+    it('treats a cached ISO-string graceEndsAt as a future date for GRACE', async () => {
+      mockRedis.cacheGet.mockResolvedValueOnce({
+        status: 'GRACE',
+        currentPeriodEnd: null,
+        graceEndsAt: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+      })
+
+      const result = await service.hasActiveSubscription('user-1')
+
+      expect(result).toBe(true)
+    })
+
+    it('never grants access from a cached ISO-string date when status is not entitled', async () => {
+      mockRedis.cacheGet.mockResolvedValueOnce({
+        status: 'PENDING',
+        currentPeriodEnd: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+        graceEndsAt: null,
+      })
+
+      const result = await service.hasActiveSubscription('user-1')
+
+      expect(result).toBe(false)
+    })
+
     it('caches the entitlement data on a cache miss', async () => {
       const future = new Date(Date.now() + 1000 * 60 * 60)
       prisma.userSubscription.findUnique.mockResolvedValue({
@@ -786,6 +838,93 @@ describe('SubscriptionService', () => {
       expect(result).toBe(false)
       expect(prisma.userSubscription.findUnique).toHaveBeenCalled()
     })
+  })
+
+  // ─── getSubscriptionAccessReason ────────────────────────────────────
+
+  describe('getSubscriptionAccessReason', () => {
+    it('returns "none" when no subscription exists', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue(null)
+
+      const result = await service.getSubscriptionAccessReason('user-1')
+
+      expect(result).toBe('none')
+    })
+
+    it('returns "active" for AUTHORIZED regardless of period end', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue({
+        status: 'AUTHORIZED',
+        currentPeriodEnd: new Date(Date.now() - 1000 * 60 * 60),
+        graceEndsAt: null,
+      })
+
+      const result = await service.getSubscriptionAccessReason('user-1')
+
+      expect(result).toBe('active')
+    })
+
+    it('returns "active" for ACTIVE with a future currentPeriodEnd', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue({
+        status: 'ACTIVE',
+        currentPeriodEnd: new Date(Date.now() + 1000 * 60 * 60 * 24),
+        graceEndsAt: null,
+      })
+
+      const result = await service.getSubscriptionAccessReason('user-1')
+
+      expect(result).toBe('active')
+    })
+
+    it('returns "expired" for ACTIVE with a past currentPeriodEnd', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue({
+        status: 'ACTIVE',
+        currentPeriodEnd: new Date(Date.now() - 1000 * 60 * 60 * 24),
+        graceEndsAt: null,
+      })
+
+      const result = await service.getSubscriptionAccessReason('user-1')
+
+      expect(result).toBe('expired')
+    })
+
+    it('returns "active" for GRACE with a future graceEndsAt', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue({
+        status: 'GRACE',
+        currentPeriodEnd: null,
+        graceEndsAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      })
+
+      const result = await service.getSubscriptionAccessReason('user-1')
+
+      expect(result).toBe('active')
+    })
+
+    it('returns "expired" for GRACE with a past graceEndsAt', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue({
+        status: 'GRACE',
+        currentPeriodEnd: null,
+        graceEndsAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
+      })
+
+      const result = await service.getSubscriptionAccessReason('user-1')
+
+      expect(result).toBe('expired')
+    })
+
+    it.each(['PENDING', 'EXPIRED', 'CANCELLED'])(
+      'returns "expired" for %s status',
+      async (status) => {
+        prisma.userSubscription.findUnique.mockResolvedValue({
+          status,
+          currentPeriodEnd: new Date(Date.now() + 1000 * 60 * 60 * 24),
+          graceEndsAt: null,
+        })
+
+        const result = await service.getSubscriptionAccessReason('user-1')
+
+        expect(result).toBe('expired')
+      },
+    )
   })
 
   describe('entitlement cache invalidation', () => {

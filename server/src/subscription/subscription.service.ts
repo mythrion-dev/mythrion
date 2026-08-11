@@ -26,6 +26,13 @@ interface EntitlementData {
   graceEndsAt: Date | null
 }
 
+/** Coerce a Date or ISO string (from a Redis cache round-trip) to a Date, or null when absent. */
+function toDateOrNull(value: Date | string | null | undefined): Date | null {
+  if (!value) return null
+  const date = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
 export interface CreateSubscriptionResult {
   /** The payment gateway redirect URL (empty for card flow) */
   initPoint: string
@@ -95,6 +102,16 @@ type SubscriptionWithDetails = {
     createdAt: Date
   }>
 }
+
+/** The subscription fields the repair path reads (kept slim for the entitlement hot path). */
+type RepairableSubscription = Pick<
+  SubscriptionWithDetails,
+  | 'status'
+  | 'pgSubscriptionId'
+  | 'pgCustomerId'
+  | 'currentPeriodStart'
+  | 'currentPeriodEnd'
+>
 
 /** Internal mapping: PagBank status → internal SubscriptionStatus */
 const GATEWAY_STATUS_MAP: Record<string, SubscriptionStatus> = {
@@ -233,6 +250,9 @@ export class SubscriptionService {
             : undefined,
         currentPeriodEnd: nextPayment,
         cancelledAt: null,
+        // Renewal wipes any prior cancellation/grace state.
+        cancelAtPeriodEnd: false,
+        graceEndsAt: null,
       },
       create: {
         userId,
@@ -320,30 +340,29 @@ export class SubscriptionService {
     }
   }
 
-  /**
-   * Auto-repair a local subscription by refreshing status/period data from the
-   * gateway when the local record looks stale (PENDING/GRACE stuck, or an
-   * ACTIVE subscription with no currentPeriodEnd). Returns the (possibly
-   * updated) subscription.
-   */
-  private async maybeRepairSubscription(
-    userId: string,
-    sub: SubscriptionWithDetails,
-  ): Promise<SubscriptionWithDetails> {
-    if (!sub.pgSubscriptionId) return sub
-
-    const needsRepair =
+  /** True when the local row looks stale and a gateway round-trip is worth it. */
+  private needsRepair(sub: RepairableSubscription): boolean {
+    return (
       sub.status === 'PENDING' ||
       sub.status === 'GRACE' ||
       (!sub.currentPeriodEnd &&
         sub.status !== 'CANCELLED' &&
         sub.status !== 'EXPIRED')
+    )
+  }
 
-    if (!needsRepair) return sub
-
+  /**
+   * Refresh a stale subscription from the gateway and persist the repair.
+   * Only call when needsRepair(sub) is true — it performs a gateway round-trip.
+   * Returns the (possibly updated) full subscription.
+   */
+  private async repairAgainstGateway(
+    userId: string,
+    sub: RepairableSubscription,
+  ): Promise<SubscriptionWithDetails> {
     try {
       const gatewaySub = await this.gateway.getSubscription(
-        sub.pgSubscriptionId,
+        sub.pgSubscriptionId as string,
       )
       const mappedStatus = mapGatewayStatus(gatewaySub.status)
       const nextPayment = gatewaySub.nextPaymentDate
@@ -355,14 +374,13 @@ export class SubscriptionService {
       const customerIdMissing = !!gatewaySub.customerId && !sub.pgCustomerId
 
       if (statusChanged || periodEndMissing || customerIdMissing) {
-        const now = new Date()
         const repaired = await this.applyRepair(userId, sub, {
           statusChanged,
           periodEndMissing,
           customerIdMissing,
           mappedStatus,
           nextPayment,
-          now,
+          now: new Date(),
           gatewayCustomerId: gatewaySub.customerId ?? null,
         })
         this.logger.log(
@@ -371,20 +389,34 @@ export class SubscriptionService {
         return repaired
       }
 
-      return sub
+      return sub as unknown as SubscriptionWithDetails
     } catch (err) {
       // Gateway API failure — just serve stale data, don't block the user
       this.logger.warn(
         `Failed to check gateway status for subscription ${sub.pgSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
       )
-      return sub
+      return sub as unknown as SubscriptionWithDetails
     }
+  }
+
+  /**
+   * Auto-repair a local subscription by refreshing status/period data from the
+   * gateway when the local record looks stale (PENDING/GRACE stuck, or an
+   * ACTIVE subscription with no currentPeriodEnd). Returns the (possibly
+   * updated) subscription. Bounded: no gateway call when the row looks healthy.
+   */
+  private async maybeRepairSubscription(
+    userId: string,
+    sub: SubscriptionWithDetails,
+  ): Promise<SubscriptionWithDetails> {
+    if (!sub.pgSubscriptionId || !this.needsRepair(sub)) return sub
+    return this.repairAgainstGateway(userId, sub)
   }
 
   /** Persist the auto-repair computed by maybeRepairSubscription. */
   private async applyRepair(
     userId: string,
-    sub: SubscriptionWithDetails,
+    sub: RepairableSubscription,
     repair: {
       statusChanged: boolean
       periodEndMissing: boolean
@@ -510,29 +542,86 @@ export class SubscriptionService {
     return this.evaluateEntitlement(data)
   }
 
+  /**
+   * Reason a user currently has or lacks subscription-gated access.
+   *
+   * Unlike hasActiveSubscription (boolean only), this distinguishes the two
+   * "no access" states so guards can emit the correct message:
+   *   'active'  → entitled right now
+   *   'none'    → no subscription row at all
+   *   'expired' → a row exists but the entitlement window has lapsed
+   *               (EXPIRED/CANCELLED, or ACTIVE past currentPeriodEnd,
+   *                or GRACE past graceEndsAt)
+   *
+   * Same fail-closed rules as hasActiveSubscription: dates are re-evaluated
+   * against `now` on every read and Redis is only a cache.
+   */
+  async getSubscriptionAccessReason(
+    userId: string,
+  ): Promise<'active' | 'none' | 'expired'> {
+    const data = await this.getEntitlementData(userId)
+    if (!data) return 'none'
+    return this.classifyEntitlement(data)
+  }
+
+  /** Classify entitlement data as active/expired at the given instant. */
+  private classifyEntitlement(
+    data: EntitlementData,
+    now: Date = new Date(),
+  ): 'active' | 'expired' {
+    const periodEnd = toDateOrNull(data.currentPeriodEnd)
+    const graceEndsAt = toDateOrNull(data.graceEndsAt)
+    switch (data.status) {
+      case 'AUTHORIZED':
+        return 'active'
+      case 'ACTIVE':
+        return periodEnd == null || periodEnd > now ? 'active' : 'expired'
+      case 'GRACE':
+        return graceEndsAt == null || graceEndsAt > now ? 'active' : 'expired'
+      default:
+        // PENDING, EXPIRED, CANCELLED
+        return 'expired'
+    }
+  }
+
   /** Read entitlement data (status + dates) from Redis cache or PostgreSQL. */
   private async getEntitlementData(
     userId: string,
   ): Promise<EntitlementData | null> {
     const cacheKey = this.entitlementCacheKey(userId)
     const cached = await this.redis.cacheGet<EntitlementData>(cacheKey)
-    if (cached) return cached
+    if (cached) {
+      // JSON round-trip turns Date into ISO strings; rehydrate so the
+      // period-end comparisons never hit `string > Date` (which is NaN → false).
+      cached.currentPeriodEnd = toDateOrNull(cached.currentPeriodEnd)
+      cached.graceEndsAt = toDateOrNull(cached.graceEndsAt)
+      return cached
+    }
 
     const sub = await this.prisma.userSubscription.findUnique({
       where: { userId },
       select: {
         status: true,
+        pgSubscriptionId: true,
+        pgCustomerId: true,
+        currentPeriodStart: true,
         currentPeriodEnd: true,
         graceEndsAt: true,
       },
     })
     if (!sub) return null
 
-    const data: EntitlementData = {
-      status: sub.status,
-      currentPeriodEnd: sub.currentPeriodEnd,
-      graceEndsAt: sub.graceEndsAt,
+    // Bounded auto-repair: only stale-looking rows (PENDING/GRACE, or ACTIVE
+    // with no period end) trigger a gateway round-trip.
+    let { status, currentPeriodEnd, graceEndsAt } = sub
+    if (sub.pgSubscriptionId && this.needsRepair(sub)) {
+      const repaired = await this.repairAgainstGateway(userId, sub)
+      status = repaired.status
+      currentPeriodEnd = repaired.currentPeriodEnd
+      graceEndsAt = repaired.graceEndsAt
     }
+
+    const data: EntitlementData = { status, currentPeriodEnd, graceEndsAt }
     // Fail-open cache write: if Redis is down the next read just hits the DB.
     await this.redis.cacheSet(cacheKey, data, this.ENTITLEMENT_CACHE_TTL_SECONDS)
     return data
@@ -543,13 +632,16 @@ export class SubscriptionService {
     data: EntitlementData,
     now: Date = new Date(),
   ): boolean {
+    // Defensive: cached values may still arrive as ISO strings.
+    const periodEnd = toDateOrNull(data.currentPeriodEnd)
+    const graceEndsAt = toDateOrNull(data.graceEndsAt)
     switch (data.status) {
       case 'AUTHORIZED':
         return true
       case 'ACTIVE':
-        return data.currentPeriodEnd == null || data.currentPeriodEnd > now
+        return periodEnd == null || periodEnd > now
       case 'GRACE':
-        return data.graceEndsAt == null || data.graceEndsAt > now
+        return graceEndsAt == null || graceEndsAt > now
       default:
         // PENDING, EXPIRED, CANCELLED
         return false

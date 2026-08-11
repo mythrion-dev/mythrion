@@ -107,6 +107,7 @@ const monthlyPlan = {
   description: null,
   price: 12000,
   pgPlanId: 'PG-MONTHLY',
+  limits: { maxCampaigns: 1, maxTemplates: 3 },
 }
 
 const annualPlan = {
@@ -116,6 +117,7 @@ const annualPlan = {
   description: null,
   price: 120000,
   pgPlanId: 'PG-ANNUAL',
+  limits: null,
 }
 
 const apiPlans = [monthlyPlan, annualPlan]
@@ -992,6 +994,7 @@ describe('AdminPlansPage', () => {
         description: undefined,
         price: 12000,
         pgPlanId: 'PG-1',
+        limits: null,
       }),
     )
     expect(await screen.findByText('Monthly')).toBeInTheDocument()
@@ -1026,6 +1029,102 @@ describe('AdminPlansPage', () => {
       ),
     )
     expect(await screen.findByText('Monthly Premium')).toBeInTheDocument()
+  })
+
+  it('pre-fills the limit inputs when editing a plan that has limits', async () => {
+    mockAdminFetchPlans.mockResolvedValueOnce([monthlyPlan])
+    render(<AdminPlansPage />)
+    await screen.findByText('Monthly')
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    expect(screen.getByPlaceholderText('Ex: 3 (blank = unlimited)')).toHaveValue('1')
+    expect(screen.getByPlaceholderText('Ex: 10 (blank = unlimited)')).toHaveValue('3')
+  })
+
+  it('creates a plan with usage limits filled in', async () => {
+    mockAdminFetchPlans.mockResolvedValueOnce([])
+    mockAdminCreatePlan.mockResolvedValue(monthlyPlan)
+    render(<AdminPlansPage />)
+    await screen.findByText('No plans registered.')
+    fireEvent.click(screen.getByRole('button', { name: 'Create first plan' }))
+    fireEvent.change(screen.getByPlaceholderText('Ex: monthly, annual, premium...'), {
+      target: { value: 'monthly' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Ex: monthly, annual'), {
+      target: { value: 'monthly' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Ex: Monthly, Annual'), {
+      target: { value: 'Monthly' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Ex: 120.00'), {
+      target: { value: '120' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('PagBank plan ID'), {
+      target: { value: 'PG-1' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Ex: 3 (blank = unlimited)'), {
+      target: { value: '2' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Ex: 10 (blank = unlimited)'), {
+      target: { value: '5' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() =>
+      expect(mockAdminCreatePlan).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'monthly',
+          limits: { maxCampaigns: 2, maxTemplates: 5 },
+        }),
+      ),
+    )
+  })
+
+  it('clears limits on edit by sending limits: null', async () => {
+    mockAdminFetchPlans.mockResolvedValueOnce([monthlyPlan])
+    mockAdminUpdatePlan.mockResolvedValue(annualPlan)
+    render(<AdminPlansPage />)
+    await screen.findByText('Monthly')
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    fireEvent.change(screen.getByPlaceholderText('Ex: 3 (blank = unlimited)'), {
+      target: { value: '' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Ex: 10 (blank = unlimited)'), {
+      target: { value: '' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() =>
+      expect(mockAdminUpdatePlan).toHaveBeenCalledWith(
+        'monthly',
+        expect.objectContaining({ limits: null }),
+      ),
+    )
+  })
+
+  it('rejects non-numeric limits without creating the plan', async () => {
+    mockAdminFetchPlans.mockResolvedValueOnce([])
+    render(<AdminPlansPage />)
+    await screen.findByText('No plans registered.')
+    fireEvent.click(screen.getByRole('button', { name: 'Create first plan' }))
+    fireEvent.change(screen.getByPlaceholderText('Ex: monthly, annual, premium...'), {
+      target: { value: 'monthly' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Ex: monthly, annual'), {
+      target: { value: 'monthly' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Ex: Monthly, Annual'), {
+      target: { value: 'Monthly' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Ex: 120.00'), {
+      target: { value: '120' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('PagBank plan ID'), {
+      target: { value: 'PG-1' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Ex: 3 (blank = unlimited)'), {
+      target: { value: 'abc' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(screen.getByText('Limits must be whole numbers.')).toBeInTheDocument()
+    expect(mockAdminCreatePlan).not.toHaveBeenCalled()
   })
 
   it('cancels the create form without saving', async () => {

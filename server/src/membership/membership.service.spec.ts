@@ -279,7 +279,7 @@ describe('MembershipService', () => {
         ForbiddenException,
       )
       await expect(service.requireWriteRole('a1', 'u1', 'GM')).rejects.toThrow(
-        'This campaign is read-only because the Game Master\'s subscription has ended. Renew the subscription to restore full access.',
+        "This campaign is currently read-only because the GM's subscription is inactive.",
       )
     })
 
@@ -333,7 +333,7 @@ describe('MembershipService', () => {
       subscription.mockHasActiveSubscription.mockResolvedValue(false)
 
       await expect(service.requireWriteAccess('a1', 'u1')).rejects.toThrow(
-        'This campaign is read-only because the Game Master\'s subscription has ended. Renew the subscription to restore full access.',
+        "This campaign is currently read-only because the GM's subscription is inactive.",
       )
     })
   })

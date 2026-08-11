@@ -232,6 +232,19 @@ describe('BookService', () => {
 
       expect(result).toHaveLength(2)
     })
+
+    it('returns an empty list for non-members (no book metadata leak)', async () => {
+      mockRedis.cacheGet.mockResolvedValueOnce(null)
+      mockMembership.isMember.mockResolvedValueOnce(false)
+      mockPrisma.book.findMany.mockResolvedValueOnce([
+        { id: 'b1', name: 'Player Book', visibility: 'PLAYER_BOOK', fileLength: 200, createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-01') },
+      ])
+
+      const result = await service.list(mockAdventureId, mockUserId)
+
+      expect(mockMembership.isMember).toHaveBeenCalledWith(mockAdventureId, mockUserId)
+      expect(result).toEqual([])
+    })
   })
 
   // -----------------------------------------------------------------------

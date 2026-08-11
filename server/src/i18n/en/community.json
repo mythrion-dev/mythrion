@@ -16,5 +16,5 @@
   "notMember": "You are not a member of this campaign",
   "gmOnly": "Only the Game Master can perform this action",
   "cannotPromoteToGm": "Cannot promote a member to Game Master. A campaign can only have one GM.",
-  "campaignReadOnly": "This campaign is read-only because the Game Master's subscription has ended. Renew the subscription to restore full access."
+  "campaignReadOnly": "This campaign is currently read-only because the GM's subscription is inactive."
 }

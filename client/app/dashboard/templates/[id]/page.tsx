@@ -751,13 +751,14 @@ export default function TemplateDetailPage() {
   const resistCount = template.resistances?.length ?? 0
 
   // Read-only applies only to campaign-attached templates (derived from the
-  // campaign owner's entitlement). Standalone templates are the user's own
-  // data; their edit/clone controls are gated on the user's subscription.
+  // campaign owner's entitlement). For standalone templates, creation/cloning
+  // is the paywall (POST /templates, POST /templates/:id/clone); editing or
+  // deleting your own template is ownership, not a paywall.
   const isCampaignTemplate = Boolean(template.adventureId)
   const readOnly = isCampaignTemplate && accessState === 'READ_ONLY'
   const noSubscription = !hasActiveSubscription
-  const editDisabled = isCampaignTemplate ? readOnly : noSubscription
-  const deleteDisabled = isCampaignTemplate && readOnly
+  const editDisabled = readOnly
+  const deleteDisabled = readOnly
   const cloneDisabled = noSubscription
   const readOnlyTooltip = t('campaign:readOnlyTooltip')
   const upgradeTooltip = t('templates:upgradeToCreate')

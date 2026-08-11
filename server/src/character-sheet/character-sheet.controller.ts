@@ -309,16 +309,18 @@ export class CharacterSheetController {
   // ── Resistance Calculations ──
 
   @Get(':id/resistances')
-  getCalculatedResistances(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+  async getCalculatedResistances(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    await this.sheetService.assertReadAccess(id, req.user.sub)
     return this.resistanceService.calculateResistances(id)
   }
 
   @Get(':id/resistances/:resistanceId')
-  getCalculatedResistance(
+  async getCalculatedResistance(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Param('resistanceId') resistanceId: string,
   ) {
+    await this.sheetService.assertReadAccess(id, req.user.sub)
     return this.resistanceService.calculateSingleResistance(id, resistanceId)
   }
 
@@ -382,7 +384,8 @@ export class CharacterSheetController {
   // ── Armor Class Calculation ──
 
   @Get(':id/armor-class')
-  getCalculatedArmorClass(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Query('armorClassId') armorClassId?: string) {
+  async getCalculatedArmorClass(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Query('armorClassId') armorClassId?: string) {
+    await this.sheetService.assertReadAccess(id, req.user.sub)
     return this.acService.calculateArmorClass(id, armorClassId)
   }
 }

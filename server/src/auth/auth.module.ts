@@ -12,7 +12,9 @@ import { GoogleAuthGuard } from './google-auth.guard.js'
 import { TokenService } from './token.service.js'
 import { RateLimitGuard } from './rate-limit.guard.js'
 import { AdminService } from './admin.service.js'
+import { PermissionService } from './permission.service.js'
 import { SubscriptionGuard } from './subscription.guard.js'
+import { PlanLimitGuard } from './plan-limit.guard.js'
 import { AdminGuard } from './admin.guard.js'
 import { SubscriptionModule } from '../subscription/subscription.module.js'
 import { EmailModule } from '../email/email.module.js'
@@ -41,7 +43,9 @@ import { TwoFactorService } from './two-factor.service.js'
     TokenService,
     RateLimitGuard,
     AdminService,
+    PermissionService,
     SubscriptionGuard,
+    PlanLimitGuard,
     AdminGuard,
     TwoFactorService,
   ],
@@ -54,7 +58,9 @@ import { TwoFactorService } from './two-factor.service.js'
     TokenService,
     RateLimitGuard,
     AdminService,
+    PermissionService,
     SubscriptionGuard,
+    PlanLimitGuard,
     AdminGuard,
   ],
 })

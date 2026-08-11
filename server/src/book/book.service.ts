@@ -389,6 +389,8 @@ export class BookService implements OnModuleInit {
     adventureId: string,
     userId: string,
   ): Promise<BookListItem[]> {
+    // Non-members must not receive any book metadata (not even PLAYER_BOOK titles).
+    if (!(await this.membership.isMember(adventureId, userId))) return []
     try {
       await this.membership.requireRole(adventureId, userId, MemberRole.GM)
       // User is GM — return everything

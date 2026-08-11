@@ -340,17 +340,18 @@ describe('TemplateDetailPage', () => {
     expect(screen.queryByRole('status')).toBeNull()
   })
 
-  it('gates Edit/Clone on the user subscription for standalone templates', async () => {
+  it('gates only Clone on the user subscription for standalone templates', async () => {
     mockHasActiveSubscription = false
     ;(api.get as any).mockResolvedValue(mockTemplate)
     render(<TemplateDetailPage />)
     await screen.findByText('Fighter Sheet')
 
-    const editBtn = screen.getByRole('button', { name: 'Edit' })
-    expect(editBtn).toBeDisabled()
-    expect(editBtn).toHaveAttribute('title', 'Upgrade to Create')
-
-    expect(screen.getByRole('button', { name: 'Clone' })).toBeDisabled()
+    // Editing your own template is ownership, not the creation paywall.
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeEnabled()
+    // Cloning creates a new template, so it is paywalled.
+    const cloneBtn = screen.getByRole('button', { name: 'Clone' })
+    expect(cloneBtn).toBeDisabled()
+    expect(cloneBtn).toHaveAttribute('title', 'Upgrade to Create')
     // Delete is not subscription-gated for standalone templates.
     expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled()
   })

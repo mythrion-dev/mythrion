@@ -180,8 +180,15 @@ export class CharacterSheetService {
     return `character-sheets:user:${userId}`
   }
 
-  private adventureListCacheKey(adventureId: string): string {
-    return `character-sheets:adventure:${adventureId}`
+  /** Adventure list cache is scoped by role so a GM never reads a player's cached view and vice versa. */
+  private adventureListCacheKey(adventureId: string, role: 'GM' | 'PLAYER', userId: string): string {
+    return role === 'GM'
+      ? `character-sheets:adventure:${adventureId}:gm`
+      : `character-sheets:adventure:${adventureId}:player:${userId}`
+  }
+
+  private adventureListCachePattern(adventureId: string): string {
+    return `character-sheets:adventure:${adventureId}:*`
   }
 
   /** Invalidate cached sheet(s). sheetId always invalidated; userId/adventureId also invalidate list caches. */
@@ -189,7 +196,7 @@ export class CharacterSheetService {
     try {
       await this.redis.del(this.cacheKey(sheetId))
       if (userId) await this.redis.del(this.userListCacheKey(userId))
-      if (adventureId) await this.redis.del(this.adventureListCacheKey(adventureId))
+      if (adventureId) await this.redis.invalidatePattern(this.adventureListCachePattern(adventureId))
     } catch (err) {
       this.logger.warn('Failed to invalidate character sheet cache', err)
     }
@@ -473,20 +480,18 @@ export class CharacterSheetService {
   }
 
   async findAllByAdventure(adventureId: string, userId: string) {
-    // Try cache first
-    const cached = await this.redis.cacheGet<any[]>(this.adventureListCacheKey(adventureId))
-    if (cached) {
-      const member = await this.prisma.campaignMember.findUnique({
-        where: { adventureId_userId: { adventureId, userId } },
-      })
-      if (!member) throw new ForbiddenException(this.i18n.t('character-sheet.notMemberAdventure'))
-      return cached
-    }
-
+    // Membership is authoritative: fetch first so a non-member can never hit the cache.
     const member = await this.prisma.campaignMember.findUnique({
       where: { adventureId_userId: { adventureId, userId } },
     })
     if (!member) throw new ForbiddenException(this.i18n.t('character-sheet.notMemberAdventure'))
+
+    const role: 'GM' | 'PLAYER' = member.role === 'GM' ? 'GM' : 'PLAYER'
+    const cacheKey = this.adventureListCacheKey(adventureId, role, userId)
+
+    // Try cache first
+    const cached = await this.redis.cacheGet<any[]>(cacheKey)
+    if (cached) return cached
 
     const where = member.role === 'GM'
       ? { adventureId, isNpc: false }
@@ -502,8 +507,8 @@ export class CharacterSheetService {
       orderBy: { createdAt: 'desc' },
     })
 
-    // Cache the list
-    await this.redis.cacheSet(this.adventureListCacheKey(adventureId), sheets, this.LIST_CACHE_TTL).catch(() => {})
+    // Cache the list under the role-scoped key
+    await this.redis.cacheSet(cacheKey, sheets, this.LIST_CACHE_TTL).catch(() => {})
 
     return sheets
   }
@@ -1555,6 +1560,16 @@ export class CharacterSheetService {
   // Public write-gates reused by the image module for avatar upload/delete.
   async assertCanModifySheet(sheetId: string, userId: string): Promise<void> {
     await this.requireOwnership(sheetId, userId)
+  }
+
+  /** Read-access gate for computed endpoints (resistances, AC): owner or campaign GM. */
+  async assertReadAccess(sheetId: string, userId: string): Promise<void> {
+    const sheet = await this.prisma.characterSheet.findUnique({
+      where: { id: sheetId },
+      select: { ownerId: true, adventureId: true },
+    })
+    if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
+    await this.assertSheetAccess(sheet, userId)
   }
 
   async assertCanModifyAbility(abilityId: string, userId: string): Promise<void> {

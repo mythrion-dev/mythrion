@@ -30,6 +30,18 @@ ADMIN_EMAILS=lucas@mythrion.com
 
 ---
 
+### 2a. `EARLY_ACCESS_EMAILS`
+
+Comma-separated list of email addresses granted the **Early Access** role — users who get Early Access entitlements *in addition to* any subscription-based access they have. Parsed identically to `ADMIN_EMAILS` (trimmed, lowercased, split on commas).
+
+```
+EARLY_ACCESS_EMAILS=jane@mythrion.com,beta@mythrion.com
+```
+
+> **WARNING:** Like `ADMIN_EMAILS`, this is the single source of truth for Early Access privileges — do **not** mirror it in the database. Early Access is a **role**, not a plan: it must never be conflated with a subscription, and it never overrides admin.
+
+---
+
 ### 3. `JWT_SECRET` (if not already set)
 
 Secret used to sign and verify JWT tokens. Railway generates one automatically for new services.

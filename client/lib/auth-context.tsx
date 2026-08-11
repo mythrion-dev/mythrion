@@ -16,7 +16,6 @@ import {
   getRefreshToken,
   setRefreshToken,
   removeRefreshToken,
-  decodeJwtPayload,
   removeInvitationToken,
   refreshAccessToken,
   isAccessTokenExpiringSoon,
@@ -34,6 +33,28 @@ interface User {
   twoFactorEnabled: boolean
   emailVerified: boolean
   hasPassword: boolean
+  permissions: UserPermissions
+}
+
+/** Server-computed permission snapshot returned by /auth/me. The server is the
+ *  single source of truth for role/early-access/subscription state — this must
+ *  never be derived from the locally-decoded JWT payload. */
+interface UserPermissions {
+  role: 'admin' | 'early_access' | 'user'
+  earlyAccess: boolean
+  subscription: {
+    plan: { slug: string; name: string; price: number } | null
+    status: string | null
+    expiresAt: string | null
+  }
+  entitlements: {
+    hasActiveSubscription: boolean
+    canUseSubscriptionFeatures: boolean
+  }
+  limits: {
+    maxCampaigns: number | null
+    maxTemplates: number | null
+  }
 }
 
 /** Result of a password login: either the session is established, or the
@@ -63,29 +84,16 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  /** Read the admin flag from the local JWT payload (not the API response). */
-  const isAdminFromToken = useCallback((): boolean => {
-    const token = getAccessToken()
-    if (!token) return false
-    const payload = decodeJwtPayload(token)
-    return payload?.role === 'admin'
-  }, [])
-
-  /** Read the early-access flag from the local JWT payload (not the API response). */
-  const isEarlyAccessFromToken = useCallback((): boolean => {
-    const token = getAccessToken()
-    if (!token) return false
-    const payload = decodeJwtPayload(token)
-    return payload?.role === 'early_access'
-  }, [])
-
   const fetchProfile = useCallback(async () => {
     try {
-      const profile = await api.get<Omit<User, 'isAdmin' | 'isEarlyAccess'>>('/auth/profile')
+      // /auth/me returns the profile plus the server-computed permission
+      // snapshot. isAdmin/isEarlyAccess must come from that snapshot — never
+      // from the locally-decoded JWT payload, which a client can tamper with.
+      const me = await api.get<Omit<User, 'isAdmin' | 'isEarlyAccess'>>('/auth/me')
       setUser({
-        ...profile,
-        isAdmin: isAdminFromToken(),
-        isEarlyAccess: isEarlyAccessFromToken(),
+        ...me,
+        isAdmin: me.permissions.role === 'admin',
+        isEarlyAccess: me.permissions.earlyAccess,
       })
       setLoading(false)
     } catch {
@@ -97,7 +105,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       // the session from a single place.
       return
     }
-  }, [isAdminFromToken, isEarlyAccessFromToken])
+  }, [])
 
   /**
    * Restore a session on mount (or on return to the tab). Order of preference:

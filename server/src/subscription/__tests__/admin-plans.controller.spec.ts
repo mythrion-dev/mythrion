@@ -1,4 +1,7 @@
-jest.mock("../../generated/prisma/client", () => ({ PrismaClient: class {} }))
+jest.mock("../../generated/prisma/client", () => ({
+  PrismaClient: class {},
+  Prisma: { DbNull: { __prismaNullValue: 'DbNull' }, JsonNull: { __prismaNullValue: 'JsonNull' } },
+}))
 jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
 jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
 jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }))
@@ -9,6 +12,7 @@ import { PrismaService } from '../../prisma.service'
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard'
 import { AdminGuard } from '../../auth/admin.guard'
 import { I18nService } from 'nestjs-i18n'
+import { Prisma } from '../../generated/prisma/client'
 import { createI18nServiceMock } from '../../i18n/i18n-testing.js'
 import { createMockPrismaService } from '../../__mocks__/prisma-service.mock'
 
@@ -23,6 +27,7 @@ describe('AdminPlansController', () => {
     description: 'Acesso mensal',
     price: 12000,
     pgPlanId: 'pg-plan-monthly',
+    limits: null,
     createdAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01'),
   }
@@ -34,6 +39,7 @@ describe('AdminPlansController', () => {
     description: 'Acesso anual',
     price: 120000,
     pgPlanId: 'pg-plan-annual',
+    limits: null,
     createdAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01'),
   }
@@ -110,8 +116,66 @@ describe('AdminPlansController', () => {
           description: 'Acesso premium',
           price: 24000,
           pgPlanId: 'pg-plan-premium',
+          limits: Prisma.DbNull,
         },
       })
+    })
+
+    it('creates a plan with usage limits', async () => {
+      prisma.subscriptionPlan.findFirst.mockResolvedValue(null)
+      const created = { ...mockPlan, id: 'premium', slug: 'premium', name: 'Plano Premium', price: 24000, pgPlanId: 'pg-plan-premium' }
+      prisma.subscriptionPlan.create.mockResolvedValue(created)
+
+      await controller.create({ ...createPayload, limits: { maxCampaigns: 3, maxTemplates: 10 } })
+
+      expect(prisma.subscriptionPlan.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          limits: { maxCampaigns: 3, maxTemplates: 10 },
+        }),
+      })
+    })
+
+    it('treats empty-object limits as unlimited (null)', async () => {
+      prisma.subscriptionPlan.findFirst.mockResolvedValue(null)
+      prisma.subscriptionPlan.create.mockResolvedValue({ ...mockPlan })
+
+      await controller.create({ ...createPayload, limits: {} })
+
+      expect(prisma.subscriptionPlan.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ limits: Prisma.DbNull }),
+      })
+    })
+
+    it('throws on unknown limits keys', async () => {
+      prisma.subscriptionPlan.findFirst.mockResolvedValue(null)
+
+      await expect(
+        controller.create({ ...createPayload, limits: { maxCampaigns: 3, maxSessions: 1 } }),
+      ).rejects.toThrow(UnprocessableEntityException)
+    })
+
+    it('throws on negative limits value', async () => {
+      prisma.subscriptionPlan.findFirst.mockResolvedValue(null)
+
+      await expect(
+        controller.create({ ...createPayload, limits: { maxCampaigns: -1 } }),
+      ).rejects.toThrow(UnprocessableEntityException)
+    })
+
+    it('throws on non-integer limits value', async () => {
+      prisma.subscriptionPlan.findFirst.mockResolvedValue(null)
+
+      await expect(
+        controller.create({ ...createPayload, limits: { maxTemplates: 2.5 } }),
+      ).rejects.toThrow(UnprocessableEntityException)
+    })
+
+    it('throws on non-object limits', async () => {
+      prisma.subscriptionPlan.findFirst.mockResolvedValue(null)
+
+      await expect(
+        controller.create({ ...createPayload, limits: 'unlimited' as unknown as Record<string, unknown> }),
+      ).rejects.toThrow(UnprocessableEntityException)
     })
 
     it('throws on missing required fields', async () => {
@@ -209,6 +273,40 @@ describe('AdminPlansController', () => {
 
       await expect(
         controller.update('monthly', { price: 0 }),
+      ).rejects.toThrow(UnprocessableEntityException)
+    })
+
+    it('sets usage limits on update', async () => {
+      prisma.subscriptionPlan.findUnique.mockResolvedValue(mockPlan)
+      prisma.subscriptionPlan.update.mockResolvedValue({ ...mockPlan, limits: { maxCampaigns: 5 } })
+
+      const result = await controller.update('monthly', { limits: { maxCampaigns: 5 } })
+
+      expect(result.limits).toEqual({ maxCampaigns: 5 })
+      expect(prisma.subscriptionPlan.update).toHaveBeenCalledWith({
+        where: { id: 'monthly' },
+        data: expect.objectContaining({ limits: { maxCampaigns: 5 } }),
+      })
+    })
+
+    it('clears usage limits with null on update', async () => {
+      prisma.subscriptionPlan.findUnique.mockResolvedValue(mockPlan)
+      prisma.subscriptionPlan.update.mockResolvedValue({ ...mockPlan, limits: null })
+
+      const result = await controller.update('monthly', { limits: null })
+
+      expect(result.limits).toBeNull()
+      expect(prisma.subscriptionPlan.update).toHaveBeenCalledWith({
+        where: { id: 'monthly' },
+        data: expect.objectContaining({ limits: Prisma.DbNull }),
+      })
+    })
+
+    it('throws on invalid limits on update', async () => {
+      prisma.subscriptionPlan.findUnique.mockResolvedValue(mockPlan)
+
+      await expect(
+        controller.update('monthly', { limits: { maxCampaigns: -5 } }),
       ).rejects.toThrow(UnprocessableEntityException)
     })
   })

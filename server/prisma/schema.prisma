@@ -961,6 +961,9 @@ model SubscriptionPlan {
   description   String?
   price         Int
   pgPlanId      String              @unique
+  // Usage limits per plan. null = unlimited.
+  // Shape: { maxCampaigns?: int, maxTemplates?: int }
+  limits        Json?
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   subscriptions UserSubscription[]

@@ -2,10 +2,11 @@
   "alreadyActive": "Você já possui uma assinatura ativa. Cancele-a antes de criar uma nova.",
   "alreadyScheduledForCancellation": "A assinatura já está agendada para cancelamento ao final do período",
   "alreadyStatus": "A assinatura já está {status}",
-  "activeSubscriptionRequired": "Uma assinatura ativa é necessária para acessar este recurso. Assine em /pricing.",
+  "activeSubscriptionRequired": "Você precisa de uma assinatura ativa para usar este recurso.",
   "authRequired": "Autenticação necessária para acessar este recurso",
   "cancelFailed": "Falha ao cancelar a assinatura: {pgError}",
   "cancelFailedGeneric": "Falha ao cancelar a assinatura",
+  "campaignLimitReached": "Você atingiu o limite de campanhas do seu plano.",
   "cannotDeletePlanWithActiveSubscriptions": "Não é possível excluir um plano com assinaturas ativas.",
   "cannotUpdatePaymentOnStatus": "Não é possível atualizar a forma de pagamento em uma assinatura {status}.",
   "cardTokenRequired": "cardToken é obrigatório e deve ser uma string de cartão criptografada válida",
@@ -13,6 +14,7 @@
   "controllerPlanIdRequired": "planId é obrigatório",
   "customerIdRequired": "customerId é obrigatório para atualizar a forma de pagamento",
   "fetchSubscriptionFailed": "Falha ao buscar a assinatura",
+  "invalidPlanLimits": "Limites de plano inválidos: esperado { maxCampaigns, maxTemplates } com valores inteiros não negativos",
   "missingRequiredFields": "Campos obrigatórios ausentes: id, slug, name, price, pgPlanId",
   "noPgCustomerId": "A assinatura não possui ID de cliente PagBank — não é possível atualizar a forma de pagamento.",
   "noPgSubscriptionId": "A assinatura não possui referência PagBank — não é possível atualizar a forma de pagamento.",
@@ -27,5 +29,7 @@
   "planNotFound": "Plano de assinatura \"{planId}\" não encontrado",
   "priceMustBePositiveInt": "O preço deve ser um inteiro positivo (centavos)",
   "slugInUse": "Slug \"{slug}\" já está em uso",
-  "subscriptionCancelled": "Assinatura cancelada com sucesso"
+  "subscriptionCancelled": "Assinatura cancelada com sucesso",
+  "subscriptionExpired": "Sua assinatura expirou. Renove sua assinatura para continuar.",
+  "templateLimitReached": "Você atingiu o limite de templates do seu plano."
 }
