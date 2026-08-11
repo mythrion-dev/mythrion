@@ -114,7 +114,7 @@ export function JoinRequestModal({
 
       <dialog
         ref={cardRef}
-        className="card !p-6 max-w-md w-full space-y-6 border-border/20 shadow-[0_24px_80px_rgba(0,0,0,0.45)] relative z-10"
+        className="card !p-6 max-w-md w-full space-y-6 border-border/20 shadow-[0_24px_80px_rgba(0,0,0,0.45)] fixed inset-0 m-auto z-10"
         aria-modal="true"
         aria-labelledby="join-modal-title"
         onCancel={(e) => { e.preventDefault(); handleCancel() }}
