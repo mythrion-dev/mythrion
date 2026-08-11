@@ -279,9 +279,10 @@ describe('CharacterSheetService', () => {
 
       it('should throw ForbiddenException when user is not a member of the adventure (dto.adventureId set)', async () => {
         const dtoWithAdv = { ...dto, adventureId: 'adventure-1' }
-        mockMembershipService.isMember.mockResolvedValue(false)
+        mockMembershipService.requireWriteAccess.mockRejectedValue(new ForbiddenException('not member'))
 
         await expect(service.create(userId, dtoWithAdv)).rejects.toThrow(ForbiddenException)
+        expect(mockMembershipService.requireWriteAccess).toHaveBeenCalledWith('adventure-1', userId)
       })
 
       it('should create sheet when template belongs to an adventure and user is a member', async () => {
@@ -289,7 +290,7 @@ describe('CharacterSheetService', () => {
           ...mockTemplate,
           adventureId: 'adventure-1',
         })
-        mockMembershipService.isMember.mockResolvedValue(true)
+        mockMembershipService.requireWriteAccess.mockResolvedValue({ role: 'PLAYER' })
         prisma.characterSheet.create.mockResolvedValue({ ...mockSheet, adventureId: 'adventure-1' })
 
         const result = await service.create(userId, dto)
@@ -299,12 +300,12 @@ describe('CharacterSheetService', () => {
 
       it('should validate membership when dto.adventureId is explicitly provided', async () => {
         const dtoWithAdv = { ...dto, adventureId: 'adventure-2' }
-        mockMembershipService.isMember.mockResolvedValue(true)
+        mockMembershipService.requireWriteAccess.mockResolvedValue({ role: 'PLAYER' })
         prisma.characterSheet.create.mockResolvedValue({ ...mockSheet, adventureId: 'adventure-2' })
 
         const result = await service.create(userId, dtoWithAdv)
 
-        expect(mockMembershipService.isMember).toHaveBeenCalledWith('adventure-2', userId)
+        expect(mockMembershipService.requireWriteAccess).toHaveBeenCalledWith('adventure-2', userId)
         expect(result.adventureId).toBe('adventure-2')
       })
 
@@ -839,17 +840,24 @@ describe('CharacterSheetService', () => {
         const otherSheet = { ...mockSheet, ownerId: 'other-user' }
         prisma.characterSheet.findUnique.mockResolvedValue(otherSheet)
 
-        await expect(service.linkToAdventure(sheetId, adventureId, 'other-user')).rejects.toThrow(ForbiddenException)
+        await expect(service.linkToAdventure(sheetId, adventureId, userId)).rejects.toThrow(ForbiddenException)
       })
 
       it('should throw ForbiddenException when user is not a member of the adventure', async () => {
-        mockMembershipService.isMember.mockResolvedValue(false)
+        mockMembershipService.requireWriteAccess.mockRejectedValue(new ForbiddenException('not member'))
+
+        await expect(service.linkToAdventure(sheetId, adventureId, userId)).rejects.toThrow(ForbiddenException)
+        expect(mockMembershipService.requireWriteAccess).toHaveBeenCalledWith(adventureId, userId)
+      })
+
+      it('should throw ForbiddenException when the adventure is read-only (GM subscription lapsed)', async () => {
+        mockMembershipService.requireWriteAccess.mockRejectedValue(new ForbiddenException('campaign read-only'))
 
         await expect(service.linkToAdventure(sheetId, adventureId, userId)).rejects.toThrow(ForbiddenException)
       })
 
       it('should link sheet to adventure and invalidate cache', async () => {
-        mockMembershipService.isMember.mockResolvedValue(true)
+        mockMembershipService.requireWriteAccess.mockResolvedValue({ role: 'GM' })
         const linkedSheet = { ...mockSheet, adventureId }
         prisma.characterSheet.update.mockResolvedValue(linkedSheet)
 
@@ -1022,7 +1030,7 @@ describe('CharacterSheetService', () => {
     beforeEach(() => {
       jest.clearAllMocks()
       prisma.adventure.findUnique.mockResolvedValue(mockAdventure)
-      mockMembershipService.isMember.mockResolvedValue(true)
+      mockMembershipService.requireWriteAccess.mockResolvedValue({ role: 'PLAYER' })
       mockRedisService.del.mockResolvedValue(undefined)
       prisma.characterSheet.create.mockResolvedValue(mockCreatedSheet)
     })
@@ -1308,7 +1316,19 @@ describe('CharacterSheetService', () => {
     })
 
     it('throws ForbiddenException when user is not a campaign member', async () => {
-      mockMembershipService.isMember.mockResolvedValue(false)
+      mockMembershipService.requireWriteAccess.mockRejectedValue(new ForbiddenException('not member'))
+
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId,
+        }),
+      ).rejects.toThrow(ForbiddenException)
+      expect(mockMembershipService.requireWriteAccess).toHaveBeenCalledWith(adventureId, userId)
+    })
+
+    it('throws ForbiddenException when the campaign is read-only (GM subscription lapsed)', async () => {
+      mockMembershipService.requireWriteAccess.mockRejectedValue(new ForbiddenException('campaign read-only'))
 
       await expect(
         service.createFromCampaignSnapshot(userId, {

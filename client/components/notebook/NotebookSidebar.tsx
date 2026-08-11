@@ -45,6 +45,8 @@ interface NotebookSidebarProps {
   readonly onClose?: () => void
   /** Hide floating toggle button (adventure page already has tab) */
   readonly hideToggle?: boolean
+  /** Disable all edits (campaign read-only) */
+  readonly readOnly?: boolean
 }
 
 interface ContextMenuState {
@@ -130,6 +132,7 @@ export function NotebookSidebar({
   forceOpen = false,
   onClose,
   hideToggle = false,
+  readOnly = false,
 }: NotebookSidebarProps) {
   const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
@@ -826,8 +829,10 @@ export function NotebookSidebar({
                 {t('notebook:emptyNotebookHint')}
               </p>
               <button
-                onClick={() => handleCreatePage()}
-                className="btn-primary !py-1.5 !px-3 !text-xs"
+                onClick={readOnly ? undefined : () => handleCreatePage()}
+                disabled={readOnly}
+                className={`btn-primary !py-1.5 !px-3 !text-xs ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
+                title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
               >
                 {t('notebook:createFirstPage')}
               </button>
@@ -895,8 +900,9 @@ export function NotebookSidebar({
                               setSearchQuery('')
                             }}
                             onDelete={handleDeletePage}
-                            onContextMenu={handlePageContextMenu}
+                            onContextMenu={readOnly ? undefined : handlePageContextMenu}
                             onDragStart={handlePageDragStart}
+                            readOnly={readOnly}
                           />
                         )
                       })
@@ -926,6 +932,7 @@ export function NotebookSidebar({
                         onCreatePage={handleCreatePage}
                         onPageContextMenu={handlePageContextMenu}
                         onDropOnFolder={handleDropOnFolder}
+                        readOnly={readOnly}
                       />
                     ))}
                 </div>
@@ -961,8 +968,9 @@ export function NotebookSidebar({
                               isActive={activePageId === page.id}
                               onClick={setActivePageId}
                               onDelete={handleDeletePage}
-                              onContextMenu={handlePageContextMenu}
+                              onContextMenu={readOnly ? undefined : handlePageContextMenu}
                               onDragStart={handlePageDragStart}
+                              readOnly={readOnly}
                             />
                           ))}
                       </div>
@@ -983,9 +991,14 @@ export function NotebookSidebar({
                 <div className="flex items-center gap-2 pt-1">
                   <button
                     type="button"
-                    onClick={() => handleCreatePage()}
-                    disabled={creatingPage}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md text-accent hover:bg-accent/10 transition-colors disabled:opacity-50"
+                    onClick={readOnly ? undefined : () => handleCreatePage()}
+                    disabled={creatingPage || readOnly}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-colors disabled:opacity-50 ${
+                      readOnly
+                        ? 'text-muted-foreground cursor-not-allowed'
+                        : 'text-accent hover:bg-accent/10'
+                    }`}
+                    title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -994,9 +1007,14 @@ export function NotebookSidebar({
                   </button>
                   <button
                     type="button"
-                    onClick={handleCreateFolder}
-                    disabled={creatingFolder}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md text-accent hover:bg-accent/10 transition-colors disabled:opacity-50"
+                    onClick={readOnly ? undefined : handleCreateFolder}
+                    disabled={creatingFolder || readOnly}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-colors disabled:opacity-50 ${
+                      readOnly
+                        ? 'text-muted-foreground cursor-not-allowed'
+                        : 'text-accent hover:bg-accent/10'
+                    }`}
+                    title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6m-3-3v6m-5 4h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -1065,12 +1083,15 @@ export function NotebookSidebar({
                   ) : (
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={readOnly ? undefined : () => {
                         setTitleValue(activePage?.title ?? '')
                         setEditingTitle(true)
                       }}
-                      className="text-sm font-medium text-foreground truncate max-w-full text-left hover:text-accent transition-colors"
-                      title={t('notebook:clickToRename')}
+                      disabled={readOnly}
+                      className={`text-sm font-medium text-foreground truncate max-w-full text-left transition-colors ${
+                        readOnly ? 'cursor-default' : 'hover:text-accent'
+                      }`}
+                      title={readOnly ? t('campaign:readOnlyTooltip') : t('notebook:clickToRename')}
                     >
                       {activePage?.title || t('notebook:untitled')}
                     </button>
@@ -1097,14 +1118,19 @@ export function NotebookSidebar({
                   {/* Delete page */}
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={readOnly ? undefined : () => {
                       if (window.confirm(t('notebook:deletePageConfirm'))) {
                         handleDeletePage(activePage.id)
                       }
                     }}
-                    className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    disabled={readOnly}
+                    className={`p-1 rounded-md text-muted-foreground transition-colors ${
+                      readOnly
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:text-destructive hover:bg-destructive/10'
+                    }`}
                     aria-label={t('notebook:deletePage')}
-                    title={t('notebook:deletePage')}
+                    title={readOnly ? t('campaign:readOnlyTooltip') : t('notebook:deletePage')}
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1119,6 +1145,7 @@ export function NotebookSidebar({
                   content={activePage?.content ?? ''}
                   onChange={handleContentChange}
                   placeholder={t('notebook:startWriting')}
+                  editable={!readOnly}
                 />
               </div>
             </div>
@@ -1288,8 +1315,14 @@ export function NotebookSidebar({
               </button>
               <button
                 type="button"
-                onClick={handleConfirmDeleteFolder}
-                className="px-3 py-1.5 text-xs rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                onClick={readOnly ? undefined : handleConfirmDeleteFolder}
+                disabled={readOnly}
+                className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+                  readOnly
+                    ? 'bg-destructive/50 text-destructive-foreground cursor-not-allowed'
+                    : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                }`}
+                title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
               >
                 {t('notebook:deleteFolder')}
               </button>

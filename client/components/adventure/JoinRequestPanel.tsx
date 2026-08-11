@@ -18,6 +18,7 @@ interface JoinRequest {
 interface JoinRequestPanelProps {
   readonly requests: JoinRequest[]
   readonly loading: boolean
+  readonly disabled?: boolean
   readonly onAccept: (requestId: string) => void
   readonly onReject: (requestId: string) => void
   readonly processingIds: string[]
@@ -26,6 +27,7 @@ interface JoinRequestPanelProps {
 export function JoinRequestPanel({
   requests,
   loading,
+  disabled,
   onAccept,
   onReject,
   processingIds,
@@ -104,10 +106,11 @@ export function JoinRequestPanel({
               {/* Action buttons */}
               <div className="flex gap-2 pl-10">
                 <button
-                  onClick={() => onAccept(req.id)}
-                  disabled={isProcessing}
+                  onClick={disabled ? undefined : () => onAccept(req.id)}
+                  disabled={isProcessing || disabled}
+                  title={disabled ? t('campaign:readOnlyTooltip') : undefined}
                   className={`btn-primary text-xs px-3 py-1 ${
-                    isProcessing ? '!opacity-50 !cursor-not-allowed' : ''
+                    isProcessing || disabled ? '!opacity-50 !cursor-not-allowed' : ''
                   }`}
                 >
                   {isProcessing ? (
@@ -120,9 +123,10 @@ export function JoinRequestPanel({
                   )}
                 </button>
                 <button
-                  onClick={() => onReject(req.id)}
-                  disabled={isProcessing}
-                  className="btn-ghost text-xs px-3 py-1"
+                  onClick={disabled ? undefined : () => onReject(req.id)}
+                  disabled={isProcessing || disabled}
+                  title={disabled ? t('campaign:readOnlyTooltip') : undefined}
+                  className={`btn-ghost text-xs px-3 py-1 ${disabled ? '!opacity-50 !cursor-not-allowed' : ''}`}
                 >
                   {t('campaign:reject')}
                 </button>

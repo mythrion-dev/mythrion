@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import TemplateDetailPage from '@/app/dashboard/templates/[id]/page'
 import { api } from '@/lib/api'
 import type { BreadcrumbSegment } from '@/lib/navigation-context'
@@ -7,6 +7,12 @@ import type { BreadcrumbSegment } from '@/lib/navigation-context'
 /* ── Mock api module ── */
 vi.mock('@/lib/api', () => ({
   api: { get: vi.fn(), patch: vi.fn(), delete: vi.fn(), post: vi.fn() },
+}))
+
+/* ── Mock subscription context (page gates Edit/Clone on hasActiveSubscription) ── */
+let mockHasActiveSubscription = true
+vi.mock('@/lib/subscription-context', () => ({
+  useSubscription: () => ({ hasActiveSubscription: mockHasActiveSubscription }),
 }))
 
 /* ── Mock navigation context (used by PageNav) ── */
@@ -114,6 +120,7 @@ describe('TemplateDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockBreadcrumbs = []
+    mockHasActiveSubscription = true
   })
 
   /* ── Loading state ── */
@@ -283,5 +290,68 @@ describe('TemplateDetailPage', () => {
     render(<TemplateDetailPage />)
     await screen.findByText('Fighter Sheet')
     expect(screen.getByText('Public')).toBeInTheDocument()
+  })
+
+  /* ── Read-only gating (campaign-attached templates) ──
+   * Page fetches /templates/:id then /adventures/:adventureId/access. The
+   * access call only fires when template.adventureId is set. */
+
+  const READ_ONLY_TOOLTIP =
+    'This campaign is read-only. The Game Master needs to renew their subscription to restore full access.'
+
+  function renderCampaignTemplate(accessState: 'ACTIVE' | 'READ_ONLY') {
+    ;(api.get as any)
+      .mockResolvedValueOnce({ ...mockTemplate, adventureId: 'adv-1' })
+      .mockResolvedValueOnce({ accessState })
+    render(<TemplateDetailPage />)
+  }
+
+  it('disables Edit/Delete and shows the banner for a READ_ONLY campaign template', async () => {
+    renderCampaignTemplate('READ_ONLY')
+    await screen.findByText('Fighter Sheet')
+
+    const banner = await screen.findByRole('status')
+    expect(banner).toHaveTextContent('Read-only')
+    expect(banner).toHaveTextContent(
+      "This campaign is read-only because the Game Master's subscription has ended. Renew the subscription to restore full access.",
+    )
+
+    const editBtn = screen.getByRole('button', { name: 'Edit' })
+    expect(editBtn).toBeDisabled()
+    expect(editBtn).toHaveAttribute('title', READ_ONLY_TOOLTIP)
+
+    const deleteBtn = screen.getByRole('button', { name: 'Delete' })
+    expect(deleteBtn).toBeDisabled()
+    expect(deleteBtn).toHaveAttribute('title', READ_ONLY_TOOLTIP)
+
+    // Clone is gated on the user's own subscription, not campaign read-only.
+    expect(screen.getByRole('button', { name: 'Clone' })).toBeEnabled()
+  })
+
+  it('keeps Edit/Clone/Delete enabled and shows no banner for an ACTIVE campaign template', async () => {
+    renderCampaignTemplate('ACTIVE')
+    await screen.findByText('Fighter Sheet')
+    // Wait until the access call resolves so the absence check is deterministic.
+    await waitFor(() => expect((api.get as any).mock.calls).toHaveLength(2))
+
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Clone' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('gates Edit/Clone on the user subscription for standalone templates', async () => {
+    mockHasActiveSubscription = false
+    ;(api.get as any).mockResolvedValue(mockTemplate)
+    render(<TemplateDetailPage />)
+    await screen.findByText('Fighter Sheet')
+
+    const editBtn = screen.getByRole('button', { name: 'Edit' })
+    expect(editBtn).toBeDisabled()
+    expect(editBtn).toHaveAttribute('title', 'Upgrade to Create')
+
+    expect(screen.getByRole('button', { name: 'Clone' })).toBeDisabled()
+    // Delete is not subscription-gated for standalone templates.
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled()
   })
 })

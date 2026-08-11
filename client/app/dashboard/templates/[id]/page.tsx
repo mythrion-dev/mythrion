@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, type SubmitEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useTranslation, Trans } from 'react-i18next'
 import { api } from '@/lib/api'
+import { useSubscription } from '@/lib/subscription-context'
 import { PageNav } from '@/lib/breadcrumb'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -45,6 +46,8 @@ interface StandaloneTemplate {
   name: string
   description: string | null
   campaign: string | null
+  adventureId: string | null
+  ownerId: string | null
   attributeModifierFormula: string | null
   skillFormula: string | null
   isPublic: boolean
@@ -164,10 +167,12 @@ export default function TemplateDetailPage() {
   const { t, i18n } = useTranslation()
   const params = useParams()
   const id = params.id as string
+  const { hasActiveSubscription } = useSubscription()
 
   const [template, setTemplate] = useState<StandaloneTemplate | null>(null)
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [accessState, setAccessState] = useState<'ACTIVE' | 'READ_ONLY' | null>(null)
 
   // Edit state
   const [editing, setEditing] = useState(false)
@@ -222,6 +227,22 @@ export default function TemplateDetailPage() {
   useEffect(() => {
     fetchTemplate()
   }, [fetchTemplate])
+
+  // Campaign-attached templates are read-only while the campaign owner's
+  // subscription is not active. Fetch the access state server-side; a failure
+  // keeps accessState null (buttons stay enabled) — the backend still enforces
+  // the 403 on write.
+  const fetchAccessState = useCallback(async (adventureId: string | null) => {
+    if (!adventureId) { setAccessState(null); return }
+    try {
+      const res = await api.get<{ accessState: 'ACTIVE' | 'READ_ONLY' }>(`/adventures/${adventureId}/access`)
+      setAccessState(res.accessState)
+    } catch { setAccessState(null) }
+  }, [])
+
+  useEffect(() => {
+    fetchAccessState(template?.adventureId ?? null)
+  }, [fetchAccessState, template?.adventureId])
 
   // ── Edit handlers ──
 
@@ -729,6 +750,18 @@ export default function TemplateDetailPage() {
   const sectionCount = (template as any).characterSections?.length ?? 0
   const resistCount = template.resistances?.length ?? 0
 
+  // Read-only applies only to campaign-attached templates (derived from the
+  // campaign owner's entitlement). Standalone templates are the user's own
+  // data; their edit/clone controls are gated on the user's subscription.
+  const isCampaignTemplate = Boolean(template.adventureId)
+  const readOnly = isCampaignTemplate && accessState === 'READ_ONLY'
+  const noSubscription = !hasActiveSubscription
+  const editDisabled = isCampaignTemplate ? readOnly : noSubscription
+  const deleteDisabled = isCampaignTemplate && readOnly
+  const cloneDisabled = noSubscription
+  const readOnlyTooltip = t('campaign:readOnlyTooltip')
+  const upgradeTooltip = t('templates:upgradeToCreate')
+
   return (
     <>
       <PageNav crumbs={[
@@ -748,7 +781,9 @@ export default function TemplateDetailPage() {
           </div>
           <div className="flex gap-2 shrink-0">
             <button
-              onClick={startEditing}
+              onClick={editDisabled ? undefined : startEditing}
+              disabled={editDisabled}
+              title={editDisabled ? (isCampaignTemplate ? readOnlyTooltip : upgradeTooltip) : undefined}
               className="btn-primary text-sm"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -757,8 +792,9 @@ export default function TemplateDetailPage() {
               {t('common:edit')}
             </button>
             <button
-              onClick={handleClone}
-              disabled={cloning}
+              onClick={cloneDisabled ? undefined : handleClone}
+              disabled={cloning || cloneDisabled}
+              title={cloneDisabled ? upgradeTooltip : undefined}
               className="btn-ghost text-sm"
             >
               {cloning ? (
@@ -771,7 +807,9 @@ export default function TemplateDetailPage() {
               {t('templates:clone')}
             </button>
             <button
-              onClick={() => setConfirmDelete(true)}
+              onClick={deleteDisabled ? undefined : () => setConfirmDelete(true)}
+              disabled={deleteDisabled}
+              title={deleteDisabled ? readOnlyTooltip : undefined}
               className="btn-danger text-sm"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -792,6 +830,18 @@ export default function TemplateDetailPage() {
           <span className="badge text-xs ml-2" style={{ background: 'rgba(68,207,138,0.12)', color: '#44cf8a', border: '1px solid rgba(68,207,138,0.18)' }}>
             {t('common:public')}
           </span>
+        )}
+
+        {readOnly && (
+          <div role="status" className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-300">{t('campaign:readOnlyBadge')}</p>
+                <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">{t('campaign:readOnlyBanner')}</p>
+              </div>
+            </div>
+          </div>
         )}
 
         {cloneError && (

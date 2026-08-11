@@ -29,6 +29,8 @@ interface NotebookFolderProps {
   readonly onDropOnFolder?: (folderId: string, pageId: string) => void
   /** Called when right-click on a page inside this folder */
   readonly onPageContextMenu?: (pageId: string, e: React.MouseEvent) => void
+  /** Disable edits/drag/drop (campaign read-only) */
+  readonly readOnly?: boolean
 }
 
 export function NotebookFolder({
@@ -46,6 +48,7 @@ export function NotebookFolder({
   onCreatePage,
   onDropOnFolder,
   onPageContextMenu,
+  readOnly = false,
 }: Readonly<NotebookFolderProps>) {
   const { t } = useTranslation()
   const [isRenaming, setIsRenaming] = useState(false)
@@ -121,9 +124,9 @@ export function NotebookFolder({
       className={`mb-1 rounded-md transition-colors ${
         isDragOver ? 'bg-accent/5 ring-1 ring-accent/30' : ''
       }`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      onDragOver={readOnly ? undefined : handleDragOver}
+      onDragLeave={readOnly ? undefined : handleDragLeave}
+      onDrop={readOnly ? undefined : handleDrop}
     >
       {/* Folder header */}
       <button
@@ -180,7 +183,7 @@ export function NotebookFolder({
         <span className="text-xs text-muted-foreground mr-1">{pages.length}</span>
 
         {/* Action menu (visible on hover) */}
-        {!isRenaming && (
+        {!isRenaming && !readOnly && (
           <div className="relative" data-folder-menu>
             <button
               type="button"
@@ -267,16 +270,18 @@ export function NotebookFolder({
           {pages.length === 0 ? (
             <div className="px-3 py-2">
               <p className="text-xs text-muted-foreground mb-1.5 italic">{t('notebook:noPagesYet')}</p>
-              <button
-                type="button"
-                onClick={() => onCreatePage?.(id)}
-                className="flex items-center gap-1 text-xs text-accent hover:text-accent/80 transition-colors"
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-                {t('notebook:createPage')}
-              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => onCreatePage?.(id)}
+                  className="flex items-center gap-1 text-xs text-accent hover:text-accent/80 transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  {t('notebook:createPage')}
+                </button>
+              )}
             </div>
           ) : (
             pages.map((page) => (
@@ -290,6 +295,7 @@ export function NotebookFolder({
                 onDelete={onDeletePage}
                 onContextMenu={onPageContextMenu}
                 onDragStart={() => {}}
+                readOnly={readOnly}
               />
             ))
           )}

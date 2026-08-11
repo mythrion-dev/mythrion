@@ -437,6 +437,17 @@ describe('TemplateService', () => {
       expect(result).toEqual(updated)
     })
 
+    it('blocks update on an adventure-scoped template when the campaign is read-only, even for the template owner', async () => {
+      const existing = mockTemplateWithInclude({ ownerId: userId, adventureId: 'adv-1' })
+      prisma.template.findUnique.mockResolvedValue(existing)
+      // Campaign read-only → requireWriteRole rejects via assertCampaignWritable
+      mockMembershipService.requireWriteRole.mockRejectedValue(new ForbiddenException('This campaign is read-only'))
+
+      await expect(service.update(id, userId, { name: 'Nope' })).rejects.toThrow(ForbiddenException)
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('adv-1', userId, 'GM')
+      expect(prisma.template.update).not.toHaveBeenCalled()
+    })
+
     it('creates new attributes, updates existing, deletes removed, and upserts sheet values', async () => {
       const existing = mockTemplateWithInclude()
       prisma.template.findUnique.mockResolvedValue(existing)
@@ -1147,6 +1158,17 @@ describe('TemplateService', () => {
 
       await expect(service.remove(id, userId)).rejects.toThrow(NotFoundException)
       await expect(service.remove(id, userId)).rejects.toThrow('Template not found')
+      expect(prisma.template.delete).not.toHaveBeenCalled()
+    })
+
+    it('blocks deletion on an adventure-scoped template when the campaign is read-only, even for the template owner', async () => {
+      const existing = mockTemplateWithInclude({ ownerId: userId, adventureId: 'adv-1' })
+      prisma.template.findUnique.mockResolvedValue(existing)
+      // Campaign read-only → requireWriteRole rejects via assertCampaignWritable
+      mockMembershipService.requireWriteRole.mockRejectedValue(new ForbiddenException('This campaign is read-only'))
+
+      await expect(service.remove(id, userId)).rejects.toThrow(ForbiddenException)
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('adv-1', userId, 'GM')
       expect(prisma.template.delete).not.toHaveBeenCalled()
     })
   })

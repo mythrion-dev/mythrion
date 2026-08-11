@@ -20,6 +20,7 @@ export function CharactersSection({
   userSheets,
   showNewCharForm,
   showLinkCharForm,
+  readOnly,
   newCharName,
   newCharError,
   newCharCreating,
@@ -39,6 +40,7 @@ export function CharactersSection({
 }: {
   readonly characters: CampaignCharacter[]
   readonly isGM: boolean
+  readonly readOnly?: boolean
   readonly userId: string
   readonly snapshotName: string | null
   readonly userSheets: UserSheet[]
@@ -93,8 +95,10 @@ export function CharactersSection({
                 </button>
                 {isGM && (c.owner?.id ?? '') !== userId && (
                   <button
-                    onClick={() => onRemoveCharacter(c.id)}
-                    className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors"
+                    onClick={readOnly ? undefined : () => onRemoveCharacter(c.id)}
+                    disabled={readOnly}
+                    title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
+                    className={`text-xs text-danger px-2 py-1 transition-colors ${readOnly ? 'opacity-50 cursor-not-allowed' : 'hover:text-danger/80'}`}
                   >
                     {t('common:remove')}
                   </button>
@@ -108,17 +112,27 @@ export function CharactersSection({
       {/* Action buttons */}
       {!showNewCharForm && !showLinkCharForm && (
         <div className="flex gap-2">
-          <button onClick={onNewCharClick} className="btn-primary text-sm">
+          <button
+            onClick={readOnly ? undefined : onNewCharClick}
+            disabled={readOnly}
+            title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
+            className={`btn-primary text-sm ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
+          >
             {t('campaign:newCharacter')}
           </button>
-          <button onClick={onLinkCharClick} className="btn-ghost text-sm">
+          <button
+            onClick={readOnly ? undefined : onLinkCharClick}
+            disabled={readOnly}
+            title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
+            className={`btn-ghost text-sm ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
+          >
             {t('campaign:linkExistingCharacter')}
           </button>
         </div>
       )}
 
       {/* Create new character form */}
-      {showNewCharForm && (
+      {showNewCharForm && !readOnly && (
         <form
           onSubmit={onCreateCharacter}
           className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3"
@@ -181,7 +195,7 @@ export function CharactersSection({
       )}
 
       {/* Link existing character form */}
-      {showLinkCharForm && (
+      {showLinkCharForm && !readOnly && (
         <form
           onSubmit={onLinkCharacter}
           className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3"

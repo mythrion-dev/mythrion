@@ -173,6 +173,48 @@ describe('StandaloneTemplateController', () => {
   })
 
   // ──────────────────────────────────────────────
+  //  Subscription gating (POST/PATCH/clone require an active subscription)
+  // ──────────────────────────────────────────────
+
+  describe('subscription gating', () => {
+    it('applies SubscriptionGuard to create (POST /templates)', () => {
+      const guards = Reflect.getMetadata(
+        '__guards__',
+        StandaloneTemplateController.prototype.create,
+      )
+      expect(guards).toContain(SubscriptionGuard)
+    })
+
+    it('applies SubscriptionGuard to update (PATCH /templates/:id)', () => {
+      const guards = Reflect.getMetadata(
+        '__guards__',
+        StandaloneTemplateController.prototype.update,
+      )
+      expect(guards).toContain(SubscriptionGuard)
+    })
+
+    it('applies SubscriptionGuard to clone (POST /templates/:id/clone)', () => {
+      const guards = Reflect.getMetadata(
+        '__guards__',
+        StandaloneTemplateController.prototype.clone,
+      )
+      expect(guards).toContain(SubscriptionGuard)
+    })
+
+    it.each([
+      ['findAll', 'findAll'],
+      ['findOne', 'findOne'],
+      ['remove', 'remove'],
+    ])('does not gate %s with SubscriptionGuard', (_label, method) => {
+      const guards = Reflect.getMetadata(
+        '__guards__',
+        StandaloneTemplateController.prototype[method as keyof StandaloneTemplateController],
+      )
+      expect(guards).toBeUndefined()
+    })
+  })
+
+  // ──────────────────────────────────────────────
   //  POST /templates/:id/clone — clone
   // ──────────────────────────────────────────────
 

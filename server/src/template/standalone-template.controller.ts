@@ -62,9 +62,11 @@ export class StandaloneTemplateController {
 
   /**
    * PATCH /templates/:id — Update a template
-   * Auth: owner or GM of associated adventure
+   * Auth: owner or GM of associated adventure; requires an active subscription
+   * (editing templates is a gated operation, matching creation).
    */
   @Patch(':id')
+  @UseGuards(SubscriptionGuard)
   update(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
@@ -92,6 +94,7 @@ export class StandaloneTemplateController {
    * Fixes existing frontend bug: frontend calls this endpoint but no route existed.
    */
   @Post(':id/clone')
+  @UseGuards(SubscriptionGuard)
   clone(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,

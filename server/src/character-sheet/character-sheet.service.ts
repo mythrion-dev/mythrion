@@ -217,8 +217,7 @@ export class CharacterSheetService {
       : template.adventureId
 
     if (adventureId) {
-      const isMember = await this.membership.isMember(adventureId, userId)
-      if (!isMember) throw new ForbiddenException(this.i18n.t('character-sheet.notMemberAdventure'))
+      await this.membership.requireWriteAccess(adventureId, userId)
     }
 
     const skillProfileValues = this.buildSkillProfileValues(
@@ -362,9 +361,8 @@ export class CharacterSheetService {
       templateId = campaignTemplate.id
     }
 
-    // 3. Validate membership
-    const isMember = await this.membership.isMember(dto.adventureId, userId)
-    if (!isMember) throw new ForbiddenException(this.i18n.t('character-sheet.notMemberCampaign'))
+    // 3. Validate membership + campaign writability
+    await this.membership.requireWriteAccess(dto.adventureId, userId)
 
     // 5. Build skill profile values from snapshot data
     const skillProfileValues = this.buildSkillProfileValues(
@@ -750,8 +748,7 @@ export class CharacterSheetService {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
     if (sheet.ownerId !== userId) throw new ForbiddenException(this.i18n.t('character-sheet.ownerOnlyLink'))
-    const isMember = await this.membership.isMember(adventureId, userId)
-    if (!isMember) throw new ForbiddenException(this.i18n.t('character-sheet.notMemberAdventure'))
+    await this.membership.requireWriteAccess(adventureId, userId)
     const linked = await this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId }, include: sheetInclude })
 
     // Invalidate cache — both old adventure (none) and new adventure lists, plus sheet + user

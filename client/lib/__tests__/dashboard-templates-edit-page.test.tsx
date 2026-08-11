@@ -31,6 +31,11 @@ vi.mock('@/lib/api', () => ({
   api: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() },
 }))
 
+// ── Subscription context (page gates Edit/Clone on hasActiveSubscription) ────
+vi.mock('@/lib/subscription-context', () => ({
+  useSubscription: () => ({ hasActiveSubscription: true }),
+}))
+
 // ── Navigation context (used by PageNav) ───────────────────────────────────
 vi.mock('@/lib/navigation-context', () => ({
   useNavigation: () => ({
