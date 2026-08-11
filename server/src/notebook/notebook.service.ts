@@ -145,6 +145,7 @@ export class NotebookService {
     userId: string,
     dto: CreateFolderDto,
   ): Promise<NotebookWithRelations['folders'][number]> {
+    await this.membership.requireWriteAccess(adventureId, userId)
     const notebook = await this.getOrCreateNotebook(adventureId, userId)
 
     // Determine next sort order
@@ -176,6 +177,7 @@ export class NotebookService {
     folderId: string,
     dto: UpdateFolderDto,
   ): Promise<NotebookWithRelations['folders'][number]> {
+    await this.membership.requireWriteAccess(adventureId, userId)
     await this.getOrCreateNotebook(adventureId, userId)
 
     const folder = await this.prisma.notebookFolder.findUnique({
@@ -209,6 +211,7 @@ export class NotebookService {
     userId: string,
     folderId: string,
   ): Promise<void> {
+    await this.membership.requireWriteAccess(adventureId, userId)
     await this.getOrCreateNotebook(adventureId, userId)
 
     const folder = await this.prisma.notebookFolder.findUnique({
@@ -238,6 +241,7 @@ export class NotebookService {
     userId: string,
     dto: CreatePageDto,
   ): Promise<NotebookWithRelations['pages'][number]> {
+    await this.membership.requireWriteAccess(adventureId, userId)
     const notebook = await this.getOrCreateNotebook(adventureId, userId)
 
     // Determine next sort order
@@ -274,6 +278,7 @@ export class NotebookService {
     pageId: string,
     dto: UpdatePageDto,
   ): Promise<NotebookWithRelations['pages'][number]> {
+    await this.membership.requireWriteAccess(adventureId, userId)
     await this.getOrCreateNotebook(adventureId, userId)
 
     const page = await this.prisma.notebookPage.findUnique({
@@ -312,6 +317,7 @@ export class NotebookService {
     userId: string,
     pageId: string,
   ): Promise<void> {
+    await this.membership.requireWriteAccess(adventureId, userId)
     await this.getOrCreateNotebook(adventureId, userId)
 
     const page = await this.prisma.notebookPage.findUnique({
@@ -339,6 +345,7 @@ export class NotebookService {
       sortOrder: number
     }>,
   ): Promise<void> {
+    await this.membership.requireWriteAccess(adventureId, userId)
     await this.getOrCreateNotebook(adventureId, userId)
 
     for (const item of items) {

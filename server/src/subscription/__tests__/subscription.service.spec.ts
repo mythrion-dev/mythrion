@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common'
 import { SubscriptionService } from '../subscription.service'
 import { PrismaService } from '../../prisma.service'
+import { RedisService } from '../../redis/redis.service'
 import { createMockPrismaService } from '../../__mocks__/prisma-service.mock'
 import { PAYMENT_GATEWAY } from '../payment-gateway.interface'
 import type { PaymentGateway } from '../payment-gateway.interface'
@@ -23,6 +24,13 @@ const mockGateway: jest.Mocked<PaymentGateway> = {
   validateWebhook: jest.fn(),
 }
 
+const mockRedis = {
+  cacheGet: jest.fn().mockResolvedValue(null),
+  cacheSet: jest.fn().mockResolvedValue(undefined),
+  del: jest.fn().mockResolvedValue(undefined),
+  invalidatePattern: jest.fn().mockResolvedValue(undefined),
+}
+
 describe('SubscriptionService', () => {
   let service: SubscriptionService
   let prisma: ReturnType<typeof createMockPrismaService>
@@ -35,6 +43,7 @@ describe('SubscriptionService', () => {
       providers: [
         SubscriptionService,
         { provide: PrismaService, useValue: prisma },
+        { provide: RedisService, useValue: mockRedis },
         { provide: PAYMENT_GATEWAY, useValue: mockGateway },
         { provide: I18nService, useValue: createI18nServiceMock() },
       ],
@@ -686,6 +695,148 @@ describe('SubscriptionService', () => {
 
       expect(result).toBe(false)
     })
+
+    it('returns false for ACTIVE with a past currentPeriodEnd', async () => {
+      const past = new Date(Date.now() - 1000 * 60 * 60 * 24)
+      prisma.userSubscription.findUnique.mockResolvedValue({
+        status: 'ACTIVE',
+        currentPeriodEnd: past,
+        graceEndsAt: null,
+      })
+
+      const result = await service.hasActiveSubscription('user-1')
+
+      expect(result).toBe(false)
+    })
+
+    it('returns true for ACTIVE with a future currentPeriodEnd', async () => {
+      const future = new Date(Date.now() + 1000 * 60 * 60 * 24)
+      prisma.userSubscription.findUnique.mockResolvedValue({
+        status: 'ACTIVE',
+        currentPeriodEnd: future,
+        graceEndsAt: null,
+      })
+
+      const result = await service.hasActiveSubscription('user-1')
+
+      expect(result).toBe(true)
+    })
+
+    it('returns false for GRACE with a past graceEndsAt', async () => {
+      const past = new Date(Date.now() - 1000 * 60 * 60 * 24)
+      prisma.userSubscription.findUnique.mockResolvedValue({
+        status: 'GRACE',
+        currentPeriodEnd: null,
+        graceEndsAt: past,
+      })
+
+      const result = await service.hasActiveSubscription('user-1')
+
+      expect(result).toBe(false)
+    })
+
+    it('returns true for GRACE with a future graceEndsAt', async () => {
+      const future = new Date(Date.now() + 1000 * 60 * 60 * 24)
+      prisma.userSubscription.findUnique.mockResolvedValue({
+        status: 'GRACE',
+        currentPeriodEnd: null,
+        graceEndsAt: future,
+      })
+
+      const result = await service.hasActiveSubscription('user-1')
+
+      expect(result).toBe(true)
+    })
+
+    it('reads from cache when a cached entitlement exists and skips the DB', async () => {
+      mockRedis.cacheGet.mockResolvedValueOnce({
+        status: 'ACTIVE',
+        currentPeriodEnd: new Date(Date.now() + 1000 * 60 * 60),
+        graceEndsAt: null,
+      })
+
+      const result = await service.hasActiveSubscription('user-1')
+
+      expect(result).toBe(true)
+      expect(prisma.userSubscription.findUnique).not.toHaveBeenCalled()
+    })
+
+    it('caches the entitlement data on a cache miss', async () => {
+      const future = new Date(Date.now() + 1000 * 60 * 60)
+      prisma.userSubscription.findUnique.mockResolvedValue({
+        status: 'ACTIVE',
+        currentPeriodEnd: future,
+        graceEndsAt: null,
+      })
+
+      await service.hasActiveSubscription('user-1')
+
+      expect(mockRedis.cacheSet).toHaveBeenCalledWith(
+        'subscription:entitlement:user-1',
+        { status: 'ACTIVE', currentPeriodEnd: future, graceEndsAt: null },
+        60,
+      )
+    })
+
+    it('falls back to the DB when Redis is unavailable (cacheGet returns null)', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue(null)
+
+      const result = await service.hasActiveSubscription('user-1')
+
+      expect(result).toBe(false)
+      expect(prisma.userSubscription.findUnique).toHaveBeenCalled()
+    })
+  })
+
+  describe('entitlement cache invalidation', () => {
+    it('deletes the cached entitlement after cancelSubscription', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue({
+        id: 'sub-1',
+        userId: 'user-1',
+        status: 'ACTIVE',
+        planId: 'plan-1',
+        pgSubscriptionId: 'pg-1',
+        currentPeriodEnd: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      })
+      mockGateway.cancelSubscription.mockResolvedValue(undefined)
+      prisma.userSubscription.update.mockResolvedValue({
+        id: 'sub-1',
+        userId: 'user-1',
+        status: 'CANCELLED',
+      })
+
+      await service.cancelSubscription('user-1')
+
+      expect(mockRedis.del).toHaveBeenCalledWith('subscription:entitlement:user-1')
+    })
+
+    it('deletes the cached entitlement after createSubscription', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue(null)
+      prisma.subscriptionPlan.findUnique.mockResolvedValue({
+        id: 'plan-1',
+        pgPlanId: 'pg-plan-123',
+        slug: 'monthly',
+        name: 'Monthly Plan',
+        price: 12000,
+      })
+      mockGateway.createSubscription.mockResolvedValue({
+        id: 'SUB-1',
+        initPoint: '',
+        status: 'PENDING',
+      })
+      prisma.userSubscription.upsert.mockResolvedValue({
+        id: 'sub-1',
+        userId: 'user-1',
+      })
+
+      await service.createSubscription({
+        userId: 'user-1',
+        planId: 'plan-1',
+        email: 'user@example.com',
+      })
+
+      expect(mockRedis.del).toHaveBeenCalledWith('subscription:entitlement:user-1')
+    })
   })
 
   // ─── processWebhook ─────────────────────────────────────────────────
@@ -965,7 +1116,7 @@ describe('SubscriptionService', () => {
         expect(mockGateway.getPaymentCharge).toHaveBeenCalledWith('CHARGE-1')
         expect(prisma.userSubscription.findUnique).toHaveBeenCalledWith({
           where: { pgSubscriptionId: 'SUB-1' },
-          select: { id: true, status: true, planId: true },
+          select: { id: true, status: true, planId: true, userId: true },
         })
         // Reactivates from GRACE
         expect(prisma.userSubscription.update).toHaveBeenCalledWith(

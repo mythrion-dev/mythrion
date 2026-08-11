@@ -127,7 +127,7 @@ export class BookService implements OnModuleInit {
     file: { buffer: Buffer; originalname: string; mimetype: string },
     dto: CreateBookDto,
   ): Promise<BookListItem> {
-    await this.membership.requireRole(adventureId, userId, MemberRole.GM)
+    await this.membership.requireWriteRole(adventureId, userId, MemberRole.GM)
 
     // Create the Prisma record first (to get an ID for GridFS metadata)
     const book = await this.prisma.book.create({
@@ -277,7 +277,7 @@ export class BookService implements OnModuleInit {
     userId: string,
     dto: UpdateBookDto,
   ): Promise<BookListItem> {
-    await this.membership.requireRole(adventureId, userId, MemberRole.GM)
+    await this.membership.requireWriteRole(adventureId, userId, MemberRole.GM)
 
     const book = await this.prisma.book.findUnique({ where: { id: bookId } })
     if (book?.adventureId !== adventureId) {
@@ -313,7 +313,7 @@ export class BookService implements OnModuleInit {
     userId: string,
     file: { buffer: Buffer; originalname: string; mimetype: string },
   ): Promise<BookListItem> {
-    await this.membership.requireRole(adventureId, userId, MemberRole.GM)
+    await this.membership.requireWriteRole(adventureId, userId, MemberRole.GM)
 
     const book = await this.prisma.book.findUnique({ where: { id: bookId } })
     if (book?.adventureId !== adventureId) {
@@ -355,7 +355,7 @@ export class BookService implements OnModuleInit {
    * Delete a book and its GridFS file. GM only.
    */
   async delete(adventureId: string, bookId: string, userId: string): Promise<void> {
-    await this.membership.requireRole(adventureId, userId, MemberRole.GM)
+    await this.membership.requireWriteRole(adventureId, userId, MemberRole.GM)
 
     const book = await this.prisma.book.findUnique({ where: { id: bookId } })
     if (book?.adventureId !== adventureId) {

@@ -23,6 +23,7 @@ import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 
 const mockMembershipService = {
   requireRole: jest.fn(),
+  requireWriteRole: jest.fn(),
   createMembership: jest.fn().mockResolvedValue({}),
   isMember: jest.fn(),
   getUserAdventures: jest.fn().mockResolvedValue([]),
@@ -63,6 +64,7 @@ describe('AdventureService', () => {
     jest.clearAllMocks()
 
     mockMembershipService.requireRole.mockResolvedValue({ role: 'GM' })
+    mockMembershipService.requireWriteRole.mockResolvedValue({ role: 'GM' })
     mockMembershipService.isMember.mockReturnValue(true)
 
     const module = await Test.createTestingModule({
@@ -185,7 +187,7 @@ describe('AdventureService', () => {
 
       const result = await service.update('a1', 'u1', dto)
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
       expect(prisma.adventure.update).toHaveBeenCalledWith({
         where: { id: 'a1' },
         data: {
@@ -203,7 +205,7 @@ describe('AdventureService', () => {
 
       const result = await service.update('a1', 'u1', dto)
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
       expect(prisma.adventure.update).toHaveBeenCalledWith({
         where: { id: 'a1' },
         data: {
@@ -239,7 +241,7 @@ describe('AdventureService', () => {
 
       const result = await service.remove('a1', 'u1')
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
       expect(prisma.adventure.delete).toHaveBeenCalledWith({ where: { id: 'a1' } })
       expect(result).toEqual(deleted)
     })
@@ -256,7 +258,7 @@ describe('AdventureService', () => {
 
       const result = await service.updateVisibility('a1', 'u1', true)
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
       expect(prisma.adventure.update).toHaveBeenCalledWith({
         where: { id: 'a1' },
         data: { isPublic: true },
@@ -764,7 +766,7 @@ describe('AdventureService', () => {
 
         const result = await service.createNpc('a1', 'u1', { name: 'Goblin King', type: 'NPC' })
 
-        expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
+        expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
         expect(mockCharacterSheetService.create).toHaveBeenCalled()
         expect(prisma.characterSheetCoreResourceValue.update).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -933,7 +935,7 @@ describe('AdventureService', () => {
 
         await service.updateNpc('a1', 'n1', 'u1', { name: 'Updated Goblin' })
 
-        expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
+        expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
         expect(mockCharacterSheetService.update).toHaveBeenCalledWith(
           'n1',
           'u1',
@@ -964,7 +966,7 @@ describe('AdventureService', () => {
 
         await service.deleteNpc('a1', 'n1', 'u1')
 
-        expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
+        expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
         expect(mockCharacterSheetService.remove).toHaveBeenCalledWith('n1', 'u1')
       })
 

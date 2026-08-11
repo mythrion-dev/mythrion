@@ -15,5 +15,6 @@
   "maxPlayerCapacity": "A campanha atingiu a capacidade máxima de jogadores",
   "notMember": "Você não é membro desta campanha",
   "gmOnly": "Apenas o Mestre do Jogo pode realizar esta ação",
-  "cannotPromoteToGm": "Não é possível promover um membro a Mestre do Jogo. Uma campanha só pode ter um Mestre."
+  "cannotPromoteToGm": "Não é possível promover um membro a Mestre do Jogo. Uma campanha só pode ter um Mestre.",
+  "campaignReadOnly": "Esta campanha está somente leitura porque a assinatura do Mestre do Jogo foi encerrada. Renove a assinatura para restaurar o acesso completo."
 }

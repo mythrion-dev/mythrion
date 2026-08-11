@@ -72,7 +72,7 @@ export class JoinRequestService {
    * GM only. Checks capacity before accepting.
    */
   async accept(adventureId: string, requestId: string, userId: string) {
-    await this.membership.requireRole(adventureId, userId, 'GM')
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
 
     const request = await this.prisma.joinRequest.findUnique({ where: { id: requestId } })
     if (!request) throw new NotFoundException(this.i18n.t('community.joinRequestNotFound'))
@@ -102,7 +102,7 @@ export class JoinRequestService {
    * GM only.
    */
   async reject(adventureId: string, requestId: string, userId: string) {
-    await this.membership.requireRole(adventureId, userId, 'GM')
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
 
     const request = await this.prisma.joinRequest.findUnique({ where: { id: requestId } })
     if (!request) throw new NotFoundException(this.i18n.t('community.joinRequestNotFound'))

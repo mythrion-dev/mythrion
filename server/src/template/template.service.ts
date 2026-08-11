@@ -228,7 +228,7 @@ export class TemplateService {
   }
 
   async create(adventureId: string, userId: string, dto: CreateTemplateDto) {
-    await this.membership.requireRole(adventureId, userId, 'GM')
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
 
     // Look up the adventure to check if it's public and set ownerId
     const adventure = await this.prisma.adventure.findUnique({ where: { id: adventureId } })
@@ -640,7 +640,7 @@ export class TemplateService {
     // Owner OR GM of associated adventure can update
     if (template.ownerId !== userId) {
       if (template.adventureId) {
-        await this.membership.requireRole(template.adventureId, userId, 'GM')
+        await this.membership.requireWriteRole(template.adventureId, userId, 'GM')
       } else {
         throw new ForbiddenException(this.i18n.t('template.ownerOnlyUpdate'))
       }
@@ -1367,7 +1367,7 @@ export class TemplateService {
     // Owner OR GM of associated adventure can delete
     if (template.ownerId !== userId) {
       if (template.adventureId) {
-        await this.membership.requireRole(template.adventureId, userId, 'GM')
+        await this.membership.requireWriteRole(template.adventureId, userId, 'GM')
       } else {
         throw new ForbiddenException(this.i18n.t('template.ownerOnlyDelete'))
       }
@@ -1423,7 +1423,7 @@ export class TemplateService {
     // Auth: owner can always clone; anyone can clone public; GM of adventure can clone
     if (original.ownerId !== userId && !original.isPublic) {
       if (original.adventureId) {
-        await this.membership.requireRole(original.adventureId, userId, 'GM')
+        await this.membership.requireWriteRole(original.adventureId, userId, 'GM')
       } else {
         throw new ForbiddenException(this.i18n.t('template.noClonePermission'))
       }
@@ -1915,7 +1915,7 @@ export class TemplateService {
    */
   async attachToAdventure(templateId: string, adventureId: string, userId: string) {
     // GM only
-    await this.membership.requireRole(adventureId, userId, 'GM')
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
 
     // Enforce single template per campaign: reject if one is already attached
     const existing = await this.prisma.adventure.findUnique({
@@ -1972,7 +1972,7 @@ export class TemplateService {
    */
   async replaceAdventureTemplate(templateId: string, adventureId: string, userId: string) {
     // GM only
-    await this.membership.requireRole(adventureId, userId, 'GM')
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
 
     // Read existing attachment for old template ID cache invalidation
     const current = await this.prisma.adventure.findUnique({
@@ -2025,7 +2025,7 @@ export class TemplateService {
    */
   async detachFromAdventure(adventureId: string, userId: string) {
     // GM only
-    await this.membership.requireRole(adventureId, userId, 'GM')
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
 
     // Read the current adventure to get the originalTemplateId for cache invalidation
     const current = await this.prisma.adventure.findUnique({

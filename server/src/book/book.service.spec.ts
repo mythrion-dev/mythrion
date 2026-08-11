@@ -101,6 +101,7 @@ const mockRedis = {
 
 const mockMembership = {
   requireRole: jest.fn<(...args: any[]) => Promise<void>>().mockResolvedValue(undefined),
+  requireWriteRole: jest.fn<(...args: any[]) => Promise<void>>().mockResolvedValue(undefined),
   isMember: jest.fn<(...args: any[]) => Promise<boolean>>().mockResolvedValue(true),
 }
 
@@ -267,7 +268,7 @@ describe('BookService', () => {
 
       const result = await service.create(mockAdventureId, mockUserId, mockFile, mockDto)
 
-      expect(mockMembership.requireRole).toHaveBeenCalledWith(mockAdventureId, mockUserId, MemberRole.GM)
+      expect(mockMembership.requireWriteRole).toHaveBeenCalledWith(mockAdventureId, mockUserId, MemberRole.GM)
       expect(mockPrisma.book.create).toHaveBeenCalledWith({
         data: {
           adventureId: mockAdventureId,
@@ -314,7 +315,7 @@ describe('BookService', () => {
     })
 
     it('throws ForbiddenException if user is not GM', async () => {
-      mockMembership.requireRole.mockRejectedValueOnce(new ForbiddenException())
+      mockMembership.requireWriteRole.mockRejectedValueOnce(new ForbiddenException())
 
       await expect(service.create(mockAdventureId, mockUserId, mockFile, mockDto)).rejects.toThrow(
         ForbiddenException,
@@ -557,7 +558,7 @@ describe('BookService', () => {
 
       const result = await service.update(mockAdventureId, mockBookId, mockUserId, { name: 'Updated Book' })
 
-      expect(mockMembership.requireRole).toHaveBeenCalledWith(mockAdventureId, mockUserId, MemberRole.GM)
+      expect(mockMembership.requireWriteRole).toHaveBeenCalledWith(mockAdventureId, mockUserId, MemberRole.GM)
       expect(mockPrisma.book.update).toHaveBeenCalledWith({
         where: { id: mockBookId },
         data: { name: 'Updated Book' },
@@ -637,7 +638,7 @@ describe('BookService', () => {
 
       await service.delete(mockAdventureId, mockBookId, mockUserId)
 
-      expect(mockMembership.requireRole).toHaveBeenCalledWith(mockAdventureId, mockUserId, MemberRole.GM)
+      expect(mockMembership.requireWriteRole).toHaveBeenCalledWith(mockAdventureId, mockUserId, MemberRole.GM)
       expect(mockPrisma.book.delete).toHaveBeenCalledWith({ where: { id: mockBookId } })
       expect(mockRedis.invalidatePattern).toHaveBeenCalledWith(`books:${mockAdventureId}:list*`)
     })

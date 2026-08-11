@@ -52,7 +52,7 @@ export class InvitationService {
     origin?: string
   }) {
     // Verify creator is GM
-    await this.membership.requireRole(
+    await this.membership.requireWriteRole(
       params.adventureId,
       params.createdById,
       'GM',
@@ -115,7 +115,7 @@ export class InvitationService {
     createdById: string
     origin?: string
   }) {
-    await this.membership.requireRole(
+    await this.membership.requireWriteRole(
       params.adventureId,
       params.createdById,
       'GM',
@@ -280,7 +280,7 @@ export class InvitationService {
     if (!invitation) throw new NotFoundException(this.i18n.t('community.invitationNotFound'))
 
     // Must be GM of the adventure
-    await this.membership.requireRole(invitation.adventureId, userId, 'GM')
+    await this.membership.requireWriteRole(invitation.adventureId, userId, 'GM')
 
     return this.prisma.campaignInvitation.update({
       where: { id: invitationId },

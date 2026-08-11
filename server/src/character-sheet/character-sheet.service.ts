@@ -566,11 +566,17 @@ export class CharacterSheetService {
     sheet: { ownerId: string | null; isNpc: boolean; adventureId: string | null },
     userId: string,
   ): Promise<void> {
-    if (sheet.ownerId === userId) return
+    if (sheet.ownerId === userId) {
+      // Owner editing their own sheet: respect campaign read-only state when linked
+      if (sheet.adventureId) {
+        await this.membership.requireWriteAccess(sheet.adventureId, userId)
+      }
+      return
+    }
     // Only allow GM bypass for NPC sheets; player sheets are owner-only
     if (sheet.isNpc && sheet.adventureId) {
       try {
-        await this.membership.requireRole(sheet.adventureId, userId, 'GM')
+        await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM')
         return
       } catch {
         throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
@@ -719,9 +725,14 @@ export class CharacterSheetService {
   async remove(id: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id } })
     if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
-    if (sheet.ownerId !== userId) {
+    if (sheet.ownerId === userId) {
+      // Owner editing their own sheet: respect campaign read-only state when linked
+      if (sheet.adventureId) {
+        await this.membership.requireWriteAccess(sheet.adventureId, userId)
+      }
+    } else {
       if (sheet.isNpc && sheet.adventureId) {
-        try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+        try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
         catch { throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission')) }
       } else {
         throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
@@ -752,9 +763,14 @@ export class CharacterSheetService {
   async unlinkFromAdventure(sheetId: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
-    if (sheet.ownerId !== userId) {
+    if (sheet.ownerId === userId) {
+      // Owner editing their own sheet: respect campaign read-only state when linked
+      if (sheet.adventureId) {
+        await this.membership.requireWriteAccess(sheet.adventureId, userId)
+      }
+    } else {
       if (sheet.isNpc && sheet.adventureId) {
-        try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+        try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
         catch { throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission')) }
       } else {
         throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
@@ -830,7 +846,7 @@ export class CharacterSheetService {
   }
 
   async listAbilities(sheetId: string, userId: string) {
-    await this.requireOwnership(sheetId, userId)
+    await this.requireOwnership(sheetId, userId, false)
     return this.prisma.characterAbility.findMany({
       where: { sheetId, summonId: null },
       orderBy: { order: 'asc' },
@@ -939,7 +955,7 @@ export class CharacterSheetService {
   async listSummonAbilities(summonId: string, userId: string) {
     const summon = await this.prisma.characterAbility.findUnique({ where: { id: summonId } })
     if (!summon) throw new NotFoundException(this.i18n.t('character-sheet.summonNotFound'))
-    await this.requireOwnership(summon.sheetId, userId)
+    await this.requireOwnership(summon.sheetId, userId, false)
     return this.prisma.characterAbility.findMany({
       where: { summonId },
       orderBy: { order: 'asc' },
@@ -987,7 +1003,7 @@ export class CharacterSheetService {
   async listAbilityLevels(abilityId: string, userId: string) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
     if (!ability) throw new NotFoundException(this.i18n.t('character-sheet.abilityNotFound'))
-    await this.requireOwnership(ability.sheetId, userId)
+    await this.requireOwnership(ability.sheetId, userId, false)
     return this.prisma.characterAbilityLevel.findMany({ where: { abilityId }, orderBy: { level: 'asc' } })
   }
 
@@ -1215,7 +1231,7 @@ export class CharacterSheetService {
   // ── Inventory (CRUD) ──
 
   async listInventory(sheetId: string, userId: string) {
-    await this.requireOwnership(sheetId, userId)
+    await this.requireOwnership(sheetId, userId, false)
     return this.prisma.characterInventoryItem.findMany({ where: { sheetId }, orderBy: { order: 'asc' } })
   }
 
@@ -1248,7 +1264,7 @@ export class CharacterSheetService {
   // ── Story (CRUD — one-to-one) ──
 
   async getStory(sheetId: string, userId: string) {
-    await this.requireOwnership(sheetId, userId)
+    await this.requireOwnership(sheetId, userId, false)
     const story = await this.prisma.characterStory.findUnique({ where: { sheetId } })
     if (!story) {
       return this.prisma.characterStory.create({ data: { sheetId } })
@@ -1266,7 +1282,7 @@ export class CharacterSheetService {
   // ── Character Section Entries (CRUD) ──
 
   async listSectionEntries(sheetId: string, userId: string) {
-    await this.requireOwnership(sheetId, userId)
+    await this.requireOwnership(sheetId, userId, false)
     return this.prisma.characterSectionEntry.findMany({
       where: { sheetId },
       orderBy: { order: 'asc' },
@@ -1321,9 +1337,13 @@ export class CharacterSheetService {
   ) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
-    if (sheet.ownerId !== userId) {
+    if (sheet.ownerId === userId) {
+      if (sheet.adventureId) {
+        await this.membership.requireWriteAccess(sheet.adventureId, userId)
+      }
+    } else {
       if (!sheet.adventureId) throw new ForbiddenException(this.i18n.t('character-sheet.ownerOnlyManage'))
-      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+      try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
       catch { throw new ForbiddenException(this.i18n.t('character-sheet.ownerOrGmManage')) }
     }
 
@@ -1368,9 +1388,13 @@ export class CharacterSheetService {
   async removeResistance(sheetId: string, resistanceId: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
-    if (sheet.ownerId !== userId) {
+    if (sheet.ownerId === userId) {
+      if (sheet.adventureId) {
+        await this.membership.requireWriteAccess(sheet.adventureId, userId)
+      }
+    } else {
       if (!sheet.adventureId) throw new ForbiddenException(this.i18n.t('character-sheet.ownerOnlyManage'))
-      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
+      try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
       catch { throw new ForbiddenException(this.i18n.t('character-sheet.ownerOrGmManage')) }
     }
 
@@ -1404,7 +1428,7 @@ export class CharacterSheetService {
   } as const
 
   async listProfessionalSkills(sheetId: string, userId: string) {
-    await this.requireOwnership(sheetId, userId)
+    await this.requireOwnership(sheetId, userId, false)
     return this.prisma.sheetProfessionalSkill.findMany({
       where: { sheetId },
       orderBy: { order: 'asc' },
@@ -1505,21 +1529,41 @@ export class CharacterSheetService {
     }
   }
 
-  private async requireOwnership(sheetId: string, userId: string) {
+  private async requireOwnership(sheetId: string, userId: string, write = true) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
-    if (sheet.ownerId !== userId) {
-      // Only allow GM bypass for NPC sheets; player sheets are owner-only
-      if (sheet.isNpc && sheet.adventureId) {
-        try {
-          await this.membership.requireRole(sheet.adventureId, userId, 'GM')
-          return
-        } catch {
-          throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
-        }
+    if (sheet.ownerId === userId) {
+      // Owner always retains read access; writes respect campaign read-only state when linked
+      if (write && sheet.adventureId) {
+        await this.membership.requireWriteAccess(sheet.adventureId, userId)
       }
-      throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
+      return
     }
+    // Only allow GM bypass for NPC sheets; player sheets are owner-only
+    if (sheet.isNpc && sheet.adventureId) {
+      try {
+        if (write) {
+          await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM')
+        } else {
+          await this.membership.requireRole(sheet.adventureId, userId, 'GM')
+        }
+        return
+      } catch {
+        throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
+      }
+    }
+    throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
+  }
+
+  // Public write-gates reused by the image module for avatar upload/delete.
+  async assertCanModifySheet(sheetId: string, userId: string): Promise<void> {
+    await this.requireOwnership(sheetId, userId)
+  }
+
+  async assertCanModifyAbility(abilityId: string, userId: string): Promise<void> {
+    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
+    if (!ability) throw new NotFoundException(this.i18n.t('character-sheet.abilityNotFound'))
+    await this.requireOwnership(ability.sheetId, userId)
   }
 
   private extractVariableNames(formula: string): string[] {

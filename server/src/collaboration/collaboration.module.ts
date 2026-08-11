@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { JwtModule } from '@nestjs/jwt'
 import { EmailModule } from '../email/email.module.js'
+import { SubscriptionModule } from '../subscription/subscription.module.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { MembershipController } from '../membership/membership.controller.js'
 import { InvitationService } from '../invitation/invitation.service.js'
@@ -14,6 +15,7 @@ import { PrismaService } from '../prisma.service.js'
       signOptions: { expiresIn: '7d' },
     }),
     EmailModule,
+    SubscriptionModule,
   ],
   controllers: [InvitationController, MembershipController],
   providers: [MembershipService, InvitationService, PrismaService],

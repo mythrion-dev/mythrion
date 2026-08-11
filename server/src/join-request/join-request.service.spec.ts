@@ -16,6 +16,7 @@ import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 
 const mockMembershipService = {
   requireRole: jest.fn(),
+  requireWriteRole: jest.fn(),
   isMember: jest.fn(),
   assertPlayerCapacity: jest.fn(),
 }
@@ -29,6 +30,7 @@ describe('JoinRequestService', () => {
     jest.clearAllMocks()
 
     mockMembershipService.requireRole.mockResolvedValue(undefined)
+    mockMembershipService.requireWriteRole.mockResolvedValue(undefined)
     mockMembershipService.isMember.mockResolvedValue(false)
     mockMembershipService.assertPlayerCapacity.mockResolvedValue(undefined)
 
@@ -209,7 +211,7 @@ describe('JoinRequestService', () => {
 
       const result = await service.accept('adv-1', 'jr-1', 'u1')
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith(
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith(
         'adv-1',
         'u1',
         'GM',
@@ -271,7 +273,7 @@ describe('JoinRequestService', () => {
 
       const result = await service.reject('adv-1', 'jr-1', 'u1')
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith(
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith(
         'adv-1',
         'u1',
         'GM',
