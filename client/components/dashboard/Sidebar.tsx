@@ -45,8 +45,9 @@ export function Sidebar() {
 
   const isActive = (href: string) => {
     const tab = href.split('tab=')[1] ?? null
-    if (!tab) return pathname === href
-    return pathname === '/dashboard' && currentTab === tab
+    if (tab) return pathname === '/dashboard' && currentTab === tab
+    if (href === '/dashboard') return pathname === '/dashboard' && !currentTab
+    return pathname === href
   }
 
   async function handleLogout() {

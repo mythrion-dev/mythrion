@@ -245,10 +245,25 @@ describe('Sidebar active link', () => {
     expect(csLink?.className).toContain('sidebar-link-active')
   })
 
-  // Dashboard link's href is "/dashboard" (no tab= param).
-  // isActive matches on pathname === href when no tab in href, so it's always
-  // active when on /dashboard regardless of the current tab param.
-  // This test is removed because the behavior is correct.
+  it.each(['adventures', 'character-sheets'])('does not highlight Dashboard when tab=%s', (tab) => {
+    mockUsePathname.mockReturnValue('/dashboard')
+    mockUseSearchParams.mockReturnValue(new URLSearchParams(`tab=${tab}`))
+    render(<Sidebar />)
+    const links = screen.getAllByRole('link')
+    const dashboardLink = links.find((l) => l.textContent === 'Dashboard')
+    expect(dashboardLink?.className).not.toContain('sidebar-link-active')
+  })
+
+  it('highlights exactly one sidebar link when on a tab page', () => {
+    mockUsePathname.mockReturnValue('/dashboard')
+    mockUseSearchParams.mockReturnValue(new URLSearchParams('tab=character-sheets'))
+    render(<Sidebar />)
+    const activeLinks = screen
+      .getAllByRole('link')
+      .filter((l) => l.className.includes('sidebar-link-active'))
+    expect(activeLinks).toHaveLength(1)
+    expect(activeLinks[0].textContent).toBe('Character Sheets')
+  })
 
   it('does not match tab links when on non-dashboard page', () => {
     mockUsePathname.mockReturnValue('/other')

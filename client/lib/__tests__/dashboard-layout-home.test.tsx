@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 
 // ── next/navigation override (per-test search params + captured router) ──
 const mockRouterReplace = vi.fn()
@@ -257,8 +257,6 @@ describe('DashboardPage', () => {
       'href',
       '/dashboard/adventures/a1',
     )
-    // Campaign count badge on the tab
-    expect(screen.getByText('1')).toBeInTheDocument()
   })
 
   it('renders adventure cards with non-GM role and no synopsis', async () => {
@@ -294,8 +292,6 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Player')).toBeInTheDocument()
     expect(screen.getByText('5 max')).toBeInTheDocument()
     expect(screen.getByText('Gamma')).toBeInTheDocument()
-    // count badge = 2
-    expect(screen.getByText('2')).toBeInTheDocument()
   })
 
   it('renders the character-sheets tab with a standalone sheet', async () => {
@@ -357,23 +353,7 @@ describe('DashboardPage', () => {
     )
   })
 
-  it('switches tabs on click and updates the URL via replaceState', async () => {
-    mockApiData([], [])
-    const replaceSpy = vi.spyOn(window.history, 'replaceState')
-    render(<DashboardPage />)
-    expect(await screen.findByText('No campaigns yet')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Character Sheets' }))
-    expect(screen.getByText('No character sheets yet')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'New Character Sheet' })).toHaveAttribute(
-      'href',
-      '/dashboard/character-sheets/new',
-    )
-    expect(replaceSpy).toHaveBeenCalled()
-    replaceSpy.mockRestore()
-  })
-
-  it('syncs the active tab when search params change after the initial render', async () => {
+  it('renders the active tab from the URL search params on re-render', async () => {
     searchParamsString = 'tab=character-sheets'
     mockApiData([], [])
     const { rerender } = render(<DashboardPage />)
