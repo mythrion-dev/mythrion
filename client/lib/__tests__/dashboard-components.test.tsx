@@ -99,7 +99,6 @@ describe('Sidebar', () => {
 
   it('renders all navigation links', () => {
     render(<Sidebar />)
-    expect(screen.getByText('Dashboard')).toBeInTheDocument()
     expect(screen.getByText('Campaigns')).toBeInTheDocument()
     expect(screen.getByText('Character Sheets')).toBeInTheDocument()
   })
@@ -211,14 +210,6 @@ describe('Sidebar active link', () => {
     mockUseSearchParams.mockReturnValue(new URLSearchParams())
   })
 
-  it('highlights Dashboard when pathname is /dashboard', () => {
-    mockUsePathname.mockReturnValue('/dashboard')
-    render(<Sidebar />)
-    const links = screen.getAllByRole('link')
-    const dashboardLink = links.find((l) => l.textContent === 'Dashboard')
-    expect(dashboardLink?.className).toContain('sidebar-link-active')
-  })
-
   it('does not highlight Adventures when on Dashboard', () => {
     mockUsePathname.mockReturnValue('/dashboard')
     render(<Sidebar />)
@@ -245,15 +236,6 @@ describe('Sidebar active link', () => {
     expect(csLink?.className).toContain('sidebar-link-active')
   })
 
-  it.each(['adventures', 'character-sheets'])('does not highlight Dashboard when tab=%s', (tab) => {
-    mockUsePathname.mockReturnValue('/dashboard')
-    mockUseSearchParams.mockReturnValue(new URLSearchParams(`tab=${tab}`))
-    render(<Sidebar />)
-    const links = screen.getAllByRole('link')
-    const dashboardLink = links.find((l) => l.textContent === 'Dashboard')
-    expect(dashboardLink?.className).not.toContain('sidebar-link-active')
-  })
-
   it('highlights exactly one sidebar link when on a tab page', () => {
     mockUsePathname.mockReturnValue('/dashboard')
     mockUseSearchParams.mockReturnValue(new URLSearchParams('tab=character-sheets'))
@@ -277,10 +259,10 @@ describe('Sidebar active link', () => {
   it('matches exact pathname for non-tab links', () => {
     mockUsePathname.mockReturnValue('/other')
     render(<Sidebar />)
-    // Dashboard link href is '/dashboard', pathname is '/other' — not active
+    // Settings link href is '/dashboard/settings', pathname is '/other' — not active
     const links = screen.getAllByRole('link')
-    const dashboardLink = links.find((l) => l.textContent === 'Dashboard')
-    expect(dashboardLink?.className).not.toContain('sidebar-link-active')
+    const settingsLink = links.find((l) => l.textContent === 'Settings')
+    expect(settingsLink?.className).not.toContain('sidebar-link-active')
   })
 
   it('highlights Explore Campaigns when pathname is /dashboard/explore-campaigns', () => {
@@ -448,13 +430,6 @@ describe('Sidebar nav link hrefs', () => {
     localStorage.clear()
     mockUsePathname.mockReturnValue('/')
     mockUseSearchParams.mockReturnValue(new URLSearchParams())
-  })
-
-  it('Dashboard link points to /dashboard', () => {
-    render(<Sidebar />)
-    const links = screen.getAllByRole('link')
-    const dashboardLink = links.find((l) => l.textContent === 'Dashboard')
-    expect(dashboardLink).toHaveAttribute('href', '/dashboard')
   })
 
   it('Adventures link points to /dashboard?tab=adventures', () => {
