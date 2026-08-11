@@ -721,6 +721,13 @@ describe('ManageSubscriptionPage', () => {
     renderWithSub(<ManageSubscriptionPage />)
     await screen.findByText('Monthly')
     fireEvent.click(screen.getByRole('button', { name: 'Cancel subscription' }))
+    expect(screen.getByRole('link', { name: 'Read the cancellation terms' })).toHaveAttribute(
+      'href',
+      '/cancel-terms',
+    )
+    const confirm = screen.getByRole('button', { name: 'Confirm cancellation' })
+    expect(confirm).toBeDisabled()
+    fireEvent.click(screen.getByRole('checkbox'))
     fireEvent.click(screen.getByRole('button', { name: 'Confirm cancellation' }))
     await waitFor(() => expect(mockCancelSubscription).toHaveBeenCalledTimes(1))
     expect(mockFetchMySubscription.mock.calls.length).toBeGreaterThanOrEqual(2)
@@ -736,6 +743,7 @@ describe('ManageSubscriptionPage', () => {
     renderWithSub(<ManageSubscriptionPage />)
     await screen.findByText('Monthly')
     fireEvent.click(screen.getByRole('button', { name: 'Cancel subscription' }))
+    fireEvent.click(screen.getByRole('checkbox'))
     fireEvent.click(screen.getByRole('button', { name: 'Confirm cancellation' }))
     expect(await screen.findByText('cancel failed')).toBeInTheDocument()
   })

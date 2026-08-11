@@ -32,6 +32,7 @@ export default function ManageSubscriptionPage() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState('')
+  const [termsAccepted, setTermsAccepted] = useState(false)
 
   useEffect(() => {
     if (authLoading) return
@@ -209,7 +210,10 @@ export default function ManageSubscriptionPage() {
             </p>
             {!showCancelConfirm ? (
               <button
-                onClick={() => setShowCancelConfirm(true)}
+                onClick={() => {
+                  setShowCancelConfirm(true)
+                  setTermsAccepted(false)
+                }}
                 className="btn-ghost text-sm w-full justify-center text-red-500 hover:text-red-600 hover:bg-red-500/5"
               >
                 {t('billing:cancelSubscription')}
@@ -222,6 +226,21 @@ export default function ManageSubscriptionPage() {
                 {cancelError && (
                   <p className="mt-2 text-xs text-red-500">{cancelError}</p>
                 )}
+                <Link
+                  href="/cancel-terms"
+                  className="mt-3 inline-block text-sm text-primary underline hover:text-primary-hover"
+                >
+                  {t('billing:readCancellationTerms')}
+                </Link>
+                <label className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="mt-0.5"
+                  />
+                  <span>{t('billing:cancelTermsAcceptance')}</span>
+                </label>
                 <div className="mt-3 flex gap-2">
                   <button
                     onClick={() => {
@@ -236,7 +255,7 @@ export default function ManageSubscriptionPage() {
                   <button
                     onClick={handleCancel}
                     className="btn-primary text-xs px-3 py-1.5 bg-red-600 hover:bg-red-700 border-red-600"
-                    disabled={cancelling}
+                    disabled={cancelling || !termsAccepted}
                   >
                     {cancelling ? t('billing:cancelling') : t('billing:confirmCancellation')}
                   </button>

@@ -46,6 +46,7 @@ import RootLayout, { metadata } from '@/app/layout'
 import HomePage from '@/app/page'
 import TermsPage from '@/app/terms/page'
 import PrivacyPage from '@/app/privacy/page'
+import CancelTermsPage from '@/app/cancel-terms/page'
 import PricingPage from '@/app/pricing/page'
 
 const mockFetchPlans = vi.mocked(fetchPlans)
@@ -207,6 +208,11 @@ describe('HomePage', () => {
     for (const link of termsLinks) {
       expect(link).toHaveAttribute('href', '/terms')
     }
+    const cancelTermsLinks = screen.getAllByRole('link', { name: 'Cancellation Terms' })
+    expect(cancelTermsLinks.length).toBeGreaterThanOrEqual(1)
+    for (const link of cancelTermsLinks) {
+      expect(link).toHaveAttribute('href', '/cancel-terms')
+    }
   })
 
   it('renders the language switcher', () => {
@@ -243,6 +249,53 @@ describe('PrivacyPage', () => {
     expect(
       screen.getByText(
         'At Mythrion, we respect your privacy and are committed to protecting your personal data.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Go Home' })).toHaveAttribute('href', '/')
+  })
+})
+
+// ════════════════════════════════════════════════════════════
+// CancelTermsPage (app/cancel-terms/page.tsx)
+// ════════════════════════════════════════════════════════════
+
+describe('CancelTermsPage', () => {
+  it('renders the cancellation terms content and a home link', () => {
+    render(<CancelTermsPage />)
+    expect(screen.getAllByText('Subscription Cancellation Terms').length).toBeGreaterThanOrEqual(2)
+    expect(
+      screen.getByText(
+        'These terms govern the cancellation of your Mythrion Premium subscription. By cancelling, you agree to the conditions below.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Cancellation takes effect at the end of the current billing period. Once your request is processed, no further renewals will be scheduled.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'You will retain full access to Mythrion Premium until the end of your paid billing period, even after requesting cancellation.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'You will not be charged again after cancelling. As you keep access for the remainder of an already-paid period, no refund is issued for that period.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'You can cancel at any time from the Subscription page in your dashboard. To submit the cancellation, you must read these terms and check the acceptance box.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'When your subscription ends, your account returns to the free tier. Your campaigns and character sheets remain available, and features that require a paid plan become limited.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'For questions about these terms, please contact support at portal@mythrion.com.',
       ),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Go Home' })).toHaveAttribute('href', '/')

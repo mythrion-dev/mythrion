@@ -228,6 +228,7 @@ export default function DashboardSubscriptionPage() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState('')
+  const [termsAccepted, setTermsAccepted] = useState(false)
 
   // CPF mask
   const formatCPF = (value: string) => {
@@ -633,7 +634,10 @@ export default function DashboardSubscriptionPage() {
         {/* Cancel subscription */}
         {isCancellable && !showCancelConfirm && (
           <button
-            onClick={() => setShowCancelConfirm(true)}
+            onClick={() => {
+              setShowCancelConfirm(true)
+              setTermsAccepted(false)
+            }}
             className="w-full py-2.5 rounded-lg border border-red-500/20 text-sm font-medium text-red-500 hover:bg-red-500/5 transition-colors"
           >
             {t('billing:cancelSubscription')}
@@ -648,6 +652,21 @@ export default function DashboardSubscriptionPage() {
             {cancelError && (
               <p className="mt-2 text-xs text-red-500">{cancelError}</p>
             )}
+            <Link
+              href="/cancel-terms"
+              className="mt-3 inline-block text-sm text-primary underline hover:text-primary-hover"
+            >
+              {t('billing:readCancellationTerms')}
+            </Link>
+            <label className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>{t('billing:cancelTermsAcceptance')}</span>
+            </label>
             <div className="mt-3 flex gap-2">
               <button
                 onClick={() => {
@@ -662,7 +681,7 @@ export default function DashboardSubscriptionPage() {
               <button
                 onClick={handleCancel}
                 className="flex-1 py-2 rounded-lg bg-red-600 text-background text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={cancelling}
+                disabled={cancelling || !termsAccepted}
               >
                 {cancelling ? t('billing:cancelling') : t('billing:confirmCancellation')}
               </button>
