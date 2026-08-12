@@ -20,6 +20,8 @@ interface NotebookFolderProps {
   readonly onToggle: () => void
   readonly onPageClick: (pageId: string) => void
   readonly onDeletePage: (pageId: string) => void
+  /** Request a custom confirmation flow instead of deleting immediately */
+  readonly onRequestDeletePage?: (pageId: string) => void
   readonly onRename: (folderId: string, newName: string) => void
   /** Called to request folder deletion dialog (sidebar manages it) */
   readonly onDeleteFolderRequest?: (folderId: string) => void
@@ -43,6 +45,7 @@ export function NotebookFolder({
   onToggle,
   onPageClick,
   onDeletePage,
+  onRequestDeletePage,
   onRename,
   onDeleteFolderRequest,
   onCreatePage,

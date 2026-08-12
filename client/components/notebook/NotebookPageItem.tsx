@@ -13,6 +13,8 @@ interface NotebookPageItemProps {
   readonly folderName?: string | null
   readonly onClick: (id: string) => void
   readonly onDelete: (id: string) => void
+  /** Request a custom confirmation flow instead of the native browser dialog */
+  readonly onRequestDelete?: (id: string) => void
   /** Fired when drag starts on this page — dataTransfer gets pageId */
   readonly onDragStart?: (pageId: string, e: React.DragEvent) => void
   /** Fired on right-click / long press for context menu */
@@ -29,6 +31,7 @@ export function NotebookPageItem({
   folderName,
   onClick,
   onDelete,
+  onRequestDelete,
   onDragStart,
   onContextMenu,
   readOnly = false,
@@ -93,9 +96,11 @@ export function NotebookPageItem({
           type="button"
           onClick={(e) => {
             e.stopPropagation()
-            if (window.confirm(t('notebook:deletePageConfirm'))) {
-              onDelete(id)
+            if (onRequestDelete) {
+              onRequestDelete(id)
+              return
             }
+            onDelete(id)
           }}
           className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-destructive transition-all shrink-0"
           aria-label={t('notebook:deletePage')}

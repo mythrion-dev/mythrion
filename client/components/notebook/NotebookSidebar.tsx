@@ -155,6 +155,7 @@ export function NotebookSidebar({
 
   // Folder deletion dialog state
   const [folderDeleteDialog, setFolderDeleteDialog] = useState<FolderDeleteDialogState | null>(null)
+  const [pageDeleteDialog, setPageDeleteDialog] = useState<string | null>(null)
 
   // Drag-over tracking
   const [dragOverRoot, setDragOverRoot] = useState(false)
@@ -473,12 +474,24 @@ export function NotebookSidebar({
         if (activePageId === pageId) {
           setActivePageId(null)
         }
+        if (pageDeleteDialog === pageId) {
+          setPageDeleteDialog(null)
+        }
       } catch {
         setError(t('notebook:failedToDeletePage'))
       }
     },
-    [adventureId, activePageId, t],
+    [adventureId, activePageId, pageDeleteDialog, t],
   )
+
+  const handleDeletePageRequest = useCallback((pageId: string) => {
+    setPageDeleteDialog(pageId)
+  }, [])
+
+  const handleConfirmDeletePage = useCallback(() => {
+    if (!pageDeleteDialog) return
+    handleDeletePage(pageDeleteDialog)
+  }, [handleDeletePage, pageDeleteDialog])
 
   /* ── Move page to a folder (or root) ── */
   const handleMovePage = useCallback(
@@ -900,6 +913,7 @@ export function NotebookSidebar({
                               setSearchQuery('')
                             }}
                             onDelete={handleDeletePage}
+                            onRequestDelete={handleDeletePageRequest}
                             onContextMenu={readOnly ? undefined : handlePageContextMenu}
                             onDragStart={handlePageDragStart}
                             readOnly={readOnly}
@@ -927,6 +941,7 @@ export function NotebookSidebar({
                         onToggle={() => toggleFolder(folder.id)}
                         onPageClick={setActivePageId}
                         onDeletePage={handleDeletePage}
+                        onRequestDeletePage={handleDeletePageRequest}
                         onRename={handleRenameFolder}
                         onDeleteFolderRequest={handleDeleteFolderRequest}
                         onCreatePage={handleCreatePage}
@@ -968,6 +983,7 @@ export function NotebookSidebar({
                               isActive={activePageId === page.id}
                               onClick={setActivePageId}
                               onDelete={handleDeletePage}
+                              onRequestDelete={handleDeletePageRequest}
                               onContextMenu={readOnly ? undefined : handlePageContextMenu}
                               onDragStart={handlePageDragStart}
                               readOnly={readOnly}
@@ -1118,11 +1134,7 @@ export function NotebookSidebar({
                   {/* Delete page */}
                   <button
                     type="button"
-                    onClick={readOnly ? undefined : () => {
-                      if (window.confirm(t('notebook:deletePageConfirm'))) {
-                        handleDeletePage(activePage.id)
-                      }
-                    }}
+                    onClick={readOnly ? undefined : () => setPageDeleteDialog(activePage.id)}
                     disabled={readOnly}
                     className={`p-1 rounded-md text-muted-foreground transition-colors ${
                       readOnly
@@ -1210,6 +1222,46 @@ export function NotebookSidebar({
                 {folder.name}
               </button>
             ))}
+          </div>
+        </>
+      )}
+
+      {/* ── Page Deletion Dialog ── */}
+      {pageDeleteDialog && (
+        <>
+          <div
+            className="fixed inset-0 z-[60] bg-black/40"
+            onClick={() => setPageDeleteDialog(null)}
+            aria-hidden="true"
+          />
+          <div
+            className="fixed z-[70] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-surface border border-border rounded-xl shadow-2xl p-5"
+          >
+            <h3 className="text-sm font-semibold text-foreground mb-2">{t('notebook:deletePage')}</h3>
+            <p className="text-sm text-muted-foreground mb-4">{t('notebook:deletePageConfirm')}</p>
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPageDeleteDialog(null)}
+                className="px-3 py-1.5 text-xs rounded-md btn-ghost"
+              >
+                {t('common:cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={readOnly ? undefined : handleConfirmDeletePage}
+                disabled={readOnly}
+                className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+                  readOnly
+                    ? 'bg-destructive/50 text-destructive-foreground cursor-not-allowed'
+                    : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                }`}
+                title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
+              >
+                {t('notebook:deletePage')}
+              </button>
+            </div>
           </div>
         </>
       )}
