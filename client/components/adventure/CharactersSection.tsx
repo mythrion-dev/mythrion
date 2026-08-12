@@ -116,16 +116,6 @@ export function CharactersSection({
                 >
                   {t('common:view')}
                 </button>
-                {isGM && (c.owner?.id ?? '') !== userId && (
-                  <button
-                    onClick={readOnly ? undefined : () => onRemoveCharacter(c.id)}
-                    disabled={readOnly}
-                    title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
-                    className={`text-xs text-danger px-2 py-1 transition-colors ${readOnly ? 'opacity-50 cursor-not-allowed' : 'hover:text-danger/80'}`}
-                  >
-                    {t('common:remove')}
-                  </button>
-                )}
                 {isGM && (
                   <button
                     onClick={readOnly ? undefined : () => onAssign(c.id)}
@@ -134,6 +124,16 @@ export function CharactersSection({
                     className={`btn-ghost text-xs px-2 py-1 ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
                   >
                     {c.assignedMember ? t('campaign:changeAssignment') : t('campaign:assign')}
+                  </button>
+                )}
+                {isGM && (c.owner?.id ?? '') !== userId && (
+                  <button
+                    onClick={readOnly ? undefined : () => onRemoveCharacter(c.id)}
+                    disabled={readOnly}
+                    title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
+                    className={`text-xs text-danger px-2 py-1 transition-colors ${readOnly ? 'opacity-50 cursor-not-allowed' : 'hover:text-danger/80'}`}
+                  >
+                    {t('common:remove')}
                   </button>
                 )}
                 {isGM && c.assignedMember && (
