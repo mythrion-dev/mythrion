@@ -168,9 +168,11 @@ export class SubscriptionController {
       },
     )
 
-    // Sweep for subscriptions past their grace period or cancel-at-period-end date
+    // Sweep for subscriptions past their grace period, cancel-at-period-end
+    // date, or whose ACTIVE period has lapsed
     await this.subscriptionService.expireGraceSubscriptions()
     await this.subscriptionService.expireCancelledSubscriptions()
+    await this.subscriptionService.expireLapsedActiveSubscriptions()
 
     return { received: true, action: result }
   }

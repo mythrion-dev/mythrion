@@ -15,7 +15,12 @@ function createMockContext(overrides?: {
   return {
     switchToHttp: () => ({
       getRequest: () => ({
-        user: overrides?.user ?? { sub: 'u1', email: 'user@test.com', role: 'user' },
+        // Respect an explicit `user: undefined` override (the "no user" case)
+        // instead of silently falling back to the default via nullish coalescing.
+        user:
+          overrides && 'user' in overrides
+            ? overrides.user
+            : { sub: 'u1', email: 'user@test.com', role: 'user' },
       }),
       getResponse: () => ({}),
     }),
@@ -42,6 +47,7 @@ describe('SubscriptionGuard', () => {
 
     subscriptionService = {
       hasActiveSubscription: jest.fn(),
+      getSubscriptionAccessReason: jest.fn(),
     } as unknown as jest.Mocked<SubscriptionService>
 
     guard = new SubscriptionGuard(
@@ -105,7 +111,7 @@ describe('SubscriptionGuard', () => {
 
       expect(result).toBe(true)
       expect(adminService.isAdmin).toHaveBeenCalledWith('admin@mythrion.com')
-      expect(subscriptionService.hasActiveSubscription).not.toHaveBeenCalled()
+      expect(subscriptionService.getSubscriptionAccessReason).not.toHaveBeenCalled()
     })
 
     it('allows early-access users without checking subscription', async () => {
@@ -121,14 +127,14 @@ describe('SubscriptionGuard', () => {
 
       expect(result).toBe(true)
       expect(adminService.isEarlyAccess).toHaveBeenCalledWith('early@mythrion.com')
-      expect(subscriptionService.hasActiveSubscription).not.toHaveBeenCalled()
+      expect(subscriptionService.getSubscriptionAccessReason).not.toHaveBeenCalled()
     })
 
     it('blocks early-access users from the subscription check only when not in the list', async () => {
       reflector.getAllAndOverride.mockReturnValue(false)
       adminService.isAdmin.mockReturnValue(false)
       adminService.isEarlyAccess.mockReturnValue(false)
-      subscriptionService.hasActiveSubscription.mockResolvedValue(false)
+      subscriptionService.getSubscriptionAccessReason.mockResolvedValue('none')
 
       await expect(
         guard.canActivate(
@@ -144,7 +150,7 @@ describe('SubscriptionGuard', () => {
     it('allows access when user has an active subscription', async () => {
       reflector.getAllAndOverride.mockReturnValue(false)
       adminService.isAdmin.mockReturnValue(false)
-      subscriptionService.hasActiveSubscription.mockResolvedValue(true)
+      subscriptionService.getSubscriptionAccessReason.mockResolvedValue('active')
 
       const result = await guard.canActivate(
         createMockContext({
@@ -153,27 +159,13 @@ describe('SubscriptionGuard', () => {
       )
 
       expect(result).toBe(true)
-      expect(subscriptionService.hasActiveSubscription).toHaveBeenCalledWith('u1')
+      expect(subscriptionService.getSubscriptionAccessReason).toHaveBeenCalledWith('u1')
     })
 
-    it('throws ForbiddenException when user has no active subscription', async () => {
+    it('throws activeSubscriptionRequired when user has no subscription at all', async () => {
       reflector.getAllAndOverride.mockReturnValue(false)
       adminService.isAdmin.mockReturnValue(false)
-      subscriptionService.hasActiveSubscription.mockResolvedValue(false)
-
-      await expect(
-        guard.canActivate(
-          createMockContext({
-            user: { sub: 'u1', email: 'user@test.com', role: 'user' },
-          }),
-        ),
-      ).rejects.toThrow(ForbiddenException)
-    })
-
-    it('includes pricing redirect hint in ForbiddenException message', async () => {
-      reflector.getAllAndOverride.mockReturnValue(false)
-      adminService.isAdmin.mockReturnValue(false)
-      subscriptionService.hasActiveSubscription.mockResolvedValue(false)
+      subscriptionService.getSubscriptionAccessReason.mockResolvedValue('none')
 
       try {
         await guard.canActivate(
@@ -184,7 +176,29 @@ describe('SubscriptionGuard', () => {
         throw new Error('should not reach here')
       } catch (err) {
         expect(err).toBeInstanceOf(ForbiddenException)
-        expect((err as ForbiddenException).message).toMatch(/\/pricing/)
+        expect((err as ForbiddenException).message).toBe(
+          'You need an active subscription to use this feature.',
+        )
+      }
+    })
+
+    it('throws subscriptionExpired when the subscription has expired', async () => {
+      reflector.getAllAndOverride.mockReturnValue(false)
+      adminService.isAdmin.mockReturnValue(false)
+      subscriptionService.getSubscriptionAccessReason.mockResolvedValue('expired')
+
+      try {
+        await guard.canActivate(
+          createMockContext({
+            user: { sub: 'u1', email: 'user@test.com', role: 'user' },
+          }),
+        )
+        throw new Error('should not reach here')
+      } catch (err) {
+        expect(err).toBeInstanceOf(ForbiddenException)
+        expect((err as ForbiddenException).message).toBe(
+          'Your subscription has expired. Renew your subscription to continue.',
+        )
       }
     })
   })

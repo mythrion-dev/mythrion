@@ -101,7 +101,7 @@ export class AdventureService {
 
   async update(id: string, userId: string, dto: UpdateAdventureDto) {
     // Only GM can update
-    await this.membership.requireRole(id, userId, 'GM')
+    await this.membership.requireWriteRole(id, userId, 'GM')
 
     return this.prisma.adventure.update({
       where: { id },
@@ -123,7 +123,7 @@ export class AdventureService {
    * GM only.
    */
   async updateVisibility(adventureId: string, userId: string, isPublic: boolean) {
-    await this.membership.requireRole(adventureId, userId, 'GM')
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
 
     return this.prisma.adventure.update({
       where: { id: adventureId },
@@ -423,7 +423,7 @@ export class AdventureService {
 
   async remove(id: string, userId: string) {
     // Only GM can delete
-    await this.membership.requireRole(id, userId, 'GM')
+    await this.membership.requireWriteRole(id, userId, 'GM')
 
     return this.prisma.adventure.delete({ where: { id } })
   }
@@ -513,7 +513,7 @@ export class AdventureService {
       notes?: string
     },
   ) {
-    await this.membership.requireRole(adventureId, userId, 'GM')
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
 
     const adventure = await this.prisma.adventure.findUnique({
       where: { id: adventureId },
@@ -617,7 +617,7 @@ export class AdventureService {
     userId: string,
     dto: { name?: string; description?: string; notes?: string },
   ) {
-    await this.membership.requireRole(adventureId, userId, 'GM')
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
 
     const npc = await this.prisma.characterSheet.findUnique({
       where: { id: npcId },
@@ -642,7 +642,7 @@ export class AdventureService {
    * GM-only.
    */
   async deleteNpc(adventureId: string, npcId: string, userId: string) {
-    await this.membership.requireRole(adventureId, userId, 'GM')
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
 
     const npc = await this.prisma.characterSheet.findUnique({
       where: { id: npcId },

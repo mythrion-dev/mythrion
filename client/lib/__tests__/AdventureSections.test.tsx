@@ -250,6 +250,7 @@ describe('AdventureHeader', () => {
         userRole={null}
         onEdit={onEdit}
         onDelete={onDelete}
+        readOnly={false}
       />,
     )
     expect(screen.getByText('The Lost Mines')).toBeInTheDocument()
@@ -266,6 +267,7 @@ describe('AdventureHeader', () => {
         userRole={null}
         onEdit={onEdit}
         onDelete={onDelete}
+        readOnly={false}
       />,
     )
     expect(screen.getByText(/1 player/)).toBeInTheDocument()
@@ -279,6 +281,7 @@ describe('AdventureHeader', () => {
         userRole="PLAYER"
         onEdit={onEdit}
         onDelete={onDelete}
+        readOnly={false}
       />,
     )
     expect(screen.getByText('PLAYER')).toBeInTheDocument()
@@ -292,6 +295,7 @@ describe('AdventureHeader', () => {
         userRole={null}
         onEdit={onEdit}
         onDelete={onDelete}
+        readOnly={false}
       />,
     )
     expect(screen.queryByText('PLAYER')).not.toBeInTheDocument()
@@ -306,6 +310,7 @@ describe('AdventureHeader', () => {
         userRole="GM"
         onEdit={onEdit}
         onDelete={onDelete}
+        readOnly={false}
       />,
     )
     const badge = screen.getByText('GM')
@@ -321,6 +326,7 @@ describe('AdventureHeader', () => {
         userRole={null}
         onEdit={onEdit}
         onDelete={onDelete}
+        readOnly={false}
       />,
     )
     expect(screen.getByText('Edit')).toBeInTheDocument()
@@ -335,6 +341,7 @@ describe('AdventureHeader', () => {
         userRole={null}
         onEdit={onEdit}
         onDelete={onDelete}
+        readOnly={false}
       />,
     )
     expect(screen.queryByText('Edit')).not.toBeInTheDocument()
@@ -349,6 +356,7 @@ describe('AdventureHeader', () => {
         userRole={null}
         onEdit={onEdit}
         onDelete={onDelete}
+        readOnly={false}
       />,
     )
     await userEvent.click(screen.getByText('Edit'))
@@ -363,6 +371,7 @@ describe('AdventureHeader', () => {
         userRole={null}
         onEdit={onEdit}
         onDelete={onDelete}
+        readOnly={false}
       />,
     )
     await userEvent.click(screen.getByText('Delete'))
@@ -377,6 +386,7 @@ describe('AdventureHeader', () => {
         userRole={null}
         onEdit={onEdit}
         onDelete={onDelete}
+        readOnly={false}
       />,
     )
     expect(screen.getByText('No synopsis yet.')).toBeInTheDocument()
@@ -390,6 +400,7 @@ describe('AdventureHeader', () => {
         userRole={null}
         onEdit={onEdit}
         onDelete={onDelete}
+        readOnly={false}
       />,
     )
     expect(screen.getByText('No synopsis yet.')).toBeInTheDocument()
@@ -406,6 +417,7 @@ describe('AdventureHeader', () => {
         userRole={null}
         onEdit={onEdit}
         onDelete={onDelete}
+        readOnly={false}
       />,
     )
     const synopsisEl = screen.getByText('A grand adventure begins.')
@@ -420,6 +432,7 @@ describe('AdventureHeader', () => {
         userRole={null}
         onEdit={onEdit}
         onDelete={onDelete}
+        readOnly={false}
       />,
     )
     // January ... 2025 (day may vary by timezone)

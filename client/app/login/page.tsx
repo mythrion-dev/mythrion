@@ -270,6 +270,10 @@ export default function LoginPage() {
   const { t } = useTranslation()
   return (
     <main className="flex-1 flex items-center justify-center p-4 relative">
+      <Link href="/" className="absolute top-4 right-4 text-sm text-primary hover:text-primary-hover">
+        {t('common:goHome')}
+      </Link>
+
       {/* Ambient glow */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-gradient-to-b from-accent/5 via-primary/3 to-transparent blur-3xl pointer-events-none" />
 

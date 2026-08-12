@@ -25,6 +25,7 @@ interface TemplateAttachmentPanelProps {
   readonly originalTemplateId: string | null
   readonly templateSnapshot: SnapshotSummary | null
   readonly isGM: boolean
+  readonly readOnly?: boolean
   readonly onAttached?: () => void
   readonly onDetached?: () => void
 }
@@ -34,6 +35,7 @@ export function TemplateAttachmentPanel({
   originalTemplateId,
   templateSnapshot,
   isGM,
+  readOnly,
   onAttached,
   onDetached,
 }: TemplateAttachmentPanelProps) {
@@ -106,9 +108,10 @@ export function TemplateAttachmentPanel({
           <div className="flex gap-2">
             {!hasAttachment ? (
               <button
-                onClick={() => setShowPicker(true)}
-                className="btn-primary text-xs !px-3 !py-1"
-                disabled={attaching}
+                onClick={readOnly ? undefined : () => setShowPicker(true)}
+                className={`btn-primary text-xs !px-3 !py-1 ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
+                disabled={attaching || readOnly}
+                title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
               >
                 {attaching ? (
                   <div className="w-3 h-3 border-2 border-background/30 border-t-background rounded-full animate-spin" />
@@ -119,15 +122,18 @@ export function TemplateAttachmentPanel({
             ) : (
               <>
                 <button
-                  onClick={() => setShowPicker(true)}
-                  className="btn-secondary text-xs !px-3 !py-1"
+                  onClick={readOnly ? undefined : () => setShowPicker(true)}
+                  className={`btn-secondary text-xs !px-3 !py-1 ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
+                  disabled={readOnly}
+                  title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
                 >
                   {t('campaign:replace')}
                 </button>
                 <button
-                  onClick={handleDetach}
-                  disabled={detaching}
-                  className="btn-ghost text-xs !px-3 !py-1"
+                  onClick={readOnly ? undefined : handleDetach}
+                  disabled={detaching || readOnly}
+                  className={`btn-ghost text-xs !px-3 !py-1 ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
+                  title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
                 >
                   {detaching ? (
                     <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />

@@ -48,9 +48,11 @@ export function SubscriptionProvider({ children }: { readonly children: ReactNod
     refresh()
   }, [authLoading, refresh])
 
-  const activeStatuses = ['AUTHORIZED', 'ACTIVE', 'GRACE']
+  // hasActiveSubscription is computed server-side by getMySubscription, so the
+  // client trusts that single boolean instead of re-deriving it from a status
+  // list. Admin/early-access override regardless of subscription state.
   const hasActiveSubscription =
-    (subscription !== null && activeStatuses.includes(subscription.status)) ||
+    subscription?.hasActiveSubscription === true ||
     user?.isAdmin === true ||
     user?.isEarlyAccess === true
 

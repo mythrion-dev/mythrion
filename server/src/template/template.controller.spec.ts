@@ -8,6 +8,7 @@ import { TemplateController } from './template.controller.js'
 import { TemplateService } from './template.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { SubscriptionGuard } from '../auth/subscription.guard.js'
+import { PlanLimitGuard } from '../auth/plan-limit.guard.js'
 import { CreateTemplateDto } from './dto/create-template.dto.js'
 import { UpdateTemplateDto } from './dto/update-template.dto.js'
 import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
@@ -68,6 +69,8 @@ describe('TemplateController', () => {
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: jest.fn(() => true) })
       .overrideGuard(SubscriptionGuard)
+      .useValue({ canActivate: jest.fn(() => true) })
+      .overrideGuard(PlanLimitGuard)
       .useValue({ canActivate: jest.fn(() => true) })
       .compile()
 

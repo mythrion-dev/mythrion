@@ -18,6 +18,7 @@ import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 
 const mockMembershipService = {
   requireRole: jest.fn(),
+  requireWriteRole: jest.fn(),
   assertPlayerCapacity: jest.fn(),
   isMember: jest.fn(),
   createMembership: jest.fn().mockResolvedValue({}),
@@ -36,8 +37,9 @@ describe('InvitationService', () => {
     prisma = createMockPrismaService()
     jest.clearAllMocks()
 
-    // Default: requireRole resolves successfully
+    // Default: requireRole / requireWriteRole resolve successfully
     mockMembershipService.requireRole.mockResolvedValue({ role: 'GM' })
+    mockMembershipService.requireWriteRole.mockResolvedValue({ role: 'GM' })
 
     const module = await Test.createTestingModule({
       providers: [
@@ -69,7 +71,7 @@ describe('InvitationService', () => {
 
       await service.inviteByEmail(params)
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'gm1', 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('a1', 'gm1', 'GM')
     })
 
     it('throws NotFoundException when adventure does not exist', async () => {
@@ -176,7 +178,7 @@ describe('InvitationService', () => {
 
       await service.inviteByLink(params)
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'gm1', 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('a1', 'gm1', 'GM')
     })
 
     it('returns { inviteUrl }', async () => {
@@ -515,7 +517,7 @@ describe('InvitationService', () => {
 
       await service.revoke('inv1', 'gm1')
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('a1', 'gm1', 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('a1', 'gm1', 'GM')
     })
 
     it('calls update with status=REVOKED', async () => {

@@ -209,6 +209,10 @@ export default function HomePage() {
             <Link href="/terms" className="text-sm text-muted transition-colors hover:text-foreground">
               {t('dashboard:termsLink')}
             </Link>
+            <span className="text-muted">·</span>
+            <Link href="/cancel-terms" className="text-sm text-muted transition-colors hover:text-foreground">
+              {t('dashboard:cancelTermsLink')}
+            </Link>
           </div>
         </div>
       </footer>

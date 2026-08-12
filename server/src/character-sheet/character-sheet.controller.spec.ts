@@ -67,6 +67,7 @@ describe('CharacterSheetController', () => {
       removeSectionEntry: jest.fn().mockResolvedValue(undefined),
       createResistance: jest.fn().mockResolvedValue({ id: 'res-1', name: 'Fire' }),
       removeResistance: jest.fn().mockResolvedValue(undefined),
+      assertReadAccess: jest.fn().mockResolvedValue(undefined),
       listProfessionalSkills: jest.fn().mockResolvedValue([{ id: 'ps-1', name: 'Crafting' }]),
       createProfessionalSkill: jest.fn().mockResolvedValue({ id: 'ps-2', name: 'Alchemy' }),
       updateProfessionalSkill: jest.fn().mockResolvedValue({ id: 'ps-1', name: 'Master Crafting' }),
@@ -479,16 +480,18 @@ describe('CharacterSheetController', () => {
 
   // ── Resistance Calculations ──
   describe('getCalculatedResistances', () => {
-    it('should delegate to resistanceService.calculateResistances', async () => {
+    it('should enforce read access then delegate to resistanceService.calculateResistances', async () => {
       const result = await controller.getCalculatedResistances(mockReq, 'sheet-1')
+      expect(mockSheetService.assertReadAccess).toHaveBeenCalledWith('sheet-1', 'user-1')
       expect(mockResistanceService.calculateResistances).toHaveBeenCalledWith('sheet-1')
       expect(result).toEqual([{ resistanceId: 'res-1', name: 'Fire', total: 10 }])
     })
   })
 
   describe('getCalculatedResistance', () => {
-    it('should delegate to resistanceService.calculateSingleResistance', async () => {
+    it('should enforce read access then delegate to resistanceService.calculateSingleResistance', async () => {
       const result = await controller.getCalculatedResistance(mockReq, 'sheet-1', 'res-1')
+      expect(mockSheetService.assertReadAccess).toHaveBeenCalledWith('sheet-1', 'user-1')
       expect(mockResistanceService.calculateSingleResistance).toHaveBeenCalledWith('sheet-1', 'res-1')
       expect(result).toEqual({ resistanceId: 'res-1', name: 'Fire', total: 10 })
     })
@@ -558,14 +561,16 @@ describe('CharacterSheetController', () => {
 
   // ── Armor Class Calculation ──
   describe('getCalculatedArmorClass', () => {
-    it('should delegate to acService.calculateArmorClass without armorClassId', async () => {
+    it('should enforce read access then delegate to acService.calculateArmorClass without armorClassId', async () => {
       const result = await controller.getCalculatedArmorClass(mockReq, 'sheet-1')
+      expect(mockSheetService.assertReadAccess).toHaveBeenCalledWith('sheet-1', 'user-1')
       expect(mockAcService.calculateArmorClass).toHaveBeenCalledWith('sheet-1', undefined)
       expect(result).toEqual({ total: 15, armorClassName: 'Natural Armor', fieldBreakdown: [], attributeModifierBreakdown: [] })
     })
 
-    it('should delegate to acService.calculateArmorClass with armorClassId', async () => {
+    it('should enforce read access then delegate to acService.calculateArmorClass with armorClassId', async () => {
       const result = await controller.getCalculatedArmorClass(mockReq, 'sheet-1', 'ac-1')
+      expect(mockSheetService.assertReadAccess).toHaveBeenCalledWith('sheet-1', 'user-1')
       expect(mockAcService.calculateArmorClass).toHaveBeenCalledWith('sheet-1', 'ac-1')
       expect(result).toEqual({ total: 15, armorClassName: 'Natural Armor', fieldBreakdown: [], attributeModifierBreakdown: [] })
     })

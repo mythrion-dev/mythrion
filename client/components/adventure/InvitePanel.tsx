@@ -20,6 +20,7 @@ export function InvitePanel({
   inviteError,
   inviteSending,
   invitations,
+  disabled,
   onEmailChange,
   onInviteByEmail,
   onInviteByLink,
@@ -30,6 +31,7 @@ export function InvitePanel({
   readonly inviteError: string | null
   readonly inviteSending: boolean
   readonly invitations: Invitation[]
+  readonly disabled?: boolean
   readonly onEmailChange: (e: string) => void
   readonly onInviteByEmail: (e: SubmitEvent) => void
   readonly onInviteByLink: () => void
@@ -39,7 +41,7 @@ export function InvitePanel({
   return (
     <div className="space-y-4">
       {/* Invite by email */}
-      <form onSubmit={onInviteByEmail} className="space-y-3">
+      <form onSubmit={disabled ? undefined : onInviteByEmail} className="space-y-3">
         <div>
           <label className="label">{t('campaign:inviteByEmail')}</label>
           <div className="flex gap-2">
@@ -47,13 +49,15 @@ export function InvitePanel({
               type="email"
               value={inviteEmail}
               onChange={e => onEmailChange(e.target.value)}
+              disabled={disabled}
               className="input-field flex-1"
               placeholder={t('campaign:emailPlaceholder')}
             />
             <button
               type="submit"
-              disabled={inviteSending || inviteEmail.trim().length === 0}
-              className="btn-primary"
+              disabled={inviteSending || inviteEmail.trim().length === 0 || disabled}
+              title={disabled ? t('campaign:readOnlyTooltip') : undefined}
+              className={`btn-primary ${disabled ? '!opacity-50 !cursor-not-allowed' : ''}`}
             >
               {t('campaign:send')}
             </button>
@@ -65,9 +69,10 @@ export function InvitePanel({
       <div>
         <label className="label">{t('campaign:inviteByLink')}</label>
         <button
-          onClick={onInviteByLink}
-          disabled={inviteSending}
-          className="btn-ghost"
+          onClick={disabled ? undefined : onInviteByLink}
+          disabled={inviteSending || disabled}
+          title={disabled ? t('campaign:readOnlyTooltip') : undefined}
+          className={`btn-ghost ${disabled ? '!opacity-50 !cursor-not-allowed' : ''}`}
         >
           {t('campaign:generateInviteLink')}
         </button>
@@ -106,8 +111,10 @@ export function InvitePanel({
                 {inv.invitedEmail ?? t('campaign:linkInvitation')}
               </span>
               <button
-                onClick={() => onRevoke(inv.id)}
-                className="text-xs text-danger hover:text-danger/80 transition-colors"
+                onClick={disabled ? undefined : () => onRevoke(inv.id)}
+                disabled={disabled}
+                title={disabled ? t('campaign:readOnlyTooltip') : undefined}
+                className={`text-xs text-danger transition-colors ${disabled ? 'opacity-50 cursor-not-allowed hover:text-danger' : 'hover:text-danger/80'}`}
               >
                 {t('campaign:revoke')}
               </button>

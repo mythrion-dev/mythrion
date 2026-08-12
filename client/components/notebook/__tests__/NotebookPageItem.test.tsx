@@ -50,24 +50,25 @@ describe('NotebookPageItem', () => {
     expect(screen.getByText('Lore')).toBeInTheDocument()
   })
 
-  it('deletes the page when confirmed', () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
-    render(<NotebookPageItem {...baseProps} />)
+  it('requests deletion through the custom confirmation flow', () => {
+    const onRequestDelete = vi.fn()
+    render(<NotebookPageItem {...baseProps} onRequestDelete={onRequestDelete} />)
     fireEvent.click(screen.getByLabelText('Delete page'))
-    expect(confirmSpy).toHaveBeenCalledWith('Delete this page?')
-    expect(baseProps.onDelete).toHaveBeenCalledWith('page-1')
-  })
-
-  it('does not delete the page when confirm is cancelled', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
-    render(<NotebookPageItem {...baseProps} />)
-    fireEvent.click(screen.getByLabelText('Delete page'))
+    expect(onRequestDelete).toHaveBeenCalledWith('page-1')
     expect(baseProps.onDelete).not.toHaveBeenCalled()
   })
 
+  it('does not delete the page immediately when a request is triggered', () => {
+    const onRequestDelete = vi.fn()
+    render(<NotebookPageItem {...baseProps} onRequestDelete={onRequestDelete} />)
+    fireEvent.click(screen.getByLabelText('Delete page'))
+    expect(baseProps.onDelete).not.toHaveBeenCalled()
+    expect(onRequestDelete).toHaveBeenCalledTimes(1)
+  })
+
   it('delete click does not trigger the row onClick', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
-    render(<NotebookPageItem {...baseProps} />)
+    const onRequestDelete = vi.fn()
+    render(<NotebookPageItem {...baseProps} onRequestDelete={onRequestDelete} />)
     fireEvent.click(screen.getByLabelText('Delete page'))
     expect(baseProps.onClick).not.toHaveBeenCalled()
   })

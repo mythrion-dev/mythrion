@@ -33,6 +33,7 @@ interface NpcSheet {
 interface CampaignCreatureSidebarProps {
   readonly adventureId: string
   readonly isGM: boolean
+  readonly readOnly?: boolean
   readonly refreshKey?: number
   /** Called after an NPC/MOB is created or deleted so parent components can re-fetch */
   readonly onCreaturesChange?: () => void
@@ -43,6 +44,7 @@ interface CampaignCreatureSidebarProps {
 export function CampaignCreatureSidebar({
   adventureId,
   isGM,
+  readOnly,
   refreshKey,
   onCreaturesChange,
 }: CampaignCreatureSidebarProps) {
@@ -285,9 +287,10 @@ export function CampaignCreatureSidebar({
               {/* Create buttons */}
               <div className="flex gap-2">
                 <button
-                  onClick={() => handleCreate('NPC')}
-                  disabled={creating !== null}
-                  className="flex-1 btn-primary !py-1.5 !text-xs"
+                  onClick={readOnly ? undefined : () => handleCreate('NPC')}
+                  disabled={creating !== null || readOnly}
+                  className={`flex-1 btn-primary !py-1.5 !text-xs ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
+                  title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
                 >
                   {creating === 'NPC' ? (
                     <span className="flex items-center gap-1.5 justify-center">
@@ -307,9 +310,10 @@ export function CampaignCreatureSidebar({
                   )}
                 </button>
                 <button
-                  onClick={() => handleCreate('MOB')}
-                  disabled={creating !== null}
-                  className="flex-1 btn-primary !py-1.5 !text-xs"
+                  onClick={readOnly ? undefined : () => handleCreate('MOB')}
+                  disabled={creating !== null || readOnly}
+                  className={`flex-1 btn-primary !py-1.5 !text-xs ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
+                  title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
                 >
                   {creating === 'MOB' ? (
                     <span className="flex items-center gap-1.5 justify-center">
@@ -382,7 +386,12 @@ export function CampaignCreatureSidebar({
                             }}
                           />
                           {/* Upload overlay */}
-                          <label aria-label={t('campaign:uploadAvatar')} className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                          <label
+                            aria-label={t('campaign:uploadAvatar')}
+                            aria-disabled={readOnly || undefined}
+                            title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
+                            className={`absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity ${readOnly ? 'pointer-events-none' : ''}`}
+                          >
                             <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                               <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -391,6 +400,7 @@ export function CampaignCreatureSidebar({
                               type="file"
                               accept="image/*"
                               className="hidden"
+                              disabled={readOnly}
                               onChange={e => {
                                 const f = e.target.files?.[0]
                                 if (f) handleAvatarUpload(npc.id, f)
@@ -429,10 +439,11 @@ export function CampaignCreatureSidebar({
                         <div className="flex gap-1 shrink-0">
                           {/* Edit inline drawer */}
                           <button
-                            onClick={() => setEditingNpcId(npc.id)}
-                            className="p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all"
+                            onClick={readOnly ? undefined : () => setEditingNpcId(npc.id)}
+                            disabled={readOnly}
+                            className={`p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all ${readOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                             aria-label={t('campaign:editCreature', { name: npc.characterName })}
-                            title={t('campaign:editInline')}
+                            title={readOnly ? t('campaign:readOnlyTooltip') : t('campaign:editInline')}
                           >
                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -451,13 +462,14 @@ export function CampaignCreatureSidebar({
                           </button>
                           {/* Delete */}
                           <button
-                            onClick={e => {
+                            onClick={readOnly ? undefined : e => {
                               e.stopPropagation()
                               handleDelete(npc.id)
                             }}
-                            disabled={deleting === npc.id}
-                            className="p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all shrink-0"
+                            disabled={deleting === npc.id || readOnly}
+                            className={`p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all shrink-0 ${readOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                             aria-label={t('campaign:deleteCreature', { name: npc.characterName })}
+                            title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
                           >
                             {deleting === npc.id ? (
                               <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">

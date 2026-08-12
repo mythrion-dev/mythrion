@@ -1,5 +1,5 @@
 import { api } from './api'
-import type { Plan } from './subscription-api'
+import type { Plan, PlanLimits } from './subscription-api'
 
 export interface CreatePlanPayload {
   id: string
@@ -9,6 +9,8 @@ export interface CreatePlanPayload {
   /** Price in cents (BRL) */
   price: number
   pgPlanId: string
+  /** Usage caps: { maxCampaigns?, maxTemplates? }. null/absent = unlimited. */
+  limits?: PlanLimits | null
 }
 
 export interface UpdatePlanPayload {
@@ -18,6 +20,8 @@ export interface UpdatePlanPayload {
   /** Price in cents (BRL) */
   price?: number
   pgPlanId?: string
+  /** Usage caps: { maxCampaigns?, maxTemplates? }. null/{} clears caps. */
+  limits?: PlanLimits | null
 }
 
 export async function adminFetchPlans(): Promise<Plan[]> {

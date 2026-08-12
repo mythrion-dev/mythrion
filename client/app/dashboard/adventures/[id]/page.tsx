@@ -14,6 +14,8 @@ import { CollapsibleSection } from '@/components/adventure/CollapsibleSection'
 import { MemberRow } from '@/components/adventure/MemberRow'
 import { InvitePanel } from '@/components/adventure/InvitePanel'
 import { DeleteModal } from '@/components/adventure/DeleteModal'
+import { LeaveModal } from '@/components/adventure/LeaveModal'
+import { TransferGmModal } from '@/components/adventure/TransferGmModal'
 import { EditForm } from '@/components/adventure/EditForm'
 import { CharactersSection } from '@/components/adventure/CharactersSection'
 import { TemplatesSection } from '@/components/adventure/TemplatesSection'
@@ -299,6 +301,8 @@ export default function AdventureDetailPage() {
   const [userRole, setUserRole] = useState<string | null>(null)
   const [editing, setEditing] = useState(false); const [editName, setEditName] = useState(''); const [editCampaign, setEditCampaign] = useState(''); const [editSynopsis, setEditSynopsis] = useState(''); const [editMaxPlayers, setEditMaxPlayers] = useState(4); const [editSessionWeekday, setEditSessionWeekday] = useState(''); const [editSessionTime, setEditSessionTime] = useState(''); const [editSessionType, setEditSessionType] = useState(''); const [editError, setEditError] = useState<string | null>(null); const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false); const [deleting, setDeleting] = useState(false); const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [confirmLeave, setConfirmLeave] = useState(false); const [leaving, setLeaving] = useState(false); const [leaveError, setLeaveError] = useState<string | null>(null)
+  const [showTransfer, setShowTransfer] = useState(false); const [transferTargetId, setTransferTargetId] = useState(''); const [transferring, setTransferring] = useState(false); const [transferError, setTransferError] = useState<string | null>(null)
   const [members, setMembers] = useState<Member[]>([]); const [showMembers, setShowMembers] = useState(false)
   const [showInvite, setShowInvite] = useState(false); const [inviteEmail, setInviteEmail] = useState(''); const [inviteError, setInviteError] = useState<string | null>(null); const [inviteSending, setInviteSending] = useState(false); const [inviteLink, setInviteLink] = useState<string | null>(null); const [invitations, setInvitations] = useState<Invitation[]>([])
 
@@ -452,6 +456,8 @@ export default function AdventureDetailPage() {
 
   const [npcRefreshKey, setNpcRefreshKey] = useState(0)
   const isGM = userRole === 'GM'; const [activeTab, setActiveTab] = useState<'campaign' | 'templates' | 'books'>('campaign')
+  const [accessState, setAccessState] = useState<'ACTIVE' | 'READ_ONLY' | null>(null)
+  const readOnly = accessState === 'READ_ONLY'
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null)
   const [notebookOpen, setNotebookOpen] = useState(false)
   const [showNotebook, setShowNotebook] = useState(false)
@@ -465,7 +471,8 @@ export default function AdventureDetailPage() {
 
   const fetchAdventure = useCallback(async () => { try { const d = await api.get<Adventure>(`/adventures/${id}`); setAdventure(d); setTemplateSource((d as any).templateSource ?? null); setEditName(d.name); setEditCampaign(d.campaign); setEditSynopsis(d.synopsis ?? ''); setEditMaxPlayers(d.maxPlayers); setEditSessionWeekday((d as any).sessionWeekday ?? ''); setEditSessionTime((d as any).sessionTime ?? ''); setEditSessionType((d as any).sessionType ?? '') } catch { /* load errors keep the adventure null; session loss is handled centrally by the layout AuthGuard via onAuthFailure */ } finally { setFetching(false) } }, [id])
   const resolveRole = useCallback(async () => { try { const all = await api.get<Array<{ id: string; role: string }>>('/me/adventures'); const e = all.find(a => a.id === id); if (e) setUserRole(e.role) } catch { } }, [id])
-  useEffect(() => { fetchAdventure(); resolveRole() }, [fetchAdventure, resolveRole])
+  const fetchAccessState = useCallback(async () => { try { const d = await api.get<{ accessState: 'ACTIVE' | 'READ_ONLY' }>(`/adventures/${id}/access`); setAccessState(d.accessState) } catch { } }, [id])
+  useEffect(() => { fetchAdventure(); resolveRole(); fetchAccessState() }, [fetchAdventure, resolveRole, fetchAccessState])
   const fetchMembers = useCallback(async () => { try { setMembers(await api.get<Member[]>(`/adventures/${id}/members`)) } catch { } }, [id])
   const fetchInvitations = useCallback(async () => { try { setInvitations(await api.get<Invitation[]>(`/adventures/${id}/invitations`)) } catch { } }, [id])
   const fetchTemplates = useCallback(async () => { try { setTemplates(await api.get<Template[]>(`/adventures/${id}/templates`)) } catch { } }, [id])
@@ -635,6 +642,8 @@ export default function AdventureDetailPage() {
     try { const u = await api.patch<Adventure>(`/adventures/${id}`, { name: editName.trim() || undefined, campaign: editCampaign.trim() || undefined, synopsis: editSynopsis.trim() || undefined, maxPlayers: editMaxPlayers, sessionWeekday: editSessionWeekday || undefined, sessionTime: editSessionTime || undefined, sessionType: editSessionType || undefined }); setAdventure(u); setEditing(false) } catch (err) { setEditError(err instanceof Error ? err.message : t('campaign:failedToUpdate')) } finally { setSaving(false) }
   }
   async function handleDelete() { setDeleteError(null); setDeleting(true); try { await api.delete(`/adventures/${id}`); router.push('/dashboard') } catch (err) { setDeleteError(err instanceof Error ? err.message : t('campaign:failedToDelete')); setDeleting(false); setConfirmDelete(false) } }
+  async function handleLeave() { setLeaveError(null); setLeaving(true); try { await api.post(`/adventures/${id}/leave`); router.push('/dashboard') } catch (err) { setLeaveError(err instanceof Error ? err.message : t('campaign:failedToLeave')); setLeaving(false) } }
+  async function handleTransferGm() { if (!transferTargetId) return; setTransferError(null); setTransferring(true); try { await api.post(`/adventures/${id}/transfer-gm`, { newGmId: transferTargetId }); setTransferring(false); setShowTransfer(false); setTransferTargetId(''); fetchMembers(); resolveRole(); fetchAccessState() } catch (err) { setTransferError(err instanceof Error ? err.message : t('campaign:failedToTransfer')); setTransferring(false) } }
   async function handleInviteByEmail(e: SubmitEvent) { e.preventDefault(); setInviteError(null); setInviteSending(true); try { await api.post(`/adventures/${id}/invitations/email`, { email: inviteEmail.trim() }); setInviteEmail(''); fetchInvitations() } catch (err) { setInviteError(err instanceof Error ? err.message : t('campaign:failedToSendInvitation')) } finally { setInviteSending(false) } }
   async function handleInviteByLink() { setInviteError(null); setInviteSending(true); try { const r = await api.post<{ inviteUrl: string }>(`/adventures/${id}/invitations/link`); setInviteLink(r.inviteUrl); fetchInvitations() } catch (err) { setInviteError(err instanceof Error ? err.message : t('campaign:failedToCreateLink')) } finally { setInviteSending(false) } }
   async function handleRevokeInvitation(invId: string) { try { await api.post(`/invitations/${invId}/revoke`); fetchInvitations() } catch { } }
@@ -674,7 +683,18 @@ export default function AdventureDetailPage() {
       {/* Ambient glow */}
       <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-gradient-to-b from-accent/5 via-primary/3 to-transparent blur-3xl pointer-events-none" />
       <PageNav crumbs={[{ label: t('common:dashboard'), href: '/dashboard' }, { label: adventure.name }]} />
-      <AdventureHeader adventure={adventure} isGM={isGM} userRole={userRole} onEdit={() => setEditing(true)} onDelete={() => setConfirmDelete(true)} />
+      <AdventureHeader adventure={adventure} isGM={isGM} userRole={userRole} readOnly={readOnly} onEdit={() => setEditing(true)} onDelete={() => setConfirmDelete(true)} />
+      {readOnly && (
+        <div role="status" className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-700 dark:text-amber-300">{t('campaign:readOnlyBadge')}</p>
+              <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">{t('campaign:readOnlyBanner')}</p>
+            </div>
+          </div>
+        </div>
+      )}
       {!editing ? (<div className="space-y-6 mt-8">
         <div className="flex items-center justify-between gap-4">
           <nav className="flex gap-1"><button onClick={() => setActiveTab('campaign')} className={tabPillClass(activeTab, 'campaign')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>{t('campaign:campaignTab')}</button><button onClick={() => setActiveTab('books')} className={tabPillClass(activeTab, 'books')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>{t('campaign:booksTab')}</button><button onClick={() => setActiveTab('templates')} className={tabPillClass(activeTab, 'templates')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>{t('campaign:templatesTab')}</button></nav>
@@ -702,13 +722,13 @@ export default function AdventureDetailPage() {
           )}
 
           <CollapsibleSection title={t('campaign:partyMembers')} accent expanded={showMembers} onToggle={() => { setShowMembers(!showMembers); if (!showMembers) { fetchMembers(); if (isGM) fetchInvitations() } }}>
-            {members.length === 0 ? <LoadingSkeleton variant="list" /> : <div className="space-y-2">{members.map(m => <MemberRow key={m.id} member={m} isGM={isGM} isSelf={m.user.id === user?.id} onRemove={() => handleRemoveMember(m.user.id)} />)}</div>}
+            {members.length === 0 ? <LoadingSkeleton variant="list" /> : <div className="space-y-2">{members.map(m => <MemberRow key={m.id} member={m} isGM={isGM} isSelf={m.user.id === user?.id} disabled={readOnly} onRemove={() => handleRemoveMember(m.user.id)} />)}</div>}
           </CollapsibleSection>
           {isGM && <CollapsibleSection title={t('campaign:invitePlayers')} accent expanded={showInvite} onToggle={() => setShowInvite(!showInvite)}>
-            <InvitePanel inviteEmail={inviteEmail} inviteLink={inviteLink} inviteError={inviteError} inviteSending={inviteSending} invitations={invitations} onEmailChange={setInviteEmail} onInviteByEmail={handleInviteByEmail} onInviteByLink={handleInviteByLink} onRevoke={handleRevokeInvitation} />
+            <InvitePanel inviteEmail={inviteEmail} inviteLink={inviteLink} inviteError={inviteError} inviteSending={inviteSending} invitations={invitations} disabled={readOnly} onEmailChange={setInviteEmail} onInviteByEmail={handleInviteByEmail} onInviteByLink={handleInviteByLink} onRevoke={handleRevokeInvitation} />
           </CollapsibleSection>}
           <CollapsibleSection title={t('campaign:characters')} accent expanded={showCharacters} onToggle={() => { setShowCharacters(!showCharacters); if (!showCharacters) { fetchCampaignCharacters(); fetchUserSheets() } }}>
-            <CharactersSection characters={campaignCharacters} isGM={isGM} userId={user?.id ?? ''} snapshotName={snapshotData?.snapshot?.name ?? templates[0]?.name ?? null} userSheets={userSheets} showNewCharForm={showNewCharForm} showLinkCharForm={showLinkCharForm} newCharName={newCharName} newCharError={newCharError} newCharCreating={newCharCreating} linkSheetId={linkSheetId} linkCharError={linkCharError} linkCharLinking={linkCharLinking} onNewCharClick={() => { setShowNewCharForm(true); setShowLinkCharForm(false) }} onLinkCharClick={() => { setShowLinkCharForm(true); setShowNewCharForm(false); fetchUserSheets() }} onCancelNewChar={() => { setShowNewCharForm(false); setNewCharName(''); setNewCharError(null) }} onCancelLinkChar={() => { setShowLinkCharForm(false); setLinkSheetId(''); setLinkCharError(null) }} onCreateCharacter={handleCreateCharacter} onLinkCharacter={handleLinkCharacter} onNewCharNameChange={setNewCharName} onLinkSheetChange={setLinkSheetId} onRemoveCharacter={handleRemoveCharacter} onViewCharacter={sid => router.push(`/dashboard/character-sheets/${sid}`)} />
+            <CharactersSection characters={campaignCharacters} isGM={isGM} readOnly={readOnly} userId={user?.id ?? ''} snapshotName={snapshotData?.snapshot?.name ?? templates[0]?.name ?? null} userSheets={userSheets} showNewCharForm={showNewCharForm} showLinkCharForm={showLinkCharForm} newCharName={newCharName} newCharError={newCharError} newCharCreating={newCharCreating} linkSheetId={linkSheetId} linkCharError={linkCharError} linkCharLinking={linkCharLinking} onNewCharClick={() => { setShowNewCharForm(true); setShowLinkCharForm(false) }} onLinkCharClick={() => { setShowLinkCharForm(true); setShowNewCharForm(false); fetchUserSheets() }} onCancelNewChar={() => { setShowNewCharForm(false); setNewCharName(''); setNewCharError(null) }} onCancelLinkChar={() => { setShowLinkCharForm(false); setLinkSheetId(''); setLinkCharError(null) }} onCreateCharacter={handleCreateCharacter} onLinkCharacter={handleLinkCharacter} onNewCharNameChange={setNewCharName} onLinkSheetChange={setLinkSheetId} onRemoveCharacter={handleRemoveCharacter} onViewCharacter={sid => router.push(`/dashboard/character-sheets/${sid}`)} />
           </CollapsibleSection>
           {isGM && (
             <>
@@ -735,6 +755,7 @@ export default function AdventureDetailPage() {
                 <VisibilityToggle
                   isPublic={(adventure as any).isPublic ?? false}
                   loading={visibilityLoading}
+                  disabled={readOnly}
                   onToggle={handleVisibilityToggle}
                 />
               </div>
@@ -742,6 +763,7 @@ export default function AdventureDetailPage() {
                 <JoinRequestPanel
                   requests={joinRequests}
                   loading={joinRequestsLoading}
+                  disabled={readOnly}
                   onAccept={handleAcceptRequest}
                   onReject={handleRejectRequest}
                   processingIds={processingIds}
@@ -749,6 +771,26 @@ export default function AdventureDetailPage() {
               </div>
             </>
           )}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t('campaign:membershipActions')}</h3>
+            {isGM ? (
+              <button
+                type="button"
+                onClick={() => { setTransferTargetId(''); setTransferError(null); setShowTransfer(true); fetchMembers() }}
+                className="btn-primary"
+              >
+                {t('campaign:transferGM')}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => { setLeaveError(null); setConfirmLeave(true) }}
+                className="btn-danger"
+              >
+                {t('campaign:leaveCampaign')}
+              </button>
+            )}
+          </div>
         </div>)}
         {activeTab === 'templates' && (() => {
           const hasCampaignTemplate = templateSource !== null
@@ -767,6 +809,7 @@ export default function AdventureDetailPage() {
                 ) : (
                   <TemplateAttachmentPanel
                     adventureId={id}
+                    readOnly={readOnly}
                     originalTemplateId={snapshotData?.originalTemplateId ?? null}
                     templateSnapshot={snapshotData?.snapshot ? {
                       name: snapshotData.snapshot.name,
@@ -790,7 +833,7 @@ export default function AdventureDetailPage() {
             )}
             {/* CASE 1 (no template) + CASE 2 (campaign-owned): show TemplatesSection */}
             {(!hasCampaignTemplate || templateSource === 'campaign') && (
-              <TemplatesSection templates={templates} isGM={isGM} showNewTemplate={showNewTemplate} hideCreateButton={templateSource === 'campaign'} editingTemplateId={editingTemplateId}
+              <TemplatesSection templates={templates} isGM={isGM} readOnly={readOnly} showNewTemplate={showNewTemplate} hideCreateButton={templateSource === 'campaign'} editingTemplateId={editingTemplateId}
                 newTemplateName={newTemplateName} newTemplateDescription={newTemplateDescription} newTemplateAttrs={newTemplateAttrs} newAttrModifierFormula={newAttrModifierFormula} newSkillFormula={newSkillFormula} newTemplateFields={newTemplateFields} templateError={templateError} templateCreating={templateCreating}
                 editTemplateName={editTemplateName} editTemplateDescription={editTemplateDescription} editTemplateAttrs={editTemplateAttrs} editAttrModifierFormula={editAttrModifierFormula} editSkillFormula={editSkillFormula} editingTemplateError={editingTemplateError} templateSaving={templateSaving}
                 onNewClick={() => setShowNewTemplate(true)} onCancelNew={resetNewTemplate} onCreateTemplate={handleCreateTemplate}
@@ -862,9 +905,11 @@ export default function AdventureDetailPage() {
           )
         })()}
         {activeTab === 'books' && (
-          <BookListPanel adventureId={id} isGM={isGM} onSelectBook={setSelectedBookId} />
+          <BookListPanel adventureId={id} isGM={isGM} readOnly={readOnly} onSelectBook={setSelectedBookId} />
         )}
         {confirmDelete && <DeleteModal name={adventure.name} error={deleteError} loading={deleting} onCancel={() => setConfirmDelete(false)} onConfirm={handleDelete} />}
+        {confirmLeave && <LeaveModal error={leaveError} loading={leaving} onCancel={() => setConfirmLeave(false)} onConfirm={handleLeave} />}
+        {showTransfer && <TransferGmModal members={members} currentUserId={user?.id ?? ''} value={transferTargetId} error={transferError} loading={transferring} onValueChange={setTransferTargetId} onCancel={() => { setShowTransfer(false); setTransferError(null); setTransferTargetId('') }} onConfirm={handleTransferGm} />}
       </div>) : (<EditForm name={editName} campaign={editCampaign} synopsis={editSynopsis} maxPlayers={editMaxPlayers} sessionWeekday={editSessionWeekday} sessionTime={editSessionTime} sessionType={editSessionType} error={editError} saving={saving} onNameChange={setEditName} onCampaignChange={setEditCampaign} onSynopsisChange={setEditSynopsis} onMaxPlayersChange={setEditMaxPlayers} onSessionWeekdayChange={setEditSessionWeekday} onSessionTimeChange={setEditSessionTime} onSessionTypeChange={setEditSessionType} onCancel={() => { setEditing(false); setEditError(null) }} onSubmit={handleUpdate} />)}
 
       {/* NPC/Mob Sidebar — fixed right edge, GM-only */}
@@ -872,6 +917,7 @@ export default function AdventureDetailPage() {
         <CampaignCreatureSidebar
           adventureId={id}
           isGM={isGM}
+          readOnly={readOnly}
           onCreaturesChange={() => setNpcRefreshKey(k => k + 1)}
         />
       )}
@@ -889,6 +935,7 @@ export default function AdventureDetailPage() {
       <NotebookSidebar
         adventureId={id}
         isGM={isGM}
+        readOnly={readOnly}
         forceOpen={notebookOpen}
         onClose={() => setNotebookOpen(false)}
         hideToggle

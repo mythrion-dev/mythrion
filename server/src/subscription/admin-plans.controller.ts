@@ -19,7 +19,9 @@ import {
   IsInt,
   Min,
   IsNotEmpty,
+  IsObject,
 } from 'class-validator'
+import { Prisma } from '../generated/prisma/client.js'
 import { PrismaService } from '../prisma.service.js'
 import { I18nService, i18nValidationMessage } from 'nestjs-i18n'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
@@ -52,6 +54,10 @@ class CreateSubscriptionPlanDto {
   @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsNotEmpty({ message: i18nValidationMessage('validation.isNotEmpty') })
   pgPlanId: string
+
+  /** Usage caps: { maxCampaigns?, maxTemplates? }. null/absent = unlimited. */
+  @IsOptional() @IsObject({ message: i18nValidationMessage('validation.isObject') })
+  limits?: Record<string, unknown> | null
 }
 
 class UpdateSubscriptionPlanDto {
@@ -71,6 +77,10 @@ class UpdateSubscriptionPlanDto {
 
   @IsOptional() @IsString({ message: i18nValidationMessage('validation.isString') }) @IsNotEmpty({ message: i18nValidationMessage('validation.isNotEmpty') })
   pgPlanId?: string
+
+  /** Usage caps: { maxCampaigns?, maxTemplates? }. null/{} clears caps. */
+  @IsOptional() @IsObject({ message: i18nValidationMessage('validation.isObject') })
+  limits?: Record<string, unknown> | null
 }
 
 /* ── Controller ───────────────────────────────────── */
@@ -142,6 +152,7 @@ export class AdminPlansController {
         description: body.description ?? null,
         price: body.price,
         pgPlanId: body.pgPlanId,
+        limits: this.normalizeLimits(body.limits) ?? Prisma.DbNull,
       },
     })
   }
@@ -187,6 +198,7 @@ export class AdminPlansController {
         ...(body.description !== undefined && { description: body.description }),
         ...(body.price !== undefined && { price: body.price }),
         ...(body.pgPlanId !== undefined && { pgPlanId: body.pgPlanId }),
+        ...(body.limits !== undefined && { limits: this.normalizeLimits(body.limits) ?? Prisma.DbNull }),
       },
     })
   }
@@ -224,6 +236,40 @@ export class AdminPlansController {
         this.i18n.t('subscription.priceMustBePositiveInt'),
       )
     }
+  }
+
+  /**
+   * Validate and normalize a limits value for storage; null when unlimited.
+   * Accepts null/{}/undefined (→ unlimited) and non-negative integer caps for
+   * the known keys. Throws 422 on unknown keys or malformed values. Returns a
+   * plain object so it is directly assignable to the Prisma JSON column.
+   */
+  private normalizeLimits(limits: unknown): Record<string, number> | null {
+    if (limits == null) return null
+    if (typeof limits !== 'object' || Array.isArray(limits)) {
+      throw new UnprocessableEntityException(
+        this.i18n.t('subscription.invalidPlanLimits'),
+      )
+    }
+    const source = limits as Record<string, unknown>
+    const out: Record<string, number> = {}
+    for (const [key, value] of Object.entries(source)) {
+      if (key !== 'maxCampaigns' && key !== 'maxTemplates') {
+        throw new UnprocessableEntityException(
+          this.i18n.t('subscription.invalidPlanLimits'),
+        )
+      }
+      if (
+        value != null &&
+        (typeof value !== 'number' || !Number.isInteger(value) || value < 0)
+      ) {
+        throw new UnprocessableEntityException(
+          this.i18n.t('subscription.invalidPlanLimits'),
+        )
+      }
+      out[key] = value as number
+    }
+    return Object.keys(out).length > 0 ? out : null
   }
 
   /**

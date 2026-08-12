@@ -406,8 +406,7 @@ describe('NotebookSidebar extended actions', () => {
     await waitFor(() => expect(screen.queryByText('Root Page')).not.toBeInTheDocument())
   })
 
-  it('deletes the active page from the editor when confirmed', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
+  it('opens the custom delete confirmation and deletes the active page after confirmation', async () => {
     renderNotebook()
     await openSidebar()
     fireEvent.click(screen.getByText('Lore'))
@@ -415,19 +414,24 @@ describe('NotebookSidebar extended actions', () => {
     expect(screen.getByTestId('notebook-editor')).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText('Delete page'))
+    expect(screen.getByText('Delete this page?')).toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Delete page' }).at(-1)!)
+
     expect(api.delete).toHaveBeenCalledWith('/adventures/adv-1/notebook/pages/page-1')
     await waitFor(() => expect(screen.queryByTestId('notebook-editor')).not.toBeInTheDocument())
     expect(screen.queryByText('Folder Page')).not.toBeInTheDocument()
   })
 
-  it('keeps the page when the editor delete is cancelled', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
+  it('keeps the page when the custom delete confirmation is cancelled', async () => {
     renderNotebook()
     await openSidebar()
     fireEvent.click(screen.getByText('Lore'))
     fireEvent.click(screen.getByText('Folder Page'))
 
     fireEvent.click(screen.getByLabelText('Delete page'))
+    expect(screen.getByText('Delete this page?')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+
     expect(api.delete).not.toHaveBeenCalled()
     expect(screen.getByTestId('notebook-editor')).toBeInTheDocument()
   })

@@ -128,12 +128,18 @@ describe('NotebookFolder', () => {
     expect(screen.queryByText('New Page')).not.toBeInTheDocument()
   })
 
-  it('deletes a page inside the folder when confirmed', () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+  it('deletes a page inside the folder directly when no confirmation flow is provided', () => {
     render(<NotebookFolder {...baseProps} isExpanded />)
     fireEvent.click(screen.getAllByLabelText('Delete page')[0])
-    expect(confirmSpy).toHaveBeenCalledWith('Delete this page?')
     expect(baseProps.onDeletePage).toHaveBeenCalledWith('page-1')
+  })
+
+  it('requests confirmation before deleting a page when onRequestDeletePage is provided', () => {
+    const onRequestDeletePage = vi.fn()
+    render(<NotebookFolder {...baseProps} isExpanded onRequestDeletePage={onRequestDeletePage} />)
+    fireEvent.click(screen.getAllByLabelText('Delete page')[0])
+    expect(onRequestDeletePage).toHaveBeenCalledWith('page-1')
+    expect(baseProps.onDeletePage).not.toHaveBeenCalled()
   })
 
   it('notifies onDragOverFolder and onDropOnFolder for drag and drop', () => {

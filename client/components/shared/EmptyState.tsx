@@ -9,6 +9,8 @@ interface EmptyStateProps {
   readonly actionLabel?: string
   readonly actionHref?: string
   readonly onAction?: () => void
+  readonly disabled?: boolean
+  readonly actionTitle?: string
 }
 
 export function EmptyState({
@@ -18,6 +20,8 @@ export function EmptyState({
   actionLabel,
   actionHref,
   onAction,
+  disabled,
+  actionTitle,
 }: Readonly<EmptyStateProps>) {
   let actionEl: React.ReactNode = null
   if (actionLabel) {
@@ -29,7 +33,12 @@ export function EmptyState({
       )
     } else {
       actionEl = (
-        <button onClick={onAction} className="btn-primary">
+        <button
+          onClick={disabled ? undefined : onAction}
+          disabled={disabled}
+          title={actionTitle}
+          className={`btn-primary ${disabled ? '!opacity-50 !cursor-not-allowed' : ''}`}
+        >
           {actionLabel}
         </button>
       )

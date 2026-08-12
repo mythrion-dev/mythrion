@@ -28,6 +28,7 @@ import type { UpdateTemplateDto } from './dto/update-template.dto'
 
 const mockMembershipService = {
   requireRole: jest.fn<any>(),
+  requireWriteRole: jest.fn<any>(),
   isMember: jest.fn<any>(),
 }
 
@@ -70,8 +71,9 @@ describe('TemplateService', () => {
     prisma = createMockPrismaService()
     jest.clearAllMocks()
 
-    // Default: requireRole resolves, isMember returns true
-    mockMembershipService.requireRole.mockResolvedValue({ role: 'GM' })
+    // Default: requireRole / requireWriteRole resolve, isMember returns true
+    mockMembershipService.requireWriteRole.mockResolvedValue({ role: 'GM' })
+    mockMembershipService.requireWriteRole.mockResolvedValue({ role: 'GM' })
     mockMembershipService.isMember.mockResolvedValue(true)
 
     const module = await Test.createTestingModule({
@@ -115,7 +117,7 @@ describe('TemplateService', () => {
 
       const result = await service.create(adventureId, userId, dto)
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
       expect(prisma.template.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -208,7 +210,7 @@ describe('TemplateService', () => {
 
       await service.create(adventureId, userId, dto as any)
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
       expect(prisma.template.create).toHaveBeenCalled()
       // Skills post-create should have been updated with attribute links
       expect(prisma.templateSkill.update).toHaveBeenCalled()
@@ -424,7 +426,7 @@ describe('TemplateService', () => {
       const dto: UpdateTemplateDto = { name: 'New Name' }
       const result = await service.update(id, userId, dto)
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('adv-1', userId, 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('adv-1', userId, 'GM')
       expect(prisma.template.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id },
@@ -433,6 +435,17 @@ describe('TemplateService', () => {
       )
       expect(mockRedisService.del).toHaveBeenCalledWith(`templates:adventure:adv-1`)
       expect(result).toEqual(updated)
+    })
+
+    it('blocks update on an adventure-scoped template when the campaign is read-only, even for the template owner', async () => {
+      const existing = mockTemplateWithInclude({ ownerId: userId, adventureId: 'adv-1' })
+      prisma.template.findUnique.mockResolvedValue(existing)
+      // Campaign read-only → requireWriteRole rejects via assertCampaignWritable
+      mockMembershipService.requireWriteRole.mockRejectedValue(new ForbiddenException('This campaign is read-only'))
+
+      await expect(service.update(id, userId, { name: 'Nope' })).rejects.toThrow(ForbiddenException)
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('adv-1', userId, 'GM')
+      expect(prisma.template.update).not.toHaveBeenCalled()
     })
 
     it('creates new attributes, updates existing, deletes removed, and upserts sheet values', async () => {
@@ -1112,7 +1125,7 @@ describe('TemplateService', () => {
 
       const result = await service.remove(id, userId)
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('adv-1', userId, 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('adv-1', userId, 'GM')
       expect(prisma.template.delete).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id } }),
       )
@@ -1145,6 +1158,17 @@ describe('TemplateService', () => {
 
       await expect(service.remove(id, userId)).rejects.toThrow(NotFoundException)
       await expect(service.remove(id, userId)).rejects.toThrow('Template not found')
+      expect(prisma.template.delete).not.toHaveBeenCalled()
+    })
+
+    it('blocks deletion on an adventure-scoped template when the campaign is read-only, even for the template owner', async () => {
+      const existing = mockTemplateWithInclude({ ownerId: userId, adventureId: 'adv-1' })
+      prisma.template.findUnique.mockResolvedValue(existing)
+      // Campaign read-only → requireWriteRole rejects via assertCampaignWritable
+      mockMembershipService.requireWriteRole.mockRejectedValue(new ForbiddenException('This campaign is read-only'))
+
+      await expect(service.remove(id, userId)).rejects.toThrow(ForbiddenException)
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('adv-1', userId, 'GM')
       expect(prisma.template.delete).not.toHaveBeenCalled()
     })
   })
@@ -1206,7 +1230,7 @@ describe('TemplateService', () => {
 
       const result = await service.clone(id, userId)
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('adv-1', userId, 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('adv-1', userId, 'GM')
       expect(prisma.template.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id } }),
       )
@@ -1474,10 +1498,10 @@ describe('TemplateService', () => {
       expect(prisma.template.update).not.toHaveBeenCalled()
     })
 
-    it('throws ForbiddenException when requireRole rejects', async () => {
+    it('throws ForbiddenException when requireWriteRole rejects', async () => {
       const existing = mockTemplateWithInclude()
       prisma.template.findUnique.mockResolvedValue(existing)
-      mockMembershipService.requireRole.mockRejectedValue(new ForbiddenException('Only the Game Master can perform this action'))
+      mockMembershipService.requireWriteRole.mockRejectedValue(new ForbiddenException('Only the Game Master can perform this action'))
 
       await expect(service.update(id, 'user-1', { name: 'Try' })).rejects.toThrow(ForbiddenException)
       await expect(service.update(id, 'user-1', { name: 'Try' })).rejects.toThrow('Only the Game Master can perform this action')
@@ -1553,7 +1577,7 @@ describe('TemplateService', () => {
       const result = await service.update(id, ownerId, { name: 'Updated' })
 
       expect(result.name).toBe('Updated')
-      expect(mockMembershipService.requireRole).not.toHaveBeenCalled()
+      expect(mockMembershipService.requireWriteRole).not.toHaveBeenCalled()
     })
 
     it('throws ForbiddenException when non-owner tries to update a standalone template', async () => {
@@ -1574,7 +1598,7 @@ describe('TemplateService', () => {
       const result = await service.update(id, 'gm-user', { name: 'GM Update' })
 
       expect(result.name).toBe('GM Update')
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('adv-1', 'gm-user', 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('adv-1', 'gm-user', 'GM')
     })
   })
 
@@ -1595,7 +1619,7 @@ describe('TemplateService', () => {
       const result = await service.remove(id, ownerId)
 
       expect(result).toEqual(existing)
-      expect(mockMembershipService.requireRole).not.toHaveBeenCalled()
+      expect(mockMembershipService.requireWriteRole).not.toHaveBeenCalled()
       expect(mockRedisService.del).toHaveBeenCalledWith(`template:${id}`)
     })
 
@@ -1656,7 +1680,7 @@ describe('TemplateService', () => {
       const result = await service.clone(id, 'stranger')
 
       expect(result).toBeDefined()
-      expect(mockMembershipService.requireRole).not.toHaveBeenCalled()
+      expect(mockMembershipService.requireWriteRole).not.toHaveBeenCalled()
     })
 
     it('throws ForbiddenException when cloning a non-public, non-owned standalone template', async () => {
@@ -1679,7 +1703,7 @@ describe('TemplateService', () => {
       const result = await service.clone(id, 'gm-user')
 
       expect(result).toBeDefined()
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith('adv-1', 'gm-user', 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('adv-1', 'gm-user', 'GM')
     })
   })
 
@@ -1957,7 +1981,7 @@ describe('TemplateService', () => {
 
       const result = await service.attachToAdventure(templateId, adventureId, userId)
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
       expect(prisma.template.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: templateId } }),
       )
@@ -1988,7 +2012,7 @@ describe('TemplateService', () => {
     })
 
     it('throws ForbiddenException when user is not GM', async () => {
-      mockMembershipService.requireRole.mockRejectedValue(new ForbiddenException('Not GM'))
+      mockMembershipService.requireWriteRole.mockRejectedValue(new ForbiddenException('Not GM'))
 
       await expect(service.attachToAdventure(templateId, adventureId, 'not-gm')).rejects.toThrow(ForbiddenException)
       expect(prisma.template.findUnique).not.toHaveBeenCalled()
@@ -2041,7 +2065,7 @@ describe('TemplateService', () => {
 
       const result = await service.replaceAdventureTemplate(templateId, adventureId, userId)
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
       expect(prisma.template.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: templateId } }),
       )
@@ -2072,7 +2096,7 @@ describe('TemplateService', () => {
     })
 
     it('throws ForbiddenException when user is not GM', async () => {
-      mockMembershipService.requireRole.mockRejectedValue(new ForbiddenException('Not GM'))
+      mockMembershipService.requireWriteRole.mockRejectedValue(new ForbiddenException('Not GM'))
 
       await expect(
         service.replaceAdventureTemplate(templateId, adventureId, 'not-gm'),
@@ -2120,7 +2144,7 @@ describe('TemplateService', () => {
 
       const result = await service.detachFromAdventure(adventureId, userId)
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
       expect(prisma.adventure.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: adventureId },
@@ -2152,7 +2176,7 @@ describe('TemplateService', () => {
     })
 
     it('throws ForbiddenException when user is not GM', async () => {
-      mockMembershipService.requireRole.mockRejectedValue(new ForbiddenException('Not GM'))
+      mockMembershipService.requireWriteRole.mockRejectedValue(new ForbiddenException('Not GM'))
 
       await expect(service.detachFromAdventure(adventureId, 'not-gm')).rejects.toThrow(ForbiddenException)
       expect(prisma.adventure.update).not.toHaveBeenCalled()
