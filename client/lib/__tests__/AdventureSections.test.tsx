@@ -122,6 +122,7 @@ function makeCharacter(overrides = {}) {
     adventure: { id: 'adv-1', name: 'The Lost Mines', campaign: 'Phandelver' },
     template: { id: 'tmpl-1', name: 'Fighter' },
     owner: { id: 'user-1', displayName: 'HeroPlayer', email: 'player@test.com' },
+    assignedMember: null,
     createdAt: '2025-01-15T00:00:00Z',
     ...overrides,
   }
