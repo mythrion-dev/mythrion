@@ -4,6 +4,8 @@ import { CollapsibleSection } from '@/components/adventure/CollapsibleSection'
 import { CollapsibleAttrCard } from '@/components/adventure/CollapsibleAttrCard'
 import { CollapsibleSkillCard } from '@/components/adventure/CollapsibleSkillCard'
 import { DeleteModal } from '@/components/adventure/DeleteModal'
+import { LeaveModal } from '@/components/adventure/LeaveModal'
+import { TransferGmModal } from '@/components/adventure/TransferGmModal'
 import type { ReactNode } from 'react'
 
 // ── CollapsibleSection ──
@@ -547,5 +549,206 @@ describe('DeleteModal', () => {
     expect(errorDiv).toBeInTheDocument()
     expect(errorDiv?.className).toContain('border-danger/30')
     expect(errorDiv?.textContent).toContain('Failed to delete')
+  })
+})
+
+// ── LeaveModal ──
+
+describe('LeaveModal', () => {
+  it('renders the "Leave Campaign" heading', () => {
+    render(
+      <LeaveModal error={null} loading={false} onCancel={() => {}} onConfirm={() => {}} />,
+    )
+    expect(screen.getByRole('heading', { name: 'Leave Campaign' })).toBeInTheDocument()
+  })
+
+  it('renders the leave hint text', () => {
+    render(
+      <LeaveModal error={null} loading={false} onCancel={() => {}} onConfirm={() => {}} />,
+    )
+    expect(
+      screen.getByText("Leaving removes you from this campaign's party."),
+    ).toBeInTheDocument()
+  })
+
+  it('renders the confirmation message', () => {
+    render(
+      <LeaveModal error={null} loading={false} onCancel={() => {}} onConfirm={() => {}} />,
+    )
+    expect(
+      screen.getByText(/Are you sure you want to leave this campaign/),
+    ).toBeInTheDocument()
+  })
+
+  it('renders Cancel and Leave Campaign buttons', () => {
+    render(
+      <LeaveModal error={null} loading={false} onCancel={() => {}} onConfirm={() => {}} />,
+    )
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Leave Campaign' })).toBeInTheDocument()
+  })
+
+  it('calls onCancel when Cancel is clicked', () => {
+    const onCancel = vi.fn()
+    render(
+      <LeaveModal error={null} loading={false} onCancel={onCancel} onConfirm={() => {}} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(onCancel).toHaveBeenCalledTimes(1)
+  })
+
+  it('calls onConfirm when the confirm button is clicked', () => {
+    const onConfirm = vi.fn()
+    render(
+      <LeaveModal error={null} loading={false} onCancel={() => {}} onConfirm={onConfirm} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Leave Campaign' }))
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+  })
+
+  it('displays the error message when error is provided', () => {
+    render(
+      <LeaveModal error="Failed to leave the campaign" loading={false} onCancel={() => {}} onConfirm={() => {}} />,
+    )
+    expect(screen.getByText('Failed to leave the campaign')).toBeInTheDocument()
+  })
+
+  it('does not display an error box when error is null', () => {
+    const { container } = render(
+      <LeaveModal error={null} loading={false} onCancel={() => {}} onConfirm={() => {}} />,
+    )
+    expect(container.querySelector('.rounded-lg.bg-danger-muted')).toBeNull()
+  })
+
+  it('shows "Leaving..." when loading is true', () => {
+    render(
+      <LeaveModal error={null} loading={true} onCancel={() => {}} onConfirm={() => {}} />,
+    )
+    expect(screen.getByRole('button', { name: 'Leaving...' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Leave Campaign' })).not.toBeInTheDocument()
+  })
+
+  it('disables both buttons when loading is true', () => {
+    render(
+      <LeaveModal error={null} loading={true} onCancel={() => {}} onConfirm={() => {}} />,
+    )
+    expect(screen.getByRole('button', { name: 'Leaving...' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
+  })
+
+  it('renders the fixed overlay with z-50 and backdrop', () => {
+    const { container } = render(
+      <LeaveModal error={null} loading={false} onCancel={() => {}} onConfirm={() => {}} />,
+    )
+    const overlay = container.querySelector('.fixed.inset-0')
+    expect(overlay).toBeInTheDocument()
+    expect(overlay?.className).toContain('z-50')
+    expect(container.querySelector('.bg-black\\/50')).toBeInTheDocument()
+  })
+})
+
+// ── TransferGmModal ──
+
+describe('TransferGmModal', () => {
+  const members = [
+    { id: 'm-1', role: 'GM', user: { id: 'user-1', email: 'alice@example.com', displayName: 'Alice' } },
+    { id: 'm-2', role: 'PLAYER', user: { id: 'user-2', email: 'bob@example.com', displayName: 'Bob' } },
+    { id: 'm-3', role: 'PLAYER', user: { id: 'user-3', email: 'carol@example.com', displayName: null } },
+  ]
+
+  const baseProps = {
+    members,
+    currentUserId: 'user-1',
+    value: '',
+    error: null as string | null,
+    loading: false,
+    onValueChange: () => {},
+    onCancel: () => {},
+    onConfirm: () => {},
+  }
+
+  it('renders the "Transfer GM Role" heading and help text', () => {
+    render(<TransferGmModal {...baseProps} />)
+    expect(screen.getByText('Transfer GM Role')).toBeInTheDocument()
+    expect(
+      screen.getByText(/Choose a player to become the new Game Master/),
+    ).toBeInTheDocument()
+  })
+
+  it('lists only non-GM players who are not the current user', () => {
+    render(<TransferGmModal {...baseProps} />)
+    expect(screen.getByRole('option', { name: 'Bob' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'carol@example.com' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'Alice' })).not.toBeInTheDocument()
+  })
+
+  it('renders the placeholder option', () => {
+    render(<TransferGmModal {...baseProps} />)
+    expect(screen.getByRole('option', { name: 'Select a player...' })).toBeInTheDocument()
+  })
+
+  it('calls onValueChange when a player is selected', () => {
+    const onValueChange = vi.fn()
+    render(<TransferGmModal {...baseProps} onValueChange={onValueChange} />)
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'user-2' } })
+    expect(onValueChange).toHaveBeenCalledWith('user-2')
+  })
+
+  it('disables the confirm button when no player is selected', () => {
+    render(<TransferGmModal {...baseProps} value="" />)
+    expect(screen.getByRole('button', { name: 'Transfer' })).toBeDisabled()
+  })
+
+  it('enables the confirm button when a player is selected', () => {
+    render(<TransferGmModal {...baseProps} value="user-2" />)
+    expect(screen.getByRole('button', { name: 'Transfer' })).not.toBeDisabled()
+  })
+
+  it('calls onCancel when Cancel is clicked', () => {
+    const onCancel = vi.fn()
+    render(<TransferGmModal {...baseProps} onCancel={onCancel} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(onCancel).toHaveBeenCalledTimes(1)
+  })
+
+  it('calls onConfirm when Transfer is clicked with a selection', () => {
+    const onConfirm = vi.fn()
+    render(<TransferGmModal {...baseProps} value="user-2" onConfirm={onConfirm} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Transfer' }))
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not call onConfirm when Transfer is clicked without a selection', () => {
+    const onConfirm = vi.fn()
+    render(<TransferGmModal {...baseProps} value="" onConfirm={onConfirm} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Transfer' }))
+    expect(onConfirm).not.toHaveBeenCalled()
+  })
+
+  it('displays the error message when error is provided', () => {
+    render(<TransferGmModal {...baseProps} error="Failed to transfer the GM role" />)
+    expect(screen.getByText('Failed to transfer the GM role')).toBeInTheDocument()
+  })
+
+  it('shows the empty state when there are no players to transfer to', () => {
+    render(<TransferGmModal {...baseProps} members={members.slice(0, 1)} />)
+    expect(
+      screen.getByText(/No other players are available to take over/),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+  })
+
+  it('shows "Transferring..." and disables buttons when loading', () => {
+    render(<TransferGmModal {...baseProps} value="user-2" loading={true} />)
+    expect(screen.getByRole('button', { name: 'Transferring...' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
+  })
+
+  it('renders the fixed overlay with z-50 and backdrop', () => {
+    const { container } = render(<TransferGmModal {...baseProps} />)
+    const overlay = container.querySelector('.fixed.inset-0')
+    expect(overlay).toBeInTheDocument()
+    expect(overlay?.className).toContain('z-50')
+    expect(container.querySelector('.bg-black\\/50')).toBeInTheDocument()
   })
 })

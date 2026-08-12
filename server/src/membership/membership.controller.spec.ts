@@ -61,6 +61,16 @@ describe('MembershipController', () => {
       }),
       getUserAdventures: jest.fn().mockResolvedValue(mockAdventures),
       getAccessState: jest.fn().mockResolvedValue('ACTIVE'),
+      leaveCampaign: jest.fn().mockResolvedValue({
+        id: 'm2',
+        adventureId: 'adv-1',
+        userId: 'user-2',
+        role: 'PLAYER',
+      }),
+      transferGm: jest.fn().mockResolvedValue([
+        { id: 'm1', adventureId: 'adv-1', userId: 'user-1', role: 'PLAYER' },
+        { id: 'm2', adventureId: 'adv-1', userId: 'user-2', role: 'GM' },
+      ]),
     }
 
     const module: TestingModule = await Test.createTestingModule({
@@ -247,6 +257,91 @@ describe('MembershipController', () => {
     })
   })
 
+  describe('leaveCampaign', () => {
+    it('should delegate to membershipService.leaveCampaign with the current user', async () => {
+      const result = await controller.leaveCampaign(mockUserReq, 'adv-1')
+
+      expect(mockMembershipService.leaveCampaign).toHaveBeenCalledWith(
+        'adv-1',
+        'user-1',
+      )
+      expect(result).toEqual({
+        id: 'm2',
+        adventureId: 'adv-1',
+        userId: 'user-2',
+        role: 'PLAYER',
+      })
+    })
+
+    it('should propagate a service rejection', async () => {
+      mockMembershipService.leaveCampaign.mockRejectedValue(
+        new ForbiddenException('You are not a member of this campaign'),
+      )
+
+      await expect(controller.leaveCampaign(mockUserReq, 'adv-1')).rejects.toThrow(
+        ForbiddenException,
+      )
+    })
+  })
+
+  describe('transferGm', () => {
+    it('should require GM role then delegate to membershipService.transferGm', async () => {
+      mockMembershipService.requireRole.mockResolvedValueOnce({
+        id: 'm1',
+        adventureId: 'adv-1',
+        userId: 'user-1',
+        role: 'GM',
+      })
+      mockMembershipService.transferGm.mockResolvedValueOnce([
+        { id: 'm1', adventureId: 'adv-1', userId: 'user-1', role: 'PLAYER' },
+        { id: 'm2', adventureId: 'adv-1', userId: 'user-2', role: 'GM' },
+      ])
+
+      const dto = { newGmId: 'user-2' }
+      const result = await controller.transferGm(mockUserReq, 'adv-1', dto)
+
+      expect(mockMembershipService.requireRole).toHaveBeenCalledWith(
+        'adv-1',
+        'user-1',
+        'GM',
+      )
+      expect(mockMembershipService.transferGm).toHaveBeenCalledWith(
+        'adv-1',
+        'user-1',
+        'user-2',
+      )
+      expect(result).toEqual([
+        { id: 'm1', adventureId: 'adv-1', userId: 'user-1', role: 'PLAYER' },
+        { id: 'm2', adventureId: 'adv-1', userId: 'user-2', role: 'GM' },
+      ])
+    })
+
+    it('should throw ForbiddenException when requireRole rejects (user not GM)', async () => {
+      mockMembershipService.requireRole.mockRejectedValueOnce(
+        new ForbiddenException('Only the Game Master can perform this action'),
+      )
+
+      const dto = { newGmId: 'user-2' }
+      await expect(controller.transferGm(mockUserReq, 'adv-1', dto)).rejects.toThrow(
+        ForbiddenException,
+      )
+
+      expect(mockMembershipService.transferGm).not.toHaveBeenCalled()
+    })
+
+    it('should propagate a service rejection when the transfer fails', async () => {
+      mockMembershipService.requireRole.mockResolvedValueOnce(undefined)
+      mockMembershipService.transferGm.mockRejectedValueOnce(
+        new ForbiddenException('The new Game Master needs an active subscription'),
+      )
+
+      const dto = { newGmId: 'user-2' }
+      await expect(controller.transferGm(mockUserReq, 'adv-1', dto)).rejects.toThrow(
+        ForbiddenException,
+      )
+    })
+  })
+
   describe('getMyAdventures', () => {
     it('should delegate to membershipService.getUserAdventures with the user id', async () => {
       const result = await controller.getMyAdventures(mockUserReq)
@@ -300,6 +395,25 @@ describe('MembershipController', () => {
       await expect(
         controller.getAccessState(mockUserReq, 'adv-1'),
       ).rejects.toThrow(ForbiddenException)
+    })
+  })
+
+  describe('generated decorator metadata fallback', () => {
+    it('covers the design:paramtypes fallback branch emitted for the injected type', () => {
+      // With emitDecoratorMetadata, TS emits a `typeof Service === "function"
+      // ? Service : Object` ternary in the class-level __decorate call. Loading
+      // the controller in an isolated registry with the service as a
+      // non-function exercises the `: Object` fallback, which is otherwise
+      // unreachable while the real class is imported.
+      jest.isolateModules(() => {
+        jest.doMock('./membership.service.js', () => ({
+          MembershipService: undefined,
+        }))
+        const { MembershipController } = jest.requireMock(
+          './membership.controller.js',
+        )
+        expect(MembershipController).toBeDefined()
+      })
     })
   })
 

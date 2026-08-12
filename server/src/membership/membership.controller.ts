@@ -3,6 +3,7 @@ import {
   Get,
   Delete,
   Patch,
+  Post,
   Param,
   Body,
   UseGuards,
@@ -11,13 +12,18 @@ import {
 import { MembershipService } from './membership.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
-import { IsEnum } from 'class-validator'
+import { IsEnum, IsString } from 'class-validator'
 
 const MemberRoleEnum = { PLAYER: 'PLAYER' as const }
 
 class UpdateRoleDto {
   @IsEnum(MemberRoleEnum)
   role!: 'PLAYER'
+}
+
+class TransferGmDto {
+  @IsString()
+  newGmId!: string
 }
 
 @Controller()
@@ -57,6 +63,33 @@ export class MembershipController {
   ) {
     return this.membership.requireWriteRole(adventureId, req.user.sub, 'GM').then(() =>
       this.membership.removeMember(adventureId, userId),
+    )
+  }
+
+  /** POST /adventures/:adventureId/leave — a member leaves on their own */
+  @Post('adventures/:adventureId/leave')
+  leaveCampaign(
+    @Req() req: AuthenticatedRequest,
+    @Param('adventureId') adventureId: string,
+  ) {
+    return this.membership.leaveCampaign(adventureId, req.user.sub)
+  }
+
+  /**
+   * POST /adventures/:adventureId/transfer-gm
+   * GM hands the role to another player. Membership-only role gate (not
+   * writability): a read-only campaign can still be handed off, since the new
+   * GM's entitlement — checked inside the service — is what determines whether
+   * the campaign stays writable.
+   */
+  @Post('adventures/:adventureId/transfer-gm')
+  transferGm(
+    @Req() req: AuthenticatedRequest,
+    @Param('adventureId') adventureId: string,
+    @Body() dto: TransferGmDto,
+  ) {
+    return this.membership.requireRole(adventureId, req.user.sub, 'GM').then(() =>
+      this.membership.transferGm(adventureId, req.user.sub, dto.newGmId),
     )
   }
 

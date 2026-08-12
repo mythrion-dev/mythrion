@@ -276,6 +276,161 @@ describe('MembershipService', () => {
     })
   })
 
+  describe('leaveCampaign', () => {
+    it('throws ForbiddenException when the user is not a member', async () => {
+      prisma.campaignMember.findUnique.mockResolvedValue(null)
+
+      await expect(service.leaveCampaign('a1', 'u1')).rejects.toThrow(
+        'You are not a member of this campaign',
+      )
+      expect(prisma.campaignMember.delete).not.toHaveBeenCalled()
+    })
+
+    it('throws ForbiddenException when the member is the GM', async () => {
+      prisma.campaignMember.findUnique.mockResolvedValue({
+        id: 'm1',
+        adventureId: 'a1',
+        userId: 'u1',
+        role: 'GM',
+      })
+
+      await expect(service.leaveCampaign('a1', 'u1')).rejects.toThrow(
+        'The Game Master cannot leave the campaign',
+      )
+      expect(prisma.campaignMember.delete).not.toHaveBeenCalled()
+    })
+
+    it('deletes the membership for a PLAYER member', async () => {
+      const deleted = { id: 'm1', adventureId: 'a1', userId: 'u2', role: 'PLAYER' }
+      prisma.campaignMember.findUnique.mockResolvedValue({
+        id: 'm1',
+        adventureId: 'a1',
+        userId: 'u2',
+        role: 'PLAYER',
+      })
+      prisma.campaignMember.delete.mockResolvedValue(deleted)
+
+      const result = await service.leaveCampaign('a1', 'u2')
+
+      expect(result).toEqual(deleted)
+      expect(prisma.campaignMember.delete).toHaveBeenCalledWith({
+        where: { adventureId_userId: { adventureId: 'a1', userId: 'u2' } },
+      })
+    })
+  })
+
+  describe('transferGm', () => {
+    it('throws ForbiddenException when transferring to the current GM', async () => {
+      await expect(service.transferGm('a1', 'u1', 'u1')).rejects.toThrow(
+        'You cannot transfer the GM role to yourself',
+      )
+      expect(prisma.campaignMember.findUnique).not.toHaveBeenCalled()
+    })
+
+    it('throws ForbiddenException when the target is not a member', async () => {
+      prisma.campaignMember.findUnique.mockResolvedValue(null)
+
+      await expect(service.transferGm('a1', 'u1', 'u2')).rejects.toThrow(
+        'The selected user is not a player in this campaign',
+      )
+      expect(prisma.$transaction).not.toHaveBeenCalled()
+    })
+
+    it('throws ForbiddenException when the target member is not a PLAYER', async () => {
+      prisma.campaignMember.findUnique.mockResolvedValue({
+        id: 'm2',
+        adventureId: 'a1',
+        userId: 'u2',
+        role: 'GM',
+      })
+
+      await expect(service.transferGm('a1', 'u1', 'u2')).rejects.toThrow(
+        'The selected user is not a player in this campaign',
+      )
+    })
+
+    it('throws ForbiddenException when the target has no active subscription', async () => {
+      prisma.campaignMember.findUnique.mockResolvedValue({
+        id: 'm2',
+        adventureId: 'a1',
+        userId: 'u2',
+        role: 'PLAYER',
+      })
+      prisma.user.findUnique.mockResolvedValue({ id: 'u2', email: 'p@test.com' })
+      subscription.mockHasActiveSubscription.mockResolvedValue(false)
+
+      await expect(service.transferGm('a1', 'u1', 'u2')).rejects.toThrow(
+        'The new Game Master needs an active subscription',
+      )
+      expect(prisma.$transaction).not.toHaveBeenCalled()
+    })
+
+    it('transfers the GM role and ownership in a transaction when the target is entitled', async () => {
+      prisma.campaignMember.findUnique.mockResolvedValue({
+        id: 'm2',
+        adventureId: 'a1',
+        userId: 'u2',
+        role: 'PLAYER',
+      })
+      prisma.user.findUnique.mockResolvedValue({ id: 'u2', email: 'p@test.com' })
+      subscription.mockHasActiveSubscription.mockResolvedValue(true)
+
+      const result = await service.transferGm('a1', 'u1', 'u2')
+
+      expect(result).toEqual([])
+      expect(subscription.hasActiveSubscription).toHaveBeenCalledWith('u2')
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1)
+      const txOps = prisma.$transaction.mock.calls[0][0]
+      expect(txOps).toHaveLength(3)
+      expect(prisma.campaignMember.update).toHaveBeenNthCalledWith(1, {
+        where: { adventureId_userId: { adventureId: 'a1', userId: 'u1' } },
+        data: { role: 'PLAYER' },
+      })
+      expect(prisma.campaignMember.update).toHaveBeenNthCalledWith(2, {
+        where: { adventureId_userId: { adventureId: 'a1', userId: 'u2' } },
+        data: { role: 'GM' },
+      })
+      expect(prisma.adventure.update).toHaveBeenCalledWith({
+        where: { id: 'a1' },
+        data: { ownerId: 'u2' },
+      })
+    })
+
+    it('allows the transfer when the target is an admin despite a lapsed subscription', async () => {
+      prisma.campaignMember.findUnique.mockResolvedValue({
+        id: 'm2',
+        adventureId: 'a1',
+        userId: 'u2',
+        role: 'PLAYER',
+      })
+      prisma.user.findUnique.mockResolvedValue({ id: 'u2', email: 'admin@test.com' })
+      admin.mockIsAdmin.mockReturnValue(true)
+      subscription.mockHasActiveSubscription.mockResolvedValue(false)
+
+      await service.transferGm('a1', 'u1', 'u2')
+
+      expect(subscription.hasActiveSubscription).not.toHaveBeenCalled()
+      expect(prisma.$transaction).toHaveBeenCalled()
+    })
+
+    it('allows the transfer when the target is on the early-access list despite a lapsed subscription', async () => {
+      prisma.campaignMember.findUnique.mockResolvedValue({
+        id: 'm2',
+        adventureId: 'a1',
+        userId: 'u2',
+        role: 'PLAYER',
+      })
+      prisma.user.findUnique.mockResolvedValue({ id: 'u2', email: 'ea@test.com' })
+      admin.mockIsEarlyAccess.mockReturnValue(true)
+      subscription.mockHasActiveSubscription.mockResolvedValue(false)
+
+      await service.transferGm('a1', 'u1', 'u2')
+
+      expect(subscription.hasActiveSubscription).not.toHaveBeenCalled()
+      expect(prisma.$transaction).toHaveBeenCalled()
+    })
+  })
+
   describe('requireWriteRole', () => {
     it('returns the member when role matches and the GM subscription is active', async () => {
       const member = { id: 'm1', adventureId: 'a1', userId: 'u1', role: 'GM' }

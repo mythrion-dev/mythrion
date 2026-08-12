@@ -16,5 +16,9 @@
   "notMember": "You are not a member of this campaign",
   "gmOnly": "Only the Game Master can perform this action",
   "cannotPromoteToGm": "Cannot promote a member to Game Master. A campaign can only have one GM.",
-  "campaignReadOnly": "This campaign is currently read-only because the GM's subscription is inactive."
+  "campaignReadOnly": "This campaign is currently read-only because the GM's subscription is inactive.",
+  "gmCannotLeave": "The Game Master cannot leave the campaign. Transfer the GM role to another player or delete the campaign instead.",
+  "cannotTransferToSelf": "You cannot transfer the GM role to yourself.",
+  "transferTargetNotPlayer": "The selected user is not a player in this campaign.",
+  "transferRequiresActiveSubscription": "The new Game Master needs an active subscription (or admin/early-access access) so the campaign does not become read-only."
 }

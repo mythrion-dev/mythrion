@@ -16,5 +16,9 @@
   "notMember": "Você não é membro desta campanha",
   "gmOnly": "Apenas o Mestre do Jogo pode realizar esta ação",
   "cannotPromoteToGm": "Não é possível promover um membro a Mestre do Jogo. Uma campanha só pode ter um Mestre.",
-  "campaignReadOnly": "Esta campanha está somente leitura porque a assinatura do Mestre do Jogo está inativa."
+  "campaignReadOnly": "Esta campanha está somente leitura porque a assinatura do Mestre do Jogo está inativa.",
+  "gmCannotLeave": "O Mestre do Jogo não pode sair da campanha. Transfira o cargo de Mestre para outro jogador ou exclua a campanha.",
+  "cannotTransferToSelf": "Você não pode transferir o cargo de Mestre para si mesmo.",
+  "transferTargetNotPlayer": "O usuário selecionado não é um jogador desta campanha.",
+  "transferRequiresActiveSubscription": "O novo Mestre do Jogo precisa de uma assinatura ativa (ou acesso de admin/early-access) para que a campanha não fique somente leitura."
 }

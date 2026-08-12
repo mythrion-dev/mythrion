@@ -202,6 +202,72 @@ export class MembershipService {
     })
   }
 
+  /**
+   * A member leaves the campaign on their own. The GM cannot leave this way —
+   * they must transfer the role first or delete the campaign. Membership-only
+   * gate: a player may leave even when the campaign is read-only.
+   */
+  async leaveCampaign(adventureId: string, userId: string) {
+    const member = await this.requireRole(adventureId, userId, 'PLAYER')
+    if (member.role === 'GM') {
+      throw new ForbiddenException(this.i18n.t('community.gmCannotLeave'))
+    }
+    return this.prisma.campaignMember.delete({
+      where: { adventureId_userId: { adventureId, userId } },
+    })
+  }
+
+  /**
+   * Transfer the GM role to another PLAYER member. The new GM becomes the
+   * campaign owner (Adventure.ownerId), so downstream logic keying on the
+   * owner — subscription read-only gating, plan limits, public GM display —
+   * follows the new GM. The transfer is blocked when the target would make
+   * the campaign instantly read-only (no active subscription / admin bypass).
+   */
+  async transferGm(adventureId: string, currentGmId: string, newGmId: string) {
+    if (newGmId === currentGmId) {
+      throw new ForbiddenException(this.i18n.t('community.cannotTransferToSelf'))
+    }
+
+    const target = await this.prisma.campaignMember.findUnique({
+      where: { adventureId_userId: { adventureId, userId: newGmId } },
+    })
+    if (!target || target.role !== 'PLAYER') {
+      throw new ForbiddenException(
+        this.i18n.t('community.transferTargetNotPlayer'),
+      )
+    }
+
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: newGmId },
+      select: { email: true },
+    })
+    const targetEntitled = await this.isOwnerEntitled({
+      ownerId: newGmId,
+      owner: targetUser,
+    })
+    if (!targetEntitled) {
+      throw new ForbiddenException(
+        this.i18n.t('community.transferRequiresActiveSubscription'),
+      )
+    }
+
+    return this.prisma.$transaction([
+      this.prisma.campaignMember.update({
+        where: { adventureId_userId: { adventureId, userId: currentGmId } },
+        data: { role: 'PLAYER' },
+      }),
+      this.prisma.campaignMember.update({
+        where: { adventureId_userId: { adventureId, userId: newGmId } },
+        data: { role: 'GM' },
+      }),
+      this.prisma.adventure.update({
+        where: { id: adventureId },
+        data: { ownerId: newGmId },
+      }),
+    ])
+  }
+
   async isMember(adventureId: string, userId: string) {
     const member = await this.prisma.campaignMember.findUnique({
       where: { adventureId_userId: { adventureId, userId } },

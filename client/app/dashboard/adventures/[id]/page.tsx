@@ -14,6 +14,8 @@ import { CollapsibleSection } from '@/components/adventure/CollapsibleSection'
 import { MemberRow } from '@/components/adventure/MemberRow'
 import { InvitePanel } from '@/components/adventure/InvitePanel'
 import { DeleteModal } from '@/components/adventure/DeleteModal'
+import { LeaveModal } from '@/components/adventure/LeaveModal'
+import { TransferGmModal } from '@/components/adventure/TransferGmModal'
 import { EditForm } from '@/components/adventure/EditForm'
 import { CharactersSection } from '@/components/adventure/CharactersSection'
 import { TemplatesSection } from '@/components/adventure/TemplatesSection'
@@ -299,6 +301,8 @@ export default function AdventureDetailPage() {
   const [userRole, setUserRole] = useState<string | null>(null)
   const [editing, setEditing] = useState(false); const [editName, setEditName] = useState(''); const [editCampaign, setEditCampaign] = useState(''); const [editSynopsis, setEditSynopsis] = useState(''); const [editMaxPlayers, setEditMaxPlayers] = useState(4); const [editSessionWeekday, setEditSessionWeekday] = useState(''); const [editSessionTime, setEditSessionTime] = useState(''); const [editSessionType, setEditSessionType] = useState(''); const [editError, setEditError] = useState<string | null>(null); const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false); const [deleting, setDeleting] = useState(false); const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [confirmLeave, setConfirmLeave] = useState(false); const [leaving, setLeaving] = useState(false); const [leaveError, setLeaveError] = useState<string | null>(null)
+  const [showTransfer, setShowTransfer] = useState(false); const [transferTargetId, setTransferTargetId] = useState(''); const [transferring, setTransferring] = useState(false); const [transferError, setTransferError] = useState<string | null>(null)
   const [members, setMembers] = useState<Member[]>([]); const [showMembers, setShowMembers] = useState(false)
   const [showInvite, setShowInvite] = useState(false); const [inviteEmail, setInviteEmail] = useState(''); const [inviteError, setInviteError] = useState<string | null>(null); const [inviteSending, setInviteSending] = useState(false); const [inviteLink, setInviteLink] = useState<string | null>(null); const [invitations, setInvitations] = useState<Invitation[]>([])
 
@@ -638,6 +642,8 @@ export default function AdventureDetailPage() {
     try { const u = await api.patch<Adventure>(`/adventures/${id}`, { name: editName.trim() || undefined, campaign: editCampaign.trim() || undefined, synopsis: editSynopsis.trim() || undefined, maxPlayers: editMaxPlayers, sessionWeekday: editSessionWeekday || undefined, sessionTime: editSessionTime || undefined, sessionType: editSessionType || undefined }); setAdventure(u); setEditing(false) } catch (err) { setEditError(err instanceof Error ? err.message : t('campaign:failedToUpdate')) } finally { setSaving(false) }
   }
   async function handleDelete() { setDeleteError(null); setDeleting(true); try { await api.delete(`/adventures/${id}`); router.push('/dashboard') } catch (err) { setDeleteError(err instanceof Error ? err.message : t('campaign:failedToDelete')); setDeleting(false); setConfirmDelete(false) } }
+  async function handleLeave() { setLeaveError(null); setLeaving(true); try { await api.post(`/adventures/${id}/leave`); router.push('/dashboard') } catch (err) { setLeaveError(err instanceof Error ? err.message : t('campaign:failedToLeave')); setLeaving(false) } }
+  async function handleTransferGm() { if (!transferTargetId) return; setTransferError(null); setTransferring(true); try { await api.post(`/adventures/${id}/transfer-gm`, { newGmId: transferTargetId }); setTransferring(false); setShowTransfer(false); setTransferTargetId(''); fetchMembers(); resolveRole(); fetchAccessState() } catch (err) { setTransferError(err instanceof Error ? err.message : t('campaign:failedToTransfer')); setTransferring(false) } }
   async function handleInviteByEmail(e: SubmitEvent) { e.preventDefault(); setInviteError(null); setInviteSending(true); try { await api.post(`/adventures/${id}/invitations/email`, { email: inviteEmail.trim() }); setInviteEmail(''); fetchInvitations() } catch (err) { setInviteError(err instanceof Error ? err.message : t('campaign:failedToSendInvitation')) } finally { setInviteSending(false) } }
   async function handleInviteByLink() { setInviteError(null); setInviteSending(true); try { const r = await api.post<{ inviteUrl: string }>(`/adventures/${id}/invitations/link`); setInviteLink(r.inviteUrl); fetchInvitations() } catch (err) { setInviteError(err instanceof Error ? err.message : t('campaign:failedToCreateLink')) } finally { setInviteSending(false) } }
   async function handleRevokeInvitation(invId: string) { try { await api.post(`/invitations/${invId}/revoke`); fetchInvitations() } catch { } }
@@ -765,6 +771,26 @@ export default function AdventureDetailPage() {
               </div>
             </>
           )}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t('campaign:membershipActions')}</h3>
+            {isGM ? (
+              <button
+                type="button"
+                onClick={() => { setTransferTargetId(''); setTransferError(null); setShowTransfer(true); fetchMembers() }}
+                className="btn-primary"
+              >
+                {t('campaign:transferGM')}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => { setLeaveError(null); setConfirmLeave(true) }}
+                className="btn-danger"
+              >
+                {t('campaign:leaveCampaign')}
+              </button>
+            )}
+          </div>
         </div>)}
         {activeTab === 'templates' && (() => {
           const hasCampaignTemplate = templateSource !== null
@@ -882,6 +908,8 @@ export default function AdventureDetailPage() {
           <BookListPanel adventureId={id} isGM={isGM} readOnly={readOnly} onSelectBook={setSelectedBookId} />
         )}
         {confirmDelete && <DeleteModal name={adventure.name} error={deleteError} loading={deleting} onCancel={() => setConfirmDelete(false)} onConfirm={handleDelete} />}
+        {confirmLeave && <LeaveModal error={leaveError} loading={leaving} onCancel={() => setConfirmLeave(false)} onConfirm={handleLeave} />}
+        {showTransfer && <TransferGmModal members={members} currentUserId={user?.id ?? ''} value={transferTargetId} error={transferError} loading={transferring} onValueChange={setTransferTargetId} onCancel={() => { setShowTransfer(false); setTransferError(null); setTransferTargetId('') }} onConfirm={handleTransferGm} />}
       </div>) : (<EditForm name={editName} campaign={editCampaign} synopsis={editSynopsis} maxPlayers={editMaxPlayers} sessionWeekday={editSessionWeekday} sessionTime={editSessionTime} sessionType={editSessionType} error={editError} saving={saving} onNameChange={setEditName} onCampaignChange={setEditCampaign} onSynopsisChange={setEditSynopsis} onMaxPlayersChange={setEditMaxPlayers} onSessionWeekdayChange={setEditSessionWeekday} onSessionTimeChange={setEditSessionTime} onSessionTypeChange={setEditSessionType} onCancel={() => { setEditing(false); setEditError(null) }} onSubmit={handleUpdate} />)}
 
       {/* NPC/Mob Sidebar — fixed right edge, GM-only */}
