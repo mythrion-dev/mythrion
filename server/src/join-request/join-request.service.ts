@@ -16,6 +16,9 @@ export class JoinRequestService {
    * - Adventure must exist and be public
    * - User must not already be a member
    * - User must not have a pending request
+   * - A REJECTED request, or an ACCEPTED one whose membership has since been
+   *   removed (the player left the campaign or was removed), can be re-requested
+   *   by moving it back to PENDING.
    */
   async create(adventureId: string, userId: string, message?: string) {
     const adventure = await this.prisma.adventure.findUnique({ where: { id: adventureId } })
@@ -31,12 +34,11 @@ export class JoinRequestService {
     if (existing?.status === 'PENDING') {
       throw new ConflictException(this.i18n.t('community.alreadyPending'))
     }
-    if (existing?.status === 'ACCEPTED') {
-      throw new ConflictException(this.i18n.t('community.alreadyAccepted'))
-    }
 
-    // If previously rejected, allow re-requesting: update the existing record
-    if (existing?.status === 'REJECTED') {
+    // If previously rejected, or previously accepted but the user is no longer
+    // a member (the player left or was removed), allow re-requesting: update
+    // the existing record back to PENDING.
+    if (existing?.status === 'REJECTED' || existing?.status === 'ACCEPTED') {
       return this.prisma.joinRequest.update({
         where: { id: existing.id },
         data: { status: 'PENDING', message: message ?? null },

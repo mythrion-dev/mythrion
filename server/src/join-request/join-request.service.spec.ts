@@ -124,18 +124,31 @@ describe('JoinRequestService', () => {
       )
     })
 
-    it('throws ConflictException when user was already accepted', async () => {
+    it('re-activates a previously accepted request when the player is no longer a member', async () => {
       prisma.adventure.findUnique.mockResolvedValue(baseAdventure)
+      mockMembershipService.isMember.mockResolvedValue(false)
       prisma.joinRequest.findUnique.mockResolvedValue({
         id: 'jr-1',
         adventureId: 'adv-1',
         userId: 'u1',
         status: 'ACCEPTED',
+        message: null,
+      })
+      prisma.joinRequest.update.mockResolvedValue({
+        id: 'jr-1',
+        adventureId: 'adv-1',
+        userId: 'u1',
+        status: 'PENDING',
+        message: 'Let me in again!',
       })
 
-      await expect(service.create('adv-1', 'u1')).rejects.toThrow(
-        ConflictException,
-      )
+      const result = await service.create('adv-1', 'u1', 'Let me in again!')
+
+      expect(result.status).toBe('PENDING')
+      expect(prisma.joinRequest.update).toHaveBeenCalledWith({
+        where: { id: 'jr-1' },
+        data: { status: 'PENDING', message: 'Let me in again!' },
+      })
     })
 
     it('re-activates a previously rejected request', async () => {

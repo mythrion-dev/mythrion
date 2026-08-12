@@ -3,7 +3,6 @@
   "adventureNotPublic": "Campaign is not public",
   "alreadyMember": "You are already a member of this campaign",
   "alreadyPending": "You already have a pending request for this campaign",
-  "alreadyAccepted": "You have already been accepted to this campaign",
   "joinRequestNotFound": "Join request not found",
   "requestNotBelong": "Request does not belong to this campaign",
   "requestNotPending": "Request is not pending",
