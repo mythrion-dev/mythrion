@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common'
 import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
+import { RedisService } from '../redis/redis.service.js'
 import type { PaymentGateway } from './payment-gateway.interface.js'
 import { PAYMENT_GATEWAY } from './payment-gateway.interface.js'
 
@@ -17,6 +18,20 @@ type SubscriptionStatus =
   | 'GRACE'
   | 'EXPIRED'
   | 'CANCELLED'
+
+/** Data needed to evaluate entitlement at read time (never a cached boolean). */
+interface EntitlementData {
+  status: SubscriptionStatus
+  currentPeriodEnd: Date | null
+  graceEndsAt: Date | null
+}
+
+/** Coerce a Date or ISO string (from a Redis cache round-trip) to a Date, or null when absent. */
+function toDateOrNull(value: Date | string | null | undefined): Date | null {
+  if (!value) return null
+  const date = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
+}
 
 export interface CreateSubscriptionResult {
   /** The payment gateway redirect URL (empty for card flow) */
@@ -45,6 +60,8 @@ export interface MySubscriptionResult {
     price: number
   }
   status: string
+  /** Server-computed; mirrors classifyEntitlement(sub) === 'active'. */
+  hasActiveSubscription: boolean
   pgSubscriptionId: string | null
   graceEndsAt: Date | null
   currentPeriodStart: Date | null
@@ -88,6 +105,16 @@ type SubscriptionWithDetails = {
   }>
 }
 
+/** The subscription fields the repair path reads (kept slim for the entitlement hot path). */
+type RepairableSubscription = Pick<
+  SubscriptionWithDetails,
+  | 'status'
+  | 'pgSubscriptionId'
+  | 'pgCustomerId'
+  | 'currentPeriodStart'
+  | 'currentPeriodEnd'
+>
+
 /** Internal mapping: PagBank status → internal SubscriptionStatus */
 const GATEWAY_STATUS_MAP: Record<string, SubscriptionStatus> = {
   ACTIVE: 'ACTIVE',
@@ -113,6 +140,7 @@ export class SubscriptionService {
     @Inject(PAYMENT_GATEWAY)
     private readonly gateway: PaymentGateway,
     private readonly i18n: I18nService,
+    private readonly redis: RedisService,
   ) {}
 
   /** Return all subscription plans (sorted by price ascending). */
@@ -224,6 +252,9 @@ export class SubscriptionService {
             : undefined,
         currentPeriodEnd: nextPayment,
         cancelledAt: null,
+        // Renewal wipes any prior cancellation/grace state.
+        cancelAtPeriodEnd: false,
+        graceEndsAt: null,
       },
       create: {
         userId,
@@ -238,6 +269,8 @@ export class SubscriptionService {
         currentPeriodEnd: nextPayment,
       },
     })
+
+    await this.invalidateEntitlementCache(userId)
 
     // Save payer name to user profile for future reference (only if blank)
     if (payerName) {
@@ -298,6 +331,7 @@ export class SubscriptionService {
       id: sub.id,
       plan: sub.plan,
       status: sub.status,
+      hasActiveSubscription: this.classifyEntitlement(sub) === 'active',
       pgSubscriptionId: sub.pgSubscriptionId,
       graceEndsAt: sub.graceEndsAt,
       currentPeriodStart: sub.currentPeriodStart,
@@ -309,30 +343,29 @@ export class SubscriptionService {
     }
   }
 
-  /**
-   * Auto-repair a local subscription by refreshing status/period data from the
-   * gateway when the local record looks stale (PENDING/GRACE stuck, or an
-   * ACTIVE subscription with no currentPeriodEnd). Returns the (possibly
-   * updated) subscription.
-   */
-  private async maybeRepairSubscription(
-    userId: string,
-    sub: SubscriptionWithDetails,
-  ): Promise<SubscriptionWithDetails> {
-    if (!sub.pgSubscriptionId) return sub
-
-    const needsRepair =
+  /** True when the local row looks stale and a gateway round-trip is worth it. */
+  private needsRepair(sub: RepairableSubscription): boolean {
+    return (
       sub.status === 'PENDING' ||
       sub.status === 'GRACE' ||
       (!sub.currentPeriodEnd &&
         sub.status !== 'CANCELLED' &&
         sub.status !== 'EXPIRED')
+    )
+  }
 
-    if (!needsRepair) return sub
-
+  /**
+   * Refresh a stale subscription from the gateway and persist the repair.
+   * Only call when needsRepair(sub) is true — it performs a gateway round-trip.
+   * Returns the (possibly updated) full subscription.
+   */
+  private async repairAgainstGateway(
+    userId: string,
+    sub: RepairableSubscription,
+  ): Promise<SubscriptionWithDetails> {
     try {
       const gatewaySub = await this.gateway.getSubscription(
-        sub.pgSubscriptionId,
+        sub.pgSubscriptionId as string,
       )
       const mappedStatus = mapGatewayStatus(gatewaySub.status)
       const nextPayment = gatewaySub.nextPaymentDate
@@ -344,14 +377,13 @@ export class SubscriptionService {
       const customerIdMissing = !!gatewaySub.customerId && !sub.pgCustomerId
 
       if (statusChanged || periodEndMissing || customerIdMissing) {
-        const now = new Date()
         const repaired = await this.applyRepair(userId, sub, {
           statusChanged,
           periodEndMissing,
           customerIdMissing,
           mappedStatus,
           nextPayment,
-          now,
+          now: new Date(),
           gatewayCustomerId: gatewaySub.customerId ?? null,
         })
         this.logger.log(
@@ -360,20 +392,34 @@ export class SubscriptionService {
         return repaired
       }
 
-      return sub
+      return sub as unknown as SubscriptionWithDetails
     } catch (err) {
       // Gateway API failure — just serve stale data, don't block the user
       this.logger.warn(
         `Failed to check gateway status for subscription ${sub.pgSubscriptionId}: ${err instanceof Error ? err.message : String(err)}`,
       )
-      return sub
+      return sub as unknown as SubscriptionWithDetails
     }
+  }
+
+  /**
+   * Auto-repair a local subscription by refreshing status/period data from the
+   * gateway when the local record looks stale (PENDING/GRACE stuck, or an
+   * ACTIVE subscription with no currentPeriodEnd). Returns the (possibly
+   * updated) subscription. Bounded: no gateway call when the row looks healthy.
+   */
+  private async maybeRepairSubscription(
+    userId: string,
+    sub: SubscriptionWithDetails,
+  ): Promise<SubscriptionWithDetails> {
+    if (!sub.pgSubscriptionId || !this.needsRepair(sub)) return sub
+    return this.repairAgainstGateway(userId, sub)
   }
 
   /** Persist the auto-repair computed by maybeRepairSubscription. */
   private async applyRepair(
     userId: string,
-    sub: SubscriptionWithDetails,
+    sub: RepairableSubscription,
     repair: {
       statusChanged: boolean
       periodEndMissing: boolean
@@ -384,7 +430,7 @@ export class SubscriptionService {
       gatewayCustomerId: string | null
     },
   ): Promise<SubscriptionWithDetails> {
-    return this.prisma.userSubscription.update({
+    const updated = await this.prisma.userSubscription.update({
       where: { userId },
       data: {
         status: repair.statusChanged ? repair.mappedStatus : sub.status,
@@ -418,6 +464,8 @@ export class SubscriptionService {
         },
       },
     })
+    await this.invalidateEntitlementCache(userId)
+    return updated
   }
 
   /**
@@ -461,6 +509,7 @@ export class SubscriptionService {
         cancelledAt: new Date(),
       },
     })
+    await this.invalidateEntitlementCache(userId)
 
     // Cancel in PagBank (stops future billing)
     if (sub.pgSubscriptionId) {
@@ -473,17 +522,142 @@ export class SubscriptionService {
   }
 
   /**
-   * Check if a user has an active subscription.
-   * Active = AUTHORIZED, ACTIVE, or GRACE status.
-   * Admins are always considered to have an active subscription.
+   * Check if a user has an active subscription at this moment.
+   *
+   * Entitlement is evaluated from the subscription *data* (status + entitlement
+   * dates) at read time, never from a cached boolean. This closes the gap where
+   * an ACTIVE row whose currentPeriodEnd has passed (but whose status has not
+   * yet been transitioned by a webhook) would still grant access.
+   *
+   *   AUTHORIZED → entitled (payment authorized, activation pending)
+   *   ACTIVE     → entitled until currentPeriodEnd
+   *   GRACE      → entitled until graceEndsAt
+   *   otherwise  → not entitled
+   *
+   * The subscription data is cached in Redis (short TTL) purely as a perf
+   * optimization; because dates are re-evaluated against `now` on every read,
+   * a stale cache entry can never grant access past the entitlement dates, and
+   * when Redis is unavailable we fail closed by querying PostgreSQL directly.
    */
   async hasActiveSubscription(userId: string): Promise<boolean> {
+    const data = await this.getEntitlementData(userId)
+    if (!data) return false
+    return this.evaluateEntitlement(data)
+  }
+
+  /**
+   * Reason a user currently has or lacks subscription-gated access.
+   *
+   * Unlike hasActiveSubscription (boolean only), this distinguishes the two
+   * "no access" states so guards can emit the correct message:
+   *   'active'  → entitled right now
+   *   'none'    → no subscription row at all
+   *   'expired' → a row exists but the entitlement window has lapsed
+   *               (EXPIRED/CANCELLED, or ACTIVE past currentPeriodEnd,
+   *                or GRACE past graceEndsAt)
+   *
+   * Same fail-closed rules as hasActiveSubscription: dates are re-evaluated
+   * against `now` on every read and Redis is only a cache.
+   */
+  async getSubscriptionAccessReason(
+    userId: string,
+  ): Promise<'active' | 'none' | 'expired'> {
+    const data = await this.getEntitlementData(userId)
+    if (!data) return 'none'
+    return this.classifyEntitlement(data)
+  }
+
+  /** Classify entitlement data as active/expired at the given instant. */
+  private classifyEntitlement(
+    data: EntitlementData,
+    now: Date = new Date(),
+  ): 'active' | 'expired' {
+    const periodEnd = toDateOrNull(data.currentPeriodEnd)
+    const graceEndsAt = toDateOrNull(data.graceEndsAt)
+    switch (data.status) {
+      case 'AUTHORIZED':
+        return 'active'
+      case 'ACTIVE':
+        return periodEnd == null || periodEnd > now ? 'active' : 'expired'
+      case 'GRACE':
+        return graceEndsAt == null || graceEndsAt > now ? 'active' : 'expired'
+      default:
+        // PENDING, EXPIRED, CANCELLED
+        return 'expired'
+    }
+  }
+
+  /** Read entitlement data (status + dates) from Redis cache or PostgreSQL. */
+  private async getEntitlementData(
+    userId: string,
+  ): Promise<EntitlementData | null> {
+    const cacheKey = this.entitlementCacheKey(userId)
+    const cached = await this.redis.cacheGet<EntitlementData>(cacheKey)
+    if (cached) {
+      // JSON round-trip turns Date into ISO strings; rehydrate so the
+      // period-end comparisons never hit `string > Date` (which is NaN → false).
+      cached.currentPeriodEnd = toDateOrNull(cached.currentPeriodEnd)
+      cached.graceEndsAt = toDateOrNull(cached.graceEndsAt)
+      return cached
+    }
+
     const sub = await this.prisma.userSubscription.findUnique({
       where: { userId },
-      select: { status: true },
+      select: {
+        status: true,
+        pgSubscriptionId: true,
+        pgCustomerId: true,
+        currentPeriodStart: true,
+        currentPeriodEnd: true,
+        graceEndsAt: true,
+      },
     })
-    if (!sub) return false
-    return ['AUTHORIZED', 'ACTIVE', 'GRACE'].includes(sub.status)
+    if (!sub) return null
+
+    // Bounded auto-repair: only stale-looking rows (PENDING/GRACE, or ACTIVE
+    // with no period end) trigger a gateway round-trip.
+    let { status, currentPeriodEnd, graceEndsAt } = sub
+    if (sub.pgSubscriptionId && this.needsRepair(sub)) {
+      const repaired = await this.repairAgainstGateway(userId, sub)
+      status = repaired.status
+      currentPeriodEnd = repaired.currentPeriodEnd
+      graceEndsAt = repaired.graceEndsAt
+    }
+
+    const data: EntitlementData = { status, currentPeriodEnd, graceEndsAt }
+    // Fail-open cache write: if Redis is down the next read just hits the DB.
+    await this.redis.cacheSet(cacheKey, data, this.ENTITLEMENT_CACHE_TTL_SECONDS)
+    return data
+  }
+
+  /** Evaluate entitlement from subscription data at the given instant. */
+  private evaluateEntitlement(
+    data: EntitlementData,
+    now: Date = new Date(),
+  ): boolean {
+    // Defensive: cached values may still arrive as ISO strings.
+    const periodEnd = toDateOrNull(data.currentPeriodEnd)
+    const graceEndsAt = toDateOrNull(data.graceEndsAt)
+    switch (data.status) {
+      case 'AUTHORIZED':
+        return true
+      case 'ACTIVE':
+        return periodEnd == null || periodEnd > now
+      case 'GRACE':
+        return graceEndsAt == null || graceEndsAt > now
+      default:
+        // PENDING, EXPIRED, CANCELLED
+        return false
+    }
+  }
+
+  /** Drop the cached entitlement data for a user after a mutation. */
+  private async invalidateEntitlementCache(userId: string): Promise<void> {
+    await this.redis.del(this.entitlementCacheKey(userId))
+  }
+
+  private entitlementCacheKey(userId: string): string {
+    return `subscription:entitlement:${userId}`
   }
 
   /**
@@ -601,7 +775,7 @@ export class SubscriptionService {
         ? new Date(gatewaySub.nextPaymentDate)
         : null
 
-      await this.prisma.userSubscription.update({
+      const updated = await this.prisma.userSubscription.update({
         where: { pgSubscriptionId },
         data: {
           status: 'ACTIVE',
@@ -609,7 +783,9 @@ export class SubscriptionService {
           currentPeriodEnd: nextPayment,
           pgCustomerId: gatewaySub.customerId ?? undefined,
         },
+        select: { userId: true },
       })
+      await this.invalidateEntitlementCache(updated.userId)
       this.logger.log(`Subscription ${pgSubscriptionId} activated`)
       return 'activated'
     } catch (err) {
@@ -642,13 +818,15 @@ export class SubscriptionService {
         return 'cancelled_at_period_end'
       }
 
-      await this.prisma.userSubscription.update({
+      const updated = await this.prisma.userSubscription.update({
         where: { pgSubscriptionId },
         data: {
           status: 'CANCELLED',
           cancelledAt: new Date(),
         },
+        select: { userId: true },
       })
+      await this.invalidateEntitlementCache(updated.userId)
       this.logger.log(
         `Subscription ${pgSubscriptionId} cancelled (external)`,
       )
@@ -686,10 +864,12 @@ export class SubscriptionService {
         updateData.currentPeriodEnd = nextPayment
       }
 
-      await this.prisma.userSubscription.update({
+      const updated = await this.prisma.userSubscription.update({
         where: { pgSubscriptionId },
         data: updateData,
+        select: { userId: true },
       })
+      await this.invalidateEntitlementCache(updated.userId)
       this.logger.log(
         `Subscription ${pgSubscriptionId} recurred (reactivated from GRACE if applicable)`,
       )
@@ -727,7 +907,7 @@ export class SubscriptionService {
       const mappedStatus = mapGatewayStatus(gatewaySub.status)
       const localSub = await this.prisma.userSubscription.findUnique({
         where: { pgSubscriptionId },
-        select: { status: true },
+        select: { status: true, userId: true },
       })
 
       if (localSub?.status === 'PENDING' && mappedStatus !== 'PENDING') {
@@ -743,6 +923,7 @@ export class SubscriptionService {
             currentPeriodEnd: nextPayment ?? undefined,
           },
         })
+        await this.invalidateEntitlementCache(localSub.userId)
         return 'advanced'
       }
 
@@ -754,6 +935,9 @@ export class SubscriptionService {
           where: { pgSubscriptionId },
           data: { currentPeriodEnd: nextPayment },
         })
+        if (localSub) {
+          await this.invalidateEntitlementCache(localSub.userId)
+        }
       }
 
       return 'updated'
@@ -767,6 +951,9 @@ export class SubscriptionService {
 
   /** Grace period duration in days for payment failures */
   private readonly PAYMENT_FAILURE_GRACE_DAYS = 7
+
+  /** TTL for cached entitlement data — short, since dates are re-evaluated at read time. */
+  private readonly ENTITLEMENT_CACHE_TTL_SECONDS = 60
 
   /**
    * Handle a charge.paid or charge.failed webhook event.
@@ -800,7 +987,7 @@ export class SubscriptionService {
       // Find the local subscription by PagBank subscription ID
       const sub = await this.prisma.userSubscription.findUnique({
         where: { pgSubscriptionId },
-        select: { id: true, status: true, planId: true },
+        select: { id: true, status: true, planId: true, userId: true },
       })
 
       if (!sub) {
@@ -860,6 +1047,7 @@ export class SubscriptionService {
             })
           }
 
+          await this.invalidateEntitlementCache(sub.userId)
           this.logger.log(
             `Payment approved for subscription ${sub.id}: R$${(invoiceAmount / 100).toFixed(2)}`,
           )
@@ -906,6 +1094,7 @@ export class SubscriptionService {
               },
             })
 
+            await this.invalidateEntitlementCache(sub.userId)
             this.logger.warn(
               `Payment rejected for subscription ${sub.id}: moving to GRACE until ${graceEnd.toISOString()}`,
             )
@@ -938,6 +1127,14 @@ export class SubscriptionService {
    */
   async expireCancelledSubscriptions(): Promise<number> {
     const now = new Date()
+    const affected = await this.prisma.userSubscription.findMany({
+      where: {
+        cancelAtPeriodEnd: true,
+        currentPeriodEnd: { lte: now },
+        status: { notIn: ['EXPIRED', 'CANCELLED'] },
+      },
+      select: { userId: true },
+    })
     const expired = await this.prisma.userSubscription.updateMany({
       where: {
         cancelAtPeriodEnd: true,
@@ -948,6 +1145,9 @@ export class SubscriptionService {
         status: 'EXPIRED',
       },
     })
+    for (const sub of affected) {
+      await this.invalidateEntitlementCache(sub.userId)
+    }
     if (expired.count > 0) {
       this.logger.log(
         `Expired ${expired.count} cancel-at-period-end subscription(s)`,
@@ -965,6 +1165,13 @@ export class SubscriptionService {
    */
   async expireGraceSubscriptions(): Promise<number> {
     const now = new Date()
+    const affected = await this.prisma.userSubscription.findMany({
+      where: {
+        status: 'GRACE',
+        graceEndsAt: { lte: now },
+      },
+      select: { userId: true },
+    })
     const expired = await this.prisma.userSubscription.updateMany({
       where: {
         status: 'GRACE',
@@ -974,9 +1181,50 @@ export class SubscriptionService {
         status: 'EXPIRED',
       },
     })
+    for (const sub of affected) {
+      await this.invalidateEntitlementCache(sub.userId)
+    }
     if (expired.count > 0) {
       this.logger.log(
         `Expired ${expired.count} grace-period subscription(s)`,
+      )
+    }
+    return expired.count
+  }
+
+  // ─── Helper: expire lapsed ACTIVE subscriptions ────────────────────
+
+  /**
+   * Check for any subscriptions still marked ACTIVE whose currentPeriodEnd
+   * has already passed and expire them. Without this sweep the DB row would
+   * keep status ACTIVE forever even though date-evaluation already denies
+   * access, leaving the DB and the entitlement read disagreeing.
+   * Called from a cron or on webhook. Returns count of expired subscriptions.
+   */
+  async expireLapsedActiveSubscriptions(): Promise<number> {
+    const now = new Date()
+    const affected = await this.prisma.userSubscription.findMany({
+      where: {
+        status: 'ACTIVE',
+        currentPeriodEnd: { not: null, lte: now },
+      },
+      select: { userId: true },
+    })
+    const expired = await this.prisma.userSubscription.updateMany({
+      where: {
+        status: 'ACTIVE',
+        currentPeriodEnd: { not: null, lte: now },
+      },
+      data: {
+        status: 'EXPIRED',
+      },
+    })
+    for (const sub of affected) {
+      await this.invalidateEntitlementCache(sub.userId)
+    }
+    if (expired.count > 0) {
+      this.logger.log(
+        `Expired ${expired.count} lapsed ACTIVE subscription(s)`,
       )
     }
     return expired.count

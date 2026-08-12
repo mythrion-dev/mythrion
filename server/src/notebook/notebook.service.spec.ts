@@ -64,7 +64,10 @@ describe('NotebookService', () => {
       cacheSet: jest.fn().mockResolvedValue(undefined),
       invalidatePattern: jest.fn().mockResolvedValue(undefined),
     }
-    membership = { isMember: jest.fn().mockResolvedValue(true) }
+    membership = {
+      isMember: jest.fn().mockResolvedValue(true),
+      requireWriteAccess: jest.fn().mockResolvedValue({ role: 'PLAYER' }),
+    }
     service = new NotebookService(
       prisma,
       redis as any,

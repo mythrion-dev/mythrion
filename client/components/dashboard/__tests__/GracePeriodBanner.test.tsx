@@ -8,6 +8,12 @@ vi.mock('@/lib/subscription-context', () => ({
   useSubscription: () => mockUseSubscription(),
 }))
 
+/* ── Mock auth context ── */
+const mockUseAuth = vi.fn()
+vi.mock('@/lib/auth-context', () => ({
+  useAuth: () => mockUseAuth(),
+}))
+
 /** Create a fake subscription object with a given status and graceEndsAt date. */
 function fakeSubscription(
   status: string,
@@ -36,6 +42,8 @@ describe('GracePeriodBanner', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     vi.setSystemTime(new Date('2025-01-10T12:00:00Z'))
+    // Non-admin, non-early-access user by default.
+    mockUseAuth.mockReturnValue({ user: { id: 'user-1', isAdmin: false, isEarlyAccess: false } })
   })
 
   afterEach(() => {
@@ -59,6 +67,28 @@ describe('GracePeriodBanner', () => {
 
   it('returns null when subscription is null', () => {
     mockUseSubscription.mockReturnValue({ subscription: null })
+
+    const { container } = render(<GracePeriodBanner />)
+    expect(container.innerHTML).toBe('')
+  })
+
+  // ─── Hidden for admins / early-access users ─────────────────────────
+
+  it('returns null for an admin even when subscription is GRACE', () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'admin-1', isAdmin: true, isEarlyAccess: false } })
+    mockUseSubscription.mockReturnValue({
+      subscription: fakeSubscription('GRACE', '2025-01-15T12:00:00.000Z'),
+    })
+
+    const { container } = render(<GracePeriodBanner />)
+    expect(container.innerHTML).toBe('')
+  })
+
+  it('returns null for an early-access user even when subscription is GRACE', () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'ea-1', isAdmin: false, isEarlyAccess: true } })
+    mockUseSubscription.mockReturnValue({
+      subscription: fakeSubscription('GRACE', '2025-01-15T12:00:00.000Z'),
+    })
 
     const { container } = render(<GracePeriodBanner />)
     expect(container.innerHTML).toBe('')

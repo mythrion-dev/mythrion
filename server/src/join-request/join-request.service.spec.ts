@@ -16,6 +16,7 @@ import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 
 const mockMembershipService = {
   requireRole: jest.fn(),
+  requireWriteRole: jest.fn(),
   isMember: jest.fn(),
   assertPlayerCapacity: jest.fn(),
 }
@@ -29,6 +30,7 @@ describe('JoinRequestService', () => {
     jest.clearAllMocks()
 
     mockMembershipService.requireRole.mockResolvedValue(undefined)
+    mockMembershipService.requireWriteRole.mockResolvedValue(undefined)
     mockMembershipService.isMember.mockResolvedValue(false)
     mockMembershipService.assertPlayerCapacity.mockResolvedValue(undefined)
 
@@ -122,18 +124,31 @@ describe('JoinRequestService', () => {
       )
     })
 
-    it('throws ConflictException when user was already accepted', async () => {
+    it('re-activates a previously accepted request when the player is no longer a member', async () => {
       prisma.adventure.findUnique.mockResolvedValue(baseAdventure)
+      mockMembershipService.isMember.mockResolvedValue(false)
       prisma.joinRequest.findUnique.mockResolvedValue({
         id: 'jr-1',
         adventureId: 'adv-1',
         userId: 'u1',
         status: 'ACCEPTED',
+        message: null,
+      })
+      prisma.joinRequest.update.mockResolvedValue({
+        id: 'jr-1',
+        adventureId: 'adv-1',
+        userId: 'u1',
+        status: 'PENDING',
+        message: 'Let me in again!',
       })
 
-      await expect(service.create('adv-1', 'u1')).rejects.toThrow(
-        ConflictException,
-      )
+      const result = await service.create('adv-1', 'u1', 'Let me in again!')
+
+      expect(result.status).toBe('PENDING')
+      expect(prisma.joinRequest.update).toHaveBeenCalledWith({
+        where: { id: 'jr-1' },
+        data: { status: 'PENDING', message: 'Let me in again!' },
+      })
     })
 
     it('re-activates a previously rejected request', async () => {
@@ -209,7 +224,7 @@ describe('JoinRequestService', () => {
 
       const result = await service.accept('adv-1', 'jr-1', 'u1')
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith(
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith(
         'adv-1',
         'u1',
         'GM',
@@ -271,7 +286,7 @@ describe('JoinRequestService', () => {
 
       const result = await service.reject('adv-1', 'jr-1', 'u1')
 
-      expect(mockMembershipService.requireRole).toHaveBeenCalledWith(
+      expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith(
         'adv-1',
         'u1',
         'GM',

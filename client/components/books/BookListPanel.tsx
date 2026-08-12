@@ -21,6 +21,7 @@ interface Book {
 interface BookListPanelProps {
   readonly adventureId: string
   readonly isGM: boolean
+  readonly readOnly?: boolean
   readonly onSelectBook: (bookId: string | null) => void
 }
 
@@ -44,7 +45,7 @@ function formatDate(iso: string): string {
 
 /* ── Component ── */
 
-export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<BookListPanelProps>) {
+export function BookListPanel({ adventureId, isGM, readOnly, onSelectBook }: Readonly<BookListPanelProps>) {
   const { t } = useTranslation()
   const [books, setBooks] = useState<Book[]>([])
   const [loading, setLoading] = useState(true)
@@ -197,7 +198,7 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
       )}
 
       {/* GM upload controls */}
-      {isGM && (
+      {isGM && !readOnly && (
         <div className="card !p-4 space-y-3">
           <h3 className="text-sm font-semibold text-foreground">{t('books:uploadNewBook')}</h3>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -377,13 +378,14 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
                     <>
                       {/* Rename */}
                       <button
-                        onClick={() => {
+                        onClick={readOnly ? undefined : () => {
                           setRenamingId(book.id)
                           setRenameValue(book.name)
                         }}
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all"
+                        disabled={readOnly}
+                        className={`p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all ${readOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                         aria-label={t('books:renameBook', { name: book.name })}
-                        title={t('common:rename')}
+                        title={readOnly ? t('campaign:readOnlyTooltip') : t('common:rename')}
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -393,9 +395,10 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
                       {/* Replace file */}
                       <label
                         className={`p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all cursor-pointer ${
-                          isReplacing ? 'opacity-50 pointer-events-none' : ''
+                          isReplacing || readOnly ? 'opacity-50 pointer-events-none' : ''
                         }`}
-                        title={t('books:replaceFileTooltip')}
+                        aria-disabled={readOnly || undefined}
+                        title={readOnly ? t('campaign:readOnlyTooltip') : t('books:replaceFileTooltip')}
                       >
                         {isReplacing ? (
                           <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -411,7 +414,7 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
                           type="file"
                           accept=".pdf,application/pdf"
                           className="hidden"
-                          disabled={isReplacing}
+                          disabled={isReplacing || readOnly}
                           onChange={e => {
                             const f = e.target.files?.[0]
                             if (f) {
@@ -449,10 +452,11 @@ export function BookListPanel({ adventureId, isGM, onSelectBook }: Readonly<Book
                         </div>
                       ) : (
                         <button
-                          onClick={() => setDeleteId(book.id)}
-                          className="p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all"
+                          onClick={readOnly ? undefined : () => setDeleteId(book.id)}
+                          disabled={readOnly}
+                          className={`p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all ${readOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                           aria-label={t('books:deleteBook', { name: book.name })}
-                          title={t('common:delete')}
+                          title={readOnly ? t('campaign:readOnlyTooltip') : t('common:delete')}
                         >
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

@@ -1,6 +1,7 @@
 'use client'
 
 import { useSubscription } from '@/lib/subscription-context'
+import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -8,9 +9,11 @@ import { useTranslation } from 'react-i18next'
 /**
  * Dismissible banner shown when the user's subscription is in GRACE status.
  * Displays the remaining days to update payment method.
+ * Hidden for admins / early-access users — their access is not paywalled.
  */
 export function GracePeriodBanner() {
   const { subscription } = useSubscription()
+  const { user } = useAuth()
   const { t } = useTranslation()
   const [dismissed, setDismissed] = useState(false)
   const [daysLeft, setDaysLeft] = useState<number | null>(null)
@@ -36,7 +39,13 @@ export function GracePeriodBanner() {
     return () => clearInterval(interval)
   }, [subscription])
 
-  if (!subscription?.status || subscription.status !== 'GRACE' || dismissed) {
+  if (
+    !subscription?.status ||
+    subscription.status !== 'GRACE' ||
+    dismissed ||
+    user?.isAdmin === true ||
+    user?.isEarlyAccess === true
+  ) {
     return null
   }
 

@@ -9,6 +9,7 @@
  */
 jest.mock('./auth.service.js', () => ({}))
 jest.mock('./language.service.js', () => ({}))
+jest.mock('./permission.service.js', () => ({}))
 jest.mock('./dto/register.dto.js', () => ({}))
 jest.mock('./dto/login.dto.js', () => ({}))
 jest.mock('./dto/onboarding.dto.js', () => ({}))

@@ -9,7 +9,7 @@ export default function SettingsPage() {
   return (
     <div>
       <PageHeader title={t('common:settings')} />
-      <div className="mt-8 space-y-6 max-w-2xl">
+      <div className="mt-8 space-y-6 max-w-2xl mx-auto">
         <TwoFactorSettings />
         <ChangePasswordSettings />
       </div>

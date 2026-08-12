@@ -7,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { AuthController } from './auth.controller.js'
 import { AuthService } from './auth.service.js'
 import { LanguageService } from './language.service.js'
+import { PermissionService } from './permission.service.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
 import { RateLimitGuard } from './rate-limit.guard.js'
 import { AuthGuard } from '@nestjs/passport'
@@ -20,12 +21,21 @@ describe('AuthController', () => {
   let controller: AuthController
   let mockAuthService: Record<string, jest.Mock>
   let mockLanguageService: Record<string, jest.Mock>
+  let mockPermissionService: Record<string, jest.Mock>
 
   const mockUserReq = {
     user: { sub: 'user-1', email: 'test@test.com' },
     headers: { 'x-forwarded-for': '203.0.113.1' },
     socket: { remoteAddress: '192.168.1.1' },
   } as unknown as AuthenticatedRequest
+
+  const mockPermissions = {
+    role: 'user',
+    earlyAccess: false,
+    subscription: { plan: null, status: null, expiresAt: null },
+    entitlements: { hasActiveSubscription: false, canUseSubscriptionFeatures: false },
+    limits: { maxCampaigns: null, maxTemplates: null },
+  }
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -55,12 +65,16 @@ describe('AuthController', () => {
       updateLanguage: jest.fn().mockResolvedValue('en'),
       getLanguage: jest.fn().mockResolvedValue('en'),
     }
+    mockPermissionService = {
+      getPermissions: jest.fn().mockResolvedValue(mockPermissions),
+    }
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
         { provide: AuthService, useValue: mockAuthService },
         { provide: LanguageService, useValue: mockLanguageService },
+        { provide: PermissionService, useValue: mockPermissionService },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -135,6 +149,20 @@ describe('AuthController', () => {
       const result = await controller.getProfile(mockUserReq)
       expect(mockAuthService.getProfile).toHaveBeenCalledWith('user-1')
       expect(result).toEqual({ id: 'user-1', email: 'test@test.com', displayName: 'Test User' })
+    })
+  })
+
+  describe('me', () => {
+    it('should merge the profile with server-computed permissions', async () => {
+      const result = await controller.me(mockUserReq)
+      expect(mockAuthService.getProfile).toHaveBeenCalledWith('user-1')
+      expect(mockPermissionService.getPermissions).toHaveBeenCalledWith('user-1', 'test@test.com')
+      expect(result).toEqual({
+        id: 'user-1',
+        email: 'test@test.com',
+        displayName: 'Test User',
+        permissions: mockPermissions,
+      })
     })
   })
 
@@ -246,6 +274,7 @@ describe('AuthController', () => {
         'confirmTwoFactor',
         'logout',
         'getProfile',
+        'me',
         'updateLanguage',
         'currentUser',
       ]

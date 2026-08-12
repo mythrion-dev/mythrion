@@ -26,7 +26,7 @@ interface TemplateSummary {
 }
 
 export function TemplateRow(props: {
-  readonly template: TemplateSummary; readonly isGM: boolean; readonly isEditing: boolean; readonly editName: string; readonly editDescription: string; readonly editAttrs: { key: string; name: string }[]; readonly editAttrModifierFormula: string; readonly editSkillFormula: string; readonly editFields?: { key: string; label: string }[]; readonly editSkills?: { name: string; description: string; attributeId: string; allowedAttributeIds?: string[]; defaultAttributeId?: string }[]; readonly editError: string | null; readonly saving: boolean
+  readonly template: TemplateSummary; readonly isGM: boolean; readonly readOnly?: boolean; readonly isEditing: boolean; readonly editName: string; readonly editDescription: string; readonly editAttrs: { key: string; name: string }[]; readonly editAttrModifierFormula: string; readonly editSkillFormula: string; readonly editFields?: { key: string; label: string }[]; readonly editSkills?: { name: string; description: string; attributeId: string; allowedAttributeIds?: string[]; defaultAttributeId?: string }[]; readonly editError: string | null; readonly saving: boolean
   readonly onStartEdit: () => void; readonly onCancelEdit: () => void; readonly onUpdate: (e: SubmitEvent) => void; readonly onDelete: () => void; readonly onEditNameChange: (v: string) => void; readonly onEditDescriptionChange: (v: string) => void
   readonly onAddAttr: () => void; readonly onRemoveAttr: (i: number) => void; readonly onUpdateAttr: (i: number, f: 'key' | 'name', v: string) => void
   readonly onAddField?: () => void; readonly onRemoveField?: (i: number) => void; readonly onUpdateField?: (i: number, f: 'key' | 'label', v: string) => void
@@ -94,7 +94,7 @@ export function TemplateRow(props: {
   const allAttrs = props.editAttrs.filter(a => a.key.trim() && a.name.trim()).map(a => ({ key: a.key.trim(), name: a.name.trim() }))
 
   // ── EDIT MODE ──
-  if (props.isEditing) {
+  if (props.isEditing && !props.readOnly) {
     return (
       <form onSubmit={props.onUpdate} className="card !p-5 animate-slide-up space-y-4 border-primary/20">
         {/* Header */}
@@ -394,13 +394,23 @@ export function TemplateRow(props: {
           {/* Right actions */}
           {props.isGM && (
             <div className="flex gap-1.5 shrink-0">
-              <button onClick={props.onStartEdit} className="btn-ghost text-xs px-3 py-1.5 inline-flex items-center gap-1">
+              <button
+                onClick={props.readOnly ? undefined : props.onStartEdit}
+                disabled={props.readOnly}
+                title={props.readOnly ? t('campaign:readOnlyTooltip') : undefined}
+                className={`btn-ghost text-xs px-3 py-1.5 inline-flex items-center gap-1 ${props.readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
+              >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
                 {t('common:edit')}
               </button>
-              <button onClick={props.onDelete} className="btn-danger text-xs px-3 py-1.5 inline-flex items-center gap-1">
+              <button
+                onClick={props.readOnly ? undefined : props.onDelete}
+                disabled={props.readOnly}
+                title={props.readOnly ? t('campaign:readOnlyTooltip') : undefined}
+                className={`btn-danger text-xs px-3 py-1.5 inline-flex items-center gap-1 ${props.readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
+              >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>

@@ -14,6 +14,8 @@ import { CreateTemplateDto } from './dto/create-template.dto.js'
 import { UpdateTemplateDto } from './dto/update-template.dto.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
 import { SubscriptionGuard } from '../auth/subscription.guard.js'
+import { PlanLimitGuard } from '../auth/plan-limit.guard.js'
+import { PlanLimit } from '../auth/plan-limit.decorator.js'
 import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
 
 /**
@@ -30,7 +32,8 @@ export class StandaloneTemplateController {
    * Requires an active subscription (free tier cannot create templates).
    */
   @Post()
-  @UseGuards(SubscriptionGuard)
+  @UseGuards(SubscriptionGuard, PlanLimitGuard)
+  @PlanLimit('template')
   create(
     @Req() req: AuthenticatedRequest,
     @Body() dto: CreateTemplateDto,
@@ -62,7 +65,9 @@ export class StandaloneTemplateController {
 
   /**
    * PATCH /templates/:id — Update a template
-   * Auth: owner or GM of associated adventure
+   * Auth: owner or GM of associated adventure (ownership gate, no paywall).
+   * Creation is paywalled (POST /templates, POST /templates/:id/clone);
+   * managing your own existing templates is not.
    */
   @Patch(':id')
   update(
@@ -92,6 +97,8 @@ export class StandaloneTemplateController {
    * Fixes existing frontend bug: frontend calls this endpoint but no route existed.
    */
   @Post(':id/clone')
+  @UseGuards(SubscriptionGuard, PlanLimitGuard)
+  @PlanLimit('template')
   clone(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,

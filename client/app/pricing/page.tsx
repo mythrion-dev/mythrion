@@ -213,16 +213,13 @@ export default function PricingPage() {
               const isAnnual = plan.slug === 'annual'
               const pricePerMonth = isAnnual ? Math.round(plan.price / 12) : plan.price
               const isSubscribed = subscription?.plan.slug === plan.slug
-              const isCancelledOrExpired =
-                subscription &&
-                (subscription.status === 'CANCELLED' || subscription.status === 'EXPIRED')
 
               let cta: { labelKey: string; href: string } | null = null
               if (!user) {
                 cta = { labelKey: 'billing:subscribe', href: `/login?redirect=/pricing` }
               } else if (isSubscribed && hasActiveSubscription) {
                 cta = { labelKey: 'billing:currentPlan', href: '/dashboard' }
-              } else if (isCancelledOrExpired && isSubscribed) {
+              } else if (isSubscribed && !hasActiveSubscription) {
                 cta = { labelKey: 'billing:renew', href: `/subscription/checkout?planId=${plan.id}` }
               } else {
                 cta = { labelKey: 'billing:subscribe', href: `/subscription/checkout?planId=${plan.id}` }

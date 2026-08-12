@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 
-export function InlineClickEdit({ value, onSave, as = 'input', className = '', inputClassName = '', emptyDisplay = '—', rows = 2 }: {
+export function InlineClickEdit({ value, onSave, as = 'input', className = '', inputClassName = '', emptyDisplay = '—', rows = 2, readOnly = false }: {
   readonly value: string
   readonly onSave: (value: string) => Promise<void>
   readonly as?: 'input' | 'textarea'
@@ -10,6 +10,7 @@ export function InlineClickEdit({ value, onSave, as = 'input', className = '', i
   readonly inputClassName?: string
   readonly emptyDisplay?: string
   readonly rows?: number
+  readonly readOnly?: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value)
@@ -26,6 +27,15 @@ export function InlineClickEdit({ value, onSave, as = 'input', className = '', i
     catch { setDraft(value) }
     finally { setSaving(false) }
   }, [draft, value, onSave])
+
+  if (readOnly) {
+    const display = value?.trim()
+    return (
+      <span className={`inline-block px-1 -mx-1 ${display ? '' : 'text-muted italic'} ${className}`}>
+        {display || emptyDisplay}
+      </span>
+    )
+  }
 
   if (!editing) {
     const display = value?.trim()

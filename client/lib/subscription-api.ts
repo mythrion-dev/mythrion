@@ -1,5 +1,10 @@
 import { api } from './api'
 
+export interface PlanLimits {
+  maxCampaigns?: number | null
+  maxTemplates?: number | null
+}
+
 export interface Plan {
   id: string
   slug: string
@@ -7,6 +12,7 @@ export interface Plan {
   description: string | null
   price: number
   pgPlanId: string
+  limits?: PlanLimits | null
 }
 
 export interface Invoice {
@@ -27,6 +33,8 @@ export interface MySubscription {
     price: number
   }
   status: string
+  /** Server-computed; false when the entitlement window has lapsed. */
+  hasActiveSubscription: boolean
   pgSubscriptionId: string | null
   graceEndsAt: string | null
   currentPeriodStart: string | null

@@ -13,11 +13,13 @@ export function MemberRow({
   member,
   isGM,
   isSelf,
+  disabled,
   onRemove,
 }: {
   readonly member: Member
   readonly isGM: boolean
   readonly isSelf: boolean
+  readonly disabled?: boolean
   readonly onRemove: () => void
 }) {
   const { t } = useTranslation()
@@ -44,8 +46,10 @@ export function MemberRow({
       </div>
       {isGM && !isSelf && (
         <button
-          onClick={onRemove}
-          className="text-xs text-danger hover:text-danger/80 transition-colors shrink-0"
+          onClick={disabled ? undefined : onRemove}
+          disabled={disabled}
+          title={disabled ? t('campaign:readOnlyTooltip') : undefined}
+          className={`text-xs text-danger transition-colors shrink-0 ${disabled ? 'opacity-50 cursor-not-allowed hover:text-danger' : 'hover:text-danger/80'}`}
         >
           {t('common:remove')}
         </button>

@@ -825,6 +825,7 @@ export const SubscriptionPlanScalarFieldEnum = {
   description: 'description',
   price: 'price',
   pgPlanId: 'pgPlanId',
+  limits: 'limits',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

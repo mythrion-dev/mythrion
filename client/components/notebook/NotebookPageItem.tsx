@@ -13,10 +13,14 @@ interface NotebookPageItemProps {
   readonly folderName?: string | null
   readonly onClick: (id: string) => void
   readonly onDelete: (id: string) => void
+  /** Request a custom confirmation flow instead of the native browser dialog */
+  readonly onRequestDelete?: (id: string) => void
   /** Fired when drag starts on this page — dataTransfer gets pageId */
   readonly onDragStart?: (pageId: string, e: React.DragEvent) => void
   /** Fired on right-click / long press for context menu */
   readonly onContextMenu?: (pageId: string, e: React.MouseEvent) => void
+  /** Disable edit/drag/context actions (campaign read-only) */
+  readonly readOnly?: boolean
 }
 
 export function NotebookPageItem({
@@ -27,8 +31,10 @@ export function NotebookPageItem({
   folderName,
   onClick,
   onDelete,
+  onRequestDelete,
   onDragStart,
   onContextMenu,
+  readOnly = false,
 }: Readonly<NotebookPageItemProps>) {
   const handleDragStart = useCallback(
     (e: React.DragEvent) => {
@@ -53,9 +59,9 @@ export function NotebookPageItem({
   return (
     <button
       type="button"
-      draggable={!!onDragStart}
-      onDragStart={handleDragStart}
-      onContextMenu={handleContextMenu}
+      draggable={!readOnly && !!onDragStart}
+      onDragStart={readOnly ? undefined : handleDragStart}
+      onContextMenu={readOnly ? undefined : handleContextMenu}
       onClick={() => onClick(id)}
       className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-left text-sm transition-colors group ${
         isActive
@@ -85,22 +91,26 @@ export function NotebookPageItem({
       )}
 
       {/* Delete button (visible on hover) */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          if (window.confirm(t('notebook:deletePageConfirm'))) {
+      {!readOnly && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            if (onRequestDelete) {
+              onRequestDelete(id)
+              return
+            }
             onDelete(id)
-          }
-        }}
-        className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-destructive transition-all shrink-0"
-        aria-label={t('notebook:deletePage')}
-        title={t('notebook:deletePage')}
-      >
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+          }}
+          className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-destructive transition-all shrink-0"
+          aria-label={t('notebook:deletePage')}
+          title={t('notebook:deletePage')}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
     </button>
   )
 }

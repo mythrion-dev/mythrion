@@ -18,6 +18,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto.js'
 import { ChangePasswordDto } from './dto/change-password.dto.js'
 import { ChangeEmailDto } from './dto/change-email.dto.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
+import { PermissionService } from './permission.service.js'
 import { SkipEmailVerificationCheck } from './skip-email-verification.decorator.js'
 import { AuthGuard } from '@nestjs/passport'
 import { GoogleAuthGuard } from './google-auth.guard.js'
@@ -45,6 +46,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly languageService: LanguageService,
+    private readonly permissionService: PermissionService,
   ) {}
 
   @Post('register')
@@ -145,6 +147,19 @@ export class AuthController {
   @SkipEmailVerificationCheck()
   getProfile(@Req() req: AuthenticatedRequest) {
     return this.authService.getProfile(req.user.sub)
+  }
+
+  /** Normalized profile + authorization result, computed server-side. */
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @SkipEmailVerificationCheck()
+  async me(@Req() req: AuthenticatedRequest) {
+    const profile = await this.authService.getProfile(req.user.sub)
+    const permissions = await this.permissionService.getPermissions(
+      req.user.sub,
+      req.user.email,
+    )
+    return { ...profile, permissions }
   }
 
   @Patch('language')

@@ -257,6 +257,20 @@ describe('DashboardSubscriptionPage', () => {
     ).toBeInTheDocument()
   })
 
+  it('shows the cancellation terms link and keeps the confirm button disabled until the acceptance box is checked', () => {
+    setSub(subscription('ACTIVE'))
+    render(<DashboardSubscriptionPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel subscription' }))
+    expect(screen.getByRole('link', { name: 'Read the cancellation terms' })).toHaveAttribute(
+      'href',
+      '/cancel-terms',
+    )
+    const confirm = screen.getByRole('button', { name: 'Confirm cancellation' })
+    expect(confirm).toBeDisabled()
+    fireEvent.click(screen.getByRole('checkbox'))
+    expect(screen.getByRole('button', { name: 'Confirm cancellation' })).toBeEnabled()
+  })
+
   it('cancels the subscription after confirmation', async () => {
     mockCancelSubscription.mockResolvedValue(undefined)
     mockRefresh.mockResolvedValue(undefined)
@@ -264,6 +278,7 @@ describe('DashboardSubscriptionPage', () => {
     render(<DashboardSubscriptionPage />)
     fireEvent.click(screen.getByRole('button', { name: 'Cancel subscription' }))
     expect(screen.getByText(/Are you sure you want to cancel/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('checkbox'))
     fireEvent.click(screen.getByRole('button', { name: 'Confirm cancellation' }))
     await waitFor(() => expect(mockCancelSubscription).toHaveBeenCalled())
     await waitFor(() => expect(mockRefresh).toHaveBeenCalled())
@@ -275,6 +290,7 @@ describe('DashboardSubscriptionPage', () => {
     setSub(subscription('ACTIVE'))
     render(<DashboardSubscriptionPage />)
     fireEvent.click(screen.getByRole('button', { name: 'Cancel subscription' }))
+    fireEvent.click(screen.getByRole('checkbox'))
     fireEvent.click(screen.getByRole('button', { name: 'Confirm cancellation' }))
     expect(await screen.findByText('cancel boom')).toBeInTheDocument()
     expect(screen.getByText(/Are you sure you want to cancel/)).toBeInTheDocument()

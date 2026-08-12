@@ -16,7 +16,6 @@ vi.mock('@/lib/api', () => ({
   removeRefreshToken: vi.fn(),
   getInvitationToken: vi.fn(),
   removeInvitationToken: vi.fn(),
-  decodeJwtPayload: vi.fn(() => ({ role: 'user' })),
   refreshAccessToken: vi.fn(),
   isAccessTokenExpiringSoon: vi.fn(() => false),
   onAuthFailure: vi.fn(() => () => {}),
@@ -52,6 +51,8 @@ function TestConsumer() {
       <div data-testid="loading">{String(auth.loading)}</div>
       <div data-testid="user">{auth.user?.email ?? 'no-user'}</div>
       <div data-testid="twofactor">{auth.user ? String(auth.user.twoFactorEnabled) : 'no-user'}</div>
+      <div data-testid="isAdmin">{auth.user ? String(auth.user.isAdmin) : 'no-user'}</div>
+      <div data-testid="isEarlyAccess">{auth.user ? String(auth.user.isEarlyAccess) : 'no-user'}</div>
       <button onClick={() => auth.login('test@test.com', 'pass')}>Login</button>
       <button onClick={() => auth.register('test@test.com', 'pass', 'Test')}>Register</button>
       <button onClick={auth.logout}>Logout</button>
@@ -80,6 +81,14 @@ function TwoFactorLoginConsumer() {
   )
 }
 
+const mockPermissions = {
+  role: 'user',
+  earlyAccess: false,
+  subscription: { plan: null, status: null, expiresAt: null },
+  entitlements: { hasActiveSubscription: false, canUseSubscriptionFeatures: false },
+  limits: { maxCampaigns: null, maxTemplates: null },
+}
+
 const mockProfile = {
   id: 'user-1',
   email: 'test@test.com',
@@ -89,6 +98,7 @@ const mockProfile = {
   emailVerified: false,
   hasPassword: true,
   language: 'en',
+  permissions: mockPermissions,
 }
 
 beforeEach(() => {
@@ -113,7 +123,7 @@ describe('AuthProvider + useAuth', () => {
     expect(screen.getByTestId('user')).toHaveTextContent('no-user')
   })
 
-  it('calls api.get(/auth/profile) when access token exists', async () => {
+  it('calls api.get(/auth/me) when access token exists', async () => {
     vi.mocked(getAccessToken).mockReturnValue('mock-token')
     vi.mocked(api.get).mockResolvedValue(mockProfile)
 
@@ -124,7 +134,7 @@ describe('AuthProvider + useAuth', () => {
     )
 
     await waitFor(() => {
-      expect(api.get).toHaveBeenCalledWith('/auth/profile')
+      expect(api.get).toHaveBeenCalledWith('/auth/me')
     })
   })
 
@@ -190,7 +200,7 @@ describe('AuthProvider + useAuth', () => {
 
     await waitFor(() => {
       expect(refreshAccessToken).toHaveBeenCalledTimes(1)
-      expect(api.get).toHaveBeenCalledWith('/auth/profile')
+      expect(api.get).toHaveBeenCalledWith('/auth/me')
       expect(screen.getByTestId('user')).toHaveTextContent('test@test.com')
     })
   })
@@ -262,7 +272,7 @@ describe('AuthProvider + useAuth', () => {
     )
 
     await waitFor(() => {
-      expect(api.get).toHaveBeenCalledWith('/auth/profile')
+      expect(api.get).toHaveBeenCalledWith('/auth/me')
     })
 
     act(() => {
@@ -364,7 +374,7 @@ describe('login', () => {
     await userEvent.click(screen.getByText('Login'))
 
     await waitFor(() => {
-      expect(api.get).toHaveBeenCalledWith('/auth/profile')
+      expect(api.get).toHaveBeenCalledWith('/auth/me')
     })
   })
 
@@ -461,7 +471,7 @@ describe('register', () => {
     await userEvent.click(screen.getByText('Register'))
 
     await waitFor(() => {
-      expect(api.get).toHaveBeenCalledWith('/auth/profile')
+      expect(api.get).toHaveBeenCalledWith('/auth/me')
     })
   })
 })
@@ -628,7 +638,7 @@ describe('login with 2FA', () => {
     // No tokens were issued by the server, so none may be stored.
     expect(setAccessToken).not.toHaveBeenCalled()
     expect(setRefreshToken).not.toHaveBeenCalled()
-    expect(api.get).not.toHaveBeenCalledWith('/auth/profile')
+    expect(api.get).not.toHaveBeenCalledWith('/auth/me')
   })
 
   it('stores tokens when 2FA is not required', async () => {
@@ -713,7 +723,7 @@ describe('verifyTwoFactor', () => {
     await userEvent.click(screen.getByText('Verify2FA'))
 
     await waitFor(() => {
-      expect(api.get).toHaveBeenCalledWith('/auth/profile')
+      expect(api.get).toHaveBeenCalledWith('/auth/me')
       expect(screen.getByTestId('user')).toHaveTextContent('test@test.com')
     })
   })
@@ -744,7 +754,7 @@ describe('refreshProfile', () => {
     vi.mocked(getRefreshToken).mockReturnValue(null)
   })
 
-  it('re-fetches the profile from /auth/profile', async () => {
+  it('re-fetches the profile from /auth/me', async () => {
     vi.mocked(api.get).mockResolvedValue(mockProfile)
 
     render(
@@ -756,7 +766,7 @@ describe('refreshProfile', () => {
     await userEvent.click(screen.getByText('RefreshProfile'))
 
     await waitFor(() => {
-      expect(api.get).toHaveBeenCalledWith('/auth/profile')
+      expect(api.get).toHaveBeenCalledWith('/auth/me')
     })
   })
 
@@ -780,6 +790,65 @@ describe('refreshProfile', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('twofactor')).toHaveTextContent('true')
+    })
+  })
+})
+
+// --------------- permission derivation from /auth/me ---------------
+
+describe('permission derivation (F1)', () => {
+  beforeEach(() => {
+    vi.mocked(getAccessToken).mockReturnValue('mock-token')
+  })
+
+  it('derives isAdmin from permissions.role === admin', async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      ...mockProfile,
+      permissions: { ...mockPermissions, role: 'admin' },
+    })
+
+    render(
+      <TestWrapper>
+        <TestConsumer />
+      </TestWrapper>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('isAdmin')).toHaveTextContent('true')
+      expect(screen.getByTestId('isEarlyAccess')).toHaveTextContent('false')
+    })
+  })
+
+  it('derives isEarlyAccess from permissions.earlyAccess', async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      ...mockProfile,
+      permissions: { ...mockPermissions, earlyAccess: true },
+    })
+
+    render(
+      <TestWrapper>
+        <TestConsumer />
+      </TestWrapper>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('isEarlyAccess')).toHaveTextContent('true')
+      expect(screen.getByTestId('isAdmin')).toHaveTextContent('false')
+    })
+  })
+
+  it('a plain user defaults both flags to false', async () => {
+    vi.mocked(api.get).mockResolvedValue(mockProfile)
+
+    render(
+      <TestWrapper>
+        <TestConsumer />
+      </TestWrapper>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('isAdmin')).toHaveTextContent('false')
+      expect(screen.getByTestId('isEarlyAccess')).toHaveTextContent('false')
     })
   })
 })

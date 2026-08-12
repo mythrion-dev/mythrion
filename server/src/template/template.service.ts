@@ -228,7 +228,7 @@ export class TemplateService {
   }
 
   async create(adventureId: string, userId: string, dto: CreateTemplateDto) {
-    await this.membership.requireRole(adventureId, userId, 'GM')
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
 
     // Look up the adventure to check if it's public and set ownerId
     const adventure = await this.prisma.adventure.findUnique({ where: { id: adventureId } })
@@ -637,13 +637,15 @@ export class TemplateService {
   }
 
   private async assertCanUpdate(template: { ownerId: string | null; adventureId: string | null }, userId: string): Promise<void> {
-    // Owner OR GM of associated adventure can update
+    // Adventure-scoped templates require GM role AND campaign writability.
+    // The owner short-circuit must not bypass the read-only check — a GM whose
+    // subscription lapsed must not edit a template attached to a read-only campaign.
+    if (template.adventureId) {
+      await this.membership.requireWriteRole(template.adventureId, userId, 'GM')
+      return
+    }
     if (template.ownerId !== userId) {
-      if (template.adventureId) {
-        await this.membership.requireRole(template.adventureId, userId, 'GM')
-      } else {
-        throw new ForbiddenException(this.i18n.t('template.ownerOnlyUpdate'))
-      }
+      throw new ForbiddenException(this.i18n.t('template.ownerOnlyUpdate'))
     }
   }
 
@@ -1364,13 +1366,12 @@ export class TemplateService {
     const template = await this.prisma.template.findUnique({ where: { id } })
     if (!template) throw new NotFoundException(this.i18n.t('template.notFound'))
 
-    // Owner OR GM of associated adventure can delete
-    if (template.ownerId !== userId) {
-      if (template.adventureId) {
-        await this.membership.requireRole(template.adventureId, userId, 'GM')
-      } else {
-        throw new ForbiddenException(this.i18n.t('template.ownerOnlyDelete'))
-      }
+    // Adventure-scoped templates require GM role AND campaign writability —
+    // read-only campaigns block deletion even for the template owner.
+    if (template.adventureId) {
+      await this.membership.requireWriteRole(template.adventureId, userId, 'GM')
+    } else if (template.ownerId !== userId) {
+      throw new ForbiddenException(this.i18n.t('template.ownerOnlyDelete'))
     }
 
     // Block deletion if character sheets reference this template
@@ -1423,7 +1424,7 @@ export class TemplateService {
     // Auth: owner can always clone; anyone can clone public; GM of adventure can clone
     if (original.ownerId !== userId && !original.isPublic) {
       if (original.adventureId) {
-        await this.membership.requireRole(original.adventureId, userId, 'GM')
+        await this.membership.requireWriteRole(original.adventureId, userId, 'GM')
       } else {
         throw new ForbiddenException(this.i18n.t('template.noClonePermission'))
       }
@@ -1915,7 +1916,7 @@ export class TemplateService {
    */
   async attachToAdventure(templateId: string, adventureId: string, userId: string) {
     // GM only
-    await this.membership.requireRole(adventureId, userId, 'GM')
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
 
     // Enforce single template per campaign: reject if one is already attached
     const existing = await this.prisma.adventure.findUnique({
@@ -1972,7 +1973,7 @@ export class TemplateService {
    */
   async replaceAdventureTemplate(templateId: string, adventureId: string, userId: string) {
     // GM only
-    await this.membership.requireRole(adventureId, userId, 'GM')
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
 
     // Read existing attachment for old template ID cache invalidation
     const current = await this.prisma.adventure.findUnique({
@@ -2025,7 +2026,7 @@ export class TemplateService {
    */
   async detachFromAdventure(adventureId: string, userId: string) {
     // GM only
-    await this.membership.requireRole(adventureId, userId, 'GM')
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
 
     // Read the current adventure to get the originalTemplateId for cache invalidation
     const current = await this.prisma.adventure.findUnique({

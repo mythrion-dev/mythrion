@@ -10,17 +10,24 @@ jest.mock('@nestjs/platform-express', () => ({
 }))
 
 import { Test, TestingModule } from '@nestjs/testing'
-import { NotFoundException } from '@nestjs/common'
+import { NotFoundException, ForbiddenException } from '@nestjs/common'
 import { ImageController } from './image.controller.js'
 import { ImageService } from './image.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
+import { CharacterSheetService } from '../character-sheet/character-sheet.service.js'
 import { I18nService } from 'nestjs-i18n'
 import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 import type { Response } from 'express'
+import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
 
 describe('ImageController', () => {
   let controller: ImageController
   let mockImageService: Record<string, jest.Mock>
+  let mockCharacterSheetService: Record<string, jest.Mock>
+
+  const mockUserReq = {
+    user: { sub: 'user-1', email: 'test@test.com', role: 'user' },
+  } as unknown as AuthenticatedRequest
 
   const mockFile = {
     buffer: Buffer.from('fake-image-bytes'),
@@ -53,10 +60,16 @@ describe('ImageController', () => {
       delete: jest.fn().mockResolvedValue(undefined),
     }
 
+    mockCharacterSheetService = {
+      assertCanModifySheet: jest.fn().mockResolvedValue(undefined),
+      assertCanModifyAbility: jest.fn().mockResolvedValue(undefined),
+    }
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ImageController],
       providers: [
         { provide: ImageService, useValue: mockImageService },
+        { provide: CharacterSheetService, useValue: mockCharacterSheetService },
         { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     })
@@ -73,7 +86,7 @@ describe('ImageController', () => {
 
   describe('uploadAvatar', () => {
     it('should upload a file and return fileId', async () => {
-      const result = await controller.uploadAvatar('sheet-1', mockFile)
+      const result = await controller.uploadAvatar(mockUserReq, 'sheet-1', mockFile)
 
       expect(mockImageService.upload).toHaveBeenCalledWith('sheet-1', {
         buffer: mockFile.buffer,
@@ -84,13 +97,13 @@ describe('ImageController', () => {
     })
 
     it('should throw NotFoundException when no file is provided', async () => {
-      await expect(controller.uploadAvatar('sheet-1', undefined))
+      await expect(controller.uploadAvatar(mockUserReq, 'sheet-1', undefined))
         .rejects.toThrow(NotFoundException)
       expect(mockImageService.upload).not.toHaveBeenCalled()
     })
 
     it('should pass an empty sheetId string to the service', async () => {
-      const result = await controller.uploadAvatar('', mockFile)
+      const result = await controller.uploadAvatar(mockUserReq, '', mockFile)
 
       expect(mockImageService.upload).toHaveBeenCalledWith('', {
         buffer: mockFile.buffer,
@@ -103,8 +116,24 @@ describe('ImageController', () => {
     it('should propagate a service upload error', async () => {
       mockImageService.upload.mockRejectedValue(new Error('Upload failure'))
 
-      await expect(controller.uploadAvatar('sheet-1', mockFile))
+      await expect(controller.uploadAvatar(mockUserReq, 'sheet-1', mockFile))
         .rejects.toThrow('Upload failure')
+    })
+
+    it('should verify sheet modification rights before uploading', async () => {
+      await controller.uploadAvatar(mockUserReq, 'sheet-1', mockFile)
+
+      expect(mockCharacterSheetService.assertCanModifySheet).toHaveBeenCalledWith('sheet-1', 'user-1')
+    })
+
+    it('should reject with 403 and skip upload when the user cannot modify the sheet', async () => {
+      mockCharacterSheetService.assertCanModifySheet.mockRejectedValue(
+        new ForbiddenException('Campaign is read-only'),
+      )
+
+      await expect(controller.uploadAvatar(mockUserReq, 'sheet-1', mockFile))
+        .rejects.toThrow(ForbiddenException)
+      expect(mockImageService.upload).not.toHaveBeenCalled()
     })
   })
 
@@ -171,14 +200,14 @@ describe('ImageController', () => {
 
   describe('deleteAvatar', () => {
     it('should delete the avatar and return { deleted: true }', async () => {
-      const result = await controller.deleteAvatar('sheet-1')
+      const result = await controller.deleteAvatar(mockUserReq, 'sheet-1')
 
       expect(mockImageService.delete).toHaveBeenCalledWith('sheet-1')
       expect(result).toEqual({ deleted: true })
     })
 
     it('should call the service with an empty sheetId string', async () => {
-      const result = await controller.deleteAvatar('')
+      const result = await controller.deleteAvatar(mockUserReq, '')
 
       expect(mockImageService.delete).toHaveBeenCalledWith('')
       expect(result).toEqual({ deleted: true })
@@ -187,8 +216,24 @@ describe('ImageController', () => {
     it('should propagate a service delete error', async () => {
       mockImageService.delete.mockRejectedValue(new Error('Delete failure'))
 
-      await expect(controller.deleteAvatar('sheet-1'))
+      await expect(controller.deleteAvatar(mockUserReq, 'sheet-1'))
         .rejects.toThrow('Delete failure')
+    })
+
+    it('should verify sheet modification rights before deleting', async () => {
+      await controller.deleteAvatar(mockUserReq, 'sheet-1')
+
+      expect(mockCharacterSheetService.assertCanModifySheet).toHaveBeenCalledWith('sheet-1', 'user-1')
+    })
+
+    it('should reject with 403 and skip delete when the user cannot modify the sheet', async () => {
+      mockCharacterSheetService.assertCanModifySheet.mockRejectedValue(
+        new ForbiddenException('Campaign is read-only'),
+      )
+
+      await expect(controller.deleteAvatar(mockUserReq, 'sheet-1'))
+        .rejects.toThrow(ForbiddenException)
+      expect(mockImageService.delete).not.toHaveBeenCalled()
     })
   })
 
@@ -198,7 +243,7 @@ describe('ImageController', () => {
 
   describe('uploadAbilityAvatar', () => {
     it('should upload a file with abilityId field name and return fileId', async () => {
-      const result = await controller.uploadAbilityAvatar('ability-1', mockFile)
+      const result = await controller.uploadAbilityAvatar(mockUserReq, 'ability-1', mockFile)
 
       expect(mockImageService.upload).toHaveBeenCalledWith('ability-1', {
         buffer: mockFile.buffer,
@@ -209,13 +254,13 @@ describe('ImageController', () => {
     })
 
     it('should throw NotFoundException when no file is provided', async () => {
-      await expect(controller.uploadAbilityAvatar('ability-1', undefined))
+      await expect(controller.uploadAbilityAvatar(mockUserReq, 'ability-1', undefined))
         .rejects.toThrow(NotFoundException)
       expect(mockImageService.upload).not.toHaveBeenCalled()
     })
 
     it('should pass an empty abilityId string to the service', async () => {
-      const result = await controller.uploadAbilityAvatar('', mockFile)
+      const result = await controller.uploadAbilityAvatar(mockUserReq, '', mockFile)
 
       expect(mockImageService.upload).toHaveBeenCalledWith('', {
         buffer: mockFile.buffer,
@@ -228,8 +273,24 @@ describe('ImageController', () => {
     it('should propagate a service upload error', async () => {
       mockImageService.upload.mockRejectedValue(new Error('Ability upload failure'))
 
-      await expect(controller.uploadAbilityAvatar('ability-1', mockFile))
+      await expect(controller.uploadAbilityAvatar(mockUserReq, 'ability-1', mockFile))
         .rejects.toThrow('Ability upload failure')
+    })
+
+    it('should verify ability modification rights before uploading', async () => {
+      await controller.uploadAbilityAvatar(mockUserReq, 'ability-1', mockFile)
+
+      expect(mockCharacterSheetService.assertCanModifyAbility).toHaveBeenCalledWith('ability-1', 'user-1')
+    })
+
+    it('should reject with 403 and skip upload when the user cannot modify the ability', async () => {
+      mockCharacterSheetService.assertCanModifyAbility.mockRejectedValue(
+        new ForbiddenException('Campaign is read-only'),
+      )
+
+      await expect(controller.uploadAbilityAvatar(mockUserReq, 'ability-1', mockFile))
+        .rejects.toThrow(ForbiddenException)
+      expect(mockImageService.upload).not.toHaveBeenCalled()
     })
   })
 
@@ -296,14 +357,14 @@ describe('ImageController', () => {
 
   describe('deleteAbilityAvatar', () => {
     it('should delete the ability avatar and return { deleted: true }', async () => {
-      const result = await controller.deleteAbilityAvatar('ability-1')
+      const result = await controller.deleteAbilityAvatar(mockUserReq, 'ability-1')
 
       expect(mockImageService.delete).toHaveBeenCalledWith('ability-1', 'abilityId')
       expect(result).toEqual({ deleted: true })
     })
 
     it('should call the service with an empty abilityId string', async () => {
-      const result = await controller.deleteAbilityAvatar('')
+      const result = await controller.deleteAbilityAvatar(mockUserReq, '')
 
       expect(mockImageService.delete).toHaveBeenCalledWith('', 'abilityId')
       expect(result).toEqual({ deleted: true })
@@ -312,8 +373,24 @@ describe('ImageController', () => {
     it('should propagate a service delete error', async () => {
       mockImageService.delete.mockRejectedValue(new Error('Delete failure'))
 
-      await expect(controller.deleteAbilityAvatar('ability-1'))
+      await expect(controller.deleteAbilityAvatar(mockUserReq, 'ability-1'))
         .rejects.toThrow('Delete failure')
+    })
+
+    it('should verify ability modification rights before deleting', async () => {
+      await controller.deleteAbilityAvatar(mockUserReq, 'ability-1')
+
+      expect(mockCharacterSheetService.assertCanModifyAbility).toHaveBeenCalledWith('ability-1', 'user-1')
+    })
+
+    it('should reject with 403 and skip delete when the user cannot modify the ability', async () => {
+      mockCharacterSheetService.assertCanModifyAbility.mockRejectedValue(
+        new ForbiddenException('Campaign is read-only'),
+      )
+
+      await expect(controller.deleteAbilityAvatar(mockUserReq, 'ability-1'))
+        .rejects.toThrow(ForbiddenException)
+      expect(mockImageService.delete).not.toHaveBeenCalled()
     })
   })
 
@@ -328,7 +405,7 @@ describe('ImageController', () => {
     ['a sheet ID with special characters', 'sheet-123_abc'],
   ])('uploadAvatar with %s', (_label, sheetId) => {
     it('should delegate to imageService.upload with the correct entityId', async () => {
-      const result = await controller.uploadAvatar(sheetId, mockFile)
+      const result = await controller.uploadAvatar(mockUserReq, sheetId, mockFile)
 
       expect(mockImageService.upload).toHaveBeenCalledWith(sheetId, {
         buffer: mockFile.buffer,

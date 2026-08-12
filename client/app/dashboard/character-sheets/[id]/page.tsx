@@ -117,18 +117,20 @@ export default function CharacterSheetDetailPage() {
   modifierResultsRef.current = modifierResults
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null)
   const [notebookOpen, setNotebookOpen] = useState(false)
+  const [accessState, setAccessState] = useState<'ACTIVE' | 'READ_ONLY' | null>(null)
   const [activeTab, setActiveTab] = useState<string>('character')
   const isOwner = sheet?.ownerId === user?.id || (sheet?.isNpc === true)
+  const readOnly = accessState === 'READ_ONLY'
   const permissions: SheetPermissions = {
-    canEditCharacter: isOwner,
-    canEditSkills: isOwner,
-    canEditResources: isOwner,
-    canEditInventory: isOwner,
-    canEditStory: isOwner,
-    canEditProfessionalSkills: isOwner,
-    canEditPersonalAbilities: isOwner,
-    canEditResistances: isOwner,
-    canEditAbilities: isOwner,
+    canEditCharacter: isOwner && !readOnly,
+    canEditSkills: isOwner && !readOnly,
+    canEditResources: isOwner && !readOnly,
+    canEditInventory: isOwner && !readOnly,
+    canEditStory: isOwner && !readOnly,
+    canEditProfessionalSkills: isOwner && !readOnly,
+    canEditPersonalAbilities: isOwner && !readOnly,
+    canEditResistances: isOwner && !readOnly,
+    canEditAbilities: isOwner && !readOnly,
   }
 
   const [abilities, setAbilities] = useState<Ability[]>([]); const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]); const [story, setStory] = useState<Story | null>(null)
@@ -285,6 +287,16 @@ export default function CharacterSheetDetailPage() {
   }, [id, computeModifiers, computeSkills, computeAC, computeSummonModifiers, computeSummonAC, evaluateFormula])
 
   useEffect(() => { fetchSheet() }, [fetchSheet])
+
+  const fetchAccessState = useCallback(async (adventureId: string | null) => {
+    if (!adventureId) { setAccessState(null); return }
+    try {
+      const res = await api.get<{ accessState: 'ACTIVE' | 'READ_ONLY' }>(`/adventures/${adventureId}/access`)
+      setAccessState(res.accessState)
+    } catch { setAccessState(null) }
+  }, [])
+
+  useEffect(() => { fetchAccessState(sheet?.adventure?.id ?? null) }, [fetchAccessState, sheet?.adventure?.id])
 
   async function saveCharacterName(name: string) {
     const updated = await updateSheet({ characterName: name })
@@ -657,9 +669,10 @@ export default function CharacterSheetDetailPage() {
                 {isOwner && (
                   <button
                     type="button"
-                    onClick={handleAvatarDelete}
+                    onClick={readOnly ? undefined : handleAvatarDelete}
+                    disabled={readOnly}
                     className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-danger text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    title={t('character:removeAvatar')}
+                    title={readOnly ? t('campaign:readOnlyTooltip') : t('character:removeAvatar')}
                   >
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                   </button>
@@ -667,13 +680,13 @@ export default function CharacterSheetDetailPage() {
               </div>
             ) : (
               isOwner && (
-                <label className={`aspect-square w-full max-w-[10rem] rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/30 transition-colors ${avatarUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                <label className={`aspect-square w-full max-w-[10rem] rounded-xl border-2 border-dashed border-border flex items-center justify-center transition-colors ${avatarUploading ? 'opacity-50 pointer-events-none' : ''} ${readOnly ? 'cursor-not-allowed' : 'cursor-pointer hover:border-primary/30'}`} title={readOnly ? t('campaign:readOnlyTooltip') : undefined}>
                   {avatarUploading ? (
                     <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                   ) : (
                     <span className="text-2xl text-muted">+</span>
                   )}
-                  <input type="file" accept="image/*" className="hidden" disabled={avatarUploading} onChange={e=>{const f=e.target.files?.[0];if(f)handleAvatarUpload(f)}}/>
+                  <input type="file" accept="image/*" className="hidden" disabled={avatarUploading || readOnly} onChange={e=>{const f=e.target.files?.[0];if(f)handleAvatarUpload(f)}}/>
                 </label>
               )
             )}
@@ -683,15 +696,15 @@ export default function CharacterSheetDetailPage() {
           <div className="flex-1 min-w-0 flex flex-col justify-between">
             <div>
               {isOwner ? (
-                <InlineText value={sheet.characterName} onSave={saveCharacterName} maxLength={100} className="text-2xl font-bold text-gradient truncate block" />
+                <InlineText value={sheet.characterName} onSave={saveCharacterName} maxLength={100} className="text-2xl font-bold text-gradient truncate block" disabled={readOnly} title={readOnly ? t('campaign:readOnlyTooltip') : undefined} />
               ) : (
                 <h1 className="text-2xl font-bold text-gradient truncate">{sheet.characterName}</h1>
               )}
               <div className="flex flex-wrap items-center gap-2 mt-2">
                 {isOwner ? (
                   <>
-                    <span className="badge badge-gold inline-flex items-center gap-1">{t('character:playerLabel')}<InlineText value={sheet.playerName ?? ''} onSave={savePlayerName} maxLength={100} emptyDisplay="—" /></span>
-                    <span className="badge badge-gold inline-flex items-center gap-1">{t('character:levelField')}<InlineNumber value={sheet.level} onSave={saveLevel} min={1} /></span>
+                    <span className="badge badge-gold inline-flex items-center gap-1">{t('character:playerLabel')}<InlineText value={sheet.playerName ?? ''} onSave={savePlayerName} maxLength={100} emptyDisplay="—" disabled={readOnly} title={readOnly ? t('campaign:readOnlyTooltip') : undefined} /></span>
+                    <span className="badge badge-gold inline-flex items-center gap-1">{t('character:levelField')}<InlineNumber value={sheet.level} onSave={saveLevel} min={1} disabled={readOnly} title={readOnly ? t('campaign:readOnlyTooltip') : undefined} /></span>
                   </>
                 ) : (
                   <>
@@ -717,13 +730,25 @@ export default function CharacterSheetDetailPage() {
           {/* Actions - delete button vertically centered */}
           {isOwner && (
             <div className="flex flex-col gap-3 justify-center shrink-0 sm:min-h-[170px]">
-              <button onClick={() => setConfirmDelete(true)} className="btn-danger text-sm px-6 py-2.5 w-full sm:w-auto">
+              <button onClick={readOnly ? undefined : () => setConfirmDelete(true)} disabled={readOnly} title={readOnly ? t('campaign:readOnlyTooltip') : undefined} className="btn-danger text-sm px-6 py-2.5 w-full sm:w-auto">
                 <svg className="w-4 h-4 inline mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>{t('common:delete')}
               </button>
             </div>
           )}
         </div>
       </div>
+
+      {readOnly && (
+        <div role="status" className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-700 dark:text-amber-300">{t('campaign:readOnlyBadge')}</p>
+              <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">{t('campaign:readOnlyBanner')}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <nav className="flex gap-1 flex-wrap border-b border-border/60">
         <button onClick={()=>setActiveTab('character')} className={tabClass('character')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>{t('character:tabCharacter')}</button>
@@ -857,6 +882,7 @@ export default function CharacterSheetDetailPage() {
           adventureId={sheet.adventure.id}
           isGM={isOwner}
           forceOpen={notebookOpen}
+          readOnly={readOnly}
           onClose={() => setNotebookOpen(false)}
         />
       )}

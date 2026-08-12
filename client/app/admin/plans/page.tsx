@@ -8,7 +8,7 @@ import {
   adminDeletePlan,
   type UpdatePlanPayload,
 } from '@/lib/subscription-admin-api'
-import type { Plan } from '@/lib/subscription-api'
+import type { Plan, PlanLimits } from '@/lib/subscription-api'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 
@@ -41,6 +41,8 @@ interface PlanFormData {
   description: string
   price: string // BRL string, e.g. "120,00"
   pgPlanId: string
+  maxCampaigns: string // blank = unlimited
+  maxTemplates: string // blank = unlimited
 }
 
 const emptyForm = (): PlanFormData => ({
@@ -50,6 +52,8 @@ const emptyForm = (): PlanFormData => ({
   description: '',
   price: '',
   pgPlanId: '',
+  maxCampaigns: '',
+  maxTemplates: '',
 })
 
 function formFromPlan(plan: Plan): PlanFormData {
@@ -60,7 +64,24 @@ function formFromPlan(plan: Plan): PlanFormData {
     description: plan.description ?? '',
     price: formatCentsToBRLInput(plan.price),
     pgPlanId: plan.pgPlanId,
+    maxCampaigns:
+      plan.limits?.maxCampaigns != null ? String(plan.limits.maxCampaigns) : '',
+    maxTemplates:
+      plan.limits?.maxTemplates != null ? String(plan.limits.maxTemplates) : '',
   }
+}
+
+/**
+ * Build the usage caps payload from the form. null = unlimited (clears caps).
+ */
+function buildLimits(form: PlanFormData): PlanLimits | null {
+  const mc = form.maxCampaigns.trim()
+  const mt = form.maxTemplates.trim()
+  if (!mc && !mt) return null
+  const limits: PlanLimits = {}
+  if (mc) limits.maxCampaigns = Number(mc)
+  if (mt) limits.maxTemplates = Number(mt)
+  return limits
 }
 
 function sortByPrice(a: Plan, b: Plan): number {
@@ -80,6 +101,11 @@ function validatePlanForm(
   if (!form.price.trim()) return t('billing:priceRequired')
   if (!form.pgPlanId.trim()) return t('billing:pagbankPlanIdRequired')
   if (parseBRLtoCents(form.price) <= 0) return t('billing:priceMustBePositive')
+  const mc = form.maxCampaigns.trim()
+  const mt = form.maxTemplates.trim()
+  if ((mc && !/^\d+$/.test(mc)) || (mt && !/^\d+$/.test(mt))) {
+    return t('billing:limitsInvalid')
+  }
   return null
 }
 
@@ -93,6 +119,7 @@ function buildUpdatePayload(
   if (form.description.trim()) payload.description = form.description.trim()
   payload.price = price
   if (form.pgPlanId.trim()) payload.pgPlanId = form.pgPlanId.trim()
+  payload.limits = buildLimits(form)
   return payload
 }
 
@@ -196,6 +223,7 @@ export default function AdminPlansPage() {
           description: form.description.trim() || undefined,
           price,
           pgPlanId: form.pgPlanId.trim(),
+          limits: buildLimits(form),
         })
         setPlans((prev) => [...prev, created].sort(sortByPrice))
       } else {
@@ -343,6 +371,32 @@ export default function AdminPlansPage() {
                 value={form.pgPlanId}
                 onChange={(e) => setForm((f) => ({ ...f, pgPlanId: e.target.value }))}
                 placeholder={t('billing:pagbankPlanIdPlaceholder')}
+                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+            <div className="md:col-span-2 mt-2">
+              <div className="block text-sm font-medium text-foreground mb-1">{t('billing:limitsSection')}</div>
+              <p className="text-xs text-muted-foreground mb-3">{t('billing:limitsHint')}</p>
+            </div>
+            <div>
+              <div className="block text-sm font-medium text-foreground mb-1">{t('billing:maxCampaignsLabel')}</div>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={form.maxCampaigns}
+                onChange={(e) => setForm((f) => ({ ...f, maxCampaigns: e.target.value }))}
+                placeholder={t('billing:maxCampaignsPlaceholder')}
+                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+            <div>
+              <div className="block text-sm font-medium text-foreground mb-1">{t('billing:maxTemplatesLabel')}</div>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={form.maxTemplates}
+                onChange={(e) => setForm((f) => ({ ...f, maxTemplates: e.target.value }))}
+                placeholder={t('billing:maxTemplatesPlaceholder')}
                 className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>

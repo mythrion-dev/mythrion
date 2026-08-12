@@ -13,6 +13,7 @@ export function InlineText({
   className = '',
   inputClassName = '',
   emptyDisplay = '—',
+  title,
 }: {
   readonly value: string
   readonly onSave: (value: string) => Promise<void>
@@ -22,6 +23,7 @@ export function InlineText({
   readonly className?: string
   readonly inputClassName?: string
   readonly emptyDisplay?: string
+  readonly title?: string
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value)
@@ -44,6 +46,7 @@ export function InlineText({
       <button
         type="button"
         disabled={disabled}
+        title={title}
         onClick={() => { if (!disabled) { setEditing(true); setTimeout(() => inputRef.current?.focus(), 0) } }}
         className={`text-left min-w-[40px] hover:bg-foreground/5 rounded px-1 -mx-1 transition-colors cursor-pointer ${disabled ? 'cursor-default hover:bg-transparent' : ''} ${className}`}
       >
@@ -88,6 +91,7 @@ export function InlineNumber({
   className = '',
   inputClassName = '',
   emptyDisplay = '—',
+  title,
 }: {
   readonly value: number | string | null | undefined
   readonly onSave: (value: number) => Promise<void>
@@ -98,6 +102,7 @@ export function InlineNumber({
   readonly className?: string
   readonly inputClassName?: string
   readonly emptyDisplay?: string
+  readonly title?: string
 }) {
   const display = value != null && value !== '' ? String(value) : ''
   const [editing, setEditing] = useState(false)
@@ -122,6 +127,7 @@ export function InlineNumber({
       <button
         type="button"
         disabled={disabled}
+        title={title}
         onClick={() => { if (!disabled) { setEditing(true); setTimeout(() => inputRef.current?.focus(), 0) } }}
         className={`text-left min-w-[30px] hover:bg-foreground/5 rounded px-1 -mx-1 transition-colors cursor-pointer ${disabled ? 'cursor-default hover:bg-transparent' : ''} ${className}`}
       >

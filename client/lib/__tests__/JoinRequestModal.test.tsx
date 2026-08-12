@@ -304,6 +304,18 @@ describe('JoinRequestModal', () => {
     expect(onCancel).toHaveBeenCalled()
   })
 
+  it('closes when the native dialog cancel event fires', () => {
+    const onCancel = vi.fn()
+    render(
+      <JoinRequestModal {...defaultProps} open={true} onCancel={onCancel} />,
+    )
+    // Real browsers dispatch a cancel event on the <dialog> when Escape is
+    // pressed; jsdom does not, so fire it manually to cover that handler.
+    const dialog = screen.getByRole('dialog')
+    dialog.dispatchEvent(new Event('cancel', { bubbles: true, cancelable: true }))
+    expect(onCancel).toHaveBeenCalledOnce()
+  })
+
   it('focuses the textarea when modal opens', async () => {
     render(<JoinRequestModal {...defaultProps} open={true} />)
     await waitFor(

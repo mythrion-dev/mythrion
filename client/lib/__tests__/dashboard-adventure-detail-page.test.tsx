@@ -138,6 +138,38 @@ vi.mock('@/components/adventure/DeleteModal', () => ({
   ),
 }))
 
+vi.mock('@/components/adventure/LeaveModal', () => ({
+  LeaveModal: (p: any) => (
+    <div data-testid="LeaveModal">
+      <span data-testid="leave-error">{p.error}</span>
+      <button data-testid="leave-cancel" onClick={p.onCancel}>
+        cancel
+      </button>
+      <button data-testid="leave-confirm" onClick={p.onConfirm}>
+        confirm
+      </button>
+    </div>
+  ),
+}))
+
+vi.mock('@/components/adventure/TransferGmModal', () => ({
+  TransferGmModal: (p: any) => (
+    <div data-testid="TransferGmModal">
+      <span data-testid="transfer-error">{p.error}</span>
+      <select data-testid="transfer-select" value={p.value} onChange={(e) => p.onValueChange(e.target.value)}>
+        <option value="">none</option>
+        <option value="user-2">Bob</option>
+      </select>
+      <button data-testid="transfer-cancel" onClick={p.onCancel}>
+        cancel
+      </button>
+      <button data-testid="transfer-confirm" onClick={p.onConfirm} disabled={!p.value || p.loading}>
+        confirm
+      </button>
+    </div>
+  ),
+}))
+
 vi.mock('@/components/adventure/EditForm', () => ({
   EditForm: (p: any) => (
     <div data-testid="EditForm">
@@ -1340,6 +1372,123 @@ describe('AdventureDetailPage — edit & delete', () => {
     await tick()
     await waitFor(() => expect(screen.queryByTestId('DeleteModal')).not.toBeInTheDocument())
     expect(mockRouterPush).not.toHaveBeenCalled()
+  })
+})
+
+// ════════════════════════════════════════════════════════════
+// Leave campaign + transfer GM
+// ════════════════════════════════════════════════════════════
+
+describe('AdventureDetailPage — leave & transfer GM', () => {
+  function asPlayer() {
+    mockApiGet.mockImplementation((url: string) =>
+      url === '/me/adventures' ? Promise.resolve([{ id: 'adv-1', role: 'PLAYER' }]) : apiGetImpl(url),
+    )
+  }
+
+  it('shows the leave button for a non-GM member and not the transfer button', async () => {
+    asPlayer()
+    renderPage()
+    const leave = await screen.findByRole('button', { name: 'Leave Campaign' })
+    expect(leave).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Transfer GM Role' })).not.toBeInTheDocument()
+  })
+
+  it('leaves the campaign as a non-GM member and redirects to the dashboard', async () => {
+    asPlayer()
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Leave Campaign' }))
+    await screen.findByTestId('LeaveModal')
+    fireEvent.click(screen.getByTestId('leave-confirm'))
+    await waitFor(() => expect(mockApiPost).toHaveBeenCalledWith('/adventures/adv-1/leave'))
+    await waitFor(() => expect(mockRouterPush).toHaveBeenCalledWith('/dashboard'))
+  })
+
+  it('keeps the leave modal open and shows the error when leaving fails', async () => {
+    asPlayer()
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Leave Campaign' }))
+    await screen.findByTestId('LeaveModal')
+    mockApiPost.mockRejectedValueOnce(new Error('leave-boom'))
+    fireEvent.click(screen.getByTestId('leave-confirm'))
+    expect(await screen.findByTestId('leave-error')).toHaveTextContent('leave-boom')
+    expect(screen.getByTestId('LeaveModal')).toBeInTheDocument()
+    expect(mockRouterPush).not.toHaveBeenCalled()
+  })
+
+  it('cancels leaving and closes the modal', async () => {
+    asPlayer()
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Leave Campaign' }))
+    await screen.findByTestId('LeaveModal')
+    fireEvent.click(screen.getByTestId('leave-cancel'))
+    await waitFor(() => expect(screen.queryByTestId('LeaveModal')).not.toBeInTheDocument())
+    expect(mockApiPost).not.toHaveBeenCalledWith('/adventures/adv-1/leave')
+  })
+
+  it('shows the transfer button for the GM and not the leave button', async () => {
+    renderPage()
+    const transfer = await screen.findByRole('button', { name: 'Transfer GM Role' })
+    expect(transfer).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Leave Campaign' })).not.toBeInTheDocument()
+  })
+
+  it('transfers the GM role, refreshes members/role/access, and closes the modal', async () => {
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Transfer GM Role' }))
+    await screen.findByTestId('TransferGmModal')
+    fireEvent.change(screen.getByTestId('transfer-select'), { target: { value: 'user-2' } })
+    fireEvent.click(screen.getByTestId('transfer-confirm'))
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenCalledWith('/adventures/adv-1/transfer-gm', { newGmId: 'user-2' })
+      expect(mockApiGet).toHaveBeenCalledWith('/adventures/adv-1/members')
+      expect(mockApiGet).toHaveBeenCalledWith('/me/adventures')
+      expect(mockApiGet).toHaveBeenCalledWith('/adventures/adv-1/access')
+    })
+    await waitFor(() => expect(screen.queryByTestId('TransferGmModal')).not.toBeInTheDocument())
+  })
+
+  it('keeps the transfer modal open and shows the error when transfer fails', async () => {
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Transfer GM Role' }))
+    await screen.findByTestId('TransferGmModal')
+    fireEvent.change(screen.getByTestId('transfer-select'), { target: { value: 'user-2' } })
+    mockApiPost.mockRejectedValueOnce(new Error('transfer-boom'))
+    fireEvent.click(screen.getByTestId('transfer-confirm'))
+    expect(await screen.findByTestId('transfer-error')).toHaveTextContent('transfer-boom')
+    expect(screen.getByTestId('TransferGmModal')).toBeInTheDocument()
+  })
+
+  it('disables the transfer confirm until a player is selected', async () => {
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Transfer GM Role' }))
+    await screen.findByTestId('TransferGmModal')
+    expect(screen.getByTestId('transfer-confirm')).toBeDisabled()
+    fireEvent.change(screen.getByTestId('transfer-select'), { target: { value: 'user-2' } })
+    expect(screen.getByTestId('transfer-confirm')).toBeEnabled()
+  })
+
+  it('cancels the transfer and closes the modal', async () => {
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Transfer GM Role' }))
+    await screen.findByTestId('TransferGmModal')
+    fireEvent.click(screen.getByTestId('transfer-cancel'))
+    await waitFor(() => expect(screen.queryByTestId('TransferGmModal')).not.toBeInTheDocument())
+    expect(mockApiPost).not.toHaveBeenCalledWith('/adventures/adv-1/transfer-gm', expect.anything())
+  })
+
+  it('shows the read-only banner when the campaign access state is read-only', async () => {
+    mockApiGet.mockImplementation((url: string) =>
+      url === '/adventures/adv-1/access'
+        ? Promise.resolve({ accessState: 'READ_ONLY' })
+        : apiGetImpl(url),
+    )
+    renderPage()
+    const badge = await screen.findByText('Read-only')
+    expect(badge).toBeInTheDocument()
+    expect(
+      screen.getByText(/This campaign is read-only because the Game Master's subscription has ended/),
+    ).toBeInTheDocument()
   })
 })
 

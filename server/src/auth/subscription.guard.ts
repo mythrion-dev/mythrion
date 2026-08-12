@@ -47,12 +47,17 @@ export class SubscriptionGuard implements CanActivate {
       return true
     }
 
-    // Layer 2 — Active subscription check
-    const hasActive = await this.subscriptionService.hasActiveSubscription(user.sub)
-    if (!hasActive) {
+    // Layer 2 — Active subscription check. Distinguish "no subscription at all"
+    // from "subscription lapsed" so the user gets the right message and is
+    // routed to renew rather than to subscribe fresh.
+    const access = await this.subscriptionService.getSubscriptionAccessReason(user.sub)
+    if (access === 'none') {
       throw new ForbiddenException(
         this.i18n.t('subscription.activeSubscriptionRequired'),
       )
+    }
+    if (access === 'expired') {
+      throw new ForbiddenException(this.i18n.t('subscription.subscriptionExpired'))
     }
 
     return true
