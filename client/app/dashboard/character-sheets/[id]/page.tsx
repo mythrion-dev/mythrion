@@ -120,17 +120,19 @@ export default function CharacterSheetDetailPage() {
   const [accessState, setAccessState] = useState<'ACTIVE' | 'READ_ONLY' | null>(null)
   const [activeTab, setActiveTab] = useState<string>('character')
   const isOwner = sheet?.ownerId === user?.id || (sheet?.isNpc === true)
+  const isAssignedPlayer = sheet?.assignedMember?.userId === user?.id
+  const canEdit = isOwner || isAssignedPlayer
   const readOnly = accessState === 'READ_ONLY'
   const permissions: SheetPermissions = {
-    canEditCharacter: isOwner && !readOnly,
-    canEditSkills: isOwner && !readOnly,
-    canEditResources: isOwner && !readOnly,
-    canEditInventory: isOwner && !readOnly,
-    canEditStory: isOwner && !readOnly,
-    canEditProfessionalSkills: isOwner && !readOnly,
-    canEditPersonalAbilities: isOwner && !readOnly,
-    canEditResistances: isOwner && !readOnly,
-    canEditAbilities: isOwner && !readOnly,
+    canEditCharacter: canEdit && !readOnly,
+    canEditSkills: canEdit && !readOnly,
+    canEditResources: canEdit && !readOnly,
+    canEditInventory: canEdit && !readOnly,
+    canEditStory: canEdit && !readOnly,
+    canEditProfessionalSkills: canEdit && !readOnly,
+    canEditPersonalAbilities: canEdit && !readOnly,
+    canEditResistances: canEdit && !readOnly,
+    canEditAbilities: canEdit && !readOnly,
   }
 
   const [abilities, setAbilities] = useState<Ability[]>([]); const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]); const [story, setStory] = useState<Story | null>(null)
@@ -714,6 +716,11 @@ export default function CharacterSheetDetailPage() {
                 )}
                 {sheet.adventure && <span className="badge badge-gold">{sheet.adventure.campaign}</span>}
                 <span className="badge badge-gold">{sheet.template.name}</span>
+                {sheet.assignedMember && (
+                  <span className="badge badge-gold">
+                    {t('campaign:assignedTo', { name: sheet.assignedMember.user.displayName ?? sheet.assignedMember.user.email })}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-muted mt-1.5">
                 {t('character:createdDate', { date: new Date(sheet.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) })}

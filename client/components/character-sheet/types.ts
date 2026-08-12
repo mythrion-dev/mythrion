@@ -94,6 +94,7 @@ export interface CharacterSheet {
   sectionEntries: SectionEntry[]
   abilities: Ability[]; inventoryItems: InventoryItem[]; story: Story | null
   ownerId: string | null; isNpc: boolean; npcType: string | null; adventureId: string | null; createdAt: string
+  assignedMember?: { id: string; userId: string; user: { id: string; displayName: string | null; email: string } } | null
 }
 
 export interface SheetPermissions {

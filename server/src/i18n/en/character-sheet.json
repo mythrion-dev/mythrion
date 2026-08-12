@@ -26,5 +26,9 @@
   "ownerOnlyManage": "Only the owner can manage this character sheet",
   "ownerOrGmManage": "Only the owner or a GM can manage this character sheet",
   "profSkillExists": "A professional skill named \"{name}\" already exists on this sheet.",
-  "profSkillNotFound": "Professional skill not found"
+  "profSkillNotFound": "Professional skill not found",
+  "cannotAssignNpc": "NPCs and MOBs cannot be assigned to players",
+  "assignRequiresAdventure": "The character must be linked to a campaign before it can be assigned",
+  "assigneeNotInCampaign": "The selected player is not a member of this campaign",
+  "cannotAssignToGm": "The Game Master cannot be assigned to a character"
 }

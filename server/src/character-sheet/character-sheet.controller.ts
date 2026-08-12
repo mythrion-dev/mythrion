@@ -13,6 +13,7 @@ import {
 import { CharacterSheetService } from './character-sheet.service.js'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
 import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
+import { AssignCharacterDto } from './dto/assign-character.dto.js'
 import { CreateCharacterFromCampaignDto } from './dto/create-character-from-campaign.dto.js'
 import { ResistanceCalculationService } from './resistance-calculation.service.js'
 import { AcCalculationService } from './ac-calculation.service.js'
@@ -88,6 +89,25 @@ export class CharacterSheetController {
     @Param('id') id: string,
   ) {
     return this.sheetService.unlinkFromAdventure(id, req.user.sub)
+  }
+
+  // ── Player assignment ──
+
+  @Post(':id/assign')
+  assign(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: AssignCharacterDto,
+  ) {
+    return this.sheetService.assignMember(id, dto.memberId, req.user.sub)
+  }
+
+  @Delete(':id/assign')
+  removeAssignment(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
+    return this.sheetService.removeAssignment(id, req.user.sub)
   }
 
   @Patch(':id/skills/:skillId/profiles/:profileId')

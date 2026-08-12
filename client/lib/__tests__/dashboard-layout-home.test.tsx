@@ -104,6 +104,7 @@ interface SheetSummary {
   adventure: { id: string; name: string; campaign: string } | null
   template: { id: string; name: string }
   createdAt: string
+  assignedMember?: { id: string; userId: string; user: { id: string; displayName: string | null; email: string } } | null
 }
 
 function mockApiData(adventures: AdventureSummary[] = [], sheets: SheetSummary[] = []) {
@@ -337,6 +338,66 @@ describe('DashboardPage', () => {
     expect(screen.getByText('World A')).toBeInTheDocument()
     expect(screen.getByText('Alpha')).toBeInTheDocument()
     expect(screen.queryByText('Standalone')).not.toBeInTheDocument()
+  })
+
+  it('shows an "Assigned to you" badge when a sheet is assigned to the current user', async () => {
+    searchParamsString = 'tab=character-sheets'
+    mockApiData([], [
+      {
+        id: 's3',
+        characterName: 'Rogue',
+        template: { id: 't3', name: 'Shadow' },
+        adventure: { id: 'a1', name: 'Alpha', campaign: 'World A' },
+        createdAt: '2024-01-01T00:00:00Z',
+        assignedMember: {
+          id: 'cm-1',
+          userId: 'user-1',
+          user: { id: 'user-1', displayName: 'Alice', email: 'alice@example.com' },
+        },
+      },
+    ])
+    render(<DashboardPage />)
+    expect(await screen.findByText('Rogue')).toBeInTheDocument()
+    expect(screen.getByText('Assigned to you')).toBeInTheDocument()
+  })
+
+  it('shows an "Assigned to {{name}}" badge when a sheet is assigned to another user', async () => {
+    searchParamsString = 'tab=character-sheets'
+    mockApiData([], [
+      {
+        id: 's4',
+        characterName: 'Cleric',
+        template: { id: 't4', name: 'Healer' },
+        adventure: { id: 'a1', name: 'Alpha', campaign: 'World A' },
+        createdAt: '2024-01-01T00:00:00Z',
+        assignedMember: {
+          id: 'cm-2',
+          userId: 'user-2',
+          user: { id: 'user-2', displayName: 'Bob', email: 'bob@example.com' },
+        },
+      },
+    ])
+    render(<DashboardPage />)
+    expect(await screen.findByText('Cleric')).toBeInTheDocument()
+    expect(screen.getByText('Assigned to Bob')).toBeInTheDocument()
+    expect(screen.queryByText('Assigned to you')).not.toBeInTheDocument()
+  })
+
+  it('does not show an assignment badge when a sheet is unassigned', async () => {
+    searchParamsString = 'tab=character-sheets'
+    mockApiData([], [
+      {
+        id: 's5',
+        characterName: 'Fighter',
+        template: { id: 't5', name: 'Knight' },
+        adventure: { id: 'a1', name: 'Alpha', campaign: 'World A' },
+        createdAt: '2024-01-01T00:00:00Z',
+        assignedMember: null,
+      },
+    ])
+    render(<DashboardPage />)
+    expect(await screen.findByText('Fighter')).toBeInTheDocument()
+    expect(screen.queryByText(/Assigned to/)).not.toBeInTheDocument()
   })
 
   it('shows the empty state for the character-sheets tab', async () => {
