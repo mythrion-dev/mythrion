@@ -296,6 +296,7 @@ export function NotebookFolder({
                 indented
                 onClick={onPageClick}
                 onDelete={onDeletePage}
+                onRequestDelete={onRequestDeletePage}
                 onContextMenu={onPageContextMenu}
                 onDragStart={() => {}}
                 readOnly={readOnly}

@@ -164,7 +164,7 @@ export function TemplatePickerModal({
       />
       <dialog
         ref={dialogRef}
-        className="card !p-0 max-w-lg w-full mx-4 max-h-[80vh] flex flex-col relative z-10"
+        className="card !p-0 max-w-lg w-full max-h-[80vh] flex flex-col fixed inset-0 m-auto z-10"
         aria-modal="true"
         onCancel={(e) => { e.preventDefault(); onClose() }}
       >
