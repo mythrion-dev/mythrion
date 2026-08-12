@@ -54,6 +54,7 @@ describe('SubscriptionController', () => {
       processWebhook: jest.fn(),
       expireGraceSubscriptions: jest.fn(),
       expireCancelledSubscriptions: jest.fn(),
+      expireLapsedActiveSubscriptions: jest.fn(),
       hasActiveSubscription: jest.fn(),
     } as unknown as jest.Mocked<SubscriptionService>
 
@@ -311,6 +312,7 @@ describe('SubscriptionController', () => {
       subscriptionService.processWebhook.mockResolvedValue('activated')
       subscriptionService.expireGraceSubscriptions.mockResolvedValue(0)
       subscriptionService.expireCancelledSubscriptions.mockResolvedValue(0)
+      subscriptionService.expireLapsedActiveSubscriptions.mockResolvedValue(0)
 
       const result = await controller.handleWebhook(
         webhookBody,
@@ -330,12 +332,14 @@ describe('SubscriptionController', () => {
       )
       expect(subscriptionService.expireGraceSubscriptions).toHaveBeenCalled()
       expect(subscriptionService.expireCancelledSubscriptions).toHaveBeenCalled()
+      expect(subscriptionService.expireLapsedActiveSubscriptions).toHaveBeenCalled()
     })
 
     it('passes undefined authenticityToken when header is missing', async () => {
       subscriptionService.processWebhook.mockResolvedValue('invalid_signature')
       subscriptionService.expireGraceSubscriptions.mockResolvedValue(0)
       subscriptionService.expireCancelledSubscriptions.mockResolvedValue(0)
+      subscriptionService.expireLapsedActiveSubscriptions.mockResolvedValue(0)
 
       const result = await controller.handleWebhook(
         webhookBody,
@@ -360,6 +364,7 @@ describe('SubscriptionController', () => {
       subscriptionService.processWebhook.mockResolvedValue('cancelled')
       subscriptionService.expireGraceSubscriptions.mockResolvedValue(0)
       subscriptionService.expireCancelledSubscriptions.mockResolvedValue(0)
+      subscriptionService.expireLapsedActiveSubscriptions.mockResolvedValue(0)
 
       const result = await controller.handleWebhook(
         cancelBody,

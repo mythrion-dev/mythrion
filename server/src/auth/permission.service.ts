@@ -48,9 +48,11 @@ export class PermissionService {
     const isEarlyAccess = this.adminService.isEarlyAccess(email)
     const role: UserRole = isAdmin ? 'admin' : isEarlyAccess ? 'early_access' : 'user'
 
-    const hasActiveSubscription =
-      await this.subscriptionService.hasActiveSubscription(userId)
+    // Single entitlement read: plan/status/expiresAt and the active boolean
+    // all come from the same getMySubscription result so they can never
+    // disagree within one response.
     const sub = await this.subscriptionService.getMySubscription(userId)
+    const hasActiveSubscription = sub?.hasActiveSubscription ?? false
 
     const plan = sub?.plan ?? null
     const status = sub?.status ?? null

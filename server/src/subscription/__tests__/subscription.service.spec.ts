@@ -307,6 +307,7 @@ describe('SubscriptionService', () => {
         id: 'sub-1',
         plan: { slug: 'monthly', name: 'Monthly Plan', price: 12000 },
         status: 'ACTIVE',
+        hasActiveSubscription: false,
         pgSubscriptionId: 'SUB-1',
         graceEndsAt: null,
         currentPeriodStart: new Date('2025-01-01'),
@@ -1551,6 +1552,48 @@ describe('SubscriptionService', () => {
       const result = await service.expireCancelledSubscriptions()
 
       expect(result).toBe(0)
+    })
+  })
+
+  // ─── expireLapsedActiveSubscriptions ────────────────────────────────
+
+  describe('expireLapsedActiveSubscriptions', () => {
+    it('expires ACTIVE subscriptions whose period has lapsed and invalidates their entitlement cache', async () => {
+      prisma.userSubscription.findMany.mockResolvedValue([
+        { userId: 'u1' },
+        { userId: 'u2' },
+      ])
+      prisma.userSubscription.updateMany.mockResolvedValue({ count: 2 })
+
+      const result = await service.expireLapsedActiveSubscriptions()
+
+      expect(result).toBe(2)
+      expect(prisma.userSubscription.findMany).toHaveBeenCalledWith({
+        where: {
+          status: 'ACTIVE',
+          currentPeriodEnd: { not: null, lte: expect.any(Date) },
+        },
+        select: { userId: true },
+      })
+      expect(prisma.userSubscription.updateMany).toHaveBeenCalledWith({
+        where: {
+          status: 'ACTIVE',
+          currentPeriodEnd: { not: null, lte: expect.any(Date) },
+        },
+        data: { status: 'EXPIRED' },
+      })
+      expect(mockRedis.del).toHaveBeenCalledWith('subscription:entitlement:u1')
+      expect(mockRedis.del).toHaveBeenCalledWith('subscription:entitlement:u2')
+    })
+
+    it('returns 0 when no ACTIVE subscriptions have lapsed', async () => {
+      prisma.userSubscription.findMany.mockResolvedValue([])
+      prisma.userSubscription.updateMany.mockResolvedValue({ count: 0 })
+
+      const result = await service.expireLapsedActiveSubscriptions()
+
+      expect(result).toBe(0)
+      expect(mockRedis.del).not.toHaveBeenCalled()
     })
   })
 })

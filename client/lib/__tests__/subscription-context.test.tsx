@@ -35,13 +35,14 @@ function renderProvider(children: ReactNode) {
 
 /* ── Helpers ── */
 
-function activeSub(status: string) {
+function activeSub(status: string, hasActiveSubscription = false) {
   return {
     id: 'sub-1',
     userId: 'user-1',
     planId: 'monthly',
     pgSubscriptionId: 'SUB-1',
     status,
+    hasActiveSubscription,
     graceEndsAt: null,
     currentPeriodStart: '2025-01-01',
     currentPeriodEnd: '2025-02-01',
@@ -103,8 +104,11 @@ describe('SubscriptionProvider', () => {
     expect(screen.getByTestId('subscription-status')).toHaveTextContent('ACTIVE')
   })
 
-  // ─── hasActiveSubscription: active statuses ────────────────────────
+  // ─── hasActiveSubscription: server-computed boolean ─────────────────
 
+  // The client no longer derives entitlement from a status list — it trusts the
+  // boolean the backend computed in getMySubscription. These rows assert the
+  // value is surfaced verbatim for the statuses classifyEntitlement produces.
   it.each([
     ['AUTHORIZED', true],
     ['ACTIVE', true],
@@ -112,14 +116,50 @@ describe('SubscriptionProvider', () => {
     ['PENDING', false],
     ['EXPIRED', false],
     ['CANCELLED', false],
-  ])('hasActiveSubscription is %s for status %s', async (status, expected) => {
+  ])('surfaces the backend hasActiveSubscription field (%s => %s)', async (status, expected) => {
     mockUseAuth.mockReturnValue({ user: { id: 'user-1' }, loading: false })
-    mockFetchMySubscription.mockResolvedValue(activeSub(status))
+    mockFetchMySubscription.mockResolvedValue(activeSub(status, expected as boolean))
 
     renderProvider(<TestConsumer />)
 
     await waitFor(() => {
       expect(screen.getByTestId('has-active')).toHaveTextContent(String(expected))
+    })
+  })
+
+  it('shows hasActiveSubscription false for a lapsed ACTIVE subscription', async () => {
+    // Bug 3 regression: the row is still ACTIVE but the backend period check
+    // already denied access — the client must not re-grant from the status.
+    mockUseAuth.mockReturnValue({ user: { id: 'user-1' }, loading: false })
+    mockFetchMySubscription.mockResolvedValue(activeSub('ACTIVE', false))
+
+    renderProvider(<TestConsumer />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('has-active')).toHaveTextContent('false')
+    })
+    expect(screen.getByTestId('subscription-status')).toHaveTextContent('ACTIVE')
+  })
+
+  it('treats an admin as active even when the backend subscription is expired', async () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'admin-1', isAdmin: true }, loading: false })
+    mockFetchMySubscription.mockResolvedValue(activeSub('EXPIRED', false))
+
+    renderProvider(<TestConsumer />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('has-active')).toHaveTextContent('true')
+    })
+  })
+
+  it('treats an early-access user as active even when the backend subscription is expired', async () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'ea-1', isEarlyAccess: true }, loading: false })
+    mockFetchMySubscription.mockResolvedValue(activeSub('EXPIRED', false))
+
+    renderProvider(<TestConsumer />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('has-active')).toHaveTextContent('true')
     })
   })
 

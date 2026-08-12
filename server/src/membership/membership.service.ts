@@ -2,7 +2,14 @@ import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/commo
 import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
 import { SubscriptionService } from '../subscription/subscription.service.js'
+import { AdminService } from '../auth/admin.service.js'
 import { MemberRole } from '../generated/prisma/client.js'
+
+/** The adventure shape all entitlement lookups resolve owner info from. */
+type AdventureWithOwner = {
+  ownerId: string
+  owner?: { email: string | null } | null
+}
 
 @Injectable()
 export class MembershipService {
@@ -10,6 +17,7 @@ export class MembershipService {
     private readonly prisma: PrismaService,
     private readonly i18n: I18nService,
     private readonly subscriptionService: SubscriptionService,
+    private readonly adminService: AdminService,
   ) {}
 
   /** Check that the user has at least the required role on the adventure. */
@@ -75,35 +83,53 @@ export class MembershipService {
     await this.requireRole(adventureId, userId, 'PLAYER')
     const adventure = await this.prisma.adventure.findUnique({
       where: { id: adventureId },
-      select: { ownerId: true },
+      select: { ownerId: true, owner: { select: { email: true } } },
     })
     if (!adventure) {
       throw new NotFoundException(this.i18n.t('community.adventureNotFound'))
     }
-    const active = await this.subscriptionService.hasActiveSubscription(
-      adventure.ownerId,
-    )
+    const active = await this.isOwnerEntitled(adventure)
     return active ? 'ACTIVE' : 'READ_ONLY'
   }
 
   /**
    * Throws Forbidden when the GM's subscription is no longer active.
    * The campaign becomes read-only for everyone, not just the GM.
+   * Admins / early-access GMs always keep their campaign writable.
    */
   private async assertCampaignWritable(adventureId: string): Promise<void> {
     const adventure = await this.prisma.adventure.findUnique({
       where: { id: adventureId },
-      select: { ownerId: true },
+      select: { ownerId: true, owner: { select: { email: true } } },
     })
     if (!adventure) {
       throw new NotFoundException(this.i18n.t('community.adventureNotFound'))
     }
-    const active = await this.subscriptionService.hasActiveSubscription(
-      adventure.ownerId,
-    )
+    const active = await this.isOwnerEntitled(adventure)
     if (!active) {
       throw new ForbiddenException(this.i18n.t('community.campaignReadOnly'))
     }
+  }
+
+  /**
+   * A GM is entitled when their own subscription is active, or when the owner
+   * email is an admin / early-access user. Admin and early-access bypass the
+   * subscription paywall, so their campaigns must not degrade to read-only
+   * when their (optional) subscription lapses.
+   */
+  private async isOwnerEntitled(
+    adventure: AdventureWithOwner,
+  ): Promise<boolean> {
+    const email = adventure.owner?.email ?? null
+    if (email) {
+      if (
+        this.adminService.isAdmin(email) ||
+        this.adminService.isEarlyAccess(email)
+      ) {
+        return true
+      }
+    }
+    return this.subscriptionService.hasActiveSubscription(adventure.ownerId)
   }
 
   /** Create a membership (sets GM automatically if it's the owner). */
@@ -132,7 +158,9 @@ export class MembershipService {
   async getUserAdventures(userId: string) {
     const memberships = await this.prisma.campaignMember.findMany({
       where: { userId },
-      include: { adventure: true },
+      include: {
+        adventure: { include: { owner: { select: { email: true } } } },
+      },
       orderBy: { joinedAt: 'desc' },
     })
     return Promise.all(
@@ -142,9 +170,7 @@ export class MembershipService {
         joinedAt: m.joinedAt,
         // Access state is derived from the GM's entitlement and cascades to every
         // member, so a player's own subscription does not affect it.
-        accessState: (await this.subscriptionService.hasActiveSubscription(
-          m.adventure.ownerId,
-        ))
+        accessState: (await this.isOwnerEntitled(m.adventure))
           ? 'ACTIVE'
           : 'READ_ONLY',
       })),

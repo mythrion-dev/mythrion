@@ -6,8 +6,10 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common'
 import { MembershipService } from './membership.service'
 import { PrismaService } from '../prisma.service'
 import { SubscriptionService } from '../subscription/subscription.service'
+import { AdminService } from '../auth/admin.service'
 import { createMockPrismaService } from '../__mocks__/prisma-service.mock'
 import { createMockSubscriptionService } from '../__mocks__/subscription-service.mock'
+import { createMockAdminService } from '../__mocks__/admin-service.mock'
 import { I18nService } from 'nestjs-i18n'
 import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 
@@ -15,16 +17,19 @@ describe('MembershipService', () => {
   let service: MembershipService
   let prisma: ReturnType<typeof createMockPrismaService>
   let subscription: ReturnType<typeof createMockSubscriptionService>
+  let admin: ReturnType<typeof createMockAdminService>
 
   beforeEach(async () => {
     prisma = createMockPrismaService()
     subscription = createMockSubscriptionService()
+    admin = createMockAdminService()
 
     const module = await Test.createTestingModule({
       providers: [
         MembershipService,
         { provide: PrismaService, useValue: prisma },
         { provide: SubscriptionService, useValue: subscription },
+        { provide: AdminService, useValue: admin },
         { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     }).compile()
@@ -129,16 +134,16 @@ describe('MembershipService', () => {
   describe('getUserAdventures', () => {
     it('returns adventures the user is a member of', async () => {
       const memberships = [
-        { adventure: { id: 'a1', name: 'Test Adv', ownerId: 'gm1' }, role: 'PLAYER', joinedAt: new Date('2024-01-01') },
-        { adventure: { id: 'a2', name: 'My Adv', ownerId: 'u1' }, role: 'GM', joinedAt: new Date('2024-02-01') },
+        { adventure: { id: 'a1', name: 'Test Adv', ownerId: 'gm1', owner: { email: 'gm@test.com' } }, role: 'PLAYER', joinedAt: new Date('2024-01-01') },
+        { adventure: { id: 'a2', name: 'My Adv', ownerId: 'u1', owner: { email: 'u1@test.com' } }, role: 'GM', joinedAt: new Date('2024-02-01') },
       ]
       prisma.campaignMember.findMany.mockResolvedValue(memberships)
 
       const result = await service.getUserAdventures('u1')
 
       expect(result).toEqual([
-        { id: 'a1', name: 'Test Adv', ownerId: 'gm1', role: 'PLAYER', joinedAt: memberships[0].joinedAt, accessState: 'ACTIVE' },
-        { id: 'a2', name: 'My Adv', ownerId: 'u1', role: 'GM', joinedAt: memberships[1].joinedAt, accessState: 'ACTIVE' },
+        { id: 'a1', name: 'Test Adv', ownerId: 'gm1', owner: { email: 'gm@test.com' }, role: 'PLAYER', joinedAt: memberships[0].joinedAt, accessState: 'ACTIVE' },
+        { id: 'a2', name: 'My Adv', ownerId: 'u1', owner: { email: 'u1@test.com' }, role: 'GM', joinedAt: memberships[1].joinedAt, accessState: 'ACTIVE' },
       ])
       expect(subscription.hasActiveSubscription).toHaveBeenCalledWith('gm1')
       expect(subscription.hasActiveSubscription).toHaveBeenCalledWith('u1')
@@ -146,7 +151,7 @@ describe('MembershipService', () => {
 
     it('derives READ_ONLY accessState when the GM subscription is inactive', async () => {
       const memberships = [
-        { adventure: { id: 'a1', name: 'Test Adv', ownerId: 'gm1' }, role: 'PLAYER', joinedAt: new Date('2024-01-01') },
+        { adventure: { id: 'a1', name: 'Test Adv', ownerId: 'gm1', owner: { email: 'gm@test.com' } }, role: 'PLAYER', joinedAt: new Date('2024-01-01') },
       ]
       prisma.campaignMember.findMany.mockResolvedValue(memberships)
       subscription.mockHasActiveSubscription.mockResolvedValue(false)
@@ -154,6 +159,21 @@ describe('MembershipService', () => {
       const result = await service.getUserAdventures('u1')
 
       expect(result[0].accessState).toBe('READ_ONLY')
+    })
+
+    it('keeps the campaign ACTIVE for a member when the GM is an admin with a lapsed subscription', async () => {
+      const memberships = [
+        { adventure: { id: 'a1', name: 'Test Adv', ownerId: 'gm1', owner: { email: 'gm@test.com' } }, role: 'PLAYER', joinedAt: new Date('2024-01-01') },
+      ]
+      prisma.campaignMember.findMany.mockResolvedValue(memberships)
+      admin.mockIsAdmin.mockReturnValue(true)
+      subscription.mockHasActiveSubscription.mockResolvedValue(false)
+
+      const result = await service.getUserAdventures('u1')
+
+      expect(result[0].accessState).toBe('ACTIVE')
+      // The subscription is never consulted once the admin override short-circuits.
+      expect(subscription.hasActiveSubscription).not.toHaveBeenCalled()
     })
   })
 
@@ -260,7 +280,7 @@ describe('MembershipService', () => {
     it('returns the member when role matches and the GM subscription is active', async () => {
       const member = { id: 'm1', adventureId: 'a1', userId: 'u1', role: 'GM' }
       prisma.campaignMember.findUnique.mockResolvedValue(member)
-      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', ownerId: 'gm1' })
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', ownerId: 'gm1', owner: { email: 'gm@test.com' } })
       subscription.mockHasActiveSubscription.mockResolvedValue(true)
 
       const result = await service.requireWriteRole('a1', 'u1', 'GM')
@@ -272,7 +292,7 @@ describe('MembershipService', () => {
     it('throws ForbiddenException when the GM subscription is inactive', async () => {
       const member = { id: 'm1', adventureId: 'a1', userId: 'u1', role: 'GM' }
       prisma.campaignMember.findUnique.mockResolvedValue(member)
-      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', ownerId: 'gm1' })
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', ownerId: 'gm1', owner: { email: 'gm@test.com' } })
       subscription.mockHasActiveSubscription.mockResolvedValue(false)
 
       await expect(service.requireWriteRole('a1', 'u1', 'GM')).rejects.toThrow(
@@ -281,6 +301,32 @@ describe('MembershipService', () => {
       await expect(service.requireWriteRole('a1', 'u1', 'GM')).rejects.toThrow(
         "This campaign is currently read-only because the GM's subscription is inactive.",
       )
+    })
+
+    it('keeps the campaign writable when the GM is an admin with a lapsed subscription', async () => {
+      const member = { id: 'm1', adventureId: 'a1', userId: 'u1', role: 'GM' }
+      prisma.campaignMember.findUnique.mockResolvedValue(member)
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', ownerId: 'gm1', owner: { email: 'gm@test.com' } })
+      admin.mockIsAdmin.mockReturnValue(true)
+      subscription.mockHasActiveSubscription.mockResolvedValue(false)
+
+      const result = await service.requireWriteRole('a1', 'u1', 'GM')
+
+      expect(result).toEqual(member)
+      expect(subscription.hasActiveSubscription).not.toHaveBeenCalled()
+    })
+
+    it('keeps the campaign writable when the GM is on the early-access list with a lapsed subscription', async () => {
+      const member = { id: 'm1', adventureId: 'a1', userId: 'u1', role: 'GM' }
+      prisma.campaignMember.findUnique.mockResolvedValue(member)
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', ownerId: 'gm1', owner: { email: 'gm@test.com' } })
+      admin.mockIsEarlyAccess.mockReturnValue(true)
+      subscription.mockHasActiveSubscription.mockResolvedValue(false)
+
+      const result = await service.requireWriteRole('a1', 'u1', 'GM')
+
+      expect(result).toEqual(member)
+      expect(subscription.hasActiveSubscription).not.toHaveBeenCalled()
     })
 
     it('throws NotFoundException when the adventure does not exist', async () => {
@@ -309,12 +355,25 @@ describe('MembershipService', () => {
     it('allows a member when the GM subscription is active', async () => {
       const member = { id: 'm1', adventureId: 'a1', userId: 'u1', role: 'PLAYER' }
       prisma.campaignMember.findUnique.mockResolvedValue(member)
-      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', ownerId: 'gm1' })
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', ownerId: 'gm1', owner: { email: 'gm@test.com' } })
       subscription.mockHasActiveSubscription.mockResolvedValue(true)
 
       const result = await service.requireWriteAccess('a1', 'u1')
 
       expect(result).toEqual(member)
+    })
+
+    it('allows a member when the GM is an admin despite a lapsed subscription', async () => {
+      const member = { id: 'm1', adventureId: 'a1', userId: 'u1', role: 'PLAYER' }
+      prisma.campaignMember.findUnique.mockResolvedValue(member)
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', ownerId: 'gm1', owner: { email: 'gm@test.com' } })
+      admin.mockIsAdmin.mockReturnValue(true)
+      subscription.mockHasActiveSubscription.mockResolvedValue(false)
+
+      const result = await service.requireWriteAccess('a1', 'u1')
+
+      expect(result).toEqual(member)
+      expect(subscription.hasActiveSubscription).not.toHaveBeenCalled()
     })
 
     it('throws ForbiddenException for a non-member', async () => {
@@ -329,7 +388,7 @@ describe('MembershipService', () => {
     it('throws ForbiddenException when the campaign is read-only', async () => {
       const member = { id: 'm1', adventureId: 'a1', userId: 'u1', role: 'PLAYER' }
       prisma.campaignMember.findUnique.mockResolvedValue(member)
-      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', ownerId: 'gm1' })
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', ownerId: 'gm1', owner: { email: 'gm@test.com' } })
       subscription.mockHasActiveSubscription.mockResolvedValue(false)
 
       await expect(service.requireWriteAccess('a1', 'u1')).rejects.toThrow(
@@ -343,7 +402,7 @@ describe('MembershipService', () => {
       prisma.campaignMember.findUnique.mockResolvedValue({
         id: 'm1', adventureId: 'a1', userId: 'u1', role: 'PLAYER',
       })
-      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', ownerId: 'gm1' })
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', ownerId: 'gm1', owner: { email: 'gm@test.com' } })
       subscription.mockHasActiveSubscription.mockResolvedValue(true)
 
       await expect(service.getAccessState('a1', 'u1')).resolves.toBe('ACTIVE')
@@ -353,10 +412,22 @@ describe('MembershipService', () => {
       prisma.campaignMember.findUnique.mockResolvedValue({
         id: 'm1', adventureId: 'a1', userId: 'u1', role: 'PLAYER',
       })
-      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', ownerId: 'gm1' })
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', ownerId: 'gm1', owner: { email: 'gm@test.com' } })
       subscription.mockHasActiveSubscription.mockResolvedValue(false)
 
       await expect(service.getAccessState('a1', 'u1')).resolves.toBe('READ_ONLY')
+    })
+
+    it('returns ACTIVE when the GM is on the early-access list despite a lapsed subscription', async () => {
+      prisma.campaignMember.findUnique.mockResolvedValue({
+        id: 'm1', adventureId: 'a1', userId: 'u1', role: 'PLAYER',
+      })
+      prisma.adventure.findUnique.mockResolvedValue({ id: 'a1', ownerId: 'gm1', owner: { email: 'gm@test.com' } })
+      admin.mockIsEarlyAccess.mockReturnValue(true)
+      subscription.mockHasActiveSubscription.mockResolvedValue(false)
+
+      await expect(service.getAccessState('a1', 'u1')).resolves.toBe('ACTIVE')
+      expect(subscription.hasActiveSubscription).not.toHaveBeenCalled()
     })
 
     it('throws ForbiddenException for a non-member', async () => {

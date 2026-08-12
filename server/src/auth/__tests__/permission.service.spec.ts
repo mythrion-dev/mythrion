@@ -22,6 +22,7 @@ describe('PermissionService', () => {
     id: 'sub-1',
     plan: { slug: 'monthly', name: 'Monthly', price: 12000 },
     status: 'ACTIVE',
+    hasActiveSubscription: true,
     pgSubscriptionId: 'pg-sub-1',
     graceEndsAt: null,
     currentPeriodStart: new Date('2025-01-01'),
@@ -35,6 +36,7 @@ describe('PermissionService', () => {
   const graceSub = {
     ...activeSub,
     status: 'GRACE',
+    hasActiveSubscription: true,
     graceEndsAt: new Date('2025-01-15'),
     currentPeriodEnd: new Date('2025-01-10'),
   }
@@ -124,7 +126,6 @@ describe('PermissionService', () => {
   // ─── subscription / entitlement ─────────────────────────────────────
 
   it('reports an ACTIVE subscription with plan and expiresAt from currentPeriodEnd', async () => {
-    subscriptionService.hasActiveSubscription.mockResolvedValue(true)
     subscriptionService.getMySubscription.mockResolvedValue(activeSub)
 
     const result = await service.getPermissions('user-1', 'user@test.com')
@@ -137,7 +138,6 @@ describe('PermissionService', () => {
   })
 
   it('uses graceEndsAt as expiresAt for a GRACE subscription', async () => {
-    subscriptionService.hasActiveSubscription.mockResolvedValue(true)
     subscriptionService.getMySubscription.mockResolvedValue(graceSub)
 
     const result = await service.getPermissions('user-1', 'user@test.com')
@@ -146,9 +146,11 @@ describe('PermissionService', () => {
     expect(result.subscription.expiresAt).toBe('2025-01-15T00:00:00.000Z')
   })
 
-  it('reports hasActiveSubscription false when the service says the entitlement is expired', async () => {
-    subscriptionService.hasActiveSubscription.mockResolvedValue(false)
-    subscriptionService.getMySubscription.mockResolvedValue(activeSub)
+  it('reports hasActiveSubscription false when the row is ACTIVE but the period has lapsed', async () => {
+    subscriptionService.getMySubscription.mockResolvedValue({
+      ...activeSub,
+      hasActiveSubscription: false,
+    })
 
     const result = await service.getPermissions('user-1', 'user@test.com')
 
@@ -159,10 +161,10 @@ describe('PermissionService', () => {
   })
 
   it('surfaces EXPIRED subscription status with an expiresAt in the past', async () => {
-    subscriptionService.hasActiveSubscription.mockResolvedValue(false)
     subscriptionService.getMySubscription.mockResolvedValue({
       ...activeSub,
       status: 'EXPIRED',
+      hasActiveSubscription: false,
       currentPeriodEnd: new Date('2025-01-05'),
     })
 

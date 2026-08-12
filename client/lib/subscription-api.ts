@@ -33,6 +33,8 @@ export interface MySubscription {
     price: number
   }
   status: string
+  /** Server-computed; false when the entitlement window has lapsed. */
+  hasActiveSubscription: boolean
   pgSubscriptionId: string | null
   graceEndsAt: string | null
   currentPeriodStart: string | null

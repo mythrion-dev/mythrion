@@ -127,6 +127,7 @@ function subscription(status: string, overrides: Record<string, unknown> = {}) {
     id: 'sub-1',
     plan: { slug: 'monthly', name: 'Monthly', price: 12000 },
     status,
+    hasActiveSubscription: ['ACTIVE', 'AUTHORIZED', 'GRACE'].includes(status),
     pgSubscriptionId: 'SUB-1',
     graceEndsAt: null,
     currentPeriodStart: '2025-01-01',

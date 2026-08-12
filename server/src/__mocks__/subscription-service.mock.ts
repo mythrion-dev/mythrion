@@ -9,14 +9,17 @@
  */
 export function createMockSubscriptionService() {
   const mockHasActiveSubscription = jest.fn().mockResolvedValue(true)
+  const mockGetMySubscription = jest.fn().mockResolvedValue(null)
   return {
     hasActiveSubscription: mockHasActiveSubscription,
     getSubscription: jest.fn(),
     getActiveSubscription: jest.fn(),
+    getMySubscription: mockGetMySubscription,
     getAllPlans: jest.fn(),
     createSubscription: jest.fn(),
     cancelSubscription: jest.fn(),
     processWebhook: jest.fn(),
     mockHasActiveSubscription,
+    mockGetMySubscription,
   }
 }

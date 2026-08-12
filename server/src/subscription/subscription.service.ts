@@ -60,6 +60,8 @@ export interface MySubscriptionResult {
     price: number
   }
   status: string
+  /** Server-computed; mirrors classifyEntitlement(sub) === 'active'. */
+  hasActiveSubscription: boolean
   pgSubscriptionId: string | null
   graceEndsAt: Date | null
   currentPeriodStart: Date | null
@@ -329,6 +331,7 @@ export class SubscriptionService {
       id: sub.id,
       plan: sub.plan,
       status: sub.status,
+      hasActiveSubscription: this.classifyEntitlement(sub) === 'active',
       pgSubscriptionId: sub.pgSubscriptionId,
       graceEndsAt: sub.graceEndsAt,
       currentPeriodStart: sub.currentPeriodStart,
@@ -1184,6 +1187,44 @@ export class SubscriptionService {
     if (expired.count > 0) {
       this.logger.log(
         `Expired ${expired.count} grace-period subscription(s)`,
+      )
+    }
+    return expired.count
+  }
+
+  // ─── Helper: expire lapsed ACTIVE subscriptions ────────────────────
+
+  /**
+   * Check for any subscriptions still marked ACTIVE whose currentPeriodEnd
+   * has already passed and expire them. Without this sweep the DB row would
+   * keep status ACTIVE forever even though date-evaluation already denies
+   * access, leaving the DB and the entitlement read disagreeing.
+   * Called from a cron or on webhook. Returns count of expired subscriptions.
+   */
+  async expireLapsedActiveSubscriptions(): Promise<number> {
+    const now = new Date()
+    const affected = await this.prisma.userSubscription.findMany({
+      where: {
+        status: 'ACTIVE',
+        currentPeriodEnd: { not: null, lte: now },
+      },
+      select: { userId: true },
+    })
+    const expired = await this.prisma.userSubscription.updateMany({
+      where: {
+        status: 'ACTIVE',
+        currentPeriodEnd: { not: null, lte: now },
+      },
+      data: {
+        status: 'EXPIRED',
+      },
+    })
+    for (const sub of affected) {
+      await this.invalidateEntitlementCache(sub.userId)
+    }
+    if (expired.count > 0) {
+      this.logger.log(
+        `Expired ${expired.count} lapsed ACTIVE subscription(s)`,
       )
     }
     return expired.count

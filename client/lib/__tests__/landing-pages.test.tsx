@@ -88,6 +88,7 @@ const subscriptionFixture = {
   id: 'sub-1',
   plan: { slug: 'monthly', name: 'Plano Mensal (API)', price: 12000 },
   status: 'ACTIVE',
+  hasActiveSubscription: true,
   pgSubscriptionId: null,
   graceEndsAt: null,
   currentPeriodStart: '2026-01-01T00:00:00Z',
@@ -395,6 +396,7 @@ describe('PricingPage', () => {
     mockFetchMySubscription.mockResolvedValue({
       ...subscriptionFixture,
       status: 'CANCELLED',
+      hasActiveSubscription: false,
     })
     renderPricing()
     expect(await screen.findByText('Plano Mensal (API)')).toBeInTheDocument()
