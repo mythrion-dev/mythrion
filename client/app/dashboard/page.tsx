@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { useEffect, useState, useCallback, Suspense } from 'react'
 import Link from 'next/link'
 import { useSubscription } from '@/lib/subscription-context'
+import { useAuth } from '@/lib/auth-context'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -29,6 +30,7 @@ interface CharacterSheetSummary {
   adventure: { id: string; name: string; campaign: string } | null
   template: { id: string; name: string }
   createdAt: string
+  assignedMember?: { id: string; userId: string; user: { id: string; displayName: string | null; email: string } } | null
 }
 
 /* ── Tab type ── */
@@ -127,9 +129,11 @@ function AdventuresTabContent({
 function SheetsTabContent({
   fetching,
   sheets,
+  currentUserId,
 }: {
   readonly fetching: boolean
   readonly sheets: CharacterSheetSummary[]
+  readonly currentUserId: string | null
 }) {
   const { t } = useTranslation()
   if (fetching) {
@@ -156,7 +160,7 @@ function SheetsTabContent({
     <section className="flex-1">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {sheets.map((sheet, i) => (
-          <CharacterSheetCard key={sheet.id} sheet={sheet} index={i} />
+          <CharacterSheetCard key={sheet.id} sheet={sheet} index={i} currentUserId={currentUserId} />
         ))}
       </div>
     </section>
@@ -165,6 +169,7 @@ function SheetsTabContent({
 
 function DashboardContent() {
   const { hasActiveSubscription } = useSubscription()
+  const { user } = useAuth()
   const searchParams = useSearchParams()
   const { t } = useTranslation()
   // The active view follows the ?tab= URL param, which the sidebar links set.
@@ -225,7 +230,7 @@ function DashboardContent() {
           hasActiveSubscription={hasActiveSubscription}
         />
       ) : (
-        <SheetsTabContent fetching={fetchingSheets} sheets={sheets} />
+        <SheetsTabContent fetching={fetchingSheets} sheets={sheets} currentUserId={user?.id ?? null} />
       )}
     </>
   )
@@ -317,9 +322,11 @@ function AdventureCard({
 function CharacterSheetCard({
   sheet,
   index,
+  currentUserId,
 }: {
   readonly sheet: CharacterSheetSummary
   readonly index: number
+  readonly currentUserId: string | null
 }) {
   const { t } = useTranslation()
   return (
@@ -338,6 +345,18 @@ function CharacterSheetCard({
           {sheet.template.name}
         </span>
       </div>
+
+      {sheet.assignedMember && (
+        <div className="flex items-center gap-1.5 mb-2">
+          <span className="badge text-[0.6rem]">
+            {sheet.assignedMember.userId === currentUserId
+              ? t('dashboard:assignedToYou')
+              : t('campaign:assignedTo', {
+                  name: sheet.assignedMember.user.displayName ?? sheet.assignedMember.user.email,
+                })}
+          </span>
+        </div>
+      )}
 
       {sheet.adventure ? (
         <>

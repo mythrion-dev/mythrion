@@ -40,6 +40,7 @@ const mockCharacterSheetService = {
   update: jest.fn().mockResolvedValue({ id: 'sheet-1' }),
   remove: jest.fn().mockResolvedValue(undefined),
   findOne: jest.fn(),
+  invalidateAdventureSheets: jest.fn().mockResolvedValue(undefined),
 }
 
 const mockTemplateService = {
@@ -235,13 +236,14 @@ describe('AdventureService', () => {
   })
 
   describe('remove', () => {
-    it('requires GM role and deletes adventure', async () => {
+    it('requires GM role, invalidates sheet caches, and deletes adventure', async () => {
       const deleted = { id: 'a1', name: 'Test' }
       prisma.adventure.delete.mockResolvedValue(deleted)
 
       const result = await service.remove('a1', 'u1')
 
       expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('a1', 'u1', 'GM')
+      expect(mockCharacterSheetService.invalidateAdventureSheets).toHaveBeenCalledWith('a1')
       expect(prisma.adventure.delete).toHaveBeenCalledWith({ where: { id: 'a1' } })
       expect(result).toEqual(deleted)
     })

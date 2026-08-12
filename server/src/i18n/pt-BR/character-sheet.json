@@ -26,5 +26,9 @@
   "ownerOnlyManage": "Apenas o dono pode gerenciar esta ficha de personagem",
   "ownerOrGmManage": "Apenas o dono ou um Mestre pode gerenciar esta ficha de personagem",
   "profSkillExists": "Uma perícia profissional chamada \"{name}\" já existe nesta ficha.",
-  "profSkillNotFound": "Perícia profissional não encontrada"
+  "profSkillNotFound": "Perícia profissional não encontrada",
+  "cannotAssignNpc": "NPCs e MOBs não podem ser atribuídos a jogadores",
+  "assignRequiresAdventure": "O personagem deve estar vinculado a uma campanha antes de ser atribuído",
+  "assigneeNotInCampaign": "O jogador selecionado não é membro desta campanha",
+  "cannotAssignToGm": "O Mestre não pode ser atribuído a um personagem"
 }

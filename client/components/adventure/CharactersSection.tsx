@@ -3,9 +3,17 @@
 import { useTranslation } from 'react-i18next'
 import type { SubmitEvent } from 'react'
 
+interface AssignedMember {
+  id: string
+  user: { id: string; displayName: string | null; email: string } | null
+}
 interface CampaignCharacter {
   id: string; characterName: string; adventure: { id: string; name: string; campaign: string }
   template: { id: string; name: string }; owner: { id: string; displayName: string | null; email: string } | null; createdAt: string
+  assignedMember: AssignedMember | null
+}
+interface CampaignPlayer {
+  id: string; role: string; user: { id: string; email: string; displayName: string | null }
 }
 interface UserSheet {
   id: string; characterName: string; adventure: { id: string; name: string; campaign: string }
@@ -18,6 +26,7 @@ export function CharactersSection({
   userId,
   snapshotName,
   userSheets,
+  players,
   showNewCharForm,
   showLinkCharForm,
   readOnly,
@@ -37,6 +46,8 @@ export function CharactersSection({
   onLinkSheetChange,
   onRemoveCharacter,
   onViewCharacter,
+  onAssign,
+  onRemoveAssignment,
 }: {
   readonly characters: CampaignCharacter[]
   readonly isGM: boolean
@@ -44,6 +55,7 @@ export function CharactersSection({
   readonly userId: string
   readonly snapshotName: string | null
   readonly userSheets: UserSheet[]
+  readonly players: ReadonlyArray<CampaignPlayer>
   readonly showNewCharForm: boolean
   readonly showLinkCharForm: boolean
   readonly newCharName: string
@@ -62,6 +74,8 @@ export function CharactersSection({
   readonly onLinkSheetChange: (v: string) => void
   readonly onRemoveCharacter: (id: string) => void
   readonly onViewCharacter: (id: string) => void
+  readonly onAssign: (id: string) => void
+  readonly onRemoveAssignment: (id: string) => void
 }) {
   const { t } = useTranslation()
   return (
@@ -83,8 +97,17 @@ export function CharactersSection({
                   <span className="badge badge-gold text-[0.6rem]">{c.template.name}</span>
                 </div>
                 <p className="text-xs text-muted mt-0.5">
-                  {c.owner?.displayName ?? c.owner?.email ?? 'Unknown'}
+                  {c.owner?.displayName ?? c.owner?.email ?? t('campaign:unknownUser')}
                 </p>
+                {isGM && (
+                  <p className="text-xs mt-0.5">
+                    {c.assignedMember?.user?.displayName ?? c.assignedMember?.user?.email ? (
+                      <span className="text-muted">{t('campaign:assignedTo', { name: c.assignedMember?.user?.displayName ?? c.assignedMember?.user?.email })}</span>
+                    ) : (
+                      <span className="text-muted italic">{t('campaign:notAssigned')}</span>
+                    )}
+                  </p>
+                )}
               </div>
               <div className="flex gap-1 shrink-0 ml-2">
                 <button
@@ -93,6 +116,16 @@ export function CharactersSection({
                 >
                   {t('common:view')}
                 </button>
+                {isGM && (
+                  <button
+                    onClick={readOnly ? undefined : () => onAssign(c.id)}
+                    disabled={readOnly}
+                    title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
+                    className={`btn-ghost text-xs px-2 py-1 ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
+                  >
+                    {c.assignedMember ? t('campaign:changeAssignment') : t('campaign:assign')}
+                  </button>
+                )}
                 {isGM && (c.owner?.id ?? '') !== userId && (
                   <button
                     onClick={readOnly ? undefined : () => onRemoveCharacter(c.id)}
@@ -101,6 +134,16 @@ export function CharactersSection({
                     className={`text-xs text-danger px-2 py-1 transition-colors ${readOnly ? 'opacity-50 cursor-not-allowed' : 'hover:text-danger/80'}`}
                   >
                     {t('common:remove')}
+                  </button>
+                )}
+                {isGM && c.assignedMember && (
+                  <button
+                    onClick={readOnly ? undefined : () => onRemoveAssignment(c.id)}
+                    disabled={readOnly}
+                    title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
+                    className={`text-xs text-danger px-2 py-1 transition-colors ${readOnly ? 'opacity-50 cursor-not-allowed' : 'hover:text-danger/80'}`}
+                  >
+                    {t('campaign:removeAssignment')}
                   </button>
                 )}
               </div>
