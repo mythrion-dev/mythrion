@@ -25,6 +25,8 @@ export function AssignCharacterModal({ characterName, players, currentAssigneeId
   const available = players.filter(p => p.role !== 'GM')
   const isChange = currentAssigneeId !== ''
   const confirmDisabled = !value || value === currentAssigneeId || available.length === 0 || loading
+  const confirmLabel = isChange ? t('campaign:changeAssignment') : t('campaign:assign')
+  const buttonLabel = loading ? t('campaign:assigning') : confirmLabel
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
       <div className="absolute inset-0 bg-black/50" />
@@ -66,7 +68,7 @@ export function AssignCharacterModal({ characterName, players, currentAssigneeId
         <div className="flex gap-3 justify-end">
           <button onClick={onCancel} disabled={loading} className="btn-ghost">{t('common:cancel')}</button>
           <button onClick={onConfirm} disabled={confirmDisabled} className="btn-primary">
-            {loading ? t('campaign:assigning') : (isChange ? t('campaign:changeAssignment') : t('campaign:assign'))}
+            {buttonLabel}
           </button>
         </div>
       </div>
