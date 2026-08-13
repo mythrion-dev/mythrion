@@ -425,6 +425,11 @@ export class AdventureService {
     // Only GM can delete
     await this.membership.requireWriteRole(id, userId, 'GM')
 
+    // Deleting detaches sheets (adventureId SetNull) and drops assignments;
+    // drop their caches first so the dashboard never serves sheets tied to a
+    // deleted campaign.
+    await this.sheetService.invalidateAdventureSheets(id)
+
     return this.prisma.adventure.delete({ where: { id } })
   }
 

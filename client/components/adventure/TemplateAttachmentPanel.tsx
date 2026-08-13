@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, type CSSProperties, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
 import { TemplatePickerModal } from '@/components/adventure/TemplatePickerModal'
@@ -28,6 +28,167 @@ interface TemplateAttachmentPanelProps {
   readonly readOnly?: boolean
   readonly onAttached?: () => void
   readonly onDetached?: () => void
+}
+
+type SnapshotCountKey =
+  | 'attributeCount'
+  | 'skillCount'
+  | 'fieldCount'
+  | 'profileCount'
+  | 'resourceCount'
+  | 'acCount'
+  | 'sectionCount'
+  | 'resistCount'
+
+const SNAPSHOT_CHIPS: ReadonlyArray<{ key: SnapshotCountKey; i18nKey: string; style: CSSProperties }> = [
+  { key: 'attributeCount', i18nKey: 'campaign:attrCount', style: { background: 'rgba(124,92,231,0.12)', color: '#9070f0', border: '1px solid rgba(124,92,231,0.18)' } },
+  { key: 'skillCount', i18nKey: 'campaign:skillCount', style: { background: 'rgba(201,164,75,0.12)', color: '#c9a44b', border: '1px solid rgba(201,164,75,0.18)' } },
+  { key: 'fieldCount', i18nKey: 'campaign:fieldCount', style: { background: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.18)' } },
+  { key: 'profileCount', i18nKey: 'campaign:profileCount', style: { background: 'rgba(236,72,153,0.12)', color: '#f472b6', border: '1px solid rgba(236,72,153,0.18)' } },
+  { key: 'resourceCount', i18nKey: 'campaign:resourceCount', style: { background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.18)' } },
+  { key: 'acCount', i18nKey: 'campaign:acCount', style: { background: 'rgba(52,211,153,0.12)', color: '#34d399', border: '1px solid rgba(52,211,153,0.18)' } },
+  { key: 'sectionCount', i18nKey: 'campaign:sectionCount', style: { background: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.18)' } },
+  { key: 'resistCount', i18nKey: 'campaign:resistCount', style: { background: 'rgba(168,85,247,0.12)', color: '#a855f7', border: '1px solid rgba(168,85,247,0.18)' } },
+]
+
+function SnapshotChips({ snapshot }: { readonly snapshot: SnapshotSummary }) {
+  const { t } = useTranslation()
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {SNAPSHOT_CHIPS.filter(chip => snapshot[chip.key] > 0).map(chip => (
+        <span key={chip.key} className="badge text-[0.55rem]" style={chip.style}>
+          {t(chip.i18nKey, { count: snapshot[chip.key] })}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+function SnapshotInfo({
+  snapshot,
+  originalTemplateId,
+}: {
+  readonly snapshot: SnapshotSummary
+  readonly originalTemplateId: string | null
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="space-y-2">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm font-medium text-foreground">{snapshot.name}</p>
+          {snapshot.description && (
+            <p className="text-xs text-muted-foreground mt-0.5">{snapshot.description}</p>
+          )}
+        </div>
+      </div>
+
+      <SnapshotChips snapshot={snapshot} />
+
+      <div className="flex items-center justify-between pt-2 border-t border-border/50">
+        <span className="text-[0.6rem] text-muted">
+          {t('campaign:snapshotCreated', { date: new Date(snapshot.createdAt).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }) })}
+        </span>
+        {originalTemplateId && (
+          <span className="text-[0.6rem] text-muted">{t('campaign:linkedToOriginalTemplate')}</span>
+        )}
+        {!originalTemplateId && (
+          <span className="text-[0.6rem] text-muted italic">{t('campaign:detachedSnapshotPreserved')}</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function SnapshotEmptyState({ isGM }: { readonly isGM: boolean }) {
+  const { t } = useTranslation()
+  return (
+    <div className="flex flex-col items-center py-6 text-center">
+      <span className="text-2xl mb-2">📋</span>
+      <p className="text-sm text-muted-foreground">
+        {t('campaign:noTemplateAttachedYet')}
+      </p>
+      {isGM && (
+        <p className="text-xs text-muted mt-1">
+          {t('campaign:attachTemplateToAllowPlayers')}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function GmActionButton({
+  readOnly,
+  onClick,
+  disabled,
+  className,
+  children,
+}: {
+  readonly readOnly?: boolean
+  readonly onClick?: () => void
+  readonly disabled?: boolean
+  readonly className: string
+  readonly children: ReactNode
+}) {
+  const { t } = useTranslation()
+  return (
+    <button
+      onClick={readOnly ? undefined : onClick}
+      disabled={disabled || readOnly}
+      title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
+      className={`${className} ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
+    >
+      {children}
+    </button>
+  )
+}
+
+const attachSpinner = (
+  <div className="w-3 h-3 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+)
+const detachSpinner = (
+  <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+)
+
+function AttachmentActions({
+  hasAttachment,
+  attaching,
+  detaching,
+  readOnly,
+  onAttach,
+  onDetach,
+}: {
+  readonly hasAttachment: boolean
+  readonly attaching: boolean
+  readonly detaching: boolean
+  readonly readOnly?: boolean
+  readonly onAttach: () => void
+  readonly onDetach: () => void
+}) {
+  const { t } = useTranslation()
+  if (hasAttachment) {
+    return (
+      <div className="flex gap-2">
+        <GmActionButton readOnly={readOnly} onClick={onAttach} className="btn-secondary text-xs !px-3 !py-1">
+          {t('campaign:replace')}
+        </GmActionButton>
+        <GmActionButton readOnly={readOnly} onClick={onDetach} disabled={detaching} className="btn-ghost text-xs !px-3 !py-1">
+          {detaching ? detachSpinner : t('campaign:detach')}
+        </GmActionButton>
+      </div>
+    )
+  }
+  return (
+    <div className="flex gap-2">
+      <GmActionButton readOnly={readOnly} onClick={onAttach} disabled={attaching} className="btn-primary text-xs !px-3 !py-1">
+        {attaching ? attachSpinner : t('campaign:attachTemplate')}
+      </GmActionButton>
+    </div>
+  )
 }
 
 export function TemplateAttachmentPanel({
@@ -105,45 +266,14 @@ export function TemplateAttachmentPanel({
         </h3>
 
         {isGM && (
-          <div className="flex gap-2">
-            {!hasAttachment ? (
-              <button
-                onClick={readOnly ? undefined : () => setShowPicker(true)}
-                className={`btn-primary text-xs !px-3 !py-1 ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
-                disabled={attaching || readOnly}
-                title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
-              >
-                {attaching ? (
-                  <div className="w-3 h-3 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                ) : (
-                  t('campaign:attachTemplate')
-                )}
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={readOnly ? undefined : () => setShowPicker(true)}
-                  className={`btn-secondary text-xs !px-3 !py-1 ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
-                  disabled={readOnly}
-                  title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
-                >
-                  {t('campaign:replace')}
-                </button>
-                <button
-                  onClick={readOnly ? undefined : handleDetach}
-                  disabled={detaching || readOnly}
-                  className={`btn-ghost text-xs !px-3 !py-1 ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
-                  title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
-                >
-                  {detaching ? (
-                    <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                  ) : (
-                    t('campaign:detach')
-                  )}
-                </button>
-              </>
-            )}
-          </div>
+          <AttachmentActions
+            hasAttachment={hasAttachment}
+            attaching={attaching}
+            detaching={detaching}
+            readOnly={readOnly}
+            onAttach={() => setShowPicker(true)}
+            onDetach={handleDetach}
+          />
         )}
       </div>
 
@@ -160,92 +290,9 @@ export function TemplateAttachmentPanel({
 
       {/* Snapshot Info */}
       {templateSnapshot ? (
-        <div className="space-y-2">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                {templateSnapshot.name}
-              </p>
-              {templateSnapshot.description && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {templateSnapshot.description}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Feature chips */}
-          <div className="flex flex-wrap gap-1.5">
-            {templateSnapshot.attributeCount > 0 && (
-              <span className="badge text-[0.55rem]" style={{ background: 'rgba(124,92,231,0.12)', color: '#9070f0', border: '1px solid rgba(124,92,231,0.18)' }}>
-                {t('campaign:attrCount', { count: templateSnapshot.attributeCount })}
-              </span>
-            )}
-            {templateSnapshot.skillCount > 0 && (
-              <span className="badge text-[0.55rem]" style={{ background: 'rgba(201,164,75,0.12)', color: '#c9a44b', border: '1px solid rgba(201,164,75,0.18)' }}>
-                {t('campaign:skillCount', { count: templateSnapshot.skillCount })}
-              </span>
-            )}
-            {templateSnapshot.fieldCount > 0 && (
-              <span className="badge text-[0.55rem]" style={{ background: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.18)' }}>
-                {t('campaign:fieldCount', { count: templateSnapshot.fieldCount })}
-              </span>
-            )}
-            {templateSnapshot.profileCount > 0 && (
-              <span className="badge text-[0.55rem]" style={{ background: 'rgba(236,72,153,0.12)', color: '#f472b6', border: '1px solid rgba(236,72,153,0.18)' }}>
-                {t('campaign:profileCount', { count: templateSnapshot.profileCount })}
-              </span>
-            )}
-            {templateSnapshot.resourceCount > 0 && (
-              <span className="badge text-[0.55rem]" style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.18)' }}>
-                {t('campaign:resourceCount', { count: templateSnapshot.resourceCount })}
-              </span>
-            )}
-            {templateSnapshot.acCount > 0 && (
-              <span className="badge text-[0.55rem]" style={{ background: 'rgba(52,211,153,0.12)', color: '#34d399', border: '1px solid rgba(52,211,153,0.18)' }}>
-                {t('campaign:acCount', { count: templateSnapshot.acCount })}
-              </span>
-            )}
-            {templateSnapshot.sectionCount > 0 && (
-              <span className="badge text-[0.55rem]" style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.18)' }}>
-                {t('campaign:sectionCount', { count: templateSnapshot.sectionCount })}
-              </span>
-            )}
-            {templateSnapshot.resistCount > 0 && (
-              <span className="badge text-[0.55rem]" style={{ background: 'rgba(168,85,247,0.12)', color: '#a855f7', border: '1px solid rgba(168,85,247,0.18)' }}>
-                {t('campaign:resistCount', { count: templateSnapshot.resistCount })}
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between pt-2 border-t border-border/50">
-            <span className="text-[0.6rem] text-muted">
-              {t('campaign:snapshotCreated', { date: new Date(templateSnapshot.createdAt).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              }) })}
-            </span>
-            {originalTemplateId && (
-              <span className="text-[0.6rem] text-muted">{t('campaign:linkedToOriginalTemplate')}</span>
-            )}
-            {!originalTemplateId && templateSnapshot && (
-              <span className="text-[0.6rem] text-muted italic">{t('campaign:detachedSnapshotPreserved')}</span>
-            )}
-          </div>
-        </div>
+        <SnapshotInfo snapshot={templateSnapshot} originalTemplateId={originalTemplateId} />
       ) : (
-        <div className="flex flex-col items-center py-6 text-center">
-          <span className="text-2xl mb-2">📋</span>
-          <p className="text-sm text-muted-foreground">
-            {t('campaign:noTemplateAttachedYet')}
-          </p>
-          {isGM && (
-            <p className="text-xs text-muted mt-1">
-              {t('campaign:attachTemplateToAllowPlayers')}
-            </p>
-          )}
-        </div>
+        <SnapshotEmptyState isGM={isGM} />
       )}
 
       {/* Picker Modal */}

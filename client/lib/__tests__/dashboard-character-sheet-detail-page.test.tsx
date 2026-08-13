@@ -92,7 +92,7 @@ vi.mock('@/lib/inline-editable', () => ({
 
 vi.mock('@/components/character-sheet', () => {
   const CharacterTab = (p: any) => (
-    <div data-testid="CharacterTab">
+    <div data-testid="CharacterTab" data-can-edit={String(Boolean(p.permissions?.canEditCharacter))}>
       <button data-testid="saveFieldValue" onClick={() => p.saveFieldValue('field-1', 'hello')}>saveFieldValue</button>
       <button data-testid="saveAttributeValue" onClick={() => p.saveAttributeValue('attr-1', '5')}>saveAttributeValue</button>
       <button data-testid="cr-change" onClick={() => p.handleCoreResourceChange('cr-1', 'current', '15')}>cr-change</button>
@@ -462,6 +462,38 @@ describe('CharacterSheetDetailPage', () => {
     setAuth({ user: { ...baseUser, id: 'user-2' } })
     renderPage()
     expect(await screen.findByRole('heading', { name: 'Aria' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
+    expect(screen.queryByTestId('InlineText')).not.toBeInTheDocument()
+    expect(document.querySelector('input[type="file"]')).toBeNull()
+  })
+
+  it('shows the assigned-player badge for an assigned player', async () => {
+    mockApiGet.mockImplementation((url: string) => {
+      if (url.includes('/resistances')) return Promise.resolve(resistances)
+      return Promise.resolve({
+        ...makeSheet(),
+        assignedMember: { id: 'cm-1', userId: 'user-2', user: { id: 'user-2', displayName: 'Bob', email: 'bob@test.com' } },
+      })
+    })
+    setAuth({ user: { ...baseUser, id: 'user-2' } })
+    renderPage()
+    expect(await screen.findByText('Assigned to Bob')).toBeInTheDocument()
+  })
+
+  it('grants the assigned player edit access without delete or GM controls', async () => {
+    mockApiGet.mockImplementation((url: string) => {
+      if (url.includes('/resistances')) return Promise.resolve(resistances)
+      return Promise.resolve({
+        ...makeSheet(),
+        assignedMember: { id: 'cm-1', userId: 'user-2', user: { id: 'user-2', displayName: 'Bob', email: 'bob@test.com' } },
+      })
+    })
+    setAuth({ user: { ...baseUser, id: 'user-2' } })
+    renderPage()
+    expect(await screen.findByRole('heading', { name: 'Aria' })).toBeInTheDocument()
+    // The assigned player can edit sheet content...
+    expect(screen.getByTestId('CharacterTab').getAttribute('data-can-edit')).toBe('true')
+    // ...but cannot delete the sheet (owner-only), rename it, or upload an avatar.
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
     expect(screen.queryByTestId('InlineText')).not.toBeInTheDocument()
     expect(document.querySelector('input[type="file"]')).toBeNull()

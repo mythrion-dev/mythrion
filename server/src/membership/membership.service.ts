@@ -1,6 +1,7 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common'
 import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
+import { RedisService } from '../redis/redis.service.js'
 import { SubscriptionService } from '../subscription/subscription.service.js'
 import { AdminService } from '../auth/admin.service.js'
 import { MemberRole } from '../generated/prisma/client.js'
@@ -18,7 +19,18 @@ export class MembershipService {
     private readonly i18n: I18nService,
     private readonly subscriptionService: SubscriptionService,
     private readonly adminService: AdminService,
+    private readonly redis: RedisService,
   ) {}
+
+  /**
+   * When a member leaves or is removed, the FK ON DELETE SET NULL clears their
+   * character assignments. The adventure lists and the member's personal list
+   * are cached, so drop them here to avoid serving stale assignment state.
+   */
+  private async invalidateAssignmentCaches(adventureId: string, userId: string) {
+    await this.redis.del(`character-sheets:user:${userId}`).catch(() => {})
+    await this.redis.invalidatePattern(`character-sheets:adventure:${adventureId}:*`).catch(() => {})
+  }
 
   /** Check that the user has at least the required role on the adventure. */
   async requireRole(
@@ -178,11 +190,13 @@ export class MembershipService {
   }
 
   async removeMember(adventureId: string, targetUserId: string) {
-    return this.prisma.campaignMember.delete({
+    const result = await this.prisma.campaignMember.delete({
       where: {
         adventureId_userId: { adventureId, userId: targetUserId },
       },
     })
+    await this.invalidateAssignmentCaches(adventureId, targetUserId)
+    return result
   }
 
   async updateRole(
@@ -212,9 +226,11 @@ export class MembershipService {
     if (member.role === 'GM') {
       throw new ForbiddenException(this.i18n.t('community.gmCannotLeave'))
     }
-    return this.prisma.campaignMember.delete({
+    const result = await this.prisma.campaignMember.delete({
       where: { adventureId_userId: { adventureId, userId } },
     })
+    await this.invalidateAssignmentCaches(adventureId, userId)
+    return result
   }
 
   /**
@@ -232,7 +248,7 @@ export class MembershipService {
     const target = await this.prisma.campaignMember.findUnique({
       where: { adventureId_userId: { adventureId, userId: newGmId } },
     })
-    if (!target || target.role !== 'PLAYER') {
+    if (target?.role !== 'PLAYER') {
       throw new ForbiddenException(
         this.i18n.t('community.transferTargetNotPlayer'),
       )

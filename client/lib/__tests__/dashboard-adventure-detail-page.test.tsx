@@ -2003,6 +2003,15 @@ describe('AdventureDetailPage — books & misc', () => {
     await waitFor(() => expect(screen.getByTestId('visibility-value')).toHaveTextContent('true'))
   })
 
+  it('keeps visibility unchanged when toggle fails', async () => {
+    renderPage()
+    await screen.findByText('The Lost Mine')
+    mockApiPatch.mockRejectedValueOnce(new Error('vis-boom'))
+    fireEventClick('visibility-toggle')
+    await waitFor(() => expect(mockApiPatch).toHaveBeenCalledWith('/adventures/adv-1/visibility', { isPublic: true }))
+    await waitFor(() => expect(screen.getByTestId('visibility-value')).toHaveTextContent('false'))
+  })
+
   it('accepts and rejects join requests', async () => {
     renderPage()
     await screen.findByText('The Lost Mine')

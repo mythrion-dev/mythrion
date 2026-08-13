@@ -51,6 +51,7 @@ export type CharacterSheetMinAggregateOutputType = {
   adventureId: string | null
   templateId: string | null
   ownerId: string | null
+  assignedMemberId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -68,6 +69,7 @@ export type CharacterSheetMaxAggregateOutputType = {
   adventureId: string | null
   templateId: string | null
   ownerId: string | null
+  assignedMemberId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -85,6 +87,7 @@ export type CharacterSheetCountAggregateOutputType = {
   adventureId: number
   templateId: number
   ownerId: number
+  assignedMemberId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -116,6 +119,7 @@ export type CharacterSheetMinAggregateInputType = {
   adventureId?: true
   templateId?: true
   ownerId?: true
+  assignedMemberId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -133,6 +137,7 @@ export type CharacterSheetMaxAggregateInputType = {
   adventureId?: true
   templateId?: true
   ownerId?: true
+  assignedMemberId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -150,6 +155,7 @@ export type CharacterSheetCountAggregateInputType = {
   adventureId?: true
   templateId?: true
   ownerId?: true
+  assignedMemberId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -254,6 +260,7 @@ export type CharacterSheetGroupByOutputType = {
   adventureId: string | null
   templateId: string
   ownerId: string | null
+  assignedMemberId: string | null
   createdAt: Date
   updatedAt: Date
   _count: CharacterSheetCountAggregateOutputType | null
@@ -294,11 +301,13 @@ export type CharacterSheetWhereInput = {
   adventureId?: Prisma.StringNullableFilter<"CharacterSheet"> | string | null
   templateId?: Prisma.StringFilter<"CharacterSheet"> | string
   ownerId?: Prisma.StringNullableFilter<"CharacterSheet"> | string | null
+  assignedMemberId?: Prisma.StringNullableFilter<"CharacterSheet"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CharacterSheet"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterSheet"> | Date | string
   adventure?: Prisma.XOR<Prisma.AdventureNullableScalarRelationFilter, Prisma.AdventureWhereInput> | null
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
   owner?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  assignedMember?: Prisma.XOR<Prisma.CampaignMemberNullableScalarRelationFilter, Prisma.CampaignMemberWhereInput> | null
   values?: Prisma.CharacterSheetValueListRelationFilter
   fieldValues?: Prisma.CharacterSheetFieldValueListRelationFilter
   skillValues?: Prisma.CharacterSheetSkillValueListRelationFilter
@@ -329,11 +338,13 @@ export type CharacterSheetOrderByWithRelationInput = {
   adventureId?: Prisma.SortOrderInput | Prisma.SortOrder
   templateId?: Prisma.SortOrder
   ownerId?: Prisma.SortOrderInput | Prisma.SortOrder
+  assignedMemberId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   adventure?: Prisma.AdventureOrderByWithRelationInput
   template?: Prisma.TemplateOrderByWithRelationInput
   owner?: Prisma.UserOrderByWithRelationInput
+  assignedMember?: Prisma.CampaignMemberOrderByWithRelationInput
   values?: Prisma.CharacterSheetValueOrderByRelationAggregateInput
   fieldValues?: Prisma.CharacterSheetFieldValueOrderByRelationAggregateInput
   skillValues?: Prisma.CharacterSheetSkillValueOrderByRelationAggregateInput
@@ -367,11 +378,13 @@ export type CharacterSheetWhereUniqueInput = Prisma.AtLeast<{
   adventureId?: Prisma.StringNullableFilter<"CharacterSheet"> | string | null
   templateId?: Prisma.StringFilter<"CharacterSheet"> | string
   ownerId?: Prisma.StringNullableFilter<"CharacterSheet"> | string | null
+  assignedMemberId?: Prisma.StringNullableFilter<"CharacterSheet"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CharacterSheet"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterSheet"> | Date | string
   adventure?: Prisma.XOR<Prisma.AdventureNullableScalarRelationFilter, Prisma.AdventureWhereInput> | null
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
   owner?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  assignedMember?: Prisma.XOR<Prisma.CampaignMemberNullableScalarRelationFilter, Prisma.CampaignMemberWhereInput> | null
   values?: Prisma.CharacterSheetValueListRelationFilter
   fieldValues?: Prisma.CharacterSheetFieldValueListRelationFilter
   skillValues?: Prisma.CharacterSheetSkillValueListRelationFilter
@@ -402,6 +415,7 @@ export type CharacterSheetOrderByWithAggregationInput = {
   adventureId?: Prisma.SortOrderInput | Prisma.SortOrder
   templateId?: Prisma.SortOrder
   ownerId?: Prisma.SortOrderInput | Prisma.SortOrder
+  assignedMemberId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.CharacterSheetCountOrderByAggregateInput
@@ -427,6 +441,7 @@ export type CharacterSheetScalarWhereWithAggregatesInput = {
   adventureId?: Prisma.StringNullableWithAggregatesFilter<"CharacterSheet"> | string | null
   templateId?: Prisma.StringWithAggregatesFilter<"CharacterSheet"> | string
   ownerId?: Prisma.StringNullableWithAggregatesFilter<"CharacterSheet"> | string | null
+  assignedMemberId?: Prisma.StringNullableWithAggregatesFilter<"CharacterSheet"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"CharacterSheet"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"CharacterSheet"> | Date | string
 }
@@ -446,6 +461,7 @@ export type CharacterSheetCreateInput = {
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
@@ -476,6 +492,7 @@ export type CharacterSheetUncheckedCreateInput = {
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -510,6 +527,7 @@ export type CharacterSheetUpdateInput = {
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
@@ -540,6 +558,7 @@ export type CharacterSheetUncheckedUpdateInput = {
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -572,6 +591,7 @@ export type CharacterSheetCreateManyInput = {
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -603,6 +623,7 @@ export type CharacterSheetUncheckedUpdateManyInput = {
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -635,6 +656,7 @@ export type CharacterSheetCountOrderByAggregateInput = {
   adventureId?: Prisma.SortOrder
   templateId?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
+  assignedMemberId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -658,6 +680,7 @@ export type CharacterSheetMaxOrderByAggregateInput = {
   adventureId?: Prisma.SortOrder
   templateId?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
+  assignedMemberId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -675,6 +698,7 @@ export type CharacterSheetMinOrderByAggregateInput = {
   adventureId?: Prisma.SortOrder
   templateId?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
+  assignedMemberId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -766,6 +790,48 @@ export type CharacterSheetUncheckedUpdateManyWithoutAdventureNestedInput = {
   connect?: Prisma.CharacterSheetWhereUniqueInput | Prisma.CharacterSheetWhereUniqueInput[]
   update?: Prisma.CharacterSheetUpdateWithWhereUniqueWithoutAdventureInput | Prisma.CharacterSheetUpdateWithWhereUniqueWithoutAdventureInput[]
   updateMany?: Prisma.CharacterSheetUpdateManyWithWhereWithoutAdventureInput | Prisma.CharacterSheetUpdateManyWithWhereWithoutAdventureInput[]
+  deleteMany?: Prisma.CharacterSheetScalarWhereInput | Prisma.CharacterSheetScalarWhereInput[]
+}
+
+export type CharacterSheetCreateNestedManyWithoutAssignedMemberInput = {
+  create?: Prisma.XOR<Prisma.CharacterSheetCreateWithoutAssignedMemberInput, Prisma.CharacterSheetUncheckedCreateWithoutAssignedMemberInput> | Prisma.CharacterSheetCreateWithoutAssignedMemberInput[] | Prisma.CharacterSheetUncheckedCreateWithoutAssignedMemberInput[]
+  connectOrCreate?: Prisma.CharacterSheetCreateOrConnectWithoutAssignedMemberInput | Prisma.CharacterSheetCreateOrConnectWithoutAssignedMemberInput[]
+  createMany?: Prisma.CharacterSheetCreateManyAssignedMemberInputEnvelope
+  connect?: Prisma.CharacterSheetWhereUniqueInput | Prisma.CharacterSheetWhereUniqueInput[]
+}
+
+export type CharacterSheetUncheckedCreateNestedManyWithoutAssignedMemberInput = {
+  create?: Prisma.XOR<Prisma.CharacterSheetCreateWithoutAssignedMemberInput, Prisma.CharacterSheetUncheckedCreateWithoutAssignedMemberInput> | Prisma.CharacterSheetCreateWithoutAssignedMemberInput[] | Prisma.CharacterSheetUncheckedCreateWithoutAssignedMemberInput[]
+  connectOrCreate?: Prisma.CharacterSheetCreateOrConnectWithoutAssignedMemberInput | Prisma.CharacterSheetCreateOrConnectWithoutAssignedMemberInput[]
+  createMany?: Prisma.CharacterSheetCreateManyAssignedMemberInputEnvelope
+  connect?: Prisma.CharacterSheetWhereUniqueInput | Prisma.CharacterSheetWhereUniqueInput[]
+}
+
+export type CharacterSheetUpdateManyWithoutAssignedMemberNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterSheetCreateWithoutAssignedMemberInput, Prisma.CharacterSheetUncheckedCreateWithoutAssignedMemberInput> | Prisma.CharacterSheetCreateWithoutAssignedMemberInput[] | Prisma.CharacterSheetUncheckedCreateWithoutAssignedMemberInput[]
+  connectOrCreate?: Prisma.CharacterSheetCreateOrConnectWithoutAssignedMemberInput | Prisma.CharacterSheetCreateOrConnectWithoutAssignedMemberInput[]
+  upsert?: Prisma.CharacterSheetUpsertWithWhereUniqueWithoutAssignedMemberInput | Prisma.CharacterSheetUpsertWithWhereUniqueWithoutAssignedMemberInput[]
+  createMany?: Prisma.CharacterSheetCreateManyAssignedMemberInputEnvelope
+  set?: Prisma.CharacterSheetWhereUniqueInput | Prisma.CharacterSheetWhereUniqueInput[]
+  disconnect?: Prisma.CharacterSheetWhereUniqueInput | Prisma.CharacterSheetWhereUniqueInput[]
+  delete?: Prisma.CharacterSheetWhereUniqueInput | Prisma.CharacterSheetWhereUniqueInput[]
+  connect?: Prisma.CharacterSheetWhereUniqueInput | Prisma.CharacterSheetWhereUniqueInput[]
+  update?: Prisma.CharacterSheetUpdateWithWhereUniqueWithoutAssignedMemberInput | Prisma.CharacterSheetUpdateWithWhereUniqueWithoutAssignedMemberInput[]
+  updateMany?: Prisma.CharacterSheetUpdateManyWithWhereWithoutAssignedMemberInput | Prisma.CharacterSheetUpdateManyWithWhereWithoutAssignedMemberInput[]
+  deleteMany?: Prisma.CharacterSheetScalarWhereInput | Prisma.CharacterSheetScalarWhereInput[]
+}
+
+export type CharacterSheetUncheckedUpdateManyWithoutAssignedMemberNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterSheetCreateWithoutAssignedMemberInput, Prisma.CharacterSheetUncheckedCreateWithoutAssignedMemberInput> | Prisma.CharacterSheetCreateWithoutAssignedMemberInput[] | Prisma.CharacterSheetUncheckedCreateWithoutAssignedMemberInput[]
+  connectOrCreate?: Prisma.CharacterSheetCreateOrConnectWithoutAssignedMemberInput | Prisma.CharacterSheetCreateOrConnectWithoutAssignedMemberInput[]
+  upsert?: Prisma.CharacterSheetUpsertWithWhereUniqueWithoutAssignedMemberInput | Prisma.CharacterSheetUpsertWithWhereUniqueWithoutAssignedMemberInput[]
+  createMany?: Prisma.CharacterSheetCreateManyAssignedMemberInputEnvelope
+  set?: Prisma.CharacterSheetWhereUniqueInput | Prisma.CharacterSheetWhereUniqueInput[]
+  disconnect?: Prisma.CharacterSheetWhereUniqueInput | Prisma.CharacterSheetWhereUniqueInput[]
+  delete?: Prisma.CharacterSheetWhereUniqueInput | Prisma.CharacterSheetWhereUniqueInput[]
+  connect?: Prisma.CharacterSheetWhereUniqueInput | Prisma.CharacterSheetWhereUniqueInput[]
+  update?: Prisma.CharacterSheetUpdateWithWhereUniqueWithoutAssignedMemberInput | Prisma.CharacterSheetUpdateWithWhereUniqueWithoutAssignedMemberInput[]
+  updateMany?: Prisma.CharacterSheetUpdateManyWithWhereWithoutAssignedMemberInput | Prisma.CharacterSheetUpdateManyWithWhereWithoutAssignedMemberInput[]
   deleteMany?: Prisma.CharacterSheetScalarWhereInput | Prisma.CharacterSheetScalarWhereInput[]
 }
 
@@ -1043,6 +1109,7 @@ export type CharacterSheetCreateWithoutOwnerInput = {
   updatedAt?: Date | string
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
@@ -1072,6 +1139,7 @@ export type CharacterSheetUncheckedCreateWithoutOwnerInput = {
   npcType?: string | null
   adventureId?: string | null
   templateId: string
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -1133,6 +1201,7 @@ export type CharacterSheetScalarWhereInput = {
   adventureId?: Prisma.StringNullableFilter<"CharacterSheet"> | string | null
   templateId?: Prisma.StringFilter<"CharacterSheet"> | string
   ownerId?: Prisma.StringNullableFilter<"CharacterSheet"> | string | null
+  assignedMemberId?: Prisma.StringNullableFilter<"CharacterSheet"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CharacterSheet"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CharacterSheet"> | Date | string
 }
@@ -1151,6 +1220,7 @@ export type CharacterSheetCreateWithoutAdventureInput = {
   updatedAt?: Date | string
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
@@ -1180,6 +1250,7 @@ export type CharacterSheetUncheckedCreateWithoutAdventureInput = {
   npcType?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -1225,6 +1296,96 @@ export type CharacterSheetUpdateManyWithWhereWithoutAdventureInput = {
   data: Prisma.XOR<Prisma.CharacterSheetUpdateManyMutationInput, Prisma.CharacterSheetUncheckedUpdateManyWithoutAdventureInput>
 }
 
+export type CharacterSheetCreateWithoutAssignedMemberInput = {
+  id?: string
+  characterName: string
+  playerName?: string | null
+  level?: number | null
+  hpActual?: number | null
+  hpMax?: number | null
+  hpNotes?: string | null
+  isNpc?: boolean
+  npcType?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
+  template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
+  owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
+  fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
+  skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
+  skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
+  coreResourceValues?: Prisma.CharacterSheetCoreResourceValueCreateNestedManyWithoutSheetInput
+  acValues?: Prisma.CharacterSheetArmorClassValueCreateNestedManyWithoutSheetInput
+  acAttributeValues?: Prisma.CharacterSheetArmorClassAttributeValueCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueCreateNestedManyWithoutSheetInput
+  abilities?: Prisma.CharacterAbilityCreateNestedManyWithoutSheetInput
+  inventoryItems?: Prisma.CharacterInventoryItemCreateNestedManyWithoutSheetInput
+  sectionEntries?: Prisma.CharacterSectionEntryCreateNestedManyWithoutSheetInput
+  story?: Prisma.CharacterStoryCreateNestedOneWithoutSheetInput
+  sheetResistances?: Prisma.SheetResistanceCreateNestedManyWithoutSheetInput
+  professionalSkills?: Prisma.SheetProfessionalSkillCreateNestedManyWithoutSheetInput
+}
+
+export type CharacterSheetUncheckedCreateWithoutAssignedMemberInput = {
+  id?: string
+  characterName: string
+  playerName?: string | null
+  level?: number | null
+  hpActual?: number | null
+  hpMax?: number | null
+  hpNotes?: string | null
+  isNpc?: boolean
+  npcType?: string | null
+  adventureId?: string | null
+  templateId: string
+  ownerId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
+  fieldValues?: Prisma.CharacterSheetFieldValueUncheckedCreateNestedManyWithoutSheetInput
+  skillValues?: Prisma.CharacterSheetSkillValueUncheckedCreateNestedManyWithoutSheetInput
+  skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedCreateNestedManyWithoutSheetInput
+  coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedCreateNestedManyWithoutSheetInput
+  acValues?: Prisma.CharacterSheetArmorClassValueUncheckedCreateNestedManyWithoutSheetInput
+  acAttributeValues?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedCreateNestedManyWithoutSheetInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedCreateNestedManyWithoutSheetInput
+  abilities?: Prisma.CharacterAbilityUncheckedCreateNestedManyWithoutSheetInput
+  inventoryItems?: Prisma.CharacterInventoryItemUncheckedCreateNestedManyWithoutSheetInput
+  sectionEntries?: Prisma.CharacterSectionEntryUncheckedCreateNestedManyWithoutSheetInput
+  story?: Prisma.CharacterStoryUncheckedCreateNestedOneWithoutSheetInput
+  sheetResistances?: Prisma.SheetResistanceUncheckedCreateNestedManyWithoutSheetInput
+  professionalSkills?: Prisma.SheetProfessionalSkillUncheckedCreateNestedManyWithoutSheetInput
+}
+
+export type CharacterSheetCreateOrConnectWithoutAssignedMemberInput = {
+  where: Prisma.CharacterSheetWhereUniqueInput
+  create: Prisma.XOR<Prisma.CharacterSheetCreateWithoutAssignedMemberInput, Prisma.CharacterSheetUncheckedCreateWithoutAssignedMemberInput>
+}
+
+export type CharacterSheetCreateManyAssignedMemberInputEnvelope = {
+  data: Prisma.CharacterSheetCreateManyAssignedMemberInput | Prisma.CharacterSheetCreateManyAssignedMemberInput[]
+  skipDuplicates?: boolean
+}
+
+export type CharacterSheetUpsertWithWhereUniqueWithoutAssignedMemberInput = {
+  where: Prisma.CharacterSheetWhereUniqueInput
+  update: Prisma.XOR<Prisma.CharacterSheetUpdateWithoutAssignedMemberInput, Prisma.CharacterSheetUncheckedUpdateWithoutAssignedMemberInput>
+  create: Prisma.XOR<Prisma.CharacterSheetCreateWithoutAssignedMemberInput, Prisma.CharacterSheetUncheckedCreateWithoutAssignedMemberInput>
+}
+
+export type CharacterSheetUpdateWithWhereUniqueWithoutAssignedMemberInput = {
+  where: Prisma.CharacterSheetWhereUniqueInput
+  data: Prisma.XOR<Prisma.CharacterSheetUpdateWithoutAssignedMemberInput, Prisma.CharacterSheetUncheckedUpdateWithoutAssignedMemberInput>
+}
+
+export type CharacterSheetUpdateManyWithWhereWithoutAssignedMemberInput = {
+  where: Prisma.CharacterSheetScalarWhereInput
+  data: Prisma.XOR<Prisma.CharacterSheetUpdateManyMutationInput, Prisma.CharacterSheetUncheckedUpdateManyWithoutAssignedMemberInput>
+}
+
 export type CharacterSheetCreateWithoutTemplateInput = {
   id?: string
   characterName: string
@@ -1239,6 +1400,7 @@ export type CharacterSheetCreateWithoutTemplateInput = {
   updatedAt?: Date | string
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
@@ -1268,6 +1430,7 @@ export type CharacterSheetUncheckedCreateWithoutTemplateInput = {
   npcType?: string | null
   adventureId?: string | null
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -1328,6 +1491,7 @@ export type CharacterSheetCreateWithoutSkillProfileValuesInput = {
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
@@ -1357,6 +1521,7 @@ export type CharacterSheetUncheckedCreateWithoutSkillProfileValuesInput = {
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -1406,6 +1571,7 @@ export type CharacterSheetUpdateWithoutSkillProfileValuesInput = {
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
@@ -1435,6 +1601,7 @@ export type CharacterSheetUncheckedUpdateWithoutSkillProfileValuesInput = {
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -1468,6 +1635,7 @@ export type CharacterSheetCreateWithoutSkillValuesInput = {
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
@@ -1497,6 +1665,7 @@ export type CharacterSheetUncheckedCreateWithoutSkillValuesInput = {
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -1546,6 +1715,7 @@ export type CharacterSheetUpdateWithoutSkillValuesInput = {
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
@@ -1575,6 +1745,7 @@ export type CharacterSheetUncheckedUpdateWithoutSkillValuesInput = {
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -1608,6 +1779,7 @@ export type CharacterSheetCreateWithoutValuesInput = {
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
@@ -1637,6 +1809,7 @@ export type CharacterSheetUncheckedCreateWithoutValuesInput = {
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   fieldValues?: Prisma.CharacterSheetFieldValueUncheckedCreateNestedManyWithoutSheetInput
@@ -1686,6 +1859,7 @@ export type CharacterSheetUpdateWithoutValuesInput = {
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
@@ -1715,6 +1889,7 @@ export type CharacterSheetUncheckedUpdateWithoutValuesInput = {
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fieldValues?: Prisma.CharacterSheetFieldValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -1748,6 +1923,7 @@ export type CharacterSheetCreateWithoutFieldValuesInput = {
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueCreateNestedManyWithoutSheetInput
@@ -1777,6 +1953,7 @@ export type CharacterSheetUncheckedCreateWithoutFieldValuesInput = {
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -1826,6 +2003,7 @@ export type CharacterSheetUpdateWithoutFieldValuesInput = {
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
   skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
@@ -1855,6 +2033,7 @@ export type CharacterSheetUncheckedUpdateWithoutFieldValuesInput = {
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -1888,6 +2067,7 @@ export type CharacterSheetCreateWithoutCoreResourceValuesInput = {
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
@@ -1917,6 +2097,7 @@ export type CharacterSheetUncheckedCreateWithoutCoreResourceValuesInput = {
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -1966,6 +2147,7 @@ export type CharacterSheetUpdateWithoutCoreResourceValuesInput = {
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
@@ -1995,6 +2177,7 @@ export type CharacterSheetUncheckedUpdateWithoutCoreResourceValuesInput = {
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -2028,6 +2211,7 @@ export type CharacterSheetCreateWithoutAcValuesInput = {
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
@@ -2057,6 +2241,7 @@ export type CharacterSheetUncheckedCreateWithoutAcValuesInput = {
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -2106,6 +2291,7 @@ export type CharacterSheetUpdateWithoutAcValuesInput = {
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
@@ -2135,6 +2321,7 @@ export type CharacterSheetUncheckedUpdateWithoutAcValuesInput = {
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -2168,6 +2355,7 @@ export type CharacterSheetCreateWithoutAcAttributeValuesInput = {
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
@@ -2197,6 +2385,7 @@ export type CharacterSheetUncheckedCreateWithoutAcAttributeValuesInput = {
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -2246,6 +2435,7 @@ export type CharacterSheetUpdateWithoutAcAttributeValuesInput = {
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
@@ -2275,6 +2465,7 @@ export type CharacterSheetUncheckedUpdateWithoutAcAttributeValuesInput = {
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -2308,6 +2499,7 @@ export type CharacterSheetCreateWithoutResistanceValuesInput = {
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
@@ -2337,6 +2529,7 @@ export type CharacterSheetUncheckedCreateWithoutResistanceValuesInput = {
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -2386,6 +2579,7 @@ export type CharacterSheetUpdateWithoutResistanceValuesInput = {
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
@@ -2415,6 +2609,7 @@ export type CharacterSheetUncheckedUpdateWithoutResistanceValuesInput = {
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -2448,6 +2643,7 @@ export type CharacterSheetCreateWithoutResistanceComponentValuesInput = {
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
@@ -2477,6 +2673,7 @@ export type CharacterSheetUncheckedCreateWithoutResistanceComponentValuesInput =
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -2526,6 +2723,7 @@ export type CharacterSheetUpdateWithoutResistanceComponentValuesInput = {
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
@@ -2555,6 +2753,7 @@ export type CharacterSheetUncheckedUpdateWithoutResistanceComponentValuesInput =
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -2588,6 +2787,7 @@ export type CharacterSheetCreateWithoutSheetResistancesInput = {
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
@@ -2617,6 +2817,7 @@ export type CharacterSheetUncheckedCreateWithoutSheetResistancesInput = {
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -2666,6 +2867,7 @@ export type CharacterSheetUpdateWithoutSheetResistancesInput = {
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
@@ -2695,6 +2897,7 @@ export type CharacterSheetUncheckedUpdateWithoutSheetResistancesInput = {
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -2728,6 +2931,7 @@ export type CharacterSheetCreateWithoutProfessionalSkillsInput = {
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
@@ -2757,6 +2961,7 @@ export type CharacterSheetUncheckedCreateWithoutProfessionalSkillsInput = {
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -2806,6 +3011,7 @@ export type CharacterSheetUpdateWithoutProfessionalSkillsInput = {
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
@@ -2835,6 +3041,7 @@ export type CharacterSheetUncheckedUpdateWithoutProfessionalSkillsInput = {
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -2868,6 +3075,7 @@ export type CharacterSheetCreateWithoutAbilitiesInput = {
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
@@ -2897,6 +3105,7 @@ export type CharacterSheetUncheckedCreateWithoutAbilitiesInput = {
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -2946,6 +3155,7 @@ export type CharacterSheetUpdateWithoutAbilitiesInput = {
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
@@ -2975,6 +3185,7 @@ export type CharacterSheetUncheckedUpdateWithoutAbilitiesInput = {
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -3008,6 +3219,7 @@ export type CharacterSheetCreateWithoutInventoryItemsInput = {
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
@@ -3037,6 +3249,7 @@ export type CharacterSheetUncheckedCreateWithoutInventoryItemsInput = {
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -3086,6 +3299,7 @@ export type CharacterSheetUpdateWithoutInventoryItemsInput = {
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
@@ -3115,6 +3329,7 @@ export type CharacterSheetUncheckedUpdateWithoutInventoryItemsInput = {
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -3148,6 +3363,7 @@ export type CharacterSheetCreateWithoutStoryInput = {
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
@@ -3177,6 +3393,7 @@ export type CharacterSheetUncheckedCreateWithoutStoryInput = {
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -3226,6 +3443,7 @@ export type CharacterSheetUpdateWithoutStoryInput = {
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
@@ -3255,6 +3473,7 @@ export type CharacterSheetUncheckedUpdateWithoutStoryInput = {
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -3288,6 +3507,7 @@ export type CharacterSheetCreateWithoutSectionEntriesInput = {
   adventure?: Prisma.AdventureCreateNestedOneWithoutCharacterSheetsInput
   template: Prisma.TemplateCreateNestedOneWithoutCharacterSheetsInput
   owner?: Prisma.UserCreateNestedOneWithoutCharacterSheetsInput
+  assignedMember?: Prisma.CampaignMemberCreateNestedOneWithoutAssignedSheetsInput
   values?: Prisma.CharacterSheetValueCreateNestedManyWithoutSheetInput
   fieldValues?: Prisma.CharacterSheetFieldValueCreateNestedManyWithoutSheetInput
   skillValues?: Prisma.CharacterSheetSkillValueCreateNestedManyWithoutSheetInput
@@ -3317,6 +3537,7 @@ export type CharacterSheetUncheckedCreateWithoutSectionEntriesInput = {
   adventureId?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   values?: Prisma.CharacterSheetValueUncheckedCreateNestedManyWithoutSheetInput
@@ -3366,6 +3587,7 @@ export type CharacterSheetUpdateWithoutSectionEntriesInput = {
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
@@ -3395,6 +3617,7 @@ export type CharacterSheetUncheckedUpdateWithoutSectionEntriesInput = {
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -3425,6 +3648,7 @@ export type CharacterSheetCreateManyOwnerInput = {
   npcType?: string | null
   adventureId?: string | null
   templateId: string
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -3443,6 +3667,7 @@ export type CharacterSheetUpdateWithoutOwnerInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
@@ -3472,6 +3697,7 @@ export type CharacterSheetUncheckedUpdateWithoutOwnerInput = {
   npcType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -3503,6 +3729,7 @@ export type CharacterSheetUncheckedUpdateManyWithoutOwnerInput = {
   npcType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -3519,6 +3746,7 @@ export type CharacterSheetCreateManyAdventureInput = {
   npcType?: string | null
   templateId: string
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -3537,6 +3765,7 @@ export type CharacterSheetUpdateWithoutAdventureInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
@@ -3566,6 +3795,7 @@ export type CharacterSheetUncheckedUpdateWithoutAdventureInput = {
   npcType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -3597,6 +3827,105 @@ export type CharacterSheetUncheckedUpdateManyWithoutAdventureInput = {
   npcType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateId?: Prisma.StringFieldUpdateOperationsInput | string
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type CharacterSheetCreateManyAssignedMemberInput = {
+  id?: string
+  characterName: string
+  playerName?: string | null
+  level?: number | null
+  hpActual?: number | null
+  hpMax?: number | null
+  hpNotes?: string | null
+  isNpc?: boolean
+  npcType?: string | null
+  adventureId?: string | null
+  templateId: string
+  ownerId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type CharacterSheetUpdateWithoutAssignedMemberInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  characterName?: Prisma.StringFieldUpdateOperationsInput | string
+  playerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  level?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpActual?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpMax?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isNpc?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  npcType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
+  template?: Prisma.TemplateUpdateOneRequiredWithoutCharacterSheetsNestedInput
+  owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
+  fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
+  skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
+  skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUpdateManyWithoutSheetNestedInput
+  coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUpdateManyWithoutSheetNestedInput
+  acValues?: Prisma.CharacterSheetArmorClassValueUpdateManyWithoutSheetNestedInput
+  acAttributeValues?: Prisma.CharacterSheetArmorClassAttributeValueUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUpdateManyWithoutSheetNestedInput
+  abilities?: Prisma.CharacterAbilityUpdateManyWithoutSheetNestedInput
+  inventoryItems?: Prisma.CharacterInventoryItemUpdateManyWithoutSheetNestedInput
+  sectionEntries?: Prisma.CharacterSectionEntryUpdateManyWithoutSheetNestedInput
+  story?: Prisma.CharacterStoryUpdateOneWithoutSheetNestedInput
+  sheetResistances?: Prisma.SheetResistanceUpdateManyWithoutSheetNestedInput
+  professionalSkills?: Prisma.SheetProfessionalSkillUpdateManyWithoutSheetNestedInput
+}
+
+export type CharacterSheetUncheckedUpdateWithoutAssignedMemberInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  characterName?: Prisma.StringFieldUpdateOperationsInput | string
+  playerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  level?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpActual?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpMax?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isNpc?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  npcType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateId?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
+  fieldValues?: Prisma.CharacterSheetFieldValueUncheckedUpdateManyWithoutSheetNestedInput
+  skillValues?: Prisma.CharacterSheetSkillValueUncheckedUpdateManyWithoutSheetNestedInput
+  skillProfileValues?: Prisma.CharacterSheetSkillProfileValueUncheckedUpdateManyWithoutSheetNestedInput
+  coreResourceValues?: Prisma.CharacterSheetCoreResourceValueUncheckedUpdateManyWithoutSheetNestedInput
+  acValues?: Prisma.CharacterSheetArmorClassValueUncheckedUpdateManyWithoutSheetNestedInput
+  acAttributeValues?: Prisma.CharacterSheetArmorClassAttributeValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceValues?: Prisma.CharacterSheetResistanceValueUncheckedUpdateManyWithoutSheetNestedInput
+  resistanceComponentValues?: Prisma.CharacterSheetResistanceComponentValueUncheckedUpdateManyWithoutSheetNestedInput
+  abilities?: Prisma.CharacterAbilityUncheckedUpdateManyWithoutSheetNestedInput
+  inventoryItems?: Prisma.CharacterInventoryItemUncheckedUpdateManyWithoutSheetNestedInput
+  sectionEntries?: Prisma.CharacterSectionEntryUncheckedUpdateManyWithoutSheetNestedInput
+  story?: Prisma.CharacterStoryUncheckedUpdateOneWithoutSheetNestedInput
+  sheetResistances?: Prisma.SheetResistanceUncheckedUpdateManyWithoutSheetNestedInput
+  professionalSkills?: Prisma.SheetProfessionalSkillUncheckedUpdateManyWithoutSheetNestedInput
+}
+
+export type CharacterSheetUncheckedUpdateManyWithoutAssignedMemberInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  characterName?: Prisma.StringFieldUpdateOperationsInput | string
+  playerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  level?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpActual?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpMax?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  hpNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isNpc?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  npcType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateId?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -3613,6 +3942,7 @@ export type CharacterSheetCreateManyTemplateInput = {
   npcType?: string | null
   adventureId?: string | null
   ownerId?: string | null
+  assignedMemberId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -3631,6 +3961,7 @@ export type CharacterSheetUpdateWithoutTemplateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventure?: Prisma.AdventureUpdateOneWithoutCharacterSheetsNestedInput
   owner?: Prisma.UserUpdateOneWithoutCharacterSheetsNestedInput
+  assignedMember?: Prisma.CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput
   values?: Prisma.CharacterSheetValueUpdateManyWithoutSheetNestedInput
   fieldValues?: Prisma.CharacterSheetFieldValueUpdateManyWithoutSheetNestedInput
   skillValues?: Prisma.CharacterSheetSkillValueUpdateManyWithoutSheetNestedInput
@@ -3660,6 +3991,7 @@ export type CharacterSheetUncheckedUpdateWithoutTemplateInput = {
   npcType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   values?: Prisma.CharacterSheetValueUncheckedUpdateManyWithoutSheetNestedInput
@@ -3691,6 +4023,7 @@ export type CharacterSheetUncheckedUpdateManyWithoutTemplateInput = {
   npcType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adventureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedMemberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -3856,11 +4189,13 @@ export type CharacterSheetSelect<ExtArgs extends runtime.Types.Extensions.Intern
   adventureId?: boolean
   templateId?: boolean
   ownerId?: boolean
+  assignedMemberId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   adventure?: boolean | Prisma.CharacterSheet$adventureArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   owner?: boolean | Prisma.CharacterSheet$ownerArgs<ExtArgs>
+  assignedMember?: boolean | Prisma.CharacterSheet$assignedMemberArgs<ExtArgs>
   values?: boolean | Prisma.CharacterSheet$valuesArgs<ExtArgs>
   fieldValues?: boolean | Prisma.CharacterSheet$fieldValuesArgs<ExtArgs>
   skillValues?: boolean | Prisma.CharacterSheet$skillValuesArgs<ExtArgs>
@@ -3892,11 +4227,13 @@ export type CharacterSheetSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   adventureId?: boolean
   templateId?: boolean
   ownerId?: boolean
+  assignedMemberId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   adventure?: boolean | Prisma.CharacterSheet$adventureArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   owner?: boolean | Prisma.CharacterSheet$ownerArgs<ExtArgs>
+  assignedMember?: boolean | Prisma.CharacterSheet$assignedMemberArgs<ExtArgs>
 }, ExtArgs["result"]["characterSheet"]>
 
 export type CharacterSheetSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -3912,11 +4249,13 @@ export type CharacterSheetSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   adventureId?: boolean
   templateId?: boolean
   ownerId?: boolean
+  assignedMemberId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   adventure?: boolean | Prisma.CharacterSheet$adventureArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   owner?: boolean | Prisma.CharacterSheet$ownerArgs<ExtArgs>
+  assignedMember?: boolean | Prisma.CharacterSheet$assignedMemberArgs<ExtArgs>
 }, ExtArgs["result"]["characterSheet"]>
 
 export type CharacterSheetSelectScalar = {
@@ -3932,15 +4271,17 @@ export type CharacterSheetSelectScalar = {
   adventureId?: boolean
   templateId?: boolean
   ownerId?: boolean
+  assignedMemberId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CharacterSheetOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "characterName" | "playerName" | "level" | "hpActual" | "hpMax" | "hpNotes" | "isNpc" | "npcType" | "adventureId" | "templateId" | "ownerId" | "createdAt" | "updatedAt", ExtArgs["result"]["characterSheet"]>
+export type CharacterSheetOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "characterName" | "playerName" | "level" | "hpActual" | "hpMax" | "hpNotes" | "isNpc" | "npcType" | "adventureId" | "templateId" | "ownerId" | "assignedMemberId" | "createdAt" | "updatedAt", ExtArgs["result"]["characterSheet"]>
 export type CharacterSheetInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   adventure?: boolean | Prisma.CharacterSheet$adventureArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   owner?: boolean | Prisma.CharacterSheet$ownerArgs<ExtArgs>
+  assignedMember?: boolean | Prisma.CharacterSheet$assignedMemberArgs<ExtArgs>
   values?: boolean | Prisma.CharacterSheet$valuesArgs<ExtArgs>
   fieldValues?: boolean | Prisma.CharacterSheet$fieldValuesArgs<ExtArgs>
   skillValues?: boolean | Prisma.CharacterSheet$skillValuesArgs<ExtArgs>
@@ -3962,11 +4303,13 @@ export type CharacterSheetIncludeCreateManyAndReturn<ExtArgs extends runtime.Typ
   adventure?: boolean | Prisma.CharacterSheet$adventureArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   owner?: boolean | Prisma.CharacterSheet$ownerArgs<ExtArgs>
+  assignedMember?: boolean | Prisma.CharacterSheet$assignedMemberArgs<ExtArgs>
 }
 export type CharacterSheetIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   adventure?: boolean | Prisma.CharacterSheet$adventureArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   owner?: boolean | Prisma.CharacterSheet$ownerArgs<ExtArgs>
+  assignedMember?: boolean | Prisma.CharacterSheet$assignedMemberArgs<ExtArgs>
 }
 
 export type $CharacterSheetPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3975,6 +4318,7 @@ export type $CharacterSheetPayload<ExtArgs extends runtime.Types.Extensions.Inte
     adventure: Prisma.$AdventurePayload<ExtArgs> | null
     template: Prisma.$TemplatePayload<ExtArgs>
     owner: Prisma.$UserPayload<ExtArgs> | null
+    assignedMember: Prisma.$CampaignMemberPayload<ExtArgs> | null
     values: Prisma.$CharacterSheetValuePayload<ExtArgs>[]
     fieldValues: Prisma.$CharacterSheetFieldValuePayload<ExtArgs>[]
     skillValues: Prisma.$CharacterSheetSkillValuePayload<ExtArgs>[]
@@ -4004,6 +4348,7 @@ export type $CharacterSheetPayload<ExtArgs extends runtime.Types.Extensions.Inte
     adventureId: string | null
     templateId: string
     ownerId: string | null
+    assignedMemberId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["characterSheet"]>
@@ -4403,6 +4748,7 @@ export interface Prisma__CharacterSheetClient<T, Null = never, ExtArgs extends r
   adventure<T extends Prisma.CharacterSheet$adventureArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$adventureArgs<ExtArgs>>): Prisma.Prisma__AdventureClient<runtime.Types.Result.GetResult<Prisma.$AdventurePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   template<T extends Prisma.TemplateDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateDefaultArgs<ExtArgs>>): Prisma.Prisma__TemplateClient<runtime.Types.Result.GetResult<Prisma.$TemplatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   owner<T extends Prisma.CharacterSheet$ownerArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$ownerArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  assignedMember<T extends Prisma.CharacterSheet$assignedMemberArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$assignedMemberArgs<ExtArgs>>): Prisma.Prisma__CampaignMemberClient<runtime.Types.Result.GetResult<Prisma.$CampaignMemberPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   values<T extends Prisma.CharacterSheet$valuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$valuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   fieldValues<T extends Prisma.CharacterSheet$fieldValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$fieldValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetFieldValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   skillValues<T extends Prisma.CharacterSheet$skillValuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterSheet$skillValuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetSkillValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -4459,6 +4805,7 @@ export interface CharacterSheetFieldRefs {
   readonly adventureId: Prisma.FieldRef<"CharacterSheet", 'String'>
   readonly templateId: Prisma.FieldRef<"CharacterSheet", 'String'>
   readonly ownerId: Prisma.FieldRef<"CharacterSheet", 'String'>
+  readonly assignedMemberId: Prisma.FieldRef<"CharacterSheet", 'String'>
   readonly createdAt: Prisma.FieldRef<"CharacterSheet", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"CharacterSheet", 'DateTime'>
 }
@@ -4897,6 +5244,25 @@ export type CharacterSheet$ownerArgs<ExtArgs extends runtime.Types.Extensions.In
    */
   include?: Prisma.UserInclude<ExtArgs> | null
   where?: Prisma.UserWhereInput
+}
+
+/**
+ * CharacterSheet.assignedMember
+ */
+export type CharacterSheet$assignedMemberArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CampaignMember
+   */
+  select?: Prisma.CampaignMemberSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CampaignMember
+   */
+  omit?: Prisma.CampaignMemberOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CampaignMemberInclude<ExtArgs> | null
+  where?: Prisma.CampaignMemberWhereInput
 }
 
 /**

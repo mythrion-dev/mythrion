@@ -42,18 +42,16 @@ interface ToolbarButtonProps {
 
 function ToolbarButton({ onClick, isActive = false, label, disabled = false, children }: Readonly<ToolbarButtonProps>) {
   const { t } = useTranslation()
+  const activeClass = isActive
+    ? 'bg-accent/15 text-accent'
+    : 'text-muted-foreground hover:text-foreground hover:bg-hover'
+  const variantClass = disabled ? 'text-muted-foreground opacity-50 cursor-not-allowed' : activeClass
   return (
     <button
       type="button"
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
-      className={`p-1.5 rounded-md transition-colors ${
-        disabled
-          ? 'text-muted-foreground opacity-50 cursor-not-allowed'
-          : isActive
-            ? 'bg-accent/15 text-accent'
-            : 'text-muted-foreground hover:text-foreground hover:bg-hover'
-      }`}
+      className={`p-1.5 rounded-md transition-colors ${variantClass}`}
       aria-label={label}
       title={disabled ? t('campaign:readOnlyTooltip') : label}
     >

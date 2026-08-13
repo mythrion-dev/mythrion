@@ -157,6 +157,11 @@ const sheetInclude = {
   },
   inventoryItems: { orderBy: { order: 'asc' as const } },
   story: true,
+  assignedMember: {
+    include: {
+      user: { select: { id: true, displayName: true, email: true } },
+    },
+  },
 }
 
 @Injectable()
@@ -199,6 +204,34 @@ export class CharacterSheetService {
       if (adventureId) await this.redis.invalidatePattern(this.adventureListCachePattern(adventureId))
     } catch (err) {
       this.logger.warn('Failed to invalidate character sheet cache', err)
+    }
+  }
+
+  /**
+   * Invalidate every cached artifact for sheets in an adventure before the
+   * adventure is deleted. The delete detaches sheets (adventureId SetNull) and
+   * drops assignments (member rows cascade), so without this the caches keep
+   * serving sheets that claim to belong to a deleted campaign.
+   */
+  async invalidateAdventureSheets(adventureId: string): Promise<void> {
+    try {
+      const sheets = await this.prisma.characterSheet.findMany({
+        where: { adventureId },
+        select: {
+          id: true,
+          ownerId: true,
+          assignedMember: { select: { userId: true } },
+        },
+      })
+      await this.redis.invalidatePattern(this.adventureListCachePattern(adventureId))
+      for (const sheet of sheets) {
+        await this.invalidateCache(sheet.id, sheet.ownerId ?? undefined)
+        if (sheet.assignedMember) {
+          await this.redis.del(this.userListCacheKey(sheet.assignedMember.userId)).catch(() => {})
+        }
+      }
+    } catch (err) {
+      this.logger.warn('Failed to invalidate character sheet caches for adventure', err)
     }
   }
 
@@ -465,10 +498,17 @@ export class CharacterSheetService {
     if (cached) return cached
 
     const sheets = await this.prisma.characterSheet.findMany({
-      where: { ownerId: userId },
+      where: {
+        OR: [{ ownerId: userId }, { assignedMember: { userId } }],
+      },
       include: {
         adventure: { select: { id: true, name: true, campaign: true } },
         template: { select: { id: true, name: true } },
+        assignedMember: {
+          include: {
+            user: { select: { id: true, displayName: true, email: true } },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     })
@@ -495,7 +535,11 @@ export class CharacterSheetService {
 
     const where = member.role === 'GM'
       ? { adventureId, isNpc: false }
-      : { adventureId, ownerId: userId, isNpc: false }
+      : {
+          adventureId,
+          isNpc: false,
+          OR: [{ ownerId: userId }, { assignedMember: { userId } }],
+        }
 
     const sheets = await this.prisma.characterSheet.findMany({
       where,
@@ -503,6 +547,11 @@ export class CharacterSheetService {
         adventure: { select: { id: true, name: true, campaign: true } },
         template: { select: { id: true, name: true } },
         owner: { select: { id: true, displayName: true, email: true } },
+        assignedMember: {
+          include: {
+            user: { select: { id: true, displayName: true, email: true } },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     })
@@ -566,7 +615,7 @@ export class CharacterSheetService {
   }
 
   private async assertCanModify(
-    sheet: { ownerId: string | null; isNpc: boolean; adventureId: string | null },
+    sheet: { ownerId: string | null; isNpc: boolean; adventureId: string | null; assignedMemberId: string | null },
     userId: string,
   ): Promise<void> {
     if (sheet.ownerId === userId) {
@@ -575,6 +624,20 @@ export class CharacterSheetService {
         await this.membership.requireWriteAccess(sheet.adventureId, userId)
       }
       return
+    }
+    // The assigned player can edit the sheet's content; writes respect the
+    // campaign read-only state.
+    if (sheet.assignedMemberId) {
+      const assigned = await this.prisma.campaignMember.findUnique({
+        where: { id: sheet.assignedMemberId },
+        select: { userId: true },
+      })
+      if (assigned?.userId === userId) {
+        if (sheet.adventureId) {
+          await this.membership.requireWriteAccess(sheet.adventureId, userId)
+        }
+        return
+      }
     }
     // Only allow GM bypass for NPC sheets; player sheets are owner-only
     if (sheet.isNpc && sheet.adventureId) {
@@ -733,13 +796,11 @@ export class CharacterSheetService {
       if (sheet.adventureId) {
         await this.membership.requireWriteAccess(sheet.adventureId, userId)
       }
+    } else if (sheet.isNpc && sheet.adventureId) {
+      try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
+      catch { throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission')) }
     } else {
-      if (sheet.isNpc && sheet.adventureId) {
-        try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
-        catch { throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission')) }
-      } else {
-        throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
-      }
+      throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
     }
     const deleted = await this.prisma.characterSheet.delete({ where: { id } })
 
@@ -770,20 +831,101 @@ export class CharacterSheetService {
       if (sheet.adventureId) {
         await this.membership.requireWriteAccess(sheet.adventureId, userId)
       }
+    } else if (sheet.isNpc && sheet.adventureId) {
+      try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
+      catch { throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission')) }
     } else {
-      if (sheet.isNpc && sheet.adventureId) {
-        try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
-        catch { throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission')) }
-      } else {
-        throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
-      }
+      throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
     }
-    const unlinked = await this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId: null }, include: sheetInclude })
+    const unlinked = await this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId: null, assignedMemberId: null }, include: sheetInclude })
 
-    // Invalidate cache for old adventure list, sheet + user
+    // Invalidate cache for old adventure list, sheet + user (and old assignee's list)
+    const oldAssigneeId = sheet.assignedMemberId
     await this.invalidateCache(sheetId, sheet.ownerId ?? undefined, sheet.adventureId ?? undefined).catch(() => {})
+    if (oldAssigneeId) {
+      await this.invalidateAssigneeUserList(oldAssigneeId).catch(() => {})
+    }
 
     return unlinked
+  }
+
+  /**
+   * Assign a campaign character to a campaign member (a player).
+   *
+   * Assignment is a relationship, not an ownership transfer: the GM keeps
+   * ownership (ownerId) and full control, while the assigned player gets read
+   * + edit access to the sheet. A character holds at most one assignment — the
+   * single nullable assignedMemberId column enforces that in the DB — so
+   * changing the assigned player is the same UPDATE as the first assignment.
+   */
+  async assignMember(sheetId: string, memberId: string, gmUserId: string) {
+    const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
+    if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
+    if (sheet.isNpc) throw new ForbiddenException(this.i18n.t('character-sheet.cannotAssignNpc'))
+    if (!sheet.adventureId) throw new ForbiddenException(this.i18n.t('character-sheet.assignRequiresAdventure'))
+
+    // GM gate: membership + GM role + campaign writable (read-only blocks this).
+    await this.membership.requireWriteRole(sheet.adventureId, gmUserId, 'GM')
+
+    // Target must be a PLAYER member of the SAME campaign as the character.
+    const target = await this.prisma.campaignMember.findUnique({
+      where: { id: memberId },
+    })
+    if (target?.adventureId !== sheet.adventureId) {
+      throw new ForbiddenException(this.i18n.t('character-sheet.assigneeNotInCampaign'))
+    }
+    if (target.role === 'GM') {
+      throw new ForbiddenException(this.i18n.t('character-sheet.cannotAssignToGm'))
+    }
+
+    const previousAssigneeId = sheet.assignedMemberId
+    const updated = await this.prisma.characterSheet.update({
+      where: { id: sheetId },
+      data: { assignedMemberId: memberId },
+      include: sheetInclude,
+    })
+
+    // Cache: sheet, adventure lists (GM sees assignment state), and both the
+    // new assignee's and the previous assignee's personal lists changed.
+    await this.invalidateCache(sheetId, target.userId, sheet.adventureId).catch(() => {})
+    if (previousAssigneeId && previousAssigneeId !== memberId) {
+      await this.invalidateAssigneeUserList(previousAssigneeId).catch(() => {})
+    }
+
+    return updated
+  }
+
+  /** Clear the assigned player. The character itself is never deleted. */
+  async removeAssignment(sheetId: string, gmUserId: string) {
+    const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
+    if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
+    if (sheet.isNpc) throw new ForbiddenException(this.i18n.t('character-sheet.cannotAssignNpc'))
+    if (!sheet.adventureId) throw new ForbiddenException(this.i18n.t('character-sheet.assignRequiresAdventure'))
+    await this.membership.requireWriteRole(sheet.adventureId, gmUserId, 'GM')
+
+    const previousAssigneeId = sheet.assignedMemberId
+    const updated = await this.prisma.characterSheet.update({
+      where: { id: sheetId },
+      data: { assignedMemberId: null },
+      include: sheetInclude,
+    })
+
+    await this.invalidateCache(sheetId, undefined, sheet.adventureId).catch(() => {})
+    if (previousAssigneeId) {
+      await this.invalidateAssigneeUserList(previousAssigneeId).catch(() => {})
+    }
+
+    return updated
+  }
+
+  /** Resolve the assignee's userId (DB, never cache) and del their personal list. */
+  private async invalidateAssigneeUserList(memberId: string): Promise<void> {
+    const member = await this.prisma.campaignMember.findUnique({
+      where: { id: memberId },
+      select: { userId: true },
+    })
+    if (!member) return
+    await this.redis.del(this.userListCacheKey(member.userId)).catch(() => {})
   }
 
   async updateSkillProfileValue(sheetId: string, skillId: string, profileId: string, optionId: string | null, userId: string) {
@@ -1332,6 +1474,35 @@ export class CharacterSheetService {
     return result
   }
 
+  // Resistance structure (create/remove) is managed by the owner, the assigned
+  // player, or a campaign GM. Writes respect the campaign read-only state.
+  private async assertCanManageResistances(
+    sheet: { ownerId: string | null; adventureId: string | null; assignedMemberId: string | null },
+    userId: string,
+  ): Promise<void> {
+    if (sheet.ownerId === userId) {
+      if (sheet.adventureId) {
+        await this.membership.requireWriteAccess(sheet.adventureId, userId)
+      }
+      return
+    }
+    if (sheet.assignedMemberId) {
+      const assigned = await this.prisma.campaignMember.findUnique({
+        where: { id: sheet.assignedMemberId },
+        select: { userId: true },
+      })
+      if (assigned?.userId === userId) {
+        if (sheet.adventureId) {
+          await this.membership.requireWriteAccess(sheet.adventureId, userId)
+        }
+        return
+      }
+    }
+    if (!sheet.adventureId) throw new ForbiddenException(this.i18n.t('character-sheet.ownerOnlyManage'))
+    try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
+    catch { throw new ForbiddenException(this.i18n.t('character-sheet.ownerOrGmManage')) }
+  }
+
   async createResistance(
     sheetId: string,
     userId: string,
@@ -1339,15 +1510,7 @@ export class CharacterSheetService {
   ) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
-    if (sheet.ownerId === userId) {
-      if (sheet.adventureId) {
-        await this.membership.requireWriteAccess(sheet.adventureId, userId)
-      }
-    } else {
-      if (!sheet.adventureId) throw new ForbiddenException(this.i18n.t('character-sheet.ownerOnlyManage'))
-      try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
-      catch { throw new ForbiddenException(this.i18n.t('character-sheet.ownerOrGmManage')) }
-    }
+    await this.assertCanManageResistances(sheet, userId)
 
     // Get current max order to append (scoped to this sheet)
     const maxOrder = await this.prisma.sheetResistance.aggregate({
@@ -1390,15 +1553,7 @@ export class CharacterSheetService {
   async removeResistance(sheetId: string, resistanceId: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
-    if (sheet.ownerId === userId) {
-      if (sheet.adventureId) {
-        await this.membership.requireWriteAccess(sheet.adventureId, userId)
-      }
-    } else {
-      if (!sheet.adventureId) throw new ForbiddenException(this.i18n.t('character-sheet.ownerOnlyManage'))
-      try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
-      catch { throw new ForbiddenException(this.i18n.t('character-sheet.ownerOrGmManage')) }
-    }
+    await this.assertCanManageResistances(sheet, userId)
 
     // Try sheet-specific resistance first, fall back to template resistance
     const sheetRes = await this.prisma.sheetResistance.findUnique({
@@ -1519,10 +1674,25 @@ export class CharacterSheetService {
   }
 
   private async assertSheetAccess(
-    sheet: { ownerId: string | null; adventureId: string | null },
+    sheet: {
+      ownerId: string | null
+      adventureId: string | null
+      assignedMemberId?: string | null
+      assignedMember?: { userId: string } | null
+    },
     userId: string,
   ): Promise<void> {
     if (sheet.ownerId === userId) return
+    // The assigned player gets read access. Resolve the assignee from the DB —
+    // authorization must never depend on cache contents.
+    if (sheet.assignedMemberId) {
+      if (sheet.assignedMember?.userId === userId) return
+      const member = await this.prisma.campaignMember.findUnique({
+        where: { id: sheet.assignedMemberId },
+        select: { userId: true },
+      })
+      if (member?.userId === userId) return
+    }
     if (!sheet.adventureId) throw new ForbiddenException(this.i18n.t('character-sheet.noAccess'))
     try {
       await this.membership.requireRole(sheet.adventureId, userId, 'GM')
@@ -1531,23 +1701,57 @@ export class CharacterSheetService {
     }
   }
 
+  /**
+   * Owner / assigned-player writes respect the campaign read-only state, but
+   * plain reads are always allowed. Called for both branches in requireOwnership.
+   */
+  private async requireWriteAccessIfLinked(
+    adventureId: string | null,
+    userId: string,
+    write: boolean,
+  ) {
+    if (write && adventureId) {
+      await this.membership.requireWriteAccess(adventureId, userId)
+    }
+  }
+
+  /** GM read gate for NPC sheets: reads only require the GM role. */
+  private async requireGmReadRole(adventureId: string, userId: string) {
+    await this.membership.requireRole(adventureId, userId, 'GM')
+  }
+
+  /** GM write gate for NPC sheets: writes also require the campaign writable. */
+  private async requireGmWriteRole(adventureId: string, userId: string) {
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
+  }
+
   private async requireOwnership(sheetId: string, userId: string, write = true) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
     if (sheet.ownerId === userId) {
       // Owner always retains read access; writes respect campaign read-only state when linked
-      if (write && sheet.adventureId) {
-        await this.membership.requireWriteAccess(sheet.adventureId, userId)
-      }
+      await this.requireWriteAccessIfLinked(sheet.adventureId, userId, write)
       return
+    }
+    // The assigned player can read and edit the sheet; writes respect the
+    // campaign read-only state. Delete is NOT granted here (owner/GM-NPC only).
+    if (sheet.assignedMemberId) {
+      const assigned = await this.prisma.campaignMember.findUnique({
+        where: { id: sheet.assignedMemberId },
+        select: { userId: true },
+      })
+      if (assigned?.userId === userId) {
+        await this.requireWriteAccessIfLinked(sheet.adventureId, userId, write)
+        return
+      }
     }
     // Only allow GM bypass for NPC sheets; player sheets are owner-only
     if (sheet.isNpc && sheet.adventureId) {
       try {
         if (write) {
-          await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM')
+          await this.requireGmWriteRole(sheet.adventureId, userId)
         } else {
-          await this.membership.requireRole(sheet.adventureId, userId, 'GM')
+          await this.requireGmReadRole(sheet.adventureId, userId)
         }
         return
       } catch {
@@ -1562,11 +1766,16 @@ export class CharacterSheetService {
     await this.requireOwnership(sheetId, userId)
   }
 
-  /** Read-access gate for computed endpoints (resistances, AC): owner or campaign GM. */
+  /** Read-access gate for computed endpoints (resistances, AC): owner, assigned player, or campaign GM. */
   async assertReadAccess(sheetId: string, userId: string): Promise<void> {
     const sheet = await this.prisma.characterSheet.findUnique({
       where: { id: sheetId },
-      select: { ownerId: true, adventureId: true },
+      select: {
+        ownerId: true,
+        adventureId: true,
+        assignedMemberId: true,
+        assignedMember: { select: { userId: true } },
+      },
     })
     if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
     await this.assertSheetAccess(sheet, userId)

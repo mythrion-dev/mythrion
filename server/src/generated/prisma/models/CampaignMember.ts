@@ -200,6 +200,7 @@ export type CampaignMemberWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"CampaignMember"> | Date | string
   adventure?: Prisma.XOR<Prisma.AdventureScalarRelationFilter, Prisma.AdventureWhereInput>
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  assignedSheets?: Prisma.CharacterSheetListRelationFilter
 }
 
 export type CampaignMemberOrderByWithRelationInput = {
@@ -212,6 +213,7 @@ export type CampaignMemberOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   adventure?: Prisma.AdventureOrderByWithRelationInput
   user?: Prisma.UserOrderByWithRelationInput
+  assignedSheets?: Prisma.CharacterSheetOrderByRelationAggregateInput
 }
 
 export type CampaignMemberWhereUniqueInput = Prisma.AtLeast<{
@@ -228,6 +230,7 @@ export type CampaignMemberWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"CampaignMember"> | Date | string
   adventure?: Prisma.XOR<Prisma.AdventureScalarRelationFilter, Prisma.AdventureWhereInput>
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  assignedSheets?: Prisma.CharacterSheetListRelationFilter
 }, "id" | "adventureId_userId">
 
 export type CampaignMemberOrderByWithAggregationInput = {
@@ -264,6 +267,7 @@ export type CampaignMemberCreateInput = {
   updatedAt?: Date | string
   adventure: Prisma.AdventureCreateNestedOneWithoutMembersInput
   user: Prisma.UserCreateNestedOneWithoutMembershipsInput
+  assignedSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAssignedMemberInput
 }
 
 export type CampaignMemberUncheckedCreateInput = {
@@ -274,6 +278,7 @@ export type CampaignMemberUncheckedCreateInput = {
   joinedAt?: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
+  assignedSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAssignedMemberInput
 }
 
 export type CampaignMemberUpdateInput = {
@@ -284,6 +289,7 @@ export type CampaignMemberUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventure?: Prisma.AdventureUpdateOneRequiredWithoutMembersNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutMembershipsNestedInput
+  assignedSheets?: Prisma.CharacterSheetUpdateManyWithoutAssignedMemberNestedInput
 }
 
 export type CampaignMemberUncheckedUpdateInput = {
@@ -294,6 +300,7 @@ export type CampaignMemberUncheckedUpdateInput = {
   joinedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  assignedSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAssignedMemberNestedInput
 }
 
 export type CampaignMemberCreateManyInput = {
@@ -367,6 +374,11 @@ export type CampaignMemberMinOrderByAggregateInput = {
   joinedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type CampaignMemberNullableScalarRelationFilter = {
+  is?: Prisma.CampaignMemberWhereInput | null
+  isNot?: Prisma.CampaignMemberWhereInput | null
 }
 
 export type CampaignMemberCreateNestedManyWithoutUserInput = {
@@ -457,6 +469,22 @@ export type EnumMemberRoleFieldUpdateOperationsInput = {
   set?: $Enums.MemberRole
 }
 
+export type CampaignMemberCreateNestedOneWithoutAssignedSheetsInput = {
+  create?: Prisma.XOR<Prisma.CampaignMemberCreateWithoutAssignedSheetsInput, Prisma.CampaignMemberUncheckedCreateWithoutAssignedSheetsInput>
+  connectOrCreate?: Prisma.CampaignMemberCreateOrConnectWithoutAssignedSheetsInput
+  connect?: Prisma.CampaignMemberWhereUniqueInput
+}
+
+export type CampaignMemberUpdateOneWithoutAssignedSheetsNestedInput = {
+  create?: Prisma.XOR<Prisma.CampaignMemberCreateWithoutAssignedSheetsInput, Prisma.CampaignMemberUncheckedCreateWithoutAssignedSheetsInput>
+  connectOrCreate?: Prisma.CampaignMemberCreateOrConnectWithoutAssignedSheetsInput
+  upsert?: Prisma.CampaignMemberUpsertWithoutAssignedSheetsInput
+  disconnect?: Prisma.CampaignMemberWhereInput | boolean
+  delete?: Prisma.CampaignMemberWhereInput | boolean
+  connect?: Prisma.CampaignMemberWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CampaignMemberUpdateToOneWithWhereWithoutAssignedSheetsInput, Prisma.CampaignMemberUpdateWithoutAssignedSheetsInput>, Prisma.CampaignMemberUncheckedUpdateWithoutAssignedSheetsInput>
+}
+
 export type CampaignMemberCreateWithoutUserInput = {
   id?: string
   role: $Enums.MemberRole
@@ -464,6 +492,7 @@ export type CampaignMemberCreateWithoutUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   adventure: Prisma.AdventureCreateNestedOneWithoutMembersInput
+  assignedSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAssignedMemberInput
 }
 
 export type CampaignMemberUncheckedCreateWithoutUserInput = {
@@ -473,6 +502,7 @@ export type CampaignMemberUncheckedCreateWithoutUserInput = {
   joinedAt?: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
+  assignedSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAssignedMemberInput
 }
 
 export type CampaignMemberCreateOrConnectWithoutUserInput = {
@@ -521,6 +551,7 @@ export type CampaignMemberCreateWithoutAdventureInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutMembershipsInput
+  assignedSheets?: Prisma.CharacterSheetCreateNestedManyWithoutAssignedMemberInput
 }
 
 export type CampaignMemberUncheckedCreateWithoutAdventureInput = {
@@ -530,6 +561,7 @@ export type CampaignMemberUncheckedCreateWithoutAdventureInput = {
   joinedAt?: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
+  assignedSheets?: Prisma.CharacterSheetUncheckedCreateNestedManyWithoutAssignedMemberInput
 }
 
 export type CampaignMemberCreateOrConnectWithoutAdventureInput = {
@@ -558,6 +590,62 @@ export type CampaignMemberUpdateManyWithWhereWithoutAdventureInput = {
   data: Prisma.XOR<Prisma.CampaignMemberUpdateManyMutationInput, Prisma.CampaignMemberUncheckedUpdateManyWithoutAdventureInput>
 }
 
+export type CampaignMemberCreateWithoutAssignedSheetsInput = {
+  id?: string
+  role: $Enums.MemberRole
+  joinedAt?: Date | string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  adventure: Prisma.AdventureCreateNestedOneWithoutMembersInput
+  user: Prisma.UserCreateNestedOneWithoutMembershipsInput
+}
+
+export type CampaignMemberUncheckedCreateWithoutAssignedSheetsInput = {
+  id?: string
+  adventureId: string
+  userId: string
+  role: $Enums.MemberRole
+  joinedAt?: Date | string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type CampaignMemberCreateOrConnectWithoutAssignedSheetsInput = {
+  where: Prisma.CampaignMemberWhereUniqueInput
+  create: Prisma.XOR<Prisma.CampaignMemberCreateWithoutAssignedSheetsInput, Prisma.CampaignMemberUncheckedCreateWithoutAssignedSheetsInput>
+}
+
+export type CampaignMemberUpsertWithoutAssignedSheetsInput = {
+  update: Prisma.XOR<Prisma.CampaignMemberUpdateWithoutAssignedSheetsInput, Prisma.CampaignMemberUncheckedUpdateWithoutAssignedSheetsInput>
+  create: Prisma.XOR<Prisma.CampaignMemberCreateWithoutAssignedSheetsInput, Prisma.CampaignMemberUncheckedCreateWithoutAssignedSheetsInput>
+  where?: Prisma.CampaignMemberWhereInput
+}
+
+export type CampaignMemberUpdateToOneWithWhereWithoutAssignedSheetsInput = {
+  where?: Prisma.CampaignMemberWhereInput
+  data: Prisma.XOR<Prisma.CampaignMemberUpdateWithoutAssignedSheetsInput, Prisma.CampaignMemberUncheckedUpdateWithoutAssignedSheetsInput>
+}
+
+export type CampaignMemberUpdateWithoutAssignedSheetsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumMemberRoleFieldUpdateOperationsInput | $Enums.MemberRole
+  joinedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  adventure?: Prisma.AdventureUpdateOneRequiredWithoutMembersNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutMembershipsNestedInput
+}
+
+export type CampaignMemberUncheckedUpdateWithoutAssignedSheetsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  adventureId?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumMemberRoleFieldUpdateOperationsInput | $Enums.MemberRole
+  joinedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type CampaignMemberCreateManyUserInput = {
   id?: string
   adventureId: string
@@ -574,6 +662,7 @@ export type CampaignMemberUpdateWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   adventure?: Prisma.AdventureUpdateOneRequiredWithoutMembersNestedInput
+  assignedSheets?: Prisma.CharacterSheetUpdateManyWithoutAssignedMemberNestedInput
 }
 
 export type CampaignMemberUncheckedUpdateWithoutUserInput = {
@@ -583,6 +672,7 @@ export type CampaignMemberUncheckedUpdateWithoutUserInput = {
   joinedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  assignedSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAssignedMemberNestedInput
 }
 
 export type CampaignMemberUncheckedUpdateManyWithoutUserInput = {
@@ -610,6 +700,7 @@ export type CampaignMemberUpdateWithoutAdventureInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutMembershipsNestedInput
+  assignedSheets?: Prisma.CharacterSheetUpdateManyWithoutAssignedMemberNestedInput
 }
 
 export type CampaignMemberUncheckedUpdateWithoutAdventureInput = {
@@ -619,6 +710,7 @@ export type CampaignMemberUncheckedUpdateWithoutAdventureInput = {
   joinedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  assignedSheets?: Prisma.CharacterSheetUncheckedUpdateManyWithoutAssignedMemberNestedInput
 }
 
 export type CampaignMemberUncheckedUpdateManyWithoutAdventureInput = {
@@ -631,6 +723,35 @@ export type CampaignMemberUncheckedUpdateManyWithoutAdventureInput = {
 }
 
 
+/**
+ * Count Type CampaignMemberCountOutputType
+ */
+
+export type CampaignMemberCountOutputType = {
+  assignedSheets: number
+}
+
+export type CampaignMemberCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  assignedSheets?: boolean | CampaignMemberCountOutputTypeCountAssignedSheetsArgs
+}
+
+/**
+ * CampaignMemberCountOutputType without action
+ */
+export type CampaignMemberCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CampaignMemberCountOutputType
+   */
+  select?: Prisma.CampaignMemberCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * CampaignMemberCountOutputType without action
+ */
+export type CampaignMemberCountOutputTypeCountAssignedSheetsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CharacterSheetWhereInput
+}
+
 
 export type CampaignMemberSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -642,6 +763,8 @@ export type CampaignMemberSelect<ExtArgs extends runtime.Types.Extensions.Intern
   updatedAt?: boolean
   adventure?: boolean | Prisma.AdventureDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  assignedSheets?: boolean | Prisma.CampaignMember$assignedSheetsArgs<ExtArgs>
+  _count?: boolean | Prisma.CampaignMemberCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["campaignMember"]>
 
 export type CampaignMemberSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -682,6 +805,8 @@ export type CampaignMemberOmit<ExtArgs extends runtime.Types.Extensions.Internal
 export type CampaignMemberInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   adventure?: boolean | Prisma.AdventureDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  assignedSheets?: boolean | Prisma.CampaignMember$assignedSheetsArgs<ExtArgs>
+  _count?: boolean | Prisma.CampaignMemberCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CampaignMemberIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   adventure?: boolean | Prisma.AdventureDefaultArgs<ExtArgs>
@@ -697,6 +822,7 @@ export type $CampaignMemberPayload<ExtArgs extends runtime.Types.Extensions.Inte
   objects: {
     adventure: Prisma.$AdventurePayload<ExtArgs>
     user: Prisma.$UserPayload<ExtArgs>
+    assignedSheets: Prisma.$CharacterSheetPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1102,6 +1228,7 @@ export interface Prisma__CampaignMemberClient<T, Null = never, ExtArgs extends r
   readonly [Symbol.toStringTag]: "PrismaPromise"
   adventure<T extends Prisma.AdventureDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AdventureDefaultArgs<ExtArgs>>): Prisma.Prisma__AdventureClient<runtime.Types.Result.GetResult<Prisma.$AdventurePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  assignedSheets<T extends Prisma.CampaignMember$assignedSheetsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CampaignMember$assignedSheetsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterSheetPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1536,6 +1663,30 @@ export type CampaignMemberDeleteManyArgs<ExtArgs extends runtime.Types.Extension
    * Limit how many CampaignMembers to delete.
    */
   limit?: number
+}
+
+/**
+ * CampaignMember.assignedSheets
+ */
+export type CampaignMember$assignedSheetsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CharacterSheet
+   */
+  select?: Prisma.CharacterSheetSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CharacterSheet
+   */
+  omit?: Prisma.CharacterSheetOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CharacterSheetInclude<ExtArgs> | null
+  where?: Prisma.CharacterSheetWhereInput
+  orderBy?: Prisma.CharacterSheetOrderByWithRelationInput | Prisma.CharacterSheetOrderByWithRelationInput[]
+  cursor?: Prisma.CharacterSheetWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CharacterSheetScalarFieldEnum | Prisma.CharacterSheetScalarFieldEnum[]
 }
 
 /**

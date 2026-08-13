@@ -74,6 +74,8 @@ describe('CharacterSheetController', () => {
       removeProfessionalSkill: jest.fn().mockResolvedValue(undefined),
       updateProfessionalSkillProfileValue: jest.fn().mockResolvedValue({ success: true }),
       createFromCampaignSnapshot: jest.fn().mockResolvedValue({ id: 'cs-campaign-1', characterName: 'Campaign Hero' }),
+      assignMember: jest.fn().mockResolvedValue({ id: 'sheet-1', assignedMember: { id: 'cm-1', userId: 'user-2' } }),
+      removeAssignment: jest.fn().mockResolvedValue({ id: 'sheet-1', assignedMember: null }),
     }
 
     mockResistanceService = {
@@ -189,6 +191,35 @@ describe('CharacterSheetController', () => {
       const result = await controller.unlinkFromAdventure(mockReq, 'sheet-1')
       expect(mockSheetService.unlinkFromAdventure).toHaveBeenCalledWith('sheet-1', 'user-1')
       expect(result).toEqual({ id: 'sheet-1', adventureId: null })
+    })
+  })
+
+  // ── Player Assignment ──
+  describe('assign', () => {
+    it('should delegate to sheetService.assignMember with sheet id, member id, and userId', async () => {
+      const dto = { memberId: 'cm-1' }
+      const result = await controller.assign(mockReq, 'sheet-1', dto)
+      expect(mockSheetService.assignMember).toHaveBeenCalledWith('sheet-1', 'cm-1', 'user-1')
+      expect(result).toEqual({ id: 'sheet-1', assignedMember: { id: 'cm-1', userId: 'user-2' } })
+    })
+
+    it('should propagate service errors', async () => {
+      mockSheetService.assignMember.mockRejectedValueOnce(new Error('No permission'))
+      const dto = { memberId: 'cm-1' }
+      await expect(controller.assign(mockReq, 'sheet-1', dto)).rejects.toThrow('No permission')
+    })
+  })
+
+  describe('removeAssignment', () => {
+    it('should delegate to sheetService.removeAssignment with sheet id and userId', async () => {
+      const result = await controller.removeAssignment(mockReq, 'sheet-1')
+      expect(mockSheetService.removeAssignment).toHaveBeenCalledWith('sheet-1', 'user-1')
+      expect(result).toEqual({ id: 'sheet-1', assignedMember: null })
+    })
+
+    it('should propagate service errors', async () => {
+      mockSheetService.removeAssignment.mockRejectedValueOnce(new Error('Sheet not found'))
+      await expect(controller.removeAssignment(mockReq, 'sheet-1')).rejects.toThrow('Sheet not found')
     })
   })
 

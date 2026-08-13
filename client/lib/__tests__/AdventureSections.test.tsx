@@ -122,6 +122,7 @@ function makeCharacter(overrides = {}) {
     adventure: { id: 'adv-1', name: 'The Lost Mines', campaign: 'Phandelver' },
     template: { id: 'tmpl-1', name: 'Fighter' },
     owner: { id: 'user-1', displayName: 'HeroPlayer', email: 'player@test.com' },
+    assignedMember: null,
     createdAt: '2025-01-15T00:00:00Z',
     ...overrides,
   }
@@ -457,6 +458,8 @@ describe('CharactersSection', () => {
     onLinkSheetChange: vi.fn(),
     onRemoveCharacter: vi.fn(),
     onViewCharacter: vi.fn(),
+    onAssign: vi.fn(),
+    onRemoveAssignment: vi.fn(),
   }
 
   const baseProps = {
@@ -465,6 +468,7 @@ describe('CharactersSection', () => {
     userId: 'user-1',
     snapshotName: null as string | null,
     userSheets: [] as any[],
+    players: [] as any[],
     showNewCharForm: false,
     showLinkCharForm: false,
     newCharName: '',
@@ -524,14 +528,14 @@ describe('CharactersSection', () => {
     expect(screen.getByText('anon@test.com')).toBeInTheDocument()
   })
 
-  it('falls back to "Unknown" when both displayName and email are null', () => {
+  it('falls back to "Unknown User" when both displayName and email are null', () => {
     render(
       <CharactersSection
         {...baseProps}
         characters={[makeCharacter({ owner: { id: 'u2', displayName: null, email: null } })]}
       />,
     )
-    expect(screen.getByText('Unknown')).toBeInTheDocument()
+    expect(screen.getByText('Unknown User')).toBeInTheDocument()
   })
 
   it('shows View button for every character', () => {
@@ -603,6 +607,116 @@ describe('CharactersSection', () => {
     )
     await userEvent.click(screen.getByText('Remove'))
     expect(handlers.onRemoveCharacter).toHaveBeenCalledWith('remove-me')
+  })
+
+  /* ── assignment ── */
+  const makeAssignedMember = (displayName: string) => ({
+    id: 'mem-2',
+    user: { id: 'user-2', displayName, email: 'p2@test.com' },
+  })
+
+  it('shows Assign button for GM when character is not assigned', () => {
+    render(
+      <CharactersSection
+        {...baseProps}
+        isGM={true}
+        userId='gm-1'
+        characters={[makeCharacter()]}
+      />,
+    )
+    expect(screen.getByText('Assign')).toBeInTheDocument()
+    expect(screen.queryByText('Change Player')).not.toBeInTheDocument()
+    expect(screen.queryByText('Remove Assignment')).not.toBeInTheDocument()
+  })
+
+  it('hides assignment buttons when not GM', () => {
+    render(
+      <CharactersSection
+        {...baseProps}
+        isGM={false}
+        characters={[makeCharacter()]}
+      />,
+    )
+    expect(screen.queryByText('Assign')).not.toBeInTheDocument()
+    expect(screen.queryByText('Change Player')).not.toBeInTheDocument()
+    expect(screen.queryByText('Remove Assignment')).not.toBeInTheDocument()
+  })
+
+  it('shows Change Player and Remove Assignment for GM when assigned', () => {
+    render(
+      <CharactersSection
+        {...baseProps}
+        isGM={true}
+        userId='gm-1'
+        characters={[makeCharacter({ assignedMember: makeAssignedMember('HeroPlayer2') })]}
+      />,
+    )
+    expect(screen.queryByText('Assign')).not.toBeInTheDocument()
+    expect(screen.getByText('Change Player')).toBeInTheDocument()
+    expect(screen.getByText('Remove Assignment')).toBeInTheDocument()
+    expect(screen.getByText('Assigned to HeroPlayer2')).toBeInTheDocument()
+  })
+
+  it('shows "Not assigned" state for GM when character is unassigned', () => {
+    render(
+      <CharactersSection
+        {...baseProps}
+        isGM={true}
+        userId='gm-1'
+        characters={[makeCharacter({ assignedMember: null })]}
+      />,
+    )
+    expect(screen.getByText('Not assigned')).toBeInTheDocument()
+  })
+
+  it('hides assignment state line when not GM', () => {
+    render(
+      <CharactersSection
+        {...baseProps}
+        isGM={false}
+        characters={[makeCharacter({ assignedMember: makeAssignedMember('HeroPlayer2') })]}
+      />,
+    )
+    expect(screen.queryByText('Assigned to HeroPlayer2')).not.toBeInTheDocument()
+  })
+
+  it('calls onAssign when Assign is clicked', async () => {
+    render(
+      <CharactersSection
+        {...baseProps}
+        isGM={true}
+        userId='gm-1'
+        characters={[makeCharacter({ id: 'assign-me' })]}
+      />,
+    )
+    await userEvent.click(screen.getByText('Assign'))
+    expect(handlers.onAssign).toHaveBeenCalledWith('assign-me')
+  })
+
+  it('calls onRemoveAssignment when Remove Assignment is clicked', async () => {
+    render(
+      <CharactersSection
+        {...baseProps}
+        isGM={true}
+        userId='gm-1'
+        characters={[makeCharacter({ id: 'remove-assign', assignedMember: makeAssignedMember('HeroPlayer2') })]}
+      />,
+    )
+    await userEvent.click(screen.getByText('Remove Assignment'))
+    expect(handlers.onRemoveAssignment).toHaveBeenCalledWith('remove-assign')
+  })
+
+  it('disables assignment buttons when readOnly', () => {
+    render(
+      <CharactersSection
+        {...baseProps}
+        isGM={true}
+        readOnly={true}
+        userId='gm-1'
+        characters={[makeCharacter()]}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Assign' })).toBeDisabled()
   })
 
   /* ── action buttons ── */

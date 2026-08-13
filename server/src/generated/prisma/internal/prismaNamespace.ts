@@ -4919,6 +4919,7 @@ export const CharacterSheetScalarFieldEnum = {
   adventureId: 'adventureId',
   templateId: 'templateId',
   ownerId: 'ownerId',
+  assignedMemberId: 'assignedMemberId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

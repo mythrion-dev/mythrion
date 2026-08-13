@@ -310,4 +310,130 @@ describe('BookListPanel', () => {
       expect(screen.getByText('Upload failed')).toBeInTheDocument()
     })
   })
+
+  /* ── File size formatting edge cases ── */
+
+  it('formats zero-byte and sub-KB file sizes', async () => {
+    ;(api.get as any).mockResolvedValue([
+      { id: 'book-0', name: 'Empty Book', visibility: 'GM_BOOK', fileLength: 0, createdAt: '2025-01-15T00:00:00Z', updatedAt: '2025-01-15T00:00:00Z' },
+      { id: 'book-small', name: 'Tiny Book', visibility: 'PLAYER_BOOK', fileLength: 500, createdAt: '2025-01-15T00:00:00Z', updatedAt: '2025-01-15T00:00:00Z' },
+    ])
+    renderPanel()
+    expect(await screen.findByText('Empty Book')).toBeInTheDocument()
+    expect(screen.getByText(/^0 B/)).toBeInTheDocument()
+    expect(screen.getByText(/^500 B/)).toBeInTheDocument()
+  })
+
+  /* ── Read-only mode ── */
+
+  it('disables GM actions when readOnly', async () => {
+    render(
+      <BookListPanel adventureId="adv-1" isGM readOnly onSelectBook={vi.fn()} />,
+    )
+    expect(await screen.findByText('Campaign Guide')).toBeInTheDocument()
+
+    expect(screen.getByRole('button', { name: 'Rename Campaign Guide' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Delete Campaign Guide' })).toBeDisabled()
+  })
+
+  /* ── Rename edge cases ── */
+
+  it('saves rename when Enter is pressed', async () => {
+    ;(api.patch as any).mockResolvedValue({})
+    renderPanel(true)
+    expect(await screen.findByText('Campaign Guide')).toBeInTheDocument()
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Rename/ })[0])
+    const input = screen.getByDisplayValue('Campaign Guide')
+    fireEvent.change(input, { target: { value: 'Entered Name' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    await waitFor(() => {
+      expect(api.patch).toHaveBeenCalledWith(
+        '/adventures/adv-1/books/book-1',
+        { name: 'Entered Name' },
+      )
+    })
+  })
+
+  it('does not rename when the new name is empty', async () => {
+    renderPanel(true)
+    expect(await screen.findByText('Campaign Guide')).toBeInTheDocument()
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Rename/ })[0])
+    const input = screen.getByDisplayValue('Campaign Guide')
+    fireEvent.change(input, { target: { value: '' } })
+    fireEvent.click(screen.getByTitle('Save'))
+
+    expect(api.patch).not.toHaveBeenCalled()
+    // Still in rename mode — save button remains and title is not shown
+    expect(screen.getByTitle('Save')).toBeInTheDocument()
+    expect(screen.queryByText('Campaign Guide')).not.toBeInTheDocument()
+  })
+
+  it('shows error banner when rename fails', async () => {
+    ;(api.patch as any).mockRejectedValue(new Error('boom'))
+    renderPanel(true)
+    expect(await screen.findByText('Campaign Guide')).toBeInTheDocument()
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Rename/ })[0])
+    const input = screen.getByDisplayValue('Campaign Guide')
+    fireEvent.change(input, { target: { value: 'New Name' } })
+    fireEvent.click(screen.getByTitle('Save'))
+
+    expect(await screen.findByText('Failed to rename book')).toBeInTheDocument()
+  })
+
+  /* ── Delete failure ── */
+
+  it('shows error banner when delete fails', async () => {
+    ;(api.delete as any).mockRejectedValue(new Error('boom'))
+    renderPanel(true)
+    expect(await screen.findByText('Campaign Guide')).toBeInTheDocument()
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Delete/ })[0])
+    fireEvent.click(screen.getByText('Confirm'))
+
+    expect(await screen.findByText('Failed to delete book')).toBeInTheDocument()
+  })
+
+  /* ── Upload edge cases ── */
+
+  it('shows error when uploading without a book name', async () => {
+    renderPanel(true)
+    expect(await screen.findByText('Campaign Guide')).toBeInTheDocument()
+
+    const fileInput = document.querySelector('input[type="file"]')!
+    const file = new File(['content'], 'x.pdf', { type: 'application/pdf' })
+    fireEvent.change(fileInput, { target: { files: [file] } })
+
+    expect(await screen.findByText('Please enter a book name before uploading')).toBeInTheDocument()
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('shows generic error when upload response omits a message', async () => {
+    mockFetch.mockResolvedValue({ ok: false, json: () => Promise.resolve({}) })
+    renderPanel(true)
+    expect(await screen.findByText('Campaign Guide')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByPlaceholderText('Book name...'), { target: { value: 'X' } })
+    const fileInput = document.querySelector('input[type="file"]')!
+    const file = new File(['content'], 'x.pdf', { type: 'application/pdf' })
+    fireEvent.change(fileInput, { target: { files: [file] } })
+
+    expect(await screen.findByText('Upload failed')).toBeInTheDocument()
+  })
+
+  it('shows error banner when upload throws a non-Error', async () => {
+    mockFetch.mockRejectedValue('string error')
+    renderPanel(true)
+    expect(await screen.findByText('Campaign Guide')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByPlaceholderText('Book name...'), { target: { value: 'X' } })
+    const fileInput = document.querySelector('input[type="file"]')!
+    const file = new File(['content'], 'x.pdf', { type: 'application/pdf' })
+    fireEvent.change(fileInput, { target: { files: [file] } })
+
+    expect(await screen.findByText('Failed to upload book')).toBeInTheDocument()
+  })
 })

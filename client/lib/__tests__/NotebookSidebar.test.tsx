@@ -736,4 +736,122 @@ describe('NotebookSidebar extended actions', () => {
       { timeout: 2500 },
     )
   })
+
+  it('renders the list read-only for non-GM viewers', async () => {
+    renderNotebook({ readOnly: true, isGM: false })
+    await openSidebar()
+
+    expect(screen.getByText('Private')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'New page' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'New folder' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'New page' })).toHaveAttribute(
+      'title',
+      'This campaign is read-only. The Game Master needs to renew their subscription to restore full access.',
+    )
+  })
+
+  it('renders the editor read-only', async () => {
+    renderNotebook({ readOnly: true })
+    await openSidebar()
+    fireEvent.click(screen.getByText('Lore'))
+    fireEvent.click(screen.getByText('Folder Page'))
+
+    expect(screen.getByTestId('notebook-editor')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Folder Page' })).toBeDisabled()
+    expect(screen.getByLabelText('Delete page')).toBeDisabled()
+  })
+
+  it('renders the empty state read-only', async () => {
+    ;(api.get as any).mockResolvedValue({ ...mockNotebook, pages: [], folders: [] })
+    renderNotebook({ readOnly: true })
+
+    fireEvent.click(screen.getByLabelText('Open notebook'))
+    await screen.findByText(/Your notebook is empty/)
+    expect(screen.getByText('+ New Page')).toBeDisabled()
+  })
+
+  it('falls back to an anonymous storage key when no token is present', async () => {
+    window.localStorage.clear()
+    renderNotebook()
+    await openSidebar()
+    expect(screen.getByText('Root Page')).toBeInTheDocument()
+  })
+
+  it('searches pages with empty or malformed content', async () => {
+    ;(api.get as any).mockResolvedValue({
+      ...mockNotebook,
+      folders: [],
+      pages: [
+        {
+          id: 'p-root',
+          folderId: null,
+          title: 'Root Page',
+          content: '',
+          sortOrder: 0,
+          createdAt: '2025-01-15T00:00:00Z',
+          updatedAt: '2025-01-15T00:00:00Z',
+        },
+        {
+          id: 'p-plain',
+          folderId: null,
+          title: 'Plain',
+          content: 'no tags here',
+          sortOrder: 1,
+          createdAt: '2025-01-15T00:00:00Z',
+          updatedAt: '2025-01-15T00:00:00Z',
+        },
+        {
+          id: 'p-broken',
+          folderId: null,
+          title: 'Broken',
+          content: '<p',
+          sortOrder: 2,
+          createdAt: '2025-01-15T00:00:00Z',
+          updatedAt: '2025-01-15T00:00:00Z',
+        },
+      ],
+    })
+    renderNotebook()
+    await openSidebar()
+
+    fireEvent.change(screen.getByPlaceholderText('Search pages...'), {
+      target: { value: 'plain' },
+    })
+    expect(screen.getByText(/1 result for "plain"/)).toBeInTheDocument()
+    expect(screen.getByText('Plain')).toBeInTheDocument()
+  })
+
+  it('shows Untitled for a page with no title and restores it on Escape', async () => {
+    ;(api.get as any).mockResolvedValue({
+      ...mockNotebook,
+      folders: [],
+      pages: [
+        {
+          id: 'page-empty',
+          folderId: null,
+          title: null,
+          content: '<p></p>',
+          sortOrder: 0,
+          createdAt: '2025-01-15T00:00:00Z',
+          updatedAt: '2025-01-15T00:00:00Z',
+        },
+      ],
+    })
+    renderNotebook()
+
+    // The mount persist effect (once userId resolves) writes a null activePageId over the
+    // seeded key, so seed the restored page id AFTER render but BEFORE the fetch runs.
+    window.localStorage.setItem(
+      'notebook:adv-1:user-1',
+      JSON.stringify({ activePageId: 'page-empty', expandedFolders: [] }),
+    )
+    fireEvent.click(screen.getByLabelText('Open notebook'))
+    await screen.findByTestId('notebook-editor')
+
+    expect(screen.getByRole('button', { name: 'Untitled' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Untitled' }))
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Escape' })
+    expect(screen.getByRole('button', { name: 'Untitled' })).toBeInTheDocument()
+  })
 })

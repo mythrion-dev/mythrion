@@ -94,6 +94,168 @@ function deleteAbility(abilities: Ability[], abilityId: string): Ability[] {
 }
 
 
+// ── Module-scope presentational components (extracted to reduce per-function cognitive complexity) ──
+
+function SheetAvatar(props: {
+  readonly avatarUrl: string | null
+  readonly isOwner: boolean
+  readonly readOnly: boolean
+  readonly avatarUploading: boolean
+  readonly onAvatarDelete: () => void
+  readonly onAvatarUpload: (file: File) => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="shrink-0 w-full max-w-[10rem]">
+      {props.avatarUrl ? (
+        <div className="relative group aspect-square w-full">
+          <img src={props.avatarUrl} alt={t('character:avatar')} className="w-full h-full rounded-xl object-cover border border-border" />
+          {props.isOwner && (
+            <button
+              type="button"
+              onClick={props.readOnly ? undefined : props.onAvatarDelete}
+              disabled={props.readOnly}
+              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-danger text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              title={props.readOnly ? t('campaign:readOnlyTooltip') : t('character:removeAvatar')}
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          )}
+        </div>
+      ) : (
+        props.isOwner && (
+          <label className={`aspect-square w-full max-w-[10rem] rounded-xl border-2 border-dashed border-border flex items-center justify-center transition-colors ${props.avatarUploading ? 'opacity-50 pointer-events-none' : ''} ${props.readOnly ? 'cursor-not-allowed' : 'cursor-pointer hover:border-primary/30'}`} title={props.readOnly ? t('campaign:readOnlyTooltip') : undefined}>
+            {props.avatarUploading ? (
+              <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+            ) : (
+              <span className="text-2xl text-muted">+</span>
+            )}
+            <input type="file" accept="image/*" className="hidden" disabled={props.avatarUploading || props.readOnly} onChange={e=>{const f=e.target.files?.[0];if(f)props.onAvatarUpload(f)}}/>
+          </label>
+        )
+      )}
+    </div>
+  )
+}
+
+function SheetInfo(props: {
+  readonly sheet: CharacterSheet
+  readonly isOwner: boolean
+  readonly readOnly: boolean
+  readonly onSaveCharacterName: (name: string) => Promise<void>
+  readonly onSavePlayerName: (name: string) => Promise<void>
+  readonly onSaveLevel: (level: number) => Promise<void>
+}) {
+  const { t } = useTranslation()
+  const s = props.sheet
+  return (
+    <div className="flex-1 min-w-0 flex flex-col justify-between">
+      <div>
+        {props.isOwner ? (
+          <InlineText value={s.characterName} onSave={props.onSaveCharacterName} maxLength={100} className="text-2xl font-bold text-gradient truncate block" disabled={props.readOnly} title={props.readOnly ? t('campaign:readOnlyTooltip') : undefined} />
+        ) : (
+          <h1 className="text-2xl font-bold text-gradient truncate">{s.characterName}</h1>
+        )}
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          {props.isOwner ? (
+            <>
+              <span className="badge badge-gold inline-flex items-center gap-1">{t('character:playerLabel')}<InlineText value={s.playerName ?? ''} onSave={props.onSavePlayerName} maxLength={100} emptyDisplay="—" disabled={props.readOnly} title={props.readOnly ? t('campaign:readOnlyTooltip') : undefined} /></span>
+              <span className="badge badge-gold inline-flex items-center gap-1">{t('character:levelField')}<InlineNumber value={s.level} onSave={props.onSaveLevel} min={1} disabled={props.readOnly} title={props.readOnly ? t('campaign:readOnlyTooltip') : undefined} /></span>
+            </>
+          ) : (
+            <>
+              {s.playerName && <span className="badge badge-gold">{t('character:playerLabel')}{s.playerName}</span>}
+              {s.level && <span className="badge badge-gold">{t('character:levelField')}{s.level}</span>}
+            </>
+          )}
+          {s.adventure && <span className="badge badge-gold">{s.adventure.campaign}</span>}
+          <span className="badge badge-gold">{s.template.name}</span>
+          {s.assignedMember && (
+            <span className="badge badge-gold">
+              {t('campaign:assignedTo', { name: s.assignedMember.user.displayName ?? s.assignedMember.user.email })}
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-muted mt-1.5">
+          {t('character:createdDate', { date: new Date(s.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) })}
+        </p>
+      </div>
+      {s.adventure && (
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-xs text-muted uppercase tracking-wider">{t('character:adventureLabel')}</span>
+          <span className="font-medium">{s.adventure.name}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SheetActions(props: { readonly readOnly: boolean; readonly onRequestDelete: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <div className="flex flex-col gap-3 justify-center shrink-0 sm:min-h-[170px]">
+      <button onClick={props.readOnly ? undefined : props.onRequestDelete} disabled={props.readOnly} title={props.readOnly ? t('campaign:readOnlyTooltip') : undefined} className="btn-danger text-sm px-6 py-2.5 w-full sm:w-auto">
+        <svg className="w-4 h-4 inline mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>{t('common:delete')}
+      </button>
+    </div>
+  )
+}
+
+function SheetHeaderCard(props: {
+  readonly sheet: CharacterSheet
+  readonly isOwner: boolean
+  readonly readOnly: boolean
+  readonly avatarUrl: string | null
+  readonly avatarUploading: boolean
+  readonly onAvatarDelete: () => void
+  readonly onAvatarUpload: (file: File) => void
+  readonly onSaveCharacterName: (name: string) => Promise<void>
+  readonly onSavePlayerName: (name: string) => Promise<void>
+  readonly onSaveLevel: (level: number) => Promise<void>
+  readonly onRequestDelete: () => void
+}) {
+  return (
+    <div className="card !p-6">
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+        <SheetAvatar avatarUrl={props.avatarUrl} isOwner={props.isOwner} readOnly={props.readOnly} avatarUploading={props.avatarUploading} onAvatarDelete={props.onAvatarDelete} onAvatarUpload={props.onAvatarUpload} />
+        <SheetInfo sheet={props.sheet} isOwner={props.isOwner} readOnly={props.readOnly} onSaveCharacterName={props.onSaveCharacterName} onSavePlayerName={props.onSavePlayerName} onSaveLevel={props.onSaveLevel} />
+        {props.isOwner && <SheetActions readOnly={props.readOnly} onRequestDelete={props.onRequestDelete} />}
+      </div>
+    </div>
+  )
+}
+
+function ReadOnlyBanner() {
+  const { t } = useTranslation()
+  return (
+    <output className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+      <div className="flex items-start gap-3">
+        <svg className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-amber-700 dark:text-amber-300">{t('campaign:readOnlyBadge')}</p>
+          <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">{t('campaign:readOnlyBanner')}</p>
+        </div>
+      </div>
+    </output>
+  )
+}
+
+function SheetTabNav(props: { readonly activeTab: string; readonly onTabChange: (tab: string) => void }) {
+  const { t } = useTranslation()
+  const tabClass = (tab: string) => `flex items-center gap-2 px-3 py-2 text-sm sm:px-5 sm:py-3 sm:text-base font-medium transition-colors border-b-2 ${props.activeTab === tab ? 'border-[#c9a84c] text-white' : 'border-transparent text-gray-400 hover:text-white'}`
+  return (
+    <nav className="flex gap-1 flex-wrap border-b border-border/60">
+      <button onClick={() => props.onTabChange('character')} className={tabClass('character')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>{t('character:tabCharacter')}</button>
+      <button onClick={() => props.onTabChange('abilities')} className={tabClass('abilities')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/><path strokeLinecap="round" strokeLinejoin="round" d="M8 2l.5 1.5L10 4l-1.5.5L8 6l-.5-1.5L6 4l1.5-.5L8 2z"/><path strokeLinecap="round" strokeLinejoin="round" d="M16 1l.3 1.2L18 3l-1.7.8L16 5l-.3-1.2L14 3l1.7-.8L16 1z"/></svg>{t('character:tabAbilities')}</button>
+      <button onClick={() => props.onTabChange('inventory')} className={tabClass('inventory')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M6 10a2 2 0 012-2h8a2 2 0 012 2v7a2 2 0 01-2 2H8a2 2 0 01-2-2V10z"/><path d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2"/><rect x="9" y="12" width="6" height="3" rx="1"/><path d="M6 11l-2 1"/><path d="M18 11l2 1"/><path d="M11 6v-1"/><path d="M13 6v-1"/><path d="M10.5 5h3"/></svg>{t('character:tabInventory')}</button>
+      <button onClick={() => props.onTabChange('story')} className={tabClass('story')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>{t('character:tabStory')}</button>
+      <button onClick={() => props.onTabChange('personal-abilities')} className={tabClass('personal-abilities')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>{t('character:tabPersonalAbilities')}</button>
+      <button onClick={() => props.onTabChange('resistances')} className={tabClass('resistances')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3C7 3 4 6 4 9v1c0 2 1.5 3.5 3 4l1 3h8l1-3c1.5-.5 3-2 3-4V9c0-3-3-6-8-6z"/><path strokeLinecap="round" strokeLinejoin="round" d="M8 9h8"/><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6"/><path strokeLinecap="round" strokeLinejoin="round" d="M12 3V1"/></svg>{t('character:tabResistances')}</button>
+    </nav>
+  )
+}
+
+
 export default function CharacterSheetDetailPage() {
   const router = useRouter(); const params = useParams(); const id = params.id as string
   const { user } = useAuth()
@@ -120,17 +282,19 @@ export default function CharacterSheetDetailPage() {
   const [accessState, setAccessState] = useState<'ACTIVE' | 'READ_ONLY' | null>(null)
   const [activeTab, setActiveTab] = useState<string>('character')
   const isOwner = sheet?.ownerId === user?.id || (sheet?.isNpc === true)
+  const isAssignedPlayer = sheet?.assignedMember?.userId === user?.id
+  const canEdit = isOwner || isAssignedPlayer
   const readOnly = accessState === 'READ_ONLY'
   const permissions: SheetPermissions = {
-    canEditCharacter: isOwner && !readOnly,
-    canEditSkills: isOwner && !readOnly,
-    canEditResources: isOwner && !readOnly,
-    canEditInventory: isOwner && !readOnly,
-    canEditStory: isOwner && !readOnly,
-    canEditProfessionalSkills: isOwner && !readOnly,
-    canEditPersonalAbilities: isOwner && !readOnly,
-    canEditResistances: isOwner && !readOnly,
-    canEditAbilities: isOwner && !readOnly,
+    canEditCharacter: canEdit && !readOnly,
+    canEditSkills: canEdit && !readOnly,
+    canEditResources: canEdit && !readOnly,
+    canEditInventory: canEdit && !readOnly,
+    canEditStory: canEdit && !readOnly,
+    canEditProfessionalSkills: canEdit && !readOnly,
+    canEditPersonalAbilities: canEdit && !readOnly,
+    canEditResistances: canEdit && !readOnly,
+    canEditAbilities: canEdit && !readOnly,
   }
 
   const [abilities, setAbilities] = useState<Ability[]>([]); const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]); const [story, setStory] = useState<Story | null>(null)
@@ -648,8 +812,7 @@ export default function CharacterSheetDetailPage() {
   const armorClasses = sheet?.template.armorClasses?.filter(ac => ac.enabled) ?? []
   const modifiersEnabled = sheet.template.attributeModifiersEnabled !== false
   const totalWeight = inventoryItems.reduce((s, i) => s + (i.weight ?? 0), 0)
-  const tabClass = (t: string) => `flex items-center gap-2 px-3 py-2 text-sm sm:px-5 sm:py-3 sm:text-base font-medium transition-colors border-b-2 ${activeTab === t ? 'border-[#c9a84c] text-white' : 'border-transparent text-gray-400 hover:text-white'}`
-  const enabledCoreResources = (sheet.template.coreResources || []).filter(cr => cr.enabled)
+  const enabledCoreResources = (sheet.template.coreResources ?? []).filter(cr => cr.enabled)
 
   return (<div className="w-full">
     <PageNav crumbs={[
@@ -659,105 +822,23 @@ export default function CharacterSheetDetailPage() {
     ]} />
 
     <div className="space-y-6">
-      <div className="card !p-6">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-          {/* Avatar - responsive */}
-          <div className="shrink-0 w-full max-w-[10rem]">
-            {avatarUrl ? (
-              <div className="relative group aspect-square w-full">
-                <img src={avatarUrl} alt={t('character:avatar')} className="w-full h-full rounded-xl object-cover border border-border" />
-                {isOwner && (
-                  <button
-                    type="button"
-                    onClick={readOnly ? undefined : handleAvatarDelete}
-                    disabled={readOnly}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-danger text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    title={readOnly ? t('campaign:readOnlyTooltip') : t('character:removeAvatar')}
-                  >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                  </button>
-                )}
-              </div>
-            ) : (
-              isOwner && (
-                <label className={`aspect-square w-full max-w-[10rem] rounded-xl border-2 border-dashed border-border flex items-center justify-center transition-colors ${avatarUploading ? 'opacity-50 pointer-events-none' : ''} ${readOnly ? 'cursor-not-allowed' : 'cursor-pointer hover:border-primary/30'}`} title={readOnly ? t('campaign:readOnlyTooltip') : undefined}>
-                  {avatarUploading ? (
-                    <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                  ) : (
-                    <span className="text-2xl text-muted">+</span>
-                  )}
-                  <input type="file" accept="image/*" className="hidden" disabled={avatarUploading || readOnly} onChange={e=>{const f=e.target.files?.[0];if(f)handleAvatarUpload(f)}}/>
-                </label>
-              )
-            )}
-          </div>
+      <SheetHeaderCard
+        sheet={sheet}
+        isOwner={isOwner}
+        readOnly={readOnly}
+        avatarUrl={avatarUrl}
+        avatarUploading={avatarUploading}
+        onAvatarDelete={handleAvatarDelete}
+        onAvatarUpload={handleAvatarUpload}
+        onSaveCharacterName={saveCharacterName}
+        onSavePlayerName={savePlayerName}
+        onSaveLevel={saveLevel}
+        onRequestDelete={() => setConfirmDelete(true)}
+      />
 
-          {/* Info - center column */}
-          <div className="flex-1 min-w-0 flex flex-col justify-between">
-            <div>
-              {isOwner ? (
-                <InlineText value={sheet.characterName} onSave={saveCharacterName} maxLength={100} className="text-2xl font-bold text-gradient truncate block" disabled={readOnly} title={readOnly ? t('campaign:readOnlyTooltip') : undefined} />
-              ) : (
-                <h1 className="text-2xl font-bold text-gradient truncate">{sheet.characterName}</h1>
-              )}
-              <div className="flex flex-wrap items-center gap-2 mt-2">
-                {isOwner ? (
-                  <>
-                    <span className="badge badge-gold inline-flex items-center gap-1">{t('character:playerLabel')}<InlineText value={sheet.playerName ?? ''} onSave={savePlayerName} maxLength={100} emptyDisplay="—" disabled={readOnly} title={readOnly ? t('campaign:readOnlyTooltip') : undefined} /></span>
-                    <span className="badge badge-gold inline-flex items-center gap-1">{t('character:levelField')}<InlineNumber value={sheet.level} onSave={saveLevel} min={1} disabled={readOnly} title={readOnly ? t('campaign:readOnlyTooltip') : undefined} /></span>
-                  </>
-                ) : (
-                  <>
-                    {sheet.playerName && <span className="badge badge-gold">{t('character:playerLabel')}{sheet.playerName}</span>}
-                    {sheet.level && <span className="badge badge-gold">{t('character:levelField')}{sheet.level}</span>}
-                  </>
-                )}
-                {sheet.adventure && <span className="badge badge-gold">{sheet.adventure.campaign}</span>}
-                <span className="badge badge-gold">{sheet.template.name}</span>
-              </div>
-              <p className="text-xs text-muted mt-1.5">
-                {t('character:createdDate', { date: new Date(sheet.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) })}
-              </p>
-            </div>
-            {sheet.adventure && (
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-xs text-muted uppercase tracking-wider">{t('character:adventureLabel')}</span>
-                <span className="font-medium">{sheet.adventure.name}</span>
-              </div>
-            )}
-          </div>
+      {readOnly && <ReadOnlyBanner />}
 
-          {/* Actions - delete button vertically centered */}
-          {isOwner && (
-            <div className="flex flex-col gap-3 justify-center shrink-0 sm:min-h-[170px]">
-              <button onClick={readOnly ? undefined : () => setConfirmDelete(true)} disabled={readOnly} title={readOnly ? t('campaign:readOnlyTooltip') : undefined} className="btn-danger text-sm px-6 py-2.5 w-full sm:w-auto">
-                <svg className="w-4 h-4 inline mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>{t('common:delete')}
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {readOnly && (
-        <div role="status" className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-          <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-amber-700 dark:text-amber-300">{t('campaign:readOnlyBadge')}</p>
-              <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">{t('campaign:readOnlyBanner')}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <nav className="flex gap-1 flex-wrap border-b border-border/60">
-        <button onClick={()=>setActiveTab('character')} className={tabClass('character')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>{t('character:tabCharacter')}</button>
-        <button onClick={()=>setActiveTab('abilities')} className={tabClass('abilities')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/><path strokeLinecap="round" strokeLinejoin="round" d="M8 2l.5 1.5L10 4l-1.5.5L8 6l-.5-1.5L6 4l1.5-.5L8 2z"/><path strokeLinecap="round" strokeLinejoin="round" d="M16 1l.3 1.2L18 3l-1.7.8L16 5l-.3-1.2L14 3l1.7-.8L16 1z"/></svg>{t('character:tabAbilities')}</button>
-        <button onClick={()=>setActiveTab('inventory')} className={tabClass('inventory')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M6 10a2 2 0 012-2h8a2 2 0 012 2v7a2 2 0 01-2 2H8a2 2 0 01-2-2V10z"/><path d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2"/><rect x="9" y="12" width="6" height="3" rx="1"/><path d="M6 11l-2 1"/><path d="M18 11l2 1"/><path d="M11 6v-1"/><path d="M13 6v-1"/><path d="M10.5 5h3"/></svg>{t('character:tabInventory')}</button>
-        <button onClick={()=>setActiveTab('story')} className={tabClass('story')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>{t('character:tabStory')}</button>
-        <button onClick={()=>setActiveTab('personal-abilities')} className={tabClass('personal-abilities')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>{t('character:tabPersonalAbilities')}</button>
-        <button onClick={()=>setActiveTab('resistances')} className={tabClass('resistances')}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3C7 3 4 6 4 9v1c0 2 1.5 3.5 3 4l1 3h8l1-3c1.5-.5 3-2 3-4V9c0-3-3-6-8-6z"/><path strokeLinecap="round" strokeLinejoin="round" d="M8 9h8"/><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6"/><path strokeLinecap="round" strokeLinejoin="round" d="M12 3V1"/></svg>{t('character:tabResistances')}</button>
-      </nav>
+      <SheetTabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       {activeTab === 'character' && <CharacterTab
         sheet={sheet}
@@ -835,7 +916,7 @@ export default function CharacterSheetDetailPage() {
       {activeTab === 'story' && <StoryTab story={story} permissions={permissions} onSaveField={saveStoryField} />}
 
       {activeTab === 'personal-abilities' && <PersonalAbilitiesTab
-        sections={sheet.template.characterSections || []}
+        sections={sheet.template.characterSections ?? []}
         entries={sectionEntries}
         permissions={permissions}
         toSingular={toSingular}
@@ -872,7 +953,7 @@ export default function CharacterSheetDetailPage() {
         <PdfViewerSidebar
           adventureId={sheet.adventure.id}
           isGM={isOwner}
-          bookId={selectedBookId || null}
+          bookId={selectedBookId ?? null}
           onClose={() => setSelectedBookId(null)}
         />
       )}
