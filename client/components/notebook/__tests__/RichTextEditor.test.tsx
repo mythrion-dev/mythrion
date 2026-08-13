@@ -1171,3 +1171,100 @@ describe('Heading functionality', () => {
     expect(h1Btn.className).toContain('bg-accent')
   })
 })
+
+// ════════════════════════════════════════════════════════════════
+// Table Operation Toolbar Buttons
+// ════════════════════════════════════════════════════════════════
+
+describe('Table operation toolbar buttons', () => {
+  const mockOnChange = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  async function renderWithTable() {
+    const user = userEvent.setup()
+    const { container } = render(<RichTextEditor content="" onChange={mockOnChange} />)
+    await screen.findByLabelText('Bold')
+    await user.click(screen.getByLabelText('Insert table'))
+    await waitFor(() => {
+      expect(container.querySelector('.ProseMirror table')).not.toBeNull()
+    })
+    return { user, container }
+  }
+
+  const rowCount = (container: HTMLElement) => container.querySelectorAll('.ProseMirror tr').length
+  const thCount = (container: HTMLElement) => container.querySelectorAll('.ProseMirror th').length
+  const tdCount = (container: HTMLElement) => container.querySelectorAll('.ProseMirror td').length
+
+  it('adds a row above via toolbar button', async () => {
+    const { user, container } = await renderWithTable()
+    const before = rowCount(container)
+    await user.click(screen.getByLabelText('Add row above'))
+    await waitFor(() => expect(rowCount(container)).toBe(before + 1))
+  })
+
+  it('adds a row below via toolbar button', async () => {
+    const { user, container } = await renderWithTable()
+    const before = rowCount(container)
+    await user.click(screen.getByLabelText('Add row below'))
+    await waitFor(() => expect(rowCount(container)).toBe(before + 1))
+  })
+
+  it('adds a column before via toolbar button', async () => {
+    const { user, container } = await renderWithTable()
+    const thBefore = thCount(container)
+    const tdBefore = tdCount(container)
+    await user.click(screen.getByLabelText('Add column before'))
+    await waitFor(() => {
+      expect(thCount(container)).toBe(thBefore + 1)
+      expect(tdCount(container)).toBe(tdBefore + 2)
+    })
+  })
+
+  it('adds a column after via toolbar button', async () => {
+    const { user, container } = await renderWithTable()
+    const thBefore = thCount(container)
+    const tdBefore = tdCount(container)
+    await user.click(screen.getByLabelText('Add column after'))
+    await waitFor(() => {
+      expect(thCount(container)).toBe(thBefore + 1)
+      expect(tdCount(container)).toBe(tdBefore + 2)
+    })
+  })
+
+  it('deletes a row via toolbar button', async () => {
+    const { user, container } = await renderWithTable()
+    const before = rowCount(container)
+    await user.click(screen.getByLabelText('Delete row'))
+    await waitFor(() => expect(rowCount(container)).toBe(before - 1))
+  })
+
+  it('deletes a column via toolbar button', async () => {
+    const { user, container } = await renderWithTable()
+    const thBefore = thCount(container)
+    const tdBefore = tdCount(container)
+    await user.click(screen.getByLabelText('Delete column'))
+    await waitFor(() => {
+      expect(thCount(container)).toBe(thBefore - 1)
+      expect(tdCount(container)).toBe(tdBefore - 2)
+    })
+  })
+
+  it('runs merge cells via toolbar button without crashing', async () => {
+    const { user, container } = await renderWithTable()
+    await user.click(screen.getByLabelText('Merge cells'))
+    await waitFor(() => {
+      expect(container.querySelector('.ProseMirror table')).not.toBeNull()
+    })
+  })
+
+  it('runs split cell via toolbar button without crashing', async () => {
+    const { user, container } = await renderWithTable()
+    await user.click(screen.getByLabelText('Split cell'))
+    await waitFor(() => {
+      expect(container.querySelector('.ProseMirror table')).not.toBeNull()
+    })
+  })
+})
