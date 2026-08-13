@@ -211,10 +211,10 @@ function SidebarToggleButton({
   pageCount,
   onToggle,
 }: {
-  isOpen: boolean
-  notebookLoaded: boolean
-  pageCount: number
-  onToggle: () => void
+  readonly isOpen: boolean
+  readonly notebookLoaded: boolean
+  readonly pageCount: number
+  readonly onToggle: () => void
 }) {
   const { t } = useTranslation()
   return (
@@ -242,11 +242,11 @@ function SidebarHeader({
   onMinimize,
   onClose,
 }: {
-  notebookLoaded: boolean
-  activePagePresent: boolean
-  isGM: boolean
-  onMinimize: () => void
-  onClose: () => void
+  readonly notebookLoaded: boolean
+  readonly activePagePresent: boolean
+  readonly isGM: boolean
+  readonly onMinimize: () => void
+  readonly onClose: () => void
 }) {
   const { t } = useTranslation()
   return (
@@ -295,7 +295,7 @@ function NotebookLoadingState() {
   )
 }
 
-function NotebookErrorState({ error, onRetry }: { error: string; onRetry: () => void }) {
+function NotebookErrorState({ error, onRetry }: { readonly error: string; readonly onRetry: () => void }) {
   const { t } = useTranslation()
   return (
     <div className="flex flex-col items-center justify-center h-full gap-3 px-4">
@@ -314,8 +314,8 @@ function NotebookEmptyState({
   readOnly,
   onCreatePage,
 }: {
-  readOnly: boolean
-  onCreatePage: () => void
+  readonly readOnly: boolean
+  readonly onCreatePage: () => void
 }) {
   const { t } = useTranslation()
   return (
@@ -343,9 +343,9 @@ function NotebookSearchBar({
   onChange,
   onClear,
 }: {
-  value: string
-  onChange: (v: string) => void
-  onClear: () => void
+  readonly value: string
+  readonly onChange: (v: string) => void
+  readonly onClear: () => void
 }) {
   const { t } = useTranslation()
   return (
@@ -393,15 +393,15 @@ function NotebookSearchResults({
   onPageDragStart,
   readOnly,
 }: {
-  pages: Page[]
-  folders: Folder[]
-  searchQuery: string
-  onOpenPage: (id: string) => void
-  onDeletePage: (id: string) => void
-  onRequestDeletePage: (id: string) => void
-  onPageContextMenu?: (pageId: string, e: React.MouseEvent) => void
-  onPageDragStart: (pageId: string, e: React.DragEvent) => void
-  readOnly: boolean
+  readonly pages: Page[]
+  readonly folders: Folder[]
+  readonly searchQuery: string
+  readonly onOpenPage: (id: string) => void
+  readonly onDeletePage: (id: string) => void
+  readonly onRequestDeletePage: (id: string) => void
+  readonly onPageContextMenu?: (pageId: string, e: React.MouseEvent) => void
+  readonly onPageDragStart: (pageId: string, e: React.DragEvent) => void
+  readonly readOnly: boolean
 }) {
   const { t } = useTranslation()
   return (
@@ -454,19 +454,19 @@ function NotebookFolderList({
   onDropOnFolder,
   readOnly,
 }: {
-  folders: Folder[]
-  activePageId: string | null
-  expandedFolders: string[]
-  onToggleFolder: (id: string) => void
-  onPageClick: (id: string) => void
-  onDeletePage: (id: string) => void
-  onRequestDeletePage: (id: string) => void
-  onRenameFolder: (id: string, name: string) => void
-  onDeleteFolderRequest: (id: string) => void
-  onCreatePage: (folderId?: string) => void
-  onPageContextMenu: (pageId: string, e: React.MouseEvent) => void
-  onDropOnFolder: (folderId: string, pageId: string) => void
-  readOnly: boolean
+  readonly folders: Folder[]
+  readonly activePageId: string | null
+  readonly expandedFolders: string[]
+  readonly onToggleFolder: (id: string) => void
+  readonly onPageClick: (id: string) => void
+  readonly onDeletePage: (id: string) => void
+  readonly onRequestDeletePage: (id: string) => void
+  readonly onRenameFolder: (id: string, name: string) => void
+  readonly onDeleteFolderRequest: (id: string) => void
+  readonly onCreatePage: (folderId?: string) => void
+  readonly onPageContextMenu: (pageId: string, e: React.MouseEvent) => void
+  readonly onDropOnFolder: (folderId: string, pageId: string) => void
+  readonly readOnly: boolean
 }) {
   return (
     <div>
@@ -510,18 +510,18 @@ function NotebookUncategorizedZone({
   onDragLeaveRoot,
   onDropOnRoot,
 }: {
-  notebook: Notebook
-  activePageId: string | null
-  dragOverRoot: boolean
-  readOnly: boolean
-  onPageContextMenu?: (pageId: string, e: React.MouseEvent) => void
-  onPageClick: (id: string) => void
-  onDeletePage: (id: string) => void
-  onRequestDeletePage: (id: string) => void
-  onPageDragStart: (pageId: string, e: React.DragEvent) => void
-  onDragOverRoot: (e: React.DragEvent) => void
-  onDragLeaveRoot: (e: React.DragEvent) => void
-  onDropOnRoot: (e: React.DragEvent) => void
+  readonly notebook: Notebook
+  readonly activePageId: string | null
+  readonly dragOverRoot: boolean
+  readonly readOnly: boolean
+  readonly onPageContextMenu?: (pageId: string, e: React.MouseEvent) => void
+  readonly onPageClick: (id: string) => void
+  readonly onDeletePage: (id: string) => void
+  readonly onRequestDeletePage: (id: string) => void
+  readonly onPageDragStart: (pageId: string, e: React.DragEvent) => void
+  readonly onDragOverRoot: (e: React.DragEvent) => void
+  readonly onDragLeaveRoot: (e: React.DragEvent) => void
+  readonly onDropOnRoot: (e: React.DragEvent) => void
 }) {
   const { t } = useTranslation()
   const pageContextMenu = readOnly ? undefined : onPageContextMenu
@@ -578,11 +578,11 @@ function NotebookCreateButtons({
   onCreatePage,
   onCreateFolder,
 }: {
-  creatingPage: boolean
-  creatingFolder: boolean
-  readOnly: boolean
-  onCreatePage: () => void
-  onCreateFolder: () => void
+  readonly creatingPage: boolean
+  readonly creatingFolder: boolean
+  readonly readOnly: boolean
+  readonly onCreatePage: () => void
+  readonly onCreateFolder: () => void
 }) {
   const { t } = useTranslation()
   return (
@@ -728,11 +728,11 @@ function TitleInput({
   onCommit,
   onReset,
 }: {
-  value: string
-  currentTitle: string | undefined
-  onChange: (v: string) => void
-  onCommit: (v: string) => void
-  onReset: () => void
+  readonly value: string
+  readonly currentTitle: string | undefined
+  readonly onChange: (v: string) => void
+  readonly onCommit: (v: string) => void
+  readonly onReset: () => void
 }) {
   return (
     <input
@@ -765,10 +765,10 @@ function TitleButton({
   onClick,
   readOnlyTooltip,
 }: {
-  title: string | undefined
-  readOnly: boolean
-  onClick: () => void
-  readOnlyTooltip: string
+  readonly title: string | undefined
+  readonly readOnly: boolean
+  readonly onClick: () => void
+  readonly readOnlyTooltip: string
 }) {
   const { t } = useTranslation()
   return (
@@ -791,9 +791,9 @@ function EditorSaveIndicator({
   saveError,
   savedAt,
 }: {
-  saving: boolean
-  saveError: string | null
-  savedAt?: string
+  readonly saving: boolean
+  readonly saveError: string | null
+  readonly savedAt?: string
 }) {
   const { t } = useTranslation()
   return (
@@ -816,7 +816,7 @@ function EditorSaveIndicator({
   )
 }
 
-function EditorBackButton({ onClick }: { onClick: () => void }) {
+function EditorBackButton({ onClick }: { readonly onClick: () => void }) {
   const { t } = useTranslation()
   return (
     <button
@@ -837,8 +837,8 @@ function EditorDeleteButton({
   readOnly,
   onClick,
 }: {
-  readOnly: boolean
-  onClick?: () => void
+  readonly readOnly: boolean
+  readonly onClick?: () => void
 }) {
   const { t } = useTranslation()
   return (
@@ -875,18 +875,18 @@ function EditorHeader({
   saveError,
   readOnly,
 }: {
-  activePage: Page
-  editingTitle: boolean
-  titleValue: string
-  onTitleValueChange: (v: string) => void
-  onCommitTitle: (v: string) => void
-  onExitEdit: () => void
-  onStartEdit: () => void
-  onDeleteRequest: () => void
-  onBack: () => void
-  saving: boolean
-  saveError: string | null
-  readOnly: boolean
+  readonly activePage: Page
+  readonly editingTitle: boolean
+  readonly titleValue: string
+  readonly onTitleValueChange: (v: string) => void
+  readonly onCommitTitle: (v: string) => void
+  readonly onExitEdit: () => void
+  readonly onStartEdit: () => void
+  readonly onDeleteRequest: () => void
+  readonly onBack: () => void
+  readonly saving: boolean
+  readonly saveError: string | null
+  readonly readOnly: boolean
 }) {
   const { t } = useTranslation()
   return (
@@ -931,19 +931,19 @@ function NotebookEditorBody({
   saveError,
   onContentChange,
 }: {
-  activePage: Page
-  readOnly: boolean
-  onBack: () => void
-  onStartEdit: () => void
-  onExitEdit: () => void
-  onDeleteRequest: () => void
-  editingTitle: boolean
-  titleValue: string
-  onTitleValueChange: (v: string) => void
-  onCommitTitle: (v: string) => void
-  saving: boolean
-  saveError: string | null
-  onContentChange: (html: string) => void
+  readonly activePage: Page
+  readonly readOnly: boolean
+  readonly onBack: () => void
+  readonly onStartEdit: () => void
+  readonly onExitEdit: () => void
+  readonly onDeleteRequest: () => void
+  readonly editingTitle: boolean
+  readonly titleValue: string
+  readonly onTitleValueChange: (v: string) => void
+  readonly onCommitTitle: (v: string) => void
+  readonly saving: boolean
+  readonly saveError: string | null
+  readonly onContentChange: (html: string) => void
 }) {
   const { t } = useTranslation()
   return (
@@ -982,12 +982,12 @@ function NotebookContextMenu({
   onClose,
   menuRef,
 }: {
-  contextMenu: ContextMenuState
-  notebook: Notebook | null
-  onMoveToRoot: () => void
-  onMoveToFolder: (folderId: string) => void
-  onClose: () => void
-  menuRef: React.RefObject<HTMLDivElement | null>
+  readonly contextMenu: ContextMenuState
+  readonly notebook: Notebook | null
+  readonly onMoveToRoot: () => void
+  readonly onMoveToFolder: (folderId: string) => void
+  readonly onClose: () => void
+  readonly menuRef: React.RefObject<HTMLDivElement | null>
 }) {
   const { t } = useTranslation()
   const contextPageFolderId = notebook
@@ -1055,9 +1055,9 @@ function PageDeleteDialog({
   onCancel,
   onConfirm,
 }: {
-  readOnly: boolean
-  onCancel: () => void
-  onConfirm: () => void
+  readonly readOnly: boolean
+  readonly onCancel: () => void
+  readonly onConfirm: () => void
 }) {
   const { t } = useTranslation()
   return (
@@ -1107,13 +1107,13 @@ function FolderDeleteDialog({
   onMoveToFolderIdChange,
   dialogRef,
 }: {
-  folderDeleteDialog: FolderDeleteDialogState
-  notebook: Notebook | null
-  readOnly: boolean
-  onCancel: () => void
-  onConfirm: () => void
-  onMoveToFolderIdChange: (moveToFolderId: string | null) => void
-  dialogRef: React.RefObject<HTMLDivElement | null>
+  readonly folderDeleteDialog: FolderDeleteDialogState
+  readonly notebook: Notebook | null
+  readonly readOnly: boolean
+  readonly onCancel: () => void
+  readonly onConfirm: () => void
+  readonly onMoveToFolderIdChange: (moveToFolderId: string | null) => void
+  readonly dialogRef: React.RefObject<HTMLDivElement | null>
 }) {
   const { t } = useTranslation()
   const otherFolders = notebook?.folders.filter((f) => f.id !== folderDeleteDialog.folderId) ?? []

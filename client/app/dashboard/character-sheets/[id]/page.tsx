@@ -97,12 +97,12 @@ function deleteAbility(abilities: Ability[], abilityId: string): Ability[] {
 // ── Module-scope presentational components (extracted to reduce per-function cognitive complexity) ──
 
 function SheetAvatar(props: {
-  avatarUrl: string | null
-  isOwner: boolean
-  readOnly: boolean
-  avatarUploading: boolean
-  onAvatarDelete: () => void
-  onAvatarUpload: (file: File) => void
+  readonly avatarUrl: string | null
+  readonly isOwner: boolean
+  readonly readOnly: boolean
+  readonly avatarUploading: boolean
+  readonly onAvatarDelete: () => void
+  readonly onAvatarUpload: (file: File) => void
 }) {
   const { t } = useTranslation()
   return (
@@ -139,12 +139,12 @@ function SheetAvatar(props: {
 }
 
 function SheetInfo(props: {
-  sheet: CharacterSheet
-  isOwner: boolean
-  readOnly: boolean
-  onSaveCharacterName: (name: string) => Promise<void>
-  onSavePlayerName: (name: string) => Promise<void>
-  onSaveLevel: (level: number) => Promise<void>
+  readonly sheet: CharacterSheet
+  readonly isOwner: boolean
+  readonly readOnly: boolean
+  readonly onSaveCharacterName: (name: string) => Promise<void>
+  readonly onSavePlayerName: (name: string) => Promise<void>
+  readonly onSaveLevel: (level: number) => Promise<void>
 }) {
   const { t } = useTranslation()
   const s = props.sheet
@@ -190,7 +190,7 @@ function SheetInfo(props: {
   )
 }
 
-function SheetActions(props: { readOnly: boolean; onRequestDelete: () => void }) {
+function SheetActions(props: { readonly readOnly: boolean; readonly onRequestDelete: () => void }) {
   const { t } = useTranslation()
   return (
     <div className="flex flex-col gap-3 justify-center shrink-0 sm:min-h-[170px]">
@@ -202,17 +202,17 @@ function SheetActions(props: { readOnly: boolean; onRequestDelete: () => void })
 }
 
 function SheetHeaderCard(props: {
-  sheet: CharacterSheet
-  isOwner: boolean
-  readOnly: boolean
-  avatarUrl: string | null
-  avatarUploading: boolean
-  onAvatarDelete: () => void
-  onAvatarUpload: (file: File) => void
-  onSaveCharacterName: (name: string) => Promise<void>
-  onSavePlayerName: (name: string) => Promise<void>
-  onSaveLevel: (level: number) => Promise<void>
-  onRequestDelete: () => void
+  readonly sheet: CharacterSheet
+  readonly isOwner: boolean
+  readonly readOnly: boolean
+  readonly avatarUrl: string | null
+  readonly avatarUploading: boolean
+  readonly onAvatarDelete: () => void
+  readonly onAvatarUpload: (file: File) => void
+  readonly onSaveCharacterName: (name: string) => Promise<void>
+  readonly onSavePlayerName: (name: string) => Promise<void>
+  readonly onSaveLevel: (level: number) => Promise<void>
+  readonly onRequestDelete: () => void
 }) {
   return (
     <div className="card !p-6">
@@ -240,7 +240,7 @@ function ReadOnlyBanner() {
   )
 }
 
-function SheetTabNav(props: { activeTab: string; onTabChange: (tab: string) => void }) {
+function SheetTabNav(props: { readonly activeTab: string; readonly onTabChange: (tab: string) => void }) {
   const { t } = useTranslation()
   const tabClass = (tab: string) => `flex items-center gap-2 px-3 py-2 text-sm sm:px-5 sm:py-3 sm:text-base font-medium transition-colors border-b-2 ${props.activeTab === tab ? 'border-[#c9a84c] text-white' : 'border-transparent text-gray-400 hover:text-white'}`
   return (
