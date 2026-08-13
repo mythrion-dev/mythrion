@@ -1715,13 +1715,14 @@ export class CharacterSheetService {
     }
   }
 
-  /** GM access gate for NPC sheets: write requires the campaign writable, read does not. */
-  private async requireGmRole(adventureId: string, userId: string, write: boolean) {
-    if (write) {
-      await this.membership.requireWriteRole(adventureId, userId, 'GM')
-    } else {
-      await this.membership.requireRole(adventureId, userId, 'GM')
-    }
+  /** GM read gate for NPC sheets: reads only require the GM role. */
+  private async requireGmReadRole(adventureId: string, userId: string) {
+    await this.membership.requireRole(adventureId, userId, 'GM')
+  }
+
+  /** GM write gate for NPC sheets: writes also require the campaign writable. */
+  private async requireGmWriteRole(adventureId: string, userId: string) {
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
   }
 
   private async requireOwnership(sheetId: string, userId: string, write = true) {
@@ -1747,7 +1748,11 @@ export class CharacterSheetService {
     // Only allow GM bypass for NPC sheets; player sheets are owner-only
     if (sheet.isNpc && sheet.adventureId) {
       try {
-        await this.requireGmRole(sheet.adventureId, userId, write)
+        if (write) {
+          await this.requireGmWriteRole(sheet.adventureId, userId)
+        } else {
+          await this.requireGmReadRole(sheet.adventureId, userId)
+        }
         return
       } catch {
         throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))

@@ -14,7 +14,7 @@ function avatarUrl(npcId: string) {
   return `${API_URL}/images/character-sheets/${npcId}/avatar`
 }
 
-function filterNpcs(npcs: NpcSheet[], filter: 'all' | 'NPC' | 'MOB', search: string): NpcSheet[] {
+function filterNpcs(npcs: NpcSheet[], filter: NpcFilter, search: string): NpcSheet[] {
   const byType = npcs.filter(n => {
     if (filter === 'NPC' && n.npcType === 'NPC') return true
     if (filter === 'MOB' && n.npcType === 'MOB') return true
@@ -44,6 +44,8 @@ interface NpcSheet {
   createdAt: string
   template: { id: string; name: string } | null
 }
+
+type NpcFilter = 'all' | 'NPC' | 'MOB'
 
 /* ── Props ── */
 
@@ -115,9 +117,9 @@ function SidebarHeader({ onClose }: { readonly onClose: () => void }) {
 }
 
 function FilterPills({ filter, npcs, onFilterChange }: {
-  readonly filter: 'all' | 'NPC' | 'MOB'
+  readonly filter: NpcFilter
   readonly npcs: NpcSheet[]
-  readonly onFilterChange: (f: 'all' | 'NPC' | 'MOB') => void
+  readonly onFilterChange: (f: NpcFilter) => void
 }) {
   const { t } = useTranslation()
   return (
@@ -234,13 +236,14 @@ function CreatureActions({ npc, readOnly, deleting, onEdit, onSelect, onDelete }
   readonly onDelete: (id: string) => void
 }) {
   const { t } = useTranslation()
+  const roClass = readOnly ? 'opacity-50 cursor-not-allowed' : ''
   return (
     <div className="flex gap-1 shrink-0">
       {/* Edit inline drawer */}
       <button
-        onClick={readOnly ? undefined : () => onEdit(npc.id)}
+        onClick={() => onEdit(npc.id)}
         disabled={readOnly}
-        className={`p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all ${readOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all ${roClass}`}
         aria-label={t('campaign:editCreature', { name: npc.characterName })}
         title={readOnly ? t('campaign:readOnlyTooltip') : t('campaign:editInline')}
       >
@@ -261,12 +264,12 @@ function CreatureActions({ npc, readOnly, deleting, onEdit, onSelect, onDelete }
       </button>
       {/* Delete */}
       <button
-        onClick={readOnly ? undefined : e => {
+        onClick={(e) => {
           e.stopPropagation()
           onDelete(npc.id)
         }}
         disabled={deleting === npc.id || readOnly}
-        className={`p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all shrink-0 ${readOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all shrink-0 ${roClass}`}
         aria-label={t('campaign:deleteCreature', { name: npc.characterName })}
         title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
       >
@@ -346,8 +349,8 @@ function CreatureListMode({ npcs, filtered, loading, search, readOnly, creating,
   readonly readOnly?: boolean
   readonly creating: string | null
   readonly deleting: string | null
-  readonly filter: 'all' | 'NPC' | 'MOB'
-  readonly onFilterChange: (f: 'all' | 'NPC' | 'MOB') => void
+  readonly filter: NpcFilter
+  readonly onFilterChange: (f: NpcFilter) => void
   readonly onSearchChange: (v: string) => void
   readonly onCreate: (type: 'NPC' | 'MOB') => void
   readonly onSelect: (id: string) => void
@@ -460,7 +463,7 @@ export function CampaignCreatureSidebar({
   const [npcs, setNpcs] = useState<NpcSheet[]>([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<'all' | 'NPC' | 'MOB'>('all')
+  const [filter, setFilter] = useState<NpcFilter>('all')
   const [creating, setCreating] = useState<string | null>(null) // 'NPC' | 'MOB' | null
   const [deleting, setDeleting] = useState<string | null>(null)
   const [editingNpcId, setEditingNpcId] = useState<string | null>(null)
