@@ -1,9 +1,9 @@
 'use client'
 
+import { useState, type Dispatch, type SetStateAction, type SubmitEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { InlineClickEdit } from '@/components/character-sheet'
 import type { TemplateCharacterSection, SectionEntry, SheetPermissions } from './types'
-import type { SubmitEvent } from 'react'
 
 interface PersonalAbilitiesTabProps {
   readonly sections: TemplateCharacterSection[]
@@ -11,13 +11,13 @@ interface PersonalAbilitiesTabProps {
   readonly permissions: SheetPermissions
   readonly toSingular: (name: string) => string
   readonly expandedEntries: Record<string, boolean>
-  readonly setExpandedEntries: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+  readonly setExpandedEntries: Dispatch<SetStateAction<Record<string, boolean>>>
   readonly handleUpdateEntry: (entryId: string, field: 'name' | 'description', value: string) => Promise<void>
   readonly handleDeleteEntry: (entryId: string) => Promise<void>
   readonly showNewEntry: string | null
-  readonly setShowNewEntry: React.Dispatch<React.SetStateAction<string | null>>
+  readonly setShowNewEntry: Dispatch<SetStateAction<string | null>>
   readonly newEntryForm: { name: string; description: string }
-  readonly setNewEntryForm: React.Dispatch<React.SetStateAction<{ name: string; description: string }>>
+  readonly setNewEntryForm: Dispatch<SetStateAction<{ name: string; description: string }>>
   readonly handleCreateEntry: (sectionId: string, e: SubmitEvent) => Promise<void>
   readonly saving: boolean
   readonly resetForm: () => void
@@ -33,7 +33,11 @@ export function PersonalAbilitiesTab({
 }: Readonly<PersonalAbilitiesTabProps>) {
   const { t } = useTranslation()
   const canEditPersonalAbilities = permissions.canEditPersonalAbilities
+  const [pendingDeleteEntryId, setPendingDeleteEntryId] = useState<string | null>(null)
+  const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null)
   const toggleEntry = (entryId: string) => setExpandedEntries(prev => ({ ...prev, [entryId]: !prev[entryId] }))
+  const pendingDeleteEntry = pendingDeleteEntryId ? entries.find(entry => entry.id === pendingDeleteEntryId) ?? null : null
+
   if (sections.length === 0) {
     return (
       <div className="card !p-6 animate-slide-up">
@@ -49,6 +53,53 @@ export function PersonalAbilitiesTab({
   }
 
   return (
+    <>
+      {pendingDeleteEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="card !p-6 max-w-md w-full mx-4 space-y-4 border-danger/20 relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center">
+                <svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="font-semibold text-foreground">{t('common:delete')}</h2>
+                <p className="text-sm text-muted-foreground">{t('campaign:actionCannotBeUndone')}</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">{t('character:deleteConfirm', { name: pendingDeleteEntry.name })}</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setPendingDeleteEntryId(null)} className="btn-ghost text-sm">
+                {t('common:cancel')}
+              </button>
+              <button
+                onClick={async () => {
+                  setDeletingEntryId(pendingDeleteEntry.id)
+                  await handleDeleteEntry(pendingDeleteEntry.id)
+                  setDeletingEntryId(null)
+                  setPendingDeleteEntryId(null)
+                }}
+                disabled={deletingEntryId === pendingDeleteEntry.id}
+                className="btn-danger-solid text-sm"
+              >
+                {deletingEntryId === pendingDeleteEntry.id ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    {t('campaign:deleting')}
+                  </span>
+                ) : (
+                  t('character:deleteForever')
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     <div className="space-y-6 animate-slide-up">
       {sections.map(section => {
         const sectionEntries = entries.filter(e => e.sectionId === section.id)
@@ -143,7 +194,7 @@ export function PersonalAbilitiesTab({
                         {canEditPersonalAbilities && (
                           <button
                             type="button"
-                            onClick={e => { e.stopPropagation(); handleDeleteEntry(entry.id) }}
+                            onClick={e => { e.stopPropagation(); setPendingDeleteEntryId(entry.id) }}
                             className="text-muted hover:text-danger p-1 transition-colors shrink-0"
                             title={t('character:deleteEntryTitle')}
                           >
@@ -232,5 +283,6 @@ export function PersonalAbilitiesTab({
         )
       })}
     </div>
+    </>
   )
 }

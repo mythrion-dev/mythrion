@@ -320,11 +320,9 @@ describe('ResistanceTab', () => {
 
   // ---------- Delete resistance ----------
 
-  it('deletes resistance after confirmation', async () => {
+  it('opens the custom delete confirmation and deletes resistance after confirmation', async () => {
     const onDeleteResistance = vi.fn().mockResolvedValue(undefined)
     const user = userEvent.setup()
-    const originalConfirm = window.confirm
-    window.confirm = vi.fn(() => true)
 
     render(
       <ResistanceTab
@@ -334,17 +332,15 @@ describe('ResistanceTab', () => {
     )
 
     await user.click(screen.getByTitle('Delete resistance'))
-    expect(window.confirm).toHaveBeenCalledWith('Delete this resistance? This cannot be undone.')
-    expect(onDeleteResistance).toHaveBeenCalledWith('r1')
+    expect(screen.getByText('Delete this resistance? This cannot be undone.')).toBeInTheDocument()
 
-    window.confirm = originalConfirm
+    await user.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(onDeleteResistance).toHaveBeenCalledWith('r1')
   })
 
-  it('does NOT delete when confirm returns false', async () => {
+  it('does NOT delete when the custom confirmation is cancelled', async () => {
     const onDeleteResistance = vi.fn().mockResolvedValue(undefined)
     const user = userEvent.setup()
-    const originalConfirm = window.confirm
-    window.confirm = vi.fn(() => false)
 
     render(
       <ResistanceTab
@@ -354,9 +350,8 @@ describe('ResistanceTab', () => {
     )
 
     await user.click(screen.getByTitle('Delete resistance'))
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(onDeleteResistance).not.toHaveBeenCalled()
-
-    window.confirm = originalConfirm
   })
 
   it('does not render delete button when onDeleteResistance is undefined', () => {

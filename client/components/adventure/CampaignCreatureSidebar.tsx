@@ -466,6 +466,7 @@ export function CampaignCreatureSidebar({
   const [filter, setFilter] = useState<NpcFilter>('all')
   const [creating, setCreating] = useState<string | null>(null) // 'NPC' | 'MOB' | null
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [pendingDeleteNpcId, setPendingDeleteNpcId] = useState<string | null>(null)
   const [editingNpcId, setEditingNpcId] = useState<string | null>(null)
 
   /* ── Fetch NPCs ── */
@@ -510,6 +511,7 @@ export function CampaignCreatureSidebar({
     setDeleting(npcId)
     try {
       await api.delete(`/adventures/${adventureId}/npcs/${npcId}`)
+      setPendingDeleteNpcId(null)
       await fetchNpcs()
       onCreaturesChange?.()
     } catch {
@@ -553,6 +555,8 @@ export function CampaignCreatureSidebar({
   /* ── Filter & search ── */
   const filtered = filterNpcs(npcs, filter, search)
 
+  const pendingDeleteNpc = pendingDeleteNpcId ? npcs.find(npc => npc.id === pendingDeleteNpcId) ?? null : null
+
   /* ── Render ── */
   if (!isGM) return null
 
@@ -580,6 +584,43 @@ export function CampaignCreatureSidebar({
           tabIndex={-1}
           aria-hidden="true"
         />
+      )}
+
+      {pendingDeleteNpc && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="card !p-6 max-w-md w-full mx-4 space-y-4 border-danger/20 relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-danger-muted flex items-center justify-center">
+                <svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="font-semibold text-foreground">{t('common:delete')}</h2>
+                <p className="text-sm text-muted-foreground">{t('campaign:actionCannotBeUndone')}</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">{t('campaign:deleteConfirm', { name: pendingDeleteNpc.characterName })}</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setPendingDeleteNpcId(null)} disabled={deleting === pendingDeleteNpc.id} className="btn-ghost text-sm">
+                {t('common:cancel')}
+              </button>
+              <button onClick={() => handleDelete(pendingDeleteNpc.id)} disabled={deleting === pendingDeleteNpc.id} className="btn-danger-solid text-sm">
+                {deleting === pendingDeleteNpc.id ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    {t('campaign:deleting')}
+                  </span>
+                ) : (
+                  t('campaign:deleteForever')
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Sidebar panel — wider in edit mode */}
@@ -610,7 +651,7 @@ export function CampaignCreatureSidebar({
             onCreate={handleCreate}
             onSelect={handleSelect}
             onEdit={setEditingNpcId}
-            onDelete={handleDelete}
+            onDelete={setPendingDeleteNpcId}
             onAvatarUpload={handleAvatarUpload}
             onClose={() => setIsOpen(false)}
           />

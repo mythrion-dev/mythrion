@@ -1404,7 +1404,7 @@ describe('CampaignCreatureSidebar', () => {
       mockApi.get.mockResolvedValue(createMockNpcList())
     })
 
-    it('calls api.delete when delete button is clicked', async () => {
+    it('opens delete confirmation and calls api.delete only after confirm', async () => {
       mockApi.delete.mockResolvedValue({})
 
       render(<CampaignCreatureSidebar {...defaultSidebarProps} />)
@@ -1417,6 +1417,14 @@ describe('CampaignCreatureSidebar', () => {
 
       await act(async () => {
         fireEvent.click(screen.getByLabelText(/Delete Goblin King/))
+      })
+
+      expect(screen.getByText(/Are you sure you want to delete/i)).toBeInTheDocument()
+      expect(screen.getAllByText(/Goblin King/i).length).toBeGreaterThan(0)
+      expect(mockApi.delete).not.toHaveBeenCalled()
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Delete forever/i }))
       })
 
       expect(mockApi.delete).toHaveBeenCalledWith('/adventures/adv-1/npcs/npc-1')
@@ -1438,10 +1446,13 @@ describe('CampaignCreatureSidebar', () => {
 
       fireEvent.click(screen.getByLabelText(/Delete Goblin King/))
 
-      // The delete button should show spinner
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Delete forever/i }))
+      })
+
       await waitFor(() => {
-        const deleteBtn = screen.getByLabelText(/Delete Goblin King/)
-        const svg = deleteBtn.querySelector('svg.animate-spin')
+        const confirmBtn = screen.getByRole('button', { name: /Deleting/i })
+        const svg = confirmBtn.querySelector('svg.animate-spin')
         expect(svg).toBeInTheDocument()
       })
 

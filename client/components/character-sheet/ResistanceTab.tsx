@@ -79,6 +79,7 @@ export function ResistanceTab({
   const [showNewForm, setShowNewForm] = useState(false)
   const [draft, setDraft] = useState<NewResistanceDraft>(emptyDraft)
   const [saving, setSaving] = useState(false)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const prevCount = useRef(0)
 
   // Auto-expand newly added resistances
@@ -112,10 +113,17 @@ export function ResistanceTab({
 
   async function handleDelete(resistanceId: string) {
     if (!onDeleteResistance) return
-    if (!confirm(t('character:deleteResistanceConfirm'))) return
+    setDeleteConfirmId(resistanceId)
+  }
+
+  async function handleConfirmDelete() {
+    if (!onDeleteResistance || !deleteConfirmId) return
     try {
-      await onDeleteResistance(resistanceId)
-    } catch {}
+      await onDeleteResistance(deleteConfirmId)
+      setDeleteConfirmId(null)
+    } catch {
+      setDeleteConfirmId(null)
+    }
   }
 
   // ── Draft editing helpers ──
@@ -296,6 +304,44 @@ export function ResistanceTab({
           </div>
         )
       })}
+
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
+          <div className="absolute inset-0 bg-black/50" aria-hidden="true" />
+          <div className="relative z-10 w-full max-w-sm rounded-xl border border-border bg-surface p-5 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-danger-muted text-danger">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">{t('character:deleteResistanceTitle')}</h3>
+                <p className="text-xs text-muted-foreground">{t('campaign:actionCannotBeUndone')}</p>
+              </div>
+            </div>
+
+            <p className="mb-4 text-sm text-muted-foreground">{t('character:deleteResistanceConfirm')}</p>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmId(null)}
+                className="btn-ghost text-xs px-3 py-1.5"
+              >
+                {t('common:cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="btn-danger-solid text-xs px-3 py-1.5"
+              >
+                {t('common:delete')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Resistance Form */}
       {canEditResistances && onCreateResistance && (
