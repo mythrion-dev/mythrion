@@ -23,3 +23,33 @@ Anyone who plays tabletop RPGs online and is tired of stitching together five di
 ## Status
 
 Currently in early development.
+
+## Desenvolvimento local
+
+Backend (NestJS) e frontend (Next.js) rodam na sua máquina, mas o banco de dados, o Redis e o Mongo continuam sendo os serviços do ambiente **dev** no Railway — nada muda no fluxo de deploy (push → Railway + Vercel).
+
+### Pré-requisitos
+
+- Node.js >= 22.12.0
+- Connection strings **públicas** do ambiente dev do Railway (aba *Data/Connect* no dashboard do projeto). URLs `*.railway.internal` **não** funcionam fora da rede do Railway.
+
+### Configuração
+
+1. **Servidor** — em `server/.env` (arquivo gitignored, nunca vai pro deploy):
+   - `DATABASE_URL` — connection string pública do Postgres do ambiente **dev**
+   - `MONGO_URL` — connection string pública do Mongo (armazenamento de imagens)
+   - `REDIS_URL` — connection string pública do Redis (rate limiting + cache)
+2. **Frontend** — em `client/.env.local` (gitignored), o valor local já está pronto:
+   - `NEXT_PUBLIC_API_URL=http://localhost:3001/api`
+
+### Rodando
+
+```bash
+npm install          # raiz (orquestrador) — ou `npm run setup` para instalar tudo
+npm run dev          # sobe backend (porta 3001) e frontend (porta 3000) juntos
+# ou separado: npm run dev:server / npm run dev:client
+```
+
+### E quando subir pra produção?
+
+Nada muda: `git push` continua deployando igual hoje (Railway para o `server/`, Vercel para o `client/`). Os arquivos `.env` locais são gitignored e não afetam os deploys.

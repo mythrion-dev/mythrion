@@ -38,7 +38,9 @@ import { TwoFactorService } from './two-factor.service.js'
     JwtAuthGuard,
     PrismaService,
     GoogleService,
-    GoogleStrategy,
+    // OAuth2Strategy throws when GOOGLE_CLIENT_ID is empty. Only register the
+    // strategy when credentials exist so the app boots locally without them.
+    ...(process.env.GOOGLE_CLIENT_ID ? [GoogleStrategy] : []),
     GoogleAuthGuard,
     TokenService,
     RateLimitGuard,
