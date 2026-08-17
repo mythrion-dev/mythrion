@@ -664,5 +664,6 @@ export function ProfessionalSkillsSection({
         </p>
       )}
     </div>
+    </>
   )
 }
