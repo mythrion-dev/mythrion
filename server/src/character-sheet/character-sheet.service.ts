@@ -796,13 +796,11 @@ export class CharacterSheetService {
       if (sheet.adventureId) {
         await this.membership.requireWriteAccess(sheet.adventureId, userId)
       }
+    } else if (sheet.isNpc && sheet.adventureId) {
+      try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
+      catch { throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission')) }
     } else {
-      if (sheet.isNpc && sheet.adventureId) {
-        try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
-        catch { throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission')) }
-      } else {
-        throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
-      }
+      throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
     }
     const deleted = await this.prisma.characterSheet.delete({ where: { id } })
 
@@ -833,13 +831,11 @@ export class CharacterSheetService {
       if (sheet.adventureId) {
         await this.membership.requireWriteAccess(sheet.adventureId, userId)
       }
+    } else if (sheet.isNpc && sheet.adventureId) {
+      try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
+      catch { throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission')) }
     } else {
-      if (sheet.isNpc && sheet.adventureId) {
-        try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
-        catch { throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission')) }
-      } else {
-        throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
-      }
+      throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
     }
     const unlinked = await this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId: null, assignedMemberId: null }, include: sheetInclude })
 
@@ -875,7 +871,7 @@ export class CharacterSheetService {
     const target = await this.prisma.campaignMember.findUnique({
       where: { id: memberId },
     })
-    if (!target || target.adventureId !== sheet.adventureId) {
+    if (target?.adventureId !== sheet.adventureId) {
       throw new ForbiddenException(this.i18n.t('character-sheet.assigneeNotInCampaign'))
     }
     if (target.role === 'GM') {
@@ -1705,14 +1701,36 @@ export class CharacterSheetService {
     }
   }
 
+  /**
+   * Owner / assigned-player writes respect the campaign read-only state, but
+   * plain reads are always allowed. Called for both branches in requireOwnership.
+   */
+  private async requireWriteAccessIfLinked(
+    adventureId: string | null,
+    userId: string,
+    write: boolean,
+  ) {
+    if (write && adventureId) {
+      await this.membership.requireWriteAccess(adventureId, userId)
+    }
+  }
+
+  /** GM read gate for NPC sheets: reads only require the GM role. */
+  private async requireGmReadRole(adventureId: string, userId: string) {
+    await this.membership.requireRole(adventureId, userId, 'GM')
+  }
+
+  /** GM write gate for NPC sheets: writes also require the campaign writable. */
+  private async requireGmWriteRole(adventureId: string, userId: string) {
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
+  }
+
   private async requireOwnership(sheetId: string, userId: string, write = true) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
     if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
     if (sheet.ownerId === userId) {
       // Owner always retains read access; writes respect campaign read-only state when linked
-      if (write && sheet.adventureId) {
-        await this.membership.requireWriteAccess(sheet.adventureId, userId)
-      }
+      await this.requireWriteAccessIfLinked(sheet.adventureId, userId, write)
       return
     }
     // The assigned player can read and edit the sheet; writes respect the
@@ -1723,9 +1741,7 @@ export class CharacterSheetService {
         select: { userId: true },
       })
       if (assigned?.userId === userId) {
-        if (write && sheet.adventureId) {
-          await this.membership.requireWriteAccess(sheet.adventureId, userId)
-        }
+        await this.requireWriteAccessIfLinked(sheet.adventureId, userId, write)
         return
       }
     }
@@ -1733,9 +1749,9 @@ export class CharacterSheetService {
     if (sheet.isNpc && sheet.adventureId) {
       try {
         if (write) {
-          await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM')
+          await this.requireGmWriteRole(sheet.adventureId, userId)
         } else {
-          await this.membership.requireRole(sheet.adventureId, userId, 'GM')
+          await this.requireGmReadRole(sheet.adventureId, userId)
         }
         return
       } catch {

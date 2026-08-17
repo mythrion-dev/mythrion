@@ -248,7 +248,7 @@ export class MembershipService {
     const target = await this.prisma.campaignMember.findUnique({
       where: { adventureId_userId: { adventureId, userId: newGmId } },
     })
-    if (!target || target.role !== 'PLAYER') {
+    if (target?.role !== 'PLAYER') {
       throw new ForbiddenException(
         this.i18n.t('community.transferTargetNotPlayer'),
       )

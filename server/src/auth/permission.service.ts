@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common'
 import { AdminService } from './admin.service.js'
-import { SubscriptionService } from '../subscription/subscription.service.js'
+import {
+  SubscriptionService,
+  type MySubscriptionResult,
+} from '../subscription/subscription.service.js'
 import { parsePlanLimits } from '../subscription/plan-limits.js'
 import { PrismaService } from '../prisma.service.js'
 
@@ -46,7 +49,14 @@ export class PermissionService {
   async getPermissions(userId: string, email: string): Promise<PermissionResult> {
     const isAdmin = this.adminService.isAdmin(email)
     const isEarlyAccess = this.adminService.isEarlyAccess(email)
-    const role: UserRole = isAdmin ? 'admin' : isEarlyAccess ? 'early_access' : 'user'
+    let role: UserRole
+    if (isAdmin) {
+      role = 'admin'
+    } else if (isEarlyAccess) {
+      role = 'early_access'
+    } else {
+      role = 'user'
+    }
 
     // Single entitlement read: plan/status/expiresAt and the active boolean
     // all come from the same getMySubscription result so they can never
@@ -56,9 +66,7 @@ export class PermissionService {
 
     const plan = sub?.plan ?? null
     const status = sub?.status ?? null
-    const expiresAt = this.toIso(
-      sub ? (sub.status === 'GRACE' ? sub.graceEndsAt : sub.currentPeriodEnd) : null,
-    )
+    const expiresAt = this.toIso(this.expiryOf(sub))
 
     return {
       role,
@@ -85,6 +93,12 @@ export class PermissionService {
       maxCampaigns: parsed?.maxCampaigns ?? null,
       maxTemplates: parsed?.maxTemplates ?? null,
     }
+  }
+
+  /** Expiry relevant to the current period: grace end during GRACE, else period end. */
+  private expiryOf(sub: MySubscriptionResult | null): Date | null {
+    if (!sub) return null
+    return sub.status === 'GRACE' ? sub.graceEndsAt : sub.currentPeriodEnd
   }
 
   /** Coerce a Date or ISO string (Redis round-trip) to an ISO string, or null. */

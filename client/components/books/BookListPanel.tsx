@@ -43,6 +43,302 @@ function formatDate(iso: string): string {
   })
 }
 
+/* ── Book info (rename / metadata) ── */
+
+interface BookInfoSectionProps {
+  readonly book: Book
+  readonly isRenaming: boolean
+  readonly renameValue: string
+  readonly onRenameChange: (value: string) => void
+  readonly onSaveRename: () => void
+  readonly onCancelRename: () => void
+}
+
+function BookInfoSection({
+  book,
+  isRenaming,
+  renameValue,
+  onRenameChange,
+  onSaveRename,
+  onCancelRename,
+}: Readonly<BookInfoSectionProps>) {
+  const { t } = useTranslation()
+
+  return (
+    <div className="flex-1 min-w-0">
+      {isRenaming ? (
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={renameValue}
+            onChange={e => onRenameChange(e.target.value)}
+            className="flex-1 px-2 py-1 rounded border border-border bg-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+            autoFocus
+            onKeyDown={e => {
+              if (e.key === 'Enter') onSaveRename()
+              if (e.key === 'Escape') onCancelRename()
+            }}
+          />
+          <button
+            onClick={onSaveRename}
+            className="p-1 rounded text-accent hover:bg-accent/10 transition-colors"
+            title={t('common:save')}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
+          <button
+            onClick={onCancelRename}
+            className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
+            title={t('common:cancel')}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-foreground truncate">
+              {book.name}
+            </span>
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${
+              book.visibility === 'GM_BOOK'
+                ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20'
+                : 'bg-green-500/10 text-green-500 border border-green-500/20'
+            }`}>
+              {book.visibility === 'GM_BOOK' ? t('books:gmBadge') : t('books:playerBadge')}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {formatFileSize(book.fileLength)} · {formatDate(book.createdAt)}
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
+/* ── Book delete button / confirmation ── */
+
+interface BookDeleteButtonProps {
+  readonly readOnly?: boolean
+  readonly isDeleting: boolean
+  readonly deleting: boolean
+  readonly bookName: string
+  readonly onStartDelete: () => void
+  readonly onConfirmDelete: () => void
+  readonly onCancelDelete: () => void
+}
+
+function BookDeleteButton({
+  readOnly,
+  isDeleting,
+  deleting,
+  bookName,
+  onStartDelete,
+  onConfirmDelete,
+  onCancelDelete,
+}: Readonly<BookDeleteButtonProps>) {
+  const { t } = useTranslation()
+
+  return isDeleting ? (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={onConfirmDelete}
+        disabled={deleting}
+        className="p-1.5 rounded-md text-red-500 hover:bg-red-500/10 transition-all text-xs font-medium"
+      >
+        {deleting ? (
+          <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        ) : (
+          t('common:confirm')
+        )}
+      </button>
+      <button
+        onClick={onCancelDelete}
+        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-all text-xs"
+      >
+        {t('common:cancel')}
+      </button>
+    </div>
+  ) : (
+    <button
+      onClick={readOnly ? undefined : onStartDelete}
+      disabled={readOnly}
+      className={`p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all ${readOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+      aria-label={t('books:deleteBook', { name: bookName })}
+      title={readOnly ? t('campaign:readOnlyTooltip') : t('common:delete')}
+    >
+      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+    </button>
+  )
+}
+
+/* ── GM-only actions (rename / replace / delete) ── */
+
+interface BookGmActionsProps {
+  readonly book: Book
+  readonly readOnly?: boolean
+  readonly isDeleting: boolean
+  readonly isReplacing: boolean
+  readonly deleting: boolean
+  readonly onStartRename: () => void
+  readonly onStartReplace: (file: File) => void
+  readonly onStartDelete: () => void
+  readonly onConfirmDelete: () => void
+  readonly onCancelDelete: () => void
+}
+
+function BookGmActions({
+  book,
+  readOnly,
+  isDeleting,
+  isReplacing,
+  deleting,
+  onStartRename,
+  onStartReplace,
+  onStartDelete,
+  onConfirmDelete,
+  onCancelDelete,
+}: Readonly<BookGmActionsProps>) {
+  const { t } = useTranslation()
+
+  return (
+    <>
+      {/* Rename */}
+      <button
+        onClick={readOnly ? undefined : onStartRename}
+        disabled={readOnly}
+        className={`p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all ${readOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+        aria-label={t('books:renameBook', { name: book.name })}
+        title={readOnly ? t('campaign:readOnlyTooltip') : t('common:rename')}
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      </button>
+
+      {/* Replace file */}
+      <label
+        className={`p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all cursor-pointer ${
+          isReplacing || readOnly ? 'opacity-50 pointer-events-none' : ''
+        }`}
+        aria-disabled={readOnly || undefined}
+        title={readOnly ? t('campaign:readOnlyTooltip') : t('books:replaceFileTooltip')}
+      >
+        {isReplacing ? (
+          <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        ) : (
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+        )}
+        <input
+          type="file"
+          accept=".pdf,application/pdf"
+          className="hidden"
+          disabled={isReplacing || readOnly}
+          onChange={e => {
+            const f = e.target.files?.[0]
+            if (f) {
+              onStartReplace(f)
+            }
+            e.target.value = ''
+          }}
+        />
+      </label>
+
+      {/* Delete */}
+      <BookDeleteButton
+        readOnly={readOnly}
+        isDeleting={isDeleting}
+        deleting={deleting}
+        bookName={book.name}
+        onStartDelete={onStartDelete}
+        onConfirmDelete={onConfirmDelete}
+        onCancelDelete={onCancelDelete}
+      />
+    </>
+  )
+}
+
+/* ── Book actions (view + GM actions) ── */
+
+interface BookActionsProps {
+  readonly book: Book
+  readonly isGM: boolean
+  readonly readOnly?: boolean
+  readonly isDeleting: boolean
+  readonly isReplacing: boolean
+  readonly deleting: boolean
+  readonly onSelectBook: (bookId: string) => void
+  readonly onStartRename: () => void
+  readonly onStartReplace: (file: File) => void
+  readonly onStartDelete: () => void
+  readonly onConfirmDelete: () => void
+  readonly onCancelDelete: () => void
+}
+
+function BookActions({
+  book,
+  isGM,
+  readOnly,
+  isDeleting,
+  isReplacing,
+  deleting,
+  onSelectBook,
+  onStartRename,
+  onStartReplace,
+  onStartDelete,
+  onConfirmDelete,
+  onCancelDelete,
+}: Readonly<BookActionsProps>) {
+  const { t } = useTranslation()
+
+  return (
+    <div className="flex items-center gap-1 shrink-0">
+      {/* View / Open */}
+      <button
+        onClick={() => onSelectBook(book.id)}
+        className="p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all"
+        aria-label={t('books:viewBook', { name: book.name })}
+        title={t('books:viewBookTooltip')}
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      </button>
+
+      {isGM && (
+        <BookGmActions
+          book={book}
+          readOnly={readOnly}
+          isDeleting={isDeleting}
+          isReplacing={isReplacing}
+          deleting={deleting}
+          onStartRename={onStartRename}
+          onStartReplace={onStartReplace}
+          onStartDelete={onStartDelete}
+          onConfirmDelete={onConfirmDelete}
+          onCancelDelete={onCancelDelete}
+        />
+      )}
+    </div>
+  )
+}
+
 /* ── Component ── */
 
 export function BookListPanel({ adventureId, isGM, readOnly, onSelectBook }: Readonly<BookListPanelProps>) {
@@ -305,167 +601,36 @@ export function BookListPanel({ adventureId, isGM, readOnly, onSelectBook }: Rea
                 </div>
 
                 {/* Book info */}
-                <div className="flex-1 min-w-0">
-                  {isRenaming ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={renameValue}
-                        onChange={e => setRenameValue(e.target.value)}
-                        className="flex-1 px-2 py-1 rounded border border-border bg-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                        autoFocus
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') handleRename(book.id)
-                          if (e.key === 'Escape') setRenamingId(null)
-                        }}
-                      />
-                      <button
-                        onClick={() => handleRename(book.id)}
-                        className="p-1 rounded text-accent hover:bg-accent/10 transition-colors"
-                        title={t('common:save')}
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => setRenamingId(null)}
-                        className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-hover transition-colors"
-                        title={t('common:cancel')}
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-foreground truncate">
-                          {book.name}
-                        </span>
-                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${
-                          book.visibility === 'GM_BOOK'
-                            ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20'
-                            : 'bg-green-500/10 text-green-500 border border-green-500/20'
-                        }`}>
-                          {book.visibility === 'GM_BOOK' ? t('books:gmBadge') : t('books:playerBadge')}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {formatFileSize(book.fileLength)} · {formatDate(book.createdAt)}
-                      </p>
-                    </>
-                  )}
-                </div>
+                <BookInfoSection
+                  book={book}
+                  isRenaming={isRenaming}
+                  renameValue={renameValue}
+                  onRenameChange={setRenameValue}
+                  onSaveRename={() => handleRename(book.id)}
+                  onCancelRename={() => setRenamingId(null)}
+                />
 
                 {/* Actions */}
-                <div className="flex items-center gap-1 shrink-0">
-                  {/* View / Open */}
-                  <button
-                    onClick={() => onSelectBook(book.id)}
-                    className="p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all"
-                    aria-label={t('books:viewBook', { name: book.name })}
-                    title={t('books:viewBookTooltip')}
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  </button>
-
-                  {isGM && (
-                    <>
-                      {/* Rename */}
-                      <button
-                        onClick={readOnly ? undefined : () => {
-                          setRenamingId(book.id)
-                          setRenameValue(book.name)
-                        }}
-                        disabled={readOnly}
-                        className={`p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all ${readOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        aria-label={t('books:renameBook', { name: book.name })}
-                        title={readOnly ? t('campaign:readOnlyTooltip') : t('common:rename')}
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-
-                      {/* Replace file */}
-                      <label
-                        className={`p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all cursor-pointer ${
-                          isReplacing || readOnly ? 'opacity-50 pointer-events-none' : ''
-                        }`}
-                        aria-disabled={readOnly || undefined}
-                        title={readOnly ? t('campaign:readOnlyTooltip') : t('books:replaceFileTooltip')}
-                      >
-                        {isReplacing ? (
-                          <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                        ) : (
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                          </svg>
-                        )}
-                        <input
-                          type="file"
-                          accept=".pdf,application/pdf"
-                          className="hidden"
-                          disabled={isReplacing || readOnly}
-                          onChange={e => {
-                            const f = e.target.files?.[0]
-                            if (f) {
-                              setReplacingId(book.id)
-                              handleReplace(book.id, f)
-                            }
-                            e.target.value = ''
-                          }}
-                        />
-                      </label>
-
-                      {/* Delete */}
-                      {isDeleting ? (
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleDelete(book.id)}
-                            disabled={deleting}
-                            className="p-1.5 rounded-md text-red-500 hover:bg-red-500/10 transition-all text-xs font-medium"
-                          >
-                            {deleting ? (
-                              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                              </svg>
-                            ) : (
-                              t('common:confirm')
-                            )}
-                          </button>
-                          <button
-                            onClick={() => setDeleteId(null)}
-                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-hover transition-all text-xs"
-                          >
-                            {t('common:cancel')}
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={readOnly ? undefined : () => setDeleteId(book.id)}
-                          disabled={readOnly}
-                          className={`p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all ${readOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          aria-label={t('books:deleteBook', { name: book.name })}
-                          title={readOnly ? t('campaign:readOnlyTooltip') : t('common:delete')}
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
+                <BookActions
+                  book={book}
+                  isGM={isGM}
+                  readOnly={readOnly}
+                  isDeleting={isDeleting}
+                  isReplacing={isReplacing}
+                  deleting={deleting}
+                  onSelectBook={onSelectBook}
+                  onStartRename={() => {
+                    setRenamingId(book.id)
+                    setRenameValue(book.name)
+                  }}
+                  onStartReplace={file => {
+                    setReplacingId(book.id)
+                    handleReplace(book.id, file)
+                  }}
+                  onStartDelete={() => setDeleteId(book.id)}
+                  onConfirmDelete={() => handleDelete(book.id)}
+                  onCancelDelete={() => setDeleteId(null)}
+                />
               </div>
             )
           })}

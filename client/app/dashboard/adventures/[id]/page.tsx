@@ -648,13 +648,72 @@ export default function AdventureDetailPage() {
   }
   async function handleDelete() { setDeleteError(null); setDeleting(true); try { await api.delete(`/adventures/${id}`); router.push('/dashboard') } catch (err) { setDeleteError(err instanceof Error ? err.message : t('campaign:failedToDelete')); setDeleting(false); setConfirmDelete(false) } }
   async function handleLeave() { setLeaveError(null); setLeaving(true); try { await api.post(`/adventures/${id}/leave`); router.push('/dashboard') } catch (err) { setLeaveError(err instanceof Error ? err.message : t('campaign:failedToLeave')); setLeaving(false) } }
-  async function handleTransferGm() { if (!transferTargetId) return; setTransferError(null); setTransferring(true); try { await api.post(`/adventures/${id}/transfer-gm`, { newGmId: transferTargetId }); setTransferring(false); setShowTransfer(false); setTransferTargetId(''); fetchMembers(); resolveRole(); fetchAccessState() } catch (err) { setTransferError(err instanceof Error ? err.message : t('campaign:failedToTransfer')); setTransferring(false) } }
+  async function handleTransferGm() {
+    if (!transferTargetId) return
+    setTransferError(null)
+    setTransferring(true)
+    try {
+      await api.post(`/adventures/${id}/transfer-gm`, { newGmId: transferTargetId })
+      setTransferring(false)
+      setShowTransfer(false)
+      setTransferTargetId('')
+      fetchMembers()
+      resolveRole()
+      fetchAccessState()
+    } catch (err) {
+      setTransferError(err instanceof Error ? err.message : t('campaign:failedToTransfer'))
+      setTransferring(false)
+    }
+  }
   async function handleInviteByEmail(e: SubmitEvent) { e.preventDefault(); setInviteError(null); setInviteSending(true); try { await api.post(`/adventures/${id}/invitations/email`, { email: inviteEmail.trim() }); setInviteEmail(''); fetchInvitations() } catch (err) { setInviteError(err instanceof Error ? err.message : t('campaign:failedToSendInvitation')) } finally { setInviteSending(false) } }
   async function handleInviteByLink() { setInviteError(null); setInviteSending(true); try { const r = await api.post<{ inviteUrl: string }>(`/adventures/${id}/invitations/link`); setInviteLink(r.inviteUrl); fetchInvitations() } catch (err) { setInviteError(err instanceof Error ? err.message : t('campaign:failedToCreateLink')) } finally { setInviteSending(false) } }
   async function handleRevokeInvitation(invId: string) { try { await api.post(`/invitations/${invId}/revoke`); fetchInvitations() } catch { } }
   async function handleRemoveMember(uid: string) { try { await api.delete(`/adventures/${id}/members/${uid}`); fetchMembers() } catch { } }
-  async function handleAssignCharacter() { if (!assignSheet || !assignMemberId) return; setAssignError(null); setAssigning(true); try { await api.post(`/character-sheets/${assignSheet.id}/assign`, { memberId: assignMemberId }); setAssigning(false); setAssignSheet(null); setAssignMemberId(''); fetchCampaignCharacters() } catch (err) { setAssignError(err instanceof Error ? err.message : t('campaign:failedToAssign')); setAssigning(false) } }
-  async function handleRemoveAssignment() { if (!removeAssignmentSheet) return; setRemoveAssignmentError(null); setRemovingAssignment(true); try { await api.delete(`/character-sheets/${removeAssignmentSheet.id}/assign`); setRemovingAssignment(false); setRemoveAssignmentSheet(null); fetchCampaignCharacters() } catch (err) { setRemoveAssignmentError(err instanceof Error ? err.message : t('campaign:failedToRemoveAssignment')); setRemovingAssignment(false) } }
+  async function handleAssignCharacter() {
+    if (!assignSheet || !assignMemberId) return
+    setAssignError(null)
+    setAssigning(true)
+    try {
+      await api.post(`/character-sheets/${assignSheet.id}/assign`, { memberId: assignMemberId })
+      setAssigning(false)
+      setAssignSheet(null)
+      setAssignMemberId('')
+      fetchCampaignCharacters()
+    } catch (err) {
+      setAssignError(err instanceof Error ? err.message : t('campaign:failedToAssign'))
+      setAssigning(false)
+    }
+  }
+  async function handleRemoveAssignment() {
+    if (!removeAssignmentSheet) return
+    setRemoveAssignmentError(null)
+    setRemovingAssignment(true)
+    try {
+      await api.delete(`/character-sheets/${removeAssignmentSheet.id}/assign`)
+      setRemovingAssignment(false)
+      setRemoveAssignmentSheet(null)
+      fetchCampaignCharacters()
+    } catch (err) {
+      setRemoveAssignmentError(err instanceof Error ? err.message : t('campaign:failedToRemoveAssignment'))
+      setRemovingAssignment(false)
+    }
+  }
+
+  function openAssignModal(charId: string) {
+    const c = campaignCharacters.find(ch => ch.id === charId)
+    if (!c) return
+    setAssignMemberId(c.assignedMember?.id ?? '')
+    setAssignError(null)
+    setAssignSheet(c)
+    fetchMembers()
+  }
+
+  function openRemoveAssignmentModal(charId: string) {
+    const c = campaignCharacters.find(ch => ch.id === charId)
+    if (!c) return
+    setRemoveAssignmentError(null)
+    setRemoveAssignmentSheet(c)
+  }
 
   async function handleVisibilityToggle() {
     setVisibilityLoading(true)
@@ -692,7 +751,7 @@ export default function AdventureDetailPage() {
       <PageNav crumbs={[{ label: t('common:dashboard'), href: '/dashboard' }, { label: adventure.name }]} />
       <AdventureHeader adventure={adventure} isGM={isGM} userRole={userRole} readOnly={readOnly} onEdit={() => setEditing(true)} onDelete={() => setConfirmDelete(true)} />
       {readOnly && (
-        <div role="status" className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+        <output className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
           <div className="flex items-start gap-3">
             <svg className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
             <div className="flex-1">
@@ -700,7 +759,7 @@ export default function AdventureDetailPage() {
               <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">{t('campaign:readOnlyBanner')}</p>
             </div>
           </div>
-        </div>
+        </output>
       )}
       {!editing ? (<div className="space-y-6 mt-8">
         <div className="flex items-center justify-between gap-4">
@@ -735,7 +794,7 @@ export default function AdventureDetailPage() {
             <InvitePanel inviteEmail={inviteEmail} inviteLink={inviteLink} inviteError={inviteError} inviteSending={inviteSending} invitations={invitations} disabled={readOnly} onEmailChange={setInviteEmail} onInviteByEmail={handleInviteByEmail} onInviteByLink={handleInviteByLink} onRevoke={handleRevokeInvitation} />
           </CollapsibleSection>}
           <CollapsibleSection title={t('campaign:characters')} accent expanded={showCharacters} onToggle={() => { setShowCharacters(!showCharacters); if (!showCharacters) { fetchCampaignCharacters(); fetchUserSheets() } }}>
-            <CharactersSection characters={campaignCharacters} isGM={isGM} readOnly={readOnly} userId={user?.id ?? ''} snapshotName={snapshotData?.snapshot?.name ?? templates[0]?.name ?? null} userSheets={userSheets} players={members} showNewCharForm={showNewCharForm} showLinkCharForm={showLinkCharForm} newCharName={newCharName} newCharError={newCharError} newCharCreating={newCharCreating} linkSheetId={linkSheetId} linkCharError={linkCharError} linkCharLinking={linkCharLinking} onNewCharClick={() => { setShowNewCharForm(true); setShowLinkCharForm(false) }} onLinkCharClick={() => { setShowLinkCharForm(true); setShowNewCharForm(false); fetchUserSheets() }} onCancelNewChar={() => { setShowNewCharForm(false); setNewCharName(''); setNewCharError(null) }} onCancelLinkChar={() => { setShowLinkCharForm(false); setLinkSheetId(''); setLinkCharError(null) }} onCreateCharacter={handleCreateCharacter} onLinkCharacter={handleLinkCharacter} onNewCharNameChange={setNewCharName} onLinkSheetChange={setLinkSheetId} onRemoveCharacter={handleRemoveCharacter} onViewCharacter={sid => router.push(`/dashboard/character-sheets/${sid}`)} onAssign={id => { const c = campaignCharacters.find(ch => ch.id === id); if (!c) return; setAssignMemberId(c.assignedMember?.id ?? ''); setAssignError(null); setAssignSheet(c); fetchMembers() }} onRemoveAssignment={id => { const c = campaignCharacters.find(ch => ch.id === id); if (!c) return; setRemoveAssignmentError(null); setRemoveAssignmentSheet(c) }} />
+            <CharactersSection characters={campaignCharacters} isGM={isGM} readOnly={readOnly} userId={user?.id ?? ''} snapshotName={snapshotData?.snapshot?.name ?? templates[0]?.name ?? null} userSheets={userSheets} players={members} showNewCharForm={showNewCharForm} showLinkCharForm={showLinkCharForm} newCharName={newCharName} newCharError={newCharError} newCharCreating={newCharCreating} linkSheetId={linkSheetId} linkCharError={linkCharError} linkCharLinking={linkCharLinking} onNewCharClick={() => { setShowNewCharForm(true); setShowLinkCharForm(false) }} onLinkCharClick={() => { setShowLinkCharForm(true); setShowNewCharForm(false); fetchUserSheets() }} onCancelNewChar={() => { setShowNewCharForm(false); setNewCharName(''); setNewCharError(null) }} onCancelLinkChar={() => { setShowLinkCharForm(false); setLinkSheetId(''); setLinkCharError(null) }} onCreateCharacter={handleCreateCharacter} onLinkCharacter={handleLinkCharacter} onNewCharNameChange={setNewCharName} onLinkSheetChange={setLinkSheetId} onRemoveCharacter={handleRemoveCharacter} onViewCharacter={sid => router.push(`/dashboard/character-sheets/${sid}`)} onAssign={openAssignModal} onRemoveAssignment={openRemoveAssignmentModal} />
           </CollapsibleSection>
           {isGM && (
             <>
