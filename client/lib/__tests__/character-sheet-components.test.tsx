@@ -213,6 +213,27 @@ describe('ProfessionalSkillsSection', () => {
     expect(screen.getByText('Delete')).toBeInTheDocument()
   })
 
+  it('opens delete confirmation before deleting a skill', async () => {
+    const skills = [makeSkill({ id: 'sk-1', name: 'Blacksmith' })]
+    mockGet.mockResolvedValue(skills)
+    mockDelete.mockResolvedValue({})
+
+    render(<ProfessionalSkillsSection {...defaultProps} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Blacksmith')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('Delete'))
+
+    expect(screen.getByText(/Delete Blacksmith\?/i)).toBeInTheDocument()
+    expect(mockDelete).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: /Delete forever/i }))
+
+    expect(mockDelete).toHaveBeenCalledWith('/character-sheets/sheet-1/professional-skills/sk-1')
+  })
+
   it('hides Edit and Delete buttons when canEditProfessionalSkills is false', async () => {
     const skills = [makeSkill()]
     mockGet.mockResolvedValue(skills)
