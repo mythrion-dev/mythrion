@@ -157,11 +157,16 @@ describe('PersonalAbilitiesTab', () => {
     expect(setShowNewEntry).toHaveBeenCalledWith('sec-1')
   })
 
-  it('handles delete entry click', () => {
-    const handleDeleteEntry = vi.fn()
+  it('opens delete confirmation before deleting an entry', async () => {
+    const handleDeleteEntry = vi.fn().mockResolvedValue(undefined)
     render(<PersonalAbilitiesTab {...defaultProps({ handleDeleteEntry })} />)
     const deleteBtn = screen.getByTitle('Delete entry')
     fireEvent.click(deleteBtn)
+
+    expect(screen.getByText(/Are you sure you want to delete "Darkvision"\?/i)).toBeInTheDocument()
+    expect(handleDeleteEntry).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: /Delete forever/i }))
     expect(handleDeleteEntry).toHaveBeenCalledWith('entry-1')
   })
 

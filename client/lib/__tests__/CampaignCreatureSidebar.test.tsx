@@ -243,7 +243,7 @@ describe('CampaignCreatureSidebar', () => {
     await waitFor(() => expect(onChange).toHaveBeenCalled())
   })
 
-  it('deletes a creature and notifies the parent', async () => {
+  it('deletes a creature only after confirming, then notifies the parent', async () => {
     mockApi.get.mockResolvedValue([makeNpc()])
     mockApi.delete.mockResolvedValue({})
     const onChange = vi.fn()
@@ -257,9 +257,14 @@ describe('CampaignCreatureSidebar', () => {
     await openSidebar()
     await screen.findByText('Goblin King')
 
+    // Clicking the trash icon opens a confirmation modal instead of deleting immediately
     await userEvent.click(
       screen.getByRole('button', { name: 'Delete Goblin King' }),
     )
+    const confirmButton = screen.getByRole('button', { name: 'Delete forever' })
+    expect(mockApi.delete).not.toHaveBeenCalled()
+
+    await userEvent.click(confirmButton)
 
     await waitFor(() =>
       expect(mockApi.delete).toHaveBeenCalledWith('/adventures/adv-1/npcs/npc-1'),
