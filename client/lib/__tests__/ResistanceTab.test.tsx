@@ -933,6 +933,7 @@ describe('InventoryTab', () => {
     )
 
     await user.click(screen.getAllByTitle('Delete item')[0])
+    await user.click(screen.getByRole('button', { name: /Delete forever/i }))
     expect(handleDeleteItem).toHaveBeenCalledWith('i1')
   })
 })
@@ -1095,6 +1096,7 @@ describe('PersonalAbilitiesTab', () => {
     )
 
     await user.click(screen.getAllByTitle('Delete entry')[0])
+    await user.click(screen.getByRole('button', { name: /Delete forever/i }))
     expect(handleDeleteEntry).toHaveBeenCalledWith('e1')
   })
 

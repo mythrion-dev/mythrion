@@ -171,8 +171,7 @@ describe('InventoryTab', () => {
     const deleteBtn = screen.getByTitle('Delete item')
     fireEvent.click(deleteBtn)
 
-    expect(screen.getByText(/Long Sword/i)).toBeInTheDocument()
-    expect(screen.getByText(/Are you sure you want to delete/i)).toBeInTheDocument()
+    expect(screen.getByText(/Are you sure you want to delete "Long Sword"\?/i)).toBeInTheDocument()
     expect(handleDeleteItem).not.toHaveBeenCalled()
 
     fireEvent.click(screen.getByRole('button', { name: /Delete forever/i }))

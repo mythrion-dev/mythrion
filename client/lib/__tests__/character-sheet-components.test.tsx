@@ -226,7 +226,7 @@ describe('ProfessionalSkillsSection', () => {
 
     fireEvent.click(screen.getByText('Delete'))
 
-    expect(screen.getByText(/Delete Blacksmith\?/i)).toBeInTheDocument()
+    expect(screen.getByText(/Are you sure you want to delete "Blacksmith"\?/i)).toBeInTheDocument()
     expect(mockDelete).not.toHaveBeenCalled()
 
     fireEvent.click(screen.getByRole('button', { name: /Delete forever/i }))
@@ -550,6 +550,7 @@ describe('ProfessionalSkillsSection', () => {
       expect(screen.getByText('Delete')).toBeInTheDocument()
     })
     await userEvent.click(screen.getByText('Delete'))
+    await userEvent.click(screen.getByRole('button', { name: /Delete forever/i }))
 
     expect(mockDelete).toHaveBeenCalledWith('/character-sheets/sheet-1/professional-skills/sk-1')
     await waitFor(() => {
@@ -566,6 +567,7 @@ describe('ProfessionalSkillsSection', () => {
       expect(screen.getByText('Delete')).toBeInTheDocument()
     })
     await userEvent.click(screen.getByText('Delete'))
+    await userEvent.click(screen.getByRole('button', { name: /Delete forever/i }))
     // Skill still visible
     await waitFor(() => {
       expect(screen.getByText('Blacksmith')).toBeInTheDocument()
@@ -819,6 +821,7 @@ describe('ProfessionalSkillsSection', () => {
       expect(screen.getByText('Delete')).toBeInTheDocument()
     })
     await userEvent.click(screen.getByText('Delete'))
+    await userEvent.click(screen.getByRole('button', { name: /Delete forever/i }))
 
     await waitFor(() => {
       expect(onLocalSkillsChange).toHaveBeenCalledWith([])

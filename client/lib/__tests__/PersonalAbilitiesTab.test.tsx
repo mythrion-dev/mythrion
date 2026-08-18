@@ -163,8 +163,7 @@ describe('PersonalAbilitiesTab', () => {
     const deleteBtn = screen.getByTitle('Delete entry')
     fireEvent.click(deleteBtn)
 
-    expect(screen.getByText(/Darkvision/i)).toBeInTheDocument()
-    expect(screen.getByText(/Are you sure you want to delete/i)).toBeInTheDocument()
+    expect(screen.getByText(/Are you sure you want to delete "Darkvision"\?/i)).toBeInTheDocument()
     expect(handleDeleteEntry).not.toHaveBeenCalled()
 
     fireEvent.click(screen.getByRole('button', { name: /Delete forever/i }))

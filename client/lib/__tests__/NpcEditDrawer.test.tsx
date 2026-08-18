@@ -1477,6 +1477,10 @@ describe('CampaignCreatureSidebar', () => {
         fireEvent.click(screen.getByLabelText(/Delete Goblin King/))
       })
 
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Delete forever/i }))
+      })
+
       expect(onCreaturesChange).toHaveBeenCalled()
     })
   })
