@@ -299,4 +299,4 @@ jobs:
 
           git commit -m "fix: resolve SonarQube issues with AI"
 
-          git push origin HEAD:QA
+          git push origin HEAD:qa
