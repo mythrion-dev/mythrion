@@ -36,12 +36,27 @@ jobs:
             --prompt "Reply with exactly: QWEN_OPENROUTER_OK" \
             --output-format text
 
-      - name: Get SonarQube issues
+      - name: Test SonarQube API
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          curl -s \
+          echo "Sonar URL: ${SONAR_HOST_URL}"
+
+          HTTP_CODE=$(curl -sS \
+            -o sonar-response.txt \
+            -w "%{http_code}" \
             -u "${SONAR_TOKEN}:" \
-            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&resolved=false" \
-            | jq .
+            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&resolved=false")
+
+          echo "HTTP Status: ${HTTP_CODE}"
+
+          echo "===== RESPONSE ====="
+          cat sonar-response.txt
+          echo
+          echo "===================="
+
+          if [ "${HTTP_CODE}" -ge 400 ]; then
+            echo "SonarQube API request failed"
+            exit 1
+          fi    
