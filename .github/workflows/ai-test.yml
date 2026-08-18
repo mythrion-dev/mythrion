@@ -35,3 +35,13 @@ jobs:
           qwen \
             --prompt "Reply with exactly: QWEN_OPENROUTER_OK" \
             --output-format text
+
+      - name: Get SonarQube issues
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          curl -s \
+            -u "${SONAR_TOKEN}:" \
+            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&resolved=false" \
+            | jq .
