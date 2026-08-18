@@ -19,7 +19,7 @@ jobs:
       - name: Checkout QA
         uses: actions/checkout@v4
         with:
-          ref: QA
+          ref: qa
           fetch-depth: 0
 
       # ============================================================
