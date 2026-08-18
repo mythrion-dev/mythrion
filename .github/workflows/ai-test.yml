@@ -24,24 +24,21 @@ jobs:
           npm install -g @qwen-code/qwen-code@latest
           qwen --version
 
-      - name: Test Qwen + OpenRouter
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          OPENAI_BASE_URL: https://openrouter.ai/api/v1
-          OPENAI_MODEL: openrouter/free
-        run: |
-          set -x
+      # - name: Test Qwen + OpenRouter
+      #   env:
+      #     OPENAI_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      #     OPENAI_BASE_URL: https://openrouter.ai/api/v1
+      #     OPENAI_MODEL: openrouter/free
+      #   run: |
+      #     set -x
 
-          qwen \
-            --prompt "Reply with exactly: QWEN_OPENROUTER_OK" \
-            --output-format text
+      #     qwen \
+      #       --prompt "Reply with exactly: QWEN_OPENROUTER_OK" \
+      #       --output-format text
 
-      - name: Test SonarQube API
+      - name: Test SONAR_HOST_URL
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
-          curl -sS \
-            -H "Authorization: Bearer ${SONAR_TOKEN}" \
-            -H "Accept: application/json" \
-            -w "\nHTTP_STATUS=%{http_code}\n" \
-            "${SONAR_HOST_URL}/api/system/status"
+          echo "SONAR_HOST_URL length: ${#SONAR_HOST_URL}"
+          echo "SONAR_HOST_URL value: [${SONAR_HOST_URL}]"
