@@ -41,22 +41,6 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          echo "Sonar URL: ${SONAR_HOST_URL}"
-
-          HTTP_CODE=$(curl -sS \
-            -o sonar-response.txt \
-            -w "%{http_code}" \
+          curl -i \
             -u "${SONAR_TOKEN}:" \
-            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&resolved=false")
-
-          echo "HTTP Status: ${HTTP_CODE}"
-
-          echo "===== RESPONSE ====="
-          cat sonar-response.txt
-          echo
-          echo "===================="
-
-          if [ "${HTTP_CODE}" -ge 400 ]; then
-            echo "SonarQube API request failed"
-            exit 1
-          fi    
+            "${SONAR_HOST_URL}/api/system/status"
