@@ -1,3 +1,19 @@
+name: AI Agent Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ai-test:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Qwen Code
         uses: QwenLM/qwen-code-action@v1
         with:
