@@ -1,0 +1,43 @@
+name: AI Agent Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ai-test:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Qwen Code
+        uses: QwenLM/qwen-code-action@v1
+        with:
+          prompt: |
+            You are testing an AI coding agent integration.
+
+            IMPORTANT:
+            - Do NOT modify any files.
+            - Do NOT create, delete, or rename files.
+            - Do NOT execute commands that modify the repository.
+            - Only analyze the repository and return a report.
+
+            Analyze this repository and report:
+
+            1. Frontend framework and version
+            2. Backend framework and version
+            3. Testing frameworks
+            4. Main project directories
+            5. Node.js version requirements
+            6. How the project currently runs SonarQube
+            7. Any relevant information about the project's architecture
+
+            Return a concise technical summary.
+
+          openai_api_key: ${{ secrets.OPENROUTER_API_KEY }}
+          openai_base_url: https://openrouter.ai/api/v1
+          openai_model: openai/gpt-oss-120b:free
