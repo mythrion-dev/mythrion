@@ -23,6 +23,26 @@ jobs:
           ref: qa
 
       # ============================================================
+      # SHOW GIT INFORMATION
+      # ============================================================
+      - name: Show Git information
+        run: |
+          echo "===== BRANCH ====="
+          git branch --show-current
+
+          echo ""
+          echo "===== COMMIT ====="
+          git rev-parse HEAD
+
+          echo ""
+          echo "===== GITHUB REF ====="
+          echo "${GITHUB_REF}"
+
+          echo ""
+          echo "===== GITHUB SHA ====="
+          echo "${GITHUB_SHA}"
+
+      # ============================================================
       # NODE
       # ============================================================
       - name: Setup Node
@@ -67,7 +87,7 @@ jobs:
           npm run test:cov
 
       # ============================================================
-      # SONARQUBE ANALYSIS
+      # SONARQUBE
       # ============================================================
       - name: Run SonarQube Analysis
         uses: sonarsource/sonarqube-scan-action@v3
@@ -76,106 +96,103 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
       # ============================================================
-      # WAIT FOR SONARQUBE
+      # SHOW SONAR REPORT
       # ============================================================
-      - name: Wait for SonarQube
-        env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Inspect SonarQube report
         run: |
-          set -euo pipefail
-
           echo "=========================================="
-          echo "Checking SonarQube"
+          echo "SONARQUBE REPORT TASK"
           echo "=========================================="
 
-          for i in {1..30}; do
-
-            RESPONSE=$(curl -sS \
-              -H "Authorization: Bearer ${SONAR_TOKEN}" \
-              -H "Accept: application/json" \
-              "${SONAR_HOST_URL}/api/system/status")
-
-            STATUS=$(echo "$RESPONSE" | jq -r '.status')
-
-            echo "Attempt $i - SonarQube status: $STATUS"
-
-            if [[ "$STATUS" == "UP" ]]; then
-              echo "SonarQube is UP."
-              break
-            fi
-
-            if [[ "$i" == "30" ]]; then
-              echo "SonarQube did not become available."
-              exit 1
-            fi
-
-            sleep 5
-          done
-
-      # ============================================================
-      # QUERY SONARQUBE
-      # ============================================================
-      - name: Compare SonarQube branches
-        env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          echo ""
-          echo "=========================================="
-          echo "SONARQUBE DIAGNOSTIC"
-          echo "=========================================="
-
-          echo ""
-          echo "=========================================="
-          echo "QUERY 1 - QA BRANCH"
-          echo "=========================================="
-
-          QA_RESPONSE=$(curl -sS \
-            -H "Authorization: Bearer ${SONAR_TOKEN}" \
-            -H "Accept: application/json" \
-            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&branch=qa&statuses=OPEN&types=CODE_SMELL&ps=100")
-
-          echo "$QA_RESPONSE" | jq .
-
-          QA_TOTAL=$(echo "$QA_RESPONSE" | jq -r '.total // 0')
-
-          echo ""
-          echo "Open Code Smells on branch QA: $QA_TOTAL"
-
-          echo ""
-          echo "=========================================="
-          echo "QUERY 2 - PROJECT WITHOUT BRANCH FILTER"
-          echo "=========================================="
-
-          ALL_RESPONSE=$(curl -sS \
-            -H "Authorization: Bearer ${SONAR_TOKEN}" \
-            -H "Accept: application/json" \
-            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&statuses=OPEN&types=CODE_SMELL&ps=100")
-
-          echo "$ALL_RESPONSE" | jq .
-
-          ALL_TOTAL=$(echo "$ALL_RESPONSE" | jq -r '.total // 0')
-
-          echo ""
-          echo "Open Code Smells without branch filter: $ALL_TOTAL"
-
-          echo ""
-          echo "=========================================="
-          echo "RESULT"
-          echo "=========================================="
-
-          echo "QA branch:        $QA_TOTAL"
-          echo "Without branch:   $ALL_TOTAL"
-
-          if [[ "$QA_TOTAL" == "0" && "$ALL_TOTAL" != "0" ]]; then
-            echo ""
-            echo "IMPORTANT:"
-            echo "SonarQube has open issues, but they are not associated"
-            echo "with the QA branch."
+          if [[ -f ".scannerwork/report-task.txt" ]]; then
+            cat .scannerwork/report-task.txt
+          else
+            echo "report-task.txt NOT FOUND"
           fi
 
           echo ""
-          echo "Diagnostic finished."
+          echo "=========================================="
+          echo "SONARQUBE WORK DIRECTORY"
+          echo "=========================================="
+
+          find .scannerwork -maxdepth 2 -type f -print 2>/dev/null || true
+
+      # ============================================================
+      # SONARQUBE SYSTEM STATUS
+      # ============================================================
+      - name: Check SonarQube status
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          echo "=========================================="
+          echo "SONARQUBE STATUS"
+          echo "=========================================="
+
+          curl -sS \
+            -H "Authorization: Bearer ${SONAR_TOKEN}" \
+            -H "Accept: application/json" \
+            "${SONAR_HOST_URL}/api/system/status" \
+            | jq .
+
+      # ============================================================
+      # LIST PROJECT BRANCHES
+      # ============================================================
+      - name: List SonarQube project branches
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          echo "=========================================="
+          echo "SONARQUBE PROJECT BRANCHES"
+          echo "=========================================="
+
+          curl -sS \
+            -H "Authorization: Bearer ${SONAR_TOKEN}" \
+            -H "Accept: application/json" \
+            "${SONAR_HOST_URL}/api/project_branches/list?project=mythrion" \
+            | jq .
+
+      # ============================================================
+      # LIST ALL ISSUES
+      # ============================================================
+      - name: List all SonarQube issues
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          echo "=========================================="
+          echo "ALL SONARQUBE ISSUES"
+          echo "=========================================="
+
+          curl -sS \
+            -H "Authorization: Bearer ${SONAR_TOKEN}" \
+            -H "Accept: application/json" \
+            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&ps=100" \
+            | jq .
+
+      # ============================================================
+      # LIST OPEN ISSUES
+      # ============================================================
+      - name: List open SonarQube issues
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          echo "=========================================="
+          echo "OPEN SONARQUBE ISSUES"
+          echo "=========================================="
+
+          curl -sS \
+            -H "Authorization: Bearer ${SONAR_TOKEN}" \
+            -H "Accept: application/json" \
+            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&statuses=OPEN&ps=100" \
+            | jq .
