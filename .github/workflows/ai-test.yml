@@ -24,18 +24,6 @@ jobs:
           npm install -g @qwen-code/qwen-code@latest
           qwen --version
 
-      # - name: Test Qwen + OpenRouter
-      #   env:
-      #     OPENAI_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-      #     OPENAI_BASE_URL: https://openrouter.ai/api/v1
-      #     OPENAI_MODEL: openrouter/free
-      #   run: |
-      #     set -x
-
-      #     qwen \
-      #       --prompt "Reply with exactly: QWEN_OPENROUTER_OK" \
-      #       --output-format text
-
       - name: Get Open SonarQube Code Smells
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -45,4 +33,18 @@ jobs:
             -H "Authorization: Bearer ${SONAR_TOKEN}" \
             -H "Accept: application/json" \
             "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&statuses=OPEN&types=CODE_SMELL" \
-            | jq .
+            > sonar-issues.json
+
+          echo "===== SONARQUBE ISSUES ====="
+          jq . sonar-issues.json
+          echo "============================"
+
+      - name: Test Qwen + OpenRouter
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENAI_BASE_URL: https://openrouter.ai/api/v1
+          OPENAI_MODEL: openrouter/free
+        run: |
+          qwen \
+            --prompt "Read the file sonar-issues.json. Report the total number of open Code Smells. For each issue, report the file, line, rule, severity, and message. Do NOT modify any files. Do NOT execute commands that modify the repository. Return a concise technical report." \
+            --output-format text
