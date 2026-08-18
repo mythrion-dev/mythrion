@@ -1,4 +1,4 @@
-name: SonarQube AI Fixer - QA
+name: SonarQube QA Diagnostic
 
 on:
   push:
@@ -6,10 +6,10 @@ on:
       - qa
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  sonar-ai-fixer:
+  sonar-diagnostic:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,9 +29,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
 
       # ============================================================
-      # INSTALL SERVER
+      # SERVER DEPENDENCIES
       # ============================================================
       - name: Install server dependencies
         run: |
@@ -39,7 +43,7 @@ jobs:
           npm ci
 
       # ============================================================
-      # INSTALL CLIENT
+      # CLIENT DEPENDENCIES
       # ============================================================
       - name: Install client dependencies
         run: |
@@ -81,7 +85,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "Checking SonarQube..."
+          echo "=========================================="
+          echo "Checking SonarQube"
+          echo "=========================================="
 
           for i in {1..30}; do
 
@@ -92,9 +98,10 @@ jobs:
 
             STATUS=$(echo "$RESPONSE" | jq -r '.status')
 
-            echo "SonarQube status: $STATUS"
+            echo "Attempt $i - SonarQube status: $STATUS"
 
             if [[ "$STATUS" == "UP" ]]; then
+              echo "SonarQube is UP."
               break
             fi
 
@@ -107,170 +114,68 @@ jobs:
           done
 
       # ============================================================
-      # GET OPEN CODE SMELLS FROM QA
+      # QUERY SONARQUBE
       # ============================================================
-      - name: Get SonarQube Open Code Smells
+      - name: Compare SonarQube branches
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           set -euo pipefail
 
+          echo ""
           echo "=========================================="
-          echo "Checking SonarQube issues on QA"
+          echo "SONARQUBE DIAGNOSTIC"
           echo "=========================================="
 
-          curl -sS \
+          echo ""
+          echo "=========================================="
+          echo "QUERY 1 - QA BRANCH"
+          echo "=========================================="
+
+          QA_RESPONSE=$(curl -sS \
             -H "Authorization: Bearer ${SONAR_TOKEN}" \
             -H "Accept: application/json" \
-            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&branch=qa&statuses=OPEN&types=CODE_SMELL&ps=100" \
-            > sonar-issues.json
+            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&branch=qa&statuses=OPEN&types=CODE_SMELL&ps=100")
+
+          echo "$QA_RESPONSE" | jq .
+
+          QA_TOTAL=$(echo "$QA_RESPONSE" | jq -r '.total // 0')
 
           echo ""
-          echo "===== SONARQUBE RESPONSE ====="
-          jq . sonar-issues.json
-          echo "=============================="
+          echo "Open Code Smells on branch QA: $QA_TOTAL"
 
-          if jq -e '.errors' sonar-issues.json > /dev/null; then
+          echo ""
+          echo "=========================================="
+          echo "QUERY 2 - PROJECT WITHOUT BRANCH FILTER"
+          echo "=========================================="
+
+          ALL_RESPONSE=$(curl -sS \
+            -H "Authorization: Bearer ${SONAR_TOKEN}" \
+            -H "Accept: application/json" \
+            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&statuses=OPEN&types=CODE_SMELL&ps=100")
+
+          echo "$ALL_RESPONSE" | jq .
+
+          ALL_TOTAL=$(echo "$ALL_RESPONSE" | jq -r '.total // 0')
+
+          echo ""
+          echo "Open Code Smells without branch filter: $ALL_TOTAL"
+
+          echo ""
+          echo "=========================================="
+          echo "RESULT"
+          echo "=========================================="
+
+          echo "QA branch:        $QA_TOTAL"
+          echo "Without branch:   $ALL_TOTAL"
+
+          if [[ "$QA_TOTAL" == "0" && "$ALL_TOTAL" != "0" ]]; then
             echo ""
-            echo "SonarQube API returned an error:"
-            jq '.errors' sonar-issues.json
-            exit 1
+            echo "IMPORTANT:"
+            echo "SonarQube has open issues, but they are not associated"
+            echo "with the QA branch."
           fi
 
-          TOTAL=$(jq -r '.total // 0' sonar-issues.json)
-
           echo ""
-          echo "Open SonarQube Code Smells on QA: $TOTAL"
-
-      # ============================================================
-      # INSTALL QWEN
-      # ============================================================
-      - name: Install Qwen Code
-        run: |
-          npm install -g @qwen-code/qwen-code@latest
-          qwen --version
-
-      # ============================================================
-      # RUN QWEN
-      # ============================================================
-      - name: Fix SonarQube issues with Qwen
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          OPENAI_BASE_URL: https://openrouter.ai/api/v1
-          OPENAI_MODEL: openai/gpt-oss-120b
-        run: |
-          set -euo pipefail
-
-          TOTAL=$(jq -r '.total // 0' sonar-issues.json)
-
-          echo "=========================================="
-          echo "Open Code Smells: $TOTAL"
-          echo "=========================================="
-
-          if [[ "$TOTAL" == "0" ]]; then
-            echo "No open Code Smells found."
-            exit 0
-          fi
-
-          qwen \
-            --prompt "
-          You are an autonomous senior TypeScript, React, Next.js and NestJS developer.
-
-          Your task is to fix the OPEN SonarQube Code Smells in this repository.
-
-          The SonarQube report is located at:
-
-          sonar-issues.json
-
-          IMPORTANT RULES:
-
-          1. Read sonar-issues.json first.
-          2. Only fix issues whose status is OPEN.
-          3. Only fix issues present in sonar-issues.json.
-          4. Do NOT modify RESOLVED issues.
-          5. Do NOT modify ACCEPTED issues.
-          6. Do NOT modify WONTFIX issues.
-          7. Do NOT disable SonarQube rules.
-          8. Do NOT add SonarQube suppressions.
-          9. Do NOT add eslint-disable comments just to hide problems.
-          10. Do NOT modify sonar-project.properties.
-          11. Do NOT modify GitHub Actions workflows.
-          12. Do NOT modify package.json unless absolutely necessary.
-          13. Do NOT modify package-lock.json.
-          14. Do NOT remove tests.
-          15. Do NOT reduce test coverage.
-          16. Do NOT change application behavior unnecessarily.
-          17. Prefer the smallest safe solution.
-          18. Follow the existing project's coding style.
-          19. Inspect the surrounding code before modifying anything.
-          20. Do not blindly apply a SonarQube recommendation if it would make the code worse.
-
-          For every issue:
-
-          - Identify the affected file.
-          - Identify the affected line.
-          - Understand the SonarQube rule.
-          - Inspect the surrounding implementation.
-          - Apply the appropriate fix.
-          - Preserve existing functionality.
-
-          After making changes:
-
-          - Run the relevant tests.
-          - Run lint where appropriate.
-          - Fix any regressions caused by your changes.
-
-          At the end, provide a concise summary containing:
-
-          - Issues fixed
-          - Files modified
-          - Tests executed
-          - Remaining concerns
-
-          You are allowed to modify source files.
-
-          Do NOT create Git commits.
-          Do NOT push anything.
-          " \
-            --output-format text
-
-      # ============================================================
-      # SHOW CHANGES
-      # ============================================================
-      - name: Show changes
-        run: |
-          echo "===== GIT STATUS ====="
-          git status --short
-
-          echo ""
-          echo "===== DIFF STAT ====="
-          git diff --stat
-
-          echo ""
-          echo "===== DIFF ====="
-          git diff
-
-      # ============================================================
-      # COMMIT AI CHANGES TO QA
-      # ============================================================
-      - name: Commit AI fixes
-        run: |
-          set -euo pipefail
-
-          # sonar-issues.json is only a temporary analysis artifact
-          rm -f sonar-issues.json
-
-          if [[ -z "$(git status --porcelain)" ]]; then
-            echo "No changes to commit."
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add .
-
-          git commit -m "fix: resolve SonarQube code smells"
-
-          git push origin HEAD:qa
+          echo "Diagnostic finished."
