@@ -65,7 +65,7 @@ jobs:
           RESPONSE=$(curl -sS \
             -H "Authorization: Bearer ${SONAR_TOKEN}" \
             -H "Accept: application/json" \
-            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&statuses=OPEN")
+            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&statuses=OPEN&types=CODE_SMELL")
 
           echo "===== SONARQUBE RESPONSE ====="
           echo "$RESPONSE" | jq .
