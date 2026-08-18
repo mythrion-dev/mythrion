@@ -1,29 +1,58 @@
-name: AI Agent Test
+name: AI SonarQube Fixer
 
 on:
   workflow_dispatch:
 
 jobs:
-  test:
+  fix-sonar-issues:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
+      contents: write
 
     steps:
+      # --------------------------------------------------
+      # 1. Checkout
+      # --------------------------------------------------
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      # --------------------------------------------------
+      # 2. Setup Node
+      # --------------------------------------------------
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
 
+      # --------------------------------------------------
+      # 3. Install dependencies
+      # --------------------------------------------------
+      - name: Install server dependencies
+        run: npm ci
+        working-directory: server
+
+      - name: Install client dependencies
+        run: npm ci
+        working-directory: client
+
+      # --------------------------------------------------
+      # 4. Install Qwen
+      # --------------------------------------------------
       - name: Install Qwen Code
         run: |
           npm install -g @qwen-code/qwen-code@latest
           qwen --version
 
+      # --------------------------------------------------
+      # 5. Get SonarQube issues
+      # --------------------------------------------------
       - name: Get Open SonarQube Code Smells
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -39,12 +68,155 @@ jobs:
           jq . sonar-issues.json
           echo "============================"
 
-      - name: Test Qwen + OpenRouter
+      # --------------------------------------------------
+      # 6. Check if there are issues
+      # --------------------------------------------------
+      - name: Check SonarQube issues
+        id: sonar
+        run: |
+          TOTAL=$(jq -r '.total' sonar-issues.json)
+
+          echo "Open Code Smells: $TOTAL"
+
+          echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
+
+      # --------------------------------------------------
+      # 7. Create AI branch
+      # --------------------------------------------------
+      - name: Create AI branch
+        if: steps.sonar.outputs.total != '0'
+        run: |
+          BRANCH="ai/sonar-fix-${GITHUB_RUN_ID}"
+
+          git checkout -b "$BRANCH"
+
+          echo "AI_BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+      # --------------------------------------------------
+      # 8. Run Qwen
+      # --------------------------------------------------
+      - name: Run Qwen Code
+        if: steps.sonar.outputs.total != '0'
         env:
           OPENAI_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENAI_BASE_URL: https://openrouter.ai/api/v1
-          OPENAI_MODEL: openrouter/free
+          OPENAI_MODEL: openai/gpt-oss-120b
         run: |
           qwen \
-            --prompt "Read the file sonar-issues.json. Report the total number of open Code Smells. For each issue, report the file, line, rule, severity, and message. Do NOT modify any files. Do NOT execute commands that modify the repository. Return a concise technical report." \
+            --prompt "
+          You are an autonomous senior TypeScript/React/NestJS developer.
+
+          Your task is to fix the OPEN Code Smells reported by SonarQube.
+
+          The SonarQube issues are available in:
+
+          sonar-issues.json
+
+          IMPORTANT RULES:
+
+          1. Read sonar-issues.json first.
+          2. Only fix issues whose status is OPEN.
+          3. Do NOT modify issues that are already RESOLVED, ACCEPTED or WONTFIX.
+          4. Do NOT change application behavior unnecessarily.
+          5. Prefer the smallest clean solution.
+          6. Follow the existing project's coding style.
+          7. Do NOT disable SonarQube rules.
+          8. Do NOT add SonarQube suppressions just to make issues disappear.
+          9. Do NOT modify sonar-project.properties.
+          10. Do NOT modify GitHub Actions workflows.
+          11. Do NOT modify package.json unless absolutely necessary.
+          12. Do NOT modify lock files.
+          13. Do NOT remove tests.
+          14. Do NOT reduce test coverage.
+          15. Preserve existing functionality.
+
+          Before making changes:
+
+          - Inspect the relevant source files.
+          - Understand the context of each issue.
+          - Determine whether the SonarQube recommendation is appropriate.
+
+          Then:
+
+          - Fix the issues directly in the source code.
+          - Run the relevant tests.
+          - Run lint where appropriate.
+          - If a test fails because of your modification, fix the problem.
+
+          At the end, provide a concise summary containing:
+
+          - Issues fixed
+          - Files modified
+          - Tests executed
+          - Any remaining concerns
+
+          You are allowed to modify source files.
+          Do not create commits yourself.
+          Do not push anything yourself.
+          " \
             --output-format text
+
+      # --------------------------------------------------
+      # 9. Show changes
+      # --------------------------------------------------
+      - name: Show changes
+        if: steps.sonar.outputs.total != '0'
+        run: |
+          echo "===== GIT STATUS ====="
+          git status --short
+
+          echo ""
+          echo "===== DIFF STAT ====="
+          git diff --stat
+
+          echo ""
+          echo "===== DIFF ====="
+          git diff
+
+      # --------------------------------------------------
+      # 10. Run backend tests
+      # --------------------------------------------------
+      - name: Run server tests
+        if: steps.sonar.outputs.total != '0'
+        run: npm run test:cov
+        working-directory: server
+
+      # --------------------------------------------------
+      # 11. Run frontend tests
+      # --------------------------------------------------
+      - name: Run client tests
+        if: steps.sonar.outputs.total != '0'
+        run: npm run test:cov
+        working-directory: client
+
+      # --------------------------------------------------
+      # 12. Commit changes
+      # --------------------------------------------------
+      - name: Commit AI changes
+        if: steps.sonar.outputs.total != '0'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add client server
+
+          if git diff --cached --quiet; then
+            echo "No source changes were made."
+            exit 0
+          fi
+
+          git commit -m "fix: resolve SonarQube code smells"
+
+      # --------------------------------------------------
+      # 13. Push AI branch
+      # --------------------------------------------------
+      - name: Push AI branch
+        if: steps.sonar.outputs.total != '0'
+        run: |
+          git push origin "$AI_BRANCH"
+
+          echo ""
+          echo "=========================================="
+          echo "AI branch created:"
+          echo "$AI_BRANCH"
+          echo "=========================================="
