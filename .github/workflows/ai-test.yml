@@ -44,5 +44,5 @@ jobs:
           curl -sS \
             -H "Authorization: Bearer ${SONAR_TOKEN}" \
             -H "Accept: application/json" \
-            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&resolved=false" \
+            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&statuses=ACCEPTED" \
             | jq .
