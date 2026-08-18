@@ -3,7 +3,7 @@ name: AI SonarQube Fix - QA
 on:
   push:
     branches:
-      - QA
+      - qa
 
 permissions:
   contents: write
