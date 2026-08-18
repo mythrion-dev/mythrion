@@ -38,11 +38,10 @@ jobs:
 
       - name: Test SonarQube API
         env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           curl -sS \
             -H "Authorization: Bearer ${SONAR_TOKEN}" \
             -H "Accept: application/json" \
             -w "\nHTTP_STATUS=%{http_code}\n" \
-            "${SONAR_HOST_URL}/api/system/status"
+            "https://sonarqube-qa.up.railway.app/api/system/status"
