@@ -10,9 +10,14 @@ permissions:
 
 jobs:
   sonar-ai-fix:
+    # Evita que o commit feito pelo próprio agente dispare outro ciclo.
+    # O workflow só trabalha quando o push veio de uma alteração normal.
+    if: github.actor != 'github-actions[bot]'
+
     runs-on: ubuntu-latest
 
     steps:
+
       # ============================================================
       # CHECKOUT QA
       # ============================================================
@@ -23,25 +28,102 @@ jobs:
           fetch-depth: 0
 
       # ============================================================
+      # SHOW GIT INFORMATION
+      # ============================================================
+      - name: Show Git information
+        run: |
+          echo "=========================================="
+          echo "GIT INFORMATION"
+          echo "=========================================="
+
+          echo "Branch:"
+          git branch --show-current
+
+          echo ""
+          echo "Commit:"
+          git rev-parse HEAD
+
+          echo ""
+          echo "GitHub ref:"
+          echo "${GITHUB_REF}"
+
+          echo ""
+          echo "GitHub SHA:"
+          echo "${GITHUB_SHA}"
+
+      # ============================================================
       # NODE
       # ============================================================
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
 
       # ============================================================
-      # INSTALL QWEN
+      # INSTALL SERVER
       # ============================================================
-      - name: Install Qwen Code
+      - name: Install server dependencies
         run: |
-          npm install -g @qwen-code/qwen-code@latest
-          qwen --version
+          cd server
+          npm ci
 
       # ============================================================
-      # WAIT FOR SONARQUBE
+      # INSTALL CLIENT
       # ============================================================
-      - name: Wait for SonarQube
+      - name: Install client dependencies
+        run: |
+          cd client
+          npm ci
+
+      # ============================================================
+      # SERVER TESTS
+      # ============================================================
+      - name: Run server tests
+        run: |
+          cd server
+          npm run test:cov
+
+      # ============================================================
+      # CLIENT TESTS
+      # ============================================================
+      - name: Run client tests
+        run: |
+          cd client
+          npm run test:cov
+
+      # ============================================================
+      # RUN SONARQUBE ANALYSIS
+      # ============================================================
+      - name: Run SonarQube Analysis
+        uses: sonarsource/sonarqube-scan-action@v3
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      # ============================================================
+      # SHOW SONAR TASK
+      # ============================================================
+      - name: Show SonarQube task
+        run: |
+          echo "=========================================="
+          echo "SONARQUBE TASK"
+          echo "=========================================="
+
+          if [[ ! -f ".scannerwork/report-task.txt" ]]; then
+            echo "ERROR: report-task.txt was not generated."
+            exit 1
+          fi
+
+          cat .scannerwork/report-task.txt
+
+      # ============================================================
+      # WAIT FOR SONARQUBE ANALYSIS
+      # ============================================================
+      - name: Wait for SonarQube analysis
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -49,37 +131,68 @@ jobs:
           set -euo pipefail
 
           echo "=========================================="
-          echo "Checking SonarQube"
+          echo "WAITING FOR SONARQUBE ANALYSIS"
           echo "=========================================="
 
-          for i in {1..12}; do
+          CE_TASK_ID=$(grep '^ceTaskId=' .scannerwork/report-task.txt | cut -d'=' -f2)
+
+          if [[ -z "$CE_TASK_ID" ]]; then
+            echo "ERROR: Could not find ceTaskId."
+            exit 1
+          fi
+
+          echo "CE Task ID: $CE_TASK_ID"
+
+          for i in {1..30}; do
 
             RESPONSE=$(curl -sS \
               -H "Authorization: Bearer ${SONAR_TOKEN}" \
               -H "Accept: application/json" \
-              "${SONAR_HOST_URL}/api/system/status")
+              "${SONAR_HOST_URL}/api/ce/task?id=${CE_TASK_ID}")
 
-            STATUS=$(echo "$RESPONSE" | jq -r '.status // empty')
+            STATUS=$(echo "$RESPONSE" | jq -r '.task.status // empty')
 
-            echo "SonarQube status: ${STATUS}"
+            echo "Attempt $i/30 - SonarQube task status: ${STATUS}"
 
-            if [[ "$STATUS" == "UP" ]]; then
-              echo "SonarQube is UP."
-              exit 0
-            fi
+            case "$STATUS" in
+              SUCCESS)
+                echo "SonarQube analysis completed successfully."
+                exit 0
+                ;;
 
-            echo "Waiting for SonarQube..."
-            sleep 10
+              FAILED)
+                echo "SonarQube analysis FAILED."
+                echo "$RESPONSE" | jq .
+                exit 1
+                ;;
+
+              CANCELED)
+                echo "SonarQube analysis was CANCELED."
+                echo "$RESPONSE" | jq .
+                exit 1
+                ;;
+
+              PENDING|IN_PROGRESS)
+                echo "Analysis still running..."
+                sleep 10
+                ;;
+
+              *)
+                echo "Unknown SonarQube status."
+                echo "$RESPONSE" | jq .
+                sleep 10
+                ;;
+            esac
 
           done
 
-          echo "SonarQube did not become available."
+          echo "SonarQube analysis did not finish within the expected time."
           exit 1
 
       # ============================================================
-      # GET SONARQUBE ISSUES
+      # GET OPEN CODE SMELLS
       # ============================================================
-      - name: Get Open SonarQube Code Smells
+      - name: Get OPEN SonarQube Code Smells
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -87,50 +200,44 @@ jobs:
           set -euo pipefail
 
           echo "=========================================="
-          echo "SONARQUBE OPEN CODE SMELLS"
+          echo "GETTING OPEN SONARQUBE CODE SMELLS"
           echo "=========================================="
+
+          SONAR_URL="${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&statuses=OPEN&types=CODE_SMELL&ps=500"
+
+          echo "Query:"
+          echo "${SONAR_URL}"
 
           curl -sS \
             -H "Authorization: Bearer ${SONAR_TOKEN}" \
             -H "Accept: application/json" \
-            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&types=CODE_SMELL&ps=500" \
+            "$SONAR_URL" \
             > sonar-response.json
 
-          echo "===== RAW SONARQUBE RESPONSE ====="
+          echo ""
+          echo "===== SONARQUBE RESPONSE ====="
           jq . sonar-response.json
-          echo "=================================="
+          echo "=============================="
 
-          # Make sure SonarQube actually returned valid JSON.
+          # Validate JSON
           jq empty sonar-response.json
 
-          # Keep ONLY issues that are actually OPEN.
-          #
-          # SonarQube can return historical CLOSED/RESOLVED/FIXED
-          # issues when querying the project. Those must not be sent
-          # to the AI agent.
+          # Make absolutely sure every returned issue is OPEN.
           jq '
-            .issues
-            | map(
-                select(
-                  .status == "OPEN"
-                  and (
-                    .resolution == null
-                    or .resolution == ""
-                  )
-                )
+            {
+              total: (
+                .issues
+                | map(select(.status == "OPEN"))
+                | length
+              ),
+              issues: (
+                .issues
+                | map(select(.status == "OPEN"))
               )
-          ' sonar-response.json > open-issues-array.json
+            }
+          ' sonar-response.json > sonar-issues.json
 
-          TOTAL_OPEN=$(jq 'length' open-issues-array.json)
-
-          # Create the file that Qwen will consume.
-          jq -n \
-            --argjson total "$TOTAL_OPEN" \
-            --slurpfile issues open-issues-array.json \
-            '{
-              total: $total,
-              issues: $issues[0]
-            }' > sonar-issues.json
+          TOTAL_OPEN=$(jq -r '.total' sonar-issues.json)
 
           echo ""
           echo "=========================================="
@@ -139,16 +246,25 @@ jobs:
 
           jq . sonar-issues.json
 
-          echo "=========================================="
-
           if [[ "$TOTAL_OPEN" -eq 0 ]]; then
+            echo ""
             echo "No OPEN Code Smells found."
           else
+            echo ""
             echo "OPEN Code Smells found."
           fi
 
       # ============================================================
-      # QWEN
+      # INSTALL QWEN
+      # ============================================================
+      - name: Install Qwen Code
+        if: ${{ hashFiles('sonar-issues.json') != '' }}
+        run: |
+          npm install -g @qwen-code/qwen-code@latest
+          qwen --version
+
+      # ============================================================
+      # RUN QWEN
       # ============================================================
       - name: Run Qwen Code Fixer
         if: ${{ hashFiles('sonar-issues.json') != '' }}
@@ -161,28 +277,31 @@ jobs:
 
           TOTAL_OPEN=$(jq -r '.total' sonar-issues.json)
 
-          echo "Open SonarQube Code Smells: ${TOTAL_OPEN}"
+          echo "=========================================="
+          echo "QWEN"
+          echo "=========================================="
+
+          echo "Open Code Smells: ${TOTAL_OPEN}"
 
           if [[ "$TOTAL_OPEN" -eq 0 ]]; then
             echo "Nothing for Qwen to fix."
             exit 0
           fi
 
-          echo "=========================================="
-          echo "STARTING QWEN"
-          echo "=========================================="
+          echo ""
+          echo "Starting Qwen..."
 
           qwen \
             --prompt "
           You are an autonomous senior TypeScript/React/NestJS developer.
 
-          You are working directly on the QA branch of the repository.
+          You are working directly on the QA branch of this repository.
 
           Your task is to fix the OPEN SonarQube Code Smells listed in:
 
           sonar-issues.json
 
-          IMPORTANT:
+          IMPORTANT RULES:
 
           1. Read sonar-issues.json FIRST.
 
@@ -205,7 +324,7 @@ jobs:
 
           8. Do NOT disable SonarQube rules.
 
-          9. Do NOT add SonarQube suppressions just to make issues disappear.
+          9. Do NOT add SonarQube suppressions.
 
           10. Do NOT modify sonar-project.properties.
 
@@ -213,8 +332,7 @@ jobs:
 
           12. Do NOT modify package.json unless absolutely necessary.
 
-          13. Do NOT modify package-lock.json, yarn.lock, pnpm-lock.yaml
-              or other lock files.
+          13. Do NOT modify package-lock.json.
 
           14. Do NOT remove tests.
 
@@ -226,7 +344,7 @@ jobs:
 
           18. Do NOT modify the main branch.
 
-          Before changing anything:
+          Before making changes:
 
           - Read sonar-issues.json.
           - Inspect every affected source file.
@@ -236,16 +354,16 @@ jobs:
           Then:
 
           - Fix the reported OPEN Code Smells.
-          - Run the relevant tests.
+          - Run relevant tests.
           - Run lint/typecheck where appropriate.
           - Fix any regression caused by your changes.
 
-          When finished, provide a concise report containing:
+          At the end provide:
 
           - Issues fixed
           - Files modified
           - Tests executed
-          - Any remaining concerns
+          - Remaining concerns
           " \
             --output-format text
 
@@ -275,28 +393,36 @@ jobs:
           git diff
 
       # ============================================================
-      # COMMIT CHANGES TO QA
+      # COMMIT AI FIXES TO QA
       # ============================================================
       - name: Commit AI fixes to QA
         run: |
           set -euo pipefail
 
-          # sonar-issues.json is only a temporary workflow artifact.
-          # It must NEVER be committed.
+          # Temporary Sonar files must never be committed.
           rm -f sonar-response.json
-          rm -f open-issues-array.json
           rm -f sonar-issues.json
 
           if [[ -z "$(git status --porcelain)" ]]; then
-            echo "No source code changes were made."
+            echo "=========================================="
+            echo "NO SOURCE CODE CHANGES"
+            echo "=========================================="
             exit 0
           fi
+
+          echo "=========================================="
+          echo "COMMITTING AI FIXES TO QA"
+          echo "=========================================="
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add -A
 
-          git commit -m "fix: resolve SonarQube issues with AI"
+          git commit \
+            -m "fix: resolve SonarQube issues with AI"
 
           git push origin HEAD:qa
+
+          echo ""
+          echo "AI fixes pushed to QA."
