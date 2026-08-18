@@ -52,4 +52,4 @@ npm run dev          # sobe backend (porta 3001) e frontend (porta 3000) juntos
 
 ### E quando subir pra produção?
 
-Nada muda: `git push` continua deployando igual hoje (Railway para o `server/`, Vercel para o `client/`). Os arquivos `.env` locais são gitignored e não afetam os deploys
+Nada muda: `git push` continua deployando igual hoje (Railway para o `server/`, Vercel para o `client/`). Os arquivos `.env` locais são gitignored e não afetam os deploys.
