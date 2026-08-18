@@ -36,9 +36,13 @@ jobs:
       #       --prompt "Reply with exactly: QWEN_OPENROUTER_OK" \
       #       --output-format text
 
-      - name: Test SONAR_HOST_URL
+      - name: Validate SONAR_HOST_URL
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
-          echo "SONAR_HOST_URL length: ${#SONAR_HOST_URL}"
-          echo "SONAR_HOST_URL value: [${SONAR_HOST_URL}]"
+          if [[ "$SONAR_HOST_URL" == "https://sonarqube-qa.up.railway.app" ]]; then
+            echo "SONAR_HOST_URL is correct"
+          else
+            echo "SONAR_HOST_URL is NOT the expected value"
+            exit 1
+          fi
