@@ -41,4 +41,4 @@ jobs:
           openai_api_key: ${{ secrets.OPENROUTER_API_KEY }}
           openai_base_url: https://openrouter.ai/api/v1
           openai_model: openai/gpt-oss-120b:free
-          debug: true
+          qwen_debug: true
