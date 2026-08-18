@@ -20,8 +20,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       # ============================================================
-      # 1. Checkout SOMENTE da QA
+      # 1. Checkout SOMENTE QA
       # ============================================================
       - name: Checkout QA
         uses: actions/checkout@v4
@@ -43,7 +44,7 @@ jobs:
             client/package-lock.json
 
       # ============================================================
-      # 3. Instalar dependências
+      # 3. Install dependencies
       # ============================================================
       - name: Install server dependencies
         working-directory: server
@@ -54,9 +55,16 @@ jobs:
         run: npm ci
 
       # ============================================================
-      # 4. Consultar SonarQube
+      # 4. Query SonarQube
+      #
+      # IMPORTANT:
+      # We intentionally do NOT use types=CODE_SMELL here.
+      #
+      # SonarQube 26.x uses the newer Clean Code / Software
+      # Quality model and an issue affecting MAINTAINABILITY may
+      # not behave as expected with the old type filter.
       # ============================================================
-      - name: Get SonarQube Code Smells
+      - name: Get SonarQube Open Issues
         id: sonar
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -66,7 +74,7 @@ jobs:
 
           echo "Checking SonarQube..."
 
-          SONAR_URL="${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&statuses=OPEN&types=CODE_SMELL&ps=100"
+          SONAR_URL="${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&statuses=OPEN&ps=100"
 
           HTTP_STATUS=$(curl -sS \
             -o sonar-issues.json \
@@ -98,23 +106,23 @@ jobs:
 
           TOTAL=$(jq -r '.total' sonar-issues.json)
 
-          echo "Open Code Smells: ${TOTAL}"
+          echo "Open SonarQube Issues: ${TOTAL}"
 
           echo "total=${TOTAL}" >> "${GITHUB_OUTPUT}"
 
       # ============================================================
-      # 5. Se não houver issues, encerra
+      # 5. Nothing to fix
       # ============================================================
-      - name: No Code Smells
+      - name: No Open Issues
         if: steps.sonar.outputs.total == '0'
         run: |
           echo "======================================"
-          echo "No OPEN Code Smells found."
-          echo "QA is clean from SonarQube Code Smells."
+          echo "No OPEN SonarQube issues found."
+          echo "QA is clean."
           echo "======================================"
 
       # ============================================================
-      # 6. Instalar Qwen
+      # 6. Install Qwen
       # ============================================================
       - name: Install Qwen Code
         if: steps.sonar.outputs.total != '0'
@@ -123,7 +131,7 @@ jobs:
           qwen --version
 
       # ============================================================
-      # 7. Executar Qwen
+      # 7. Run Qwen
       # ============================================================
       - name: Run Qwen SonarQube Fixer
         if: steps.sonar.outputs.total != '0'
@@ -141,20 +149,33 @@ jobs:
           You are working directly on the QA branch of the Mythrion
           repository.
 
-          Your task is to fix the OPEN Code Smells reported by SonarQube.
-
-          The SonarQube issues are available in:
+          Your task is to fix the OPEN SonarQube issues reported in:
 
           sonar-issues.json
 
           ============================================================
-          FIRST: READ THE SONARQUBE REPORT
+          FIRST: READ THE REPORT
           ============================================================
 
           Read sonar-issues.json before making any modification.
 
-          The report contains the current OPEN Code Smells detected
-          by SonarQube.
+          Analyze every issue returned by SonarQube.
+
+          Pay attention to:
+
+          - rule
+          - severity
+          - type
+          - issueStatus
+          - cleanCodeAttribute
+          - cleanCodeAttributeCategory
+          - impacts
+          - component
+          - line
+          - message
+
+          An issue may affect MAINTAINABILITY even when the API does
+          not classify it using the old CODE_SMELL filter.
 
           ============================================================
           RULES
@@ -162,54 +183,69 @@ jobs:
 
           1. Only fix issues whose status is OPEN.
 
-          2. Only fix issues whose type is CODE_SMELL.
-
-          3. Do NOT modify issues that are:
+          2. Do NOT modify issues that are:
              - RESOLVED
              - ACCEPTED
              - WONTFIX
              - CLOSED
 
-          4. Inspect the relevant source file before modifying it.
+          3. Inspect the relevant source file before modifying it.
 
-          5. Understand the context of the issue before applying a fix.
+          4. Understand the context of each issue before fixing it.
 
-          6. Use the smallest clean solution possible.
+          5. Apply the smallest clean solution possible.
 
-          7. Preserve existing application behavior.
+          6. Preserve existing application behavior.
 
-          8. Follow the existing project's coding style.
+          7. Follow the existing project's coding style.
 
-          9. Do NOT disable SonarQube rules.
+          8. Do NOT disable SonarQube rules.
 
-          10. Do NOT add SonarQube suppressions just to make an issue
-              disappear.
+          9. Do NOT add SonarQube suppressions.
 
-          11. Do NOT modify sonar-project.properties.
+          10. Do NOT modify sonar-project.properties.
 
-          12. Do NOT modify any GitHub Actions workflow.
+          11. Do NOT modify GitHub Actions workflows.
 
-          13. Do NOT modify package.json unless absolutely necessary.
+          12. Do NOT modify package.json unless absolutely necessary.
 
-          14. Do NOT modify package-lock.json.
+          13. Do NOT modify package-lock.json.
 
-          15. Do NOT remove tests.
+          14. Do NOT remove tests.
 
-          16. Do NOT reduce test coverage.
+          15. Do NOT reduce test coverage.
 
-          17. Do NOT make unrelated refactoring.
+          16. Do NOT perform unrelated refactoring.
 
-          18. Do NOT change application behavior unnecessarily.
+          17. Do NOT change application behavior unnecessarily.
 
-          19. Do NOT create commits.
+          18. Do NOT create commits.
 
-          20. Do NOT push anything.
+          19. Do NOT push anything.
+
+          ============================================================
+          FIXING PROCESS
+          ============================================================
+
+          For every OPEN issue:
+
+          1. Locate the affected file.
+
+          2. Inspect the surrounding code.
+
+          3. Understand why SonarQube reported the issue.
+
+          4. Determine whether the recommendation is appropriate.
+
+          5. Apply a clean production-quality fix.
+
+          6. Preserve functionality.
 
           ============================================================
           AFTER CHANGES
           ============================================================
 
-          Run the relevant tests.
+          Run relevant tests.
 
           Backend:
 
@@ -223,38 +259,34 @@ jobs:
 
           Run lint where appropriate.
 
-          If a test or lint fails because of your modification,
+          If a test or lint command fails because of your modification,
           fix the problem.
 
-          Do not ignore test failures.
+          Do not ignore failures.
 
           ============================================================
           FINAL RESPONSE
           ============================================================
 
-          Return a concise summary containing:
+          Return:
 
-          - SonarQube issues identified
+          - Issues identified
           - Issues fixed
           - Files modified
           - Tests executed
           - Lint executed
-          - Any remaining concerns
-
-          Remember:
+          - Remaining concerns
 
           You are allowed to modify source files.
 
           You MUST NOT create commits.
 
           You MUST NOT push anything.
-
-          The GitHub Actions workflow will handle the commit and push.
           " \
             --output-format text
 
       # ============================================================
-      # 8. Mostrar alterações
+      # 8. Show modifications
       # ============================================================
       - name: Show Git Changes
         if: steps.sonar.outputs.total != '0'
@@ -271,7 +303,7 @@ jobs:
           git diff
 
       # ============================================================
-      # 9. Verificar se o agente realmente alterou código
+      # 9. Check whether AI modified source code
       # ============================================================
       - name: Check AI Changes
         if: steps.sonar.outputs.total != '0'
@@ -289,7 +321,7 @@ jobs:
           fi
 
       # ============================================================
-      # 10. Testes do backend
+      # 10. Backend tests
       # ============================================================
       - name: Run backend tests
         if: steps.changes.outputs.changed == 'true'
@@ -297,7 +329,7 @@ jobs:
         run: npm test -- --runInBand
 
       # ============================================================
-      # 11. Testes do frontend
+      # 11. Frontend tests
       # ============================================================
       - name: Run frontend tests
         if: steps.changes.outputs.changed == 'true'
@@ -305,7 +337,7 @@ jobs:
         run: npm test -- --run
 
       # ============================================================
-      # 12. Commit SOMENTE client/server
+      # 12. Commit ONLY source changes
       # ============================================================
       - name: Commit AI fixes
         if: steps.changes.outputs.changed == 'true'
@@ -320,16 +352,16 @@ jobs:
             exit 0
           fi
 
-          git commit -m "fix(ai): resolve SonarQube code smells"
+          git commit -m "fix(ai): resolve SonarQube issues"
 
       # ============================================================
-      # 13. Push SOMENTE para QA
+      # 13. Push ONLY to QA
       # ============================================================
       - name: Push AI fixes to QA
         if: steps.changes.outputs.changed == 'true'
         run: |
-          echo "Pushing AI fixes to QA..."
+          echo "Pushing AI fixes to QA only..."
 
           git push origin HEAD:qa
 
-          echo "AI fixes pushed successfully to QA."
+          echo "AI fixes successfully pushed to QA."
