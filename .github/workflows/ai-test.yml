@@ -36,7 +36,7 @@ jobs:
       #       --prompt "Reply with exactly: QWEN_OPENROUTER_OK" \
       #       --output-format text
 
-      - name: Get SonarQube issues
+      - name: Get Accepted SonarQube issues
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -44,5 +44,5 @@ jobs:
           curl -sS \
             -H "Authorization: Bearer ${SONAR_TOKEN}" \
             -H "Accept: application/json" \
-            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&statuses=ACCEPTED" \
+            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&resolutions=FALSE-POSITIVE" \
             | jq .
