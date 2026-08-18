@@ -7,21 +7,97 @@ export function normalizeApiUrl(raw: string | undefined): string {
   }
   // Add /api suffix if missing
   if (!url.endsWith('/api')) {
-    url = url.replace(/\/+$/, '') + '/api'
+    // Strip trailing slashes before appending /api. A quantified regex such as
+    // /\/+$/ backtracks super-linearly on slash-heavy input (S5843), so do it
+    // with a linear loop instead.
+    while (url.endsWith('/')) url = url.slice(0, -1)
+    url += '/api'
   }
   return url
 }
 
+import i18n, { DEFAULT_LANGUAGE } from '@/i18n'
+
 export const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL)
+
+/**
+ * Auth-failure notification. Fired ONLY when the session is definitively over
+ * (the refresh token was rejected by the server — revoked/expired/invalid) —
+ * never on transient failures. AuthProvider subscribes so the whole app can
+ * clear the user immediately instead of limping along with a dead session.
+ */
+type AuthFailureHandler = () => void
+const authFailureHandlers = new Set<AuthFailureHandler>()
+
+export function onAuthFailure(handler: AuthFailureHandler): () => void {
+  authFailureHandlers.add(handler)
+  return () => {
+    authFailureHandlers.delete(handler)
+  }
+}
+
+function notifyAuthFailure() {
+  authFailureHandlers.forEach((h) => h())
+}
+
+/** Build a typed HTTP error from a Response body (message may be a string or array). */
+async function toHttpError(res: Response): Promise<Error & { statusCode: number }> {
+  const body = await res.json().catch(() => ({
+    message: res.statusText,
+  }))
+  const err = new Error(
+    Array.isArray(body.message)
+      ? body.message[0]
+      : body.message ?? 'Request failed',
+  ) as Error & { statusCode: number }
+  err.statusCode = res.status
+  return err
+}
+
+/** Rotate the token proactively when it is close to expiry; otherwise return it unchanged. */
+async function maybeRefreshToken(token: string | null): Promise<string | null> {
+  if (token && typeof window !== 'undefined' && isAccessTokenExpiringSoon(token)) {
+    const fresh = await refreshAccessToken()
+    if (fresh) return fresh
+  }
+  return token
+}
+
+/** Retry a request once with a freshly-minted token after a 401. */
+async function retryRequest<T>(
+  path: string,
+  options: RequestInit,
+  headers: Record<string, string>,
+  newToken: string,
+): Promise<T> {
+  headers.Authorization = `Bearer ${newToken}`
+  const retryRes = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+  })
+  if (retryRes.ok) {
+    return retryRes.json()
+  }
+  throw await toHttpError(retryRes)
+}
 
 async function request<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const token = typeof window !== 'undefined' ? getAccessToken() : null
+  let token = typeof window !== 'undefined' ? getAccessToken() : null
+
+  // Proactive refresh: if the access token is within the leeway window of
+  // expiry, rotate before sending so the request never rides on an expiring
+  // token (avoids a 401 round-trip and its retry). Failure here is non-fatal —
+  // the request proceeds with the current token and the 401 path below can
+  // still recover it.
+  token = await maybeRefreshToken(token)
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Accept-Language':
+      typeof window !== 'undefined' ? i18n.language : DEFAULT_LANGUAGE,
     ...(options.headers as Record<string, string> | undefined),
   }
 
@@ -38,74 +114,156 @@ async function request<T>(
   if (res.status === 401 && typeof window !== 'undefined') {
     const newToken = await refreshAccessToken()
     if (newToken) {
-      headers.Authorization = `Bearer ${newToken}`
-      const retryRes = await fetch(`${API_URL}${path}`, {
-        ...options,
-        headers,
-      })
-      if (retryRes.ok) {
-        return retryRes.json()
-      }
-      if (!retryRes.ok) {
-        const body = await retryRes.json().catch(() => ({
-          message: retryRes.statusText,
-        }))
-        const err = new Error(
-          Array.isArray(body.message)
-            ? body.message[0]
-            : body.message ?? 'Request failed',
-        ) as Error & { statusCode: number }
-        err.statusCode = retryRes.status
-        throw err
-      }
+      return retryRequest<T>(path, options, headers, newToken)
     }
   }
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({
-      message: res.statusText,
-    }))
-    const err = new Error(
-      Array.isArray(body.message)
-        ? body.message[0]
-        : body.message ?? 'Request failed',
-    ) as Error & { statusCode: number }
-    err.statusCode = res.status
-    throw err
+    throw await toHttpError(res)
   }
 
   return res.json()
 }
 
+/** Guard: only one refresh-in-flight at a time.
+ *  Multiple concurrent 401 responses all await the same
+ *  single refresh, avoiding race conditions where parallel
+ *  requests revoke each other's newly-issued tokens. */
+let refreshPromise: Promise<string | null> | null = null
+
+/**
+ * Named Web Locks key. Two tabs share the same localStorage tokens but have
+ * independent JS runtimes, so a per-tab single-flight promise cannot prevent
+ * them from racing the same single-use refresh token. Serializing the refresh
+ * under a cross-tab lock (plus re-reading the tokens inside it) means only one
+ * tab ever sends a given refresh token to the server.
+ */
+const REFRESH_LOCK_NAME = 'mythrion-auth-refresh'
+
 export async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = getRefreshToken()
-  if (!refreshToken) {
-    // No refresh token, clear auth
-    removeAccessToken()
-    removeRefreshToken()
-    return null
+  // If a refresh is already in-flight in THIS tab, wait for it instead of
+  // firing a second one.
+  if (refreshPromise) {
+    return refreshPromise
   }
 
-  try {
-    const res = await fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    })
+  const doRefresh = async (): Promise<string | null> => {
+    // Re-read inside the lock: another tab may have already rotated the tokens
+    // while we were waiting. If the stored access token is a valid, fresh JWT
+    // there is nothing to do — returning it avoids a doomed refresh of an
+    // already-revoked refresh token (which the server would answer 401, killing
+    // the session). The `decodeJwtPayload` guard matters: a plain/non-JWT token
+    // (or one whose session was server-side revoked) falls through to a real
+    // refresh attempt, which either self-heals it or surfaces a genuine 401.
+    const existing = getAccessToken()
+    if (
+      existing &&
+      decodeJwtPayload(existing) &&
+      !isAccessTokenExpiringSoon(existing)
+    ) {
+      return existing
+    }
 
-    if (!res.ok) {
+    const refreshToken = getRefreshToken()
+    if (!refreshToken) {
+      // No refresh token means there is nothing to refresh — the session is
+      // definitively over.
       removeAccessToken()
       removeRefreshToken()
+      notifyAuthFailure()
       return null
     }
 
-    const data = await res.json()
-    setAccessToken(data.accessToken)
-    setRefreshToken(data.refreshToken)
-    return data.accessToken
+    try {
+      const res = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      })
+
+      if (res.status === 401 || res.status === 403) {
+        // A 401 here means the token we sent was rejected. If another tab
+        // already stored a replacement, this is the stale token losing the
+        // race — not a real session loss. Re-check before nuking the session.
+        if (getRefreshToken() !== refreshToken) {
+          return getAccessToken()
+        }
+        // The server definitively rejected the refresh token (revoked,
+        // expired, or invalid). The session is over — clear it.
+        removeAccessToken()
+        removeRefreshToken()
+        notifyAuthFailure()
+        return null
+      }
+
+      if (!res.ok) {
+        // Transient failure (5xx, gateway, etc.). Keep the tokens so a later
+        // attempt can succeed — a server hiccup is not a logout.
+        return null
+      }
+
+      const data = await res.json()
+      setAccessToken(data.accessToken)
+      setRefreshToken(data.refreshToken)
+      return data.accessToken
+    } catch {
+      // Network error — transient. Keep the tokens and let the next request
+      // (or the focus listener) retry the refresh.
+      return null
+    }
+  }
+
+  const canLock =
+    typeof navigator !== 'undefined' && 'locks' in navigator
+
+  // navigator.locks.request resolves with the callback's return value, and the
+  // callback returns a promise (doRefresh). The installed DOM lib types that as
+  // Promise<Promise<string | null>>; awaiting it through this async wrapper
+  // flattens the layers so refreshPromise stays a single promise.
+  async function withRefreshLock(): Promise<string | null> {
+    return await navigator.locks.request(REFRESH_LOCK_NAME, doRefresh)
+  }
+
+  refreshPromise = canLock ? withRefreshLock() : doRefresh()
+
+  try {
+    return await refreshPromise
+  } finally {
+    refreshPromise = null
+  }
+}
+
+/** Leeway before expiry (ms) at which we proactively rotate the access token. */
+const PROACTIVE_REFRESH_LEEWAY_MS = 60_000
+
+/** True when the access token will expire within the proactive-refresh leeway.
+ *  Non-JWT or unparseable tokens are treated as not expiring-soon so callers
+ *  never block on a bogus token. */
+export function isAccessTokenExpiringSoon(token: string): boolean {
+  const payload = decodeJwtPayload(token)
+  if (!payload || typeof payload.exp !== 'number') return false
+  return payload.exp * 1000 - Date.now() < PROACTIVE_REFRESH_LEEWAY_MS
+}
+
+/** Decode the payload of a JWT without verifying the signature.
+ *  Security note: the decoded payload is not verified — it is extracted
+ *  from the JWT only for presentation (e.g. checking `role`). All
+ *  authorization decisions MUST be enforced server-side by guards. */
+export function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const payload = token.split('.')[1]
+    if (!payload) return null
+    // JWT payloads are base64url: `-`/`_` replace `+`/`/` and padding `=` is
+    // stripped. atob() expects standard base64, so swap the alphabet and
+    // re-add padding before decoding — otherwise decoding silently fails and
+    // proactive refresh / role checks are disabled.
+    const base64 = payload.replaceAll('-', '+').replaceAll('_', '/')
+    const padded = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      '=',
+    )
+    return JSON.parse(atob(padded))
   } catch {
-    removeAccessToken()
-    removeRefreshToken()
     return null
   }
 }
@@ -166,4 +324,45 @@ export const api = {
   patch: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+}
+
+/**
+ * fetch() that participates in the same auth lifecycle as `api`: attaches the
+ * current access token (refreshing proactively if near expiry) and follows a
+ * 401 with one refresh + retry. Use for endpoints that need raw fetch — HEAD
+ * checks, FormData/multipart uploads, etc. — instead of the JSON api helpers.
+ */
+export async function authFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
+  let token = typeof window !== 'undefined' ? getAccessToken() : null
+  if (token && typeof window !== 'undefined' && isAccessTokenExpiringSoon(token)) {
+    const fresh = await refreshAccessToken()
+    if (fresh) token = fresh
+  }
+
+  const headers = new Headers(init.headers)
+  if (!headers.has('Accept-Language')) {
+    headers.set(
+      'Accept-Language',
+      typeof window !== 'undefined' ? i18n.language : DEFAULT_LANGUAGE,
+    )
+  }
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  const res = await fetch(input, { ...init, headers })
+
+  if (res.status === 401 && typeof window !== 'undefined') {
+    const newToken = await refreshAccessToken()
+    if (newToken) {
+      const retryHeaders = new Headers(init.headers)
+      retryHeaders.set('Authorization', `Bearer ${newToken}`)
+      return fetch(input, { ...init, headers: retryHeaders })
+    }
+  }
+
+  return res
 }

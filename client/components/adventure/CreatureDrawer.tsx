@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback, type FormEvent } from 'react'
-import { api, API_URL } from '@/lib/api'
+import { useState, useEffect, useCallback, type SubmitEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import { api, API_URL, authFetch } from '@/lib/api'
 import { NumericInput } from '@/components/shared/NumericInput'
 
 /* ── Types (mirroring the backend for type safety) ── */
@@ -9,87 +10,27 @@ import { NumericInput } from '@/components/shared/NumericInput'
 interface TemplateAttribute {
   id: string; key: string; name: string
 }
-interface ArmorClassField {
-  id: string; name: string; key: string; defaultValue: string; editableByPlayer: boolean; description: string | null
-}
-interface ArmorClassAttributeModifier {
-  id: string; attributeId: string; allowPlayerSelection: boolean; defaultAttributeId: string | null
-  attribute: { id: string; key: string; name: string }
-  defaultAttribute: { id: string; key: string; name: string } | null
-}
-interface TemplateArmorClass {
-  id: string; name: string; enabled: boolean
-  fields: ArmorClassField[]
-  attributeModifiers: ArmorClassAttributeModifier[]
-}
-interface TemplateSkill {
-  id: string; name: string; description: string | null; attributeId: string | null
-  allowedAttributeIds: string[]; defaultAttributeId: string | null
-  attribute: { id: string; key: string; name: string } | null
-  defaultAttribute: { id: string; key: string; name: string } | null
-}
-interface SkillModifierProfile {
-  id: string; name: string; targetMode: string; targetSkillIds: string[]
-  options: { id: string; label: string; value: number }[]
-}
-interface ResistanceComponent {
-  id: string; name: string; editableByPlayer: boolean; defaultValue: string
-}
-interface ResistanceAttributeModifier {
-  id: string; attributeId: string; enabled: boolean
-  attribute: { id: string; key: string; name: string }
-}
-interface TemplateResistance {
-  id: string; name: string; calculationType: string; order: number
-  components: ResistanceComponent[]
-  attributeModifiers: ResistanceAttributeModifier[]
-}
 interface Template {
   id: string; name: string; description: string | null
-  attributeModifierFormula: string | null; skillFormula: string | null
+  attributeModifierFormula: string | null
   attributes: TemplateAttribute[]
   templateFields: { id: string; key: string; label: string }[]
-  templateSkills: TemplateSkill[]
-  skillModifierProfiles: SkillModifierProfile[]
-  coreResources: { id: string; slug: string; displayName: string }[]
-  armorClasses: TemplateArmorClass[]
   characterSections: { id: string; name: string }[]
-  resistances: TemplateResistance[]
 }
 
 interface SummonAttribute {
   id: string; abilityId: string; attributeId: string; value: string
 }
-interface SummonSkillProfileValue {
-  profileId: string; optionId: string | null
-  profile: { id: string; name: string; targetMode: string; targetSkillIds: string[] }
-  option: { id: string; label: string; value: number } | null
-}
 interface SummonSkill {
-  id: string; skillId: string; selectedAttributeId: string | null
-  skill: {
-    id: string; name: string; description: string | null; attributeId: string | null
-    allowedAttributeIds: string[]; defaultAttributeId: string | null
-    attribute: { id: string; key: string; name: string } | null
-    defaultAttribute: { id: string; key: string; name: string } | null
-  }
-  selectedAttribute: { id: string; key: string; name: string } | null
-  profileValues: SummonSkillProfileValue[]
-}
-interface SummonAcAttributeValue {
-  id: string; acAttributeModifierId: string; selectedAttributeId: string | null
-  selectedAttribute: { id: string; key: string; name: string } | null
+  id: string; name: string; manualValue: number
 }
 
 interface CreatureAbility {
   id: string; name: string; type: string; description: string | null; notes: string | null
   sheetId: string
   summonAttributes: SummonAttribute[]
-  summonAcValues: { id: string; abilityId: string; fieldId: string; value: string }[]
-  summonAcAttributeValues: SummonAcAttributeValue[]
+  summonAcValues: { id: string; abilityId: string; value: string }[]
   summonHealth: { id: string; abilityId: string; current: number | null; maximum: number | null; notes: string | null } | null
-  summonResistanceValues: { id: string; resistanceId: string; manualValue: string | null }[]
-  summonResistanceComponentValues: { id: string; componentId: string; value: string }[]
   summonSkills: SummonSkill[]
   childAbilities: CreatureAbility[]
   levels: { id: string; level: string; description: string | null; manaCost: number | null; range: string | null; notes: string | null; damage: string | null }[]
@@ -103,18 +44,46 @@ interface ChildAbility {
   levels: AbilityLevel[]
 }
 
+/* ── Module helpers ── */
+
+const ATTRIBUTE_SKELETON_KEYS = ['a', 'b', 'c', 'd', 'e', 'f']
+
+function updateChildAbilityLevel(
+  childAbilities: ChildAbility[],
+  abilityId: string,
+  levelId: string,
+  patch: Record<string, unknown>,
+): ChildAbility[] {
+  return childAbilities.map(c =>
+    c.id === abilityId
+      ? { ...c, levels: c.levels.map(l => l.id === levelId ? { ...l, ...patch } : l) }
+      : c
+  )
+}
+
+function removeChildAbilityLevel(
+  childAbilities: ChildAbility[],
+  childId: string,
+  levelId: string,
+): ChildAbility[] {
+  return childAbilities.map(c =>
+    c.id === childId ? { ...c, levels: c.levels.filter(l => l.id !== levelId) } : c
+  )
+}
+
 /* ── Prop ── */
 
 interface CreatureDrawerProps {
-  ability: CreatureAbility | null
-  sheetId: string | null
-  onClose: () => void
-  onUpdate: () => void
+  readonly ability: CreatureAbility | null
+  readonly sheetId: string | null
+  readonly onClose: () => void
+  readonly onUpdate: () => void
 }
 
 /* ── Component ── */
 
 export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: CreatureDrawerProps) {
+  const { t } = useTranslation()
   const [template, setTemplate] = useState<Template | null>(null)
   const [templateLoading, setTemplateLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -128,17 +97,10 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
   const [hpMax, setHpMax] = useState<number | null>(null)
   const [hpNotes, setHpNotes] = useState('')
   const [attrValues, setAttrValues] = useState<Record<string, string>>({})
-  const [acValues, setAcValues] = useState<Record<string, string>>({})
-  const [resistValues, setResistValues] = useState<Record<string, string | null>>({})
-  const [resistComponentValues, setResistComponentValues] = useState<Record<string, string>>({})
+  const [acValue, setAcValue] = useState('10')
 
   /* ── Computed / derived state ── */
   const [modifierResults, setModifierResults] = useState<Record<string, number | null>>({})
-  const [acTotals, setAcTotals] = useState<Record<string, number | null>>({})
-  const [skillResults, setSkillResults] = useState<Record<string, number | null>>({})
-  const [resistanceData, setResistanceData] = useState<
-    Array<{ resistanceId: string; name: string; calculationType: string; total: number }>
-  >([])
 
   /* ── Child ability management ── */
   const [childAbilities, setChildAbilities] = useState<ChildAbility[]>([])
@@ -149,7 +111,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
   })
   const [childAbilitySaving, setChildAbilitySaving] = useState(false)
   const [childAbilityError, setChildAbilityError] = useState<string | null>(null)
-  const [savingChildField, setSavingChildField] = useState<Record<string, boolean>>({})
   const [addingLevel, setAddingLevel] = useState<string | null>(null)
 
   /* ── Copy ability data into local state when it changes ── */
@@ -164,15 +125,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
     const av: Record<string, string> = {}
     for (const sa of ability.summonAttributes) av[sa.attributeId] = sa.value
     setAttrValues(av)
-    const acv: Record<string, string> = {}
-    for (const sa of ability.summonAcValues) acv[sa.fieldId] = sa.value
-    setAcValues(acv)
-    const rv: Record<string, string | null> = {}
-    for (const sr of ability.summonResistanceValues) rv[sr.resistanceId] = sr.manualValue
-    setResistValues(rv)
-    const rcv: Record<string, string> = {}
-    for (const sc of ability.summonResistanceComponentValues) rcv[sc.componentId] = sc.value
-    setResistComponentValues(rcv)
+    setAcValue(ability.summonAcValues?.[0]?.value ?? '10')
     /* Copy child abilities */
     setChildAbilities(ability.childAbilities?.map(c => ({
       id: c.id,
@@ -183,9 +136,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
     })) ?? [])
     /* Reset computed state */
     setModifierResults({})
-    setAcTotals({})
-    setSkillResults({})
-    setResistanceData([])
     setShowNewChildAbility(false)
   }, [ability])
 
@@ -206,7 +156,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
           setTemplate(tpl)
           // Kick off initial computations
           computeModifiers(tpl, ability!.summonAttributes)
-          fetchResistances(sheetId!)
         }
       })
       .catch(() => {
@@ -226,10 +175,10 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
       try {
         const vars: Record<string, number> = {}
         tpl.attributes.forEach(a => {
-          const v = parseFloat(attrs.find(s => s.attributeId === a.id)?.value ?? '0')
-          vars[a.key] = isNaN(v) ? 0 : v
+          const v = Number.parseFloat(attrs.find(s => s.attributeId === a.id)?.value ?? '0')
+          vars[a.key] = Number.isNaN(v) ? 0 : v
         })
-        vars['value'] = parseFloat(attrs.find(s => s.attributeId === attr.id)?.value ?? '0') || 0
+        vars['value'] = Number.parseFloat(attrs.find(s => s.attributeId === attr.id)?.value ?? '0') || 0
         const res = await api.post<{ result: number }>('/formula/evaluate', { formula, variables: vars })
         results[attr.id] = res.result
       } catch { results[attr.id] = null }
@@ -238,107 +187,13 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
     return results
   }, [])
 
-  const computeAC = useCallback((attrs: Record<string, string>, mods: Record<string, number | null>, abilityData: CreatureAbility) => {
-    if (!template) { setAcTotals({}); return }
-    const acs = template.armorClasses?.filter(ac => ac.enabled) ?? []
-    const totals: Record<string, number | null> = {}
-    for (const ac of acs) {
-      let total = 0
-      ac.fields.forEach(f => {
-        const v = parseFloat(attrs[f.id] ?? f.defaultValue)
-        if (!isNaN(v)) total += v
-      })
-      const selectedByModifierId = new Map(
-        (abilityData.summonAcAttributeValues ?? []).map(v => [v.acAttributeModifierId, v.selectedAttributeId])
-      )
-      for (const am of ac.attributeModifiers) {
-        const effectiveAttributeId = am.allowPlayerSelection
-          ? (selectedByModifierId.get(am.id) ?? am.defaultAttributeId ?? am.attributeId)
-          : am.attributeId
-        const modResult = mods[effectiveAttributeId]
-        if (modResult !== null && modResult !== undefined && !isNaN(modResult)) {
-          total += Math.max(0, modResult)
-        }
-      }
-      totals[ac.id] = total
-    }
-    setAcTotals(totals)
-  }, [template])
-
-  const computeSkills = useCallback(async (tpl: Template, attributes: SummonAttribute[]) => {
-    const formula = tpl.skillFormula
-    if (!formula?.trim() || !ability) { setSkillResults({}); return }
-    const results: Record<string, number | null> = {}
-    // Compute modifier vars
-    const modifierVars: Record<string, number> = {}
-    const globalFormula = tpl.attributeModifierFormula
-    if (globalFormula?.trim()) {
-      for (const attr of tpl.attributes) {
-        try {
-          const modVars: Record<string, number> = {}
-          tpl.attributes.forEach(a => {
-            const v = parseFloat(attributes.find(s => s.attributeId === a.id)?.value ?? '0')
-            modVars[a.key] = isNaN(v) ? 0 : v
-          })
-          modVars['value'] = parseFloat(attributes.find(s => s.attributeId === attr.id)?.value ?? '0') || 0
-          const mr = await api.post<{ result: number }>('/formula/evaluate', { formula: globalFormula, variables: modVars })
-          modifierVars[`${attr.key}_mod`] = mr.result
-        } catch { modifierVars[`${attr.key}_mod`] = 0 }
-      }
-    }
-    for (const ss of ability!.summonSkills) {
-      try {
-        let finalResult = 0
-        const selectedAttr = ss.selectedAttribute || ss.skill.defaultAttribute || ss.skill.attribute
-        const skillAttrValue = selectedAttr
-          ? parseFloat(attributes.find(sa => sa.attributeId === selectedAttr.id)?.value ?? '0')
-          : 0
-        const variables: Record<string, number> = { ...modifierVars }
-        variables['value'] = isNaN(skillAttrValue) ? 0 : skillAttrValue
-        if (selectedAttr) variables['value_mod'] = modifierVars[`${selectedAttr.key}_mod`] ?? 0
-        tpl.attributes.forEach(a => {
-          const v = parseFloat(attributes.find(s => s.attributeId === a.id)?.value ?? '0')
-          variables[a.key] = isNaN(v) ? 0 : v
-        })
-        variables['level'] = 1
-        const res = await api.post<{ result: number }>('/formula/evaluate', { formula, variables })
-        finalResult = res.result
-        // Add profile values
-        for (const spv of ss.profileValues ?? []) {
-          if (spv.option) finalResult += spv.option.value
-        }
-        results[ss.id] = finalResult
-      } catch { results[ss.id] = null }
-    }
-    setSkillResults(results)
-  }, [ability])
-
-  const fetchResistances = useCallback(async (sid: string) => {
-    try {
-      const data = await api.get<Array<{ resistanceId: string; name: string; calculationType: string; total: number }>>(
-        `/character-sheets/${sid}/resistances`
-      )
-      setResistanceData(data)
-    } catch {
-      /* probably no NPC sheet yet */
-    }
-  }, [])
-
-  /* Re-compute when attrValues or ability changes */
+  /* Re-compute modifiers when attrValues or template changes */
   useEffect(() => {
     if (!template || !ability) return
     computeModifiers(template, ability!.summonAttributes.map(sa => ({
       ...sa,
       value: attrValues[sa.attributeId] ?? sa.value,
-    }))).then(mods => {
-      if (mods) {
-        computeAC(attrValues, mods, ability!)
-        computeSkills(template, ability!.summonAttributes.map(sa => ({
-          ...sa,
-          value: attrValues[sa.attributeId] ?? sa.value,
-        })))
-      }
-    })
+    })))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attrValues, template])
 
@@ -371,22 +226,14 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
       for (const [attributeId, value] of Object.entries(attrValues)) {
         await api.patch(`/character-sheets/${sheetId}/abilities/${ability.id}/summon-attributes/${attributeId}`, { value })
       }
-      for (const [fieldId, value] of Object.entries(acValues)) {
-        await api.patch(`/character-sheets/${sheetId}/abilities/${ability.id}/summon-ac/${fieldId}`, { value })
-      }
-      for (const [componentId, value] of Object.entries(resistComponentValues)) {
-        await api.patch(`/character-sheets/${sheetId}/abilities/${ability.id}/summon-resistance-components/${componentId}`, { value })
-      }
-      for (const [resistanceId, value] of Object.entries(resistValues)) {
-        await api.patch(`/character-sheets/${sheetId}/abilities/${ability.id}/summon-resistances/${resistanceId}`, { value })
-      }
+      await api.patch(`/character-sheets/${sheetId}/abilities/${ability.id}/summon-ac`, { value: acValue })
       onUpdate()
     } catch {
       /* silently fail */
     } finally {
       setSaving(false)
     }
-  }, [ability, sheetId, saveAbilityMetadata, saveHealth, attrValues, acValues, resistValues, resistComponentValues, onUpdate])
+  }, [ability, sheetId, saveAbilityMetadata, saveHealth, attrValues, acValue, onUpdate])
 
   /* ── Avatar upload ── */
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -396,10 +243,8 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
     try {
       const formData = new FormData()
       formData.append('avatar', file)
-      const token = localStorage.getItem('accessToken')
-      await fetch(`${API_URL}/images/abilities/${ability.id}/avatar`, {
+      await authFetch(`${API_URL}/images/abilities/${ability.id}/avatar`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       })
       setAvatarKey(k => k + 1)
@@ -413,7 +258,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
 
   /* ── Child ability CRUD ── */
 
-  async function handleCreateChildAbility(e: FormEvent) {
+  async function handleCreateChildAbility(e: SubmitEvent) {
     e.preventDefault()
     if (!ability || !sheetId || !newChildAbilityForm.name.trim()) return
     setChildAbilitySaving(true)
@@ -422,7 +267,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
       const body: Record<string, unknown> = {
         name: newChildAbilityForm.name.trim(),
         description: newChildAbilityForm.description.trim() || undefined,
-        manaCost: newChildAbilityForm.manaCost.trim() ? parseInt(newChildAbilityForm.manaCost, 10) : undefined,
+        manaCost: newChildAbilityForm.manaCost.trim() ? Number.parseInt(newChildAbilityForm.manaCost, 10) : undefined,
         range: newChildAbilityForm.range.trim() || undefined,
         damage: newChildAbilityForm.damage.trim() || undefined,
       }
@@ -444,7 +289,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
       setShowNewChildAbility(false)
       onUpdate()
     } catch (err) {
-      setChildAbilityError(err instanceof Error ? err.message : 'Failed to create ability')
+      setChildAbilityError(err instanceof Error ? err.message : t('campaign:failedToCreateAbility'))
     } finally {
       setChildAbilitySaving(false)
     }
@@ -452,7 +297,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
 
   async function saveChildAbilityField(childId: string, field: string, value: string) {
     if (!ability || !sheetId) return
-    setSavingChildField(prev => ({ ...prev, [`${childId}-${field}`]: true }))
     try {
       const body: Record<string, unknown> = {}
       if (field === 'name') body.name = value.trim()
@@ -463,8 +307,6 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
       onUpdate()
     } catch {
       /* silently fail */
-    } finally {
-      setSavingChildField(prev => ({ ...prev, [`${childId}-${field}`]: false }))
     }
   }
 
@@ -481,25 +323,18 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
 
   async function handleSaveLevelField(abilityId: string, levelId: string, field: string, value: string) {
     if (!ability || !sheetId) return
-    setSavingChildField(prev => ({ ...prev, [`${levelId}-${field}`]: true }))
     try {
       const body: Record<string, unknown> = {}
       if (field === 'level') body.level = value.trim()
       else if (field === 'description') body.description = value.trim() || null
-      else if (field === 'manaCost') body.manaCost = value.trim() ? parseInt(value, 10) : null
+      else if (field === 'manaCost') body.manaCost = value.trim() ? Number.parseInt(value, 10) : null
       else if (field === 'range') body.range = value.trim() || null
       else if (field === 'notes') body.notes = value.trim() || null
       else if (field === 'damage') body.damage = value.trim() || null
       await api.patch(`/character-sheets/${sheetId}/abilities/x/levels/${levelId}`, body)
-      setChildAbilities(prev => prev.map(c =>
-        c.id === abilityId
-          ? { ...c, levels: c.levels.map(l => l.id === levelId ? { ...l, ...body } : l) }
-          : c
-      ))
+      setChildAbilities(prev => updateChildAbilityLevel(prev, abilityId, levelId, body))
     } catch {
       /* silently fail */
-    } finally {
-      setSavingChildField(prev => ({ ...prev, [`${levelId}-${field}`]: false }))
     }
   }
 
@@ -509,7 +344,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
     try {
       const existingLevels = childAbilities.find(c => c.id === childId)?.levels ?? []
       const nextLevel = existingLevels.length > 0
-        ? String(Math.max(...existingLevels.map(l => parseInt(l.level || '0', 10))) + 1)
+        ? String(Math.max(...existingLevels.map(l => Number.parseInt(l.level || '0', 10))) + 1)
         : '1'
       const lvl = await api.post<AbilityLevel>(`/character-sheets/${sheetId}/abilities/${childId}/levels`, {
         level: nextLevel,
@@ -530,9 +365,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
     if (!ability || !sheetId) return
     try {
       await api.delete(`/character-sheets/${sheetId}/abilities/x/levels/${levelId}`)
-      setChildAbilities(prev => prev.map(c =>
-        c.id === childId ? { ...c, levels: c.levels.filter(l => l.id !== levelId) } : c
-      ))
+      setChildAbilities(prev => removeChildAbilityLevel(prev, childId, levelId))
       onUpdate()
     } catch {
       /* silently fail */
@@ -545,24 +378,16 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
     return template?.attributes.find(a => a.id === id)
   }
 
-  function findResistanceComponent(id: string) {
-    for (const r of template?.resistances ?? []) {
-      const c = r.components.find(c => c.id === id)
-      if (c) return { ...c, resistanceName: r.name }
-    }
-    return null
-  }
-
   /* ── Render ── */
   if (!ability) return null
 
   const isMob = ability.notes?.startsWith('[MOB]')
-  const displayNotes = isMob ? (ability.notes?.replace(/^\[MOB\]\s*/, '') ?? '') : (ability.notes ?? '')
+  const displayNotes = isMob ? (notes.replace(/^\[MOB\]\s*/, '') ?? '') : notes
 
   return (
     <>
       {/* Overlay */}
-      <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose} />
+      <button type="button" tabIndex={-1} aria-hidden="true" className="fixed inset-0 z-50 bg-black/40" onClick={onClose} />
 
       {/* Drawer panel */}
       <div className="fixed top-0 right-0 z-50 h-full w-[70vw] max-w-[900px] min-w-[400px] bg-surface border-l border-border shadow-2xl flex flex-col">
@@ -577,7 +402,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
                 className="w-full h-full object-cover"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
               />
-              <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 cursor-pointer transition-opacity">
+              <label aria-label={t('campaign:uploadAvatar')} className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 cursor-pointer transition-opacity">
                 {uploading ? (
                   <svg className="w-5 h-5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -598,7 +423,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
                 value={name}
                 onChange={e => setName(e.target.value)}
                 className="text-xl font-bold text-foreground bg-transparent border-none focus:outline-none focus:ring-0 w-full"
-                placeholder="Creature name"
+                placeholder={t('campaign:creatureNamePlaceholder')}
               />
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                 isMob
@@ -617,14 +442,14 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Saving...
+                  {t('campaign:saving')}
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                  Save
+                  {t('common:save')}
                 </span>
               )}
             </button>
@@ -641,29 +466,29 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
 
           {/* ── Details ── */}
           <section>
-            <h3 className="header-accent mb-3">Details</h3>
+            <h3 className="header-accent mb-3">{t('campaign:details')}</h3>
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Description</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">{t('common:description')}</label>
                 <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3}
                   className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
-                  placeholder="Brief description or appearance..." />
+                  placeholder={t('campaign:briefDescriptionOrAppearance')} />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Notes</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">{t('campaign:notes')}</label>
                 <textarea value={displayNotes} onChange={e => setNotes(isMob ? `[MOB] ${e.target.value}` : e.target.value)} rows={2}
                   className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
-                  placeholder="GM notes..." />
+                  placeholder={t('campaign:gmNotesPlaceholder')} />
               </div>
             </div>
           </section>
 
           {/* ── Health ── */}
           <section>
-            <h3 className="header-accent mb-3">Health</h3>
+            <h3 className="header-accent mb-3">{t('campaign:health')}</h3>
             <div className="flex items-start gap-4 flex-wrap">
               <div className="flex-1 min-w-[120px]">
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Current HP</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">{t('campaign:currentHp')}</label>
                 <NumericInput value={hpCurrent ?? ''}
                   onChange={e => setHpCurrent(e.target.value ? Number(e.target.value) : null)}
                   className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
@@ -672,7 +497,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
                 />
               </div>
               <div className="flex-1 min-w-[120px]">
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Max HP</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">{t('campaign:maxHp')}</label>
                 <NumericInput value={hpMax ?? ''}
                   onChange={e => setHpMax(e.target.value ? Number(e.target.value) : null)}
                   className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
@@ -681,10 +506,10 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
                 />
               </div>
               <div className="flex-[2] min-w-[200px]">
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">HP Notes</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">{t('campaign:hpNotes')}</label>
                 <input type="text" value={hpNotes} onChange={e => setHpNotes(e.target.value)}
                   className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                  placeholder="e.g. temp HP, damage resistance..." />
+                  placeholder={t('campaign:hpNotesPlaceholder')} />
               </div>
             </div>
           </section>
@@ -692,20 +517,21 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
           {/* ── Attributes (with computed modifiers) ── */}
           {template && (
             <section>
-              <h3 className="header-accent mb-3">Attributes</h3>
+              <h3 className="header-accent mb-3">{t('campaign:attributes')}</h3>
               {templateLoading ? (
                 <div className="flex gap-2 flex-wrap">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="skeleton h-24 w-20 rounded-lg" />
+                  {ATTRIBUTE_SKELETON_KEYS.map(k => (
+                    <div key={k} className="skeleton h-24 w-20 rounded-lg" />
                   ))}
                 </div>
               ) : (
                 <div className="flex gap-3 flex-wrap">
                   {template.attributes.map(attr => {
                     const mod = modifierResults[attr.id]
-                    const modDisplay = mod !== null && mod !== undefined
-                      ? (mod >= 0 ? `+${mod}` : String(mod))
-                      : null
+                    let modDisplay: string | null = null
+                    if (mod !== null && mod !== undefined) {
+                      modDisplay = mod >= 0 ? `+${mod}` : String(mod)
+                    }
                     return (
                       <div key={attr.id} className="flex flex-col items-center gap-1 min-w-[80px]">
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{attr.name}</span>
@@ -725,132 +551,41 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
             </section>
           )}
 
-          {/* ── Armor Class (with computed total) ── */}
-          {template && template.armorClasses.filter(ac => ac.enabled).length > 0 && (
-            <section>
-              <h3 className="header-accent mb-3">Armor Class</h3>
-              {template.armorClasses.filter(ac => ac.enabled).map(ac => {
-                const acTotal = acTotals[ac.id]
-                return (
-                  <div key={ac.id} className="card !p-4 mb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-semibold text-foreground">{ac.name}</h4>
-                      {acTotal !== null && acTotal !== undefined && (
-                        <span className="text-lg font-bold text-gradient">{acTotal}</span>
-                      )}
-                    </div>
-                    <div className="flex gap-3 flex-wrap">
-                      {ac.attributeModifiers.map(mod => {
-                        const selected = ability.summonAcAttributeValues.find(v => v.acAttributeModifierId === mod.id)
-                        const attrName = selected?.selectedAttribute?.name ?? mod.attribute.name
-                        const modResult = modifierResults[
-                          selected?.selectedAttributeId ?? mod.defaultAttributeId ?? mod.attributeId
-                        ]
-                        const modDisplay = modResult !== null && modResult !== undefined && modResult >= 0
-                          ? `+${modResult}`
-                          : '—'
-                        return (
-                          <div key={mod.id} className="flex flex-col items-center gap-1 min-w-[70px]">
-                            <span className="text-xs text-muted-foreground">{attrName}</span>
-                            <span className={`w-12 text-center rounded bg-surface border border-border px-2 py-1.5 text-xs font-mono ${modResult !== null && modResult !== undefined ? 'text-green-500' : 'text-foreground'}`}>
-                              {modDisplay}
-                            </span>
-                          </div>
-                        )
-                      })}
-                      {ac.fields.map(field => (
-                        <div key={field.id} className="flex flex-col items-center gap-1 min-w-[80px]">
-                          <span className="text-xs text-muted-foreground">{field.name}</span>
-                          <input type="text" value={acValues[field.id] ?? field.defaultValue}
-                            onChange={e => setAcValues(p => ({ ...p, [field.id]: e.target.value }))}
-                            className="w-16 text-center rounded-lg bg-input border border-border px-2 py-1.5 text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </section>
-          )}
+          {/* ── Armor Class (single manual value) ── */}
+          <section>
+            <h3 className="header-accent mb-3">{t('campaign:armorClass')}</h3>
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-muted-foreground">{t('campaign:acShort')}</label>
+              <input type="text" value={acValue}
+                onChange={e => setAcValue(e.target.value)}
+                className="w-20 text-center rounded-lg bg-input border border-border px-3 py-2 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50" />
+            </div>
+          </section>
 
-          {/* ── Resistances (with computed totals) ── */}
-          {template && template.resistances.length > 0 && (
+          {/* ── Skills (manual name + value) ── */}
+          {ability.summonSkills.length > 0 && (
             <section>
-              <h3 className="header-accent mb-3">Resistances</h3>
-              <div className="space-y-2">
-                {template.resistances.map(r => {
-                  const computed = resistanceData.find(rd => rd.resistanceId === r.id)
-                  const total = computed?.total
-                  return (
-                    <div key={r.id} className="card !p-3">
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm font-medium text-foreground min-w-[100px]">{r.name}</span>
-                        {total !== null && total !== undefined && (
-                          <span className="text-lg font-bold text-gradient">{total}</span>
-                        )}
-                        <div className="flex items-center gap-2 ml-auto flex-wrap">
-                          {r.components.map(c => (
-                            <div key={c.id} className="flex items-center gap-1.5">
-                              <span className="text-xs text-muted-foreground">{c.name}:</span>
-                              <input type="text" value={resistComponentValues[c.id] ?? c.defaultValue}
-                                onChange={e => setResistComponentValues(p => ({ ...p, [c.id]: e.target.value }))}
-                                className="w-14 text-center rounded bg-input border border-border px-1.5 py-1 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-accent/50" />
-                            </div>
-                          ))}
-                          {r.calculationType === 'MANUAL' && (
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs text-muted-foreground">Manual:</span>
-                              <input type="text" value={resistValues[r.id] ?? ''}
-                                onChange={e => setResistValues(p => ({ ...p, [r.id]: e.target.value || null }))}
-                                className="w-14 text-center rounded bg-input border border-border px-1.5 py-1 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-accent/50" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </section>
-          )}
-
-          {/* ── Skills (with computed totals) ── */}
-          {template && template.templateSkills.length > 0 && (
-            <section>
-              <h3 className="header-accent mb-3">Skills</h3>
-              {template.templateSkills.map(skill => {
-                const summonSkill = ability.summonSkills.find(s => s.skillId === skill.id)
-                const selectedAttr = summonSkill?.selectedAttribute
-                const skillTotal = summonSkill ? skillResults[summonSkill.id] : null
-                const skillTotalDisplay = skillTotal !== null && skillTotal !== undefined
-                  ? (skillTotal >= 0 ? `+${skillTotal}` : String(skillTotal))
-                  : '—'
-                return (
-                  <div key={skill.id} className="data-row">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-sm font-medium text-foreground">{skill.name}</span>
-                      {selectedAttr && (
-                        <span className="text-xs text-muted-foreground">({selectedAttr.name})</span>
-                      )}
-                    </div>
-                    <span className={`text-sm font-mono font-bold text-right ${skillTotal !== null && skillTotal !== undefined ? 'text-green-500' : 'text-muted-foreground'}`}>
-                      {skillTotalDisplay}
-                    </span>
-                  </div>
-                )
-              })}
+              <h3 className="header-accent mb-3">{t('campaign:skills')}</h3>
+              {ability.summonSkills.map(skill => (
+                <div key={skill.id} className="data-row">
+                  <span className="text-sm font-medium text-foreground">{skill.name}</span>
+                  <span className="text-sm font-mono font-bold text-right text-foreground">
+                    {skill.manualValue >= 0 ? `+${skill.manualValue}` : String(skill.manualValue)}
+                  </span>
+                </div>
+              ))}
             </section>
           )}
 
           {/* ── Abilities (child abilities with CRUD) ── */}
           <section>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="header-accent mb-0">Abilities</h3>
+              <h3 className="header-accent mb-0">{t('campaign:abilities')}</h3>
               <button onClick={() => setShowNewChildAbility(!showNewChildAbility)} className="btn-primary !py-1.5 !px-3 !text-xs">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
-                {showNewChildAbility ? ' Cancel' : ' Add Ability'}
+                {showNewChildAbility ? t('campaign:cancelSpaced') : t('campaign:addAbilitySpaced')}
               </button>
             </div>
 
@@ -859,57 +594,57 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
               <form onSubmit={handleCreateChildAbility} className="card !p-4 mb-3 space-y-3 border-accent/30">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
-                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Name *</label>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">{t('campaign:nameRequired')}</label>
                     <input type="text" value={newChildAbilityForm.name}
                       onChange={e => setNewChildAbilityForm(p => ({ ...p, name: e.target.value }))}
                       className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                      placeholder="Ability name" required />
+                      placeholder={t('campaign:abilityNamePlaceholder')} required />
                   </div>
                   <div className="col-span-2">
-                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Description</label>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">{t('common:description')}</label>
                     <textarea value={newChildAbilityForm.description}
                       onChange={e => setNewChildAbilityForm(p => ({ ...p, description: e.target.value }))} rows={2}
                       className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
-                      placeholder="What does this ability do?" />
+                      placeholder={t('campaign:whatDoesAbilityDo')} />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Mana Cost</label>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">{t('campaign:manaCost')}</label>
                     <NumericInput value={newChildAbilityForm.manaCost}
                       onChange={e => setNewChildAbilityForm(p => ({ ...p, manaCost: e.target.value }))}
                       className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
                       wrapperClassName="w-full rounded-lg bg-input border border-border"
                       inputClassName="!w-full !bg-transparent !border-0 !px-3 !py-2 !text-sm !text-foreground focus:outline-none focus:ring-0"
-                      placeholder="MP" />
+                      placeholder={t('campaign:mp')} />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Range</label>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">{t('campaign:range')}</label>
                     <input type="text" value={newChildAbilityForm.range}
                       onChange={e => setNewChildAbilityForm(p => ({ ...p, range: e.target.value }))}
                       className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                      placeholder="e.g. 30ft" />
+                      placeholder={t('campaign:rangePlaceholder')} />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Damage</label>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">{t('campaign:damage')}</label>
                     <input type="text" value={newChildAbilityForm.damage}
                       onChange={e => setNewChildAbilityForm(p => ({ ...p, damage: e.target.value }))}
                       className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                      placeholder="e.g. 2d6" />
+                      placeholder={t('campaign:damagePlaceholder')} />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Initial Level</label>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">{t('campaign:initialLevel')}</label>
                     <input type="text" value={newChildAbilityForm.level}
                       onChange={e => setNewChildAbilityForm(p => ({ ...p, level: e.target.value }))}
                       className="w-full rounded-lg bg-input border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                      placeholder="e.g. 1" />
+                      placeholder={t('campaign:initialLevelPlaceholder')} />
                   </div>
                 </div>
                 {childAbilityError && (
                   <div className="rounded bg-danger/10 border border-danger/30 px-3 py-2 text-xs text-danger">{childAbilityError}</div>
                 )}
                 <div className="flex gap-2 justify-end">
-                  <button type="button" onClick={() => setShowNewChildAbility(false)} className="btn-ghost !py-1.5 !text-xs">Cancel</button>
+                  <button type="button" onClick={() => setShowNewChildAbility(false)} className="btn-ghost !py-1.5 !text-xs">{t('common:cancel')}</button>
                   <button type="submit" disabled={childAbilitySaving} className="btn-primary !py-1.5 !text-xs">
-                    {childAbilitySaving ? 'Creating...' : 'Create Ability'}
+                    {childAbilitySaving ? t('campaign:creating') : t('campaign:createAbility')}
                   </button>
                 </div>
               </form>
@@ -917,7 +652,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
 
             {/* Child ability list */}
             {childAbilities.length === 0 && !showNewChildAbility && (
-              <p className="text-sm text-muted-foreground italic">No abilities defined yet.</p>
+              <p className="text-sm text-muted-foreground italic">{t('campaign:noAbilitiesDefinedYet')}</p>
             )}
             <div className="space-y-2">
               {childAbilities.map(child => {
@@ -935,10 +670,10 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
                       <input type="text" value={child.name}
                         onChange={e => saveChildAbilityField(child.id, 'name', e.target.value)}
                         className="flex-1 text-sm font-semibold text-foreground bg-transparent border-none focus:outline-none focus:ring-0"
-                        placeholder="Ability name" />
+                        placeholder={t('campaign:abilityNamePlaceholder')} />
                       <button onClick={() => handleDeleteChildAbility(child.id)}
                         className="p-1 rounded text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                        aria-label={`Delete ${child.name}`}>
+                        aria-label={t('campaign:deleteNamed', { name: child.name })}>
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
@@ -951,18 +686,18 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
                           onChange={e => saveChildAbilityField(child.id, 'description', e.target.value)}
                           rows={2}
                           className="w-full rounded-lg bg-input border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
-                          placeholder="Ability description..." />
+                          placeholder={t('campaign:abilityDescriptionPlaceholder')} />
 
                         {/* Levels */}
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-medium text-muted-foreground">Levels</span>
+                            <span className="text-xs font-medium text-muted-foreground">{t('campaign:levels')}</span>
                             <button onClick={() => handleAddLevel(child.id)} disabled={addingLevel === child.id}
                               className="btn-ghost !py-0.5 !px-2 !text-[10px]">
-                              {addingLevel === child.id ? '...' : '+ Add Level'}
+                              {addingLevel === child.id ? '...' : t('campaign:addLevel')}
                             </button>
                           </div>
-                          {!hasLevels && <p className="text-xs text-muted-foreground italic">No levels yet.</p>}
+                          {!hasLevels && <p className="text-xs text-muted-foreground italic">{t('campaign:noLevelsYet')}</p>}
                           {hasLevels && (
                             <div className="space-y-2">
                               {child.levels.map(level => (
@@ -971,7 +706,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
                                     <input type="text" value={level.level}
                                       onChange={e => handleSaveLevelField(child.id, level.id, 'level', e.target.value)}
                                       className="w-12 text-center text-xs font-bold text-foreground bg-input border border-border rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-accent/50"
-                                      placeholder="Lv" />
+                                      placeholder={t('campaign:levelShort')} />
                                     <button onClick={() => handleDeleteLevel(child.id, level.id)}
                                       className="p-0.5 rounded text-muted-foreground hover:text-red-500 transition-colors">
                                       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -981,19 +716,19 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
                                   </div>
                                   <div className="flex gap-2 flex-wrap">
                                     <div className="flex items-center gap-1">
-                                      <span className="text-[10px] text-muted-foreground">MP:</span>
+                                      <span className="text-[10px] text-muted-foreground">{t('campaign:mpColon')}</span>
                                       <input type="text" value={level.manaCost ?? ''}
                                         onChange={e => handleSaveLevelField(child.id, level.id, 'manaCost', e.target.value)}
                                         className="w-12 text-center text-xs font-mono text-foreground bg-input border border-border rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-accent/50" />
                                     </div>
                                     <div className="flex items-center gap-1">
-                                      <span className="text-[10px] text-muted-foreground">Range:</span>
+                                      <span className="text-[10px] text-muted-foreground">{t('campaign:rangeColon')}</span>
                                       <input type="text" value={level.range ?? ''}
                                         onChange={e => handleSaveLevelField(child.id, level.id, 'range', e.target.value)}
                                         className="w-14 text-center text-xs font-mono text-foreground bg-input border border-border rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-accent/50" />
                                     </div>
                                     <div className="flex items-center gap-1">
-                                      <span className="text-[10px] text-muted-foreground">Dmg:</span>
+                                      <span className="text-[10px] text-muted-foreground">{t('campaign:dmgColon')}</span>
                                       <input type="text" value={level.damage ?? ''}
                                         onChange={e => handleSaveLevelField(child.id, level.id, 'damage', e.target.value)}
                                         className="w-14 text-center text-xs font-mono text-foreground bg-input border border-border rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-accent/50" />
@@ -1003,7 +738,7 @@ export function CreatureDrawer({ ability, sheetId, onClose, onUpdate }: Creature
                                     onChange={e => handleSaveLevelField(child.id, level.id, 'description', e.target.value)}
                                     rows={1}
                                     className="w-full rounded bg-input border border-border px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent/50 resize-none"
-                                    placeholder="Level description..." />
+                                    placeholder={t('campaign:levelDescriptionPlaceholder')} />
                                 </div>
                               ))}
                             </div>

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { FormulaService } from './formula.service.js'
 import { FormulaController } from './formula.controller.js'
+import { PreviewFormulaController } from './preview-formula.controller.js'
 import { JwtModule } from '@nestjs/jwt'
 
 @Module({
@@ -10,7 +11,7 @@ import { JwtModule } from '@nestjs/jwt'
       signOptions: { expiresIn: '7d' },
     }),
   ],
-  controllers: [FormulaController],
+  controllers: [FormulaController, PreviewFormulaController],
   providers: [FormulaService],
   exports: [FormulaService],
 })

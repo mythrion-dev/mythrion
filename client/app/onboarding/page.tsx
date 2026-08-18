@@ -1,15 +1,23 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
+import Image from 'next/image'
 import { useAuth } from '@/lib/auth-context'
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { t } = useTranslation()
   const { user, completeOnboarding, loading } = useAuth()
   const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  if (!loading && user && !user.emailVerified) {
+    router.replace('/verify-email')
+    return null
+  }
 
   if (!loading && user?.onboardingComplete) {
     router.replace('/dashboard')
@@ -21,7 +29,7 @@ export default function OnboardingPage() {
     return null
   }
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: SubmitEvent) {
     e.preventDefault()
     setError(null)
     setSubmitting(true)
@@ -30,7 +38,7 @@ export default function OnboardingPage() {
       await completeOnboarding(displayName.trim())
       router.push('/dashboard')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      setError(err instanceof Error ? err.message : t('auth:somethingWentWrong'))
     } finally {
       setSubmitting(false)
     }
@@ -39,7 +47,7 @@ export default function OnboardingPage() {
   if (loading) {
     return (
       <main className="flex-1 flex items-center justify-center p-4">
-        <div className="text-sm text-muted-foreground">Loading...</div>
+        <div className="text-sm text-muted-foreground">{t('common:loading')}</div>
       </main>
     )
   }
@@ -52,36 +60,29 @@ export default function OnboardingPage() {
       <div className="w-full max-w-sm space-y-6 animate-slide-up relative z-10">
         {/* Logo */}
         <div className="flex justify-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-surface border border-border ring-1 ring-primary/10 shadow-[0_0_30px_rgba(201,164,75,0.06)]">
-            <svg
-              className="w-7 h-7 text-primary"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4-6.2-4.5h7.6L12 2z"
-              />
-            </svg>
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Mythrion logo"
+            width={912}
+            height={703}
+            className="h-16 w-auto"
+            priority
+          />
         </div>
 
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold tracking-tight text-gradient">
-            Welcome to Mythrion
+            {t('auth:welcomeTitle')}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Before we begin, what should we call you in the realm?
+            {t('auth:welcomeSubtitle')}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="card !p-6 space-y-4">
           <div>
             <label htmlFor="displayName" className="label">
-              Display Name
+              {t('auth:displayName')}
             </label>
             <input
               id="displayName"
@@ -91,11 +92,11 @@ export default function OnboardingPage() {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               className="input-field"
-              placeholder="e.g. Arin the Bold"
+              placeholder={t('auth:displayNamePlaceholder')}
               autoFocus
             />
             <p className="text-xs text-muted mt-1.5">
-              This name will be visible to other adventurers.
+              {t('auth:displayNameHelper')}
             </p>
           </div>
 
@@ -110,7 +111,7 @@ export default function OnboardingPage() {
             disabled={submitting || displayName.trim().length === 0}
             className="btn-primary w-full"
           >
-            {submitting ? 'Enrolling...' : 'Begin your journey'}
+            {submitting ? t('auth:enrolling') : t('auth:beginJourney')}
           </button>
         </form>
       </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 // ── Inline Text ──
 export function InlineText({
@@ -12,15 +13,17 @@ export function InlineText({
   className = '',
   inputClassName = '',
   emptyDisplay = '—',
+  title,
 }: {
-  value: string
-  onSave: (value: string) => Promise<void>
-  placeholder?: string
-  maxLength?: number
-  disabled?: boolean
-  className?: string
-  inputClassName?: string
-  emptyDisplay?: string
+  readonly value: string
+  readonly onSave: (value: string) => Promise<void>
+  readonly placeholder?: string
+  readonly maxLength?: number
+  readonly disabled?: boolean
+  readonly className?: string
+  readonly inputClassName?: string
+  readonly emptyDisplay?: string
+  readonly title?: string
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value)
@@ -43,6 +46,7 @@ export function InlineText({
       <button
         type="button"
         disabled={disabled}
+        title={title}
         onClick={() => { if (!disabled) { setEditing(true); setTimeout(() => inputRef.current?.focus(), 0) } }}
         className={`text-left min-w-[40px] hover:bg-foreground/5 rounded px-1 -mx-1 transition-colors cursor-pointer ${disabled ? 'cursor-default hover:bg-transparent' : ''} ${className}`}
       >
@@ -62,7 +66,10 @@ export function InlineText({
         maxLength={maxLength}
         onChange={e => setDraft(e.target.value)}
         onBlur={commit}
-        onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setDraft(value); setEditing(false) } }}
+        onKeyDown={e => {
+          if (e.key === 'Enter') { commit() }
+          if (e.key === 'Escape') { setDraft(value); setEditing(false) }
+        }}
         className={`input-field py-0.5 px-1 text-sm ${inputClassName}`}
         placeholder={placeholder}
         autoFocus
@@ -84,16 +91,18 @@ export function InlineNumber({
   className = '',
   inputClassName = '',
   emptyDisplay = '—',
+  title,
 }: {
-  value: number | string | null | undefined
-  onSave: (value: number) => Promise<void>
-  min?: number
-  max?: number
-  step?: number
-  disabled?: boolean
-  className?: string
-  inputClassName?: string
-  emptyDisplay?: string
+  readonly value: number | string | null | undefined
+  readonly onSave: (value: number) => Promise<void>
+  readonly min?: number
+  readonly max?: number
+  readonly step?: number
+  readonly disabled?: boolean
+  readonly className?: string
+  readonly inputClassName?: string
+  readonly emptyDisplay?: string
+  readonly title?: string
 }) {
   const display = value != null && value !== '' ? String(value) : ''
   const [editing, setEditing] = useState(false)
@@ -104,9 +113,9 @@ export function InlineNumber({
   useEffect(() => { setDraft(display) }, [display])
 
   const commit = useCallback(async () => {
-    const num = draft.trim() === '' ? 0 : parseFloat(draft)
-    if (isNaN(num)) { setDraft(display); setEditing(false); return }
-    if (num === (parseFloat(display) || 0) && draft.trim() !== '' && !(display === '' && num === 0)) { setEditing(false); return }
+    const num = draft.trim() === '' ? 0 : Number.parseFloat(draft)
+    if (Number.isNaN(num)) { setDraft(display); setEditing(false); return }
+    if (num === (Number.parseFloat(display) || 0) && draft.trim() !== '' && !(display === '' && num === 0)) { setEditing(false); return }
     setSaving(true)
     try { await onSave(num); setEditing(false) }
     catch { setDraft(display) }
@@ -118,6 +127,7 @@ export function InlineNumber({
       <button
         type="button"
         disabled={disabled}
+        title={title}
         onClick={() => { if (!disabled) { setEditing(true); setTimeout(() => inputRef.current?.focus(), 0) } }}
         className={`text-left min-w-[30px] hover:bg-foreground/5 rounded px-1 -mx-1 transition-colors cursor-pointer ${disabled ? 'cursor-default hover:bg-transparent' : ''} ${className}`}
       >
@@ -139,7 +149,10 @@ export function InlineNumber({
         step={step}
         onChange={e => setDraft(e.target.value)}
         onBlur={commit}
-        onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setDraft(display); setEditing(false) } }}
+        onKeyDown={e => {
+          if (e.key === 'Enter') { commit() }
+          if (e.key === 'Escape') { setDraft(display); setEditing(false) }
+        }}
         className={`input-field py-0.5 px-1 text-sm w-20 ${inputClassName}`}
         autoFocus
         disabled={saving}
@@ -160,14 +173,14 @@ export function InlineTextarea({
   label,
   emptyDisplay = '—',
 }: {
-  value: string
-  onSave: (value: string) => Promise<void>
-  placeholder?: string
-  rows?: number
-  disabled?: boolean
-  className?: string
-  label?: string
-  emptyDisplay?: string
+  readonly value: string
+  readonly onSave: (value: string) => Promise<void>
+  readonly placeholder?: string
+  readonly rows?: number
+  readonly disabled?: boolean
+  readonly className?: string
+  readonly label?: string
+  readonly emptyDisplay?: string
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value)
@@ -233,24 +246,24 @@ export function InlineSelect<T extends string>({
   options,
   onSave,
   disabled = false,
-  placeholder = '— Select —',
+  placeholder,
   className = '',
 }: {
-  value: T | null
-  options: { value: T; label: string }[]
-  onSave: (value: T | null) => Promise<void>
-  disabled?: boolean
-  placeholder?: string
-  className?: string
+  readonly value: T | null
+  readonly options: { value: T; label: string }[]
+  readonly onSave: (value: T | null) => Promise<void>
+  readonly disabled?: boolean
+  readonly placeholder?: string
+  readonly className?: string
 }) {
+  const { t } = useTranslation()
+  const resolvedPlaceholder = placeholder ?? t('templates:selectPlaceholder')
   const [saving, setSaving] = useState(false)
   const selectRef = useRef<HTMLSelectElement>(null)
-  const selectedOption = options.find(o => o.value === value)
 
-  async function handleChange(newValue: string) {
-    const val = newValue || null
+  async function handleChange(newValue: string | null = null) {
     setSaving(true)
-    try { await onSave(val as T | null) }
+    try { await onSave(newValue as T | null) }
     catch { if (selectRef.current) selectRef.current.value = value ?? '' }
     finally { setSaving(false) }
   }
@@ -260,11 +273,11 @@ export function InlineSelect<T extends string>({
       <select
         ref={selectRef}
         value={value ?? ''}
-        onChange={e => handleChange(e.target.value)}
+        onChange={e => handleChange(e.target.value === '' ? null : e.target.value)}
         disabled={disabled || saving}
         className="input-field py-0.5 px-1 text-xs"
       >
-        <option value="">{placeholder}</option>
+        <option value="">{resolvedPlaceholder}</option>
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
       {saving && <div className="w-2.5 h-2.5 border border-primary/30 border-t-primary rounded-full animate-spin" />}
@@ -279,10 +292,10 @@ export function InlineCheckbox({
   disabled = false,
   label,
 }: {
-  checked: boolean
-  onToggle: () => Promise<void>
-  disabled?: boolean
-  label?: string
+  readonly checked: boolean
+  readonly onToggle: () => Promise<void>
+  readonly disabled?: boolean
+  readonly label?: string
 }) {
   const [saving, setSaving] = useState(false)
 

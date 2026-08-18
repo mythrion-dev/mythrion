@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Claude Code worktrees and session data
+.claude/
+
+# OS files
+.gitignore
+.DS_Store
+Thumbs.db
+test_logs/
+sonar-config.json
+images/
+
+# IDE / tooling local config
+.sonarlint/
+.vscode/
+
+# SonarQube bulk-fix session scratch
+sonarqube_tmp/
+.pagbank-api-requests-responses.md
+./server/docs/
+
+# PagBank homologation evidence (sandbox test script + generated log)
+server/scripts/pagbank-homologation-evidence.ts
+server/homologation/

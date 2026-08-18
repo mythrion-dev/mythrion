@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, type ChangeEvent, type InputHTMLAttributes } from 'react'
+import { useTranslation } from 'react-i18next'
 
 type NumericInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange'> & {
   onChange?: (event: ChangeEvent<HTMLInputElement>) => void
@@ -21,6 +22,7 @@ export function NumericInput({
   ...props
 }: NumericInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const { t } = useTranslation()
 
   const toNumber = (rawValue: string | number | readonly string[] | undefined) => {
     if (typeof rawValue === 'number') return rawValue
@@ -72,7 +74,7 @@ export function NumericInput({
           }}
           disabled={disabled}
           className="flex h-5 w-6 items-center justify-center text-[10px] leading-none text-muted transition-colors hover:bg-background/70 hover:text-foreground"
-          aria-label="Increase value"
+          aria-label={t('common:increaseValue')}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} className="h-3 w-3">
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
@@ -86,7 +88,7 @@ export function NumericInput({
           }}
           disabled={disabled}
           className="flex h-5 w-6 items-center justify-center border-t border-border/50 text-[10px] leading-none text-muted transition-colors hover:bg-background/70 hover:text-foreground"
-          aria-label="Decrease value"
+          aria-label={t('common:decreaseValue')}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} className="h-3 w-3">
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />

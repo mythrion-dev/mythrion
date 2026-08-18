@@ -1,0 +1,25 @@
+{
+  "privacyTitle": "Política de Privacidade",
+  "privacyIntro": "Na Mythrion, respeitamos sua privacidade e estamos comprometidos em proteger seus dados pessoais.",
+  "privacyDataUse": "Coletamos apenas as informações necessárias para criar e gerenciar sua conta, fornecer o serviço e processar pagamentos.",
+  "privacySecurity": "As informações da sua conta são protegidas com medidas de segurança padrão do setor, e limitamos o acesso a pessoal confiável.",
+  "privacyRetention": "Reteremos suas informações apenas enquanto necessário para operar o serviço, cumprir obrigações legais e dar suporte à sua conta.",
+  "privacyContact": "Se você tiver dúvidas sobre esta política, entre em contato com o suporte em portal@mythrion.com.",
+
+  "termsTitle": "Termos de Serviço",
+  "termsOfService": "Termos de Serviço",
+  "termsIntro": "Ao usar a Mythrion, você concorda com estes termos, que regem o acesso, as assinaturas e o comportamento aceitável.",
+  "termsSubscription": "O cancelamento da assinatura entra em vigor no final do período de cobrança atual. Você manterá o acesso pelo restante do período pago e não será cobrado novamente.",
+  "termsUserConduct": "Você concorda em não usar o serviço de forma inadequada, violar os direitos de terceiros ou se envolver em comportamento abusivo.",
+  "termsTermination": "A Mythrion pode suspender ou encerrar contas por violação destes termos ou por atividade que prejudique a plataforma.",
+  "termsContact": "Para dúvidas sobre estes termos, entre em contato com o suporte em portal@mythrion.com.",
+
+  "cancelTermsTitle": "Termos de Cancelamento de Assinatura",
+  "cancelTermsIntro": "Estes termos regem o cancelamento da sua assinatura do Mythrion Premium. Ao cancelar, você concorda com as condições abaixo.",
+  "cancelTermsEffect": "O cancelamento entra em vigor no final do período de cobrança atual. Depois que sua solicitação for processada, nenhuma nova renovação será agendada.",
+  "cancelTermsAccess": "Você manterá acesso total ao Mythrion Premium até o final do período pago, mesmo após solicitar o cancelamento.",
+  "cancelTermsCharges": "Você não será cobrado novamente após o cancelamento. Como você mantém o acesso pelo restante de um período já pago, nenhum reembolso é emitido por esse período.",
+  "cancelTermsHowToCancel": "Você pode cancelar a qualquer momento pela página de Assinatura no seu painel. Para enviar o cancelamento, você deve ler estes termos e marcar a caixa de aceite.",
+  "cancelTermsAfterCancellation": "Quando sua assinatura terminar, sua conta volta ao plano gratuito. Suas campanhas e fichas de personagem permanecem disponíveis, e os recursos que exigem um plano pago ficam limitados.",
+  "cancelTermsContact": "Para dúvidas sobre estes termos, entre em contato com o suporte em portal@mythrion.com."
+}

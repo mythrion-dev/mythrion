@@ -1,15 +1,26 @@
-import { Module } from '@nestjs/common'
+import { Global, Module, forwardRef } from '@nestjs/common'
 import { JwtModule } from '@nestjs/jwt'
 import { PassportModule } from '@nestjs/passport'
 import { AuthService } from './auth.service.js'
 import { AuthController } from './auth.controller.js'
+import { LanguageService } from './language.service.js'
 import { JwtAuthGuard } from './jwt-auth.guard.js'
 import { PrismaService } from '../prisma.service.js'
 import { GoogleService } from './google.service.js'
 import { GoogleStrategy } from './google.strategy.js'
+import { GoogleAuthGuard } from './google-auth.guard.js'
 import { TokenService } from './token.service.js'
 import { RateLimitGuard } from './rate-limit.guard.js'
+import { AdminService } from './admin.service.js'
+import { PermissionService } from './permission.service.js'
+import { SubscriptionGuard } from './subscription.guard.js'
+import { PlanLimitGuard } from './plan-limit.guard.js'
+import { AdminGuard } from './admin.guard.js'
+import { SubscriptionModule } from '../subscription/subscription.module.js'
+import { EmailModule } from '../email/email.module.js'
+import { TwoFactorService } from './two-factor.service.js'
 
+@Global()
 @Module({
   imports: [
     JwtModule.register({
@@ -17,17 +28,42 @@ import { RateLimitGuard } from './rate-limit.guard.js'
       signOptions: { expiresIn: '15m' },
     }),
     PassportModule,
+    forwardRef(() => SubscriptionModule),
+    EmailModule,
   ],
   controllers: [AuthController],
   providers: [
     AuthService,
+    LanguageService,
     JwtAuthGuard,
     PrismaService,
     GoogleService,
-    GoogleStrategy,
+    // OAuth2Strategy throws when GOOGLE_CLIENT_ID is empty. Only register the
+    // strategy when credentials exist so the app boots locally without them.
+    ...(process.env.GOOGLE_CLIENT_ID ? [GoogleStrategy] : []),
+    GoogleAuthGuard,
     TokenService,
     RateLimitGuard,
+    AdminService,
+    PermissionService,
+    SubscriptionGuard,
+    PlanLimitGuard,
+    AdminGuard,
+    TwoFactorService,
   ],
-  exports: [JwtAuthGuard, JwtModule, AuthService, GoogleService, TokenService, RateLimitGuard],
+  exports: [
+    JwtAuthGuard,
+    JwtModule,
+    AuthService,
+    LanguageService,
+    GoogleService,
+    TokenService,
+    RateLimitGuard,
+    AdminService,
+    PermissionService,
+    SubscriptionGuard,
+    PlanLimitGuard,
+    AdminGuard,
+  ],
 })
 export class AuthModule {}

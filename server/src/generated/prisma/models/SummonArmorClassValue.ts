@@ -27,8 +27,6 @@ export type AggregateSummonArmorClassValue = {
 export type SummonArmorClassValueMinAggregateOutputType = {
   id: string | null
   abilityId: string | null
-  armorClassId: string | null
-  fieldId: string | null
   value: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -37,8 +35,6 @@ export type SummonArmorClassValueMinAggregateOutputType = {
 export type SummonArmorClassValueMaxAggregateOutputType = {
   id: string | null
   abilityId: string | null
-  armorClassId: string | null
-  fieldId: string | null
   value: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -47,8 +43,6 @@ export type SummonArmorClassValueMaxAggregateOutputType = {
 export type SummonArmorClassValueCountAggregateOutputType = {
   id: number
   abilityId: number
-  armorClassId: number
-  fieldId: number
   value: number
   createdAt: number
   updatedAt: number
@@ -59,8 +53,6 @@ export type SummonArmorClassValueCountAggregateOutputType = {
 export type SummonArmorClassValueMinAggregateInputType = {
   id?: true
   abilityId?: true
-  armorClassId?: true
-  fieldId?: true
   value?: true
   createdAt?: true
   updatedAt?: true
@@ -69,8 +61,6 @@ export type SummonArmorClassValueMinAggregateInputType = {
 export type SummonArmorClassValueMaxAggregateInputType = {
   id?: true
   abilityId?: true
-  armorClassId?: true
-  fieldId?: true
   value?: true
   createdAt?: true
   updatedAt?: true
@@ -79,8 +69,6 @@ export type SummonArmorClassValueMaxAggregateInputType = {
 export type SummonArmorClassValueCountAggregateInputType = {
   id?: true
   abilityId?: true
-  armorClassId?: true
-  fieldId?: true
   value?: true
   createdAt?: true
   updatedAt?: true
@@ -162,8 +150,6 @@ export type SummonArmorClassValueGroupByArgs<ExtArgs extends runtime.Types.Exten
 export type SummonArmorClassValueGroupByOutputType = {
   id: string
   abilityId: string
-  armorClassId: string | null
-  fieldId: string
   value: string
   createdAt: Date
   updatedAt: Date
@@ -193,51 +179,36 @@ export type SummonArmorClassValueWhereInput = {
   NOT?: Prisma.SummonArmorClassValueWhereInput | Prisma.SummonArmorClassValueWhereInput[]
   id?: Prisma.StringFilter<"SummonArmorClassValue"> | string
   abilityId?: Prisma.StringFilter<"SummonArmorClassValue"> | string
-  armorClassId?: Prisma.StringNullableFilter<"SummonArmorClassValue"> | string | null
-  fieldId?: Prisma.StringFilter<"SummonArmorClassValue"> | string
   value?: Prisma.StringFilter<"SummonArmorClassValue"> | string
   createdAt?: Prisma.DateTimeFilter<"SummonArmorClassValue"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SummonArmorClassValue"> | Date | string
   ability?: Prisma.XOR<Prisma.CharacterAbilityScalarRelationFilter, Prisma.CharacterAbilityWhereInput>
-  armorClass?: Prisma.XOR<Prisma.TemplateArmorClassNullableScalarRelationFilter, Prisma.TemplateArmorClassWhereInput> | null
-  field?: Prisma.XOR<Prisma.ArmorClassFieldScalarRelationFilter, Prisma.ArmorClassFieldWhereInput>
 }
 
 export type SummonArmorClassValueOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   abilityId?: Prisma.SortOrder
-  armorClassId?: Prisma.SortOrderInput | Prisma.SortOrder
-  fieldId?: Prisma.SortOrder
   value?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   ability?: Prisma.CharacterAbilityOrderByWithRelationInput
-  armorClass?: Prisma.TemplateArmorClassOrderByWithRelationInput
-  field?: Prisma.ArmorClassFieldOrderByWithRelationInput
 }
 
 export type SummonArmorClassValueWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  abilityId_fieldId?: Prisma.SummonArmorClassValueAbilityIdFieldIdCompoundUniqueInput
+  abilityId?: string
   AND?: Prisma.SummonArmorClassValueWhereInput | Prisma.SummonArmorClassValueWhereInput[]
   OR?: Prisma.SummonArmorClassValueWhereInput[]
   NOT?: Prisma.SummonArmorClassValueWhereInput | Prisma.SummonArmorClassValueWhereInput[]
-  abilityId?: Prisma.StringFilter<"SummonArmorClassValue"> | string
-  armorClassId?: Prisma.StringNullableFilter<"SummonArmorClassValue"> | string | null
-  fieldId?: Prisma.StringFilter<"SummonArmorClassValue"> | string
   value?: Prisma.StringFilter<"SummonArmorClassValue"> | string
   createdAt?: Prisma.DateTimeFilter<"SummonArmorClassValue"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SummonArmorClassValue"> | Date | string
   ability?: Prisma.XOR<Prisma.CharacterAbilityScalarRelationFilter, Prisma.CharacterAbilityWhereInput>
-  armorClass?: Prisma.XOR<Prisma.TemplateArmorClassNullableScalarRelationFilter, Prisma.TemplateArmorClassWhereInput> | null
-  field?: Prisma.XOR<Prisma.ArmorClassFieldScalarRelationFilter, Prisma.ArmorClassFieldWhereInput>
-}, "id" | "abilityId_fieldId">
+}, "id" | "abilityId">
 
 export type SummonArmorClassValueOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   abilityId?: Prisma.SortOrder
-  armorClassId?: Prisma.SortOrderInput | Prisma.SortOrder
-  fieldId?: Prisma.SortOrder
   value?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -252,8 +223,6 @@ export type SummonArmorClassValueScalarWhereWithAggregatesInput = {
   NOT?: Prisma.SummonArmorClassValueScalarWhereWithAggregatesInput | Prisma.SummonArmorClassValueScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"SummonArmorClassValue"> | string
   abilityId?: Prisma.StringWithAggregatesFilter<"SummonArmorClassValue"> | string
-  armorClassId?: Prisma.StringNullableWithAggregatesFilter<"SummonArmorClassValue"> | string | null
-  fieldId?: Prisma.StringWithAggregatesFilter<"SummonArmorClassValue"> | string
   value?: Prisma.StringWithAggregatesFilter<"SummonArmorClassValue"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SummonArmorClassValue"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"SummonArmorClassValue"> | Date | string
@@ -265,15 +234,11 @@ export type SummonArmorClassValueCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   ability: Prisma.CharacterAbilityCreateNestedOneWithoutSummonAcValuesInput
-  armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutSummonAcValuesInput
-  field: Prisma.ArmorClassFieldCreateNestedOneWithoutSummonAcValuesInput
 }
 
 export type SummonArmorClassValueUncheckedCreateInput = {
   id?: string
   abilityId: string
-  armorClassId?: string | null
-  fieldId: string
   value?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -285,15 +250,11 @@ export type SummonArmorClassValueUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ability?: Prisma.CharacterAbilityUpdateOneRequiredWithoutSummonAcValuesNestedInput
-  armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutSummonAcValuesNestedInput
-  field?: Prisma.ArmorClassFieldUpdateOneRequiredWithoutSummonAcValuesNestedInput
 }
 
 export type SummonArmorClassValueUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   abilityId?: Prisma.StringFieldUpdateOperationsInput | string
-  armorClassId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  fieldId?: Prisma.StringFieldUpdateOperationsInput | string
   value?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -302,8 +263,6 @@ export type SummonArmorClassValueUncheckedUpdateInput = {
 export type SummonArmorClassValueCreateManyInput = {
   id?: string
   abilityId: string
-  armorClassId?: string | null
-  fieldId: string
   value?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -319,8 +278,6 @@ export type SummonArmorClassValueUpdateManyMutationInput = {
 export type SummonArmorClassValueUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   abilityId?: Prisma.StringFieldUpdateOperationsInput | string
-  armorClassId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  fieldId?: Prisma.StringFieldUpdateOperationsInput | string
   value?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -336,16 +293,9 @@ export type SummonArmorClassValueOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
-export type SummonArmorClassValueAbilityIdFieldIdCompoundUniqueInput = {
-  abilityId: string
-  fieldId: string
-}
-
 export type SummonArmorClassValueCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   abilityId?: Prisma.SortOrder
-  armorClassId?: Prisma.SortOrder
-  fieldId?: Prisma.SortOrder
   value?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -354,8 +304,6 @@ export type SummonArmorClassValueCountOrderByAggregateInput = {
 export type SummonArmorClassValueMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   abilityId?: Prisma.SortOrder
-  armorClassId?: Prisma.SortOrder
-  fieldId?: Prisma.SortOrder
   value?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -364,95 +312,9 @@ export type SummonArmorClassValueMaxOrderByAggregateInput = {
 export type SummonArmorClassValueMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   abilityId?: Prisma.SortOrder
-  armorClassId?: Prisma.SortOrder
-  fieldId?: Prisma.SortOrder
   value?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-}
-
-export type SummonArmorClassValueCreateNestedManyWithoutArmorClassInput = {
-  create?: Prisma.XOR<Prisma.SummonArmorClassValueCreateWithoutArmorClassInput, Prisma.SummonArmorClassValueUncheckedCreateWithoutArmorClassInput> | Prisma.SummonArmorClassValueCreateWithoutArmorClassInput[] | Prisma.SummonArmorClassValueUncheckedCreateWithoutArmorClassInput[]
-  connectOrCreate?: Prisma.SummonArmorClassValueCreateOrConnectWithoutArmorClassInput | Prisma.SummonArmorClassValueCreateOrConnectWithoutArmorClassInput[]
-  createMany?: Prisma.SummonArmorClassValueCreateManyArmorClassInputEnvelope
-  connect?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-}
-
-export type SummonArmorClassValueUncheckedCreateNestedManyWithoutArmorClassInput = {
-  create?: Prisma.XOR<Prisma.SummonArmorClassValueCreateWithoutArmorClassInput, Prisma.SummonArmorClassValueUncheckedCreateWithoutArmorClassInput> | Prisma.SummonArmorClassValueCreateWithoutArmorClassInput[] | Prisma.SummonArmorClassValueUncheckedCreateWithoutArmorClassInput[]
-  connectOrCreate?: Prisma.SummonArmorClassValueCreateOrConnectWithoutArmorClassInput | Prisma.SummonArmorClassValueCreateOrConnectWithoutArmorClassInput[]
-  createMany?: Prisma.SummonArmorClassValueCreateManyArmorClassInputEnvelope
-  connect?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-}
-
-export type SummonArmorClassValueUpdateManyWithoutArmorClassNestedInput = {
-  create?: Prisma.XOR<Prisma.SummonArmorClassValueCreateWithoutArmorClassInput, Prisma.SummonArmorClassValueUncheckedCreateWithoutArmorClassInput> | Prisma.SummonArmorClassValueCreateWithoutArmorClassInput[] | Prisma.SummonArmorClassValueUncheckedCreateWithoutArmorClassInput[]
-  connectOrCreate?: Prisma.SummonArmorClassValueCreateOrConnectWithoutArmorClassInput | Prisma.SummonArmorClassValueCreateOrConnectWithoutArmorClassInput[]
-  upsert?: Prisma.SummonArmorClassValueUpsertWithWhereUniqueWithoutArmorClassInput | Prisma.SummonArmorClassValueUpsertWithWhereUniqueWithoutArmorClassInput[]
-  createMany?: Prisma.SummonArmorClassValueCreateManyArmorClassInputEnvelope
-  set?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-  disconnect?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-  delete?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-  connect?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-  update?: Prisma.SummonArmorClassValueUpdateWithWhereUniqueWithoutArmorClassInput | Prisma.SummonArmorClassValueUpdateWithWhereUniqueWithoutArmorClassInput[]
-  updateMany?: Prisma.SummonArmorClassValueUpdateManyWithWhereWithoutArmorClassInput | Prisma.SummonArmorClassValueUpdateManyWithWhereWithoutArmorClassInput[]
-  deleteMany?: Prisma.SummonArmorClassValueScalarWhereInput | Prisma.SummonArmorClassValueScalarWhereInput[]
-}
-
-export type SummonArmorClassValueUncheckedUpdateManyWithoutArmorClassNestedInput = {
-  create?: Prisma.XOR<Prisma.SummonArmorClassValueCreateWithoutArmorClassInput, Prisma.SummonArmorClassValueUncheckedCreateWithoutArmorClassInput> | Prisma.SummonArmorClassValueCreateWithoutArmorClassInput[] | Prisma.SummonArmorClassValueUncheckedCreateWithoutArmorClassInput[]
-  connectOrCreate?: Prisma.SummonArmorClassValueCreateOrConnectWithoutArmorClassInput | Prisma.SummonArmorClassValueCreateOrConnectWithoutArmorClassInput[]
-  upsert?: Prisma.SummonArmorClassValueUpsertWithWhereUniqueWithoutArmorClassInput | Prisma.SummonArmorClassValueUpsertWithWhereUniqueWithoutArmorClassInput[]
-  createMany?: Prisma.SummonArmorClassValueCreateManyArmorClassInputEnvelope
-  set?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-  disconnect?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-  delete?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-  connect?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-  update?: Prisma.SummonArmorClassValueUpdateWithWhereUniqueWithoutArmorClassInput | Prisma.SummonArmorClassValueUpdateWithWhereUniqueWithoutArmorClassInput[]
-  updateMany?: Prisma.SummonArmorClassValueUpdateManyWithWhereWithoutArmorClassInput | Prisma.SummonArmorClassValueUpdateManyWithWhereWithoutArmorClassInput[]
-  deleteMany?: Prisma.SummonArmorClassValueScalarWhereInput | Prisma.SummonArmorClassValueScalarWhereInput[]
-}
-
-export type SummonArmorClassValueCreateNestedManyWithoutFieldInput = {
-  create?: Prisma.XOR<Prisma.SummonArmorClassValueCreateWithoutFieldInput, Prisma.SummonArmorClassValueUncheckedCreateWithoutFieldInput> | Prisma.SummonArmorClassValueCreateWithoutFieldInput[] | Prisma.SummonArmorClassValueUncheckedCreateWithoutFieldInput[]
-  connectOrCreate?: Prisma.SummonArmorClassValueCreateOrConnectWithoutFieldInput | Prisma.SummonArmorClassValueCreateOrConnectWithoutFieldInput[]
-  createMany?: Prisma.SummonArmorClassValueCreateManyFieldInputEnvelope
-  connect?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-}
-
-export type SummonArmorClassValueUncheckedCreateNestedManyWithoutFieldInput = {
-  create?: Prisma.XOR<Prisma.SummonArmorClassValueCreateWithoutFieldInput, Prisma.SummonArmorClassValueUncheckedCreateWithoutFieldInput> | Prisma.SummonArmorClassValueCreateWithoutFieldInput[] | Prisma.SummonArmorClassValueUncheckedCreateWithoutFieldInput[]
-  connectOrCreate?: Prisma.SummonArmorClassValueCreateOrConnectWithoutFieldInput | Prisma.SummonArmorClassValueCreateOrConnectWithoutFieldInput[]
-  createMany?: Prisma.SummonArmorClassValueCreateManyFieldInputEnvelope
-  connect?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-}
-
-export type SummonArmorClassValueUpdateManyWithoutFieldNestedInput = {
-  create?: Prisma.XOR<Prisma.SummonArmorClassValueCreateWithoutFieldInput, Prisma.SummonArmorClassValueUncheckedCreateWithoutFieldInput> | Prisma.SummonArmorClassValueCreateWithoutFieldInput[] | Prisma.SummonArmorClassValueUncheckedCreateWithoutFieldInput[]
-  connectOrCreate?: Prisma.SummonArmorClassValueCreateOrConnectWithoutFieldInput | Prisma.SummonArmorClassValueCreateOrConnectWithoutFieldInput[]
-  upsert?: Prisma.SummonArmorClassValueUpsertWithWhereUniqueWithoutFieldInput | Prisma.SummonArmorClassValueUpsertWithWhereUniqueWithoutFieldInput[]
-  createMany?: Prisma.SummonArmorClassValueCreateManyFieldInputEnvelope
-  set?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-  disconnect?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-  delete?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-  connect?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-  update?: Prisma.SummonArmorClassValueUpdateWithWhereUniqueWithoutFieldInput | Prisma.SummonArmorClassValueUpdateWithWhereUniqueWithoutFieldInput[]
-  updateMany?: Prisma.SummonArmorClassValueUpdateManyWithWhereWithoutFieldInput | Prisma.SummonArmorClassValueUpdateManyWithWhereWithoutFieldInput[]
-  deleteMany?: Prisma.SummonArmorClassValueScalarWhereInput | Prisma.SummonArmorClassValueScalarWhereInput[]
-}
-
-export type SummonArmorClassValueUncheckedUpdateManyWithoutFieldNestedInput = {
-  create?: Prisma.XOR<Prisma.SummonArmorClassValueCreateWithoutFieldInput, Prisma.SummonArmorClassValueUncheckedCreateWithoutFieldInput> | Prisma.SummonArmorClassValueCreateWithoutFieldInput[] | Prisma.SummonArmorClassValueUncheckedCreateWithoutFieldInput[]
-  connectOrCreate?: Prisma.SummonArmorClassValueCreateOrConnectWithoutFieldInput | Prisma.SummonArmorClassValueCreateOrConnectWithoutFieldInput[]
-  upsert?: Prisma.SummonArmorClassValueUpsertWithWhereUniqueWithoutFieldInput | Prisma.SummonArmorClassValueUpsertWithWhereUniqueWithoutFieldInput[]
-  createMany?: Prisma.SummonArmorClassValueCreateManyFieldInputEnvelope
-  set?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-  disconnect?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-  delete?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-  connect?: Prisma.SummonArmorClassValueWhereUniqueInput | Prisma.SummonArmorClassValueWhereUniqueInput[]
-  update?: Prisma.SummonArmorClassValueUpdateWithWhereUniqueWithoutFieldInput | Prisma.SummonArmorClassValueUpdateWithWhereUniqueWithoutFieldInput[]
-  updateMany?: Prisma.SummonArmorClassValueUpdateManyWithWhereWithoutFieldInput | Prisma.SummonArmorClassValueUpdateManyWithWhereWithoutFieldInput[]
-  deleteMany?: Prisma.SummonArmorClassValueScalarWhereInput | Prisma.SummonArmorClassValueScalarWhereInput[]
 }
 
 export type SummonArmorClassValueCreateNestedManyWithoutAbilityInput = {
@@ -497,120 +359,15 @@ export type SummonArmorClassValueUncheckedUpdateManyWithoutAbilityNestedInput = 
   deleteMany?: Prisma.SummonArmorClassValueScalarWhereInput | Prisma.SummonArmorClassValueScalarWhereInput[]
 }
 
-export type SummonArmorClassValueCreateWithoutArmorClassInput = {
-  id?: string
-  value?: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  ability: Prisma.CharacterAbilityCreateNestedOneWithoutSummonAcValuesInput
-  field: Prisma.ArmorClassFieldCreateNestedOneWithoutSummonAcValuesInput
-}
-
-export type SummonArmorClassValueUncheckedCreateWithoutArmorClassInput = {
-  id?: string
-  abilityId: string
-  fieldId: string
-  value?: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type SummonArmorClassValueCreateOrConnectWithoutArmorClassInput = {
-  where: Prisma.SummonArmorClassValueWhereUniqueInput
-  create: Prisma.XOR<Prisma.SummonArmorClassValueCreateWithoutArmorClassInput, Prisma.SummonArmorClassValueUncheckedCreateWithoutArmorClassInput>
-}
-
-export type SummonArmorClassValueCreateManyArmorClassInputEnvelope = {
-  data: Prisma.SummonArmorClassValueCreateManyArmorClassInput | Prisma.SummonArmorClassValueCreateManyArmorClassInput[]
-  skipDuplicates?: boolean
-}
-
-export type SummonArmorClassValueUpsertWithWhereUniqueWithoutArmorClassInput = {
-  where: Prisma.SummonArmorClassValueWhereUniqueInput
-  update: Prisma.XOR<Prisma.SummonArmorClassValueUpdateWithoutArmorClassInput, Prisma.SummonArmorClassValueUncheckedUpdateWithoutArmorClassInput>
-  create: Prisma.XOR<Prisma.SummonArmorClassValueCreateWithoutArmorClassInput, Prisma.SummonArmorClassValueUncheckedCreateWithoutArmorClassInput>
-}
-
-export type SummonArmorClassValueUpdateWithWhereUniqueWithoutArmorClassInput = {
-  where: Prisma.SummonArmorClassValueWhereUniqueInput
-  data: Prisma.XOR<Prisma.SummonArmorClassValueUpdateWithoutArmorClassInput, Prisma.SummonArmorClassValueUncheckedUpdateWithoutArmorClassInput>
-}
-
-export type SummonArmorClassValueUpdateManyWithWhereWithoutArmorClassInput = {
-  where: Prisma.SummonArmorClassValueScalarWhereInput
-  data: Prisma.XOR<Prisma.SummonArmorClassValueUpdateManyMutationInput, Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutArmorClassInput>
-}
-
-export type SummonArmorClassValueScalarWhereInput = {
-  AND?: Prisma.SummonArmorClassValueScalarWhereInput | Prisma.SummonArmorClassValueScalarWhereInput[]
-  OR?: Prisma.SummonArmorClassValueScalarWhereInput[]
-  NOT?: Prisma.SummonArmorClassValueScalarWhereInput | Prisma.SummonArmorClassValueScalarWhereInput[]
-  id?: Prisma.StringFilter<"SummonArmorClassValue"> | string
-  abilityId?: Prisma.StringFilter<"SummonArmorClassValue"> | string
-  armorClassId?: Prisma.StringNullableFilter<"SummonArmorClassValue"> | string | null
-  fieldId?: Prisma.StringFilter<"SummonArmorClassValue"> | string
-  value?: Prisma.StringFilter<"SummonArmorClassValue"> | string
-  createdAt?: Prisma.DateTimeFilter<"SummonArmorClassValue"> | Date | string
-  updatedAt?: Prisma.DateTimeFilter<"SummonArmorClassValue"> | Date | string
-}
-
-export type SummonArmorClassValueCreateWithoutFieldInput = {
-  id?: string
-  value?: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  ability: Prisma.CharacterAbilityCreateNestedOneWithoutSummonAcValuesInput
-  armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutSummonAcValuesInput
-}
-
-export type SummonArmorClassValueUncheckedCreateWithoutFieldInput = {
-  id?: string
-  abilityId: string
-  armorClassId?: string | null
-  value?: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type SummonArmorClassValueCreateOrConnectWithoutFieldInput = {
-  where: Prisma.SummonArmorClassValueWhereUniqueInput
-  create: Prisma.XOR<Prisma.SummonArmorClassValueCreateWithoutFieldInput, Prisma.SummonArmorClassValueUncheckedCreateWithoutFieldInput>
-}
-
-export type SummonArmorClassValueCreateManyFieldInputEnvelope = {
-  data: Prisma.SummonArmorClassValueCreateManyFieldInput | Prisma.SummonArmorClassValueCreateManyFieldInput[]
-  skipDuplicates?: boolean
-}
-
-export type SummonArmorClassValueUpsertWithWhereUniqueWithoutFieldInput = {
-  where: Prisma.SummonArmorClassValueWhereUniqueInput
-  update: Prisma.XOR<Prisma.SummonArmorClassValueUpdateWithoutFieldInput, Prisma.SummonArmorClassValueUncheckedUpdateWithoutFieldInput>
-  create: Prisma.XOR<Prisma.SummonArmorClassValueCreateWithoutFieldInput, Prisma.SummonArmorClassValueUncheckedCreateWithoutFieldInput>
-}
-
-export type SummonArmorClassValueUpdateWithWhereUniqueWithoutFieldInput = {
-  where: Prisma.SummonArmorClassValueWhereUniqueInput
-  data: Prisma.XOR<Prisma.SummonArmorClassValueUpdateWithoutFieldInput, Prisma.SummonArmorClassValueUncheckedUpdateWithoutFieldInput>
-}
-
-export type SummonArmorClassValueUpdateManyWithWhereWithoutFieldInput = {
-  where: Prisma.SummonArmorClassValueScalarWhereInput
-  data: Prisma.XOR<Prisma.SummonArmorClassValueUpdateManyMutationInput, Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutFieldInput>
-}
-
 export type SummonArmorClassValueCreateWithoutAbilityInput = {
   id?: string
   value?: string
   createdAt?: Date | string
   updatedAt?: Date | string
-  armorClass?: Prisma.TemplateArmorClassCreateNestedOneWithoutSummonAcValuesInput
-  field: Prisma.ArmorClassFieldCreateNestedOneWithoutSummonAcValuesInput
 }
 
 export type SummonArmorClassValueUncheckedCreateWithoutAbilityInput = {
   id?: string
-  armorClassId?: string | null
-  fieldId: string
   value?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -642,82 +399,19 @@ export type SummonArmorClassValueUpdateManyWithWhereWithoutAbilityInput = {
   data: Prisma.XOR<Prisma.SummonArmorClassValueUpdateManyMutationInput, Prisma.SummonArmorClassValueUncheckedUpdateManyWithoutAbilityInput>
 }
 
-export type SummonArmorClassValueCreateManyArmorClassInput = {
-  id?: string
-  abilityId: string
-  fieldId: string
-  value?: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type SummonArmorClassValueUpdateWithoutArmorClassInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  value?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  ability?: Prisma.CharacterAbilityUpdateOneRequiredWithoutSummonAcValuesNestedInput
-  field?: Prisma.ArmorClassFieldUpdateOneRequiredWithoutSummonAcValuesNestedInput
-}
-
-export type SummonArmorClassValueUncheckedUpdateWithoutArmorClassInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  abilityId?: Prisma.StringFieldUpdateOperationsInput | string
-  fieldId?: Prisma.StringFieldUpdateOperationsInput | string
-  value?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type SummonArmorClassValueUncheckedUpdateManyWithoutArmorClassInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  abilityId?: Prisma.StringFieldUpdateOperationsInput | string
-  fieldId?: Prisma.StringFieldUpdateOperationsInput | string
-  value?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type SummonArmorClassValueCreateManyFieldInput = {
-  id?: string
-  abilityId: string
-  armorClassId?: string | null
-  value?: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type SummonArmorClassValueUpdateWithoutFieldInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  value?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  ability?: Prisma.CharacterAbilityUpdateOneRequiredWithoutSummonAcValuesNestedInput
-  armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutSummonAcValuesNestedInput
-}
-
-export type SummonArmorClassValueUncheckedUpdateWithoutFieldInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  abilityId?: Prisma.StringFieldUpdateOperationsInput | string
-  armorClassId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  value?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type SummonArmorClassValueUncheckedUpdateManyWithoutFieldInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  abilityId?: Prisma.StringFieldUpdateOperationsInput | string
-  armorClassId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  value?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+export type SummonArmorClassValueScalarWhereInput = {
+  AND?: Prisma.SummonArmorClassValueScalarWhereInput | Prisma.SummonArmorClassValueScalarWhereInput[]
+  OR?: Prisma.SummonArmorClassValueScalarWhereInput[]
+  NOT?: Prisma.SummonArmorClassValueScalarWhereInput | Prisma.SummonArmorClassValueScalarWhereInput[]
+  id?: Prisma.StringFilter<"SummonArmorClassValue"> | string
+  abilityId?: Prisma.StringFilter<"SummonArmorClassValue"> | string
+  value?: Prisma.StringFilter<"SummonArmorClassValue"> | string
+  createdAt?: Prisma.DateTimeFilter<"SummonArmorClassValue"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"SummonArmorClassValue"> | Date | string
 }
 
 export type SummonArmorClassValueCreateManyAbilityInput = {
   id?: string
-  armorClassId?: string | null
-  fieldId: string
   value?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -728,14 +422,10 @@ export type SummonArmorClassValueUpdateWithoutAbilityInput = {
   value?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  armorClass?: Prisma.TemplateArmorClassUpdateOneWithoutSummonAcValuesNestedInput
-  field?: Prisma.ArmorClassFieldUpdateOneRequiredWithoutSummonAcValuesNestedInput
 }
 
 export type SummonArmorClassValueUncheckedUpdateWithoutAbilityInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  armorClassId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  fieldId?: Prisma.StringFieldUpdateOperationsInput | string
   value?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -743,8 +433,6 @@ export type SummonArmorClassValueUncheckedUpdateWithoutAbilityInput = {
 
 export type SummonArmorClassValueUncheckedUpdateManyWithoutAbilityInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  armorClassId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  fieldId?: Prisma.StringFieldUpdateOperationsInput | string
   value?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -755,81 +443,57 @@ export type SummonArmorClassValueUncheckedUpdateManyWithoutAbilityInput = {
 export type SummonArmorClassValueSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   abilityId?: boolean
-  armorClassId?: boolean
-  fieldId?: boolean
   value?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   ability?: boolean | Prisma.CharacterAbilityDefaultArgs<ExtArgs>
-  armorClass?: boolean | Prisma.SummonArmorClassValue$armorClassArgs<ExtArgs>
-  field?: boolean | Prisma.ArmorClassFieldDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["summonArmorClassValue"]>
 
 export type SummonArmorClassValueSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   abilityId?: boolean
-  armorClassId?: boolean
-  fieldId?: boolean
   value?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   ability?: boolean | Prisma.CharacterAbilityDefaultArgs<ExtArgs>
-  armorClass?: boolean | Prisma.SummonArmorClassValue$armorClassArgs<ExtArgs>
-  field?: boolean | Prisma.ArmorClassFieldDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["summonArmorClassValue"]>
 
 export type SummonArmorClassValueSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   abilityId?: boolean
-  armorClassId?: boolean
-  fieldId?: boolean
   value?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   ability?: boolean | Prisma.CharacterAbilityDefaultArgs<ExtArgs>
-  armorClass?: boolean | Prisma.SummonArmorClassValue$armorClassArgs<ExtArgs>
-  field?: boolean | Prisma.ArmorClassFieldDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["summonArmorClassValue"]>
 
 export type SummonArmorClassValueSelectScalar = {
   id?: boolean
   abilityId?: boolean
-  armorClassId?: boolean
-  fieldId?: boolean
   value?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type SummonArmorClassValueOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "abilityId" | "armorClassId" | "fieldId" | "value" | "createdAt" | "updatedAt", ExtArgs["result"]["summonArmorClassValue"]>
+export type SummonArmorClassValueOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "abilityId" | "value" | "createdAt" | "updatedAt", ExtArgs["result"]["summonArmorClassValue"]>
 export type SummonArmorClassValueInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   ability?: boolean | Prisma.CharacterAbilityDefaultArgs<ExtArgs>
-  armorClass?: boolean | Prisma.SummonArmorClassValue$armorClassArgs<ExtArgs>
-  field?: boolean | Prisma.ArmorClassFieldDefaultArgs<ExtArgs>
 }
 export type SummonArmorClassValueIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   ability?: boolean | Prisma.CharacterAbilityDefaultArgs<ExtArgs>
-  armorClass?: boolean | Prisma.SummonArmorClassValue$armorClassArgs<ExtArgs>
-  field?: boolean | Prisma.ArmorClassFieldDefaultArgs<ExtArgs>
 }
 export type SummonArmorClassValueIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   ability?: boolean | Prisma.CharacterAbilityDefaultArgs<ExtArgs>
-  armorClass?: boolean | Prisma.SummonArmorClassValue$armorClassArgs<ExtArgs>
-  field?: boolean | Prisma.ArmorClassFieldDefaultArgs<ExtArgs>
 }
 
 export type $SummonArmorClassValuePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "SummonArmorClassValue"
   objects: {
     ability: Prisma.$CharacterAbilityPayload<ExtArgs>
-    armorClass: Prisma.$TemplateArmorClassPayload<ExtArgs> | null
-    field: Prisma.$ArmorClassFieldPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     abilityId: string
-    armorClassId: string | null
-    fieldId: string
     value: string
     createdAt: Date
     updatedAt: Date
@@ -1228,8 +892,6 @@ readonly fields: SummonArmorClassValueFieldRefs;
 export interface Prisma__SummonArmorClassValueClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   ability<T extends Prisma.CharacterAbilityDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CharacterAbilityDefaultArgs<ExtArgs>>): Prisma.Prisma__CharacterAbilityClient<runtime.Types.Result.GetResult<Prisma.$CharacterAbilityPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  armorClass<T extends Prisma.SummonArmorClassValue$armorClassArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SummonArmorClassValue$armorClassArgs<ExtArgs>>): Prisma.Prisma__TemplateArmorClassClient<runtime.Types.Result.GetResult<Prisma.$TemplateArmorClassPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  field<T extends Prisma.ArmorClassFieldDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ArmorClassFieldDefaultArgs<ExtArgs>>): Prisma.Prisma__ArmorClassFieldClient<runtime.Types.Result.GetResult<Prisma.$ArmorClassFieldPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1261,8 +923,6 @@ export interface Prisma__SummonArmorClassValueClient<T, Null = never, ExtArgs ex
 export interface SummonArmorClassValueFieldRefs {
   readonly id: Prisma.FieldRef<"SummonArmorClassValue", 'String'>
   readonly abilityId: Prisma.FieldRef<"SummonArmorClassValue", 'String'>
-  readonly armorClassId: Prisma.FieldRef<"SummonArmorClassValue", 'String'>
-  readonly fieldId: Prisma.FieldRef<"SummonArmorClassValue", 'String'>
   readonly value: Prisma.FieldRef<"SummonArmorClassValue", 'String'>
   readonly createdAt: Prisma.FieldRef<"SummonArmorClassValue", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"SummonArmorClassValue", 'DateTime'>
@@ -1664,25 +1324,6 @@ export type SummonArmorClassValueDeleteManyArgs<ExtArgs extends runtime.Types.Ex
    * Limit how many SummonArmorClassValues to delete.
    */
   limit?: number
-}
-
-/**
- * SummonArmorClassValue.armorClass
- */
-export type SummonArmorClassValue$armorClassArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the TemplateArmorClass
-   */
-  select?: Prisma.TemplateArmorClassSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the TemplateArmorClass
-   */
-  omit?: Prisma.TemplateArmorClassOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.TemplateArmorClassInclude<ExtArgs> | null
-  where?: Prisma.TemplateArmorClassWhereInput
 }
 
 /**

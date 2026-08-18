@@ -4,13 +4,18 @@ jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
 import { Test, TestingModule } from '@nestjs/testing'
 import { BadRequestException } from '@nestjs/common'
 import { FormulaService } from './formula.service.js'
+import { I18nService } from 'nestjs-i18n'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 
 describe('FormulaService', () => {
   let service: FormulaService
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [FormulaService],
+      providers: [
+        FormulaService,
+        { provide: I18nService, useValue: createI18nServiceMock() },
+      ],
     }).compile()
 
     service = module.get<FormulaService>(FormulaService)
@@ -53,6 +58,12 @@ describe('FormulaService', () => {
     it('should wrap non-BadRequestException errors', () => {
       expect(() => service.evaluate('unknownVar', {})).toThrow(BadRequestException)
     })
+
+    it('should wrap unexpected mathjs evaluation errors', () => {
+      // floor("a") passes the AST validation but throws a TypeError at runtime
+      // (wrong argument type), which is not a BadRequestException.
+      expect(() => service.evaluate('floor("a")', {})).toThrow(BadRequestException)
+    })
   })
 
   describe('validate', () => {
@@ -91,6 +102,12 @@ describe('FormulaService', () => {
 
     it('should validate content node (parenthesized expressions)', () => {
       expect(() => service.validate('(str + dex)', ['str', 'dex'])).not.toThrow()
+    })
+
+    it('should throw BadRequestException for a variable name with invalid characters', () => {
+      // "café" parses as a valid mathjs symbol but fails the [a-zA-Z_]\w*
+      // whitelist, so it must be rejected by the invalid-name guard.
+      expect(() => service.validate('café', ['café'])).toThrow(BadRequestException)
     })
   })
 

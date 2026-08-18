@@ -1,0 +1,9 @@
+{
+  "storageUnavailable": "Book storage is not available",
+  "uploadFailed": "Failed to upload book file",
+  "notMemberAdventure": "You are not a member of this campaign",
+  "notFound": "Book not found",
+  "fileNotFound": "Book file not found (no file uploaded)",
+  "fileNotFoundInStorage": "Book file not found in storage",
+  "noFileProvided": "No file provided"
+}

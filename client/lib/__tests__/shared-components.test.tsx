@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { NumericInput } from '@/components/shared/NumericInput'
 import { PageHeader } from '@/components/shared/PageHeader'
+import { Select } from '@/components/shared/Select'
 
 // Mock next/link for EmptyState
 vi.mock('next/link', () => ({
@@ -156,13 +157,13 @@ describe('LoadingSkeleton', () => {
     const { container } = render(<LoadingSkeleton />)
     // Card variant renders skeleton divs with "card" class
     const cardEls = container.querySelectorAll('.card')
-    expect(cardEls.length).toBe(3) // default count is 3
+    expect(cardEls).toHaveLength(3) // default count is 3
   })
 
   it('renders correct number of cards (count prop)', () => {
     const { container } = render(<LoadingSkeleton count={5} />)
     const cardEls = container.querySelectorAll('.card')
-    expect(cardEls.length).toBe(5)
+    expect(cardEls).toHaveLength(5)
   })
 
   it('renders list variant', () => {
@@ -170,7 +171,7 @@ describe('LoadingSkeleton', () => {
     // List variant renders data-row divs
     const rows = container.querySelectorAll('.data-row')
     // SkeletonList creates 4 data-rows
-    expect(rows.length).toBe(4)
+    expect(rows).toHaveLength(4)
   })
 
   it('renders page variant', () => {
@@ -178,7 +179,7 @@ describe('LoadingSkeleton', () => {
     // Page variant renders card skeletons inside, but no top-level card grid class
     const cardEls = container.querySelectorAll('.card')
     // SkeletonPage renders 2 SkeletonCards
-    expect(cardEls.length).toBe(2)
+    expect(cardEls).toHaveLength(2)
   })
 })
 
@@ -257,6 +258,49 @@ describe('NumericInput', () => {
     expect(screen.getByRole('button', { name: 'Increase value' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Decrease value' })).toBeDisabled()
   })
+
+  it('falls back to 0 when no value prop is provided and input ref is empty', () => {
+    const onChange = vi.fn()
+    render(<NumericInput onChange={onChange} />)
+    // No value prop set; toNumber should resolve to 0 via the || 0 fallback
+    fireEvent.click(screen.getByRole('button', { name: 'Increase value' }))
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange.mock.calls[0][0].target.value).toBe('1')
+  })
+
+  it('does not call onChange when disabled buttons are clicked', () => {
+    const onChange = vi.fn()
+    render(<NumericInput disabled onChange={onChange} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Increase value' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Decrease value' }))
+    // React suppresses synthetic events on disabled elements
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('handles non-integer step values', () => {
+    const onChange = vi.fn()
+    render(<NumericInput value={0} step={0.1} onChange={onChange} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Increase value' }))
+    expect(onChange).toHaveBeenCalledTimes(1)
+    // Number.isInteger(0.1) is false, so toFixed(10) path is used
+    expect(onChange.mock.calls[0][0].target.value).toBe('0.1')
+  })
+
+  it('decrement does not go below min when value equals min', () => {
+    const onChange = vi.fn()
+    render(<NumericInput value={0} min={0} max={10} onChange={onChange} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Decrease value' }))
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange.mock.calls[0][0].target.value).toBe('0')
+  })
+
+  it('increment does not go above max when value equals max', () => {
+    const onChange = vi.fn()
+    render(<NumericInput value={10} min={0} max={10} onChange={onChange} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Increase value' }))
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange.mock.calls[0][0].target.value).toBe('10')
+  })
 })
 
 // ── PageHeader ──
@@ -288,6 +332,30 @@ describe('PageHeader', () => {
     // We look for the container holding the icon area - the icon div is inside a flex container
     const iconContainers = container.querySelectorAll('.w-10')
     // Without an icon, no icon container div should exist
-    expect(iconContainers.length).toBe(0)
+    expect(iconContainers).toHaveLength(0)
+  })
+})
+
+// ── Select ──
+
+describe('Select', () => {
+  it('closes when clicking outside', () => {
+    const onChange = vi.fn()
+    render(
+      <Select
+        options={[
+          { id: 'one', label: 'One' },
+          { id: 'two', label: 'Two' },
+        ]}
+        value={null}
+        onChange={onChange}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('combobox'))
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+
+    fireEvent.mouseDown(document.body)
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
   })
 })

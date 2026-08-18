@@ -8,44 +8,45 @@ import {
   IsBoolean,
 } from 'class-validator'
 import { Type } from 'class-transformer'
+import { i18nValidationMessage } from 'nestjs-i18n'
 
 export class ResistanceComponentDefDto {
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   name!: string
 
-  @IsBoolean()
+  @IsBoolean({ message: i18nValidationMessage('validation.isBoolean') })
   @IsOptional()
   editableByPlayer?: boolean
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   defaultValue?: string
 }
 
 export class ResistanceAttributeModifierDefDto {
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   attributeId!: string
 
-  @IsBoolean()
+  @IsBoolean({ message: i18nValidationMessage('validation.isBoolean') })
   @IsOptional()
   enabled?: boolean
 }
 
 export class ResistanceDefDto {
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   name!: string
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   calculationType?: string
 
-  @IsArray()
+  @IsArray({ message: i18nValidationMessage('validation.isArray') })
   @ValidateNested({ each: true })
   @IsOptional()
   @Type(() => ResistanceComponentDefDto)
   components?: ResistanceComponentDefDto[]
 
-  @IsArray()
+  @IsArray({ message: i18nValidationMessage('validation.isArray') })
   @ValidateNested({ each: true })
   @IsOptional()
   @Type(() => ResistanceAttributeModifierDefDto)
@@ -53,154 +54,154 @@ export class ResistanceDefDto {
 }
 
 export class CharacterSectionDefDto {
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   name!: string
 }
 
 export class AttributeDefDto {
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   key!: string
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   name!: string
 }
 
 export class TemplateFieldDefDto {
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   key!: string
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   label!: string
 }
 
 export class TemplateSkillDefDto {
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   name!: string
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   description?: string
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   attributeId?: string
 
-  @IsArray()
-  @IsString({ each: true })
+  @IsArray({ message: i18nValidationMessage('validation.isArray') })
+  @IsString({ each: true, message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   allowedAttributeIds?: string[]
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   defaultAttributeId?: string
 }
 
 export class ProfileOptionDefDto {
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   label!: string
 
-  @IsNumber()
+  @IsNumber(undefined, { message: i18nValidationMessage('validation.isNumber') })
   value!: number
 }
 
 export class SkillModifierProfileDefDto {
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   name!: string
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   targetMode?: string
 
-  @IsArray()
-  @IsString({ each: true })
+  @IsArray({ message: i18nValidationMessage('validation.isArray') })
+  @IsString({ each: true, message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   targetSkillIds?: string[]
 
-  @IsArray()
+  @IsArray({ message: i18nValidationMessage('validation.isArray') })
   @ValidateNested({ each: true })
-  @ArrayMinSize(1)
+  @ArrayMinSize(1, { message: i18nValidationMessage('validation.arrayMinSize') })
   @Type(() => ProfileOptionDefDto)
   options!: ProfileOptionDefDto[]
 }
 
 export class CoreResourceDefDto {
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   displayName?: string
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   slug!: string
 
-  @IsBoolean()
+  @IsBoolean({ message: i18nValidationMessage('validation.isBoolean') })
   @IsOptional()
   enabled?: boolean
 
-  @IsBoolean()
+  @IsBoolean({ message: i18nValidationMessage('validation.isBoolean') })
   @IsOptional()
   editableByPlayer?: boolean
 
-  @IsBoolean()
+  @IsBoolean({ message: i18nValidationMessage('validation.isBoolean') })
   @IsOptional()
   showNotes?: boolean
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   color?: string
 }
 
 export class ArmorClassFieldDefDto {
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   name!: string
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   key!: string
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   defaultValue?: string
 
-  @IsBoolean()
+  @IsBoolean({ message: i18nValidationMessage('validation.isBoolean') })
   @IsOptional()
   editableByPlayer?: boolean
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   description?: string
 }
 
 export class ArmorClassAttributeModifierDefDto {
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   attributeId!: string
 
-  @IsBoolean()
+  @IsBoolean({ message: i18nValidationMessage('validation.isBoolean') })
   @IsOptional()
   allowPlayerSelection?: boolean
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   defaultAttributeId?: string
 }
 
 export class ArmorClassDefDto {
-  @IsBoolean()
+  @IsBoolean({ message: i18nValidationMessage('validation.isBoolean') })
   enabled!: boolean
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   name?: string
 
-  @IsArray()
-  @IsString({ each: true })
+  @IsArray({ message: i18nValidationMessage('validation.isArray') })
+  @IsString({ each: true, message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   attributeModifierIds?: string[]
 
-  @IsArray()
+  @IsArray({ message: i18nValidationMessage('validation.isArray') })
   @ValidateNested({ each: true })
   @IsOptional()
   @Type(() => ArmorClassAttributeModifierDefDto)
   attributeModifiers?: ArmorClassAttributeModifierDefDto[]
 
-  @IsArray()
+  @IsArray({ message: i18nValidationMessage('validation.isArray') })
   @ValidateNested({ each: true })
   @IsOptional()
   @Type(() => ArmorClassFieldDefDto)
@@ -208,70 +209,74 @@ export class ArmorClassDefDto {
 }
 
 export class CreateTemplateDto {
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   name!: string
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   description?: string
 
-  @IsArray()
+  @IsArray({ message: i18nValidationMessage('validation.isArray') })
   @ValidateNested({ each: true })
   @IsOptional()
   @Type(() => TemplateFieldDefDto)
   templateFields?: TemplateFieldDefDto[]
 
-  @IsArray()
+  @IsArray({ message: i18nValidationMessage('validation.isArray') })
   @ValidateNested({ each: true })
   @IsOptional()
   @Type(() => TemplateSkillDefDto)
   skills?: TemplateSkillDefDto[]
 
-  @IsArray()
+  @IsArray({ message: i18nValidationMessage('validation.isArray') })
   @ValidateNested({ each: true })
-  @ArrayMinSize(1)
+  @ArrayMinSize(1, { message: i18nValidationMessage('validation.arrayMinSize') })
   @Type(() => AttributeDefDto)
   attributes!: AttributeDefDto[]
 
-  @IsArray()
+  @IsArray({ message: i18nValidationMessage('validation.isArray') })
   @ValidateNested({ each: true })
   @IsOptional()
   @Type(() => SkillModifierProfileDefDto)
   skillModifierProfiles?: SkillModifierProfileDefDto[]
 
-  @IsArray()
+  @IsArray({ message: i18nValidationMessage('validation.isArray') })
   @ValidateNested({ each: true })
   @IsOptional()
   @Type(() => CoreResourceDefDto)
   coreResources?: CoreResourceDefDto[]
 
-  @IsArray()
+  @IsArray({ message: i18nValidationMessage('validation.isArray') })
   @ValidateNested({ each: true })
   @IsOptional()
   @Type(() => ArmorClassDefDto)
   armorClasses?: ArmorClassDefDto[]
 
-  @IsBoolean()
+  @IsBoolean({ message: i18nValidationMessage('validation.isBoolean') })
   @IsOptional()
   attributeModifiersEnabled?: boolean
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   attributeModifierFormula?: string
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   skillFormula?: string
 
-  @IsArray()
+  @IsArray({ message: i18nValidationMessage('validation.isArray') })
   @ValidateNested({ each: true })
   @IsOptional()
   @Type(() => CharacterSectionDefDto)
   characterSections?: CharacterSectionDefDto[]
 
-  @IsArray()
+  @IsArray({ message: i18nValidationMessage('validation.isArray') })
   @ValidateNested({ each: true })
   @IsOptional()
   @Type(() => ResistanceDefDto)
   resistances?: ResistanceDefDto[]
+
+  @IsBoolean({ message: i18nValidationMessage('validation.isBoolean') })
+  @IsOptional()
+  isPublic?: boolean
 }

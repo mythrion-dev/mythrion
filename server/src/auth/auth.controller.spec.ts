@@ -1,0 +1,390 @@
+jest.mock("../generated/prisma/client", () => ({ PrismaClient: class {} }))
+jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
+jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
+jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }))
+jest.mock('geoip-lite', () => ({ lookup: jest.fn() }))
+import { Test, TestingModule } from '@nestjs/testing'
+import { AuthController } from './auth.controller.js'
+import { AuthService } from './auth.service.js'
+import { LanguageService } from './language.service.js'
+import { PermissionService } from './permission.service.js'
+import { JwtAuthGuard } from './jwt-auth.guard.js'
+import { RateLimitGuard } from './rate-limit.guard.js'
+import { AuthGuard } from '@nestjs/passport'
+import { RegisterDto } from './dto/register.dto.js'
+import { LoginDto } from './dto/login.dto.js'
+import { OnboardingDto } from './dto/onboarding.dto.js'
+import type { AuthenticatedRequest } from './AuthenticatedRequest.js'
+import type { Response } from 'express'
+
+describe('AuthController', () => {
+  let controller: AuthController
+  let mockAuthService: Record<string, jest.Mock>
+  let mockLanguageService: Record<string, jest.Mock>
+  let mockPermissionService: Record<string, jest.Mock>
+
+  const mockUserReq = {
+    user: { sub: 'user-1', email: 'test@test.com' },
+    headers: { 'x-forwarded-for': '203.0.113.1' },
+    socket: { remoteAddress: '192.168.1.1' },
+  } as unknown as AuthenticatedRequest
+
+  const mockPermissions = {
+    role: 'user',
+    earlyAccess: false,
+    subscription: { plan: null, status: null, expiresAt: null },
+    entitlements: { hasActiveSubscription: false, canUseSubscriptionFeatures: false },
+    limits: { maxCampaigns: null, maxTemplates: null },
+  }
+
+  beforeEach(async () => {
+    jest.clearAllMocks()
+
+    mockAuthService = {
+      register: jest.fn().mockResolvedValue({ accessToken: 'mock-access', refreshToken: 'mock-refresh' }),
+      login: jest.fn().mockResolvedValue({ accessToken: 'mock-access', refreshToken: 'mock-refresh' }),
+      refreshTokens: jest.fn().mockResolvedValue({ accessToken: 'new-access', refreshToken: 'new-refresh' }),
+      logout: jest.fn().mockResolvedValue({ success: true }),
+      getProfile: jest.fn().mockResolvedValue({ id: 'user-1', email: 'test@test.com', displayName: 'Test User' }),
+      completeOnboarding: jest.fn().mockResolvedValue({ id: 'user-1', onboardingComplete: true }),
+      getRequestIp: jest.fn().mockReturnValue('203.0.113.1'),
+      getLocationFromIp: jest.fn().mockResolvedValue({ country: 'US', region: 'CA', city: 'San Francisco' }),
+      verifyTwoFactor: jest.fn().mockResolvedValue({ accessToken: 'mock-access', refreshToken: 'mock-refresh' }),
+      resendTwoFactorCode: jest.fn().mockResolvedValue({ twoFactorId: 'challenge-2' }),
+      sendTwoFactorCode: jest.fn().mockResolvedValue({ twoFactorId: 'challenge-1' }),
+      confirmTwoFactor: jest.fn().mockResolvedValue({ recoveryCodes: ['AAAA'] }),
+      verifyEmail: jest.fn().mockResolvedValue({ success: true }),
+      resendVerification: jest.fn().mockResolvedValue({ success: true }),
+      forgotPassword: jest.fn().mockResolvedValue({ success: true }),
+      resetPassword: jest.fn().mockResolvedValue({ success: true }),
+      changePassword: jest.fn().mockResolvedValue({ success: true }),
+      changeEmail: jest.fn().mockResolvedValue({ success: true }),
+    }
+    mockLanguageService = {
+      normalize: jest.fn().mockReturnValue('en'),
+      updateLanguage: jest.fn().mockResolvedValue('en'),
+      getLanguage: jest.fn().mockResolvedValue('en'),
+    }
+    mockPermissionService = {
+      getPermissions: jest.fn().mockResolvedValue(mockPermissions),
+    }
+
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [AuthController],
+      providers: [
+        { provide: AuthService, useValue: mockAuthService },
+        { provide: LanguageService, useValue: mockLanguageService },
+        { provide: PermissionService, useValue: mockPermissionService },
+      ],
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: jest.fn(() => true) })
+      .overrideGuard(RateLimitGuard)
+      .useValue({ canActivate: jest.fn(() => true) })
+      .compile()
+
+    controller = module.get<AuthController>(AuthController)
+  })
+
+  describe('register', () => {
+    it('should delegate to authService.register with the dto and default language', async () => {
+      const dto: RegisterDto = {
+        email: 'test@test.com',
+        password: 'password123',
+        displayName: 'Test User',
+        acceptTerms: true,
+      }
+      const result = await controller.register(dto, mockUserReq)
+      expect(mockLanguageService.normalize).toHaveBeenCalledWith(undefined)
+      expect(mockAuthService.register).toHaveBeenCalledWith(dto, 'en', mockUserReq)
+      expect(result).toEqual({ accessToken: 'mock-access', refreshToken: 'mock-refresh' })
+    })
+
+    it('should adopt the Accept-Language header for the new user', async () => {
+      const dto: RegisterDto = {
+        email: 'test@test.com',
+        password: 'password123',
+        acceptTerms: true,
+      }
+      const req = {
+        headers: { 'accept-language': 'pt-BR,pt;q=0.9' },
+      } as any
+      mockLanguageService.normalize.mockReturnValue('pt-BR')
+
+      await controller.register(dto, req)
+
+      expect(mockLanguageService.normalize).toHaveBeenCalledWith('pt-BR,pt;q=0.9')
+      expect(mockAuthService.register).toHaveBeenCalledWith(dto, 'pt-BR', req)
+    })
+  })
+
+  describe('login', () => {
+    it('should delegate to authService.login with the dto', async () => {
+      const dto: LoginDto = { email: 'test@test.com', password: 'password123' }
+      const result = await controller.login(dto, mockUserReq)
+      expect(mockAuthService.login).toHaveBeenCalledWith(dto, mockUserReq)
+      expect(result).toEqual({ accessToken: 'mock-access', refreshToken: 'mock-refresh' })
+    })
+  })
+
+  describe('refresh', () => {
+    it('should delegate to authService.refreshTokens with the refresh token', async () => {
+      const body = { refreshToken: 'encoded-refresh-token' }
+      const result = await controller.refresh(body)
+      expect(mockAuthService.refreshTokens).toHaveBeenCalledWith('encoded-refresh-token')
+      expect(result).toEqual({ accessToken: 'new-access', refreshToken: 'new-refresh' })
+    })
+  })
+
+  describe('logout', () => {
+    it('should delegate to authService.logout with the user id', async () => {
+      const result = await controller.logout(mockUserReq)
+      expect(mockAuthService.logout).toHaveBeenCalledWith('user-1')
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('getProfile', () => {
+    it('should delegate to authService.getProfile with the user id', async () => {
+      const result = await controller.getProfile(mockUserReq)
+      expect(mockAuthService.getProfile).toHaveBeenCalledWith('user-1')
+      expect(result).toEqual({ id: 'user-1', email: 'test@test.com', displayName: 'Test User' })
+    })
+  })
+
+  describe('me', () => {
+    it('should merge the profile with server-computed permissions', async () => {
+      const result = await controller.me(mockUserReq)
+      expect(mockAuthService.getProfile).toHaveBeenCalledWith('user-1')
+      expect(mockPermissionService.getPermissions).toHaveBeenCalledWith('user-1', 'test@test.com')
+      expect(result).toEqual({
+        id: 'user-1',
+        email: 'test@test.com',
+        displayName: 'Test User',
+        permissions: mockPermissions,
+      })
+    })
+  })
+
+  describe('updateLanguage', () => {
+    it('should delegate to languageService.updateLanguage with userId and language', async () => {
+      mockLanguageService.updateLanguage.mockResolvedValue('pt-BR')
+
+      const result = await controller.updateLanguage(mockUserReq, {
+        language: 'pt-BR',
+      })
+
+      expect(mockLanguageService.updateLanguage).toHaveBeenCalledWith('user-1', 'pt-BR')
+      expect(result).toBe('pt-BR')
+    })
+  })
+
+  describe('completeOnboarding', () => {
+    it('should delegate to authService.completeOnboarding with userId and dto', async () => {
+      const dto: OnboardingDto = { displayName: 'New Name' }
+      const result = await controller.completeOnboarding(mockUserReq, dto)
+      expect(mockAuthService.completeOnboarding).toHaveBeenCalledWith('user-1', dto)
+      expect(result).toEqual({ id: 'user-1', onboardingComplete: true })
+    })
+  })
+
+  describe('verifyTwoFactor', () => {
+    it('should delegate to authService.verifyTwoFactor with the dto', async () => {
+      const dto = { twoFactorId: 'challenge-1', code: '123456' }
+      const result = await controller.verifyTwoFactor(dto, mockUserReq)
+      expect(mockAuthService.verifyTwoFactor).toHaveBeenCalledWith(dto, mockUserReq)
+      expect(result).toEqual({ accessToken: 'mock-access', refreshToken: 'mock-refresh' })
+    })
+  })
+
+  describe('verifyEmail', () => {
+    it('should delegate to authService.verifyEmail with the dto', async () => {
+      const dto = { token: 'signed-verification-token' }
+      const result = await controller.verifyEmail(dto)
+      expect(mockAuthService.verifyEmail).toHaveBeenCalledWith(dto)
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('resendVerification', () => {
+    it('should delegate to authService.resendVerification with the dto', async () => {
+      const dto = { email: 'test@test.com' }
+      const result = await controller.resendVerification(dto)
+      expect(mockAuthService.resendVerification).toHaveBeenCalledWith(dto)
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('forgotPassword', () => {
+    it('should delegate to authService.forgotPassword with the dto', async () => {
+      const dto = { email: 'test@test.com' }
+      const result = await controller.forgotPassword(dto)
+      expect(mockAuthService.forgotPassword).toHaveBeenCalledWith(dto)
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('resetPassword', () => {
+    it('should delegate to authService.resetPassword with the dto', async () => {
+      const dto = { token: 'signed-reset-token', password: 'NewPassword1!' }
+      const result = await controller.resetPassword(dto)
+      expect(mockAuthService.resetPassword).toHaveBeenCalledWith(dto)
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('changePassword', () => {
+    it('should delegate to authService.changePassword with userId, dto and request', async () => {
+      const dto = {
+        currentPassword: 'OldPassword1!',
+        newPassword: 'NewPassword1!',
+        logoutOtherDevices: true,
+      }
+      const result = await controller.changePassword(mockUserReq, dto)
+      expect(mockAuthService.changePassword).toHaveBeenCalledWith(
+        'user-1',
+        dto,
+        mockUserReq,
+      )
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('changeEmail', () => {
+    it('should delegate to authService.changeEmail with userId and dto', async () => {
+      const dto = { email: 'new@test.com' }
+      const result = await controller.changeEmail(mockUserReq, dto)
+      expect(mockAuthService.changeEmail).toHaveBeenCalledWith('user-1', dto)
+      expect(result).toEqual({ success: true })
+    })
+  })
+
+  describe('email verification gating', () => {
+    const skipKey = 'skipEmailVerificationCheck'
+
+    it('should apply @SkipEmailVerificationCheck to the change-email route', () => {
+      expect(Reflect.getMetadata(skipKey, AuthController.prototype.changeEmail)).toBe(true)
+    })
+
+    it('should apply @SkipEmailVerificationCheck to all pre-verification routes', () => {
+      const exempt = [
+        'changePassword',
+        'changeEmail',
+        'sendTwoFactorCode',
+        'confirmTwoFactor',
+        'logout',
+        'getProfile',
+        'me',
+        'updateLanguage',
+        'currentUser',
+      ]
+      for (const method of exempt) {
+        expect(Reflect.getMetadata(skipKey, AuthController.prototype[method])).toBe(true)
+      }
+    })
+
+    it('should NOT apply @SkipEmailVerificationCheck to onboarding', () => {
+      expect(
+        Reflect.getMetadata(skipKey, AuthController.prototype.completeOnboarding),
+      ).toBeUndefined()
+    })
+  })
+
+  describe('resendTwoFactorCode', () => {
+    it('should delegate to authService.resendTwoFactorCode with the dto', async () => {
+      const dto = { twoFactorId: 'challenge-1' }
+      const result = await controller.resendTwoFactorCode(dto)
+      expect(mockAuthService.resendTwoFactorCode).toHaveBeenCalledWith(dto)
+      expect(result).toEqual({ twoFactorId: 'challenge-2' })
+    })
+  })
+
+  describe('sendTwoFactorCode', () => {
+    it('should delegate to authService.sendTwoFactorCode with userId and purpose', async () => {
+      const dto = { purpose: 'ENABLE' as const }
+      const result = await controller.sendTwoFactorCode(mockUserReq, dto)
+      expect(mockAuthService.sendTwoFactorCode).toHaveBeenCalledWith('user-1', 'ENABLE')
+      expect(result).toEqual({ twoFactorId: 'challenge-1' })
+    })
+  })
+
+  describe('confirmTwoFactor', () => {
+    it('should delegate to authService.confirmTwoFactor with userId, purpose and dto', async () => {
+      const dto = { purpose: 'ENABLE' as const, twoFactorId: 'challenge-1', code: '123456' }
+      const result = await controller.confirmTwoFactor(mockUserReq, dto)
+      expect(mockAuthService.confirmTwoFactor).toHaveBeenCalledWith('user-1', 'ENABLE', dto)
+      expect(result).toEqual({ recoveryCodes: ['AAAA'] })
+    })
+  })
+
+  describe('currentUser', () => {
+    it('should return profile with ip and location', async () => {
+      const result = await controller.currentUser(mockUserReq)
+      expect(mockAuthService.getProfile).toHaveBeenCalledWith('user-1')
+      expect(mockAuthService.getRequestIp).toHaveBeenCalledWith(mockUserReq)
+      expect(mockAuthService.getLocationFromIp).toHaveBeenCalledWith('203.0.113.1')
+      expect(result).toEqual({
+        id: 'user-1',
+        email: 'test@test.com',
+        displayName: 'Test User',
+        ip: '203.0.113.1',
+        location: { country: 'US', region: 'CA', city: 'San Francisco' },
+      })
+    })
+  })
+
+  describe('googleAuth', () => {
+    it('should return undefined (guard handles redirect)', () => {
+      const result = controller.googleAuth()
+      expect(result).toBeUndefined()
+    })
+  })
+
+  describe('googleCallback', () => {
+    it('should redirect with tokens and no state', async () => {
+      const mockReq = { user: { accessToken: 'google-access', refreshToken: 'google-refresh' } }
+      const mockRes = { redirect: jest.fn() } as unknown as Response
+
+      await controller.googleCallback(mockReq as any, mockRes)
+
+      expect(mockRes.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('token=google-access'),
+      )
+      expect(mockRes.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('refreshToken=google-refresh'),
+      )
+      expect(mockRes.redirect).toHaveBeenCalledWith(
+        expect.not.stringContaining('state='),
+      )
+    })
+
+    it('should redirect to the state origin when a valid origin is provided', async () => {
+      const mockReq = { user: { accessToken: 'google-access', refreshToken: 'google-refresh' } }
+      const mockRes = { redirect: jest.fn() } as unknown as Response
+
+      // localhost:3001 is always allow-listed, so `state` resolves as the
+      // origin to redirect back to (multi-domain OAuth).
+      await controller.googleCallback(mockReq as any, mockRes, 'http://localhost:3001')
+
+      expect(mockRes.redirect).toHaveBeenCalledWith(
+        'http://localhost:3001/auth/google/callback?token=google-access&refreshToken=google-refresh',
+      )
+    })
+
+    it('should fall back to FRONTEND_URL when state is not a valid origin', async () => {
+      const mockReq = { user: { accessToken: 'google-access', refreshToken: 'google-refresh' } }
+      const mockRes = { redirect: jest.fn() } as unknown as Response
+
+      // `state` carries an origin, not an echoed nonce — non-origin values are
+      // rejected so an attacker cannot set the redirect target.
+      await controller.googleCallback(mockReq as any, mockRes, 'some-state')
+
+      expect(mockRes.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('/auth/google/callback?token=google-access'),
+      )
+      expect(mockRes.redirect).toHaveBeenCalledWith(
+        expect.not.stringContaining('state='),
+      )
+    })
+  })
+})

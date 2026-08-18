@@ -1,18 +1,33 @@
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
   ForbiddenException,
   ConflictException,
   Logger,
 } from '@nestjs/common'
+import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { RedisService } from '../redis/redis.service.js'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
-import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
+import { CreateCharacterFromCampaignDto } from './dto/create-character-from-campaign.dto.js'
+import { templateInclude } from '../template/template.service.js'
+import {
+  UpdateCharacterSheetDto,
+  AttributeValueDto,
+  FieldValueDto,
+  SkillValueDto,
+  SkillProfileValueDto,
+  CoreResourceValueDto,
+  ArmorClassValueDto,
+  ArmorClassAttributeValueDto,
+  ResistanceValueDto,
+  ResistanceComponentValueDto,
+} from './dto/update-character-sheet.dto.js'
 
 const sheetInclude = {
-  adventure: { select: { id: true, name: true, campaign: true } },
+  adventure: { select: { id: true, name: true, campaign: true, originalTemplateId: true, templateSnapshot: true } },
   template: {
     select: {
       id: true,
@@ -114,27 +129,13 @@ const sheetInclude = {
     include: {
       levels: { orderBy: { level: 'asc' as const } },
       summonAttributes: { orderBy: { createdAt: 'asc' as const } },
-      summonAcValues: { orderBy: { createdAt: 'asc' as const } },
-      summonAcAttributeValues: {
-        include: {
-          selectedAttribute: { select: { id: true, key: true, name: true } },
-        },
-      },
+      summonAcValues: true,
       summonHealth: true,
-      summonResistanceValues: true,
-      summonResistanceComponentValues: true,
       summonSkills: {
         orderBy: { createdAt: 'asc' as const },
-        include: {
-          skill: { select: { id: true, name: true, description: true, attributeId: true, allowedAttributeIds: true, defaultAttributeId: true, attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } } },
-          selectedAttribute: { select: { id: true, key: true, name: true } },
-          profileValues: {
-            include: {
-              profile: { select: { id: true, name: true, targetMode: true, targetSkillIds: true } },
-              option: { select: { id: true, label: true, value: true } },
-            },
-          },
-        },
+      },
+      summonResistances: {
+        orderBy: { createdAt: 'asc' as const },
       },
       childAbilities: {
         orderBy: { order: 'asc' as const },
@@ -156,6 +157,11 @@ const sheetInclude = {
   },
   inventoryItems: { orderBy: { order: 'asc' as const } },
   story: true,
+  assignedMember: {
+    include: {
+      user: { select: { id: true, displayName: true, email: true } },
+    },
+  },
 }
 
 @Injectable()
@@ -168,6 +174,7 @@ export class CharacterSheetService {
     private readonly prisma: PrismaService,
     private readonly membership: MembershipService,
     private readonly redis: RedisService,
+    private readonly i18n: I18nService,
   ) {}
 
   private cacheKey(id: string): string {
@@ -178,8 +185,15 @@ export class CharacterSheetService {
     return `character-sheets:user:${userId}`
   }
 
-  private adventureListCacheKey(adventureId: string): string {
-    return `character-sheets:adventure:${adventureId}`
+  /** Adventure list cache is scoped by role so a GM never reads a player's cached view and vice versa. */
+  private adventureListCacheKey(adventureId: string, role: 'GM' | 'PLAYER', userId: string): string {
+    return role === 'GM'
+      ? `character-sheets:adventure:${adventureId}:gm`
+      : `character-sheets:adventure:${adventureId}:player:${userId}`
+  }
+
+  private adventureListCachePattern(adventureId: string): string {
+    return `character-sheets:adventure:${adventureId}:*`
   }
 
   /** Invalidate cached sheet(s). sheetId always invalidated; userId/adventureId also invalidate list caches. */
@@ -187,9 +201,37 @@ export class CharacterSheetService {
     try {
       await this.redis.del(this.cacheKey(sheetId))
       if (userId) await this.redis.del(this.userListCacheKey(userId))
-      if (adventureId) await this.redis.del(this.adventureListCacheKey(adventureId))
+      if (adventureId) await this.redis.invalidatePattern(this.adventureListCachePattern(adventureId))
     } catch (err) {
       this.logger.warn('Failed to invalidate character sheet cache', err)
+    }
+  }
+
+  /**
+   * Invalidate every cached artifact for sheets in an adventure before the
+   * adventure is deleted. The delete detaches sheets (adventureId SetNull) and
+   * drops assignments (member rows cascade), so without this the caches keep
+   * serving sheets that claim to belong to a deleted campaign.
+   */
+  async invalidateAdventureSheets(adventureId: string): Promise<void> {
+    try {
+      const sheets = await this.prisma.characterSheet.findMany({
+        where: { adventureId },
+        select: {
+          id: true,
+          ownerId: true,
+          assignedMember: { select: { userId: true } },
+        },
+      })
+      await this.redis.invalidatePattern(this.adventureListCachePattern(adventureId))
+      for (const sheet of sheets) {
+        await this.invalidateCache(sheet.id, sheet.ownerId ?? undefined)
+        if (sheet.assignedMember) {
+          await this.redis.del(this.userListCacheKey(sheet.assignedMember.userId)).catch(() => {})
+        }
+      }
+    } catch (err) {
+      this.logger.warn('Failed to invalidate character sheet caches for adventure', err)
     }
   }
 
@@ -208,35 +250,21 @@ export class CharacterSheetService {
         coreResources: true,
       },
     })
-    if (!template) throw new NotFoundException('Template not found')
+    if (!template) throw new NotFoundException(this.i18n.t('character-sheet.templateNotFound'))
 
     const adventureId = dto.adventureId !== undefined
       ? (dto.adventureId || null)
       : template.adventureId
 
     if (adventureId) {
-      const isMember = await this.membership.isMember(adventureId, userId)
-      if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
+      await this.membership.requireWriteAccess(adventureId, userId)
     }
 
-    const skillProfileValues: Array<{
-      skillId: string; profileId: string; optionId?: string | null
-    }> = []
-    const globalSkillFormula = template.skillFormula
-    if (globalSkillFormula) {
-      const formulaVars = this.extractVariableNames(globalSkillFormula)
-      for (const skill of template.templateSkills) {
-        for (const profile of template.skillModifierProfiles) {
-          if (!formulaVars.includes(profile.name)) continue
-          const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
-          const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
-          if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(skill.name)) {
-            continue
-          }
-          skillProfileValues.push({ skillId: skill.id, profileId: profile.id, optionId: profile.options[0]?.id ?? null })
-        }
-      }
-    }
+    const skillProfileValues = this.buildSkillProfileValues(
+      template.templateSkills as any[],
+      template.skillModifierProfiles as any[],
+      template.skillFormula,
+    )
 
     // Fetch AC configs for this template (all enabled)
     const armorClasses = await this.prisma.templateArmorClass.findMany({
@@ -312,8 +340,154 @@ export class CharacterSheetService {
       include: sheetInclude,
     })
 
+    // ── Diagnostic: log core resource values created ──
+    const crvsDebug = (sheet as any).coreResourceValues?.map((crv: any) => ({
+      id: crv.id,
+      slug: crv.coreResource?.slug,
+      enabled: crv.coreResource?.enabled,
+      current: crv.current,
+      maximum: crv.maximum,
+    }))
+    this.logger.debug(
+      `[DIAGNOSTIC] characterSheetService.create: sheet "${sheet.characterName}" | ` +
+      `templateId=${dto.templateId} | CRVs=${JSON.stringify(crvsDebug ?? [])}`,
+    )
+    const hpCrvDebug = (sheet as any).coreResourceValues?.find(
+      (crv: any) => crv.coreResource?.slug === 'hp',
+    )
+    if (!hpCrvDebug) {
+      this.logger.warn(
+        `[DIAGNOSTIC] characterSheetService.create: NO HP core resource for "${sheet.characterName}" | ` +
+        `templateId=${dto.templateId} | Template likely missing slug='hp' core resource`,
+      )
+    }
+
     // Invalidate user's list cache for the new sheet
     await this.invalidateCache(sheet.id, userId, adventureId ?? undefined).catch(() => {})
+
+    return sheet
+  }
+
+  /** Create a character sheet from a campaign's template snapshot. */
+  async createFromCampaignSnapshot(userId: string, dto: CreateCharacterFromCampaignDto) {
+    // 1. Query Adventure for snapshot + originalTemplateId
+    const adventure = await this.prisma.adventure.findUnique({
+      where: { id: dto.adventureId },
+      select: { templateSnapshot: true, originalTemplateId: true },
+    })
+    if (!adventure) throw new NotFoundException(this.i18n.t('character-sheet.campaignNotFound'))
+
+    // 2. Resolve the template source. A snapshot attached via the attach system
+    //    takes precedence; otherwise fall back to a template created directly on
+    //    the campaign (templateSource: 'campaign'). Its fully-included shape
+    //    mirrors the stored snapshot, so it can drive sheet creation the same way.
+    let snapshot: any
+    let templateId: string
+    if (adventure.templateSnapshot && adventure.originalTemplateId) {
+      snapshot = adventure.templateSnapshot
+      templateId = adventure.originalTemplateId
+    } else {
+      const campaignTemplate = await this.prisma.template.findFirst({
+        where: { adventureId: dto.adventureId },
+        include: templateInclude,
+        orderBy: { createdAt: 'desc' },
+      })
+      if (!campaignTemplate) {
+        throw new BadRequestException(
+          this.i18n.t('character-sheet.noTemplateAttached'),
+        )
+      }
+      snapshot = campaignTemplate
+      templateId = campaignTemplate.id
+    }
+
+    // 3. Validate membership + campaign writability
+    await this.membership.requireWriteAccess(dto.adventureId, userId)
+
+    // 5. Build skill profile values from snapshot data
+    const skillProfileValues = this.buildSkillProfileValues(
+      snapshot.templateSkills ?? [],
+      snapshot.skillModifierProfiles ?? [],
+      snapshot.skillFormula as string | undefined,
+    )
+
+    // 6. Build armor class and resistance data from snapshot
+    const armorClasses: any[] = (snapshot.armorClasses ?? []).filter((ac: any) => ac.enabled !== false)
+    const resistances: any[] = snapshot.resistances ?? []
+
+    // 7. Create the sheet using snapshot data for all sub-resources
+    const sheet = await this.prisma.characterSheet.create({
+      data: {
+        characterName: dto.characterName,
+        playerName: dto.playerName ?? null,
+        level: dto.level ?? 1,
+        adventureId: dto.adventureId,
+        templateId,
+        ownerId: userId,
+        values: {
+          create: (snapshot.attributes ?? []).map((a: any) => ({ attributeId: a.id, value: '' })),
+        },
+        fieldValues: {
+          create: (snapshot.templateFields ?? []).map((f: any) => ({ templateFieldId: f.id, value: '' })),
+        },
+        skillValues: {
+          create: (snapshot.templateSkills ?? []).map((s: any) => ({
+            skillId: s.id,
+            value: '',
+            selectedAttributeId: (s as any).defaultAttributeId ?? s.attributeId ?? null,
+          })),
+        },
+        skillProfileValues: {
+          create: skillProfileValues.map(spv => ({
+            skillId: spv.skillId,
+            profileId: spv.profileId,
+            optionId: spv.optionId,
+          })),
+        },
+        coreResourceValues: {
+          create: (snapshot.coreResources ?? []).filter((cr: any) => cr.enabled).map((cr: any) => ({
+            coreResourceId: cr.id,
+          })),
+        },
+        acValues: armorClasses.some((ac: any) => (ac.fields ?? []).length > 0)
+          ? {
+              create: armorClasses.flatMap((ac: any) =>
+                (ac.fields ?? []).map((f: any) => ({
+                  fieldId: f.id,
+                  value: f.defaultValue,
+                }))
+              ),
+            }
+          : undefined,
+        acAttributeValues: armorClasses.some((ac: any) => (ac.attributeModifiers ?? []).length > 0)
+          ? {
+              create: armorClasses.flatMap((ac: any) =>
+                (ac.attributeModifiers ?? []).map((am: any) => ({
+                  acAttributeModifierId: am.id,
+                  selectedAttributeId: am.allowPlayerSelection ? (am.defaultAttributeId ?? null) : null,
+                }))
+              ),
+            }
+          : undefined,
+        resistanceValues: {
+          create: resistances.map((r: any) => ({
+            resistanceId: r.id,
+          })),
+        },
+        resistanceComponentValues: {
+          create: resistances.flatMap((r: any) =>
+            (r.components ?? []).map((c: any) => ({
+              componentId: c.id,
+              value: c.defaultValue,
+            })),
+          ),
+        },
+      },
+      include: sheetInclude,
+    })
+
+    // 8. Invalidate cache
+    await this.invalidateCache(sheet.id, userId, dto.adventureId).catch(() => {})
 
     return sheet
   }
@@ -324,10 +498,17 @@ export class CharacterSheetService {
     if (cached) return cached
 
     const sheets = await this.prisma.characterSheet.findMany({
-      where: { ownerId: userId },
+      where: {
+        OR: [{ ownerId: userId }, { assignedMember: { userId } }],
+      },
       include: {
         adventure: { select: { id: true, name: true, campaign: true } },
         template: { select: { id: true, name: true } },
+        assignedMember: {
+          include: {
+            user: { select: { id: true, displayName: true, email: true } },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     })
@@ -339,24 +520,26 @@ export class CharacterSheetService {
   }
 
   async findAllByAdventure(adventureId: string, userId: string) {
-    // Try cache first
-    const cached = await this.redis.cacheGet<any[]>(this.adventureListCacheKey(adventureId))
-    if (cached) {
-      const member = await this.prisma.campaignMember.findUnique({
-        where: { adventureId_userId: { adventureId, userId } },
-      })
-      if (!member) throw new ForbiddenException('You are not a member of this adventure')
-      return cached
-    }
-
+    // Membership is authoritative: fetch first so a non-member can never hit the cache.
     const member = await this.prisma.campaignMember.findUnique({
       where: { adventureId_userId: { adventureId, userId } },
     })
-    if (!member) throw new ForbiddenException('You are not a member of this adventure')
+    if (!member) throw new ForbiddenException(this.i18n.t('character-sheet.notMemberAdventure'))
+
+    const role: 'GM' | 'PLAYER' = member.role === 'GM' ? 'GM' : 'PLAYER'
+    const cacheKey = this.adventureListCacheKey(adventureId, role, userId)
+
+    // Try cache first
+    const cached = await this.redis.cacheGet<any[]>(cacheKey)
+    if (cached) return cached
 
     const where = member.role === 'GM'
       ? { adventureId, isNpc: false }
-      : { adventureId, ownerId: userId, isNpc: false }
+      : {
+          adventureId,
+          isNpc: false,
+          OR: [{ ownerId: userId }, { assignedMember: { userId } }],
+        }
 
     const sheets = await this.prisma.characterSheet.findMany({
       where,
@@ -364,12 +547,17 @@ export class CharacterSheetService {
         adventure: { select: { id: true, name: true, campaign: true } },
         template: { select: { id: true, name: true } },
         owner: { select: { id: true, displayName: true, email: true } },
+        assignedMember: {
+          include: {
+            user: { select: { id: true, displayName: true, email: true } },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     })
 
-    // Cache the list
-    await this.redis.cacheSet(this.adventureListCacheKey(adventureId), sheets, this.LIST_CACHE_TTL).catch(() => {})
+    // Cache the list under the role-scoped key
+    await this.redis.cacheSet(cacheKey, sheets, this.LIST_CACHE_TTL).catch(() => {})
 
     return sheets
   }
@@ -378,26 +566,19 @@ export class CharacterSheetService {
     // Try cache first
     const cached = await this.redis.cacheGet<any>(this.cacheKey(id))
     if (cached) {
-      if (cached.ownerId !== userId) {
-        if (!cached.adventureId) throw new ForbiddenException('You do not have access to this character sheet')
-        try {
-          await this.membership.requireRole(cached.adventureId, userId, 'GM')
-        } catch {
-          throw new ForbiddenException('You do not have access to this character sheet')
-        }
-      }
+      await this.assertSheetAccess(cached, userId)
       return cached
     }
 
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id }, include: sheetInclude })
-    if (!sheet) throw new NotFoundException('Character sheet not found')
-    if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) throw new ForbiddenException('You do not have access to this character sheet')
-      try {
-        await this.membership.requireRole(sheet.adventureId, userId, 'GM')
-      } catch {
-        throw new ForbiddenException('You do not have access to this character sheet')
-      }
+    if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
+    await this.assertSheetAccess(sheet, userId)
+
+    // If the original template was deleted, reconstruct template data from the snapshot
+    if (!sheet.template && (sheet.adventure as any)?.templateSnapshot) {
+      ;(sheet as any).template = this.reconstructTemplateFromSnapshot(
+        (sheet.adventure as any).templateSnapshot,
+      )
     }
 
     // Cache the result
@@ -408,141 +589,22 @@ export class CharacterSheetService {
 
   async update(id: string, userId: string, dto: UpdateCharacterSheetDto) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id } })
-    if (!sheet) throw new NotFoundException('Character sheet not found')
-    if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can edit this character sheet')
-      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
-      catch { throw new ForbiddenException('Only the owner or a GM can edit this character sheet') }
-    }
+    if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
+    await this.assertCanModify(sheet, userId)
 
-    if (dto.values) {
-      for (const v of dto.values)
-        await this.prisma.characterSheetValue.upsert({
-          where: { sheetId_attributeId: { sheetId: id, attributeId: v.attributeId } },
-          create: { sheetId: id, attributeId: v.attributeId, value: v.value },
-          update: { value: v.value },
-        })
-    }
-    if (dto.fieldValues) {
-      for (const fv of dto.fieldValues)
-        await this.prisma.characterSheetFieldValue.upsert({
-          where: { sheetId_templateFieldId: { sheetId: id, templateFieldId: fv.templateFieldId } },
-          create: { sheetId: id, templateFieldId: fv.templateFieldId, value: fv.value },
-          update: { value: fv.value },
-        })
-    }
-    if (dto.skillValues) {
-      for (const sv of dto.skillValues)
-        await this.prisma.characterSheetSkillValue.upsert({
-          where: { sheetId_skillId: { sheetId: id, skillId: sv.skillId } },
-          create: { sheetId: id, skillId: sv.skillId, value: sv.value, selectedAttributeId: sv.selectedAttributeId ?? null },
-          update: { value: sv.value, ...(sv.selectedAttributeId !== undefined ? { selectedAttributeId: sv.selectedAttributeId } : {}) },
-        })
-    }
-    if (dto.skillProfileValues) {
-      for (const spv of dto.skillProfileValues)
-        await this.prisma.characterSheetSkillProfileValue.upsert({
-          where: { sheetId_skillId_profileId: { sheetId: id, skillId: spv.skillId, profileId: spv.profileId } },
-          create: { sheetId: id, skillId: spv.skillId, profileId: spv.profileId, optionId: spv.optionId },
-          update: { optionId: spv.optionId },
-        })
-    }
-    if (dto.coreResourceValues) {
-      for (const crv of dto.coreResourceValues) {
-        await this.prisma.characterSheetCoreResourceValue.upsert({
-          where: { sheetId_coreResourceId: { sheetId: id, coreResourceId: crv.coreResourceId } },
-          create: { sheetId: id, coreResourceId: crv.coreResourceId, current: crv.current ?? null, maximum: crv.maximum ?? null, notes: crv.notes ?? null },
-          update: { current: crv.current, maximum: crv.maximum, notes: crv.notes },
-        })
-      }
-    }
-    if (dto.acValues) {
-      for (const acv of dto.acValues)
-        await this.prisma.characterSheetArmorClassValue.upsert({
-          where: { sheetId_fieldId: { sheetId: id, fieldId: acv.fieldId } },
-          create: { sheetId: id, fieldId: acv.fieldId, value: acv.value },
-          update: { value: acv.value },
-        })
-    }
-    if (dto.acAttributeValues) {
-      for (const acav of dto.acAttributeValues)
-        await this.prisma.characterSheetArmorClassAttributeValue.upsert({
-          where: { sheetId_acAttributeModifierId: { sheetId: id, acAttributeModifierId: acav.acAttributeModifierId } },
-          create: { sheetId: id, acAttributeModifierId: acav.acAttributeModifierId, selectedAttributeId: acav.selectedAttributeId ?? null },
-          update: { selectedAttributeId: acav.selectedAttributeId ?? null },
-        })
-    }
-    if (dto.resistanceValues) {
-      for (const rv of dto.resistanceValues) {
-        // Check if this resistanceId belongs to a sheet-specific resistance
-        const sheetRes = await this.prisma.sheetResistance.findUnique({
-          where: { id: rv.resistanceId },
-          select: { id: true, calculationType: true },
-        })
-        if (sheetRes) {
-          // Sheet resistance: upsert a "Value" component with the manual value
-          const existingComp = await this.prisma.sheetResistanceComponent.findFirst({
-            where: { sheetResistanceId: sheetRes.id },
-            orderBy: { order: 'asc' },
-          })
-          if (existingComp) {
-            await this.prisma.sheetResistanceComponent.update({
-              where: { id: existingComp.id },
-              data: { value: rv.manualValue ?? '0' },
-            })
-          } else {
-            await this.prisma.sheetResistanceComponent.create({
-              data: {
-                sheetResistanceId: sheetRes.id,
-                name: 'Value',
-                value: rv.manualValue ?? '0',
-                order: 0,
-              },
-            })
-          }
-        } else {
-          // Template resistance: use existing junction table
-          await this.prisma.characterSheetResistanceValue.upsert({
-            where: { sheetId_resistanceId: { sheetId: id, resistanceId: rv.resistanceId } },
-            create: { sheetId: id, resistanceId: rv.resistanceId, manualValue: rv.manualValue ?? null },
-            update: { manualValue: rv.manualValue ?? null },
-          })
-        }
-      }
-    }
-    if (dto.resistanceComponentValues) {
-      for (const rcv of dto.resistanceComponentValues) {
-        // Check if this componentId belongs to a sheet resistance component
-        const sheetComp = await this.prisma.sheetResistanceComponent.findUnique({
-          where: { id: rcv.componentId },
-          select: { id: true },
-        })
-        if (sheetComp) {
-          await this.prisma.sheetResistanceComponent.update({
-            where: { id: rcv.componentId },
-            data: { value: rcv.value },
-          })
-        } else {
-          // Template resistance component: use existing junction table
-          await this.prisma.characterSheetResistanceComponentValue.upsert({
-            where: { sheetId_componentId: { sheetId: id, componentId: rcv.componentId } },
-            create: { sheetId: id, componentId: rcv.componentId, value: rcv.value },
-            update: { value: rcv.value },
-          })
-        }
-      }
-    }
+    if (dto.values) await this.updateValues(id, dto.values)
+    if (dto.fieldValues) await this.updateFieldValues(id, dto.fieldValues)
+    if (dto.skillValues) await this.updateSkillValues(id, dto.skillValues)
+    if (dto.skillProfileValues) await this.updateSkillProfileValues(id, dto.skillProfileValues)
+    if (dto.coreResourceValues) await this.updateCoreResourceValues(id, dto.coreResourceValues)
+    if (dto.acValues) await this.updateAcValues(id, dto.acValues)
+    if (dto.acAttributeValues) await this.updateAcAttributeValues(id, dto.acAttributeValues)
+    if (dto.resistanceValues) await this.updateResistanceValues(id, dto.resistanceValues)
+    if (dto.resistanceComponentValues) await this.updateResistanceComponentValues(id, dto.resistanceComponentValues)
 
     const updated = await this.prisma.characterSheet.update({
       where: { id },
-      data: {
-        ...(dto.characterName !== undefined && { characterName: dto.characterName }),
-        ...(dto.playerName !== undefined && { playerName: dto.playerName }),
-        ...(dto.level !== undefined && { level: dto.level }),
-        ...(dto.hpActual !== undefined && { hpActual: dto.hpActual }),
-        ...(dto.hpMax !== undefined && { hpMax: dto.hpMax }),
-        ...(dto.hpNotes !== undefined && { hpNotes: dto.hpNotes }),
-      },
+      data: this.buildUpdateData(dto),
       include: sheetInclude,
     })
 
@@ -552,13 +614,193 @@ export class CharacterSheetService {
     return updated
   }
 
+  private async assertCanModify(
+    sheet: { ownerId: string | null; isNpc: boolean; adventureId: string | null; assignedMemberId: string | null },
+    userId: string,
+  ): Promise<void> {
+    if (sheet.ownerId === userId) {
+      // Owner editing their own sheet: respect campaign read-only state when linked
+      if (sheet.adventureId) {
+        await this.membership.requireWriteAccess(sheet.adventureId, userId)
+      }
+      return
+    }
+    // The assigned player can edit the sheet's content; writes respect the
+    // campaign read-only state.
+    if (sheet.assignedMemberId) {
+      const assigned = await this.prisma.campaignMember.findUnique({
+        where: { id: sheet.assignedMemberId },
+        select: { userId: true },
+      })
+      if (assigned?.userId === userId) {
+        if (sheet.adventureId) {
+          await this.membership.requireWriteAccess(sheet.adventureId, userId)
+        }
+        return
+      }
+    }
+    // Only allow GM bypass for NPC sheets; player sheets are owner-only
+    if (sheet.isNpc && sheet.adventureId) {
+      try {
+        await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM')
+        return
+      } catch {
+        throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
+      }
+    }
+    throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
+  }
+
+  private async updateValues(id: string, values: AttributeValueDto[]): Promise<void> {
+    for (const v of values)
+      await this.prisma.characterSheetValue.upsert({
+        where: { sheetId_attributeId: { sheetId: id, attributeId: v.attributeId } },
+        create: { sheetId: id, attributeId: v.attributeId, value: v.value },
+        update: { value: v.value },
+      })
+  }
+
+  private async updateFieldValues(id: string, fieldValues: FieldValueDto[]): Promise<void> {
+    for (const fv of fieldValues)
+      await this.prisma.characterSheetFieldValue.upsert({
+        where: { sheetId_templateFieldId: { sheetId: id, templateFieldId: fv.templateFieldId } },
+        create: { sheetId: id, templateFieldId: fv.templateFieldId, value: fv.value },
+        update: { value: fv.value },
+      })
+  }
+
+  private async updateSkillValues(id: string, skillValues: SkillValueDto[]): Promise<void> {
+    for (const sv of skillValues)
+      await this.prisma.characterSheetSkillValue.upsert({
+        where: { sheetId_skillId: { sheetId: id, skillId: sv.skillId } },
+        create: { sheetId: id, skillId: sv.skillId, value: sv.value, selectedAttributeId: sv.selectedAttributeId ?? null },
+        update: { value: sv.value, ...(sv.selectedAttributeId !== undefined ? { selectedAttributeId: sv.selectedAttributeId } : {}) },
+      })
+  }
+
+  private async updateSkillProfileValues(id: string, skillProfileValues: SkillProfileValueDto[]): Promise<void> {
+    for (const spv of skillProfileValues)
+      await this.prisma.characterSheetSkillProfileValue.upsert({
+        where: { sheetId_skillId_profileId: { sheetId: id, skillId: spv.skillId, profileId: spv.profileId } },
+        create: { sheetId: id, skillId: spv.skillId, profileId: spv.profileId, optionId: spv.optionId },
+        update: { optionId: spv.optionId },
+      })
+  }
+
+  private async updateCoreResourceValues(id: string, coreResourceValues: CoreResourceValueDto[]): Promise<void> {
+    for (const crv of coreResourceValues) {
+      await this.prisma.characterSheetCoreResourceValue.upsert({
+        where: { sheetId_coreResourceId: { sheetId: id, coreResourceId: crv.coreResourceId } },
+        create: { sheetId: id, coreResourceId: crv.coreResourceId, current: crv.current ?? null, maximum: crv.maximum ?? null, notes: crv.notes ?? null },
+        update: { current: crv.current, maximum: crv.maximum, notes: crv.notes },
+      })
+    }
+  }
+
+  private async updateAcValues(id: string, acValues: ArmorClassValueDto[]): Promise<void> {
+    for (const acv of acValues)
+      await this.prisma.characterSheetArmorClassValue.upsert({
+        where: { sheetId_fieldId: { sheetId: id, fieldId: acv.fieldId } },
+        create: { sheetId: id, fieldId: acv.fieldId, value: acv.value },
+        update: { value: acv.value },
+      })
+  }
+
+  private async updateAcAttributeValues(id: string, acAttributeValues: ArmorClassAttributeValueDto[]): Promise<void> {
+    for (const acav of acAttributeValues)
+      await this.prisma.characterSheetArmorClassAttributeValue.upsert({
+        where: { sheetId_acAttributeModifierId: { sheetId: id, acAttributeModifierId: acav.acAttributeModifierId } },
+        create: { sheetId: id, acAttributeModifierId: acav.acAttributeModifierId, selectedAttributeId: acav.selectedAttributeId ?? null },
+        update: { selectedAttributeId: acav.selectedAttributeId ?? null },
+      })
+  }
+
+  private async updateResistanceValues(id: string, resistanceValues: ResistanceValueDto[]): Promise<void> {
+    for (const rv of resistanceValues) {
+      // Check if this resistanceId belongs to a sheet-specific resistance
+      const sheetRes = await this.prisma.sheetResistance.findUnique({
+        where: { id: rv.resistanceId },
+        select: { id: true, calculationType: true },
+      })
+      if (sheetRes) {
+        // Sheet resistance: upsert a "Value" component with the manual value
+        const existingComp = await this.prisma.sheetResistanceComponent.findFirst({
+          where: { sheetResistanceId: sheetRes.id },
+          orderBy: { order: 'asc' },
+        })
+        if (existingComp) {
+          await this.prisma.sheetResistanceComponent.update({
+            where: { id: existingComp.id },
+            data: { value: rv.manualValue ?? '0' },
+          })
+        } else {
+          await this.prisma.sheetResistanceComponent.create({
+            data: {
+              sheetResistanceId: sheetRes.id,
+              name: 'Value',
+              value: rv.manualValue ?? '0',
+              order: 0,
+            },
+          })
+        }
+      } else {
+        // Template resistance: use existing junction table
+        await this.prisma.characterSheetResistanceValue.upsert({
+          where: { sheetId_resistanceId: { sheetId: id, resistanceId: rv.resistanceId } },
+          create: { sheetId: id, resistanceId: rv.resistanceId, manualValue: rv.manualValue ?? null },
+          update: { manualValue: rv.manualValue ?? null },
+        })
+      }
+    }
+  }
+
+  private async updateResistanceComponentValues(id: string, resistanceComponentValues: ResistanceComponentValueDto[]): Promise<void> {
+    for (const rcv of resistanceComponentValues) {
+      // Check if this componentId belongs to a sheet resistance component
+      const sheetComp = await this.prisma.sheetResistanceComponent.findUnique({
+        where: { id: rcv.componentId },
+        select: { id: true },
+      })
+      if (sheetComp) {
+        await this.prisma.sheetResistanceComponent.update({
+          where: { id: rcv.componentId },
+          data: { value: rcv.value },
+        })
+      } else {
+        // Template resistance component: use existing junction table
+        await this.prisma.characterSheetResistanceComponentValue.upsert({
+          where: { sheetId_componentId: { sheetId: id, componentId: rcv.componentId } },
+          create: { sheetId: id, componentId: rcv.componentId, value: rcv.value },
+          update: { value: rcv.value },
+        })
+      }
+    }
+  }
+
+  private buildUpdateData(dto: UpdateCharacterSheetDto) {
+    return {
+      ...(dto.characterName !== undefined && { characterName: dto.characterName }),
+      ...(dto.playerName !== undefined && { playerName: dto.playerName }),
+      ...(dto.level !== undefined && { level: dto.level }),
+      ...(dto.hpActual !== undefined && { hpActual: dto.hpActual }),
+      ...(dto.hpMax !== undefined && { hpMax: dto.hpMax }),
+      ...(dto.hpNotes !== undefined && { hpNotes: dto.hpNotes }),
+    }
+  }
+
   async remove(id: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id } })
-    if (!sheet) throw new NotFoundException('Character sheet not found')
-    if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can delete this character sheet')
-      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
-      catch { throw new ForbiddenException('Only the owner or a GM can delete this character sheet') }
+    if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
+    if (sheet.ownerId === userId) {
+      // Owner editing their own sheet: respect campaign read-only state when linked
+      if (sheet.adventureId) {
+        await this.membership.requireWriteAccess(sheet.adventureId, userId)
+      }
+    } else if (sheet.isNpc && sheet.adventureId) {
+      try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
+      catch { throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission')) }
+    } else {
+      throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
     }
     const deleted = await this.prisma.characterSheet.delete({ where: { id } })
 
@@ -570,10 +812,9 @@ export class CharacterSheetService {
 
   async linkToAdventure(sheetId: string, adventureId: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
-    if (!sheet) throw new NotFoundException('Character sheet not found')
-    if (sheet.ownerId !== userId) throw new ForbiddenException('Only the owner can link this character sheet')
-    const isMember = await this.membership.isMember(adventureId, userId)
-    if (!isMember) throw new ForbiddenException('You are not a member of this adventure')
+    if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
+    if (sheet.ownerId !== userId) throw new ForbiddenException(this.i18n.t('character-sheet.ownerOnlyLink'))
+    await this.membership.requireWriteAccess(adventureId, userId)
     const linked = await this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId }, include: sheetInclude })
 
     // Invalidate cache — both old adventure (none) and new adventure lists, plus sheet + user
@@ -584,18 +825,107 @@ export class CharacterSheetService {
 
   async unlinkFromAdventure(sheetId: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
-    if (!sheet) throw new NotFoundException('Character sheet not found')
-    if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can unlink this character sheet')
-      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
-      catch { throw new ForbiddenException('Only the owner or a GM can unlink this character sheet') }
+    if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
+    if (sheet.ownerId === userId) {
+      // Owner editing their own sheet: respect campaign read-only state when linked
+      if (sheet.adventureId) {
+        await this.membership.requireWriteAccess(sheet.adventureId, userId)
+      }
+    } else if (sheet.isNpc && sheet.adventureId) {
+      try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
+      catch { throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission')) }
+    } else {
+      throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
     }
-    const unlinked = await this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId: null }, include: sheetInclude })
+    const unlinked = await this.prisma.characterSheet.update({ where: { id: sheetId }, data: { adventureId: null, assignedMemberId: null }, include: sheetInclude })
 
-    // Invalidate cache for old adventure list, sheet + user
+    // Invalidate cache for old adventure list, sheet + user (and old assignee's list)
+    const oldAssigneeId = sheet.assignedMemberId
     await this.invalidateCache(sheetId, sheet.ownerId ?? undefined, sheet.adventureId ?? undefined).catch(() => {})
+    if (oldAssigneeId) {
+      await this.invalidateAssigneeUserList(oldAssigneeId).catch(() => {})
+    }
 
     return unlinked
+  }
+
+  /**
+   * Assign a campaign character to a campaign member (a player).
+   *
+   * Assignment is a relationship, not an ownership transfer: the GM keeps
+   * ownership (ownerId) and full control, while the assigned player gets read
+   * + edit access to the sheet. A character holds at most one assignment — the
+   * single nullable assignedMemberId column enforces that in the DB — so
+   * changing the assigned player is the same UPDATE as the first assignment.
+   */
+  async assignMember(sheetId: string, memberId: string, gmUserId: string) {
+    const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
+    if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
+    if (sheet.isNpc) throw new ForbiddenException(this.i18n.t('character-sheet.cannotAssignNpc'))
+    if (!sheet.adventureId) throw new ForbiddenException(this.i18n.t('character-sheet.assignRequiresAdventure'))
+
+    // GM gate: membership + GM role + campaign writable (read-only blocks this).
+    await this.membership.requireWriteRole(sheet.adventureId, gmUserId, 'GM')
+
+    // Target must be a PLAYER member of the SAME campaign as the character.
+    const target = await this.prisma.campaignMember.findUnique({
+      where: { id: memberId },
+    })
+    if (target?.adventureId !== sheet.adventureId) {
+      throw new ForbiddenException(this.i18n.t('character-sheet.assigneeNotInCampaign'))
+    }
+    if (target.role === 'GM') {
+      throw new ForbiddenException(this.i18n.t('character-sheet.cannotAssignToGm'))
+    }
+
+    const previousAssigneeId = sheet.assignedMemberId
+    const updated = await this.prisma.characterSheet.update({
+      where: { id: sheetId },
+      data: { assignedMemberId: memberId },
+      include: sheetInclude,
+    })
+
+    // Cache: sheet, adventure lists (GM sees assignment state), and both the
+    // new assignee's and the previous assignee's personal lists changed.
+    await this.invalidateCache(sheetId, target.userId, sheet.adventureId).catch(() => {})
+    if (previousAssigneeId && previousAssigneeId !== memberId) {
+      await this.invalidateAssigneeUserList(previousAssigneeId).catch(() => {})
+    }
+
+    return updated
+  }
+
+  /** Clear the assigned player. The character itself is never deleted. */
+  async removeAssignment(sheetId: string, gmUserId: string) {
+    const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
+    if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
+    if (sheet.isNpc) throw new ForbiddenException(this.i18n.t('character-sheet.cannotAssignNpc'))
+    if (!sheet.adventureId) throw new ForbiddenException(this.i18n.t('character-sheet.assignRequiresAdventure'))
+    await this.membership.requireWriteRole(sheet.adventureId, gmUserId, 'GM')
+
+    const previousAssigneeId = sheet.assignedMemberId
+    const updated = await this.prisma.characterSheet.update({
+      where: { id: sheetId },
+      data: { assignedMemberId: null },
+      include: sheetInclude,
+    })
+
+    await this.invalidateCache(sheetId, undefined, sheet.adventureId).catch(() => {})
+    if (previousAssigneeId) {
+      await this.invalidateAssigneeUserList(previousAssigneeId).catch(() => {})
+    }
+
+    return updated
+  }
+
+  /** Resolve the assignee's userId (DB, never cache) and del their personal list. */
+  private async invalidateAssigneeUserList(memberId: string): Promise<void> {
+    const member = await this.prisma.campaignMember.findUnique({
+      where: { id: memberId },
+      select: { userId: true },
+    })
+    if (!member) return
+    await this.redis.del(this.userListCacheKey(member.userId)).catch(() => {})
   }
 
   async updateSkillProfileValue(sheetId: string, skillId: string, profileId: string, optionId: string | null, userId: string) {
@@ -611,6 +941,24 @@ export class CharacterSheetService {
 
   async updateSkillAttribute(sheetId: string, skillId: string, attributeId: string | null, userId: string) {
     await this.requireOwnership(sheetId, userId)
+
+    // Fetch the template skill to validate allowedAttributeIds
+    const templateSkill = await this.prisma.templateSkill.findUnique({
+      where: { id: skillId },
+      select: { allowedAttributeIds: true },
+    })
+    if (!templateSkill) throw new NotFoundException(this.i18n.t('character-sheet.skillNotFound'))
+
+    // Fixed skills (allowedAttributeIds is empty) reject any attribute change
+    if (templateSkill.allowedAttributeIds.length === 0) {
+      throw new BadRequestException(this.i18n.t('character-sheet.fixedAttribute'))
+    }
+
+    // Player-selectable skills must validate the chosen attribute is in the allowed list
+    if (attributeId !== null && !templateSkill.allowedAttributeIds.includes(attributeId)) {
+      throw new BadRequestException(this.i18n.t('character-sheet.attributeNotAllowed'))
+    }
+
     const result = await this.prisma.characterSheetSkillValue.upsert({
       where: { sheetId_skillId: { sheetId, skillId } },
       create: { sheetId, skillId, value: '', selectedAttributeId: attributeId },
@@ -622,30 +970,16 @@ export class CharacterSheetService {
 
   // ── Abilities & Summons (CRUD) ──
 
-  private abilityInclude = {
+  private readonly abilityInclude = {
     levels: { orderBy: { level: 'asc' as const } },
     summonAttributes: { orderBy: { createdAt: 'asc' as const } },
-    summonAcValues: { orderBy: { createdAt: 'asc' as const } },
-    summonAcAttributeValues: {
-      include: {
-        selectedAttribute: { select: { id: true, key: true, name: true } },
-      },
-    },
+    summonAcValues: true,
     summonHealth: true,
-    summonResistanceValues: true,
-    summonResistanceComponentValues: true,
     summonSkills: {
       orderBy: { createdAt: 'asc' as const },
-      include: {
-        skill: { select: { id: true, name: true, description: true, attributeId: true, allowedAttributeIds: true, defaultAttributeId: true, attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } } },
-        selectedAttribute: { select: { id: true, key: true, name: true } },
-        profileValues: {
-          include: {
-            profile: { select: { id: true, name: true, targetMode: true, targetSkillIds: true } },
-            option: { select: { id: true, label: true, value: true } },
-          },
-        },
-      },
+    },
+    summonResistances: {
+      orderBy: { createdAt: 'asc' as const },
     },
     childAbilities: {
       orderBy: { order: 'asc' as const },
@@ -656,7 +990,7 @@ export class CharacterSheetService {
   }
 
   async listAbilities(sheetId: string, userId: string) {
-    await this.requireOwnership(sheetId, userId)
+    await this.requireOwnership(sheetId, userId, false)
     return this.prisma.characterAbility.findMany({
       where: { sheetId, summonId: null },
       orderBy: { order: 'asc' },
@@ -678,20 +1012,18 @@ export class CharacterSheetService {
     const abilityType = dto.type ?? 'ABILITY'
 
     if (abilityType === 'SUMMON') {
-      // Fetch template attributes & AC fields to create summon data
+      // Fetch template attributes to create summon attribute data
       const sheet = await this.prisma.characterSheet.findUnique({
         where: { id: sheetId },
         select: {
           template: {
             select: {
               attributes: true,
-              armorClasses: { include: { fields: true } },
             },
           },
         },
       })
       const templateAttrs = sheet?.template?.attributes ?? []
-      const acFields = sheet?.template?.armorClasses?.flatMap(ac => ac.fields) ?? []
 
       const summonAttrData = dto.summonAttributeValues ?? templateAttrs.map(a => ({ attributeId: a.id, value: '' }))
 
@@ -706,9 +1038,7 @@ export class CharacterSheetService {
           summonAttributes: summonAttrData.length > 0
             ? { create: summonAttrData.map(sa => ({ attributeId: sa.attributeId, value: sa.value })) }
             : undefined,
-          summonAcValues: acFields.length > 0
-            ? { create: acFields.map(f => ({ fieldId: f.id, value: f.defaultValue })) }
-            : undefined,
+          summonAcValues: { create: [{ value: '10' }] },
           summonHealth: (dto.summonHealthCurrent !== undefined || dto.summonHealthMax !== undefined)
             ? { create: { current: dto.summonHealthCurrent ?? null, maximum: dto.summonHealthMax ?? null } }
             : undefined,
@@ -748,7 +1078,7 @@ export class CharacterSheetService {
 
   async updateAbility(abilityId: string, userId: string, dto: { name?: string; description?: string; notes?: string }) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
+    if (!ability) throw new NotFoundException(this.i18n.t('character-sheet.abilityNotFound'))
     await this.requireOwnership(ability.sheetId, userId)
     const result = await this.prisma.characterAbility.update({ where: { id: abilityId }, data: { ...dto }, include: this.abilityInclude })
     await this.invalidateCache(ability.sheetId).catch(() => {})
@@ -757,7 +1087,7 @@ export class CharacterSheetService {
 
   async removeAbility(abilityId: string, userId: string) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
+    if (!ability) throw new NotFoundException(this.i18n.t('character-sheet.abilityNotFound'))
     await this.requireOwnership(ability.sheetId, userId)
     const result = await this.prisma.characterAbility.delete({ where: { id: abilityId } })
     await this.invalidateCache(ability.sheetId).catch(() => {})
@@ -768,8 +1098,8 @@ export class CharacterSheetService {
 
   async listSummonAbilities(summonId: string, userId: string) {
     const summon = await this.prisma.characterAbility.findUnique({ where: { id: summonId } })
-    if (!summon) throw new NotFoundException('Summon not found')
-    await this.requireOwnership(summon.sheetId, userId)
+    if (!summon) throw new NotFoundException(this.i18n.t('character-sheet.summonNotFound'))
+    await this.requireOwnership(summon.sheetId, userId, false)
     return this.prisma.characterAbility.findMany({
       where: { summonId },
       orderBy: { order: 'asc' },
@@ -782,8 +1112,8 @@ export class CharacterSheetService {
     manaCost?: number; range?: string; damage?: string
   }) {
     const summon = await this.prisma.characterAbility.findUnique({ where: { id: summonId } })
-    if (!summon) throw new NotFoundException('Summon not found')
-    if (summon.type !== 'SUMMON') throw new ForbiddenException('Only summons can have child abilities')
+    if (!summon) throw new NotFoundException(this.i18n.t('character-sheet.summonNotFound'))
+    if (summon.type !== 'SUMMON') throw new ForbiddenException(this.i18n.t('character-sheet.onlySummonsChildren'))
 
     const count = await this.prisma.characterAbility.count({ where: { summonId } })
     const result = await this.prisma.characterAbility.create({
@@ -816,8 +1146,8 @@ export class CharacterSheetService {
 
   async listAbilityLevels(abilityId: string, userId: string) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
-    await this.requireOwnership(ability.sheetId, userId)
+    if (!ability) throw new NotFoundException(this.i18n.t('character-sheet.abilityNotFound'))
+    await this.requireOwnership(ability.sheetId, userId, false)
     return this.prisma.characterAbilityLevel.findMany({ where: { abilityId }, orderBy: { level: 'asc' } })
   }
 
@@ -830,7 +1160,7 @@ export class CharacterSheetService {
       where: { id: abilityId },
       include: { levels: { orderBy: { level: 'desc' }, take: 1 } },
     })
-    if (!ability) throw new NotFoundException('Ability not found')
+    if (!ability) throw new NotFoundException(this.i18n.t('character-sheet.abilityNotFound'))
     await this.requireOwnership(ability.sheetId, userId)
 
     let data = {
@@ -860,7 +1190,7 @@ export class CharacterSheetService {
     })
     if (existing) {
       throw new ConflictException(
-        `Level "${dto.level}" already exists for this ability`,
+        this.i18n.t('character-sheet.levelExists', { args: { level: dto.level } }),
       )
     }
 
@@ -873,9 +1203,9 @@ export class CharacterSheetService {
 
   async updateAbilityLevel(levelId: string, userId: string, dto: { level?: string; description?: string; manaCost?: number; range?: string; notes?: string; damage?: string }) {
     const abilityLevel = await this.prisma.characterAbilityLevel.findUnique({ where: { id: levelId } })
-    if (!abilityLevel) throw new NotFoundException('Ability level not found')
+    if (!abilityLevel) throw new NotFoundException(this.i18n.t('character-sheet.abilityLevelNotFound'))
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityLevel.abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
+    if (!ability) throw new NotFoundException(this.i18n.t('character-sheet.abilityNotFound'))
     await this.requireOwnership(ability.sheetId, userId)
     const result = await this.prisma.characterAbilityLevel.update({
       where: { id: levelId },
@@ -890,9 +1220,9 @@ export class CharacterSheetService {
 
   async deleteAbilityLevel(levelId: string, userId: string) {
     const abilityLevel = await this.prisma.characterAbilityLevel.findUnique({ where: { id: levelId } })
-    if (!abilityLevel) throw new NotFoundException('Ability level not found')
+    if (!abilityLevel) throw new NotFoundException(this.i18n.t('character-sheet.abilityLevelNotFound'))
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityLevel.abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
+    if (!ability) throw new NotFoundException(this.i18n.t('character-sheet.abilityNotFound'))
     await this.requireOwnership(ability.sheetId, userId)
     const result = await this.prisma.characterAbilityLevel.delete({ where: { id: levelId } })
     await this.invalidateCache(ability.sheetId).catch(() => {})
@@ -901,34 +1231,38 @@ export class CharacterSheetService {
 
   // ── Summon Skills ──
 
-  async addSummonSkill(abilityId: string, skillId: string, userId: string) {
+  async addSummonSkill(abilityId: string, name: string, manualValue: number, userId: string) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
-    if (!ability) throw new NotFoundException('Summon not found')
-    if (ability.type !== 'SUMMON') throw new ForbiddenException('Skills can only be added to summons')
+    if (!ability) throw new NotFoundException(this.i18n.t('character-sheet.summonNotFound'))
+    if (ability.type !== 'SUMMON') throw new ForbiddenException(this.i18n.t('character-sheet.onlySummonsSkills'))
     await this.requireOwnership(ability.sheetId, userId)
-
-    // Default the selected attribute to the skill's default
-    const skill = await this.prisma.templateSkill.findUnique({ where: { id: skillId } })
-    const defaultAttrId = skill?.defaultAttributeId ?? skill?.attributeId ?? null
 
     const result = await this.prisma.summonSkill.create({
       data: {
         abilityId,
-        skillId,
-        selectedAttributeId: defaultAttrId ?? null,
-      },
-      include: {
-        skill: { select: { id: true, name: true, description: true, attributeId: true, allowedAttributeIds: true, defaultAttributeId: true, attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } } },
-        selectedAttribute: { select: { id: true, key: true, name: true } },
-        profileValues: {
-          include: {
-            profile: { select: { id: true, name: true } },
-            option: { select: { id: true, label: true, value: true } },
-          },
-        },
+        name,
+        manualValue,
       },
     })
     await this.invalidateCache(ability.sheetId).catch(() => {})
+    return result
+  }
+
+  async updateSummonSkill(summonSkillId: string, userId: string, dto: { name?: string; manualValue?: number }) {
+    const ss = await this.prisma.summonSkill.findUnique({
+      where: { id: summonSkillId },
+      include: { ability: true },
+    })
+    if (!ss) throw new NotFoundException(this.i18n.t('character-sheet.summonSkillNotFound'))
+    await this.requireOwnership(ss.ability.sheetId, userId)
+    const result = await this.prisma.summonSkill.update({
+      where: { id: summonSkillId },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.manualValue !== undefined ? { manualValue: dto.manualValue } : {}),
+      },
+    })
+    await this.invalidateCache(ss.ability.sheetId).catch(() => {})
     return result
   }
 
@@ -937,51 +1271,59 @@ export class CharacterSheetService {
       where: { id: summonSkillId },
       include: { ability: true },
     })
-    if (!ss) throw new NotFoundException('Summon skill not found')
+    if (!ss) throw new NotFoundException(this.i18n.t('character-sheet.summonSkillNotFound'))
     await this.requireOwnership(ss.ability.sheetId, userId)
     const result = await this.prisma.summonSkill.delete({ where: { id: summonSkillId } })
     await this.invalidateCache(ss.ability.sheetId).catch(() => {})
     return result
   }
 
-  async updateSummonSkillAttribute(summonSkillId: string, attributeId: string | null, userId: string) {
-    const ss = await this.prisma.summonSkill.findUnique({
-      where: { id: summonSkillId },
-      include: { ability: true },
-    })
-    if (!ss) throw new NotFoundException('Summon skill not found')
-    await this.requireOwnership(ss.ability.sheetId, userId)
-    const result = await this.prisma.summonSkill.update({
-      where: { id: summonSkillId },
-      data: { selectedAttributeId: attributeId },
-      include: {
-        skill: { select: { id: true, name: true, description: true, attributeId: true, allowedAttributeIds: true, defaultAttributeId: true, attribute: { select: { id: true, key: true, name: true } }, defaultAttribute: { select: { id: true, key: true, name: true } } } },
-        selectedAttribute: { select: { id: true, key: true, name: true } },
-        profileValues: {
-          include: {
-            profile: { select: { id: true, name: true } },
-            option: { select: { id: true, label: true, value: true } },
-          },
-        },
+  // ── Summon Resistances (completely manual) ──
+
+  async addSummonResistance(abilityId: string, name: string, value: string, userId: string) {
+    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
+    if (!ability) throw new NotFoundException(this.i18n.t('character-sheet.summonNotFound'))
+    if (ability.type !== 'SUMMON') throw new ForbiddenException(this.i18n.t('character-sheet.onlySummonsResistances'))
+    await this.requireOwnership(ability.sheetId, userId)
+
+    const result = await this.prisma.summonResistance.create({
+      data: {
+        abilityId,
+        name,
+        value,
       },
     })
-    await this.invalidateCache(ss.ability.sheetId).catch(() => {})
+    await this.invalidateCache(ability.sheetId).catch(() => {})
     return result
   }
 
-  async updateSummonSkillProfile(summonSkillId: string, profileId: string, optionId: string | null, userId: string) {
-    const ss = await this.prisma.summonSkill.findUnique({
-      where: { id: summonSkillId },
+  async updateSummonResistance(summonResistanceId: string, userId: string, dto: { name?: string; value?: string }) {
+    const sr = await this.prisma.summonResistance.findUnique({
+      where: { id: summonResistanceId },
       include: { ability: true },
     })
-    if (!ss) throw new NotFoundException('Summon skill not found')
-    await this.requireOwnership(ss.ability.sheetId, userId)
-    const result = await this.prisma.summonSkillProfileValue.upsert({
-      where: { summonSkillId_profileId: { summonSkillId, profileId } },
-      create: { summonSkillId, profileId, optionId },
-      update: { optionId },
+    if (!sr) throw new NotFoundException(this.i18n.t('character-sheet.summonResistanceNotFound'))
+    await this.requireOwnership(sr.ability.sheetId, userId)
+    const result = await this.prisma.summonResistance.update({
+      where: { id: summonResistanceId },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.value !== undefined ? { value: dto.value } : {}),
+      },
     })
-    await this.invalidateCache(ss.ability.sheetId).catch(() => {})
+    await this.invalidateCache(sr.ability.sheetId).catch(() => {})
+    return result
+  }
+
+  async removeSummonResistance(summonResistanceId: string, userId: string) {
+    const sr = await this.prisma.summonResistance.findUnique({
+      where: { id: summonResistanceId },
+      include: { ability: true },
+    })
+    if (!sr) throw new NotFoundException(this.i18n.t('character-sheet.summonResistanceNotFound'))
+    await this.requireOwnership(sr.ability.sheetId, userId)
+    const result = await this.prisma.summonResistance.delete({ where: { id: summonResistanceId } })
+    await this.invalidateCache(sr.ability.sheetId).catch(() => {})
     return result
   }
 
@@ -989,7 +1331,7 @@ export class CharacterSheetService {
 
   async updateSummonAttribute(abilityId: string, attributeId: string, value: string, userId: string) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
+    if (!ability) throw new NotFoundException(this.i18n.t('character-sheet.abilityNotFound'))
     await this.requireOwnership(ability.sheetId, userId)
     const result = await this.prisma.summonAttribute.upsert({
       where: { abilityId_attributeId: { abilityId, attributeId } },
@@ -1002,29 +1344,14 @@ export class CharacterSheetService {
 
   // ── Summon AC Values ──
 
-  async updateSummonAcValue(abilityId: string, fieldId: string, value: string, userId: string) {
+  async updateSummonAcValue(abilityId: string, value: string, userId: string) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
+    if (!ability) throw new NotFoundException(this.i18n.t('character-sheet.abilityNotFound'))
     await this.requireOwnership(ability.sheetId, userId)
     const result = await this.prisma.summonArmorClassValue.upsert({
-      where: { abilityId_fieldId: { abilityId, fieldId } },
-      create: { abilityId, fieldId, value },
+      where: { abilityId },
+      create: { abilityId, value },
       update: { value },
-    })
-    await this.invalidateCache(ability.sheetId).catch(() => {})
-    return result
-  }
-
-  // ── Summon AC Attribute Modifier Selection ──
-
-  async updateSummonAcAttributeValue(abilityId: string, acAttributeModifierId: string, selectedAttributeId: string | null, userId: string) {
-    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
-    await this.requireOwnership(ability.sheetId, userId)
-    const result = await this.prisma.summonArmorClassAttributeValue.upsert({
-      where: { abilityId_acAttributeModifierId: { abilityId, acAttributeModifierId } },
-      create: { abilityId, acAttributeModifierId, selectedAttributeId },
-      update: { selectedAttributeId },
     })
     await this.invalidateCache(ability.sheetId).catch(() => {})
     return result
@@ -1034,7 +1361,7 @@ export class CharacterSheetService {
 
   async updateSummonHealth(abilityId: string, userId: string, dto: { current?: number | null; maximum?: number | null; notes?: string | null }) {
     const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
+    if (!ability) throw new NotFoundException(this.i18n.t('character-sheet.abilityNotFound'))
     await this.requireOwnership(ability.sheetId, userId)
     const result = await this.prisma.summonHealth.upsert({
       where: { abilityId },
@@ -1045,38 +1372,10 @@ export class CharacterSheetService {
     return result
   }
 
-  // ── Summon Resistance Values ──
-
-  async updateSummonResistanceValue(abilityId: string, resistanceId: string, value: string | null, userId: string) {
-    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
-    await this.requireOwnership(ability.sheetId, userId)
-    const result = await this.prisma.summonResistanceValue.upsert({
-      where: { abilityId_resistanceId: { abilityId, resistanceId } },
-      create: { abilityId, resistanceId, manualValue: value },
-      update: { manualValue: value },
-    })
-    await this.invalidateCache(ability.sheetId).catch(() => {})
-    return result
-  }
-
-  async updateSummonResistanceComponentValue(abilityId: string, componentId: string, value: string, userId: string) {
-    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
-    if (!ability) throw new NotFoundException('Ability not found')
-    await this.requireOwnership(ability.sheetId, userId)
-    const result = await this.prisma.summonResistanceComponentValue.upsert({
-      where: { abilityId_componentId: { abilityId, componentId } },
-      create: { abilityId, componentId, value },
-      update: { value },
-    })
-    await this.invalidateCache(ability.sheetId).catch(() => {})
-    return result
-  }
-
   // ── Inventory (CRUD) ──
 
   async listInventory(sheetId: string, userId: string) {
-    await this.requireOwnership(sheetId, userId)
+    await this.requireOwnership(sheetId, userId, false)
     return this.prisma.characterInventoryItem.findMany({ where: { sheetId }, orderBy: { order: 'asc' } })
   }
 
@@ -1090,7 +1389,7 @@ export class CharacterSheetService {
 
   async updateInventoryItem(itemId: string, userId: string, dto: { name?: string; weight?: number; cost?: string; description?: string }) {
     const item = await this.prisma.characterInventoryItem.findUnique({ where: { id: itemId } })
-    if (!item) throw new NotFoundException('Inventory item not found')
+    if (!item) throw new NotFoundException(this.i18n.t('character-sheet.inventoryItemNotFound'))
     await this.requireOwnership(item.sheetId, userId)
     const result = await this.prisma.characterInventoryItem.update({ where: { id: itemId }, data: { ...dto } })
     await this.invalidateCache(item.sheetId).catch(() => {})
@@ -1099,7 +1398,7 @@ export class CharacterSheetService {
 
   async removeInventoryItem(itemId: string, userId: string) {
     const item = await this.prisma.characterInventoryItem.findUnique({ where: { id: itemId } })
-    if (!item) throw new NotFoundException('Inventory item not found')
+    if (!item) throw new NotFoundException(this.i18n.t('character-sheet.inventoryItemNotFound'))
     await this.requireOwnership(item.sheetId, userId)
     const result = await this.prisma.characterInventoryItem.delete({ where: { id: itemId } })
     await this.invalidateCache(item.sheetId).catch(() => {})
@@ -1109,7 +1408,7 @@ export class CharacterSheetService {
   // ── Story (CRUD — one-to-one) ──
 
   async getStory(sheetId: string, userId: string) {
-    await this.requireOwnership(sheetId, userId)
+    await this.requireOwnership(sheetId, userId, false)
     const story = await this.prisma.characterStory.findUnique({ where: { sheetId } })
     if (!story) {
       return this.prisma.characterStory.create({ data: { sheetId } })
@@ -1127,7 +1426,7 @@ export class CharacterSheetService {
   // ── Character Section Entries (CRUD) ──
 
   async listSectionEntries(sheetId: string, userId: string) {
-    await this.requireOwnership(sheetId, userId)
+    await this.requireOwnership(sheetId, userId, false)
     return this.prisma.characterSectionEntry.findMany({
       where: { sheetId },
       orderBy: { order: 'asc' },
@@ -1155,7 +1454,7 @@ export class CharacterSheetService {
 
   async updateSectionEntry(entryId: string, userId: string, dto: { name?: string; description?: string; notes?: string }) {
     const entry = await this.prisma.characterSectionEntry.findUnique({ where: { id: entryId } })
-    if (!entry) throw new NotFoundException('Section entry not found')
+    if (!entry) throw new NotFoundException(this.i18n.t('character-sheet.sectionEntryNotFound'))
     await this.requireOwnership(entry.sheetId, userId)
     const result = await this.prisma.characterSectionEntry.update({
       where: { id: entryId },
@@ -1168,11 +1467,40 @@ export class CharacterSheetService {
 
   async removeSectionEntry(entryId: string, userId: string) {
     const entry = await this.prisma.characterSectionEntry.findUnique({ where: { id: entryId } })
-    if (!entry) throw new NotFoundException('Section entry not found')
+    if (!entry) throw new NotFoundException(this.i18n.t('character-sheet.sectionEntryNotFound'))
     await this.requireOwnership(entry.sheetId, userId)
     const result = await this.prisma.characterSectionEntry.delete({ where: { id: entryId } })
     await this.invalidateCache(entry.sheetId).catch(() => {})
     return result
+  }
+
+  // Resistance structure (create/remove) is managed by the owner, the assigned
+  // player, or a campaign GM. Writes respect the campaign read-only state.
+  private async assertCanManageResistances(
+    sheet: { ownerId: string | null; adventureId: string | null; assignedMemberId: string | null },
+    userId: string,
+  ): Promise<void> {
+    if (sheet.ownerId === userId) {
+      if (sheet.adventureId) {
+        await this.membership.requireWriteAccess(sheet.adventureId, userId)
+      }
+      return
+    }
+    if (sheet.assignedMemberId) {
+      const assigned = await this.prisma.campaignMember.findUnique({
+        where: { id: sheet.assignedMemberId },
+        select: { userId: true },
+      })
+      if (assigned?.userId === userId) {
+        if (sheet.adventureId) {
+          await this.membership.requireWriteAccess(sheet.adventureId, userId)
+        }
+        return
+      }
+    }
+    if (!sheet.adventureId) throw new ForbiddenException(this.i18n.t('character-sheet.ownerOnlyManage'))
+    try { await this.membership.requireWriteRole(sheet.adventureId, userId, 'GM') }
+    catch { throw new ForbiddenException(this.i18n.t('character-sheet.ownerOrGmManage')) }
   }
 
   async createResistance(
@@ -1181,12 +1509,8 @@ export class CharacterSheetService {
     dto: { name: string; calculationType: 'MANUAL' | 'CALCULATED'; components?: { name: string; editableByPlayer?: boolean; defaultValue?: string }[]; attributeModifiers?: { attributeId: string; enabled?: boolean }[] },
   ) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
-    if (!sheet) throw new NotFoundException('Character sheet not found')
-    if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can manage this character sheet')
-      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
-      catch { throw new ForbiddenException('Only the owner or a GM can manage this character sheet') }
-    }
+    if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
+    await this.assertCanManageResistances(sheet, userId)
 
     // Get current max order to append (scoped to this sheet)
     const maxOrder = await this.prisma.sheetResistance.aggregate({
@@ -1228,19 +1552,15 @@ export class CharacterSheetService {
 
   async removeResistance(sheetId: string, resistanceId: string, userId: string) {
     const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
-    if (!sheet) throw new NotFoundException('Character sheet not found')
-    if (sheet.ownerId !== userId) {
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can manage this character sheet')
-      try { await this.membership.requireRole(sheet.adventureId, userId, 'GM') }
-      catch { throw new ForbiddenException('Only the owner or a GM can manage this character sheet') }
-    }
+    if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
+    await this.assertCanManageResistances(sheet, userId)
 
     // Try sheet-specific resistance first, fall back to template resistance
     const sheetRes = await this.prisma.sheetResistance.findUnique({
       where: { id: resistanceId },
       select: { id: true, sheetId: true },
     })
-    if (sheetRes && sheetRes.sheetId === sheetId) {
+    if (sheetRes?.sheetId === sheetId) {
       const result = await this.prisma.sheetResistance.delete({ where: { id: resistanceId } })
       await this.invalidateCache(sheetId).catch(() => {})
       return result
@@ -1252,36 +1572,55 @@ export class CharacterSheetService {
     return result
   }
 
-  // ── Professional Skills (CRUD) ──
+  // ── Professional Skills (CRUD + Profiles) ──
+
+  private readonly professionalSkillInclude = {
+    attribute: { select: { id: true, key: true, name: true } },
+    profileValues: {
+      include: {
+        profile: { select: { id: true, name: true } },
+        option: { select: { id: true, label: true, value: true } },
+      },
+    },
+  } as const
 
   async listProfessionalSkills(sheetId: string, userId: string) {
-    await this.requireOwnership(sheetId, userId)
+    await this.requireOwnership(sheetId, userId, false)
     return this.prisma.sheetProfessionalSkill.findMany({
       where: { sheetId },
       orderBy: { order: 'asc' },
-      include: { attribute: { select: { id: true, key: true, name: true } } },
+      include: this.professionalSkillInclude,
     })
   }
 
   async createProfessionalSkill(sheetId: string, userId: string, dto: { name: string; attributeId?: string | null }) {
     await this.requireOwnership(sheetId, userId)
     const count = await this.prisma.sheetProfessionalSkill.count({ where: { sheetId } })
-    const result = await this.prisma.sheetProfessionalSkill.create({
-      data: { sheetId, name: dto.name, attributeId: dto.attributeId ?? null, order: count },
-      include: { attribute: { select: { id: true, key: true, name: true } } },
-    })
-    await this.invalidateCache(sheetId).catch(() => {})
-    return result
+    try {
+      const result = await this.prisma.sheetProfessionalSkill.create({
+        data: { sheetId, name: dto.name, attributeId: dto.attributeId ?? null, order: count },
+        include: this.professionalSkillInclude,
+      })
+      await this.invalidateCache(sheetId).catch(() => {})
+      return result
+    } catch (err) {
+      if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'P2002') {
+        throw new ConflictException(
+          this.i18n.t('character-sheet.profSkillExists', { args: { name: dto.name } }),
+        )
+      }
+      throw err
+    }
   }
 
   async updateProfessionalSkill(skillId: string, userId: string, dto: { name?: string; attributeId?: string | null }) {
     const skill = await this.prisma.sheetProfessionalSkill.findUnique({ where: { id: skillId } })
-    if (!skill) throw new NotFoundException('Professional skill not found')
+    if (!skill) throw new NotFoundException(this.i18n.t('character-sheet.profSkillNotFound'))
     await this.requireOwnership(skill.sheetId, userId)
     const result = await this.prisma.sheetProfessionalSkill.update({
       where: { id: skillId },
       data: { ...dto },
-      include: { attribute: { select: { id: true, key: true, name: true } } },
+      include: this.professionalSkillInclude,
     })
     await this.invalidateCache(skill.sheetId).catch(() => {})
     return result
@@ -1289,30 +1628,168 @@ export class CharacterSheetService {
 
   async removeProfessionalSkill(skillId: string, userId: string) {
     const skill = await this.prisma.sheetProfessionalSkill.findUnique({ where: { id: skillId } })
-    if (!skill) throw new NotFoundException('Professional skill not found')
+    if (!skill) throw new NotFoundException(this.i18n.t('character-sheet.profSkillNotFound'))
     await this.requireOwnership(skill.sheetId, userId)
     const result = await this.prisma.sheetProfessionalSkill.delete({ where: { id: skillId } })
     await this.invalidateCache(skill.sheetId).catch(() => {})
     return result
   }
 
-  private async requireOwnership(sheetId: string, userId: string) {
-    const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
-    if (!sheet) throw new NotFoundException('Character sheet not found')
-    if (sheet.ownerId !== userId) {
-      // Allow GMs of the adventure to manage NPC sheets and player sheets
-      if (!sheet.adventureId) throw new ForbiddenException('Only the owner can manage this character sheet')
-      try {
-        await this.membership.requireRole(sheet.adventureId, userId, 'GM')
-      } catch {
-        throw new ForbiddenException('Only the owner or a GM can manage this character sheet')
+  async updateProfessionalSkillProfileValue(
+    sheetId: string,
+    skillId: string,
+    profileId: string,
+    optionId: string | null,
+    userId: string,
+  ) {
+    await this.requireOwnership(sheetId, userId)
+    const result = await this.prisma.sheetProfessionalSkillProfileValue.upsert({
+      where: { sheetProfessionalSkillId_profileId: { sheetProfessionalSkillId: skillId, profileId } },
+      create: { sheetProfessionalSkillId: skillId, profileId, optionId },
+      update: { optionId },
+    })
+    await this.invalidateCache(sheetId).catch(() => {})
+    return result
+  }
+
+  private buildSkillProfileValues(
+    skills: any[],
+    profiles: any[],
+    formula: string | null | undefined,
+  ): Array<{ skillId: string; profileId: string; optionId?: string | null }> {
+    const skillProfileValues: Array<{ skillId: string; profileId: string; optionId?: string | null }> = []
+    if (!formula) return skillProfileValues
+    const formulaVars = this.extractVariableNames(formula)
+    for (const skill of skills) {
+      for (const profile of profiles) {
+        if (!formulaVars.includes(profile.name)) continue
+        const targetMode = (profile as any).targetMode ?? 'ALL_SKILLS'
+        const targetSkillIds: string[] = (profile as any).targetSkillIds ?? []
+        if (targetMode === 'SELECTED_SKILLS' && targetSkillIds.length > 0 && !targetSkillIds.includes(skill.name)) continue
+        const firstOption: any = (profile.options ?? [])[0]
+        skillProfileValues.push({ skillId: skill.id, profileId: profile.id, optionId: firstOption?.id ?? null })
       }
     }
+    return skillProfileValues
+  }
+
+  private async assertSheetAccess(
+    sheet: {
+      ownerId: string | null
+      adventureId: string | null
+      assignedMemberId?: string | null
+      assignedMember?: { userId: string } | null
+    },
+    userId: string,
+  ): Promise<void> {
+    if (sheet.ownerId === userId) return
+    // The assigned player gets read access. Resolve the assignee from the DB —
+    // authorization must never depend on cache contents.
+    if (sheet.assignedMemberId) {
+      if (sheet.assignedMember?.userId === userId) return
+      const member = await this.prisma.campaignMember.findUnique({
+        where: { id: sheet.assignedMemberId },
+        select: { userId: true },
+      })
+      if (member?.userId === userId) return
+    }
+    if (!sheet.adventureId) throw new ForbiddenException(this.i18n.t('character-sheet.noAccess'))
+    try {
+      await this.membership.requireRole(sheet.adventureId, userId, 'GM')
+    } catch {
+      throw new ForbiddenException(this.i18n.t('character-sheet.noAccess'))
+    }
+  }
+
+  /**
+   * Owner / assigned-player writes respect the campaign read-only state, but
+   * plain reads are always allowed. Called for both branches in requireOwnership.
+   */
+  private async requireWriteAccessIfLinked(
+    adventureId: string | null,
+    userId: string,
+    write: boolean,
+  ) {
+    if (write && adventureId) {
+      await this.membership.requireWriteAccess(adventureId, userId)
+    }
+  }
+
+  /** GM read gate for NPC sheets: reads only require the GM role. */
+  private async requireGmReadRole(adventureId: string, userId: string) {
+    await this.membership.requireRole(adventureId, userId, 'GM')
+  }
+
+  /** GM write gate for NPC sheets: writes also require the campaign writable. */
+  private async requireGmWriteRole(adventureId: string, userId: string) {
+    await this.membership.requireWriteRole(adventureId, userId, 'GM')
+  }
+
+  private async requireOwnership(sheetId: string, userId: string, write = true) {
+    const sheet = await this.prisma.characterSheet.findUnique({ where: { id: sheetId } })
+    if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
+    if (sheet.ownerId === userId) {
+      // Owner always retains read access; writes respect campaign read-only state when linked
+      await this.requireWriteAccessIfLinked(sheet.adventureId, userId, write)
+      return
+    }
+    // The assigned player can read and edit the sheet; writes respect the
+    // campaign read-only state. Delete is NOT granted here (owner/GM-NPC only).
+    if (sheet.assignedMemberId) {
+      const assigned = await this.prisma.campaignMember.findUnique({
+        where: { id: sheet.assignedMemberId },
+        select: { userId: true },
+      })
+      if (assigned?.userId === userId) {
+        await this.requireWriteAccessIfLinked(sheet.adventureId, userId, write)
+        return
+      }
+    }
+    // Only allow GM bypass for NPC sheets; player sheets are owner-only
+    if (sheet.isNpc && sheet.adventureId) {
+      try {
+        if (write) {
+          await this.requireGmWriteRole(sheet.adventureId, userId)
+        } else {
+          await this.requireGmReadRole(sheet.adventureId, userId)
+        }
+        return
+      } catch {
+        throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
+      }
+    }
+    throw new ForbiddenException(this.i18n.t('character-sheet.noModifyPermission'))
+  }
+
+  // Public write-gates reused by the image module for avatar upload/delete.
+  async assertCanModifySheet(sheetId: string, userId: string): Promise<void> {
+    await this.requireOwnership(sheetId, userId)
+  }
+
+  /** Read-access gate for computed endpoints (resistances, AC): owner, assigned player, or campaign GM. */
+  async assertReadAccess(sheetId: string, userId: string): Promise<void> {
+    const sheet = await this.prisma.characterSheet.findUnique({
+      where: { id: sheetId },
+      select: {
+        ownerId: true,
+        adventureId: true,
+        assignedMemberId: true,
+        assignedMember: { select: { userId: true } },
+      },
+    })
+    if (!sheet) throw new NotFoundException(this.i18n.t('character-sheet.notFound'))
+    await this.assertSheetAccess(sheet, userId)
+  }
+
+  async assertCanModifyAbility(abilityId: string, userId: string): Promise<void> {
+    const ability = await this.prisma.characterAbility.findUnique({ where: { id: abilityId } })
+    if (!ability) throw new NotFoundException(this.i18n.t('character-sheet.abilityNotFound'))
+    await this.requireOwnership(ability.sheetId, userId)
   }
 
   private extractVariableNames(formula: string): string[] {
     if (!formula) return []
-    const tokens = formula.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || []
+    const tokens = formula.match(/[a-zA-Z_]\w*/g) || []
     const functions = new Set(['mod', 'floor', 'ceil', 'round', 'max', 'min', 'abs'])
     const seen = new Set<string>()
     const vars: string[] = []
@@ -1320,5 +1797,86 @@ export class CharacterSheetService {
       if (!functions.has(t) && !seen.has(t)) { seen.add(t); vars.push(t) }
     }
     return vars
+  }
+
+  /**
+   * Reconstruct a template-like object from the adventure's templateSnapshot JSON.
+   * This is used as a fallback when the original template has been deleted
+   * (sheet.template is null) but the snapshot still exists on the adventure.
+   * Preserves the same shape that sheetInclude.template would return so the
+   * frontend receives a consistent data structure.
+   */
+  public reconstructTemplateFromSnapshot(snapshot: any): any {
+    if (!snapshot) return null
+
+    // Build a map of attribute ID -> { id, key, name } for resolving references
+    const attrMap = new Map<string, { id: string; key: string; name: string }>()
+    if (snapshot.attributes) {
+      for (const a of snapshot.attributes) {
+        attrMap.set(a.id, { id: a.id, key: a.key, name: a.name })
+      }
+    }
+
+    return {
+      id: snapshot.id,
+      name: snapshot.name,
+      attributeModifierFormula: snapshot.attributeModifierFormula ?? null,
+      attributeModifiersEnabled: snapshot.attributeModifiersEnabled ?? true,
+      skillFormula: snapshot.skillFormula ?? null,
+      attributes: (snapshot.attributes ?? []).map((a: any) => ({
+        ...a,
+        id: a.id, key: a.key, name: a.name, order: a.order,
+      })),
+      templateFields: (snapshot.templateFields ?? []).map((f: any) => ({
+        ...f,
+        id: f.id, key: f.key, label: f.label, order: f.order,
+      })),
+      templateSkills: (snapshot.templateSkills ?? []).map((s: any) => ({
+        ...s,
+        attribute: s.attributeId ? (attrMap.get(s.attributeId) ?? null) : null,
+        defaultAttribute: s.defaultAttributeId ? (attrMap.get(s.defaultAttributeId) ?? null) : null,
+      })),
+      skillModifierProfiles: (snapshot.skillModifierProfiles ?? []).map((p: any) => ({
+        ...p,
+        options: (p.options ?? []).map((o: any) => ({
+          ...o,
+          id: o.id, label: o.label, value: o.value, order: o.order,
+        })),
+      })),
+      coreResources: (snapshot.coreResources ?? []).map((cr: any) => ({
+        ...cr,
+        id: cr.id, slug: cr.slug, displayName: cr.displayName, enabled: cr.enabled,
+        editableByPlayer: cr.editableByPlayer, showNotes: cr.showNotes,
+      })),
+      armorClasses: (snapshot.armorClasses ?? []).map((ac: any) => ({
+        ...ac,
+        id: ac.id, name: ac.name, enabled: ac.enabled,
+        attributeModifiers: (ac.attributeModifiers ?? []).map((am: any) => ({
+          ...am,
+          attribute: am.attributeId ? (attrMap.get(am.attributeId) ?? null) : null,
+          defaultAttribute: am.defaultAttributeId ? (attrMap.get(am.defaultAttributeId) ?? null) : null,
+        })),
+        fields: (ac.fields ?? []).map((f: any) => ({
+          ...f,
+          id: f.id, name: f.name, key: f.key, defaultValue: f.defaultValue,
+          editableByPlayer: f.editableByPlayer, description: f.description, order: f.order,
+        })),
+      })),
+      characterSections: (snapshot.characterSections ?? []).map((cs: any) => ({
+        ...cs,
+        id: cs.id, name: cs.name, order: cs.order,
+      })),
+      resistances: (snapshot.resistances ?? []).map((r: any) => ({
+        ...r,
+        components: (r.components ?? []).map((c: any) => ({
+          ...c,
+          id: c.id, name: c.name, editableByPlayer: c.editableByPlayer, defaultValue: c.defaultValue, order: c.order,
+        })),
+        attributeModifiers: (r.attributeModifiers ?? []).map((am: any) => ({
+          ...am,
+          attribute: am.attributeId ? (attrMap.get(am.attributeId) ?? null) : null,
+        })),
+      })),
+    }
   }
 }

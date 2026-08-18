@@ -2,15 +2,19 @@ import {
   Injectable,
   UnauthorizedException,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
+import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
 import { RedisService } from '../redis/redis.service.js'
+import { AdminService } from './admin.service.js'
 import { v4 as uuid } from 'uuid'
 import * as bcrypt from 'bcrypt'
 
 const REFRESH_TOKEN_EXPIRY_DAYS = 30
 const ACCESS_TOKEN_EXPIRY = '15m'
+const MAX_ACTIVE_REFRESH_TOKENS = 5
 
 @Injectable()
 export class TokenService {
@@ -18,14 +22,31 @@ export class TokenService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly redis: RedisService,
+    private readonly adminService: AdminService,
+    private readonly i18n: I18nService,
   ) {}
 
   /** Generate access token (short-lived) and refresh token (long-lived, stored in DB) */
   async generateTokens(userId: string, email: string) {
+    let role: 'admin' | 'early_access' | 'user'
+    if (this.adminService.isAdmin(email)) {
+      role = 'admin'
+    } else if (this.adminService.isEarlyAccess(email)) {
+      role = 'early_access'
+    } else {
+      role = 'user'
+    }
     const accessToken = this.jwtService.sign(
-      { sub: userId, email },
+      { sub: userId, email, role },
       { expiresIn: ACCESS_TOKEN_EXPIRY },
     )
+
+    // A prior logout (revokeAllTokens) leaves a Redis `token_blacklist:{userId}`
+    // marker with a 30-day TTL. The user is explicitly authenticating again here
+    // (login / register / Google / refresh), so clear that marker — otherwise the
+    // first refresh after this access token expires would be rejected and the
+    // user would be force-logged-out at the ~15 minute mark.
+    await this.redis.del(`token_blacklist:${userId}`)
 
     const refreshToken = await this.createRefreshToken(userId)
 
@@ -34,12 +55,6 @@ export class TokenService {
 
   /** Create a refresh token stored in the database */
   private async createRefreshToken(userId: string): Promise<string> {
-    // Revoke all existing refresh tokens for this user
-    await this.prisma.refreshToken.updateMany({
-      where: { userId, revoked: false },
-      data: { revoked: true },
-    })
-
     const rawToken = uuid()
     // UUIDs already have ~122 bits of entropy; bcrypt cost factor 10 is
     // sufficient and avoids ~300ms delays with cost 12 under CPU contention.
@@ -55,6 +70,24 @@ export class TokenService {
         expiresAt,
       },
     })
+
+    // Cap the number of live refresh tokens per user so a growing pile of
+    // rotated rows never accumulates. The newest MAX_ACTIVE_REFRESH_TOKENS are
+    // kept (the one just created plus the most recent siblings); any older live
+    // tokens are dropped. We deliberately do NOT revoke all siblings on issue —
+    // that would log the user out of their other devices on every login/refresh.
+    const recent = await this.prisma.refreshToken.findMany({
+      where: { userId, revoked: false },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+      take: MAX_ACTIVE_REFRESH_TOKENS,
+    })
+    if (recent.length >= MAX_ACTIVE_REFRESH_TOKENS) {
+      const keepIds = recent.map((t) => t.id)
+      await this.prisma.refreshToken.deleteMany({
+        where: { userId, revoked: false, id: { notIn: keepIds } },
+      })
+    }
 
     // Return the raw token (not the hash) so it can be sent to the client
     // We'll also encode the userId in the token for lookup during refresh
@@ -76,7 +109,7 @@ export class TokenService {
     const blacklistedSince = await this.redis.get(`token_blacklist:${userId}`)
     if (blacklistedSince) {
       // User logged out; all their refresh tokens are revoked
-      throw new UnauthorizedException('Refresh token has been revoked')
+      throw new UnauthorizedException(this.i18n.t('auth.refreshTokenRevoked'))
     }
 
     // Find all non-revoked, non-expired refresh tokens for this user
@@ -97,7 +130,15 @@ export class TokenService {
       try {
         isValid = await bcrypt.compare(rawToken, stored.token)
       } catch (err) {
-        throw new InternalServerErrorException('Token verification failed, please try again')
+        // bcrypt.compare can reject on a corrupt stored hash or a DB/connection
+        // failure. Log the root cause (the original error must not be silently
+        // discarded) and reject with a typed error for the client.
+        Logger.error(
+          `Failed to verify refresh token hash for user ${userId}: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        )
+        throw new InternalServerErrorException(this.i18n.t('auth.tokenVerificationFailed'))
       }
       if (isValid) {
         matched = true
@@ -111,12 +152,11 @@ export class TokenService {
     }
 
     if (!matched) {
-      // If no match found, revoke ALL tokens for security (potential token theft)
-      await this.prisma.refreshToken.updateMany({
-        where: { userId, revoked: false },
-        data: { revoked: true },
-      })
-      throw new UnauthorizedException('Invalid refresh token')
+      // No stored token matched the presented raw token. This is usually a
+      // stale/expired token, not theft. Reject this attempt only — revoking
+      // every live token here would cascade-log-out the user's other devices
+      // for a single bad token. The presented token is simply invalid.
+      throw new UnauthorizedException(this.i18n.t('auth.invalidRefreshToken'))
     }
 
     // Get user email for new token generation
@@ -126,7 +166,7 @@ export class TokenService {
     })
 
     if (!user) {
-      throw new UnauthorizedException('User not found')
+      throw new UnauthorizedException(this.i18n.t('auth.userNotFound'))
     }
 
     // Issue new token pair
@@ -147,5 +187,80 @@ export class TokenService {
       String(Math.floor(Date.now() / 1000)),
       REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
     )
+  }
+
+  /**
+   * Revoke every live refresh token for a user EXCEPT the one presented in
+   * `encodedRefreshToken` (used by "change password → log out all other
+   * devices"). Operates on the DB only — it deliberately does NOT set the
+   * Redis `token_blacklist:{userId}` marker, because rotateRefreshToken
+   * consults that marker and would then reject the current session's next
+   * refresh too. When no token is provided (or it does not belong to the
+   * user), falls back to revoking everything.
+   */
+  async revokeAllTokensExcept(
+    userId: string,
+    encodedRefreshToken?: string,
+  ): Promise<void> {
+    if (!encodedRefreshToken) {
+      await this.revokeAllTokens(userId)
+      return
+    }
+
+    let exemptId: string | null = null
+    try {
+      const payload = JSON.parse(
+        Buffer.from(encodedRefreshToken, 'base64').toString('utf-8'),
+      ) as { userId?: string; token?: string }
+      if (payload?.userId === userId && payload.token) {
+        exemptId = await this.findMatchingRefreshTokenId(userId, payload.token)
+      }
+    } catch (err) {
+      // Unparseable token envelope — fall through to revoking everything.
+      Logger.warn(
+        `Failed to parse refresh token envelope: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      )
+    }
+
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        userId,
+        revoked: false,
+        id: exemptId ? { not: exemptId } : undefined,
+      },
+      data: { revoked: true },
+    })
+  }
+
+  /**
+   * Find the id of the live refresh token whose stored hash matches `rawToken`,
+   * or null when no live token matches. A corrupt stored hash is logged and
+   * treated as a non-match so the scan continues.
+   */
+  private async findMatchingRefreshTokenId(
+    userId: string,
+    rawToken: string,
+  ): Promise<string | null> {
+    const liveTokens = await this.prisma.refreshToken.findMany({
+      where: { userId, revoked: false },
+      select: { id: true, token: true },
+    })
+    for (const stored of liveTokens) {
+      try {
+        if (await bcrypt.compare(rawToken, stored.token)) {
+          return stored.id
+        }
+      } catch (err) {
+        // Corrupt stored hash — treat as non-matching and keep scanning.
+        Logger.warn(
+          `Failed to compare refresh token hash for user ${userId}: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        )
+      }
+    }
+    return null
   }
 }

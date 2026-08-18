@@ -13,15 +13,22 @@ import {
   Logger,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
+import { I18nService } from 'nestjs-i18n'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
+import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
+import { CharacterSheetService } from '../character-sheet/character-sheet.service.js'
 import { ImageService } from './image.service.js'
-import type { Response, Request } from 'express'
+import type { Response } from 'express'
 
 @Controller('images')
 export class ImageController {
   private readonly logger = new Logger(ImageController.name)
 
-  constructor(private readonly imageService: ImageService) {}
+  constructor(
+    private readonly imageService: ImageService,
+    private readonly i18n: I18nService,
+    private readonly characterSheetService: CharacterSheetService,
+  ) {}
 
   /**
    * POST /api/images/character-sheets/:sheetId/avatar
@@ -32,12 +39,15 @@ export class ImageController {
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('avatar', { limits: { fileSize: 5 * 1024 * 1024 } }))
   async uploadAvatar(
+    @Req() req: AuthenticatedRequest,
     @Param('sheetId') sheetId: string,
     @UploadedFile() file: Express.Multer.File | undefined,
   ) {
     if (!file) {
-      throw new NotFoundException('No file provided')
+      throw new NotFoundException(this.i18n.t('image.noFileProvided'))
     }
+
+    await this.characterSheetService.assertCanModifySheet(sheetId, req.user.sub)
 
     this.logger.log(`Uploading avatar for sheet ${sheetId}: ${file.originalname} (${file.mimetype})`)
 
@@ -84,7 +94,11 @@ export class ImageController {
    */
   @Delete('character-sheets/:sheetId/avatar')
   @UseGuards(JwtAuthGuard)
-  async deleteAvatar(@Param('sheetId') sheetId: string) {
+  async deleteAvatar(
+    @Req() req: AuthenticatedRequest,
+    @Param('sheetId') sheetId: string,
+  ) {
+    await this.characterSheetService.assertCanModifySheet(sheetId, req.user.sub)
     await this.imageService.delete(sheetId)
     return { deleted: true }
   }
@@ -99,12 +113,14 @@ export class ImageController {
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('avatar', { limits: { fileSize: 5 * 1024 * 1024 } }))
   async uploadAbilityAvatar(
+    @Req() req: AuthenticatedRequest,
     @Param('abilityId') abilityId: string,
     @UploadedFile() file: Express.Multer.File | undefined,
   ) {
     if (!file) {
-      throw new NotFoundException('No file provided')
+      throw new NotFoundException(this.i18n.t('image.noFileProvided'))
     }
+    await this.characterSheetService.assertCanModifyAbility(abilityId, req.user.sub)
     this.logger.log(`Uploading avatar for ability ${abilityId}: ${file.originalname} (${file.mimetype})`)
     const result = await this.imageService.upload(abilityId, {
       buffer: file.buffer,
@@ -144,7 +160,11 @@ export class ImageController {
    */
   @Delete('abilities/:abilityId/avatar')
   @UseGuards(JwtAuthGuard)
-  async deleteAbilityAvatar(@Param('abilityId') abilityId: string) {
+  async deleteAbilityAvatar(
+    @Req() req: AuthenticatedRequest,
+    @Param('abilityId') abilityId: string,
+  ) {
+    await this.characterSheetService.assertCanModifyAbility(abilityId, req.user.sub)
     await this.imageService.delete(abilityId, 'abilityId')
     return { deleted: true }
   }

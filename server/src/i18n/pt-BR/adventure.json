@@ -1,0 +1,9 @@
+{
+  "notFound": "Campanha não encontrada",
+  "notMemberAdventure": "Você não é membro desta campanha",
+  "notFoundOrNotPublic": "Campanha não encontrada ou não é pública",
+  "noTemplateAttached": "Nenhum modelo está vinculado a esta campanha. Vincule um modelo pelas configurações da campanha primeiro e depois crie os NPCs.",
+  "npcNotFound": "NPC não encontrado",
+  "npcNotBelong": "O NPC não pertence a esta campanha",
+  "notValidNpcSheet": "Não é uma ficha de NPC válida"
+}

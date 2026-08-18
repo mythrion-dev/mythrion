@@ -28,6 +28,33 @@ jest.mock('ioredis', () => {
   }
 })
 
+// Access the mocked constructor to inspect constructor call args
+function getRedisConstructorOptions(): Record<string, unknown> | null {
+  const RedisMock = (jest.requireMock('ioredis') as any).Redis as jest.Mock
+  const call = RedisMock.mock.calls[0]
+  if (!call || call.length < 2) return null
+  return call[1] as Record<string, unknown>
+}
+
+function resetMockRedisInstance() {
+  mockRedisInstance.connect = jest.fn().mockResolvedValue(undefined)
+  mockRedisInstance.quit = jest.fn().mockResolvedValue(undefined)
+  mockRedisInstance.ping = jest.fn().mockResolvedValue('PONG')
+  mockRedisInstance.get = jest.fn().mockResolvedValue(null)
+  mockRedisInstance.set = jest.fn().mockResolvedValue('OK')
+  mockRedisInstance.setex = jest.fn().mockResolvedValue('OK')
+  mockRedisInstance.del = jest.fn().mockResolvedValue(1)
+  mockRedisInstance.exists = jest.fn().mockResolvedValue(1)
+  mockRedisInstance.expire = jest.fn().mockResolvedValue(1)
+  mockRedisInstance.incr = jest.fn().mockResolvedValue(1)
+  mockRedisInstance.ttl = jest.fn().mockResolvedValue(300)
+  mockRedisInstance.scanStream = jest.fn().mockReturnValue({
+    [Symbol.asyncIterator]: async function* () {
+      yield []
+    },
+  })
+}
+
 describe('RedisService', () => {
   let service: RedisService
   const OLD_URL = process.env.REDIS_URL
@@ -62,11 +89,52 @@ describe('RedisService', () => {
       expect(mockRedisInstance.ping).toHaveBeenCalled()
       expect(service.ready).toBe(true)
     })
+
+    it('should handle connection failure and set client to null', async () => {
+      process.env.REDIS_URL = 'redis://localhost:6379'
+      mockRedisInstance.connect.mockRejectedValue(new Error('Connection refused'))
+
+      service = new RedisService()
+      await service.onModuleInit()
+
+      expect(service.client).toBeNull()
+      expect(service.ready).toBe(false)
+    })
+  })
+
+  describe('retryStrategy', () => {
+    beforeEach(async () => {
+      jest.clearAllMocks()
+      process.env.REDIS_URL = 'redis://localhost:6379'
+      service = new RedisService()
+      await service.onModuleInit()
+    })
+
+    it('should return delay when retries <= 5', () => {
+      const opts = getRedisConstructorOptions()
+      expect(opts).not.toBeNull()
+      const retryStrategy = opts!.retryStrategy as (t: number) => number | null
+      expect(retryStrategy).toBeDefined()
+
+      const result = retryStrategy(3)
+      expect(result).toBe(600) // Math.min(3 * 200, 2000)
+    })
+
+    it('should return null and log error when retries > 5', () => {
+      const opts = getRedisConstructorOptions()
+      expect(opts).not.toBeNull()
+      const retryStrategy = opts!.retryStrategy as (t: number) => number | null
+      expect(retryStrategy).toBeDefined()
+
+      const result = retryStrategy(6)
+      expect(result).toBeNull()
+    })
   })
 
   describe('with connected client', () => {
     beforeEach(async () => {
       jest.clearAllMocks()
+      resetMockRedisInstance()
       process.env.REDIS_URL = 'redis://localhost:6379'
       service = new RedisService()
       await service.onModuleInit()
@@ -218,6 +286,12 @@ describe('RedisService', () => {
         expect(mockRedisInstance.del).toHaveBeenCalledWith('tmp:1', 'tmp:2')
       })
     })
+
+    describe('ready getter', () => {
+      it('should return true when connected', () => {
+        expect(service.ready).toBe(true)
+      })
+    })
   })
 
   describe('without client (REDIS_URL not set)', () => {
@@ -236,14 +310,14 @@ describe('RedisService', () => {
     describe('set', () => {
       it('should no-op when client is null', async () => {
         await service.set('key', 'value')
-        // Should not throw
+        expect(mockRedisInstance.set).not.toHaveBeenCalled()
       })
     })
 
     describe('del', () => {
       it('should no-op when client is null', async () => {
         await service.del('key')
-        // Should not throw
+        expect(mockRedisInstance.del).not.toHaveBeenCalled()
       })
     })
 
@@ -257,7 +331,7 @@ describe('RedisService', () => {
     describe('expire', () => {
       it('should no-op when client is null', async () => {
         await service.expire('k', 60)
-        // Should not throw
+        expect(mockRedisInstance.expire).not.toHaveBeenCalled()
       })
     })
 
@@ -285,40 +359,55 @@ describe('RedisService', () => {
     describe('cacheSet', () => {
       it('should no-op when client is null', async () => {
         await service.cacheSet('key', { data: 123 }, 60)
-        // Should not throw
+        expect(mockRedisInstance.setex).not.toHaveBeenCalled()
       })
     })
 
     describe('invalidatePattern', () => {
       it('should no-op when client is null', async () => {
         await service.invalidatePattern('tmp:*')
-        // Should not throw
+        expect(mockRedisInstance.del).not.toHaveBeenCalled()
       })
     })
 
     describe('ready getter', () => {
-      it('should return isReady state', async () => {
-        expect(service.ready).toBe(false)
+      it('should return false when client is null', async () => {
+        const result = service.ready
+        expect(result).toBe(false)
       })
     })
 
     describe('onModuleDestroy', () => {
       it('should no-op when client is null', async () => {
         await service.onModuleDestroy()
-        // Should not throw
+        expect(mockRedisInstance.quit).not.toHaveBeenCalled()
       })
     })
   })
 
   describe('onModuleDestroy with client', () => {
-    it('should call client.quit() when client exists', async () => {
+    beforeEach(async () => {
+      jest.clearAllMocks()
+      resetMockRedisInstance()
       process.env.REDIS_URL = 'redis://localhost:6379'
-
       service = new RedisService()
       await service.onModuleInit()
+    })
+
+    it('should call client.quit() when client exists', async () => {
       await service.onModuleDestroy()
 
       expect(mockRedisInstance.quit).toHaveBeenCalled()
+      expect(service.client).toBeNull()
+      expect(service.ready).toBe(false)
+    })
+
+    it('should handle quit() rejection gracefully', async () => {
+      mockRedisInstance.quit.mockRejectedValue(new Error('Quit failed'))
+
+      await service.onModuleDestroy()
+
+      // Should not throw despite quit rejecting
       expect(service.client).toBeNull()
       expect(service.ready).toBe(false)
     })

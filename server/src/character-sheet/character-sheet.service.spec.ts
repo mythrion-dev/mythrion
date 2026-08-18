@@ -3,19 +3,25 @@ jest.mock("pg", () => ({ default: { Pool: jest.fn() }, Pool: jest.fn() }))
 jest.mock("@prisma/adapter-pg", () => ({ PrismaPg: jest.fn() }))
 jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }))
 import { Test } from '@nestjs/testing'
+import { I18nService } from 'nestjs-i18n'
 import {
   NotFoundException,
+  BadRequestException,
   ForbiddenException,
   ConflictException,
 } from '@nestjs/common'
 import { CharacterSheetService } from './character-sheet.service.js'
+import { templateInclude } from '../template/template.service.js'
 import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { RedisService } from '../redis/redis.service.js'
 import { createMockPrismaService } from '../__mocks__/prisma-service.mock.js'
+import { createI18nServiceMock } from '../i18n/i18n-testing.js'
 
 const mockMembershipService = {
   requireRole: jest.fn().mockResolvedValue({ role: 'GM' }),
+  requireWriteRole: jest.fn().mockResolvedValue({ role: 'GM' }),
+  requireWriteAccess: jest.fn().mockResolvedValue({ role: 'GM' }),
   isMember: jest.fn().mockResolvedValue(true),
   assertPlayerCapacity: jest.fn().mockResolvedValue(undefined),
   createMembership: jest.fn().mockResolvedValue({}),
@@ -27,6 +33,7 @@ const mockRedisService = {
   set: jest.fn().mockResolvedValue(undefined),
   setex: jest.fn().mockResolvedValue(undefined),
   del: jest.fn().mockResolvedValue(undefined),
+  invalidatePattern: jest.fn().mockResolvedValue(undefined),
   cacheGet: jest.fn().mockResolvedValue(null),
   cacheSet: jest.fn().mockResolvedValue(undefined),
   ready: true,
@@ -57,6 +64,7 @@ describe('CharacterSheetService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: MembershipService, useValue: mockMembershipService },
         { provide: RedisService, useValue: mockRedisService },
+        { provide: I18nService, useValue: createI18nServiceMock() },
       ],
     }).compile()
 
@@ -135,11 +143,8 @@ describe('CharacterSheetService', () => {
       skillValues: [],
       skillProfileValues: [],
       acValues: [],
-      acAttributeValues: [],
       coreResourceValues: [],
       abilities: [],
-      resistanceValues: [],
-      resistanceComponentValues: [],
       inventoryItems: [],
       sectionEntries: [],
       story: null,
@@ -153,11 +158,8 @@ describe('CharacterSheetService', () => {
       skillValues: expect.anything(),
       skillProfileValues: expect.anything(),
       acValues: expect.anything(),
-      acAttributeValues: expect.anything(),
       coreResourceValues: expect.anything(),
       abilities: expect.anything(),
-      resistanceValues: expect.anything(),
-      resistanceComponentValues: expect.anything(),
       inventoryItems: expect.anything(),
       sectionEntries: expect.anything(),
       story: expect.anything(),
@@ -207,9 +209,6 @@ describe('CharacterSheetService', () => {
       prisma.characterSheetSkillProfileValue.upsert.mockResolvedValue({})
       prisma.characterSheetCoreResourceValue.upsert.mockResolvedValue({})
       prisma.characterSheetArmorClassValue.upsert.mockResolvedValue({})
-      prisma.characterSheetArmorClassAttributeValue.upsert.mockResolvedValue({})
-      prisma.characterSheetResistanceValue.upsert.mockResolvedValue({})
-      prisma.characterSheetResistanceComponentValue.upsert.mockResolvedValue({})
     })
 
     // Restore mocks to original defaults after core CRUD tests
@@ -246,6 +245,33 @@ describe('CharacterSheetService', () => {
         expect(result).toEqual(mockSheet)
       })
 
+      it('should create a sheet with optional playerName and level', async () => {
+        const extendedDto = { ...dto, playerName: 'Player One', level: 3 }
+        const expectedSheet = {
+          ...mockSheet,
+          playerName: 'Player One',
+          level: 3,
+        }
+        prisma.characterSheet.create.mockResolvedValue(expectedSheet)
+
+        const result = await service.create(userId, extendedDto)
+
+        expect(prisma.characterSheet.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              characterName: 'Test Character',
+              playerName: 'Player One',
+              level: 3,
+              adventureId: null,
+              templateId: 'template-1',
+              ownerId: userId,
+            }),
+          }),
+        )
+        expect(result.playerName).toBe('Player One')
+        expect(result.level).toBe(3)
+      })
+
       it('should throw NotFoundException when template is not found', async () => {
         prisma.template.findUnique.mockResolvedValue(null)
 
@@ -254,9 +280,10 @@ describe('CharacterSheetService', () => {
 
       it('should throw ForbiddenException when user is not a member of the adventure (dto.adventureId set)', async () => {
         const dtoWithAdv = { ...dto, adventureId: 'adventure-1' }
-        mockMembershipService.isMember.mockResolvedValue(false)
+        mockMembershipService.requireWriteAccess.mockRejectedValue(new ForbiddenException('not member'))
 
         await expect(service.create(userId, dtoWithAdv)).rejects.toThrow(ForbiddenException)
+        expect(mockMembershipService.requireWriteAccess).toHaveBeenCalledWith('adventure-1', userId)
       })
 
       it('should create sheet when template belongs to an adventure and user is a member', async () => {
@@ -264,7 +291,7 @@ describe('CharacterSheetService', () => {
           ...mockTemplate,
           adventureId: 'adventure-1',
         })
-        mockMembershipService.isMember.mockResolvedValue(true)
+        mockMembershipService.requireWriteAccess.mockResolvedValue({ role: 'PLAYER' })
         prisma.characterSheet.create.mockResolvedValue({ ...mockSheet, adventureId: 'adventure-1' })
 
         const result = await service.create(userId, dto)
@@ -274,12 +301,12 @@ describe('CharacterSheetService', () => {
 
       it('should validate membership when dto.adventureId is explicitly provided', async () => {
         const dtoWithAdv = { ...dto, adventureId: 'adventure-2' }
-        mockMembershipService.isMember.mockResolvedValue(true)
+        mockMembershipService.requireWriteAccess.mockResolvedValue({ role: 'PLAYER' })
         prisma.characterSheet.create.mockResolvedValue({ ...mockSheet, adventureId: 'adventure-2' })
 
         const result = await service.create(userId, dtoWithAdv)
 
-        expect(mockMembershipService.isMember).toHaveBeenCalledWith('adventure-2', userId)
+        expect(mockMembershipService.requireWriteAccess).toHaveBeenCalledWith('adventure-2', userId)
         expect(result.adventureId).toBe('adventure-2')
       })
 
@@ -400,7 +427,9 @@ describe('CharacterSheetService', () => {
         const result = await service.findAllByUser(userId)
 
         expect(prisma.characterSheet.findMany).toHaveBeenCalledWith({
-          where: { ownerId: userId },
+          where: {
+            OR: [{ ownerId: userId }, { assignedMember: { userId } }],
+          },
           include: expect.objectContaining({
             adventure: expect.anything(),
             template: expect.anything(),
@@ -432,14 +461,29 @@ describe('CharacterSheetService', () => {
 
         const result = await service.findAllByAdventure(adventureId, userId)
 
+        expect(mockRedisService.cacheGet).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:player:${userId}`)
         expect(prisma.characterSheet.findMany).not.toHaveBeenCalled()
         expect(result).toEqual(cachedSheets)
       })
 
-      it('should throw ForbiddenException on cache hit when user is not a member', async () => {
+      it('should read the GM-scoped cache key when the member is a GM', async () => {
+        const cachedSheets = [{ id: sheetId, characterName: 'Cached GM view' }]
+        mockRedisService.cacheGet.mockResolvedValue(cachedSheets)
+        prisma.campaignMember.findUnique.mockResolvedValue({ userId, adventureId, role: 'GM' })
+
+        const result = await service.findAllByAdventure(adventureId, userId)
+
+        expect(mockRedisService.cacheGet).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:gm`)
+        expect(prisma.characterSheet.findMany).not.toHaveBeenCalled()
+        expect(result).toEqual(cachedSheets)
+      })
+
+      it('should throw ForbiddenException when user is not a member even with a populated cache', async () => {
         mockRedisService.cacheGet.mockResolvedValue([{ id: sheetId }])
 
         await expect(service.findAllByAdventure(adventureId, userId)).rejects.toThrow(ForbiddenException)
+
+        expect(prisma.characterSheet.findMany).not.toHaveBeenCalled()
       })
 
       it('should throw ForbiddenException on cache miss when user is not a member', async () => {
@@ -466,7 +510,7 @@ describe('CharacterSheetService', () => {
           }),
         )
         expect(result).toEqual(sheets)
-        expect(mockRedisService.cacheSet).toHaveBeenCalled()
+        expect(mockRedisService.cacheSet).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:gm`, sheets, expect.any(Number))
       })
 
       it('should return only own non-NPC sheets for non-GM', async () => {
@@ -478,11 +522,66 @@ describe('CharacterSheetService', () => {
 
         expect(prisma.characterSheet.findMany).toHaveBeenCalledWith(
           expect.objectContaining({
-            where: { adventureId, ownerId: userId, isNpc: false },
+            where: {
+              adventureId,
+              isNpc: false,
+              OR: [{ ownerId: userId }, { assignedMember: { userId } }],
+            },
           }),
         )
         expect(result).toEqual(sheets)
-        expect(mockRedisService.cacheSet).toHaveBeenCalled()
+        expect(mockRedisService.cacheSet).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:player:${userId}`, sheets, expect.any(Number))
+      })
+
+      it('does not reuse a player cache entry for a GM (role-scoped keys)', async () => {
+        prisma.campaignMember.findUnique.mockResolvedValue({ userId, adventureId, role: 'GM' })
+        // Only the player-scoped key holds a value — a GM must NOT read it.
+        mockRedisService.cacheGet.mockImplementation((key: string) =>
+          key === `character-sheets:adventure:${adventureId}:player:${userId}` ? [{ id: 'player-cached' }] : null,
+        )
+        const sheets = [{ ...mockSheet, ownerId: 'other-user' }]
+        prisma.characterSheet.findMany.mockResolvedValue(sheets)
+
+        const result = await service.findAllByAdventure(adventureId, userId)
+
+        expect(prisma.characterSheet.findMany).toHaveBeenCalled()
+        expect(mockRedisService.cacheGet).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:gm`)
+        expect(result).toEqual(sheets)
+      })
+    })
+
+    // ────────── assertReadAccess ──────────
+
+    describe('assertReadAccess', () => {
+      it('allows the sheet owner', async () => {
+        prisma.characterSheet.findUnique.mockResolvedValue({ ownerId: userId, adventureId })
+
+        await expect(service.assertReadAccess(sheetId, userId)).resolves.toBeUndefined()
+      })
+
+      it('allows a campaign GM for a non-owned sheet', async () => {
+        prisma.characterSheet.findUnique.mockResolvedValue({ ownerId: 'other-user', adventureId })
+
+        await expect(service.assertReadAccess(sheetId, userId)).resolves.toBeUndefined()
+      })
+
+      it('throws ForbiddenException for a non-owner, non-GM', async () => {
+        prisma.characterSheet.findUnique.mockResolvedValue({ ownerId: 'other-user', adventureId })
+        mockMembershipService.requireRole.mockRejectedValueOnce(new ForbiddenException('no access'))
+
+        await expect(service.assertReadAccess(sheetId, userId)).rejects.toThrow(ForbiddenException)
+      })
+
+      it('throws ForbiddenException for an unlinked sheet the user does not own', async () => {
+        prisma.characterSheet.findUnique.mockResolvedValue({ ownerId: 'other-user', adventureId: null })
+
+        await expect(service.assertReadAccess(sheetId, userId)).rejects.toThrow(ForbiddenException)
+      })
+
+      it('throws NotFoundException for a missing sheet', async () => {
+        prisma.characterSheet.findUnique.mockResolvedValue(null)
+
+        await expect(service.assertReadAccess(sheetId, userId)).rejects.toThrow(NotFoundException)
       })
     })
 
@@ -588,9 +687,6 @@ describe('CharacterSheetService', () => {
         skillProfileValues: [{ skillId: 'skill-1', profileId: 'prof-1', optionId: 'opt-1' }],
         coreResourceValues: [{ coreResourceId: 'cr-1', current: 50, maximum: 100, notes: 'Half' }],
         acValues: [{ fieldId: 'ac-field-1', value: '15' }],
-        acAttributeValues: [{ acAttributeModifierId: 'ac-mod-1', selectedAttributeId: 'attr-2' }],
-        resistanceValues: [{ resistanceId: 'res-1', manualValue: '10' }],
-        resistanceComponentValues: [{ componentId: 'res-comp-1', value: '5' }],
       }
 
       it('should throw NotFoundException when sheet does not exist', async () => {
@@ -607,23 +703,24 @@ describe('CharacterSheetService', () => {
       })
 
       it('should allow GM to update when not owner but sheet belongs to an adventure', async () => {
-        const otherSheet = { ...mockSheet, ownerId: 'other-user', adventureId }
+        const otherSheet = { ...mockSheet, ownerId: 'other-user', adventureId, isNpc: true }
         prisma.characterSheet.findUnique.mockResolvedValue(otherSheet)
-        mockMembershipService.requireRole.mockResolvedValue({ role: 'GM' })
+        mockMembershipService.requireWriteRole.mockResolvedValue({ role: 'GM' })
         prisma.characterSheet.update.mockResolvedValue({ ...otherSheet, characterName: 'Updated Name' })
 
         const result = await service.update(sheetId, userId, { characterName: 'Updated Name' })
 
-        expect(mockMembershipService.requireRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
+        expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
         expect(result.characterName).toBe('Updated Name')
       })
 
       it('should throw ForbiddenException when not owner and not GM', async () => {
-        const otherSheet = { ...mockSheet, ownerId: 'other-user', adventureId }
+        const otherSheet = { ...mockSheet, ownerId: 'other-user', adventureId, isNpc: true }
         prisma.characterSheet.findUnique.mockResolvedValue(otherSheet)
-        mockMembershipService.requireRole.mockRejectedValue(new Error())
+        mockMembershipService.requireWriteRole.mockRejectedValue(new Error())
 
         await expect(service.update(sheetId, userId, { characterName: 'Hack' })).rejects.toThrow(ForbiddenException)
+        expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
       })
 
       it('should upsert attribute values', async () => {
@@ -694,76 +791,6 @@ describe('CharacterSheetService', () => {
         })
       })
 
-      it('should upsert AC attribute values', async () => {
-        await service.update(sheetId, userId, { acAttributeValues: [{ acAttributeModifierId: 'ac-mod-1', selectedAttributeId: 'attr-2' }] })
-
-        expect(prisma.characterSheetArmorClassAttributeValue.upsert).toHaveBeenCalledWith({
-          where: { sheetId_acAttributeModifierId: { sheetId, acAttributeModifierId: 'ac-mod-1' } },
-          create: { sheetId, acAttributeModifierId: 'ac-mod-1', selectedAttributeId: 'attr-2' },
-          update: { selectedAttributeId: 'attr-2' },
-        })
-      })
-
-      it('should handle sheet-specific resistance values by updating existing component', async () => {
-        prisma.sheetResistance.findUnique.mockResolvedValue({ id: 'sheet-res-1', calculationType: 'MANUAL' })
-        prisma.sheetResistanceComponent.findFirst.mockResolvedValue({
-          id: 'sheet-res-comp-1', sheetResistanceId: 'sheet-res-1', name: 'Value', value: '0', order: 0,
-        })
-
-        await service.update(sheetId, userId, { resistanceValues: [{ resistanceId: 'sheet-res-1', manualValue: '15' }] })
-
-        expect(prisma.sheetResistanceComponent.update).toHaveBeenCalledWith({
-          where: { id: 'sheet-res-comp-1' },
-          data: { value: '15' },
-        })
-      })
-
-      it('should handle sheet-specific resistance values by creating component when none exists', async () => {
-        prisma.sheetResistance.findUnique.mockResolvedValue({ id: 'sheet-res-1', calculationType: 'MANUAL' })
-        prisma.sheetResistanceComponent.findFirst.mockResolvedValue(null)
-
-        await service.update(sheetId, userId, { resistanceValues: [{ resistanceId: 'sheet-res-1', manualValue: '15' }] })
-
-        expect(prisma.sheetResistanceComponent.create).toHaveBeenCalledWith({
-          data: { sheetResistanceId: 'sheet-res-1', name: 'Value', value: '15', order: 0 },
-        })
-      })
-
-      it('should handle template resistance values via upsert', async () => {
-        prisma.sheetResistance.findUnique.mockResolvedValue(null)
-
-        await service.update(sheetId, userId, { resistanceValues: [{ resistanceId: 'res-1', manualValue: '10' }] })
-
-        expect(prisma.characterSheetResistanceValue.upsert).toHaveBeenCalledWith({
-          where: { sheetId_resistanceId: { sheetId, resistanceId: 'res-1' } },
-          create: { sheetId, resistanceId: 'res-1', manualValue: '10' },
-          update: { manualValue: '10' },
-        })
-      })
-
-      it('should handle sheet-specific resistance component values by updating directly', async () => {
-        prisma.sheetResistanceComponent.findUnique.mockResolvedValue({ id: 'sheet-res-comp-1' })
-
-        await service.update(sheetId, userId, { resistanceComponentValues: [{ componentId: 'sheet-res-comp-1', value: '7' }] })
-
-        expect(prisma.sheetResistanceComponent.update).toHaveBeenCalledWith({
-          where: { id: 'sheet-res-comp-1' },
-          data: { value: '7' },
-        })
-      })
-
-      it('should handle template resistance component values via upsert', async () => {
-        prisma.sheetResistanceComponent.findUnique.mockResolvedValue(null)
-
-        await service.update(sheetId, userId, { resistanceComponentValues: [{ componentId: 'res-comp-1', value: '5' }] })
-
-        expect(prisma.characterSheetResistanceComponentValue.upsert).toHaveBeenCalledWith({
-          where: { sheetId_componentId: { sheetId, componentId: 'res-comp-1' } },
-          create: { sheetId, componentId: 'res-comp-1', value: '5' },
-          update: { value: '5' },
-        })
-      })
-
       it('should update top-level fields without changing others', async () => {
         const minimalDto = {
           characterName: 'New Name',
@@ -826,17 +853,18 @@ describe('CharacterSheetService', () => {
       })
 
       it('should throw ForbiddenException when not owner and not GM', async () => {
-        const otherSheet = { ...mockSheet, ownerId: 'other-user', adventureId }
+        const otherSheet = { ...mockSheet, ownerId: 'other-user', adventureId, isNpc: true }
         prisma.characterSheet.findUnique.mockResolvedValue(otherSheet)
-        mockMembershipService.requireRole.mockRejectedValue(new Error())
+        mockMembershipService.requireWriteRole.mockRejectedValue(new Error())
 
         await expect(service.remove(sheetId, 'different-user')).rejects.toThrow(ForbiddenException)
+        expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith(adventureId, 'different-user', 'GM')
       })
 
       it('should allow GM to delete when sheet is in an adventure', async () => {
-        const otherSheet = { ...mockSheet, ownerId: 'other-user', adventureId }
+        const otherSheet = { ...mockSheet, ownerId: 'other-user', adventureId, isNpc: true }
         prisma.characterSheet.findUnique.mockResolvedValue(otherSheet)
-        mockMembershipService.requireRole.mockResolvedValue({ role: 'GM' })
+        mockMembershipService.requireWriteRole.mockResolvedValue({ role: 'GM' })
         prisma.characterSheet.delete.mockResolvedValue(otherSheet)
 
         const result = await service.remove(sheetId, 'gm-user')
@@ -868,7 +896,7 @@ describe('CharacterSheetService', () => {
 
         await service.remove(sheetId, userId)
 
-        expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}`)
+        expect(mockRedisService.invalidatePattern).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:*`)
       })
     })
 
@@ -885,17 +913,24 @@ describe('CharacterSheetService', () => {
         const otherSheet = { ...mockSheet, ownerId: 'other-user' }
         prisma.characterSheet.findUnique.mockResolvedValue(otherSheet)
 
-        await expect(service.linkToAdventure(sheetId, adventureId, 'other-user')).rejects.toThrow(ForbiddenException)
+        await expect(service.linkToAdventure(sheetId, adventureId, userId)).rejects.toThrow(ForbiddenException)
       })
 
       it('should throw ForbiddenException when user is not a member of the adventure', async () => {
-        mockMembershipService.isMember.mockResolvedValue(false)
+        mockMembershipService.requireWriteAccess.mockRejectedValue(new ForbiddenException('not member'))
+
+        await expect(service.linkToAdventure(sheetId, adventureId, userId)).rejects.toThrow(ForbiddenException)
+        expect(mockMembershipService.requireWriteAccess).toHaveBeenCalledWith(adventureId, userId)
+      })
+
+      it('should throw ForbiddenException when the adventure is read-only (GM subscription lapsed)', async () => {
+        mockMembershipService.requireWriteAccess.mockRejectedValue(new ForbiddenException('campaign read-only'))
 
         await expect(service.linkToAdventure(sheetId, adventureId, userId)).rejects.toThrow(ForbiddenException)
       })
 
       it('should link sheet to adventure and invalidate cache', async () => {
-        mockMembershipService.isMember.mockResolvedValue(true)
+        mockMembershipService.requireWriteAccess.mockResolvedValue({ role: 'GM' })
         const linkedSheet = { ...mockSheet, adventureId }
         prisma.characterSheet.update.mockResolvedValue(linkedSheet)
 
@@ -909,7 +944,7 @@ describe('CharacterSheetService', () => {
         expect(result).toEqual(linkedSheet)
         expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:${sheetId}`)
         expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:user:${userId}`)
-        expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}`)
+        expect(mockRedisService.invalidatePattern).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:*`)
       })
     })
 
@@ -930,17 +965,18 @@ describe('CharacterSheetService', () => {
       })
 
       it('should throw ForbiddenException when not owner and not GM', async () => {
-        const otherSheet = { ...mockSheet, ownerId: 'different-owner', adventureId }
+        const otherSheet = { ...mockSheet, ownerId: 'different-owner', adventureId, isNpc: true }
         prisma.characterSheet.findUnique.mockResolvedValue(otherSheet)
-        mockMembershipService.requireRole.mockRejectedValue(new Error())
+        mockMembershipService.requireWriteRole.mockRejectedValue(new Error())
 
         await expect(service.unlinkFromAdventure(sheetId, 'different-user')).rejects.toThrow(ForbiddenException)
+        expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith(adventureId, 'different-user', 'GM')
       })
 
       it('should allow GM to unlink', async () => {
-        const advSheet = { ...mockSheet, ownerId: 'other-user', adventureId }
+        const advSheet = { ...mockSheet, ownerId: 'other-user', adventureId, isNpc: true }
         prisma.characterSheet.findUnique.mockResolvedValue(advSheet)
-        mockMembershipService.requireRole.mockResolvedValue({ role: 'GM' })
+        mockMembershipService.requireWriteRole.mockResolvedValue({ role: 'GM' })
         const unlinkedSheet = { ...advSheet, adventureId: null }
         prisma.characterSheet.update.mockResolvedValue(unlinkedSheet)
 
@@ -948,7 +984,7 @@ describe('CharacterSheetService', () => {
 
         expect(prisma.characterSheet.update).toHaveBeenCalledWith({
           where: { id: sheetId },
-          data: { adventureId: null },
+          data: { adventureId: null, assignedMemberId: null },
           include: defaultSheetInclude,
         })
         expect(result.adventureId).toBeNull()
@@ -974,8 +1010,458 @@ describe('CharacterSheetService', () => {
 
         expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:${sheetId}`)
         expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:user:${userId}`)
-        expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}`)
+        expect(mockRedisService.invalidatePattern).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:*`)
       })
+    })
+  })
+
+  // ── createFromCampaignSnapshot ─────────────────────────────────
+
+  describe('createFromCampaignSnapshot', () => {
+    const userId = 'campaign-user'
+    const adventureId = 'campaign-adv-1'
+
+    const mockSnapshot = {
+      id: 'snapshot-id',
+      name: 'Fantasy Template',
+      skillFormula: '#{level} + #{prof1} + 5',
+      attributes: [
+        { id: 'snap-attr-1', key: 'str', name: 'Strength', order: 0 },
+        { id: 'snap-attr-2', key: 'dex', name: 'Dexterity', order: 1 },
+      ],
+      templateFields: [
+        { id: 'snap-field-1', key: 'height', label: 'Height', order: 0 },
+      ],
+      templateSkills: [
+        { id: 'snap-skill-1', name: 'Athletics', description: '', templateId: 'snapshot-id', order: 0, attributeId: 'snap-attr-1', defaultAttributeId: 'snap-attr-1', allowedAttributeIds: ['snap-attr-1'] },
+        { id: 'snap-skill-2', name: 'Stealth', description: '', templateId: 'snapshot-id', order: 1, attributeId: 'snap-attr-2', defaultAttributeId: null, allowedAttributeIds: ['snap-attr-1', 'snap-attr-2'] },
+      ],
+      skillModifierProfiles: [
+        { id: 'snap-prof-1', name: 'prof1', order: 0, targetMode: 'ALL_SKILLS', targetSkillIds: [], options: [{ id: 'opt-1', label: 'Half', value: '0.5', order: 0 }, { id: 'opt-2', label: 'Full', value: '1', order: 1 }] },
+        { id: 'snap-prof-2', name: 'nonexistent', order: 1, targetMode: 'ALL_SKILLS', targetSkillIds: [], options: [{ id: 'opt-3', label: 'No', value: '0', order: 0 }] },
+      ],
+      coreResources: [
+        { id: 'snap-cr-1', displayName: 'HP', slug: 'hp', enabled: true, editableByPlayer: true, showNotes: false },
+        { id: 'snap-cr-2', displayName: 'MP', slug: 'mp', enabled: false, editableByPlayer: true, showNotes: false },
+      ],
+      armorClasses: [
+        {
+          id: 'snap-ac-1', name: 'Armor Class', enabled: true,
+          fields: [
+            { id: 'snap-ac-field-1', name: 'Base', key: 'base', defaultValue: '10', editableByPlayer: true, description: '', order: 0 },
+          ],
+          attributeModifiers: [
+            { id: 'snap-ac-mod-1', attributeId: 'snap-attr-2', defaultAttributeId: 'snap-attr-2', allowPlayerSelection: true, enabled: true },
+          ],
+        },
+        {
+          id: 'snap-ac-2', name: 'Magic AC', enabled: false,
+          fields: [],
+          attributeModifiers: [],
+        },
+      ],
+      resistances: [
+        {
+          id: 'snap-res-1', name: 'Fire', order: 0,
+          components: [
+            { id: 'snap-res-comp-1', name: 'Base', order: 0, editableByPlayer: true, defaultValue: '0' },
+          ],
+          attributeModifiers: [],
+        },
+      ],
+      characterSections: [
+        { id: 'snap-sec-1', name: 'Background', order: 0 },
+      ],
+    }
+
+    const mockAdventure = {
+      templateSnapshot: mockSnapshot,
+      originalTemplateId: 'original-template-id',
+    }
+
+    // A campaign-created template loaded via templateInclude has the same shape
+    // as the stored snapshot (attributes, templateSkills, etc.), so it can drive
+    // sheet creation when no snapshot was attached.
+    const mockCampaignTemplate = {
+      ...mockSnapshot,
+      id: 'campaign-template-id',
+      name: 'Campaign Template',
+    }
+
+    const mockCreatedSheet = {
+      id: 'cs-campaign-1',
+      characterName: 'Campaign Hero',
+      playerName: null,
+      level: 1,
+      ownerId: userId,
+      adventureId,
+      templateId: 'original-template-id',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+
+    beforeEach(() => {
+      jest.clearAllMocks()
+      prisma.adventure.findUnique.mockResolvedValue(mockAdventure)
+      mockMembershipService.requireWriteAccess.mockResolvedValue({ role: 'PLAYER' })
+      mockRedisService.del.mockResolvedValue(undefined)
+      prisma.characterSheet.create.mockResolvedValue(mockCreatedSheet)
+    })
+
+    it('creates a sheet from snapshot with all sub-resources', async () => {
+      const result = await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Campaign Hero',
+        adventureId,
+      })
+
+      expect(prisma.adventure.findUnique).toHaveBeenCalledWith({
+        where: { id: adventureId },
+        select: { templateSnapshot: true, originalTemplateId: true },
+      })
+
+      // A stored snapshot takes precedence — the campaign-template fallback is
+      // not consulted.
+      expect(prisma.template.findFirst).not.toHaveBeenCalled()
+
+      expect(prisma.characterSheet.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            characterName: 'Campaign Hero',
+            playerName: null,
+            level: 1,
+            adventureId,
+            templateId: 'original-template-id',
+            ownerId: userId,
+          }),
+        }),
+      )
+      expect(result).toEqual(mockCreatedSheet)
+    })
+
+    it('creates attribute values from snapshot attributes', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.values).toEqual({
+        create: [
+          { attributeId: 'snap-attr-1', value: '' },
+          { attributeId: 'snap-attr-2', value: '' },
+        ],
+      })
+    })
+
+    it('creates field values from snapshot templateFields', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.fieldValues).toEqual({
+        create: [
+          { templateFieldId: 'snap-field-1', value: '' },
+        ],
+      })
+    })
+
+    it('creates skill values with default attribute from snapshot', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.skillValues).toEqual({
+        create: [
+          { skillId: 'snap-skill-1', value: '', selectedAttributeId: 'snap-attr-1' },
+          { skillId: 'snap-skill-2', value: '', selectedAttributeId: 'snap-attr-2' },
+        ],
+      })
+    })
+
+    it('creates skill profile values from snapshot skillFormula and profiles', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      // prof1 is in the formula (extractVariableNames will find it from '#{level} + #{prof1} + 5')
+      // nonexistent is NOT in 'level, prof1' variables, so it should be skipped
+      expect(callData.skillProfileValues).toEqual({
+        create: expect.arrayContaining([
+          expect.objectContaining({
+            skillId: 'snap-skill-1',
+            profileId: 'snap-prof-1',
+            optionId: 'opt-1',
+          }),
+          expect.objectContaining({
+            skillId: 'snap-skill-2',
+            profileId: 'snap-prof-1',
+            optionId: 'opt-1',
+          }),
+        ]),
+      })
+      // Only prof1 matches, not 'nonexistent'
+      expect(callData.skillProfileValues.create).toHaveLength(2)
+    })
+
+    it('creates core resource values for enabled resources only', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.coreResourceValues).toEqual({
+        create: [
+          { coreResourceId: 'snap-cr-1' },
+        ],
+      })
+    })
+
+    it('creates AC field values and attribute values from snapshot', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.acValues).toEqual({
+        create: [
+          { fieldId: 'snap-ac-field-1', value: '10' },
+        ],
+      })
+      expect(callData.acAttributeValues).toEqual({
+        create: [
+          { acAttributeModifierId: 'snap-ac-mod-1', selectedAttributeId: 'snap-attr-2' },
+        ],
+      })
+    })
+
+    it('creates resistance values with component values from snapshot', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.resistanceValues).toEqual({
+        create: [
+          { resistanceId: 'snap-res-1' },
+        ],
+      })
+      expect(callData.resistanceComponentValues).toEqual({
+        create: [
+          { componentId: 'snap-res-comp-1', value: '0' },
+        ],
+      })
+    })
+
+    it('sets templateId from adventure.originalTemplateId', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.templateId).toBe('original-template-id')
+    })
+
+    it('invalidates Redis cache after creation', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:${mockCreatedSheet.id}`)
+      expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:user:${userId}`)
+      expect(mockRedisService.invalidatePattern).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:*`)
+    })
+
+    it('handles cache invalidation failure gracefully', async () => {
+      mockRedisService.del.mockRejectedValue(new Error('Redis down'))
+
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId,
+        }),
+      ).resolves.toEqual(mockCreatedSheet)
+    })
+
+    it('accepts optional playerName and level', async () => {
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Custom Hero',
+        adventureId,
+        playerName: 'Player One',
+        level: 3,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.playerName).toBe('Player One')
+      expect(callData.level).toBe(3)
+    })
+
+    it('skips acValues and acAttributeValues when armor classes have no fields/attributeModifiers', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        ...mockAdventure,
+        templateSnapshot: {
+          ...mockSnapshot,
+          armorClasses: [
+            { id: 'ac-empty', name: 'Empty AC', enabled: true, fields: [], attributeModifiers: [] },
+          ],
+        },
+      })
+
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.acValues).toBeUndefined()
+      expect(callData.acAttributeValues).toBeUndefined()
+    })
+
+    // ── Error cases ──
+
+    it('throws NotFoundException when adventure does not exist', async () => {
+      prisma.adventure.findUnique.mockResolvedValue(null)
+
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId: 'nonexistent',
+        }),
+      ).rejects.toThrow(NotFoundException)
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId: 'nonexistent',
+        }),
+      ).rejects.toThrow('Campaign not found')
+    })
+
+    it('falls back to a campaign template when no snapshot is attached', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        templateSnapshot: null,
+        originalTemplateId: null,
+      })
+      prisma.template.findFirst.mockResolvedValue(mockCampaignTemplate)
+
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      expect(prisma.template.findFirst).toHaveBeenCalledWith({
+        where: { adventureId },
+        include: templateInclude,
+        orderBy: { createdAt: 'desc' },
+      })
+      expect(prisma.characterSheet.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            adventureId,
+            templateId: 'campaign-template-id',
+          }),
+        }),
+      )
+    })
+
+    it('throws BadRequestException when no snapshot and no campaign template exists', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        templateSnapshot: null,
+        originalTemplateId: null,
+      })
+      prisma.template.findFirst.mockResolvedValue(null)
+
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId,
+        }),
+      ).rejects.toThrow(BadRequestException)
+    })
+
+    it('throws ForbiddenException when user is not a campaign member', async () => {
+      mockMembershipService.requireWriteAccess.mockRejectedValue(new ForbiddenException('not member'))
+
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId,
+        }),
+      ).rejects.toThrow(ForbiddenException)
+      expect(mockMembershipService.requireWriteAccess).toHaveBeenCalledWith(adventureId, userId)
+    })
+
+    it('throws ForbiddenException when the campaign is read-only (GM subscription lapsed)', async () => {
+      mockMembershipService.requireWriteAccess.mockRejectedValue(new ForbiddenException('campaign read-only'))
+
+      await expect(
+        service.createFromCampaignSnapshot(userId, {
+          characterName: 'Hero',
+          adventureId,
+        }),
+      ).rejects.toThrow(ForbiddenException)
+    })
+
+    it('handles snapshot with empty sub-arrays gracefully', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        templateSnapshot: {
+          id: 'empty-snapshot',
+          name: 'Empty Template',
+          skillFormula: null,
+          attributes: [],
+          templateFields: [],
+          templateSkills: [],
+          skillModifierProfiles: [],
+          coreResources: [],
+          armorClasses: [],
+          resistances: [],
+          characterSections: [],
+        },
+        originalTemplateId: 'empty-original',
+      })
+
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Empty Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.values).toEqual({ create: [] })
+      expect(callData.fieldValues).toEqual({ create: [] })
+      expect(callData.skillValues).toEqual({ create: [] })
+      expect(callData.skillProfileValues).toEqual({ create: [] })
+      expect(callData.coreResourceValues).toEqual({ create: [] })
+      expect(callData.acValues).toBeUndefined()
+      expect(callData.acAttributeValues).toBeUndefined()
+      expect(callData.resistanceValues).toEqual({ create: [] })
+      expect(callData.resistanceComponentValues).toEqual({ create: [] })
+    })
+
+    it('skips profile values when skillFormula is null', async () => {
+      prisma.adventure.findUnique.mockResolvedValue({
+        ...mockAdventure,
+        templateSnapshot: {
+          ...mockSnapshot,
+          skillFormula: null,
+        },
+      })
+
+      await service.createFromCampaignSnapshot(userId, {
+        characterName: 'Hero',
+        adventureId,
+      })
+
+      const callData = prisma.characterSheet.create.mock.calls[0][0].data
+      expect(callData.skillProfileValues).toEqual({ create: [] })
     })
   })
 
@@ -1132,6 +1618,7 @@ describe('CharacterSheetService', () => {
         id: 's1',
         ownerId: 'other-user',
         adventureId: 'a1',
+        isNpc: true,
       })
       mockMembershipService.requireRole.mockResolvedValue({ role: 'GM' })
       prisma.characterAbility.findMany.mockResolvedValue([])
@@ -1586,6 +2073,7 @@ describe('CharacterSheetService', () => {
 
     beforeEach(() => {
       prisma.characterSheet.findUnique.mockResolvedValue({ id: sheetId, ownerId: userId, adventureId: null })
+      prisma.templateSkill.findUnique.mockResolvedValue({ id: skillId, allowedAttributeIds: ['attr-1'] })
     })
 
     it('upserts skill value with the given selectedAttributeId', async () => {
@@ -1734,11 +2222,11 @@ describe('CharacterSheetService', () => {
 
       describe('createAbilityLevel', () => {
         it('creates a level without copyFromPrevious', async () => {
-          prisma.characterAbilityLevel.create.mockResolvedValue({ id: 'lvl-3', level: 3, abilityId })
+          prisma.characterAbilityLevel.create.mockResolvedValue({ id: 'lvl-3', level: '3', abilityId })
 
-          const result = await service.createAbilityLevel(abilityId, userId, { level: 3 })
+          const result = await service.createAbilityLevel(abilityId, userId, { level: '3' })
 
-          expect(result.level).toBe(3)
+          expect(result.level).toBe('3')
         })
 
         it('creates a level with copyFromPrevious', async () => {
@@ -1749,7 +2237,7 @@ describe('CharacterSheetService', () => {
           prisma.characterAbilityLevel.findFirst.mockResolvedValue(null)
           prisma.characterAbilityLevel.create.mockResolvedValue({ id: 'lvl-3', level: '3', abilityId, description: 'previous' })
 
-          const result = await service.createAbilityLevel(abilityId, userId, { level: 3, copyFromPrevious: true })
+          const result = await service.createAbilityLevel(abilityId, userId, { level: '3', copyFromPrevious: true })
 
           // Should have found the previous level and copied its description
           expect(result.level).toBe('3')
@@ -1758,7 +2246,7 @@ describe('CharacterSheetService', () => {
         it('throws ConflictException for duplicate level', async () => {
           prisma.characterAbilityLevel.findFirst.mockResolvedValue({ id: 'lvl-2', level: 2, abilityId })
 
-          await expect(service.createAbilityLevel(abilityId, userId, { level: 2 }))
+          await expect(service.createAbilityLevel(abilityId, userId, { level: '2' }))
             .rejects.toThrow('already exists')
         })
       })
@@ -1815,28 +2303,42 @@ describe('CharacterSheetService', () => {
     })
 
     describe('addSummonSkill', () => {
-      it('adds a skill to a summon', async () => {
-        prisma.templateSkill.findUnique.mockResolvedValue({
-          id: 'tsk-1', name: 'Bite', templateId: 'tpl-1', defaultAttributeId: 'attr-str',
-        })
+      it('creates a free-form skill with name and manualValue', async () => {
+        prisma.characterAbility.findUnique.mockResolvedValue({ id: abilityId, sheetId, type: 'SUMMON' })
         prisma.summonSkill.create.mockResolvedValue({
-          id: 'ss-1', skillId: 'tsk-1', abilityId, selectedAttributeId: 'attr-str',
+          id: 'ss-1', name: 'Bite', manualValue: 5, abilityId,
         })
 
-        const result = await service.addSummonSkill(abilityId, 'tsk-1', userId)
+        const result = await service.addSummonSkill(abilityId, 'Bite', 5, userId)
 
-        expect(result.skillId).toBe('tsk-1')
+        expect(result.name).toBe('Bite')
+        expect(result.manualValue).toBe(5)
         expect(prisma.summonSkill.create).toHaveBeenCalledWith(
           expect.objectContaining({
-            data: expect.objectContaining({ selectedAttributeId: 'attr-str' }),
+            data: expect.objectContaining({
+              name: 'Bite',
+              manualValue: 5,
+              abilityId,
+            }),
           }),
         )
+      })
+
+      it('defaults manualValue to 0 when not provided', async () => {
+        prisma.characterAbility.findUnique.mockResolvedValue({ id: abilityId, sheetId, type: 'SUMMON' })
+        prisma.summonSkill.create.mockResolvedValue({
+          id: 'ss-2', name: 'Claw', manualValue: 0, abilityId,
+        })
+
+        const result = await service.addSummonSkill(abilityId, 'Claw', 0, userId)
+
+        expect(result.manualValue).toBe(0)
       })
 
       it('throws ForbiddenException when parent is not SUMMON type', async () => {
         prisma.characterAbility.findUnique.mockResolvedValue({ id: abilityId, sheetId: sheetId, type: 'CLASS' })
 
-        await expect(service.addSummonSkill(abilityId, 'tsk-1', userId))
+        await expect(service.addSummonSkill(abilityId, 'Bite', 5, userId))
           .rejects.toThrow('Skills can only be added to summons')
       })
     })
@@ -1860,41 +2362,107 @@ describe('CharacterSheetService', () => {
           .rejects.toThrow('not found')
       })
     })
+  })
 
-    describe('updateSummonSkillAttribute', () => {
-      it('updates the attribute of a summon skill', async () => {
-        prisma.summonSkill.findUnique.mockResolvedValue({
-          id: 'ss-1', abilityId, ability: { sheetId: sheetId },
+  // ── Summon resistances ────────────────────────────────────────
+
+  describe('summon resistances', () => {
+    const userId = 'u1'
+    const sheetId = 'sheet-sum'
+    const abilityId = 'ab-summon'
+
+    beforeEach(() => {
+      prisma.characterAbility.findUnique.mockResolvedValue({ id: abilityId, sheetId: sheetId, type: 'SUMMON' })
+      prisma.characterSheet.findUnique.mockResolvedValue({ id: sheetId, ownerId: userId, adventureId: null })
+      jest.clearAllMocks()
+    })
+
+    describe('addSummonResistance', () => {
+      it('creates a free-form resistance with name and value', async () => {
+        prisma.characterAbility.findUnique.mockResolvedValue({ id: abilityId, sheetId, type: 'SUMMON' })
+        prisma.summonResistance.create.mockResolvedValue({
+          id: 'sr-1', name: 'Fire', value: 'Immunity', abilityId,
         })
-        prisma.summonSkill.update.mockResolvedValue({
-          id: 'ss-1', attributeId: 'attr-dex', includes: { attribute: { id: 'attr-dex' } },
-        })
 
-        const result = await service.updateSummonSkillAttribute('ss-1', 'attr-dex', userId)
+        const result = await service.addSummonResistance(abilityId, 'Fire', 'Immunity', userId)
 
-        expect(result.attributeId).toBe('attr-dex')
+        expect(result.name).toBe('Fire')
+        expect(result.value).toBe('Immunity')
+        expect(prisma.summonResistance.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              name: 'Fire',
+              value: 'Immunity',
+              abilityId,
+            }),
+          }),
+        )
+      })
+
+      it('throws ForbiddenException when parent is not SUMMON type', async () => {
+        prisma.characterAbility.findUnique.mockResolvedValue({ id: abilityId, sheetId: sheetId, type: 'CLASS' })
+
+        await expect(service.addSummonResistance(abilityId, 'Fire', 'Immunity', userId))
+          .rejects.toThrow('Resistances can only be added to summons')
       })
     })
 
-    describe('updateSummonSkillProfile', () => {
-      it('upserts a skill profile value for a summon', async () => {
-        prisma.summonSkill.findUnique.mockResolvedValue({
-          id: 'ss-1', abilityId, ability: { sheetId: sheetId },
+    describe('updateSummonResistance', () => {
+      it('updates only the provided fields', async () => {
+        prisma.summonResistance.findUnique.mockResolvedValue({
+          id: 'sr-1', ability: { sheetId: sheetId },
         })
-        prisma.summonSkillProfileValue.upsert.mockResolvedValue({
-          id: 'sspv-1', skillId: 'ss-1', profileId: 'prof-1', optionId: 'opt-1',
+        prisma.summonResistance.update.mockResolvedValue({
+          id: 'sr-1', name: 'Cold', value: 'Immunity',
         })
 
-        const result = await service.updateSummonSkillProfile('ss-1', 'prof-1', 'opt-1', userId)
+        const result = await service.updateSummonResistance('sr-1', userId, { name: 'Cold' })
 
-        expect(result.optionId).toBe('opt-1')
+        expect(result.name).toBe('Cold')
+        expect(prisma.summonResistance.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({ name: 'Cold' }),
+          }),
+        )
+        expect(prisma.summonResistance.update).not.toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({ value: expect.anything() }),
+          }),
+        )
+      })
+
+      it('throws NotFoundException for missing summon resistance', async () => {
+        prisma.summonResistance.findUnique.mockResolvedValue(null)
+
+        await expect(service.updateSummonResistance('nonexistent', userId, { value: 'Vulnerable' }))
+          .rejects.toThrow('not found')
+      })
+    })
+
+    describe('removeSummonResistance', () => {
+      it('removes a resistance from a summon', async () => {
+        prisma.summonResistance.findUnique.mockResolvedValue({
+          id: 'sr-1', ability: { sheetId: sheetId },
+        })
+        prisma.summonResistance.delete.mockResolvedValue({ id: 'sr-1' })
+
+        const result = await service.removeSummonResistance('sr-1', userId)
+
+        expect(result).toEqual({ id: 'sr-1' })
+      })
+
+      it('throws NotFoundException for missing summon resistance', async () => {
+        prisma.summonResistance.findUnique.mockResolvedValue(null)
+
+        await expect(service.removeSummonResistance('nonexistent', userId))
+          .rejects.toThrow('not found')
       })
     })
   })
 
   // ── Summon values ─────────────────────────────────────────────
 
-  describe('summon values (attribute, AC, health, resistances)', () => {
+  describe('summon values (attribute, AC, health)', () => {
     const userId = 'u1'
     const abilityId = 'ab-summon'
     const sheetId = 'sheet-sum'
@@ -1916,24 +2484,19 @@ describe('CharacterSheetService', () => {
     })
 
     describe('updateSummonAcValue', () => {
-      it('upserts a summon AC value', async () => {
-        prisma.summonArmorClassValue.upsert.mockResolvedValue({ id: 'sac-1', fieldId: 'ac-field-1', value: '12' })
+      it('upserts a summon AC value by abilityId', async () => {
+        prisma.summonArmorClassValue.upsert.mockResolvedValue({ id: 'sac-1', abilityId, value: '18' })
 
-        const result = await service.updateSummonAcValue(abilityId, 'ac-field-1', '12', userId)
+        const result = await service.updateSummonAcValue(abilityId, '18', userId)
 
-        expect(result.value).toBe('12')
-      })
-    })
-
-    describe('updateSummonAcAttributeValue', () => {
-      it('upserts a summon AC attribute value', async () => {
-        prisma.summonArmorClassAttributeValue.upsert.mockResolvedValue({
-          id: 'sacav-1', acAttributeModifierId: 'am-1', selectedAttributeId: 'attr-dex',
-        })
-
-        const result = await service.updateSummonAcAttributeValue(abilityId, 'am-1', 'attr-dex', userId)
-
-        expect(result.selectedAttributeId).toBe('attr-dex')
+        expect(result.value).toBe('18')
+        expect(prisma.summonArmorClassValue.upsert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { abilityId },
+            create: expect.objectContaining({ abilityId, value: '18' }),
+            update: expect.objectContaining({ value: '18' }),
+          }),
+        )
       })
     })
 
@@ -1944,26 +2507,6 @@ describe('CharacterSheetService', () => {
         const result = await service.updateSummonHealth(abilityId, userId, { current: 50, maximum: 50 })
 
         expect(result.current).toBe(50)
-      })
-    })
-
-    describe('updateSummonResistanceValue', () => {
-      it('upserts a summon resistance value', async () => {
-        prisma.summonResistanceValue.upsert.mockResolvedValue({ id: 'srv-1', resistanceId: 'res-1', manualValue: '12' })
-
-        const result = await service.updateSummonResistanceValue(abilityId, 'res-1', '12', userId)
-
-        expect(result.manualValue).toBe('12')
-      })
-    })
-
-    describe('updateSummonResistanceComponentValue', () => {
-      it('upserts a summon resistance component value', async () => {
-        prisma.summonResistanceComponentValue.upsert.mockResolvedValue({ id: 'srcv-1', componentId: 'comp-1', value: '5' })
-
-        const result = await service.updateSummonResistanceComponentValue(abilityId, 'comp-1', '5', userId)
-
-        expect(result.value).toBe('5')
       })
     })
   })
@@ -2545,7 +3088,7 @@ describe('CharacterSheetService', () => {
           ownerId: 'owner-user',
           adventureId: 'adventure-1',
         })
-        mockMembershipService.requireRole.mockRejectedValue(new Error())
+        mockMembershipService.requireWriteRole.mockRejectedValue(new Error())
 
         await expect(service.createResistance(sheetId, 'other-user', { name: 'Test', calculationType: 'MANUAL' })).rejects.toThrow(ForbiddenException)
       })
@@ -2556,13 +3099,13 @@ describe('CharacterSheetService', () => {
           ownerId: 'other-user',
           adventureId: 'adventure-1',
         })
-        mockMembershipService.requireRole.mockResolvedValue({ role: 'GM' })
+        mockMembershipService.requireWriteRole.mockResolvedValue({ role: 'GM' })
         prisma.sheetResistance.aggregate.mockResolvedValue({ _max: { order: null } })
         prisma.sheetResistance.create.mockResolvedValue({ id: 'sr-new', name: 'GM Added' })
 
         const result = await service.createResistance(sheetId, 'gm-user', { name: 'GM Added', calculationType: 'MANUAL' })
 
-        expect(mockMembershipService.requireRole).toHaveBeenCalledWith('adventure-1', 'gm-user', 'GM')
+        expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('adventure-1', 'gm-user', 'GM')
         expect(result.name).toBe('GM Added')
       })
 
@@ -2648,13 +3191,13 @@ describe('CharacterSheetService', () => {
           ownerId: 'other-user',
           adventureId: 'adventure-1',
         })
-        mockMembershipService.requireRole.mockResolvedValue({ role: 'GM' })
+        mockMembershipService.requireWriteRole.mockResolvedValue({ role: 'GM' })
         prisma.sheetResistance.findUnique.mockResolvedValue(null)
         prisma.templateResistance.delete.mockResolvedValue({ id: 'tr-1' })
 
         const result = await service.removeResistance(sheetId, 'tr-1', 'gm-user')
 
-        expect(mockMembershipService.requireRole).toHaveBeenCalledWith('adventure-1', 'gm-user', 'GM')
+        expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith('adventure-1', 'gm-user', 'GM')
         expect(result).toEqual({ id: 'tr-1' })
       })
 
@@ -2671,10 +3214,10 @@ describe('CharacterSheetService', () => {
     // ────────── Professional Skills ──────────
 
     describe('listProfessionalSkills', () => {
-      it('returns skills ordered by order with attribute include', async () => {
+      it('returns skills ordered by order with attribute and profileValues include', async () => {
         const skills = [
-          { id: 'ps-1', name: 'Cooking', order: 0, attribute: { id: 'attr-1', key: 'dex', name: 'Dexterity' } },
-          { id: 'ps-2', name: 'Brewing', order: 1, attribute: { id: 'attr-2', key: 'int', name: 'Intelligence' } },
+          { id: 'ps-1', name: 'Cooking', order: 0, attribute: { id: 'attr-1', key: 'dex', name: 'Dexterity' }, profileValues: [] },
+          { id: 'ps-2', name: 'Brewing', order: 1, attribute: { id: 'attr-2', key: 'int', name: 'Intelligence' }, profileValues: [] },
         ]
         prisma.sheetProfessionalSkill.findMany.mockResolvedValue(skills)
 
@@ -2683,7 +3226,15 @@ describe('CharacterSheetService', () => {
         expect(prisma.sheetProfessionalSkill.findMany).toHaveBeenCalledWith({
           where: { sheetId },
           orderBy: { order: 'asc' },
-          include: { attribute: { select: { id: true, key: true, name: true } } },
+          include: {
+            attribute: { select: { id: true, key: true, name: true } },
+            profileValues: {
+              include: {
+                profile: { select: { id: true, name: true } },
+                option: { select: { id: true, label: true, value: true } },
+              },
+            },
+          },
         })
         expect(result).toEqual(skills)
       })
@@ -2700,9 +3251,9 @@ describe('CharacterSheetService', () => {
     })
 
     describe('createProfessionalSkill', () => {
-      it('creates skill with auto-order and attribute include', async () => {
+      it('creates skill with auto-order and profile-aware include', async () => {
         prisma.sheetProfessionalSkill.count.mockResolvedValue(2)
-        const created = { id: 'ps-new', name: 'Cooking', attributeId: 'attr-1', order: 2, attribute: { id: 'attr-1', key: 'dex', name: 'Dexterity' } }
+        const created = { id: 'ps-new', name: 'Cooking', attributeId: 'attr-1', order: 2, attribute: { id: 'attr-1', key: 'dex', name: 'Dexterity' }, profileValues: [] }
         prisma.sheetProfessionalSkill.create.mockResolvedValue(created)
 
         const result = await service.createProfessionalSkill(sheetId, userId, { name: 'Cooking', attributeId: 'attr-1' })
@@ -2710,7 +3261,15 @@ describe('CharacterSheetService', () => {
         expect(prisma.sheetProfessionalSkill.count).toHaveBeenCalledWith({ where: { sheetId } })
         expect(prisma.sheetProfessionalSkill.create).toHaveBeenCalledWith({
           data: { sheetId, name: 'Cooking', attributeId: 'attr-1', order: 2 },
-          include: { attribute: { select: { id: true, key: true, name: true } } },
+          include: {
+            attribute: { select: { id: true, key: true, name: true } },
+            profileValues: {
+              include: {
+                profile: { select: { id: true, name: true } },
+                option: { select: { id: true, label: true, value: true } },
+              },
+            },
+          },
         })
         expect(result).toEqual(created)
       })
@@ -2736,6 +3295,19 @@ describe('CharacterSheetService', () => {
 
         expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:${sheetId}`)
       })
+
+      it('throws ConflictException when skill name already exists on sheet', async () => {
+        prisma.sheetProfessionalSkill.count.mockResolvedValue(0)
+        const prismaErr = new Error('Unique constraint failed')
+        ;(prismaErr as any).code = 'P2002'
+        prisma.sheetProfessionalSkill.create.mockRejectedValue(prismaErr)
+
+        await expect(
+          service.createProfessionalSkill(sheetId, userId, { name: 'Duplicate' }),
+        ).rejects.toThrow(ConflictException)
+
+        expect(prisma.sheetProfessionalSkill.create).toHaveBeenCalled()
+      })
     })
 
     describe('updateProfessionalSkill', () => {
@@ -2745,7 +3317,7 @@ describe('CharacterSheetService', () => {
 
       it('updates the skill', async () => {
         prisma.sheetProfessionalSkill.findUnique.mockResolvedValue(mockSkill)
-        const updated = { ...mockSkill, ...dto, attribute: { id: 'attr-2', key: 'int', name: 'Intelligence' } }
+        const updated = { ...mockSkill, ...dto, attribute: { id: 'attr-2', key: 'int', name: 'Intelligence' }, profileValues: [] }
         prisma.sheetProfessionalSkill.update.mockResolvedValue(updated)
 
         const result = await service.updateProfessionalSkill(skillId, userId, dto)
@@ -2754,7 +3326,15 @@ describe('CharacterSheetService', () => {
         expect(prisma.sheetProfessionalSkill.update).toHaveBeenCalledWith({
           where: { id: skillId },
           data: { name: 'Expert Cooking', attributeId: 'attr-2' },
-          include: { attribute: { select: { id: true, key: true, name: true } } },
+          include: {
+            attribute: { select: { id: true, key: true, name: true } },
+            profileValues: {
+              include: {
+                profile: { select: { id: true, name: true } },
+                option: { select: { id: true, label: true, value: true } },
+              },
+            },
+          },
         })
         expect(result).toEqual(updated)
       })
@@ -2830,6 +3410,68 @@ describe('CharacterSheetService', () => {
       })
     })
 
+    describe('updateProfessionalSkillProfileValue', () => {
+      const sheetId = 'sheet-ps-prof'
+      const skillId = 'ps-profile-1'
+      const profileId = 'prof-1'
+      const userId = 'u1'
+
+      beforeEach(() => {
+        prisma.characterSheet.findUnique.mockResolvedValue({ id: sheetId, ownerId: userId, adventureId: null })
+      })
+
+      it('upserts professional skill profile value with an optionId', async () => {
+        prisma.sheetProfessionalSkillProfileValue.upsert.mockResolvedValue({
+          id: 'pspv-1',
+          sheetProfessionalSkillId: skillId,
+          profileId,
+          optionId: 'opt-1',
+        })
+
+        const result = await service.updateProfessionalSkillProfileValue(sheetId, skillId, profileId, 'opt-1', userId)
+
+        expect(prisma.sheetProfessionalSkillProfileValue.upsert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              sheetProfessionalSkillId_profileId: { sheetProfessionalSkillId: skillId, profileId },
+            }),
+            update: expect.objectContaining({ optionId: 'opt-1' }),
+            create: expect.objectContaining({ sheetProfessionalSkillId: skillId, profileId, optionId: 'opt-1' }),
+          }),
+        )
+        expect(result.optionId).toBe('opt-1')
+      })
+
+      it('upserts professional skill profile value with null optionId', async () => {
+        prisma.sheetProfessionalSkillProfileValue.upsert.mockResolvedValue({
+          id: 'pspv-2',
+          sheetProfessionalSkillId: skillId,
+          profileId,
+          optionId: null,
+        })
+
+        const result = await service.updateProfessionalSkillProfileValue(sheetId, skillId, profileId, null, userId)
+
+        expect(result.optionId).toBeNull()
+      })
+
+      it('throws ForbiddenException when not the owner', async () => {
+        prisma.characterSheet.findUnique.mockResolvedValue({ id: sheetId, ownerId: 'other-owner', adventureId: null })
+
+        await expect(
+          service.updateProfessionalSkillProfileValue(sheetId, skillId, profileId, 'opt-1', 'other-user'),
+        ).rejects.toThrow(ForbiddenException)
+      })
+
+      it('invalidates cache after upsert', async () => {
+        prisma.sheetProfessionalSkillProfileValue.upsert.mockResolvedValue({ id: 'pspv-3' })
+
+        await service.updateProfessionalSkillProfileValue(sheetId, skillId, profileId, 'opt-1', userId)
+
+        expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:${sheetId}`)
+      })
+    })
+
     describe('cache invalidation failure', () => {
       const userId = 'user-1'
       const sheetId = 'sheet-cache'
@@ -2888,6 +3530,305 @@ describe('CharacterSheetService', () => {
         await service.updateStory(sheetId, userId, { appearance: 'Tall' })
 
         expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:${sheetId}`)
+      })
+    })
+
+    describe('assignment', () => {
+      const adventureId = 'adventure-1'
+      const gmUserId = 'gm-user'
+      const targetMemberId = 'cm-target'
+      const targetUserId = 'user-target'
+      const previousMemberId = 'cm-prev'
+      const previousUserId = 'user-prev'
+
+      const mockAssignedSheet = {
+        id: sheetId,
+        ownerId: gmUserId,
+        adventureId,
+        isNpc: false,
+        assignedMemberId: null,
+        templateId: 'tpl-1',
+      } as any
+
+      const mockTargetMember = {
+        id: targetMemberId,
+        userId: targetUserId,
+        role: 'PLAYER',
+        adventureId,
+      } as any
+
+      beforeEach(() => {
+        prisma.characterSheet.findUnique.mockResolvedValue(mockAssignedSheet)
+        prisma.campaignMember.findUnique.mockResolvedValue(mockTargetMember)
+        prisma.characterSheet.update.mockResolvedValue({
+          id: sheetId,
+          adventureId,
+          assignedMemberId: targetMemberId,
+        } as any)
+        mockMembershipService.requireWriteRole.mockResolvedValue({ role: 'GM' })
+        mockMembershipService.requireWriteAccess.mockResolvedValue({ role: 'GM' })
+      })
+
+      describe('assignMember', () => {
+        it('assigns a campaign member to the sheet and invalidates caches', async () => {
+          const result = await service.assignMember(sheetId, targetMemberId, gmUserId)
+
+          expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith(adventureId, gmUserId, 'GM')
+          expect(prisma.characterSheet.update).toHaveBeenCalledWith(
+            expect.objectContaining({ where: { id: sheetId }, data: { assignedMemberId: targetMemberId } }),
+          )
+          expect(result.assignedMemberId).toBe(targetMemberId)
+          expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:${sheetId}`)
+          expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:user:${targetUserId}`)
+          expect(mockRedisService.invalidatePattern).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:*`)
+        })
+
+        it('throws NotFoundException when the sheet does not exist', async () => {
+          prisma.characterSheet.findUnique.mockResolvedValue(null)
+          await expect(service.assignMember(sheetId, targetMemberId, gmUserId)).rejects.toThrow(NotFoundException)
+          expect(prisma.characterSheet.update).not.toHaveBeenCalled()
+        })
+
+        it('rejects NPC sheets', async () => {
+          prisma.characterSheet.findUnique.mockResolvedValue({ ...mockAssignedSheet, isNpc: true })
+          await expect(service.assignMember(sheetId, targetMemberId, gmUserId)).rejects.toThrow(ForbiddenException)
+          expect(prisma.characterSheet.update).not.toHaveBeenCalled()
+        })
+
+        it('rejects standalone sheets without an adventure', async () => {
+          prisma.characterSheet.findUnique.mockResolvedValue({ ...mockAssignedSheet, adventureId: null })
+          await expect(service.assignMember(sheetId, targetMemberId, gmUserId)).rejects.toThrow(ForbiddenException)
+          expect(prisma.characterSheet.update).not.toHaveBeenCalled()
+        })
+
+        it('rejects callers who are not the GM', async () => {
+          mockMembershipService.requireWriteRole.mockRejectedValue(new ForbiddenException('gm only'))
+          await expect(service.assignMember(sheetId, targetMemberId, gmUserId)).rejects.toThrow(ForbiddenException)
+          expect(prisma.characterSheet.update).not.toHaveBeenCalled()
+        })
+
+        it('rejects assignments in read-only campaigns', async () => {
+          mockMembershipService.requireWriteRole.mockRejectedValue(new ForbiddenException('read-only'))
+          await expect(service.assignMember(sheetId, targetMemberId, gmUserId)).rejects.toThrow(ForbiddenException)
+          expect(prisma.characterSheet.update).not.toHaveBeenCalled()
+        })
+
+        it('rejects a target who is not in the campaign', async () => {
+          prisma.campaignMember.findUnique.mockResolvedValue(null)
+          await expect(service.assignMember(sheetId, targetMemberId, gmUserId)).rejects.toThrow(ForbiddenException)
+          expect(prisma.characterSheet.update).not.toHaveBeenCalled()
+        })
+
+        it('rejects a target from a different campaign', async () => {
+          prisma.campaignMember.findUnique.mockResolvedValue({ ...mockTargetMember, adventureId: 'other-adventure' })
+          await expect(service.assignMember(sheetId, targetMemberId, gmUserId)).rejects.toThrow(ForbiddenException)
+          expect(prisma.characterSheet.update).not.toHaveBeenCalled()
+        })
+
+        it('rejects assigning to the GM', async () => {
+          prisma.campaignMember.findUnique.mockResolvedValue({ ...mockTargetMember, role: 'GM' })
+          await expect(service.assignMember(sheetId, targetMemberId, gmUserId)).rejects.toThrow(ForbiddenException)
+          expect(prisma.characterSheet.update).not.toHaveBeenCalled()
+        })
+
+        it('reassigning to a new player invalidates both players list caches', async () => {
+          prisma.characterSheet.findUnique.mockResolvedValue({ ...mockAssignedSheet, assignedMemberId: previousMemberId })
+          prisma.campaignMember.findUnique.mockImplementation(async ({ where }: any) => {
+            if (where.id === targetMemberId) return mockTargetMember
+            if (where.id === previousMemberId) return { userId: previousUserId }
+            return null
+          })
+
+          await service.assignMember(sheetId, targetMemberId, gmUserId)
+
+          expect(prisma.characterSheet.update).toHaveBeenCalledWith(
+            expect.objectContaining({ where: { id: sheetId }, data: { assignedMemberId: targetMemberId } }),
+          )
+          expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:user:${targetUserId}`)
+          expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:user:${previousUserId}`)
+          expect(mockRedisService.invalidatePattern).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:*`)
+        })
+      })
+
+      describe('removeAssignment', () => {
+        it('clears the assignment without deleting the character', async () => {
+          prisma.characterSheet.findUnique.mockResolvedValue({ ...mockAssignedSheet, assignedMemberId: previousMemberId })
+          prisma.campaignMember.findUnique.mockImplementation(async ({ where }: any) => {
+            if (where.id === previousMemberId) return { userId: previousUserId }
+            return null
+          })
+          prisma.characterSheet.update.mockResolvedValue({ id: sheetId, adventureId, assignedMemberId: null } as any)
+
+          const result = await service.removeAssignment(sheetId, gmUserId)
+
+          expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith(adventureId, gmUserId, 'GM')
+          expect(prisma.characterSheet.update).toHaveBeenCalledWith(
+            expect.objectContaining({ where: { id: sheetId }, data: { assignedMemberId: null } }),
+          )
+          expect(prisma.characterSheet.delete).not.toHaveBeenCalled()
+          expect(result.assignedMemberId).toBeNull()
+          expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:${sheetId}`)
+          expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:user:${previousUserId}`)
+          expect(mockRedisService.invalidatePattern).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:*`)
+        })
+
+        it('throws NotFoundException when the sheet does not exist', async () => {
+          prisma.characterSheet.findUnique.mockResolvedValue(null)
+          await expect(service.removeAssignment(sheetId, gmUserId)).rejects.toThrow(NotFoundException)
+          expect(prisma.characterSheet.update).not.toHaveBeenCalled()
+          expect(prisma.characterSheet.delete).not.toHaveBeenCalled()
+        })
+
+        it('rejects NPC sheets', async () => {
+          prisma.characterSheet.findUnique.mockResolvedValue({ ...mockAssignedSheet, isNpc: true })
+          await expect(service.removeAssignment(sheetId, gmUserId)).rejects.toThrow(ForbiddenException)
+          expect(prisma.characterSheet.update).not.toHaveBeenCalled()
+        })
+
+        it('rejects standalone sheets without an adventure', async () => {
+          prisma.characterSheet.findUnique.mockResolvedValue({ ...mockAssignedSheet, adventureId: null })
+          await expect(service.removeAssignment(sheetId, gmUserId)).rejects.toThrow(ForbiddenException)
+          expect(prisma.characterSheet.update).not.toHaveBeenCalled()
+        })
+
+        it('rejects callers who are not the GM', async () => {
+          mockMembershipService.requireWriteRole.mockRejectedValue(new ForbiddenException('gm only'))
+          await expect(service.removeAssignment(sheetId, gmUserId)).rejects.toThrow(ForbiddenException)
+          expect(prisma.characterSheet.update).not.toHaveBeenCalled()
+          expect(prisma.characterSheet.delete).not.toHaveBeenCalled()
+        })
+      })
+
+      describe('invalidateAdventureSheets', () => {
+        it('invalidates list, per-sheet, owner, and assignee caches for the adventure', async () => {
+          prisma.characterSheet.findMany.mockResolvedValue([
+            { id: 's1', ownerId: 'own-1', assignedMember: { userId: 'assign-1' } },
+            { id: 's2', ownerId: null, assignedMember: null },
+          ])
+
+          await service.invalidateAdventureSheets(adventureId)
+
+          expect(prisma.characterSheet.findMany).toHaveBeenCalledWith({
+            where: { adventureId },
+            select: {
+              id: true,
+              ownerId: true,
+              assignedMember: { select: { userId: true } },
+            },
+          })
+          expect(mockRedisService.invalidatePattern).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:*`)
+          expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:s1`)
+          expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:user:own-1`)
+          expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheets:user:assign-1`)
+          expect(mockRedisService.del).toHaveBeenCalledWith(`character-sheet:s2`)
+        })
+
+        it('still invalidates the adventure list pattern when the adventure has no sheets', async () => {
+          prisma.characterSheet.findMany.mockResolvedValue([])
+
+          await service.invalidateAdventureSheets(adventureId)
+
+          expect(mockRedisService.invalidatePattern).toHaveBeenCalledWith(`character-sheets:adventure:${adventureId}:*`)
+        })
+
+        it('swallows errors when Redis is unavailable', async () => {
+          prisma.characterSheet.findMany.mockResolvedValue([{ id: 's1', ownerId: null, assignedMember: null }])
+          mockRedisService.invalidatePattern.mockRejectedValue(new Error('Redis down'))
+
+          await expect(service.invalidateAdventureSheets(adventureId)).resolves.toBeUndefined()
+        })
+      })
+
+      describe('update as the assigned player', () => {
+        it('allows the assigned player to update the sheet', async () => {
+          prisma.characterSheet.findUnique.mockResolvedValue({
+            ...mockAssignedSheet,
+            ownerId: 'another-owner',
+            assignedMemberId: 'cm-assigned',
+          })
+          prisma.campaignMember.findUnique.mockResolvedValue({ id: 'cm-assigned', userId })
+          prisma.characterSheet.update.mockResolvedValue({ id: sheetId, ownerId: 'another-owner' } as any)
+
+          await service.update(sheetId, userId, { characterName: 'Renamed' })
+
+          expect(mockMembershipService.requireWriteAccess).toHaveBeenCalledWith(adventureId, userId)
+          expect(prisma.characterSheet.update).toHaveBeenCalled()
+        })
+
+        it('rejects a campaign player who is not the assignee', async () => {
+          prisma.characterSheet.findUnique.mockResolvedValue({
+            ...mockAssignedSheet,
+            ownerId: 'another-owner',
+            assignedMemberId: 'cm-assigned',
+          })
+          prisma.campaignMember.findUnique.mockResolvedValue({ id: 'cm-assigned', userId: 'someone-else' })
+
+          await expect(service.update(sheetId, userId, { characterName: 'Renamed' })).rejects.toThrow(ForbiddenException)
+          expect(prisma.characterSheet.update).not.toHaveBeenCalled()
+        })
+
+        it('blocks the assigned player when the campaign is read-only', async () => {
+          prisma.characterSheet.findUnique.mockResolvedValue({
+            ...mockAssignedSheet,
+            ownerId: 'another-owner',
+            assignedMemberId: 'cm-assigned',
+          })
+          prisma.campaignMember.findUnique.mockResolvedValue({ id: 'cm-assigned', userId })
+          mockMembershipService.requireWriteAccess.mockRejectedValue(new ForbiddenException('read-only'))
+
+          await expect(service.update(sheetId, userId, { characterName: 'Renamed' })).rejects.toThrow(ForbiddenException)
+          expect(prisma.characterSheet.update).not.toHaveBeenCalled()
+        })
+      })
+
+      describe('resistances for assigned sheets', () => {
+        const resistanceDto = { name: 'Fire', calculationType: 'MANUAL' as const }
+
+        beforeEach(() => {
+          prisma.sheetResistance.aggregate.mockResolvedValue({ _max: { order: null } } as any)
+          prisma.sheetResistance.create.mockResolvedValue({ id: 'res-1', name: 'Fire' } as any)
+        })
+
+        it('allows the assigned player to add a resistance', async () => {
+          prisma.characterSheet.findUnique.mockResolvedValue({
+            ...mockAssignedSheet,
+            ownerId: 'another-owner',
+            assignedMemberId: 'cm-assigned',
+          })
+          prisma.campaignMember.findUnique.mockResolvedValue({ id: 'cm-assigned', userId })
+
+          await service.createResistance(sheetId, userId, resistanceDto)
+
+          expect(mockMembershipService.requireWriteAccess).toHaveBeenCalledWith(adventureId, userId)
+          expect(prisma.sheetResistance.create).toHaveBeenCalled()
+        })
+
+        it('allows the campaign GM to add a resistance', async () => {
+          prisma.characterSheet.findUnique.mockResolvedValue({
+            ...mockAssignedSheet,
+            ownerId: 'another-owner',
+            assignedMemberId: null,
+          })
+          mockMembershipService.requireWriteRole.mockResolvedValue({ role: 'GM' })
+
+          await service.createResistance(sheetId, userId, resistanceDto)
+
+          expect(mockMembershipService.requireWriteRole).toHaveBeenCalledWith(adventureId, userId, 'GM')
+          expect(prisma.sheetResistance.create).toHaveBeenCalled()
+        })
+
+        it('rejects a player who is not the assignee', async () => {
+          prisma.characterSheet.findUnique.mockResolvedValue({
+            ...mockAssignedSheet,
+            ownerId: 'another-owner',
+            assignedMemberId: 'cm-assigned',
+          })
+          prisma.campaignMember.findUnique.mockResolvedValue({ id: 'cm-assigned', userId: 'someone-else' })
+          mockMembershipService.requireWriteRole.mockRejectedValue(new ForbiddenException('gm only'))
+
+          await expect(service.createResistance(sheetId, userId, resistanceDto)).rejects.toThrow(ForbiddenException)
+          expect(prisma.sheetResistance.create).not.toHaveBeenCalled()
+        })
       })
     })
 

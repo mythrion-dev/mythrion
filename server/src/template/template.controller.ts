@@ -13,7 +13,10 @@ import { TemplateService } from './template.service.js'
 import { CreateTemplateDto } from './dto/create-template.dto.js'
 import { UpdateTemplateDto } from './dto/update-template.dto.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
-import type { AuthenticatedRequest } from '../auth/jwt-auth.guard.js'
+import { SubscriptionGuard } from '../auth/subscription.guard.js'
+import { PlanLimitGuard } from '../auth/plan-limit.guard.js'
+import { PlanLimit } from '../auth/plan-limit.decorator.js'
+import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
 
 @Controller('adventures/:adventureId/templates')
 @UseGuards(JwtAuthGuard)
@@ -21,6 +24,8 @@ export class TemplateController {
   constructor(private readonly templateService: TemplateService) {}
 
   @Post()
+  @UseGuards(SubscriptionGuard, PlanLimitGuard)
+  @PlanLimit('template')
   create(
     @Req() req: AuthenticatedRequest,
     @Param('adventureId') adventureId: string,

@@ -1,17 +1,17 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
 } from '@nestjs/common'
+import { I18nService } from 'nestjs-i18n'
 import { PrismaService } from '../prisma.service.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { EmailService } from '../email/email.service.js'
 import { v4 as uuid } from 'uuid'
-import { MemberRole, InvitationStatus } from '../generated/prisma/client.js'
+import { isAllowedOrigin, normalizeOrigin } from '../config/allowed-origins.js'
 
 const INVITATION_EXPIRY_DAYS = 7
-const APP_URL = process.env.FRONTEND_URL ?? 'http://localhost:3001'
+const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:3001'
 
 @Injectable()
 export class InvitationService {
@@ -19,6 +19,7 @@ export class InvitationService {
     private readonly prisma: PrismaService,
     private readonly membership: MembershipService,
     private readonly email: EmailService,
+    private readonly i18n: I18nService,
   ) {}
 
   private generateToken(): string {
@@ -31,15 +32,27 @@ export class InvitationService {
     return date
   }
 
+  /**
+   * Build the invite link from the origin the request actually came from (so a
+   * player visiting via mythrion.com.br gets a mythrion.com.br link, not a fixed
+   * FRONTEND_URL), falling back to FRONTEND_URL when the origin isn't trusted.
+   */
+  private resolveInviteUrl(origin: string | undefined, token: string): string {
+    const base = isAllowedOrigin(origin)
+      ? (normalizeOrigin(origin) as string)
+      : FRONTEND_URL
+    return `${base}/invite/${token}`
+  }
+
   /** Create an email-based invitation */
   async inviteByEmail(params: {
     adventureId: string
     invitedEmail: string
-    role: MemberRole
     createdById: string
+    origin?: string
   }) {
     // Verify creator is GM
-    await this.membership.requireRole(
+    await this.membership.requireWriteRole(
       params.adventureId,
       params.createdById,
       'GM',
@@ -48,12 +61,10 @@ export class InvitationService {
     const adventure = await this.prisma.adventure.findUnique({
       where: { id: params.adventureId },
     })
-    if (!adventure) throw new NotFoundException('Adventure not found')
+    if (!adventure) throw new NotFoundException(this.i18n.t('community.adventureNotFound'))
 
-    // Check player capacity for PLAYER invites
-    if (params.role === 'PLAYER') {
-      await this.membership.assertPlayerCapacity(params.adventureId)
-    }
+    // Always check player capacity — all invitations create PLAYER members
+    await this.membership.assertPlayerCapacity(params.adventureId)
 
     const token = this.generateToken()
 
@@ -62,7 +73,7 @@ export class InvitationService {
         adventureId: params.adventureId,
         invitedEmail: params.invitedEmail,
         token,
-        role: params.role,
+        role: 'PLAYER',
         status: 'PENDING',
         expiresAt: this.buildExpiryDate(),
         createdById: params.createdById,
@@ -74,14 +85,26 @@ export class InvitationService {
       where: { id: params.createdById },
     })
 
-    await this.email.sendInvitation({
-      to: params.invitedEmail,
-      campaignName: adventure.name,
-      inviterName: inviter?.displayName ?? inviter?.email ?? 'Someone',
-      role: params.role,
-      inviteUrl: `${APP_URL}/invite/${token}`,
-      expiresAt: invitation.expiresAt,
-    })
+    try {
+      await this.email.sendInvitation({
+        to: params.invitedEmail,
+        campaignName: adventure.name,
+        inviterName: inviter?.displayName ?? inviter?.email ?? 'Someone',
+        role: 'PLAYER',
+        inviteUrl: this.resolveInviteUrl(params.origin, token),
+        expiresAt: invitation.expiresAt,
+      })
+    } catch (err) {
+      // The invitation is useless if the email can't be delivered — roll it back
+      // and surface the failure so the GM sees exactly what went wrong.
+      await this.prisma.campaignInvitation
+        .delete({ where: { id: invitation.id } })
+        .catch(() => undefined)
+      const message = err instanceof Error ? err.message : String(err)
+      throw new BadRequestException(
+        this.i18n.t('community.emailFailed', { args: { message } }),
+      )
+    }
 
     return { success: true, invitationId: invitation.id }
   }
@@ -89,19 +112,17 @@ export class InvitationService {
   /** Create a shareable-link invitation */
   async inviteByLink(params: {
     adventureId: string
-    role: MemberRole
     createdById: string
+    origin?: string
   }) {
-    await this.membership.requireRole(
+    await this.membership.requireWriteRole(
       params.adventureId,
       params.createdById,
       'GM',
     )
 
-    // Check player capacity for PLAYER invites
-    if (params.role === 'PLAYER') {
-      await this.membership.assertPlayerCapacity(params.adventureId)
-    }
+    // Always check player capacity — all invitations create PLAYER members
+    await this.membership.assertPlayerCapacity(params.adventureId)
 
     const token = this.generateToken()
 
@@ -109,14 +130,14 @@ export class InvitationService {
       data: {
         adventureId: params.adventureId,
         token,
-        role: params.role,
+        role: 'PLAYER',
         status: 'PENDING',
         expiresAt: this.buildExpiryDate(),
         createdById: params.createdById,
       },
     })
 
-    return { inviteUrl: `${APP_URL}/invite/${token}` }
+    return { inviteUrl: this.resolveInviteUrl(params.origin, token) }
   }
 
   /** Validate an invitation token (for the frontend preview page) */
@@ -130,7 +151,7 @@ export class InvitationService {
     })
 
     if (!invitation) {
-      throw new NotFoundException('Invitation not found')
+      throw new NotFoundException(this.i18n.t('community.invitationNotFound'))
     }
 
     if (invitation.status === 'REVOKED') {
@@ -187,21 +208,21 @@ export class InvitationService {
     })
 
     if (!invitation) {
-      throw new NotFoundException('Invitation not found')
+      throw new NotFoundException(this.i18n.t('community.invitationNotFound'))
     }
 
     if (invitation.status === 'ACCEPTED') {
-      throw new BadRequestException('Invitation already accepted')
+      throw new BadRequestException(this.i18n.t('community.alreadyAcceptedInvitation'))
     }
     if (invitation.status === 'REVOKED') {
-      throw new BadRequestException('Invitation has been revoked')
+      throw new BadRequestException(this.i18n.t('community.revoked'))
     }
     if (new Date() > invitation.expiresAt) {
       await this.prisma.campaignInvitation.update({
         where: { id: invitation.id },
         data: { status: 'EXPIRED' },
       })
-      throw new BadRequestException('Invitation has expired')
+      throw new BadRequestException(this.i18n.t('community.expired'))
     }
 
     // Check if user is already a member of this adventure
@@ -221,15 +242,12 @@ export class InvitationService {
       }
     }
 
-    // Check player capacity when accepting a PLAYER invitation
-    if (invitation.role === 'PLAYER') {
-      // Only count this invitation itself (not the user yet, they're not a member)
-      const adventure = await this.prisma.adventure.findUnique({ where: { id: invitation.adventureId } })
-      if (adventure) {
-        const currentPlayers = await this.membership.countPlayers(invitation.adventureId)
-        if (currentPlayers + 1 > adventure.maxPlayers) {
-          throw new BadRequestException('Adventure is at maximum player capacity')
-        }
+    // Check player capacity — all invitations create PLAYER members
+    const adventure = await this.prisma.adventure.findUnique({ where: { id: invitation.adventureId } })
+    if (adventure) {
+      const currentPlayers = await this.membership.countPlayers(invitation.adventureId)
+      if (currentPlayers + 1 > adventure.maxPlayers) {
+        throw new BadRequestException(this.i18n.t('community.maxPlayerCapacity'))
       }
     }
 
@@ -246,10 +264,6 @@ export class InvitationService {
       data: { status: 'ACCEPTED', acceptedAt: new Date() },
     })
 
-    const adventure = await this.prisma.adventure.findUnique({
-      where: { id: invitation.adventureId },
-    })
-
     return {
       success: true,
       adventureId: invitation.adventureId,
@@ -263,10 +277,10 @@ export class InvitationService {
     const invitation = await this.prisma.campaignInvitation.findUnique({
       where: { id: invitationId },
     })
-    if (!invitation) throw new NotFoundException('Invitation not found')
+    if (!invitation) throw new NotFoundException(this.i18n.t('community.invitationNotFound'))
 
     // Must be GM of the adventure
-    await this.membership.requireRole(invitation.adventureId, userId, 'GM')
+    await this.membership.requireWriteRole(invitation.adventureId, userId, 'GM')
 
     return this.prisma.campaignInvitation.update({
       where: { id: invitationId },

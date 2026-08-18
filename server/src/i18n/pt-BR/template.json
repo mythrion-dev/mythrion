@@ -1,0 +1,15 @@
+{
+  "adventureNotFound": "Campanha não encontrada",
+  "campaignAlreadyHasTemplate": "Esta campanha já possui um template anexado. Use o endpoint de substituição para alterá-lo.",
+  "campaignHasTemplateDetachFirst": "Esta campanha já possui um template anexado. Desanexe-o primeiro antes de criar um template de propriedade da campanha.",
+  "campaignOwnedTemplates": "Esta campanha possui templates de propriedade da campanha. Remova-os primeiro antes de anexar um template.",
+  "deleteInUse": "Não é possível excluir o template: {sheetCount} ficha(s) de personagem ainda o referenciam. Remova ou reatribua todas as fichas primeiro.",
+  "noAccess": "Você não tem acesso a este template",
+  "noClonePermission": "Você não tem permissão para clonar este template",
+  "notFound": "Template não encontrado",
+  "notFoundOrNotPublic": "Template não encontrado ou não é público",
+  "notMemberAdventure": "Você não é membro desta campanha",
+  "ownerOnlyDelete": "Apenas o proprietário do template pode excluir este template",
+  "ownerOnlyUpdate": "Apenas o proprietário do template pode atualizar este template",
+  "ownerOnlyVisibility": "Apenas o proprietário do template pode alterar a visibilidade"
+}

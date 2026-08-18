@@ -2,14 +2,15 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 
-export function InlineClickEdit({ value, onSave, as = 'input', className = '', inputClassName = '', emptyDisplay = '—', rows = 2 }: {
-  value: string
-  onSave: (value: string) => Promise<void>
-  as?: 'input' | 'textarea'
-  className?: string
-  inputClassName?: string
-  emptyDisplay?: string
-  rows?: number
+export function InlineClickEdit({ value, onSave, as = 'input', className = '', inputClassName = '', emptyDisplay = '—', rows = 2, readOnly = false }: {
+  readonly value: string
+  readonly onSave: (value: string) => Promise<void>
+  readonly as?: 'input' | 'textarea'
+  readonly className?: string
+  readonly inputClassName?: string
+  readonly emptyDisplay?: string
+  readonly rows?: number
+  readonly readOnly?: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value)
@@ -26,6 +27,15 @@ export function InlineClickEdit({ value, onSave, as = 'input', className = '', i
     catch { setDraft(value) }
     finally { setSaving(false) }
   }, [draft, value, onSave])
+
+  if (readOnly) {
+    const display = value?.trim()
+    return (
+      <span className={`inline-block px-1 -mx-1 ${display ? '' : 'text-muted italic'} ${className}`}>
+        {display || emptyDisplay}
+      </span>
+    )
+  }
 
   if (!editing) {
     const display = value?.trim()
@@ -65,7 +75,7 @@ export function InlineClickEdit({ value, onSave, as = 'input', className = '', i
         value={draft}
         onChange={e => setDraft(e.target.value)}
         onBlur={commit}
-        onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setDraft(value); setEditing(false) } }}
+        onKeyDown={e => { if (e.key === 'Enter') { commit() } if (e.key === 'Escape') { setDraft(value); setEditing(false) } }}
         className={`input-field py-0.5 px-1 text-sm ${inputClassName}`}
         autoFocus
         disabled={saving}

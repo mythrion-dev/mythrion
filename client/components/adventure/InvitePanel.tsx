@@ -1,6 +1,7 @@
 'use client'
 
-import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { SubmitEvent } from 'react'
 
 interface Invitation {
   id: string
@@ -14,68 +15,51 @@ interface Invitation {
 }
 
 export function InvitePanel({
-  inviteRole,
   inviteEmail,
   inviteLink,
   inviteError,
   inviteSending,
   invitations,
-  onRoleChange,
+  disabled,
   onEmailChange,
   onInviteByEmail,
   onInviteByLink,
   onRevoke,
 }: {
-  inviteRole: string
-  inviteEmail: string
-  inviteLink: string | null
-  inviteError: string | null
-  inviteSending: boolean
-  invitations: Invitation[]
-  onRoleChange: (r: 'PLAYER' | 'GM') => void
-  onEmailChange: (e: string) => void
-  onInviteByEmail: (e: FormEvent) => void
-  onInviteByLink: () => void
-  onRevoke: (id: string) => void
+  readonly inviteEmail: string
+  readonly inviteLink: string | null
+  readonly inviteError: string | null
+  readonly inviteSending: boolean
+  readonly invitations: Invitation[]
+  readonly disabled?: boolean
+  readonly onEmailChange: (e: string) => void
+  readonly onInviteByEmail: (e: SubmitEvent) => void
+  readonly onInviteByLink: () => void
+  readonly onRevoke: (id: string) => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className="space-y-4">
-      {/* Role selector */}
-      <div>
-        <label className="label">Role</label>
-        <div className="flex gap-2">
-          {(['PLAYER', 'GM'] as const).map(r => (
-            <button
-              key={r}
-              onClick={() => onRoleChange(r)}
-              className={`btn-ghost text-sm ${
-                inviteRole === r ? '!border-primary/40 !text-primary' : ''
-              }`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Invite by email */}
-      <form onSubmit={onInviteByEmail} className="space-y-3">
+      <form onSubmit={disabled ? undefined : onInviteByEmail} className="space-y-3">
         <div>
-          <label className="label">Invite by Email</label>
+          <label className="label">{t('campaign:inviteByEmail')}</label>
           <div className="flex gap-2">
             <input
               type="email"
               value={inviteEmail}
               onChange={e => onEmailChange(e.target.value)}
+              disabled={disabled}
               className="input-field flex-1"
-              placeholder="player@example.com"
+              placeholder={t('campaign:emailPlaceholder')}
             />
             <button
               type="submit"
-              disabled={inviteSending || inviteEmail.trim().length === 0}
-              className="btn-primary"
+              disabled={inviteSending || inviteEmail.trim().length === 0 || disabled}
+              title={disabled ? t('campaign:readOnlyTooltip') : undefined}
+              className={`btn-primary ${disabled ? '!opacity-50 !cursor-not-allowed' : ''}`}
             >
-              Send
+              {t('campaign:send')}
             </button>
           </div>
         </div>
@@ -83,13 +67,14 @@ export function InvitePanel({
 
       {/* Invite by link */}
       <div>
-        <label className="label">Invite by Link</label>
+        <label className="label">{t('campaign:inviteByLink')}</label>
         <button
-          onClick={onInviteByLink}
-          disabled={inviteSending}
-          className="btn-ghost"
+          onClick={disabled ? undefined : onInviteByLink}
+          disabled={inviteSending || disabled}
+          title={disabled ? t('campaign:readOnlyTooltip') : undefined}
+          className={`btn-ghost ${disabled ? '!opacity-50 !cursor-not-allowed' : ''}`}
         >
-          Generate invite link
+          {t('campaign:generateInviteLink')}
         </button>
         {inviteLink && (
           <div className="mt-2 flex items-center gap-2">
@@ -103,7 +88,7 @@ export function InvitePanel({
               onClick={() => navigator.clipboard.writeText(inviteLink!)}
               className="btn-ghost text-xs"
             >
-              Copy
+              {t('common:copy')}
             </button>
           </div>
         )}
@@ -119,17 +104,19 @@ export function InvitePanel({
       {/* Pending invitations */}
       {invitations.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-muted">Pending Invitations</h4>
+          <h4 className="text-sm font-medium text-muted">{t('campaign:pendingInvitations')}</h4>
           {invitations.map(inv => (
             <div key={inv.id} className="flex items-center justify-between text-sm py-1">
               <span className="text-muted-foreground">
-                {inv.invitedEmail ?? 'Link invitation'}
+                {inv.invitedEmail ?? t('campaign:linkInvitation')}
               </span>
               <button
-                onClick={() => onRevoke(inv.id)}
-                className="text-xs text-danger hover:text-danger/80 transition-colors"
+                onClick={disabled ? undefined : () => onRevoke(inv.id)}
+                disabled={disabled}
+                title={disabled ? t('campaign:readOnlyTooltip') : undefined}
+                className={`text-xs text-danger transition-colors ${disabled ? 'opacity-50 cursor-not-allowed hover:text-danger' : 'hover:text-danger/80'}`}
               >
-                Revoke
+                {t('campaign:revoke')}
               </button>
             </div>
           ))}

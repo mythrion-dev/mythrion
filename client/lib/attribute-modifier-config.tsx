@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useTranslation, Trans } from 'react-i18next'
 import MythrionPopover from '@/lib/mythrion-popover'
 
 interface AttributeModifierConfigProps {
-  value: string
-  onChange: (formula: string) => void
-  placeholder?: string
+  readonly value: string
+  readonly onChange: (formula: string) => void
+  readonly placeholder?: string
 }
 
 interface ConfigValues {
@@ -50,23 +51,25 @@ export function parseFormula(formula: string): ConfigValues | null {
 
   // Pattern: floor((value - start) / every)
   const floorPattern = /floor\(\(value-(-?\d+)\)\/(-?\d+)\)/
-  const floorMatch = cleaned.match(floorPattern)
+  const floorMatch = floorPattern.exec(cleaned)
 
   if (!floorMatch) return null
 
-  const startingAttribute = parseInt(floorMatch[1], 10)
-  const every = parseInt(floorMatch[2], 10)
+  const startingAttribute = Number.parseInt(floorMatch[1], 10)
+  const every = Number.parseInt(floorMatch[2], 10)
 
   if (every <= 0) return null
 
-  // Check for multiplier pattern like "2*floor" or "-2*floor" anywhere in the string
+  // Check for multiplier pattern like "2*floor" or "-2*floor" anywhere in the string.
+  // The (?:^|[^\d]) prefix anchors the number so the engine never starts mid-digit-run,
+  // which keeps the match linear (S5843) while preserving capture group 1.
   let modifierIncrease = 1
-  const multiplierPattern = /(-?\d+)\*floor/
-  const multiplierMatch = cleaned.match(multiplierPattern)
+  const multiplierPattern = /(?:^|[^\d])(-?\d+)\*floor/
+  const multiplierMatch = multiplierPattern.exec(cleaned)
 
   if (multiplierMatch) {
-    const mult = parseInt(multiplierMatch[1], 10)
-    if (!isNaN(mult) && mult !== 0) {
+    const mult = Number.parseInt(multiplierMatch[1], 10)
+    if (!Number.isNaN(mult) && mult !== 0) {
       modifierIncrease = mult
     }
   }
@@ -82,9 +85,9 @@ export function parseFormula(formula: string): ConfigValues | null {
     // Match pattern: optional number, optional sign
     // The prefix may have a multiplier before floor, e.g. "5+3*" or "-2+1*".
     // Only match the base modifier (the leading number and its sign operator).
-    const prefixMatch = prefix.match(/^(-?\d+)\s*[+-]/)
+    const prefixMatch = /^(-?\d+)\s*[+-]/.exec(prefix)
     if (prefixMatch) {
-      modifier = parseInt(prefixMatch[1], 10)
+      modifier = Number.parseInt(prefixMatch[1], 10)
     }
   }
 
@@ -114,6 +117,7 @@ export default function AttributeModifierConfig({
   onChange,
   placeholder,
 }: AttributeModifierConfigProps) {
+  const { t } = useTranslation()
   const [config, setConfig] = useState<ConfigValues>(DEFAULT_CONFIG)
   const [showPreview, setShowPreview] = useState(false)
   const [initialized, setInitialized] = useState(false)
@@ -156,23 +160,17 @@ export default function AttributeModifierConfig({
   }, [generatedFormula, isCustomFormula, initialized, onChange])
 
   const handleConfigChange = (field: keyof ConfigValues, rawValue: string) => {
-    const numValue = parseInt(rawValue, 10)
+    const numValue = Number.parseInt(rawValue, 10)
     if (rawValue === '' || rawValue === '-') {
       // Allow clearing/typing intermediate state; enforce min of 1 for 'every'
       setConfig(prev => ({ ...prev, [field]: field === 'every' ? 1 : 0 }))
       return
     }
-    if (isNaN(numValue)) return
+    if (Number.isNaN(numValue)) return
 
     // Enforce min of 1 for 'every'
     const clamped = field === 'every' ? Math.max(1, numValue) : numValue
     setConfig(prev => ({ ...prev, [field]: clamped }))
-  }
-
-  const handleSwitchToCustom = () => {
-    setIsCustomFormula(true)
-    setCustomFormula(generatedFormula)
-    onChange(generatedFormula)
   }
 
   const handleCustomFormulaChange = (newFormula: string) => {
@@ -206,15 +204,14 @@ export default function AttributeModifierConfig({
       <div className="space-y-3">
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
           <p className="text-xs text-amber-400 mb-2">
-            This template uses a custom formula that cannot be represented with the simple configuration.
-            You can switch to the simple config, but it will replace your current formula.
+            {t('campaign:attrModifierCustomFormulaWarning')}
           </p>
           <textarea
             className="input-field resize-none font-mono text-sm"
             rows={2}
             value={customFormula}
             onChange={(e) => handleCustomFormulaChange(e.target.value)}
-            placeholder={placeholder ?? 'Type formula manually...'}
+            placeholder={placeholder ?? t('templates:formulaPlaceholder')}
             spellCheck={false}
           />
           <button
@@ -226,7 +223,7 @@ export default function AttributeModifierConfig({
             }}
             className="btn-ghost text-xs mt-2"
           >
-            Switch to Simple Configuration
+            {t('campaign:switchToSimpleConfig')}
           </button>
         </div>
       </div>
@@ -237,35 +234,34 @@ export default function AttributeModifierConfig({
     <div className="space-y-4">
       <div className="rounded-lg border border-border bg-background/30 p-4 space-y-4">
         <div className="flex items-center gap-2">
-          <h4 className="text-sm font-semibold text-foreground">Attribute Modifier Progression</h4>
+          <h4 className="text-sm font-semibold text-foreground">{t('campaign:attrModifierProgression')}</h4>
           <MythrionPopover
             side="top"
             align="center"
             content={
               <div className="space-y-3">
-                <h5 className="text-sm font-semibold text-primary">How does this work?</h5>
+                <h5 className="text-sm font-semibold text-primary">{t('campaign:howDoesThisWork')}</h5>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  This rule automatically calculates the modifier for every attribute in this template.
+                  {t('campaign:attrModifierProgressionHelp')}
                 </p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  <span className="text-foreground font-medium">Example:</span> if you set <span className="text-foreground font-medium">Every 5</span> attribute points, modifier increases by <span className="text-foreground font-medium">1</span>, starting at attribute <span className="text-foreground font-medium">10</span>, with modifier <span className="text-foreground font-medium">0</span>, the result will be:
+                  <span className="text-foreground font-medium">{t('campaign:exampleColon')}</span>{' '}
+                  <Trans i18nKey="campaign:attrModifierProgressionExample" values={{ every: 5, increase: 1, start: 10, base: 0 }} components={[<strong key="a" className="text-foreground font-medium" />]} />
                 </p>
                 <ul className="space-y-0.5 pl-3 border-l-2 border-primary/20">
-                  <li className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">10–14</span> → Modifier <span className="text-foreground">0</span>
-                  </li>
-                  <li className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">15–19</span> → Modifier <span className="text-foreground">+1</span>
-                  </li>
-                  <li className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">20–24</span> → Modifier <span className="text-foreground">+2</span>
-                  </li>
-                  <li className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">25–29</span> → Modifier <span className="text-foreground">+3</span>
-                  </li>
+                  {[
+                    { range: '10–14', mod: '0' },
+                    { range: '15–19', mod: '+1' },
+                    { range: '20–24', mod: '+2' },
+                    { range: '25–29', mod: '+3' },
+                  ].map(row => (
+                    <li key={row.range} className="text-xs text-muted-foreground">
+                      <Trans i18nKey="campaign:attrModifierExampleRow" values={{ range: row.range, mod: row.mod }} components={[<strong key="a" className="font-medium text-foreground" />, <span key="b" className="text-foreground" />]} />
+                    </li>
+                  ))}
                 </ul>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  You only configure this once, and every attribute will use the same progression automatically.
+                  {t('campaign:attrModifierProgressionFootnote')}
                 </p>
               </div>
             }
@@ -279,7 +275,7 @@ export default function AttributeModifierConfig({
         <div className="space-y-3">
           {/* Every N attribute points */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-foreground">Every</span>
+            <span className="text-sm text-foreground">{t('campaign:every')}</span>
             <input
               type="number"
               className="input-field w-20 text-sm text-center"
@@ -288,12 +284,12 @@ export default function AttributeModifierConfig({
               min={1}
               step={1}
             />
-            <span className="text-sm text-foreground">attribute points</span>
+            <span className="text-sm text-foreground">{t('campaign:attributePoints')}</span>
           </div>
 
           {/* Modifier increases by */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-foreground">the modifier increases by</span>
+            <span className="text-sm text-foreground">{t('campaign:modifierIncreasesBy')}</span>
             <input
               type="number"
               className="input-field w-20 text-sm text-center"
@@ -302,12 +298,12 @@ export default function AttributeModifierConfig({
               min={1}
               step={1}
             />
-            <span className="text-sm text-foreground">point(s).</span>
+            <span className="text-sm text-foreground">{t('campaign:pointSuffix')}</span>
           </div>
 
           {/* Starting at attribute */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-foreground">Starting at attribute</span>
+            <span className="text-sm text-foreground">{t('campaign:startingAtAttribute')}</span>
             <input
               type="number"
               className="input-field w-20 text-sm text-center"
@@ -319,7 +315,7 @@ export default function AttributeModifierConfig({
 
           {/* With modifier */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-foreground">with modifier</span>
+            <span className="text-sm text-foreground">{t('campaign:withModifier')}</span>
             <input
               type="number"
               className="input-field w-20 text-sm text-center"
@@ -338,21 +334,21 @@ export default function AttributeModifierConfig({
         onClick={() => setShowPreview(!showPreview)}
         className="btn-ghost text-sm w-full"
       >
-        {showPreview ? 'Hide Preview' : 'Preview Progression'}
+        {showPreview ? t('campaign:hidePreview') : t('campaign:previewProgression')}
       </button>
 
       {/* Preview modal/section */}
       {showPreview && (
         <div className="rounded-lg border border-primary/20 bg-background/50 overflow-hidden animate-slide-up">
           <div className="px-4 py-3 border-b border-border bg-background/30">
-            <h4 className="text-sm font-semibold text-foreground">Modifier Progression Preview</h4>
+            <h4 className="text-sm font-semibold text-foreground">{t('campaign:attrModifierProgressionPreview')}</h4>
           </div>
           <div className="max-h-64 overflow-y-auto">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-background/80">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-muted uppercase tracking-wider">Attribute</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-muted uppercase tracking-wider">Modifier</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-muted uppercase tracking-wider">{t('campaign:attribute')}</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-muted uppercase tracking-wider">{t('campaign:modifier')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -367,7 +363,7 @@ export default function AttributeModifierConfig({
           </div>
           {progression.length === 0 && (
             <div className="px-4 py-8 text-center text-sm text-muted italic">
-              Configure the fields above to see a preview of the modifier progression.
+              {t('campaign:attrModifierPreviewEmpty')}
             </div>
           )}
         </div>

@@ -3,16 +3,144 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react'
 
 interface MythrionPopoverProps {
-  children: ReactNode
-  content: ReactNode
-  side?: 'top' | 'bottom' | 'left' | 'right'
-  align?: 'start' | 'center' | 'end'
-  sideOffset?: number
-  alignOffset?: number
-  className?: string
+  readonly children: ReactNode
+  readonly content: ReactNode
+  readonly side?: 'top' | 'bottom' | 'left' | 'right'
+  readonly align?: 'start' | 'center' | 'end'
+  readonly sideOffset?: number
+  readonly alignOffset?: number
+  readonly className?: string
   /** When true, the popover is controlled externally */
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
+  readonly open?: boolean
+  readonly onOpenChange?: (open: boolean) => void
+}
+
+type PopoverSide = 'top' | 'bottom' | 'left' | 'right'
+type PopoverAlign = 'start' | 'center' | 'end'
+
+interface PopoverRect {
+  readonly top: number
+  readonly bottom: number
+  readonly left: number
+  readonly right: number
+  readonly width: number
+  readonly height: number
+}
+
+function getBasePosition(
+  side: PopoverSide,
+  trigger: PopoverRect,
+  popover: PopoverRect,
+  sideOffset: number,
+): { top: number; left: number } {
+  let top = 0
+  let left = 0
+  if (side === 'bottom') {
+    top = trigger.bottom + sideOffset
+  } else if (side === 'top') {
+    top = trigger.top - popover.height - sideOffset
+  } else if (side === 'left') {
+    left = trigger.left - popover.width - sideOffset
+  } else {
+    left = trigger.right + sideOffset
+  }
+  return { top, left }
+}
+
+function applyAlignment(
+  side: PopoverSide,
+  align: PopoverAlign,
+  trigger: PopoverRect,
+  popover: PopoverRect,
+  alignOffset: number,
+  pos: { top: number; left: number },
+): { top: number; left: number } {
+  let { top, left } = pos
+  if (side === 'top' || side === 'bottom') {
+    if (align === 'start') {
+      left = trigger.left + alignOffset
+    } else if (align === 'center') {
+      left = trigger.left + trigger.width / 2 - popover.width / 2 + alignOffset
+    } else {
+      left = trigger.right - popover.width + alignOffset
+    }
+  } else if (align === 'start') {
+    top = trigger.top + alignOffset
+  } else if (align === 'center') {
+    top = trigger.top + trigger.height / 2 - popover.height / 2 + alignOffset
+  } else {
+    top = trigger.bottom - popover.height + alignOffset
+  }
+  return { top, left }
+}
+
+interface FlipHorizontalOptions {
+  readonly side: PopoverSide
+  readonly align: PopoverAlign
+  readonly trigger: PopoverRect
+  readonly popover: PopoverRect
+  readonly sideOffset: number
+  readonly alignOffset: number
+  readonly viewportWidth: number
+  readonly margin: number
+  readonly pos: { top: number; left: number }
+}
+
+function flipHorizontal(options: FlipHorizontalOptions): { top: number; left: number } {
+  const { side, align, trigger, popover, sideOffset, alignOffset, viewportWidth, margin, pos } = options
+  let { top, left } = pos
+  if (left + popover.width > viewportWidth - margin) {
+    if (side === 'bottom' || side === 'top') {
+      left = viewportWidth - popover.width - margin
+    } else if (side === 'right') {
+      // Flip to left
+      left = trigger.left - popover.width - sideOffset
+      if (align === 'center') {
+        top = trigger.top + trigger.height / 2 - popover.height / 2 + alignOffset
+      }
+    }
+  }
+  if (left < margin) {
+    if (side === 'bottom' || side === 'top') {
+      left = margin
+    } else if (side === 'left') {
+      // Flip to right
+      left = trigger.right + sideOffset
+      if (align === 'center') {
+        top = trigger.top + trigger.height / 2 - popover.height / 2 + alignOffset
+      }
+    }
+  }
+  return { top, left }
+}
+
+function flipVertical(
+  side: PopoverSide,
+  trigger: PopoverRect,
+  popover: PopoverRect,
+  sideOffset: number,
+  viewportHeight: number,
+  margin: number,
+  top: number,
+): number {
+  let result = top
+  if (result + popover.height > viewportHeight - margin) {
+    if (side === 'left' || side === 'right') {
+      result = viewportHeight - popover.height - margin
+    } else if (side === 'bottom') {
+      // Flip to top
+      result = trigger.top - popover.height - sideOffset
+    }
+  }
+  if (result < margin) {
+    if (side === 'left' || side === 'right') {
+      result = margin
+    } else if (side === 'top') {
+      // Flip to bottom
+      result = trigger.bottom + sideOffset
+    }
+  }
+  return result
 }
 
 export default function MythrionPopover({
@@ -30,10 +158,11 @@ export default function MythrionPopover({
   const isControlled = controlledOpen !== undefined
   const isOpen = isControlled ? controlledOpen : internalOpen
 
-  const triggerRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
   const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({})
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const mouseInPopoverRef = useRef(false)
   const [isTouchDevice, setIsTouchDevice] = useState(false)
 
   const setOpen = useCallback(
@@ -46,7 +175,7 @@ export default function MythrionPopover({
 
   // Detect touch device
   useEffect(() => {
-    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0)
+    setIsTouchDevice(navigator.maxTouchPoints > 0)
   }, [])
 
   // Position the popover
@@ -57,110 +186,17 @@ export default function MythrionPopover({
     const popover = popoverRef.current.getBoundingClientRect()
     const viewportWidth = window.innerWidth
     const viewportHeight = window.innerHeight
-
-    let top = 0
-    let left = 0
-
-    // Calculate base position
-    switch (side) {
-      case 'bottom':
-        top = trigger.bottom + sideOffset
-        break
-      case 'top':
-        top = trigger.top - popover.height - sideOffset
-        break
-      case 'left':
-        left = trigger.left - popover.width - sideOffset
-        break
-      case 'right':
-        left = trigger.right + sideOffset
-        break
-    }
-
-    // Horizontal alignment
-    switch (align) {
-      case 'start':
-        if (side === 'top' || side === 'bottom') left = trigger.left + alignOffset
-        break
-      case 'center':
-        if (side === 'top' || side === 'bottom')
-          left = trigger.left + trigger.width / 2 - popover.width / 2 + alignOffset
-        break
-      case 'end':
-        if (side === 'top' || side === 'bottom') left = trigger.right - popover.width + alignOffset
-        break
-    }
-
-    // Vertical alignment for left/right
-    if (side === 'left' || side === 'right') {
-      switch (align) {
-        case 'start':
-          top = trigger.top + alignOffset
-          break
-        case 'center':
-          top = trigger.top + trigger.height / 2 - popover.height / 2 + alignOffset
-          break
-        case 'end':
-          top = trigger.bottom - popover.height + alignOffset
-          break
-      }
-    }
-
-    // Clamp to viewport
     const margin = 8
 
-    // Flip horizontally if needed
-    if (left + popover.width > viewportWidth - margin) {
-      if (side === 'bottom' || side === 'top') {
-        left = viewportWidth - popover.width - margin
-      } else if (side === 'right') {
-        // Flip to left
-        left = trigger.left - popover.width - sideOffset
-
-        switch (align) {
-          case 'center':
-            top = trigger.top + trigger.height / 2 - popover.height / 2 + alignOffset
-            break
-        }
-      }
-    }
-    if (left < margin) {
-      if (side === 'bottom' || side === 'top') {
-        left = margin
-      } else if (side === 'left') {
-        // Flip to right
-        left = trigger.right + sideOffset
-
-        switch (align) {
-          case 'center':
-            top = trigger.top + trigger.height / 2 - popover.height / 2 + alignOffset
-            break
-        }
-      }
-    }
-
-    // Flip vertically if needed
-    if (top + popover.height > viewportHeight - margin) {
-      if (side === 'left' || side === 'right') {
-        top = viewportHeight - popover.height - margin
-      } else if (side === 'bottom') {
-        // Flip to top
-        top = trigger.top - popover.height - sideOffset
-      }
-    }
-    if (top < margin) {
-      if (side === 'left' || side === 'right') {
-        top = margin
-      } else if (side === 'top') {
-        // Flip to bottom
-        top = trigger.bottom + sideOffset
-      }
-    }
+    let pos = getBasePosition(side, trigger, popover, sideOffset)
+    pos = applyAlignment(side, align, trigger, popover, alignOffset, pos)
+    pos = flipHorizontal({ side, align, trigger, popover, sideOffset, alignOffset, viewportWidth, margin, pos })
+    const top = flipVertical(side, trigger, popover, sideOffset, viewportHeight, margin, pos.top)
 
     setPopoverStyle({
       position: 'fixed',
       top: `${top}px`,
-      left: `${left}px`,
+      left: `${pos.left}px`,
       zIndex: 100,
     })
   }, [side, align, sideOffset, alignOffset])
@@ -224,6 +260,8 @@ export default function MythrionPopover({
 
   const handleMouseLeave = () => {
     if (isTouchDevice) return
+    if (mouseInPopoverRef.current) return
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
     hoverTimeoutRef.current = setTimeout(() => {
       setOpen(false)
     }, 150)
@@ -236,12 +274,22 @@ export default function MythrionPopover({
     setOpen(!isOpen)
   }
 
+  const handleTriggerKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      e.stopPropagation()
+      setOpen(!isOpen)
+    }
+  }
+
   const handlePopoverMouseEnter = () => {
+    mouseInPopoverRef.current = true
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
   }
 
   const handlePopoverMouseLeave = () => {
     if (isTouchDevice) return
+    mouseInPopoverRef.current = false
     hoverTimeoutRef.current = setTimeout(() => {
       setOpen(false)
     }, 150)
@@ -256,15 +304,17 @@ export default function MythrionPopover({
 
   return (
     <>
-      <div
+      <button
         ref={triggerRef}
+        type="button"
         className="inline-flex items-center cursor-help"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onClick={handleTriggerClick}
+        onKeyDown={handleTriggerKeyDown}
       >
         {children}
-      </div>
+      </button>
 
       {isOpen && (
         <div

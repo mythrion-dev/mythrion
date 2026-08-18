@@ -53,6 +53,11 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   User: 'User',
   Adventure: 'Adventure',
+  JoinRequest: 'JoinRequest',
+  Book: 'Book',
+  Notebook: 'Notebook',
+  NotebookFolder: 'NotebookFolder',
+  NotebookPage: 'NotebookPage',
   CampaignMember: 'CampaignMember',
   CampaignInvitation: 'CampaignInvitation',
   GoogleAccount: 'GoogleAccount',
@@ -84,20 +89,24 @@ export const ModelName = {
   SheetResistanceComponent: 'SheetResistanceComponent',
   SheetResistanceAttributeModifier: 'SheetResistanceAttributeModifier',
   SheetProfessionalSkill: 'SheetProfessionalSkill',
+  SheetProfessionalSkillProfileValue: 'SheetProfessionalSkillProfileValue',
   CharacterAbility: 'CharacterAbility',
   CharacterAbilityLevel: 'CharacterAbilityLevel',
   SummonSkill: 'SummonSkill',
-  SummonSkillProfileValue: 'SummonSkillProfileValue',
+  SummonResistance: 'SummonResistance',
   SummonAttribute: 'SummonAttribute',
   SummonArmorClassValue: 'SummonArmorClassValue',
-  SummonArmorClassAttributeValue: 'SummonArmorClassAttributeValue',
   SummonHealth: 'SummonHealth',
-  SummonResistanceValue: 'SummonResistanceValue',
-  SummonResistanceComponentValue: 'SummonResistanceComponentValue',
   CharacterInventoryItem: 'CharacterInventoryItem',
   CharacterStory: 'CharacterStory',
   TemplateCharacterSection: 'TemplateCharacterSection',
-  CharacterSectionEntry: 'CharacterSectionEntry'
+  CharacterSectionEntry: 'CharacterSectionEntry',
+  SubscriptionPlan: 'SubscriptionPlan',
+  UserSubscription: 'UserSubscription',
+  SubscriptionInvoice: 'SubscriptionInvoice',
+  TwoFactorChallenge: 'TwoFactorChallenge',
+  RecoveryCode: 'RecoveryCode',
+  AuditLog: 'AuditLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -122,6 +131,14 @@ export const UserScalarFieldEnum = {
   passwordHash: 'passwordHash',
   displayName: 'displayName',
   onboardingComplete: 'onboardingComplete',
+  twoFactorEnabled: 'twoFactorEnabled',
+  emailVerified: 'emailVerified',
+  emailVerifiedAt: 'emailVerifiedAt',
+  verificationTokenHash: 'verificationTokenHash',
+  verificationTokenExpiresAt: 'verificationTokenExpiresAt',
+  passwordResetTokenHash: 'passwordResetTokenHash',
+  passwordResetTokenExpiresAt: 'passwordResetTokenExpiresAt',
+  language: 'language',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -135,12 +152,83 @@ export const AdventureScalarFieldEnum = {
   campaign: 'campaign',
   synopsis: 'synopsis',
   maxPlayers: 'maxPlayers',
+  sessionWeekday: 'sessionWeekday',
+  sessionTime: 'sessionTime',
+  sessionType: 'sessionType',
   ownerId: 'ownerId',
+  isPublic: 'isPublic',
+  templateSource: 'templateSource',
+  templateSnapshot: 'templateSnapshot',
+  originalTemplateId: 'originalTemplateId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type AdventureScalarFieldEnum = (typeof AdventureScalarFieldEnum)[keyof typeof AdventureScalarFieldEnum]
+
+
+export const JoinRequestScalarFieldEnum = {
+  id: 'id',
+  adventureId: 'adventureId',
+  userId: 'userId',
+  status: 'status',
+  message: 'message',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type JoinRequestScalarFieldEnum = (typeof JoinRequestScalarFieldEnum)[keyof typeof JoinRequestScalarFieldEnum]
+
+
+export const BookScalarFieldEnum = {
+  id: 'id',
+  adventureId: 'adventureId',
+  name: 'name',
+  visibility: 'visibility',
+  fileLength: 'fileLength',
+  gridfsFileId: 'gridfsFileId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BookScalarFieldEnum = (typeof BookScalarFieldEnum)[keyof typeof BookScalarFieldEnum]
+
+
+export const NotebookScalarFieldEnum = {
+  id: 'id',
+  adventureId: 'adventureId',
+  userId: 'userId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotebookScalarFieldEnum = (typeof NotebookScalarFieldEnum)[keyof typeof NotebookScalarFieldEnum]
+
+
+export const NotebookFolderScalarFieldEnum = {
+  id: 'id',
+  notebookId: 'notebookId',
+  name: 'name',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotebookFolderScalarFieldEnum = (typeof NotebookFolderScalarFieldEnum)[keyof typeof NotebookFolderScalarFieldEnum]
+
+
+export const NotebookPageScalarFieldEnum = {
+  id: 'id',
+  notebookId: 'notebookId',
+  folderId: 'folderId',
+  title: 'title',
+  content: 'content',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotebookPageScalarFieldEnum = (typeof NotebookPageScalarFieldEnum)[keyof typeof NotebookPageScalarFieldEnum]
 
 
 export const CampaignMemberScalarFieldEnum = {
@@ -203,6 +291,10 @@ export type RefreshTokenScalarFieldEnum = (typeof RefreshTokenScalarFieldEnum)[k
 export const TemplateScalarFieldEnum = {
   id: 'id',
   adventureId: 'adventureId',
+  ownerId: 'ownerId',
+  isPublic: 'isPublic',
+  useCount: 'useCount',
+  createdFromTemplateId: 'createdFromTemplateId',
   name: 'name',
   description: 'description',
   attributeModifierFormula: 'attributeModifierFormula',
@@ -310,6 +402,7 @@ export const CharacterSheetScalarFieldEnum = {
   adventureId: 'adventureId',
   templateId: 'templateId',
   ownerId: 'ownerId',
+  assignedMemberId: 'assignedMemberId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -565,6 +658,18 @@ export const SheetProfessionalSkillScalarFieldEnum = {
 export type SheetProfessionalSkillScalarFieldEnum = (typeof SheetProfessionalSkillScalarFieldEnum)[keyof typeof SheetProfessionalSkillScalarFieldEnum]
 
 
+export const SheetProfessionalSkillProfileValueScalarFieldEnum = {
+  id: 'id',
+  sheetProfessionalSkillId: 'sheetProfessionalSkillId',
+  profileId: 'profileId',
+  optionId: 'optionId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SheetProfessionalSkillProfileValueScalarFieldEnum = (typeof SheetProfessionalSkillProfileValueScalarFieldEnum)[keyof typeof SheetProfessionalSkillProfileValueScalarFieldEnum]
+
+
 export const CharacterAbilityScalarFieldEnum = {
   id: 'id',
   sheetId: 'sheetId',
@@ -600,8 +705,8 @@ export type CharacterAbilityLevelScalarFieldEnum = (typeof CharacterAbilityLevel
 export const SummonSkillScalarFieldEnum = {
   id: 'id',
   abilityId: 'abilityId',
-  skillId: 'skillId',
-  selectedAttributeId: 'selectedAttributeId',
+  name: 'name',
+  manualValue: 'manualValue',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -609,16 +714,16 @@ export const SummonSkillScalarFieldEnum = {
 export type SummonSkillScalarFieldEnum = (typeof SummonSkillScalarFieldEnum)[keyof typeof SummonSkillScalarFieldEnum]
 
 
-export const SummonSkillProfileValueScalarFieldEnum = {
+export const SummonResistanceScalarFieldEnum = {
   id: 'id',
-  summonSkillId: 'summonSkillId',
-  profileId: 'profileId',
-  optionId: 'optionId',
+  abilityId: 'abilityId',
+  name: 'name',
+  value: 'value',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type SummonSkillProfileValueScalarFieldEnum = (typeof SummonSkillProfileValueScalarFieldEnum)[keyof typeof SummonSkillProfileValueScalarFieldEnum]
+export type SummonResistanceScalarFieldEnum = (typeof SummonResistanceScalarFieldEnum)[keyof typeof SummonResistanceScalarFieldEnum]
 
 
 export const SummonAttributeScalarFieldEnum = {
@@ -636,26 +741,12 @@ export type SummonAttributeScalarFieldEnum = (typeof SummonAttributeScalarFieldE
 export const SummonArmorClassValueScalarFieldEnum = {
   id: 'id',
   abilityId: 'abilityId',
-  armorClassId: 'armorClassId',
-  fieldId: 'fieldId',
   value: 'value',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type SummonArmorClassValueScalarFieldEnum = (typeof SummonArmorClassValueScalarFieldEnum)[keyof typeof SummonArmorClassValueScalarFieldEnum]
-
-
-export const SummonArmorClassAttributeValueScalarFieldEnum = {
-  id: 'id',
-  abilityId: 'abilityId',
-  acAttributeModifierId: 'acAttributeModifierId',
-  selectedAttributeId: 'selectedAttributeId',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type SummonArmorClassAttributeValueScalarFieldEnum = (typeof SummonArmorClassAttributeValueScalarFieldEnum)[keyof typeof SummonArmorClassAttributeValueScalarFieldEnum]
 
 
 export const SummonHealthScalarFieldEnum = {
@@ -669,30 +760,6 @@ export const SummonHealthScalarFieldEnum = {
 } as const
 
 export type SummonHealthScalarFieldEnum = (typeof SummonHealthScalarFieldEnum)[keyof typeof SummonHealthScalarFieldEnum]
-
-
-export const SummonResistanceValueScalarFieldEnum = {
-  id: 'id',
-  abilityId: 'abilityId',
-  resistanceId: 'resistanceId',
-  manualValue: 'manualValue',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type SummonResistanceValueScalarFieldEnum = (typeof SummonResistanceValueScalarFieldEnum)[keyof typeof SummonResistanceValueScalarFieldEnum]
-
-
-export const SummonResistanceComponentValueScalarFieldEnum = {
-  id: 'id',
-  abilityId: 'abilityId',
-  componentId: 'componentId',
-  value: 'value',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type SummonResistanceComponentValueScalarFieldEnum = (typeof SummonResistanceComponentValueScalarFieldEnum)[keyof typeof SummonResistanceComponentValueScalarFieldEnum]
 
 
 export const CharacterInventoryItemScalarFieldEnum = {
@@ -752,12 +819,107 @@ export const CharacterSectionEntryScalarFieldEnum = {
 export type CharacterSectionEntryScalarFieldEnum = (typeof CharacterSectionEntryScalarFieldEnum)[keyof typeof CharacterSectionEntryScalarFieldEnum]
 
 
+export const SubscriptionPlanScalarFieldEnum = {
+  id: 'id',
+  slug: 'slug',
+  name: 'name',
+  description: 'description',
+  price: 'price',
+  pgPlanId: 'pgPlanId',
+  limits: 'limits',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SubscriptionPlanScalarFieldEnum = (typeof SubscriptionPlanScalarFieldEnum)[keyof typeof SubscriptionPlanScalarFieldEnum]
+
+
+export const UserSubscriptionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  planId: 'planId',
+  pgSubscriptionId: 'pgSubscriptionId',
+  status: 'status',
+  graceEndsAt: 'graceEndsAt',
+  currentPeriodStart: 'currentPeriodStart',
+  currentPeriodEnd: 'currentPeriodEnd',
+  cancelledAt: 'cancelledAt',
+  cancelAtPeriodEnd: 'cancelAtPeriodEnd',
+  pgCustomerId: 'pgCustomerId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserSubscriptionScalarFieldEnum = (typeof UserSubscriptionScalarFieldEnum)[keyof typeof UserSubscriptionScalarFieldEnum]
+
+
+export const SubscriptionInvoiceScalarFieldEnum = {
+  id: 'id',
+  subscriptionId: 'subscriptionId',
+  pgInvoiceId: 'pgInvoiceId',
+  amount: 'amount',
+  currency: 'currency',
+  status: 'status',
+  paidAt: 'paidAt',
+  dueDate: 'dueDate',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SubscriptionInvoiceScalarFieldEnum = (typeof SubscriptionInvoiceScalarFieldEnum)[keyof typeof SubscriptionInvoiceScalarFieldEnum]
+
+
+export const TwoFactorChallengeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  purpose: 'purpose',
+  codeHash: 'codeHash',
+  expiresAt: 'expiresAt',
+  attempts: 'attempts',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type TwoFactorChallengeScalarFieldEnum = (typeof TwoFactorChallengeScalarFieldEnum)[keyof typeof TwoFactorChallengeScalarFieldEnum]
+
+
+export const RecoveryCodeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  codeHash: 'codeHash',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type RecoveryCodeScalarFieldEnum = (typeof RecoveryCodeScalarFieldEnum)[keyof typeof RecoveryCodeScalarFieldEnum]
+
+
+export const AuditLogScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  event: 'event',
+  ip: 'ip',
+  userAgent: 'userAgent',
+  createdAt: 'createdAt'
+} as const
+
+export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {
@@ -774,4 +936,13 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 

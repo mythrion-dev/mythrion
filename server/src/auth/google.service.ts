@@ -56,26 +56,36 @@ export class GoogleService {
         },
       })
 
-      // Auto-complete onboarding if not done
-      if (!existingUser.onboardingComplete) {
-        await this.prisma.user.update({
-          where: { id: existingUser.id },
-          data: {
-            displayName: existingUser.displayName ?? displayName,
-            onboardingComplete: true,
-          },
-        })
-      }
+      // Google OAuth is proof-of-identity: mark the email verified. Also
+      // auto-complete onboarding if not done.
+      await this.prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          emailVerified: true,
+          ...(existingUser.emailVerified
+            ? {}
+            : { emailVerifiedAt: new Date() }),
+          ...(!existingUser.onboardingComplete
+            ? {
+                displayName: existingUser.displayName ?? displayName,
+                onboardingComplete: true,
+              }
+            : {}),
+        },
+      })
 
       return this.tokenService.generateTokens(existingUser.id, existingUser.email)
     }
 
-    // 3. Create new User + GoogleAccount
+    // 3. Create new User + GoogleAccount (Google accounts are verified by
+    //    default — no verification email needed)
     const newUser = await this.prisma.user.create({
       data: {
         email,
         displayName,
         passwordHash: undefined,
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
         googleAccount: {
           create: {
             googleId,

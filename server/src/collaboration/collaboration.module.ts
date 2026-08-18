@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { JwtModule } from '@nestjs/jwt'
-import { EmailService } from '../email/email.service.js'
+import { EmailModule } from '../email/email.module.js'
+import { SubscriptionModule } from '../subscription/subscription.module.js'
 import { MembershipService } from '../membership/membership.service.js'
 import { MembershipController } from '../membership/membership.controller.js'
 import { InvitationService } from '../invitation/invitation.service.js'
@@ -13,14 +14,11 @@ import { PrismaService } from '../prisma.service.js'
       secret: process.env.JWT_SECRET ?? 'dev-secret-change-me',
       signOptions: { expiresIn: '7d' },
     }),
+    EmailModule,
+    SubscriptionModule,
   ],
   controllers: [InvitationController, MembershipController],
-  providers: [
-    EmailService,
-    MembershipService,
-    InvitationService,
-    PrismaService,
-  ],
-  exports: [EmailService, MembershipService, InvitationService],
+  providers: [MembershipService, InvitationService, PrismaService],
+  exports: [MembershipService, InvitationService],
 })
 export class CollaborationModule {}

@@ -1,24 +1,25 @@
 import { IsString, IsOptional, IsInt, Min } from 'class-validator'
 import { Type } from 'class-transformer'
+import { i18nValidationMessage } from 'nestjs-i18n'
 
 export class CreateCharacterSheetDto {
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   characterName!: string
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   playerName?: string
 
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: i18nValidationMessage('validation.isInt') })
+  @Min(1, { message: i18nValidationMessage('validation.min') })
   @IsOptional()
   @Type(() => Number)
   level?: number
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   templateId!: string
 
-  @IsString()
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   adventureId?: string
 }

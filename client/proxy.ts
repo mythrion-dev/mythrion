@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const publicPaths = ['/', '/login', '/register', '/invite', '/auth', '/onboarding']
+const publicPaths = ['/', '/login', '/register', '/invite', '/auth', '/onboarding', '/verify-email']
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -15,7 +15,7 @@ export async function proxy(request: NextRequest) {
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon.ico') ||
-    pathname.match(/\.(svg|png|jpg|jpeg|gif|ico|woff2?|ttf|eot)$/)
+    /\.(svg|png|jpg|jpeg|gif|ico|woff2?|ttf|eot)$/.exec(pathname)
   ) {
     return NextResponse.next()
   }

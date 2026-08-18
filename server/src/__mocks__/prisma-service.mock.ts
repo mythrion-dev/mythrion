@@ -17,6 +17,7 @@ function mockModel() {
     findFirst: jest.fn().mockResolvedValue(null),
     findMany: jest.fn().mockResolvedValue([]),
     create: jest.fn().mockResolvedValue({}),
+    createMany: jest.fn().mockResolvedValue({ count: 0 }),
     update: jest.fn().mockResolvedValue({}),
     updateMany: jest.fn().mockResolvedValue({ count: 0 }),
     delete: jest.fn().mockResolvedValue({}),
@@ -50,6 +51,8 @@ export function createMockPrismaService() {
     campaignMember: mockModel(),
     campaignInvitation: mockModel(),
     refreshToken: mockModel(),
+    twoFactorChallenge: mockModel(),
+    recoveryCode: mockModel(),
     template: mockModel(),
     templateArmorClass: mockModel(),
     templateResistance: mockModel(),
@@ -60,6 +63,9 @@ export function createMockPrismaService() {
     templateCharacterSection: mockModel(),
     skillModifierProfile: mockModel(),
     profileOption: mockModel(),
+    subscriptionPlan: mockModel(),
+    userSubscription: mockModel(),
+    subscriptionInvoice: mockModel(),
     characterSheet: mockModel(),
     characterSheetValue: mockModel(),
     characterSheetFieldValue: mockModel(),
@@ -79,8 +85,10 @@ export function createMockPrismaService() {
     sheetResistanceComponent: mockModel(),
     sheetResistanceAttributeModifier: mockModel(),
     sheetProfessionalSkill: mockModel(),
+    sheetProfessionalSkillProfileValue: mockModel(),
     summonSkill: mockModel(),
     summonSkillProfileValue: mockModel(),
+    summonResistance: mockModel(),
     summonAttribute: mockModel(),
     summonArmorClassValue: mockModel(),
     summonArmorClassAttributeValue: mockModel(),
@@ -91,9 +99,12 @@ export function createMockPrismaService() {
     armorClassAttributeModifier: mockModel(),
     resistanceComponent: mockModel(),
     resistanceAttributeModifier: mockModel(),
+    joinRequest: mockModel(),
+    auditLog: mockModel(),
     $connect: jest.fn().mockResolvedValue(undefined),
     $disconnect: jest.fn().mockResolvedValue(undefined),
     $queryRawUnsafe: jest.fn().mockResolvedValue([{ 1: 1 }]),
+    $queryRaw: jest.fn().mockResolvedValue([{ total: 0, ids: [] }]),
     $transaction: jest.fn().mockImplementation((cb: any) =>
       typeof cb === 'function' ? cb(undefined) : Promise.resolve([]),
     ),
@@ -168,6 +179,15 @@ export function createMockPrismaServiceWithData(
       const record = { ...args.data, id: args.data.id ?? crypto.randomUUID() };
       store[modelName] = [...(store[modelName] ?? []), record];
       return Promise.resolve(record);
+    });
+
+    const createMany = jest.fn().mockImplementation((args: { data: any[] }) => {
+      const records = args.data.map((r) => ({
+        ...r,
+        id: r.id ?? crypto.randomUUID(),
+      }));
+      store[modelName] = [...(store[modelName] ?? []), ...records];
+      return Promise.resolve({ count: records.length });
     });
 
     const update = jest.fn().mockImplementation(
@@ -263,6 +283,7 @@ export function createMockPrismaServiceWithData(
       findFirst,
       findMany,
       create,
+      createMany,
       update,
       updateMany,
       delete: delete_,
@@ -279,6 +300,8 @@ export function createMockPrismaServiceWithData(
     'campaignMember',
     'campaignInvitation',
     'refreshToken',
+    'twoFactorChallenge',
+    'recoveryCode',
     'template',
     'templateArmorClass',
     'templateResistance',
@@ -289,6 +312,9 @@ export function createMockPrismaServiceWithData(
     'templateCharacterSection',
     'skillModifierProfile',
     'profileOption',
+    'subscriptionPlan',
+    'userSubscription',
+    'subscriptionInvoice',
     'characterSheet',
     'characterSheetValue',
     'characterSheetFieldValue',
@@ -308,8 +334,10 @@ export function createMockPrismaServiceWithData(
     'sheetResistanceComponent',
     'sheetResistanceAttributeModifier',
     'sheetProfessionalSkill',
+    'sheetProfessionalSkillProfileValue',
     'summonSkill',
     'summonSkillProfileValue',
+    'summonResistance',
     'summonAttribute',
     'summonArmorClassValue',
     'summonArmorClassAttributeValue',
@@ -320,6 +348,8 @@ export function createMockPrismaServiceWithData(
     'armorClassAttributeModifier',
     'resistanceComponent',
     'resistanceAttributeModifier',
+    'joinRequest',
+    'auditLog',
   ] as const;
 
   const service: Record<string, any> = {};
@@ -331,6 +361,7 @@ export function createMockPrismaServiceWithData(
   service.$connect = jest.fn().mockResolvedValue(undefined);
   service.$disconnect = jest.fn().mockResolvedValue(undefined);
   service.$queryRawUnsafe = jest.fn().mockResolvedValue([{ 1: 1 }]);
+  service.$queryRaw = jest.fn().mockResolvedValue([{ total: 0, ids: [] }]);
   service.$transaction = jest.fn().mockImplementation((cb: any) =>
     typeof cb === 'function' ? cb(undefined) : Promise.resolve([]),
   );

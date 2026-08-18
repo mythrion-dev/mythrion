@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
+import { I18nService } from 'nestjs-i18n'
 import { RedisService } from '../redis/redis.service.js'
 
 export const RATE_LIMIT_KEY = 'rate-limit'
@@ -28,6 +29,7 @@ export class RateLimitGuard implements CanActivate {
   constructor(
     private readonly redis: RedisService,
     private readonly reflector: Reflector,
+    private readonly i18n: I18nService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -49,7 +51,6 @@ export class RateLimitGuard implements CanActivate {
     // Clean IP (strip IPv6 prefix)
     const cleanIp = ip.replace(/^::ffff:/, '')
     const rateKey = `ratelimit:${route}:${cleanIp}`
-    const now = Math.floor(Date.now() / 1000)
 
     try {
       // Get current count and TTL
@@ -67,7 +68,7 @@ export class RateLimitGuard implements CanActivate {
         throw new HttpException(
           {
             statusCode: HttpStatus.TOO_MANY_REQUESTS,
-            message: `Too many requests. Try again in ${retryAfter} seconds.`,
+            message: this.i18n.t('auth.tooManyRequests', { args: { retryAfter } }),
             error: 'Too Many Requests',
             retryAfterSeconds: retryAfter,
           },

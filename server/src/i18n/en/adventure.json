@@ -1,0 +1,9 @@
+{
+  "notFound": "Campaign not found",
+  "notMemberAdventure": "You are not a member of this campaign",
+  "notFoundOrNotPublic": "Campaign not found or is not public",
+  "noTemplateAttached": "No template is attached to this campaign. Attach a template via the campaign settings first, then create NPCs.",
+  "npcNotFound": "NPC not found",
+  "npcNotBelong": "NPC does not belong to this campaign",
+  "notValidNpcSheet": "Not a valid NPC sheet"
+}

@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
+import { Select } from '@/components/shared/Select'
+import type { SheetPermissions } from './types'
 
 interface ResistanceComponentValue {
   componentId: string
@@ -36,52 +39,57 @@ interface TemplateAttribute {
 interface NewResistanceDraft {
   name: string
   calculationType: 'MANUAL' | 'CALCULATED'
-  components: { name: string; editableByPlayer: boolean; defaultValue: string }[]
+  components: { id: string; name: string; editableByPlayer: boolean; defaultValue: string }[]
   attributeModifiers: { attributeId: string; attributeKey: string; attributeName: string; enabled: boolean }[]
 }
+
+const genId = () => crypto.randomUUID()
 
 function emptyDraft(): NewResistanceDraft {
   return { name: '', calculationType: 'MANUAL', components: [], attributeModifiers: [] }
 }
 
+function formatMod(n: number): string {
+  if (n > 0) return `+${n}`
+  return `${n}`
+}
+
 interface Props {
-  resistances: CalculatedResistance[]
-  isOwner: boolean
-  onSaveComponent: (componentId: string, value: number) => Promise<void>
-  onSaveManual: (resistanceId: string, value: number) => Promise<void>
-  sheetResistanceValues: Record<string, string | null>
-  templateAttributes?: TemplateAttribute[]
-  disableAttributeModifiers?: boolean
-  onCreateResistance?: (draft: NewResistanceDraft) => Promise<void>
-  onDeleteResistance?: (resistanceId: string) => Promise<void>
+  readonly resistances: CalculatedResistance[]
+  readonly permissions: SheetPermissions
+  readonly onSaveComponent: (componentId: string, value: number) => Promise<void>
+  readonly onSaveManual: (resistanceId: string, value: number) => Promise<void>
+  readonly sheetResistanceValues: Record<string, string | null>
+  readonly templateAttributes?: TemplateAttribute[]
+  readonly disableAttributeModifiers?: boolean
+  readonly onCreateResistance?: (draft: NewResistanceDraft) => Promise<void>
+  readonly onDeleteResistance?: (resistanceId: string) => Promise<void>
 }
 
 export type { NewResistanceDraft }
 
 export function ResistanceTab({
-  resistances, isOwner, onSaveComponent, onSaveManual, sheetResistanceValues,
+  resistances, permissions, onSaveComponent, onSaveManual, sheetResistanceValues,
   templateAttributes = [], disableAttributeModifiers = false,
   onCreateResistance, onDeleteResistance,
 }: Props) {
+  const canEditResistances = permissions.canEditResistances
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [showNewForm, setShowNewForm] = useState(false)
   const [draft, setDraft] = useState<NewResistanceDraft>(emptyDraft)
   const [saving, setSaving] = useState(false)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const prevCount = useRef(0)
 
   // Auto-expand newly added resistances
   useEffect(() => {
     if (resistances.length > prevCount.current && resistances.length > 0) {
-      const last = resistances[resistances.length - 1]
+      const last = resistances.at(-1)!
       setExpanded(p => ({ ...p, [last.resistanceId]: true }))
     }
     prevCount.current = resistances.length
   }, [resistances.length])
-
-  function formatMod(n: number): string {
-    if (n > 0) return `+${n}`
-    return `${n}`
-  }
 
   function toggleExpanded(id: string) {
     setExpanded(p => ({ ...p, [id]: !p[id] }))
@@ -105,10 +113,17 @@ export function ResistanceTab({
 
   async function handleDelete(resistanceId: string) {
     if (!onDeleteResistance) return
-    if (!confirm('Delete this resistance? This cannot be undone.')) return
+    setDeleteConfirmId(resistanceId)
+  }
+
+  async function handleConfirmDelete() {
+    if (!onDeleteResistance || !deleteConfirmId) return
     try {
-      await onDeleteResistance(resistanceId)
-    } catch {}
+      await onDeleteResistance(deleteConfirmId)
+      setDeleteConfirmId(null)
+    } catch {
+      setDeleteConfirmId(null)
+    }
   }
 
   // ── Draft editing helpers ──
@@ -120,7 +135,7 @@ export function ResistanceTab({
   function addComponent() {
     setDraft(prev => ({
       ...prev,
-      components: [...prev.components, { name: '', editableByPlayer: false, defaultValue: '0' }],
+      components: [...prev.components, { id: genId(), name: '', editableByPlayer: false, defaultValue: '0' }],
     }))
   }
 
@@ -164,7 +179,7 @@ export function ResistanceTab({
             <svg className="w-10 h-10 mx-auto text-muted mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
             </svg>
-            <p className="text-sm italic">No resistances configured.</p>
+            <p className="text-sm italic">{t('character:noResistancesConfigured')}</p>
           </div>
         </div>
       )}
@@ -198,12 +213,12 @@ export function ResistanceTab({
                 <div className="w-10 h-10 rounded-full border-2 border-primary/30 flex items-center justify-center bg-background/50">
                   <span className="text-base font-bold text-primary">{r.total}</span>
                 </div>
-                {isOwner && onDeleteResistance && (
+                {canEditResistances && onDeleteResistance && (
                   <button
                     type="button"
                     onClick={() => handleDelete(r.resistanceId)}
                     className="text-muted hover:text-danger p-1 transition-colors shrink-0"
-                    title="Delete resistance"
+                    title={t('character:deleteResistanceTitle')}
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -218,19 +233,19 @@ export function ResistanceTab({
               <div className="mt-4 pt-4 border-t border-border space-y-4 animate-fade-in">
                 {/* Total display */}
                 <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/30 border border-border">
-                  <span className="text-sm font-semibold text-foreground">Total</span>
+                  <span className="text-sm font-semibold text-foreground">{t('character:total')}</span>
                   <span className="text-lg font-bold text-primary">{r.total}</span>
                 </div>
 
                 {isManual ? (
                   <div>
                     <label className="label">{r.name}</label>
-                    {isOwner ? (
+                    {canEditResistances ? (
                       <input
                         type="number"
                         className="input-field"
                         value={manualVal}
-                        onChange={e => onSaveManual(r.resistanceId, parseInt(e.target.value, 10) || 0)}
+                        onChange={e => onSaveManual(r.resistanceId, Number.parseInt(e.target.value, 10) || 0)}
                       />
                     ) : (
                       <span className="text-sm font-semibold text-foreground">{manualVal || '0'}</span>
@@ -240,10 +255,10 @@ export function ResistanceTab({
                   <>
                     {r.componentValues.length > 0 && (
                       <div>
-                        <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Components</h4>
+                        <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">{t('character:components')}</h4>
                         <div className="space-y-1.5">
                           {r.componentValues.map(cv => {
-                            const canEdit = isOwner && cv.editableByPlayer
+                            const canEdit = canEditResistances && cv.editableByPlayer
                             return (
                               <div key={cv.componentId} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
                                 <span className="text-sm text-foreground">{cv.componentName}</span>
@@ -252,7 +267,7 @@ export function ResistanceTab({
                                     type="number"
                                     className="input-field py-1 text-xs w-20 text-right"
                                     value={cv.value}
-                                    onChange={e => onSaveComponent(cv.componentId, parseInt(e.target.value, 10) || 0)}
+                                    onChange={e => onSaveComponent(cv.componentId, Number.parseInt(e.target.value, 10) || 0)}
                                   />
                                 ) : (
                                   <span className="text-sm font-semibold text-foreground">{cv.value}</span>
@@ -266,15 +281,15 @@ export function ResistanceTab({
 
                     {r.attributeModifierValues.length > 0 && (
                       <div>
-                        <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Attribute Modifiers</h4>
+                        <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">{t('character:attributeModifiers')}</h4>
                         <div className="space-y-1.5 opacity-75">
                           {r.attributeModifierValues.map(am => (
                             <div key={am.attributeId} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50 border border-border">
-                              <span className="text-sm text-foreground truncate">{am.attributeName} Mod</span>
+                              <span className="text-sm text-foreground truncate">{t('character:attributeModLabel', { name: am.attributeName })}</span>
                               <span className="text-sm font-semibold text-muted">
                                 {formatMod(am.effectiveModifier)}
                                 {am.rawModifier !== am.effectiveModifier && (
-                                  <span className="text-[0.65rem] text-muted ml-1">(raw: {formatMod(am.rawModifier)})</span>
+                                  <span className="text-[0.65rem] text-muted ml-1">{t('character:rawLabel', { value: formatMod(am.rawModifier) })}</span>
                                 )}
                               </span>
                             </div>
@@ -290,8 +305,46 @@ export function ResistanceTab({
         )
       })}
 
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
+          <div className="absolute inset-0 bg-black/50" aria-hidden="true" />
+          <div className="relative z-10 w-full max-w-sm rounded-xl border border-border bg-surface p-5 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-danger-muted text-danger">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">{t('character:deleteResistanceTitle')}</h3>
+                <p className="text-xs text-muted-foreground">{t('campaign:actionCannotBeUndone')}</p>
+              </div>
+            </div>
+
+            <p className="mb-4 text-sm text-muted-foreground">{t('character:deleteResistanceConfirm')}</p>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmId(null)}
+                className="btn-ghost text-xs px-3 py-1.5"
+              >
+                {t('common:cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="btn-danger-solid text-xs px-3 py-1.5"
+              >
+                {t('common:delete')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* New Resistance Form */}
-      {isOwner && onCreateResistance && (
+      {canEditResistances && onCreateResistance && (
         <>
           {!showNewForm ? (
             <button
@@ -302,29 +355,29 @@ export function ResistanceTab({
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
               </svg>
-              New Resistance
+              {t('character:newResistance')}
             </button>
           ) : (
             <div className="card !p-5 space-y-4 border-primary/20">
               <div className="header-accent">
-                <h3 className="text-sm font-semibold text-gradient">New Resistance</h3>
+                <h3 className="text-sm font-semibold text-gradient">{t('character:newResistance')}</h3>
               </div>
 
               {/* Name */}
               <div>
-                <label className="label">Resistance Name</label>
+                <label className="label">{t('character:resistanceName')}</label>
                 <input
                   className="input-field"
                   value={draft.name}
                   onChange={e => updateDraft({ name: e.target.value })}
-                  placeholder="e.g. Fire Resistance"
+                  placeholder={t('character:resistanceNamePlaceholder')}
                   autoFocus
                 />
               </div>
 
               {/* Calculation Type */}
               <div>
-                <label className="label">Calculation Type</label>
+                <label className="label">{t('character:calculationType')}</label>
                 <div className="flex gap-2">
                   {(['MANUAL', 'CALCULATED'] as const).map(mode => (
                     <button
@@ -342,7 +395,7 @@ export function ResistanceTab({
                           : 'text-muted hover:text-foreground border border-transparent'
                       }`}
                     >
-                      {mode === 'MANUAL' ? 'Manual Value' : 'Calculated'}
+                      {mode === 'MANUAL' ? t('character:manualValue') : t('character:calculated')}
                     </button>
                   ))}
                 </div>
@@ -353,23 +406,23 @@ export function ResistanceTab({
                 <>
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-medium text-foreground">Components</label>
+                      <label className="text-sm font-medium text-foreground">{t('character:components')}</label>
                       <button type="button" onClick={addComponent} className="btn-ghost text-xs">
-                        + Add Component
+                        {t('character:addComponent')}
                       </button>
                     </div>
                     <div className="space-y-2">
                       {draft.components.length === 0 && (
-                        <p className="text-xs text-muted italic text-center py-2">No components added yet.</p>
+                        <p className="text-xs text-muted italic text-center py-2">{t('character:noComponentsAddedYet')}</p>
                       )}
                       {draft.components.map((c, cIdx) => (
-                        <div key={cIdx} className="rounded-lg border border-border/50 bg-background/20 p-2 space-y-2">
+                        <div key={c.id} className="rounded-lg border border-border/50 bg-background/20 p-2 space-y-2">
                           <div className="flex items-center gap-1.5">
                             <input
                               className="input-field flex-1"
                               value={c.name}
                               onChange={e => updateComponent(cIdx, { name: e.target.value })}
-                              placeholder="Component Name (e.g. Natural)"
+                              placeholder={t('character:componentNamePlaceholder')}
                             />
                             <input
                               className="input-field w-20 text-sm text-center"
@@ -394,7 +447,7 @@ export function ResistanceTab({
                               checked={c.editableByPlayer}
                               onChange={e => updateComponent(cIdx, { editableByPlayer: e.target.checked })}
                             />
-                            Editable by Player
+                            {t('character:editableByPlayer')}
                           </label>
                         </div>
                       ))}
@@ -405,7 +458,7 @@ export function ResistanceTab({
                   {disableAttributeModifiers ? (
                     <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
                       <p className="text-xs text-amber-300/80 leading-relaxed">
-                        Attribute Modifiers are disabled. Enable the global Attribute Modifier System to use this feature.
+                        {t('character:attributeModifiersDisabled')}
                       </p>
                       {draft.attributeModifiers.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-2 opacity-50 pointer-events-none">
@@ -423,7 +476,7 @@ export function ResistanceTab({
                   ) : (
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium text-foreground">Attribute Modifiers</label>
+                        <label className="text-sm font-medium text-foreground">{t('character:attributeModifiers')}</label>
                       </div>
                       <div className="space-y-2">
                         {draft.attributeModifiers.length > 0 && (
@@ -446,29 +499,24 @@ export function ResistanceTab({
                           </div>
                         )}
                         <div className="relative">
-                          <select
-                            className="input-field text-sm"
+                          <Select
+                            options={[
+                              { id: '', label: t('character:addAttributeModifier') },
+                              ...templateAttributes
+                                .filter(a => !draft.attributeModifiers.some(am => am.attributeId === a.id))
+                                .map(a => ({ id: `${a.id}::${a.key}::${a.name}`, label: a.name }))
+                            ]}
                             value=""
-                            onChange={e => {
-                              const val = e.target.value
+                            onChange={val => {
                               if (!val) return
                               const parts = val.split('::')
                               if (parts.length === 3) {
                                 addAttributeModifier(parts[0], parts[1], parts[2])
                               }
-                              e.target.value = ''
                             }}
-                          >
-                            <option value="">+ Add Attribute Modifier</option>
-                            {templateAttributes
-                              .filter(a => !draft.attributeModifiers.some(am => am.attributeId === a.id))
-                              .map(a => (
-                                <option key={a.id} value={`${a.id}::${a.key}::${a.name}`}>
-                                  {a.name}
-                                </option>
-                              ))
-                            }
-                          </select>
+                            className="text-sm"
+                            size="md"
+                          />
                         </div>
                       </div>
                     </div>
@@ -479,7 +527,7 @@ export function ResistanceTab({
               {/* Actions */}
               <div className="flex gap-3 justify-end pt-2 border-t border-border/40">
                 <button type="button" onClick={resetForm} disabled={saving} className="btn-ghost text-sm">
-                  Cancel
+                  {t('common:cancel')}
                 </button>
                 <button
                   type="button"
@@ -490,14 +538,14 @@ export function ResistanceTab({
                   {saving ? (
                     <>
                       <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                      Creating...
+                      {t('character:creating')}
                     </>
                   ) : (
                     <>
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
                       </svg>
-                      Create Resistance
+                      {t('character:createResistance')}
                     </>
                   )}
                 </button>

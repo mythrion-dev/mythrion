@@ -1,0 +1,9 @@
+{
+  "storageUnavailable": "Armazenamento de livros indisponível",
+  "uploadFailed": "Falha ao enviar o arquivo do livro",
+  "notMemberAdventure": "Você não é membro desta campanha",
+  "notFound": "Livro não encontrado",
+  "fileNotFound": "Arquivo do livro não encontrado (nenhum arquivo enviado)",
+  "fileNotFoundInStorage": "Arquivo do livro não encontrado no armazenamento",
+  "noFileProvided": "Nenhum arquivo fornecido"
+}

@@ -1,29 +1,321 @@
 'use client'
 
-import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { ReactNode, SubmitEvent } from 'react'
 
-interface Template {
-  id: string; name: string; description: string | null
+interface AssignedMember {
+  id: string
+  user: { id: string; displayName: string | null; email: string } | null
 }
 interface CampaignCharacter {
   id: string; characterName: string; adventure: { id: string; name: string; campaign: string }
   template: { id: string; name: string }; owner: { id: string; displayName: string | null; email: string } | null; createdAt: string
+  assignedMember: AssignedMember | null
+}
+interface CampaignPlayer {
+  id: string; role: string; user: { id: string; email: string; displayName: string | null }
 }
 interface UserSheet {
   id: string; characterName: string; adventure: { id: string; name: string; campaign: string }
   template: { id: string; name: string }; createdAt: string
 }
 
+function RowActionButton({ readOnly, onClick, className, children }: {
+  readonly readOnly?: boolean
+  readonly onClick: () => void
+  readonly className: string
+  readonly children: ReactNode
+}) {
+  const { t } = useTranslation()
+  return (
+    <button
+      type="button"
+      onClick={readOnly ? undefined : onClick}
+      disabled={readOnly}
+      title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
+      className={className}
+    >
+      {children}
+    </button>
+  )
+}
+
+function CharacterRowActions({ c, isGM, userId, readOnly, onAssign, onRemoveCharacter, onRemoveAssignment }: {
+  readonly c: CampaignCharacter
+  readonly isGM: boolean
+  readonly userId: string
+  readonly readOnly?: boolean
+  readonly onAssign: (id: string) => void
+  readonly onRemoveCharacter: (id: string) => void
+  readonly onRemoveAssignment: (id: string) => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <>
+      {isGM && (
+        <RowActionButton
+          onClick={() => onAssign(c.id)}
+          readOnly={readOnly}
+          className={`btn-ghost text-xs px-2 py-1 ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
+        >
+          {c.assignedMember ? t('campaign:changeAssignment') : t('campaign:assign')}
+        </RowActionButton>
+      )}
+      {isGM && (c.owner?.id ?? '') !== userId && (
+        <RowActionButton
+          onClick={() => onRemoveCharacter(c.id)}
+          readOnly={readOnly}
+          className={`text-xs text-danger px-2 py-1 transition-colors ${readOnly ? 'opacity-50 cursor-not-allowed' : 'hover:text-danger/80'}`}
+        >
+          {t('common:remove')}
+        </RowActionButton>
+      )}
+      {isGM && c.assignedMember && (
+        <RowActionButton
+          onClick={() => onRemoveAssignment(c.id)}
+          readOnly={readOnly}
+          className={`text-xs text-danger px-2 py-1 transition-colors ${readOnly ? 'opacity-50 cursor-not-allowed' : 'hover:text-danger/80'}`}
+        >
+          {t('campaign:removeAssignment')}
+        </RowActionButton>
+      )}
+    </>
+  )
+}
+
+function CharacterRow({ c, isGM, userId, readOnly, onViewCharacter, onAssign, onRemoveCharacter, onRemoveAssignment }: {
+  readonly c: CampaignCharacter
+  readonly isGM: boolean
+  readonly userId: string
+  readonly readOnly?: boolean
+  readonly onViewCharacter: (id: string) => void
+  readonly onAssign: (id: string) => void
+  readonly onRemoveCharacter: (id: string) => void
+  readonly onRemoveAssignment: (id: string) => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="data-row">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-foreground truncate">
+            {c.characterName}
+          </span>
+          <span className="badge badge-gold text-[0.6rem]">{c.template.name}</span>
+        </div>
+        <p className="text-xs text-muted mt-0.5">
+          {c.owner?.displayName ?? c.owner?.email ?? t('campaign:unknownUser')}
+        </p>
+        {isGM && (
+          <p className="text-xs mt-0.5">
+            {c.assignedMember?.user?.displayName ?? c.assignedMember?.user?.email ? (
+              <span className="text-muted">{t('campaign:assignedTo', { name: c.assignedMember?.user?.displayName ?? c.assignedMember?.user?.email })}</span>
+            ) : (
+              <span className="text-muted italic">{t('campaign:notAssigned')}</span>
+            )}
+          </p>
+        )}
+      </div>
+      <div className="flex gap-1 shrink-0 ml-2">
+        <button
+          type="button"
+          onClick={() => onViewCharacter(c.id)}
+          className="btn-ghost text-xs px-2 py-1"
+        >
+          {t('common:view')}
+        </button>
+        <CharacterRowActions
+          c={c}
+          isGM={isGM}
+          userId={userId}
+          readOnly={readOnly}
+          onAssign={onAssign}
+          onRemoveCharacter={onRemoveCharacter}
+          onRemoveAssignment={onRemoveAssignment}
+        />
+      </div>
+    </div>
+  )
+}
+
+function CharacterActions({ readOnly, onNewCharClick, onLinkCharClick }: {
+  readonly readOnly?: boolean
+  readonly onNewCharClick: () => void
+  readonly onLinkCharClick: () => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="flex gap-2">
+      <button
+        type="button"
+        onClick={readOnly ? undefined : onNewCharClick}
+        disabled={readOnly}
+        title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
+        className={`btn-primary text-sm ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
+      >
+        {t('campaign:newCharacter')}
+      </button>
+      <button
+        type="button"
+        onClick={readOnly ? undefined : onLinkCharClick}
+        disabled={readOnly}
+        title={readOnly ? t('campaign:readOnlyTooltip') : undefined}
+        className={`btn-ghost text-sm ${readOnly ? '!opacity-50 !cursor-not-allowed' : ''}`}
+      >
+        {t('campaign:linkExistingCharacter')}
+      </button>
+    </div>
+  )
+}
+
+function NewCharacterForm({ snapshotName, newCharName, newCharError, newCharCreating, onNewCharNameChange, onCancelNewChar, onCreateCharacter }: {
+  readonly snapshotName: string | null
+  readonly newCharName: string
+  readonly newCharError: string | null
+  readonly newCharCreating: boolean
+  readonly onNewCharNameChange: (v: string) => void
+  readonly onCancelNewChar: () => void
+  readonly onCreateCharacter: (e: SubmitEvent) => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <form
+      onSubmit={onCreateCharacter}
+      className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3"
+    >
+      <h4 className="text-sm font-semibold text-primary">{t('campaign:createNewCharacter')}</h4>
+
+      <div>
+        <label className="label">{t('campaign:characterName')}</label>
+        <input
+          className="input-field"
+          value={newCharName}
+          onChange={e => onNewCharNameChange(e.target.value)}
+          placeholder={t('campaign:charNamePlaceholder')}
+          maxLength={100}
+          required
+        />
+      </div>
+
+      {/* Snapshot-based template info */}
+      <div>
+        <label className="label">{t('campaign:template')}</label>
+        {snapshotName ? (
+          <div className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-secondary/40 border border-border/40 text-sm text-foreground">
+            <svg className="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>{snapshotName}</span>
+          </div>
+        ) : (
+          <p className="text-sm text-muted italic">
+            {t('campaign:noTemplateAttached')}
+          </p>
+        )}
+      </div>
+
+      {newCharError && (
+        <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">
+          {newCharError}
+        </div>
+      )}
+
+      <div className="flex gap-2 justify-end">
+        <button
+          type="button"
+          onClick={onCancelNewChar}
+          disabled={newCharCreating}
+          className="btn-ghost text-sm"
+        >
+          {t('common:cancel')}
+        </button>
+        <button
+          type="submit"
+          disabled={newCharCreating || !newCharName.trim() || !snapshotName}
+          className="btn-primary text-sm"
+        >
+          {newCharCreating ? t('campaign:creating') : t('campaign:create')}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function LinkCharacterForm({ userSheets, linkSheetId, linkCharError, linkCharLinking, onLinkSheetChange, onCancelLinkChar, onLinkCharacter }: {
+  readonly userSheets: UserSheet[]
+  readonly linkSheetId: string
+  readonly linkCharError: string | null
+  readonly linkCharLinking: boolean
+  readonly onLinkSheetChange: (v: string) => void
+  readonly onCancelLinkChar: () => void
+  readonly onLinkCharacter: (e: SubmitEvent) => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <form
+      onSubmit={onLinkCharacter}
+      className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3"
+    >
+      <h4 className="text-sm font-semibold text-primary">{t('campaign:linkExistingCharacter')}</h4>
+
+      <div>
+        <label className="label">{t('campaign:selectCharacter')}</label>
+        {userSheets.length === 0 ? (
+          <p className="text-sm text-muted italic">{t('campaign:noUnlinkedCharacters')}</p>
+        ) : (
+          <select
+            className="input-field"
+            value={linkSheetId}
+            onChange={e => onLinkSheetChange(e.target.value)}
+          >
+            <option value="">{t('campaign:selectCharacterPlaceholder')}</option>
+            {userSheets.map(s => (
+              <option key={s.id} value={s.id}>
+                {s.characterName} ({s.template.name})
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {linkCharError && (
+        <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">
+          {linkCharError}
+        </div>
+      )}
+
+      <div className="flex gap-2 justify-end">
+        <button
+          type="button"
+          onClick={onCancelLinkChar}
+          disabled={linkCharLinking}
+          className="btn-ghost text-sm"
+        >
+          {t('common:cancel')}
+        </button>
+        <button
+          type="submit"
+          disabled={linkCharLinking || !linkSheetId}
+          className="btn-primary text-sm"
+        >
+          {linkCharLinking ? t('campaign:linking') : t('campaign:link')}
+        </button>
+      </div>
+    </form>
+  )
+}
+
 export function CharactersSection({
   characters,
   isGM,
   userId,
-  templates,
+  snapshotName,
   userSheets,
+  players,
   showNewCharForm,
   showLinkCharForm,
+  readOnly,
   newCharName,
-  newCharTemplateId,
   newCharError,
   newCharCreating,
   linkSheetId,
@@ -36,214 +328,99 @@ export function CharactersSection({
   onCreateCharacter,
   onLinkCharacter,
   onNewCharNameChange,
-  onNewCharTemplateChange,
   onLinkSheetChange,
   onRemoveCharacter,
   onViewCharacter,
+  onAssign,
+  onRemoveAssignment,
 }: {
-  characters: CampaignCharacter[]
-  isGM: boolean
-  userId: string
-  templates: Template[]
-  userSheets: UserSheet[]
-  showNewCharForm: boolean
-  showLinkCharForm: boolean
-  newCharName: string
-  newCharTemplateId: string
-  newCharError: string | null
-  newCharCreating: boolean
-  linkSheetId: string
-  linkCharError: string | null
-  linkCharLinking: boolean
-  onNewCharClick: () => void
-  onLinkCharClick: () => void
-  onCancelNewChar: () => void
-  onCancelLinkChar: () => void
-  onCreateCharacter: (e: FormEvent) => void
-  onLinkCharacter: (e: FormEvent) => void
-  onNewCharNameChange: (v: string) => void
-  onNewCharTemplateChange: (v: string) => void
-  onLinkSheetChange: (v: string) => void
-  onRemoveCharacter: (id: string) => void
-  onViewCharacter: (id: string) => void
+  readonly characters: CampaignCharacter[]
+  readonly isGM: boolean
+  readonly readOnly?: boolean
+  readonly userId: string
+  readonly snapshotName: string | null
+  readonly userSheets: UserSheet[]
+  readonly players: ReadonlyArray<CampaignPlayer>
+  readonly showNewCharForm: boolean
+  readonly showLinkCharForm: boolean
+  readonly newCharName: string
+  readonly newCharError: string | null
+  readonly newCharCreating: boolean
+  readonly linkSheetId: string
+  readonly linkCharError: string | null
+  readonly linkCharLinking: boolean
+  readonly onNewCharClick: () => void
+  readonly onLinkCharClick: () => void
+  readonly onCancelNewChar: () => void
+  readonly onCancelLinkChar: () => void
+  readonly onCreateCharacter: (e: SubmitEvent) => void
+  readonly onLinkCharacter: (e: SubmitEvent) => void
+  readonly onNewCharNameChange: (v: string) => void
+  readonly onLinkSheetChange: (v: string) => void
+  readonly onRemoveCharacter: (id: string) => void
+  readonly onViewCharacter: (id: string) => void
+  readonly onAssign: (id: string) => void
+  readonly onRemoveAssignment: (id: string) => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className="space-y-4">
       {/* Character list */}
       {characters.length === 0 && !showNewCharForm && !showLinkCharForm ? (
         <div className="text-center py-6 text-muted-foreground text-sm italic">
-          No characters in this campaign yet.
+          {t('campaign:noCharactersYet')}
         </div>
       ) : (
         <div className="space-y-2">
           {characters.map(c => (
-            <div key={c.id} className="data-row">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-foreground truncate">
-                    {c.characterName}
-                  </span>
-                  <span className="badge badge-gold text-[0.6rem]">{c.template.name}</span>
-                </div>
-                <p className="text-xs text-muted mt-0.5">
-                  {c.owner?.displayName ?? c.owner?.email ?? 'Unknown'}
-                </p>
-              </div>
-              <div className="flex gap-1 shrink-0 ml-2">
-                <button
-                  onClick={() => onViewCharacter(c.id)}
-                  className="btn-ghost text-xs px-2 py-1"
-                >
-                  View
-                </button>
-                {isGM && (c.owner?.id ?? '') !== userId && (
-                  <button
-                    onClick={() => onRemoveCharacter(c.id)}
-                    className="text-xs text-danger hover:text-danger/80 px-2 py-1 transition-colors"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            </div>
+            <CharacterRow
+              key={c.id}
+              c={c}
+              isGM={isGM}
+              userId={userId}
+              readOnly={readOnly}
+              onViewCharacter={onViewCharacter}
+              onAssign={onAssign}
+              onRemoveCharacter={onRemoveCharacter}
+              onRemoveAssignment={onRemoveAssignment}
+            />
           ))}
         </div>
       )}
 
       {/* Action buttons */}
       {!showNewCharForm && !showLinkCharForm && (
-        <div className="flex gap-2">
-          <button onClick={onNewCharClick} className="btn-primary text-sm">
-            + New Character
-          </button>
-          <button onClick={onLinkCharClick} className="btn-ghost text-sm">
-            Link Existing Character
-          </button>
-        </div>
+        <CharacterActions
+          readOnly={readOnly}
+          onNewCharClick={onNewCharClick}
+          onLinkCharClick={onLinkCharClick}
+        />
       )}
 
       {/* Create new character form */}
-      {showNewCharForm && (
-        <form
-          onSubmit={onCreateCharacter}
-          className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3"
-        >
-          <h4 className="text-sm font-semibold text-primary">Create New Character</h4>
-
-          <div>
-            <label className="label">Character Name</label>
-            <input
-              className="input-field"
-              value={newCharName}
-              onChange={e => onNewCharNameChange(e.target.value)}
-              placeholder="e.g. Aragorn"
-              maxLength={100}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="label">Template</label>
-            {templates.length === 0 ? (
-              <p className="text-sm text-muted italic">
-                No templates available. Ask your GM to create one.
-              </p>
-            ) : (
-              <select
-                className="input-field"
-                value={newCharTemplateId}
-                onChange={e => onNewCharTemplateChange(e.target.value)}
-                required
-              >
-                <option value="">Select a template...</option>
-                {templates.map(t => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          {newCharError && (
-            <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">
-              {newCharError}
-            </div>
-          )}
-
-          <div className="flex gap-2 justify-end">
-            <button
-              type="button"
-              onClick={onCancelNewChar}
-              disabled={newCharCreating}
-              className="btn-ghost text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={newCharCreating || !newCharName.trim() || !newCharTemplateId}
-              className="btn-primary text-sm"
-            >
-              {newCharCreating ? 'Creating...' : 'Create'}
-            </button>
-          </div>
-        </form>
+      {showNewCharForm && !readOnly && (
+        <NewCharacterForm
+          snapshotName={snapshotName}
+          newCharName={newCharName}
+          newCharError={newCharError}
+          newCharCreating={newCharCreating}
+          onNewCharNameChange={onNewCharNameChange}
+          onCancelNewChar={onCancelNewChar}
+          onCreateCharacter={onCreateCharacter}
+        />
       )}
 
       {/* Link existing character form */}
-      {showLinkCharForm && (
-        <form
-          onSubmit={onLinkCharacter}
-          className="rounded-lg border border-primary/20 bg-background/50 p-4 space-y-3"
-        >
-          <h4 className="text-sm font-semibold text-primary">Link Existing Character</h4>
-
-          <div>
-            <label className="label">Select Character</label>
-            {userSheets.length === 0 ? (
-              <p className="text-sm text-muted italic">No unlinked characters available.</p>
-            ) : (
-              <select
-                className="input-field"
-                value={linkSheetId}
-                onChange={e => onLinkSheetChange(e.target.value)}
-                required
-              >
-                <option value="">Select a character...</option>
-                {userSheets.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.characterName} ({s.template.name})
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          {linkCharError && (
-            <div className="rounded-lg bg-danger-muted border border-danger/30 px-3 py-2 text-xs text-danger">
-              {linkCharError}
-            </div>
-          )}
-
-          <div className="flex gap-2 justify-end">
-            <button
-              type="button"
-              onClick={onCancelLinkChar}
-              disabled={linkCharLinking}
-              className="btn-ghost text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={linkCharLinking || !linkSheetId}
-              className="btn-primary text-sm"
-            >
-              {linkCharLinking ? 'Linking...' : 'Link'}
-            </button>
-          </div>
-        </form>
+      {showLinkCharForm && !readOnly && (
+        <LinkCharacterForm
+          userSheets={userSheets}
+          linkSheetId={linkSheetId}
+          linkCharError={linkCharError}
+          linkCharLinking={linkCharLinking}
+          onLinkSheetChange={onLinkSheetChange}
+          onCancelLinkChar={onCancelLinkChar}
+          onLinkCharacter={onLinkCharacter}
+        />
       )}
     </div>
   )

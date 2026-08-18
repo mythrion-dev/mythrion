@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
 
 /* ── Types ── */
@@ -21,15 +22,18 @@ interface NpcSheet {
 /* ── Props ── */
 
 interface NpcsMobsSectionProps {
-  adventureId: string
-  isGM: boolean
+  readonly adventureId: string
+  readonly isGM: boolean
   /** Increment to force a re-fetch (e.g. when a new NPC/MOB is created in the sidebar) */
-  refreshKey?: number
+  readonly refreshKey?: number
 }
 
 /* ── Component ── */
 
+const LOADING_SKELETON_KEYS = ['a', 'b', 'c']
+
 export function NpcsMobsSection({ adventureId, isGM, refreshKey }: NpcsMobsSectionProps) {
+  const { t } = useTranslation()
   const router = useRouter()
   const [npcs, setNpcs] = useState<NpcSheet[]>([])
   const [loading, setLoading] = useState(false)
@@ -42,6 +46,17 @@ export function NpcsMobsSection({ adventureId, isGM, refreshKey }: NpcsMobsSecti
     setLoading(true)
     try {
       const data = await api.get<NpcSheet[]>(`/adventures/${adventureId}/npcs`)
+      // [DIAGNOSTIC] log raw API response for NPC HP values
+      console.debug(
+        `[DIAGNOSTIC] NpcsMobsSection: received ${data.length} NPCs from API`,
+        data.map(n => ({
+          id: n.id,
+          name: n.characterName,
+          type: n.npcType,
+          hpActual: n.hpActual,
+          hpMax: n.hpMax,
+        })),
+      )
       setNpcs(data)
     } catch {
       /* silently fail */
@@ -77,14 +92,14 @@ export function NpcsMobsSection({ adventureId, isGM, refreshKey }: NpcsMobsSecti
             onClick={() => setActiveTab('npc')}
             className={`tab-pill text-xs ${activeTab === 'npc' ? 'tab-pill-active' : ''}`}
           >
-            NPCs
+            {t('campaign:npcs')}
             <span className="ml-1 text-[10px] opacity-70">({npcsList.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('mob')}
             className={`tab-pill text-xs ${activeTab === 'mob' ? 'tab-pill-active' : ''}`}
           >
-            Mobs
+            {t('campaign:mobs')}
             <span className="ml-1 text-[10px] opacity-70">({mobsList.length})</span>
           </button>
         </div>
@@ -101,7 +116,7 @@ export function NpcsMobsSection({ adventureId, isGM, refreshKey }: NpcsMobsSecti
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder={`Search ${activeTab === 'npc' ? 'NPCs' : 'Mobs'}...`}
+            placeholder={t('campaign:searchCreaturesPlaceholder', { type: activeTab === 'npc' ? 'NPCs' : 'Mobs' })}
             className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-input border border-border text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 transition-shadow"
           />
         </div>
@@ -110,8 +125,8 @@ export function NpcsMobsSection({ adventureId, isGM, refreshKey }: NpcsMobsSecti
       {/* Loading state */}
       {loading && (
         <div className="space-y-2">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="data-row">
+          {LOADING_SKELETON_KEYS.map(k => (
+            <div key={k} className="data-row">
               <div className="flex-1 space-y-1.5">
                 <div className="skeleton h-4 w-32" />
                 <div className="skeleton h-3 w-20" />
@@ -128,8 +143,8 @@ export function NpcsMobsSection({ adventureId, isGM, refreshKey }: NpcsMobsSecti
           <div className="text-2xl mb-2">{activeTab === 'npc' ? '👤' : '👾'}</div>
           <p className="text-sm text-muted-foreground">
             {search
-              ? `No ${activeTab === 'npc' ? 'NPCs' : 'Mobs'} match your search.`
-              : `No ${activeTab === 'npc' ? 'NPCs' : 'Mobs'} yet. Create one using the sidebar!`}
+              ? t('campaign:noCreaturesMatchSearch', { type: activeTab === 'npc' ? 'NPCs' : 'Mobs' })
+              : t('campaign:noCreaturesYet', { type: activeTab === 'npc' ? 'NPCs' : 'Mobs' })}
           </p>
         </div>
       )}
@@ -159,7 +174,6 @@ export function NpcsMobsSection({ adventureId, isGM, refreshKey }: NpcsMobsSecti
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted mt-0.5">
                   <span>Lv.{n.level ?? '?'}</span>
-                  <span>❤️ {n.hpActual ?? '?'}/{n.hpMax ?? '?'}</span>
                 </div>
               </div>
               <div className="flex gap-1 shrink-0 ml-2">
@@ -167,7 +181,7 @@ export function NpcsMobsSection({ adventureId, isGM, refreshKey }: NpcsMobsSecti
                   onClick={() => router.push(`/dashboard/character-sheets/${n.id}`)}
                   className="btn-ghost text-xs px-2 py-1"
                 >
-                  View
+                  {t('common:view')}
                 </button>
               </div>
             </div>

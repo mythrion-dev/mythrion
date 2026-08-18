@@ -1,6 +1,7 @@
 export { AdventureHeader } from './AdventureHeader'
 export { CollapsibleSection } from './CollapsibleSection'
 export { MemberRow } from './MemberRow'
+export { ConfirmDetachModal } from './ConfirmDetachModal'
 export { InvitePanel } from './InvitePanel'
 export { DeleteModal } from './DeleteModal'
 export { EditForm } from './EditForm'

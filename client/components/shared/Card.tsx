@@ -3,11 +3,11 @@
 import type { ReactNode } from 'react'
 
 interface CardProps {
-  children: ReactNode
-  variant?: 'default' | 'interactive'
-  className?: string
-  onClick?: () => void
-  style?: React.CSSProperties
+  readonly children: ReactNode
+  readonly variant?: 'default' | 'interactive'
+  readonly className?: string
+  readonly onClick?: () => void
+  readonly style?: React.CSSProperties
 }
 
 export function Card({ children, variant = 'default', className = '', onClick, style }: CardProps) {
@@ -26,14 +26,14 @@ export function Card({ children, variant = 'default', className = '', onClick, s
   )
 }
 
-export function CardHeader({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function CardHeader({ children, className = '' }: { readonly children: ReactNode; readonly className?: string }) {
   return <div className={`header-accent ${className}`}>{children}</div>
 }
 
-export function CardBody({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function CardBody({ children, className = '' }: { readonly children: ReactNode; readonly className?: string }) {
   return <div className={`space-y-3 ${className}`}>{children}</div>
 }
 
-export function CardFooter({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function CardFooter({ children, className = '' }: { readonly children: ReactNode; readonly className?: string }) {
   return <div className={`pt-3 border-t border-border flex items-center justify-between ${className}`}>{children}</div>
 }

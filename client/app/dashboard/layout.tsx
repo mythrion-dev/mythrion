@@ -3,11 +3,13 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { Sidebar } from '@/components/dashboard/Sidebar'
+import { Sidebar, GracePeriodBanner } from '@/components/dashboard'
+import { useTranslation } from 'react-i18next'
 
-function AuthGuard({ children }: { children: React.ReactNode }) {
+function AuthGuard({ children }: { readonly children: React.ReactNode }) {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const { t } = useTranslation()
 
   useEffect(() => {
     if (loading) return
@@ -15,9 +17,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       router.replace('/login')
       return
     }
+    if (!user.emailVerified) {
+      router.replace('/verify-email')
+      return
+    }
     if (!user.onboardingComplete) {
       router.replace('/onboarding')
-      return
     }
   }, [user, loading, router])
 
@@ -34,11 +39,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (!user || !user.onboardingComplete) {
+  if (!user || !user.emailVerified || !user.onboardingComplete) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-screen bg-background">
         <div className="animate-fade-in text-sm text-muted-foreground">
-          Checking access...
+          {t('common:checkingAccess')}
         </div>
       </div>
     )
@@ -50,16 +55,17 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  readonly children: React.ReactNode
 }) {
   return (
     <AuthGuard>
       <div className="flex min-h-screen bg-background">
-        {/* Sidebar — 240px */}
+        {/* Sidebar */}
         <Sidebar />
 
         {/* Main content area */}
         <main className="flex-1 min-h-screen bg-pattern overflow-auto">
+          <GracePeriodBanner />
           <div className="px-8 py-6 w-full animate-fade-in">
             {children}
           </div>

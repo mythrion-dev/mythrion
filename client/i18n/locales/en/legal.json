@@ -1,0 +1,25 @@
+{
+  "privacyTitle": "Privacy Policy",
+  "privacyIntro": "At Mythrion, we respect your privacy and are committed to protecting your personal data.",
+  "privacyDataUse": "We collect only the information necessary to create and manage your account, provide the service, and process payments.",
+  "privacySecurity": "Your account information is protected using industry-standard security measures, and we limit access to trusted personnel.",
+  "privacyRetention": "We retain your information only as long as needed to operate the service, comply with legal obligations, and support your account.",
+  "privacyContact": "If you have questions about this policy, contact support at portal@mythrion.com.",
+
+  "termsTitle": "Terms of Service",
+  "termsOfService": "Terms of Service",
+  "termsIntro": "By using Mythrion, you agree to these terms, which govern access, subscriptions, and acceptable behavior.",
+  "termsSubscription": "Subscription cancellations take effect at the end of the current billing period. You will retain access for the remainder of your paid term and will not be charged again.",
+  "termsUserConduct": "You agree not to misuse the service, infringe on others' rights, or engage in abusive behavior.",
+  "termsTermination": "Mythrion may suspend or terminate accounts for violation of these terms or for activity that harms the platform.",
+  "termsContact": "For questions about these terms, please contact support at portal@mythrion.com.",
+
+  "cancelTermsTitle": "Subscription Cancellation Terms",
+  "cancelTermsIntro": "These terms govern the cancellation of your Mythrion Premium subscription. By cancelling, you agree to the conditions below.",
+  "cancelTermsEffect": "Cancellation takes effect at the end of the current billing period. Once your request is processed, no further renewals will be scheduled.",
+  "cancelTermsAccess": "You will retain full access to Mythrion Premium until the end of your paid billing period, even after requesting cancellation.",
+  "cancelTermsCharges": "You will not be charged again after cancelling. As you keep access for the remainder of an already-paid period, no refund is issued for that period.",
+  "cancelTermsHowToCancel": "You can cancel at any time from the Subscription page in your dashboard. To submit the cancellation, you must read these terms and check the acceptance box.",
+  "cancelTermsAfterCancellation": "When your subscription ends, your account returns to the free tier. Your campaigns and character sheets remain available, and features that require a paid plan become limited.",
+  "cancelTermsContact": "For questions about these terms, please contact support at portal@mythrion.com."
+}

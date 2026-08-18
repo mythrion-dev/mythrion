@@ -9,11 +9,20 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common'
+import { IsBoolean } from 'class-validator'
 import { AdventureService } from './adventure.service.js'
 import { CreateAdventureDto } from './dto/create-adventure.dto.js'
 import { UpdateAdventureDto } from './dto/update-adventure.dto.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
-import type { AuthenticatedRequest } from '../auth/jwt-auth.guard.js'
+import { SubscriptionGuard } from '../auth/subscription.guard.js'
+import { PlanLimitGuard } from '../auth/plan-limit.guard.js'
+import { PlanLimit } from '../auth/plan-limit.decorator.js'
+import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
+
+class UpdateVisibilityDto {
+  @IsBoolean()
+  isPublic!: boolean
+}
 
 @Controller('adventures')
 @UseGuards(JwtAuthGuard)
@@ -21,6 +30,8 @@ export class AdventureController {
   constructor(private readonly adventureService: AdventureService) {}
 
   @Post()
+  @UseGuards(SubscriptionGuard, PlanLimitGuard)
+  @PlanLimit('campaign')
   create(@Req() req: AuthenticatedRequest, @Body() dto: CreateAdventureDto) {
     return this.adventureService.create(req.user.sub, dto)
   }
@@ -42,6 +53,15 @@ export class AdventureController {
     @Body() dto: UpdateAdventureDto,
   ) {
     return this.adventureService.update(id, req.user.sub, dto)
+  }
+
+  @Patch(':id/visibility')
+  updateVisibility(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: UpdateVisibilityDto,
+  ) {
+    return this.adventureService.updateVisibility(id, req.user.sub, dto.isPublic)
   }
 
   @Delete(':id')

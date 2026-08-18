@@ -1,0 +1,3 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`InvitationController JwtAuthGuard rejection should throw UnauthorizedException and match snapshot when no token is provided 1`] = `"Missing token"`;

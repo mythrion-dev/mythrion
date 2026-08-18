@@ -89,8 +89,8 @@ export class ResistanceCalculationService {
     // ── 4. Build attribute value & modifier maps ──
     const attrValues = new Map<string, number>()
     for (const v of sheet.values) {
-      const num = parseFloat(v.value)
-      attrValues.set(v.attributeId, isNaN(num) ? 0 : num)
+      const num = Number.parseFloat(v.value)
+      attrValues.set(v.attributeId, Number.isNaN(num) ? 0 : num)
     }
 
     const template = await this.prisma.template.findUnique({
@@ -100,24 +100,7 @@ export class ResistanceCalculationService {
     const formula = template?.attributeModifierFormula ?? null
     const modifiersEnabled = template?.attributeModifiersEnabled ?? true
 
-    const attributeModifiers = new Map<string, number>()
-    if (formula && modifiersEnabled) {
-      for (const v of sheet.values) {
-        const attrValue = attrValues.get(v.attributeId) ?? 0
-        try {
-          const variables: Record<string, number> = {}
-          for (const sv of sheet.values) {
-            const val = attrValues.get(sv.attributeId) ?? 0
-            variables[sv.attribute.key] = val
-          }
-          variables['value'] = attrValue
-          const mod = this.formulaService.evaluate(formula, variables)
-          attributeModifiers.set(v.attributeId, mod)
-        } catch {
-          attributeModifiers.set(v.attributeId, 0)
-        }
-      }
-    }
+    const attributeModifiers = this.buildAttributeModifiers(formula, modifiersEnabled, sheet.values, attrValues)
 
     // ── 5. Build results from all resistance sources ──
     const results: CalculatedResult[] = []
@@ -190,6 +173,36 @@ export class ResistanceCalculationService {
   }
 
   /**
+   * Build the attribute modifier map (attributeId -> modifier) using the template formula.
+   */
+  private buildAttributeModifiers(
+    formula: string | null,
+    modifiersEnabled: boolean,
+    values: Array<{ attributeId: string; value: string; attribute: { key: string } }>,
+    attrValues: Map<string, number>,
+  ): Map<string, number> {
+    const attributeModifiers = new Map<string, number>()
+    if (formula && modifiersEnabled) {
+      for (const v of values) {
+        const attrValue = attrValues.get(v.attributeId) ?? 0
+        try {
+          const variables: Record<string, number> = {}
+          for (const sv of values) {
+            const val = attrValues.get(sv.attributeId) ?? 0
+            variables[sv.attribute.key] = val
+          }
+          variables['value'] = attrValue
+          const mod = this.formulaService.evaluate(formula, variables)
+          attributeModifiers.set(v.attributeId, mod)
+        } catch {
+          attributeModifiers.set(v.attributeId, 0)
+        }
+      }
+    }
+    return attributeModifiers
+  }
+
+  /**
    * Calculate a single resistance for a character sheet.
    */
   async calculateSingleResistance(sheetId: string, resistanceId: string) {
@@ -219,51 +232,92 @@ export class ResistanceCalculationService {
     } = opts
 
     if (resistance.calculationType === 'MANUAL') {
-      let manualVal = 0
-      if (isTemplate) {
-        // Template: read from junction table
-        const sv = sheetResistanceValues.find(r => r.resistanceId === resistance.id)
-        manualVal = parseFloat(sv?.manualValue ?? '0')
-      } else {
-        // Sheet: sum component values (typically one component storing the value)
-        manualVal = resistance.components.reduce(
-          (sum, c) => sum + parseFloat(c.baseValue || '0'),
-          0,
-        )
-      }
-      return {
-        resistanceId: resistance.id,
-        name: resistance.name,
-        calculationType: 'MANUAL',
-        total: isNaN(manualVal) ? 0 : manualVal,
-        componentValues: [],
-        attributeModifierValues: [],
-      }
+      return this.calculateManualResistance(resistance, isTemplate, sheetResistanceValues)
     }
 
     // CALCULATED resistance
-    let total = 0
+    const { componentValues, total: componentsTotal } = this.buildComponentValues(
+      resistance,
+      isTemplate,
+      sheetComponentValues,
+    )
+    const { attributeModifierValues, total: modifierTotal } = this.buildAttributeModifierValues(
+      attributeModifiers,
+      modifiersEnabled,
+      resistance,
+    )
 
+    return {
+      resistanceId: resistance.id,
+      name: resistance.name,
+      calculationType: 'CALCULATED',
+      total: componentsTotal + modifierTotal,
+      componentValues,
+      attributeModifierValues,
+    }
+  }
+
+  private calculateManualResistance(
+    resistance: ResistanceInput,
+    isTemplate: boolean,
+    sheetResistanceValues: Array<{ resistanceId: string; manualValue: string | null }>,
+  ): CalculatedResult {
+    let manualVal = 0
+    if (isTemplate) {
+      // Template: read from junction table
+      const sv = sheetResistanceValues.find(r => r.resistanceId === resistance.id)
+      manualVal = Number.parseFloat(sv?.manualValue ?? '0')
+    } else {
+      // Sheet: sum component values (typically one component storing the value)
+      manualVal = resistance.components.reduce(
+        (sum, c) => sum + Number.parseFloat(c.baseValue || '0'),
+        0,
+      )
+    }
+    return {
+      resistanceId: resistance.id,
+      name: resistance.name,
+      calculationType: 'MANUAL',
+      total: Number.isNaN(manualVal) ? 0 : manualVal,
+      componentValues: [],
+      attributeModifierValues: [],
+    }
+  }
+
+  private buildComponentValues(
+    resistance: ResistanceInput,
+    isTemplate: boolean,
+    sheetComponentValues: Array<{ componentId: string; value: string }>,
+  ): { componentValues: CalculatedResult['componentValues']; total: number } {
+    let total = 0
     const componentValues: CalculatedResult['componentValues'] = []
     for (const component of resistance.components) {
       let val: number
       if (component.editableByPlayer && isTemplate) {
         // Template: use player override from junction table, else defaultValue (stored as baseValue)
         const sheetVal = sheetComponentValues.find(scv => scv.componentId === component.id)
-        val = parseFloat(sheetVal?.value ?? component.baseValue)
+        val = Number.parseFloat(sheetVal?.value ?? component.baseValue)
       } else {
         // Template non-editable or sheet: use baseValue directly
-        val = parseFloat(component.baseValue)
+        val = Number.parseFloat(component.baseValue)
       }
       componentValues.push({
         componentId: component.id,
         componentName: component.name,
-        value: isNaN(val) ? 0 : val,
+        value: Number.isNaN(val) ? 0 : val,
         editableByPlayer: component.editableByPlayer,
       })
-      total += isNaN(val) ? 0 : val
+      total += Number.isNaN(val) ? 0 : val
     }
+    return { componentValues, total }
+  }
 
+  private buildAttributeModifierValues(
+    attributeModifiers: Map<string, number>,
+    modifiersEnabled: boolean,
+    resistance: ResistanceInput,
+  ): { attributeModifierValues: CalculatedResult['attributeModifierValues']; total: number } {
+    let total = 0
     const attributeModifierValues: CalculatedResult['attributeModifierValues'] = []
     if (modifiersEnabled) {
       for (const am of resistance.attributeModifiers) {
@@ -281,14 +335,6 @@ export class ResistanceCalculationService {
         })
       }
     }
-
-    return {
-      resistanceId: resistance.id,
-      name: resistance.name,
-      calculationType: 'CALCULATED',
-      total,
-      componentValues,
-      attributeModifierValues,
-    }
+    return { attributeModifierValues, total }
   }
 }

@@ -16,8 +16,10 @@ import {
   getRefreshToken,
   setRefreshToken,
   removeRefreshToken,
-  getInvitationToken,
   removeInvitationToken,
+  refreshAccessToken,
+  isAccessTokenExpiringSoon,
+  onAuthFailure,
 } from './api'
 
 interface User {
@@ -25,67 +27,199 @@ interface User {
   email: string
   displayName: string | null
   onboardingComplete: boolean
+  isAdmin: boolean
+  language: string
+  isEarlyAccess: boolean
+  twoFactorEnabled: boolean
+  emailVerified: boolean
+  hasPassword: boolean
+  permissions: UserPermissions
 }
+
+/** Server-computed permission snapshot returned by /auth/me. The server is the
+ *  single source of truth for role/early-access/subscription state — this must
+ *  never be derived from the locally-decoded JWT payload. */
+interface UserPermissions {
+  role: 'admin' | 'early_access' | 'user'
+  earlyAccess: boolean
+  subscription: {
+    plan: { slug: string; name: string; price: number } | null
+    status: string | null
+    expiresAt: string | null
+  }
+  entitlements: {
+    hasActiveSubscription: boolean
+    canUseSubscriptionFeatures: boolean
+  }
+  limits: {
+    maxCampaigns: number | null
+    maxTemplates: number | null
+  }
+}
+
+/** Result of a password login: either the session is established, or the
+ *  server demands a 2FA code first (no tokens are issued until it is verified). */
+export type LoginOutcome =
+  | { requiresTwoFactor: true; twoFactorId: string; emailMasked: string }
+  | { requiresTwoFactor: false }
+
+type LoginResponse =
+  | { requiresTwoFactor: true; twoFactorId: string; emailMasked: string }
+  | { requiresTwoFactor: false; accessToken: string; refreshToken: string }
 
 interface AuthState {
   user: User | null
   loading: boolean
-  login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string, displayName?: string) => Promise<void>
+  login: (email: string, password: string) => Promise<LoginOutcome>
+  register: (email: string, password: string, displayName?: string, acceptTerms?: boolean) => Promise<void>
   logout: () => Promise<void>
   completeOnboarding: (displayName: string) => Promise<void>
+  verifyTwoFactor: (twoFactorId: string, code: string) => Promise<void>
+  refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
   const fetchProfile = useCallback(async () => {
     try {
-      const profile = await api.get<User>('/auth/profile')
-      setUser(profile)
-    } catch {
-      removeAccessToken()
-      removeRefreshToken()
-      setUser(null)
-    } finally {
+      // /auth/me returns the profile plus the server-computed permission
+      // snapshot. isAdmin/isEarlyAccess must come from that snapshot — never
+      // from the locally-decoded JWT payload, which a client can tamper with.
+      const me = await api.get<Omit<User, 'isAdmin' | 'isEarlyAccess'>>('/auth/me')
+      setUser({
+        ...me,
+        isAdmin: me.permissions.role === 'admin',
+        isEarlyAccess: me.permissions.earlyAccess,
+      })
       setLoading(false)
+    } catch {
+      // Transient failure (network blip / server 5xx) — this is NOT a logout,
+      // so do not clear the tokens. Keep loading true: guards render the
+      // loading state instead of redirecting to /login, and the
+      // focus/visibility listener below retries. Definitive rejection (refresh
+      // token refused by the server) is handled by onAuthFailure, which resets
+      // the session from a single place.
+      return
     }
   }, [])
 
-  useEffect(() => {
-    const token = getAccessToken()
-    if (token) {
-      fetchProfile()
-    } else {
-      const refreshToken = getRefreshToken()
-      if (refreshToken) {
-        // Try to refresh on page load
-        fetchProfile()
-      } else {
-        setLoading(false)
-      }
+  /**
+   * Restore a session on mount (or on return to the tab). Order of preference:
+   * access token present → fetch profile; else refresh token present → rotate
+   * it, then fetch profile; else no session at all.
+   */
+  const restoreSession = useCallback(async () => {
+    if (getAccessToken()) {
+      await fetchProfile()
+      return
     }
+    if (getRefreshToken()) {
+      // Refresh token but no access token — rotate first to avoid an
+      // unnecessary 401 round-trip on the profile fetch.
+      const newToken = await refreshAccessToken()
+      if (newToken) {
+        await fetchProfile()
+        return
+      }
+      if (!getRefreshToken()) {
+        // The refresh token was definitively rejected and cleared; onAuthFailure
+        // already reset the session.
+        return
+      }
+      // Transient refresh failure — tokens remain, so keep loading true and let
+      // the focus/visibility listener retry. Do not redirect to /login.
+      return
+    }
+    setLoading(false)
   }, [fetchProfile])
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await api.post<{ accessToken: string; refreshToken: string }>('/auth/login', {
-      email,
-      password,
+  useEffect(() => {
+    void restoreSession()
+  }, [restoreSession])
+
+  // Single place that reacts to a definitive session loss (the refresh token
+  // was rejected server-side — revoked, expired, or invalid). Clears all auth
+  // state and stops the loading spinner so guards redirect to /login.
+  useEffect(() => {
+    return onAuthFailure(() => {
+      removeAccessToken()
+      removeRefreshToken()
+      removeInvitationToken()
+      setUser(null)
+      setLoading(false)
     })
-    setAccessToken(res.accessToken)
-    setRefreshToken(res.refreshToken)
+  }, [])
+
+  // Recover from transient failures and keep long sessions alive: when the tab
+  // regains focus, rotate an access token that is close to expiring so the next
+  // interaction never 401s; if a previous restore was interrupted (stuck in
+  // loading with tokens still present), try again.
+  useEffect(() => {
+    const onActive = () => {
+      if (document.visibilityState !== 'visible') return
+      const token = getAccessToken()
+      if (token && isAccessTokenExpiringSoon(token)) {
+        void refreshAccessToken()
+      } else if (!token && getRefreshToken()) {
+        void restoreSession()
+      }
+    }
+    window.addEventListener('focus', onActive)
+    document.addEventListener('visibilitychange', onActive)
+    return () => {
+      window.removeEventListener('focus', onActive)
+      document.removeEventListener('visibilitychange', onActive)
+    }
+  }, [restoreSession])
+
+  const login = useCallback(
+    async (email: string, password: string): Promise<LoginOutcome> => {
+      const res = await api.post<LoginResponse>('/auth/login', {
+        email,
+        password,
+      })
+      if (res.requiresTwoFactor) {
+        // No tokens were issued — the caller must complete the code step first.
+        return res
+      }
+      setAccessToken(res.accessToken)
+      setRefreshToken(res.refreshToken)
+      await fetchProfile()
+      return { requiresTwoFactor: false }
+    },
+    [fetchProfile],
+  )
+
+  /** Complete a 2FA challenge, store the tokens it unlocks, and load the profile. */
+  const verifyTwoFactor = useCallback(
+    async (twoFactorId: string, code: string) => {
+      const res = await api.post<{ accessToken: string; refreshToken: string }>(
+        '/auth/verify-2fa',
+        { twoFactorId, code },
+      )
+      setAccessToken(res.accessToken)
+      setRefreshToken(res.refreshToken)
+      await fetchProfile()
+    },
+    [fetchProfile],
+  )
+
+  /** Re-fetch the profile (e.g. to pick up a fresh twoFactorEnabled flag). */
+  const refreshProfile = useCallback(async () => {
     await fetchProfile()
   }, [fetchProfile])
 
   const register = useCallback(
-    async (email: string, password: string, displayName?: string) => {
+    async (email: string, password: string, displayName?: string, acceptTerms = false) => {
       const res = await api.post<{ accessToken: string; refreshToken: string }>('/auth/register', {
         email,
         password,
         displayName,
+        acceptTerms,
       })
       setAccessToken(res.accessToken)
       setRefreshToken(res.refreshToken)
@@ -108,17 +242,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const completeOnboarding = useCallback(
     async (displayName: string) => {
-      const updated = await api.post<User>('/auth/onboarding', {
-        displayName,
-      })
-      setUser(updated)
+      // The server returns only { id, email, displayName, onboardingComplete },
+      // so merging it would silently drop emailVerified/twoFactorEnabled/language.
+      // Re-fetch the full profile instead.
+      await api.post('/auth/onboarding', { displayName })
+      await fetchProfile()
     },
-    [],
+    [fetchProfile],
   )
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, completeOnboarding }}
+      value={{ user, loading, login, register, logout, completeOnboarding, verifyTwoFactor, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

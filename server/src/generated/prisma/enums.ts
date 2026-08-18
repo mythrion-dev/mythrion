@@ -9,6 +9,15 @@
 * 🟢 You can import this file directly.
 */
 
+export const JoinRequestStatus = {
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED'
+} as const
+
+export type JoinRequestStatus = (typeof JoinRequestStatus)[keyof typeof JoinRequestStatus]
+
+
 export const MemberRole = {
   GM: 'GM',
   PLAYER: 'PLAYER'
@@ -25,3 +34,32 @@ export const InvitationStatus = {
 } as const
 
 export type InvitationStatus = (typeof InvitationStatus)[keyof typeof InvitationStatus]
+
+
+export const BookVisibility = {
+  GM_BOOK: 'GM_BOOK',
+  PLAYER_BOOK: 'PLAYER_BOOK'
+} as const
+
+export type BookVisibility = (typeof BookVisibility)[keyof typeof BookVisibility]
+
+
+export const SubscriptionStatus = {
+  PENDING: 'PENDING',
+  AUTHORIZED: 'AUTHORIZED',
+  ACTIVE: 'ACTIVE',
+  GRACE: 'GRACE',
+  EXPIRED: 'EXPIRED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type SubscriptionStatus = (typeof SubscriptionStatus)[keyof typeof SubscriptionStatus]
+
+
+export const TwoFactorPurpose = {
+  LOGIN: 'LOGIN',
+  ENABLE: 'ENABLE',
+  DISABLE: 'DISABLE'
+} as const
+
+export type TwoFactorPurpose = (typeof TwoFactorPurpose)[keyof typeof TwoFactorPurpose]

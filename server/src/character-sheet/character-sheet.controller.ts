@@ -13,10 +13,12 @@ import {
 import { CharacterSheetService } from './character-sheet.service.js'
 import { CreateCharacterSheetDto } from './dto/create-character-sheet.dto.js'
 import { UpdateCharacterSheetDto } from './dto/update-character-sheet.dto.js'
+import { AssignCharacterDto } from './dto/assign-character.dto.js'
+import { CreateCharacterFromCampaignDto } from './dto/create-character-from-campaign.dto.js'
 import { ResistanceCalculationService } from './resistance-calculation.service.js'
 import { AcCalculationService } from './ac-calculation.service.js'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js'
-import type { AuthenticatedRequest } from '../auth/jwt-auth.guard.js'
+import type { AuthenticatedRequest } from '../auth/AuthenticatedRequest.js'
 
 @Controller('character-sheets')
 @UseGuards(JwtAuthGuard)
@@ -30,6 +32,14 @@ export class CharacterSheetController {
   @Post()
   create(@Req() req: AuthenticatedRequest, @Body() dto: CreateCharacterSheetDto) {
     return this.sheetService.create(req.user.sub, dto)
+  }
+
+  @Post('from-campaign')
+  createFromCampaign(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: CreateCharacterFromCampaignDto,
+  ) {
+    return this.sheetService.createFromCampaignSnapshot(req.user.sub, dto)
   }
 
   @Get()
@@ -79,6 +89,25 @@ export class CharacterSheetController {
     @Param('id') id: string,
   ) {
     return this.sheetService.unlinkFromAdventure(id, req.user.sub)
+  }
+
+  // ── Player assignment ──
+
+  @Post(':id/assign')
+  assign(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: AssignCharacterDto,
+  ) {
+    return this.sheetService.assignMember(id, dto.memberId, req.user.sub)
+  }
+
+  @Delete(':id/assign')
+  removeAssignment(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
+    return this.sheetService.removeAssignment(id, req.user.sub)
   }
 
   @Patch(':id/skills/:skillId/profiles/:profileId')
@@ -174,9 +203,19 @@ export class CharacterSheetController {
   addSummonSkill(
     @Req() req: AuthenticatedRequest,
     @Param('abilityId') abilityId: string,
-    @Body('skillId') skillId: string,
+    @Body('name') name: string,
+    @Body('manualValue') manualValue: number,
   ) {
-    return this.sheetService.addSummonSkill(abilityId, skillId, req.user.sub)
+    return this.sheetService.addSummonSkill(abilityId, name, manualValue ?? 0, req.user.sub)
+  }
+
+  @Patch(':id/abilities/:abilityId/summon-skills/:summonSkillId')
+  updateSummonSkill(
+    @Req() req: AuthenticatedRequest,
+    @Param('summonSkillId') summonSkillId: string,
+    @Body() dto: { name?: string; manualValue?: number },
+  ) {
+    return this.sheetService.updateSummonSkill(summonSkillId, req.user.sub, dto)
   }
 
   @Delete(':id/abilities/:abilityId/summon-skills/:summonSkillId')
@@ -184,23 +223,30 @@ export class CharacterSheetController {
     return this.sheetService.removeSummonSkill(summonSkillId, req.user.sub)
   }
 
-  @Patch(':id/abilities/:abilityId/summon-skills/:summonSkillId/attribute')
-  updateSummonSkillAttribute(
+  // ── Summon Resistances ──
+
+  @Post(':id/abilities/:abilityId/summon-resistances')
+  addSummonResistance(
     @Req() req: AuthenticatedRequest,
-    @Param('summonSkillId') summonSkillId: string,
-    @Body('attributeId') attributeId: string | null,
+    @Param('abilityId') abilityId: string,
+    @Body('name') name: string,
+    @Body('value') value: string,
   ) {
-    return this.sheetService.updateSummonSkillAttribute(summonSkillId, attributeId, req.user.sub)
+    return this.sheetService.addSummonResistance(abilityId, name, value ?? '', req.user.sub)
   }
 
-  @Patch(':id/abilities/:abilityId/summon-skills/:summonSkillId/profiles/:profileId')
-  updateSummonSkillProfile(
+  @Patch(':id/abilities/:abilityId/summon-resistances/:summonResistanceId')
+  updateSummonResistance(
     @Req() req: AuthenticatedRequest,
-    @Param('summonSkillId') summonSkillId: string,
-    @Param('profileId') profileId: string,
-    @Body('optionId') optionId: string | null,
+    @Param('summonResistanceId') summonResistanceId: string,
+    @Body() dto: { name?: string; value?: string },
   ) {
-    return this.sheetService.updateSummonSkillProfile(summonSkillId, profileId, optionId, req.user.sub)
+    return this.sheetService.updateSummonResistance(summonResistanceId, req.user.sub, dto)
+  }
+
+  @Delete(':id/abilities/:abilityId/summon-resistances/:summonResistanceId')
+  removeSummonResistance(@Req() req: AuthenticatedRequest, @Param('summonResistanceId') summonResistanceId: string) {
+    return this.sheetService.removeSummonResistance(summonResistanceId, req.user.sub)
   }
 
   // ── Summon Attributes ──
@@ -212,16 +258,9 @@ export class CharacterSheetController {
 
   // ── Summon AC ──
 
-  @Patch(':id/abilities/:abilityId/summon-ac/:fieldId')
-  updateSummonAcValue(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Param('fieldId') fieldId: string, @Body('value') value: string) {
-    return this.sheetService.updateSummonAcValue(abilityId, fieldId, value, req.user.sub)
-  }
-
-  // ── Summon AC Attribute Modifier Selection ──
-
-  @Patch(':id/abilities/:abilityId/summon-ac-attribute-modifier/:acAttributeModifierId')
-  updateSummonAcAttributeValue(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Param('acAttributeModifierId') acAttributeModifierId: string, @Body('selectedAttributeId') selectedAttributeId: string | null) {
-    return this.sheetService.updateSummonAcAttributeValue(abilityId, acAttributeModifierId, selectedAttributeId, req.user.sub)
+  @Patch(':id/abilities/:abilityId/summon-ac')
+  updateSummonAcValue(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Body('value') value: string) {
+    return this.sheetService.updateSummonAcValue(abilityId, value, req.user.sub)
   }
 
   // ── Summon Health ──
@@ -229,18 +268,6 @@ export class CharacterSheetController {
   @Patch(':id/abilities/:abilityId/summon-health')
   updateSummonHealth(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Body() dto: { current?: number | null; maximum?: number | null; notes?: string | null }) {
     return this.sheetService.updateSummonHealth(abilityId, req.user.sub, dto)
-  }
-
-  // ── Summon Resistance Values ──
-
-  @Patch(':id/abilities/:abilityId/summon-resistances/:resistanceId')
-  updateSummonResistanceValue(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Param('resistanceId') resistanceId: string, @Body('value') value: string | null) {
-    return this.sheetService.updateSummonResistanceValue(abilityId, resistanceId, value, req.user.sub)
-  }
-
-  @Patch(':id/abilities/:abilityId/summon-resistance-components/:componentId')
-  updateSummonResistanceComponentValue(@Req() req: AuthenticatedRequest, @Param('abilityId') abilityId: string, @Param('componentId') componentId: string, @Body('value') value: string) {
-    return this.sheetService.updateSummonResistanceComponentValue(abilityId, componentId, value, req.user.sub)
   }
 
   // ── Inventory ──
@@ -302,16 +329,18 @@ export class CharacterSheetController {
   // ── Resistance Calculations ──
 
   @Get(':id/resistances')
-  getCalculatedResistances(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+  async getCalculatedResistances(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    await this.sheetService.assertReadAccess(id, req.user.sub)
     return this.resistanceService.calculateResistances(id)
   }
 
   @Get(':id/resistances/:resistanceId')
-  getCalculatedResistance(
+  async getCalculatedResistance(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Param('resistanceId') resistanceId: string,
   ) {
+    await this.sheetService.assertReadAccess(id, req.user.sub)
     return this.resistanceService.calculateSingleResistance(id, resistanceId)
   }
 
@@ -355,10 +384,28 @@ export class CharacterSheetController {
     return this.sheetService.removeProfessionalSkill(skillId, req.user.sub)
   }
 
+  @Patch(':id/professional-skills/:skillId/profiles/:profileId')
+  updateProfessionalSkillProfileValue(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('skillId') skillId: string,
+    @Param('profileId') profileId: string,
+    @Body('optionId') optionId: string | null,
+  ) {
+    return this.sheetService.updateProfessionalSkillProfileValue(
+      id,
+      skillId,
+      profileId,
+      optionId,
+      req.user.sub,
+    )
+  }
+
   // ── Armor Class Calculation ──
 
   @Get(':id/armor-class')
-  getCalculatedArmorClass(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Query('armorClassId') armorClassId?: string) {
+  async getCalculatedArmorClass(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Query('armorClassId') armorClassId?: string) {
+    await this.sheetService.assertReadAccess(id, req.user.sub)
     return this.acService.calculateArmorClass(id, armorClassId)
   }
 }
