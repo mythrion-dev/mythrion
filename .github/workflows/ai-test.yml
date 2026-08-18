@@ -43,7 +43,7 @@ jobs:
         working-directory: client
 
       # --------------------------------------------------
-      # 4. Install Qwen
+      # 4. Install Qwen Code
       # --------------------------------------------------
       - name: Install Qwen Code
         run: |
@@ -53,47 +53,87 @@ jobs:
       # --------------------------------------------------
       # 5. Get SonarQube issues
       # --------------------------------------------------
-      - name: Get Open SonarQube Code Smells
+      - name: Get Open SonarQube Issues
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          curl -sS \
+          set -euo pipefail
+
+          echo "Checking SonarQube..."
+
+          RESPONSE=$(curl -sS \
             -H "Authorization: Bearer ${SONAR_TOKEN}" \
             -H "Accept: application/json" \
-            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&statuses=OPEN&types=CODE_SMELL" \
-            > sonar-issues.json
+            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&statuses=OPEN")
 
-          echo "===== SONARQUBE ISSUES ====="
-          jq . sonar-issues.json
-          echo "============================"
+          echo "===== SONARQUBE RESPONSE ====="
+          echo "$RESPONSE" | jq .
+          echo "=============================="
+
+          # Fail immediately if SonarQube returned an API error
+          if echo "$RESPONSE" | jq -e '.errors' >/dev/null; then
+            echo "::error::SonarQube API returned an error."
+            exit 1
+          fi
+
+          # Make sure the response contains a valid total
+          if ! echo "$RESPONSE" | jq -e '.total | numbers' >/dev/null; then
+            echo "::error::SonarQube response does not contain a valid 'total'."
+            exit 1
+          fi
+
+          echo "$RESPONSE" > sonar-issues.json
 
       # --------------------------------------------------
-      # 6. Check if there are issues
+      # 6. Check SonarQube issues
       # --------------------------------------------------
       - name: Check SonarQube issues
         id: sonar
         run: |
+          set -euo pipefail
+
           TOTAL=$(jq -r '.total' sonar-issues.json)
 
-          echo "Open Code Smells: $TOTAL"
+          echo "Open SonarQube Issues: $TOTAL"
+
+          if ! [[ "$TOTAL" =~ ^[0-9]+$ ]]; then
+            echo "::error::Invalid SonarQube issue count: $TOTAL"
+            exit 1
+          fi
 
           echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
 
       # --------------------------------------------------
-      # 7. Create AI branch
+      # 7. Stop if there are no issues
+      # --------------------------------------------------
+      - name: No issues found
+        if: steps.sonar.outputs.total == '0'
+        run: |
+          echo "=========================================="
+          echo "No OPEN SonarQube issues were found."
+          echo "Nothing for the AI agent to fix."
+          echo "=========================================="
+
+      # --------------------------------------------------
+      # 8. Create AI branch
       # --------------------------------------------------
       - name: Create AI branch
         if: steps.sonar.outputs.total != '0'
         run: |
+          set -euo pipefail
+
           BRANCH="ai/sonar-fix-${GITHUB_RUN_ID}"
 
           git checkout -b "$BRANCH"
 
           echo "AI_BRANCH=$BRANCH" >> "$GITHUB_ENV"
 
+          echo "Created branch:"
+          echo "$BRANCH"
+
       # --------------------------------------------------
-      # 8. Run Qwen
+      # 9. Run Qwen
       # --------------------------------------------------
       - name: Run Qwen Code
         if: steps.sonar.outputs.total != '0'
@@ -102,64 +142,65 @@ jobs:
           OPENAI_BASE_URL: https://openrouter.ai/api/v1
           OPENAI_MODEL: openai/gpt-oss-120b
         run: |
+          set -euo pipefail
+
           qwen \
             --prompt "
-          You are an autonomous senior TypeScript/React/NestJS developer.
+          You are an autonomous senior TypeScript, React, Next.js and NestJS developer.
 
-          Your task is to fix the OPEN Code Smells reported by SonarQube.
+          Your task is to fix the OPEN SonarQube issues reported in sonar-issues.json.
 
-          The SonarQube issues are available in:
+          IMPORTANT:
 
-          sonar-issues.json
+          Read sonar-issues.json before doing anything.
 
-          IMPORTANT RULES:
+          Only work on issues whose status is OPEN.
 
-          1. Read sonar-issues.json first.
-          2. Only fix issues whose status is OPEN.
-          3. Do NOT modify issues that are already RESOLVED, ACCEPTED or WONTFIX.
-          4. Do NOT change application behavior unnecessarily.
-          5. Prefer the smallest clean solution.
-          6. Follow the existing project's coding style.
-          7. Do NOT disable SonarQube rules.
-          8. Do NOT add SonarQube suppressions just to make issues disappear.
-          9. Do NOT modify sonar-project.properties.
-          10. Do NOT modify GitHub Actions workflows.
-          11. Do NOT modify package.json unless absolutely necessary.
-          12. Do NOT modify lock files.
-          13. Do NOT remove tests.
-          14. Do NOT reduce test coverage.
-          15. Preserve existing functionality.
+          Do NOT modify issues that are:
+          - RESOLVED
+          - ACCEPTED
+          - WONTFIX
 
-          Before making changes:
+          GENERAL RULES:
 
-          - Inspect the relevant source files.
-          - Understand the context of each issue.
-          - Determine whether the SonarQube recommendation is appropriate.
+          1. Inspect the affected source files before making changes.
+          2. Understand the context of each SonarQube issue.
+          3. Apply the smallest safe fix.
+          4. Preserve existing application behavior.
+          5. Follow the existing coding style.
+          6. Do not disable SonarQube rules.
+          7. Do not add SonarQube suppressions.
+          8. Do not modify sonar-project.properties.
+          9. Do not modify GitHub Actions workflows.
+          10. Do not modify package.json.
+          11. Do not modify package-lock.json.
+          12. Do not remove tests.
+          13. Do not reduce test coverage.
+          14. Do not make unrelated refactoring.
+          15. Do not create commits.
+          16. Do not push to GitHub.
 
-          Then:
+          After making the changes:
 
-          - Fix the issues directly in the source code.
-          - Run the relevant tests.
-          - Run lint where appropriate.
-          - If a test fails because of your modification, fix the problem.
+          - Run the relevant backend tests when backend files were changed.
+          - Run the relevant frontend tests when frontend files were changed.
+          - Run lint when appropriate.
+          - If a test fails because of your changes, investigate and fix it.
 
-          At the end, provide a concise summary containing:
+          At the end, report:
 
-          - Issues fixed
+          - SonarQube issues fixed
           - Files modified
           - Tests executed
+          - Lint executed
           - Any remaining concerns
-
-          You are allowed to modify source files.
-          Do not create commits yourself.
-          Do not push anything yourself.
           " \
             --output-format text
 
       # --------------------------------------------------
-      # 9. Show changes
+      # 10. Show changes
       # --------------------------------------------------
-      - name: Show changes
+      - name: Show AI changes
         if: steps.sonar.outputs.total != '0'
         run: |
           echo "===== GIT STATUS ====="
@@ -174,7 +215,7 @@ jobs:
           git diff
 
       # --------------------------------------------------
-      # 10. Run backend tests
+      # 11. Run server tests
       # --------------------------------------------------
       - name: Run server tests
         if: steps.sonar.outputs.total != '0'
@@ -182,7 +223,7 @@ jobs:
         working-directory: server
 
       # --------------------------------------------------
-      # 11. Run frontend tests
+      # 12. Run client tests
       # --------------------------------------------------
       - name: Run client tests
         if: steps.sonar.outputs.total != '0'
@@ -190,33 +231,46 @@ jobs:
         working-directory: client
 
       # --------------------------------------------------
-      # 12. Commit changes
+      # 13. Commit changes
       # --------------------------------------------------
       - name: Commit AI changes
         if: steps.sonar.outputs.total != '0'
         run: |
+          set -euo pipefail
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+          # Only add source directories
           git add client server
 
           if git diff --cached --quiet; then
-            echo "No source changes were made."
+            echo "No source changes were made by Qwen."
             exit 0
           fi
 
           git commit -m "fix: resolve SonarQube code smells"
 
       # --------------------------------------------------
-      # 13. Push AI branch
+      # 14. Push AI branch
       # --------------------------------------------------
       - name: Push AI branch
         if: steps.sonar.outputs.total != '0'
         run: |
+          set -euo pipefail
+
           git push origin "$AI_BRANCH"
 
           echo ""
           echo "=========================================="
-          echo "AI branch created:"
-          echo "$AI_BRANCH"
+          echo "AI branch pushed successfully"
+          echo "Branch: $AI_BRANCH"
           echo "=========================================="
+
+      # --------------------------------------------------
+      # 15. Cleanup
+      # --------------------------------------------------
+      - name: Cleanup temporary files
+        if: always()
+        run: |
+          rm -f sonar-issues.json
