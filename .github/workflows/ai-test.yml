@@ -44,4 +44,4 @@ jobs:
             -H "Authorization: Bearer ${SONAR_TOKEN}" \
             -H "Accept: application/json" \
             -w "\nHTTP_STATUS=%{http_code}\n" \
-            "https://sonarqube-qa.up.railway.app/api/system/status"
+            "${SONAR_HOST_URL}/api/system/status"
