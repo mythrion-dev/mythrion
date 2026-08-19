@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   type ReactNode,
 } from 'react'
 import {
@@ -251,10 +252,19 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     [fetchProfile],
   )
 
+  const contextValue = useMemo(() => ({
+    user,
+    loading,
+    login,
+    register,
+    logout,
+    completeOnboarding,
+    verifyTwoFactor,
+    refreshProfile,
+  }), [user, loading, login, register, logout, completeOnboarding, verifyTwoFactor, refreshProfile]);
+
   return (
-    <AuthContext.Provider
-      value={{ user, loading, login, register, logout, completeOnboarding, verifyTwoFactor, refreshProfile }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   )
