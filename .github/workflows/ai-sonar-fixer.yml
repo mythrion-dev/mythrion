@@ -111,6 +111,30 @@ jobs:
           npm run test:cov
 
       # ============================================================
+      # WAKE SONARQUBE
+      # ============================================================
+      # SonarQube runs on Railway's free tier, which sleeps after ~15 min of
+      # idle time. The first request while asleep returns 404 from
+      # /api/server/version and kills the scan. Wake the app first: the first
+      # HTTP request triggers the wake, subsequent ones succeed.
+      - name: Wake SonarQube (Railway sleep)
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          echo "Waking SonarQube at ${SONAR_HOST_URL}..."
+          for i in {1..30}; do
+            CODE=$(curl -sS -o /tmp/wake -w "%{http_code}" --max-time 20 "${SONAR_HOST_URL}/api/server/version" || echo 000)
+            echo "Attempt $i/30 - HTTP ${CODE}"
+            if [[ "$CODE" == "200" ]]; then
+              echo "SonarQube is awake."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "SonarQube did not wake in time."
+          exit 1
+
+      # ============================================================
       # RUN SONARQUBE ANALYSIS
       # ============================================================
       - name: Run SonarQube Analysis
