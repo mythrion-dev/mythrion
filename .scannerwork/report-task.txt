@@ -2,5 +2,5 @@ projectKey=mythrion
 serverUrl=https://sonarqube-qa.up.railway.app
 serverVersion=26.7.0.124771
 dashboardUrl=https://sonarqube-qa.up.railway.app/dashboard?id=mythrion
-ceTaskId=90dd3176-24e4-4195-b347-d80a1dcf0792
-ceTaskUrl=https://sonarqube-qa.up.railway.app/api/ce/task?id=90dd3176-24e4-4195-b347-d80a1dcf0792
+ceTaskId=a4a9fb7e-3f89-485a-a4b6-804de0766382
+ceTaskUrl=https://sonarqube-qa.up.railway.app/api/ce/task?id=a4a9fb7e-3f89-485a-a4b6-804de0766382
