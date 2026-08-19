@@ -298,7 +298,11 @@ jobs:
           echo ""
           echo "Starting Qwen..."
 
+          # -y (YOLO mode): auto-approve Qwen's edit/write_file tools so they
+          # run non-interactively. Without it, every edit is blocked waiting
+          # for approval that never comes in a CI runner.
           qwen \
+            -y \
             --prompt "
           You are an autonomous senior TypeScript/React/NestJS developer.
 
