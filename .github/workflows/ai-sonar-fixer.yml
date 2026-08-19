@@ -305,7 +305,9 @@ jobs:
       - name: Install Qwen Code
         if: steps.get-open.outputs.total != '0'
         run: |
-          npm install -g @qwen-code/qwen-code@latest
+          # Pin the version proven in CI (0.21.14 produced the f853428 fix).
+          # @latest can drift between runs and change agentic behavior silently.
+          npm install -g @qwen-code/qwen-code@0.21.14
           qwen --version
 
       # ============================================================
@@ -316,7 +318,12 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENAI_BASE_URL: https://openrouter.ai/api/v1
-          OPENAI_MODEL: openai/gpt-oss-120b
+          # Qwen Code is Alibaba's agent CLI; pairing it with the Qwen coder
+          # model is the native combination and far more reliable for agentic
+          # edits than gpt-oss-120b, which silently bailed on a smell
+          # (empty finish, no edits, no report) in the 2026-08-19 validation
+          # run. Still near-free at this run scale (~$0.3/$1 per M tokens).
+          OPENAI_MODEL: qwen/qwen3-coder
         run: |
           set -euo pipefail
 
@@ -336,85 +343,138 @@ jobs:
           echo ""
           echo "Starting Qwen..."
 
-          # -y (YOLO mode): auto-approve Qwen's edit/write_file tools so they
-          # run non-interactively. Without it, every edit is blocked waiting
-          # for approval that never comes in a CI runner.
-          qwen \
-            -y \
-            --prompt "
-          You are an autonomous senior TypeScript/React/NestJS developer.
+          # Qwen's output is captured so a silent no-op (a model call that
+          # finishes without edits or a report) is visible in the log instead
+          # of vanishing into the TUI. A retry loop re-invokes Qwen when an
+          # attempt finishes without changing any source file: model/API
+          # flakes are intermittent, so a fresh call often succeeds.
+          MAX_ATTEMPTS=3
+          for ATTEMPT in $(seq 1 "${MAX_ATTEMPTS}"); do
+            echo "=========================================="
+            echo "QWEN ATTEMPT ${ATTEMPT}/${MAX_ATTEMPTS}"
+            echo "=========================================="
 
-          You are working directly on the QA branch of this repository.
+            # -y (YOLO mode): auto-approve Qwen's edit/write_file tools so
+            # they run non-interactively. Without it, every edit is blocked
+            # waiting for approval that never comes in a CI runner.
+            set +e
+            qwen \
+              -y \
+              --prompt "
+            You are an autonomous senior TypeScript/React/NestJS developer.
 
-          Your task is to fix the OPEN SonarQube Code Smells listed in:
+            You are working directly on the QA branch of this repository.
 
-          sonar-issues.json
+            Your task is to fix the OPEN SonarQube Code Smells listed in:
 
-          IMPORTANT RULES:
+            sonar-issues.json
 
-          1. Read sonar-issues.json FIRST.
+            IMPORTANT RULES:
 
-          2. ONLY fix issues whose status is OPEN, CONFIRMED, or REOPENED.
+            1. Read sonar-issues.json FIRST.
 
-          3. NEVER modify issues that are:
-             - CLOSED
-             - RESOLVED
-             - ACCEPTED
-             - WONTFIX
-             - FIXED
+            2. ONLY fix issues whose status is OPEN, CONFIRMED, or REOPENED.
 
-          4. Do NOT modify code unrelated to the reported issues.
+            3. NEVER modify issues that are:
+               - CLOSED
+               - RESOLVED
+               - ACCEPTED
+               - WONTFIX
+               - FIXED
 
-          5. Preserve existing application behavior.
+            4. Do NOT modify code unrelated to the reported issues.
 
-          6. Prefer the smallest clean and maintainable solution.
+            5. Preserve existing application behavior.
 
-          7. Follow the existing project's coding conventions.
+            6. Prefer the smallest clean and maintainable solution.
 
-          8. Do NOT disable SonarQube rules.
+            7. Follow the existing project's coding conventions.
 
-          9. Do NOT add SonarQube suppressions.
+            8. Do NOT disable SonarQube rules.
 
-          10. Do NOT modify sonar-project.properties.
+            9. Do NOT add SonarQube suppressions.
 
-          11. Do NOT modify GitHub Actions workflows.
+            10. Do NOT modify sonar-project.properties.
 
-          12. Do NOT modify package.json unless absolutely necessary.
+            11. Do NOT modify GitHub Actions workflows.
 
-          13. Do NOT modify package-lock.json.
+            12. Do NOT modify package.json unless absolutely necessary.
 
-          14. Do NOT remove tests.
+            13. Do NOT modify package-lock.json.
 
-          15. Do NOT reduce test coverage.
+            14. Do NOT remove tests.
 
-          16. Do NOT create commits.
+            15. Do NOT reduce test coverage.
 
-          17. Do NOT push anything.
+            16. Do NOT create commits.
 
-          18. Do NOT modify the main branch.
+            17. Do NOT push anything.
 
-          Before making changes:
+            18. Do NOT modify the main branch.
 
-          - Read sonar-issues.json.
-          - Inspect every affected source file.
-          - Understand the surrounding code.
-          - Determine the correct minimal fix.
+            19. If after investigation you determine that no code change is
+                appropriate for a reported issue, you MUST still produce the
+                final report and explain in Remaining concerns why no change
+                was made. NEVER finish without producing the final report.
 
-          Then:
+            Before making changes:
 
-          - Fix the reported OPEN Code Smells.
-          - Run relevant tests.
-          - Run lint/typecheck where appropriate.
-          - Fix any regression caused by your changes.
+            - Read sonar-issues.json.
+            - Inspect every affected source file.
+            - Understand the surrounding code.
+            - Determine the correct minimal fix.
 
-          At the end provide:
+            Then:
 
-          - Issues fixed
-          - Files modified
-          - Tests executed
-          - Remaining concerns
-          " \
-            --output-format text
+            - Fix the reported OPEN Code Smells.
+            - Run relevant tests.
+            - Run lint/typecheck where appropriate.
+            - Fix any regression caused by your changes.
+
+            At the end provide:
+
+            - Issues fixed
+            - Files modified
+            - Tests executed
+            - Remaining concerns
+            " \
+              --output-format text > qwen-output.txt 2>&1
+            QWEN_EXIT=$?
+            set -e
+
+            echo "qwen exit code: ${QWEN_EXIT}"
+            echo "----- qwen output (attempt ${ATTEMPT}) -----"
+            cat qwen-output.txt
+            echo "---------------------------------------------"
+
+            # Untracked scratch files (git status ^??) do not count as
+            # changes; only tracked source edits count.
+            CHANGES=$(git status --porcelain | grep -vc '^??' || true)
+            if [[ "${QWEN_EXIT}" -eq 0 && "${CHANGES}" -gt 0 ]]; then
+              echo "Qwen produced changes on attempt ${ATTEMPT}."
+              break
+            fi
+
+            if [[ "${ATTEMPT}" -lt "${MAX_ATTEMPTS}" ]]; then
+              echo "No usable changes after attempt ${ATTEMPT}; retrying."
+              # Reset any tracked edits Qwen made this attempt so the next
+              # attempt starts from a clean tree.
+              git checkout -- . 2>/dev/null || true
+              rm -f qwen-output.txt
+            fi
+          done
+
+          CHANGES=$(git status --porcelain | grep -vc '^??' || true)
+          if [[ "${CHANGES}" -eq 0 ]]; then
+            echo "=========================================="
+            echo "QWEN EXHAUSTED ${MAX_ATTEMPTS} ATTEMPTS"
+            echo "=========================================="
+            echo "Qwen produced no source changes after ${MAX_ATTEMPTS}"
+            echo "attempts. A smell the bot cannot fix needs human attention."
+            echo "Failing the run so this is visible in the Actions tab"
+            echo "(no commit, no push, no loop)."
+            exit 1
+          fi
 
       # ============================================================
       # SHOW CHANGES
@@ -453,6 +513,7 @@ jobs:
           # Temporary Sonar files must never be committed.
           rm -f sonar-response.json
           rm -f sonar-issues.json
+          rm -f qwen-output.txt
 
           if [[ -z "$(git status --porcelain)" ]]; then
             echo "=========================================="
