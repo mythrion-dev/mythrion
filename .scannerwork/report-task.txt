@@ -1,6 +1,0 @@
-projectKey=mythrion
-serverUrl=https://sonarqube-qa.up.railway.app
-serverVersion=26.7.0.124771
-dashboardUrl=https://sonarqube-qa.up.railway.app/dashboard?id=mythrion
-ceTaskId=a4a9fb7e-3f89-485a-a4b6-804de0766382
-ceTaskUrl=https://sonarqube-qa.up.railway.app/api/ce/task?id=a4a9fb7e-3f89-485a-a4b6-804de0766382

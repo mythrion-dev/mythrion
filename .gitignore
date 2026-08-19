@@ -24,3 +24,8 @@ sonarqube_tmp/
 # PagBank homologation evidence (sandbox test script + generated log)
 server/scripts/pagbank-homologation-evidence.ts
 server/homologation/
+
+# SonarQube scanner output + AI-fixer workflow scratch (regenerated each run)
+.scannerwork/
+sonar-response.json
+sonar-issues.json
