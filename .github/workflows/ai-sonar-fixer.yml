@@ -4,14 +4,15 @@ on:
   push:
     branches:
       - qa
-  # The bot's own commit is pushed with the repository's GITHUB_TOKEN, which
-  # does NOT emit a push event that starts a new run. The Commit step calls
-  # this trigger explicitly to re-scan the fixed code.
+  # Manual re-trigger from the Actions tab when wanted. The autonomous loop
+  # does NOT use this: a GITHUB_TOKEN cannot dispatch it (403), and this
+  # GitHub instance's parser rejects the `workflow` permission key entirely.
+  # Instead the Commit step pushes with a PAT (QA_FIXER_PAT), whose push emits
+  # a push event that restarts this workflow via on.push.
   workflow_dispatch:
 
 permissions:
   contents: write
-  workflow: write
 
 # Only one run at a time: a newer run cancels an older one, so the bot's
 # commit+push can never race a human's push into a non-fast-forward conflict.
@@ -22,8 +23,10 @@ concurrency:
 jobs:
   sonar-ai-fix:
     # The AI fixer's own commit MUST re-trigger the pipeline so the fix gets
-    # re-scanned. Termination is natural: once SonarQube reports zero active
-    # issues, nothing is committed and no push happens, so no new run starts.
+    # re-scanned. It is pushed with the QA_FIXER_PAT, so the push emits an
+    # event that starts a new run. Termination is natural: once SonarQube
+    # reports zero active issues, nothing is committed and no push happens, so
+    # no new run starts.
     # (The commit step never dirtied the tree anymore — .scannerwork/ is
     # gitignored and untracked.)
     runs-on: ubuntu-latest
@@ -418,6 +421,8 @@ jobs:
       # COMMIT AI FIXES TO QA
       # ============================================================
       - name: Commit AI fixes to QA
+        env:
+          QA_FIXER_PAT: ${{ secrets.QA_FIXER_PAT }}
         run: |
           set -euo pipefail
 
@@ -429,6 +434,31 @@ jobs:
             echo "=========================================="
             echo "NO SOURCE CODE CHANGES"
             echo "=========================================="
+            exit 0
+          fi
+
+          # Loop guard: never let an unattended bot fix chain run forever. If
+          # the last 3 commits on qa are already AI fixes, the fixes are not
+          # clearing the smells — stop instead of looping. A human commit
+          # resets the chain.
+          BOT_MSG="fix: resolve SonarQube issues with AI"
+          BOT_CAP=3
+          CHAIN=0
+          while IFS= read -r MSG; do
+            if [[ "$MSG" == "$BOT_MSG" ]]; then
+              CHAIN=$((CHAIN + 1))
+            else
+              break
+            fi
+          done < <(git log --format=%s HEAD)
+
+          if [[ "$CHAIN" -ge "$BOT_CAP" ]]; then
+            echo "=========================================="
+            echo "BOT FIX CHAIN LIMIT REACHED"
+            echo "=========================================="
+            echo "The last ${CHAIN} commits on qa are AI fixes, but active"
+            echo "SonarQube issues remain. Stopping to avoid an infinite loop."
+            echo "A human push to qa resets the chain."
             exit 0
           fi
 
@@ -444,34 +474,23 @@ jobs:
           git commit \
             -m "fix: resolve SonarQube issues with AI"
 
-          git push origin HEAD:qa
-
-          echo ""
-          echo "AI fixes pushed to QA."
-          echo ""
-
-          # A push made with the repository's GITHUB_TOKEN does NOT emit a
-          # push event that starts a new workflow run, so this fix would never
-          # be re-scanned. Dispatch the workflow explicitly (workflow_dispatch
-          # is one of the events GITHUB_TOKEN is allowed to trigger). The new
-          # run re-analyzes this commit: with zero active issues it commits
-          # nothing and the loop terminates naturally.
-          echo "Dispatching re-scan of QA..."
-          HTTP_CODE=$(curl -sS -o dispatch-response.json -w "%{http_code}" \
-            -X POST \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/ai-sonar-fixer.yml/dispatches" \
-            -d '{"ref":"qa"}')
-
-          echo "Dispatch HTTP status: ${HTTP_CODE}"
-          cat dispatch-response.json 2>/dev/null || true
-          rm -f dispatch-response.json
-
-          if [[ "$HTTP_CODE" != "204" ]]; then
-            echo "ERROR: Failed to dispatch re-scan of QA."
-            exit 1
+          # Push with a PAT when available: a PAT push emits a push event, so
+          # the on.push trigger starts a new run that re-scans this commit.
+          # With zero active issues the next run commits nothing and the loop
+          # terminates naturally. A GITHUB_TOKEN push emits NO push event, so
+          # the degraded (no-PAT) path lands the fix on qa but needs a human
+          # push to re-scan. Prefer a fine-grained PAT with "Contents: Read
+          # and write" for this repo, stored as the QA_FIXER_PAT secret.
+          if [[ -n "${QA_FIXER_PAT}" ]]; then
+            echo "Pushing with QA_FIXER_PAT (push event re-triggers the scan)..."
+            git push "https://x-access-token:${QA_FIXER_PAT}@github.com/${GITHUB_REPOSITORY}.git" HEAD:qa
+            echo ""
+            echo "AI fixes pushed to QA. Push event re-scan dispatched."
+          else
+            echo "WARNING: QA_FIXER_PAT secret is not set; pushing with GITHUB_TOKEN."
+            echo "The fix lands on qa but does NOT re-trigger a scan. Configure"
+            echo "the secret for the full autonomous loop."
+            git push origin HEAD:qa
+            echo ""
+            echo "AI fixes pushed to QA (degraded mode)."
           fi
-
-          echo "Re-scan of QA dispatched."
