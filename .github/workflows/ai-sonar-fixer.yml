@@ -255,6 +255,83 @@ jobs:
           fi
 
       # ============================================================
+      # DIAGNOSTIC: DUMP FULL SONARQUBE STATE  (TEMP - remove after root cause found)
+      # ============================================================
+      - name: "DIAGNOSTIC: Dump full SonarQube state"
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          set -euo pipefail
+          BASE="$SONAR_HOST_URL"
+          H="Authorization: Bearer ${SONAR_TOKEN}"
+          mkdir -p /tmp/sonar-diag
+
+          echo "############ 1. ALL ISSUES (no status/type filter) ############"
+          curl -sS -H "$H" -H "Accept: application/json" \
+            "${BASE}/api/issues/search?componentKeys=mythrion&ps=500" \
+            > /tmp/sonar-diag/all-issues.json || echo "QUERY1 FAILED"
+          jq '{total, paging, issues: [.issues[] | {key, status, type, rule, component, message, resolution}]}' \
+            /tmp/sonar-diag/all-issues.json 2>/dev/null > /tmp/sonar-diag/all-issues-summary.json || true
+          echo "TOTAL: $(jq -r '.total // "ERR"' /tmp/sonar-diag/all-issues.json 2>/dev/null)"
+          echo "status histogram:"
+          jq -r '.issues | group_by(.status) | map({status: .[0].status, n: length})' /tmp/sonar-diag/all-issues.json 2>/dev/null || echo "  (no issues)"
+          echo "type histogram:"
+          jq -r '.issues | group_by(.type) | map({type: .[0].type, n: length})' /tmp/sonar-diag/all-issues.json 2>/dev/null || echo "  (no issues)"
+          echo "first 25 issues (rule/status/type/component):"
+          jq -r '.issues[:25][] | "\(.rule) [\(.status) \(.type)] \(.component)"' /tmp/sonar-diag/all-issues.json 2>/dev/null || echo "  (none)"
+
+          echo ""
+          echo "############ 2. RECENT ANALYSES ############"
+          curl -sS -H "$H" -H "Accept: application/json" \
+            "${BASE}/api/project_analyses/search?project=mythrion&ps=5" \
+            > /tmp/sonar-diag/analyses.json || echo "QUERY2 FAILED"
+          jq '{paging, analyses: [.analyses[] | {key, date, revision, events}]}' \
+            /tmp/sonar-diag/analyses.json 2>/dev/null || echo "  (parse error)"
+
+          echo ""
+          echo "############ 3. OPEN ISSUES (OPEN+CONFIRMED+REOPENED, any type) ############"
+          curl -sS -H "$H" -H "Accept: application/json" \
+            "${BASE}/api/issues/search?componentKeys=mythrion&statuses=OPEN,CONFIRMED,REOPENED&ps=500" \
+            > /tmp/sonar-diag/open-anytype.json || echo "QUERY3 FAILED"
+          echo "TOTAL: $(jq -r '.total // "ERR"' /tmp/sonar-diag/open-anytype.json 2>/dev/null)"
+          jq -r '.issues[] | "\(.rule) [\(.status) \(.type)] \(.component)"' /tmp/sonar-diag/open-anytype.json 2>/dev/null || echo "  (none)"
+
+          echo ""
+          echo "############ 4. PROJECT INFO ############"
+          curl -sS -H "$H" -H "Accept: application/json" \
+            "${BASE}/api/components/show?component=mythrion" \
+            > /tmp/sonar-diag/project.json || echo "QUERY4 FAILED"
+          jq '{key: .component.key, name: .component.name, qualifier: .component.qualifier, analysisDate: .component.analysisDate, version: .component.version}' \
+            /tmp/sonar-diag/project.json 2>/dev/null || echo "  (parse error)"
+
+          echo ""
+          echo "############ 5. PROJECT MEASURES ############"
+          curl -sS -H "$H" -H "Accept: application/json" \
+            "${BASE}/api/measures/component?component=mythrion&metricKeys=ncloc,code_smells,bugs,vulnerabilities,coverage,duplicated_lines_density,complexity" \
+            > /tmp/sonar-diag/measures.json || echo "QUERY5 FAILED"
+          jq -r '.component.measures[]? | "\(.metric)=\(.value)"' /tmp/sonar-diag/measures.json 2>/dev/null || echo "  (parse error)"
+
+          echo ""
+          echo "############ 6. QUALITY PROFILES ############"
+          curl -sS -H "$H" -H "Accept: application/json" \
+            "${BASE}/api/qualityprofiles/search?projectKey=mythrion" \
+            > /tmp/sonar-diag/profiles.json || echo "QUERY6 FAILED"
+          jq -r '.profiles[] | "\(.name) [\(.language)] default=\(.isDefault) activeRules=\(.activeRuleCount) inherited=\(.rulesUpdatedAt // "n/a")"' \
+            /tmp/sonar-diag/profiles.json 2>/dev/null || echo "  (parse error)"
+
+          echo ""
+          echo "############ 7. ALL PROJECTS MATCHING 'mythrion' ############"
+          curl -sS -H "$H" -H "Accept: application/json" \
+            "${BASE}/api/projects/search?q=mythrion&ps=20" \
+            > /tmp/sonar-diag/projects.json || echo "QUERY7 FAILED"
+          jq -r '.components[] | "\(.key) name=\(.name) qualifier=\(.qualifier) lastAnalysis=\(.lastAnalysisDate // "NEVER")"' \
+            /tmp/sonar-diag/projects.json 2>/dev/null || echo "  (parse error)"
+
+          echo ""
+          echo "DIAGNOSTIC DONE"
+
+      # ============================================================
       # INSTALL QWEN
       # ============================================================
       - name: Install Qwen Code
