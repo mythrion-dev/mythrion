@@ -1,3 +1,6 @@
+# Dependencies
+node_modules/
+
 # Claude Code worktrees and session data
 .claude/
 
@@ -17,3 +20,7 @@ images/
 sonarqube_tmp/
 .pagbank-api-requests-responses.md
 ./server/docs/
+
+# PagBank homologation evidence (sandbox test script + generated log)
+server/scripts/pagbank-homologation-evidence.ts
+server/homologation/

@@ -165,11 +165,16 @@ describe('InventoryTab', () => {
     expect(screen.getByText('Steel Shield')).toBeInTheDocument()
   })
 
-  it('handles delete item click for owner', () => {
-    const handleDeleteItem = vi.fn()
+  it('opens delete confirmation before deleting an item', async () => {
+    const handleDeleteItem = vi.fn().mockResolvedValue(undefined)
     render(<InventoryTab {...defaultProps({ handleDeleteItem })} />)
     const deleteBtn = screen.getByTitle('Delete item')
     fireEvent.click(deleteBtn)
+
+    expect(screen.getByText(/Are you sure you want to delete "Long Sword"\?/i)).toBeInTheDocument()
+    expect(handleDeleteItem).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: /Delete forever/i }))
     expect(handleDeleteItem).toHaveBeenCalledWith('item-1')
   })
 
