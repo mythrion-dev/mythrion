@@ -1,6 +1,7 @@
 import { RedisService } from './redis.service.js'
 
 const mockRedisInstance = {
+  on: jest.fn(),
   connect: jest.fn().mockResolvedValue(undefined),
   quit: jest.fn().mockResolvedValue(undefined),
   ping: jest.fn().mockResolvedValue('PONG'),
@@ -37,6 +38,7 @@ function getRedisConstructorOptions(): Record<string, unknown> | null {
 }
 
 function resetMockRedisInstance() {
+  mockRedisInstance.on = jest.fn()
   mockRedisInstance.connect = jest.fn().mockResolvedValue(undefined)
   mockRedisInstance.quit = jest.fn().mockResolvedValue(undefined)
   mockRedisInstance.ping = jest.fn().mockResolvedValue('PONG')
