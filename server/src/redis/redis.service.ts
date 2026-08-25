@@ -26,6 +26,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
           return Math.min(times * 200, 2000)
         },
       })
+      this.client.on('error', (err) => {
+        this.logger.warn(`Redis connection error: ${err.message}`)
+      })
 
       await this.client.connect()
       this.isReady = true

@@ -1691,13 +1691,12 @@ describe('AdventureDetailPage — create template', () => {
           fields: [{ name: 'Base', key: 'base', defaultValue: '10', editableByPlayer: true, description: 'desc' }],
         },
       ],
-      characterSections: [{ id: undefined, name: 'Backstory' }],
+      characterSections: [{ name: 'Backstory' }],
       resistances: [
         {
-          id: 'res-1',
           name: 'Fire',
           calculationType: 'MANUAL',
-          components: [{ id: 'rc-1', name: 'Base', editableByPlayer: true, defaultValue: '0' }],
+          components: [{ name: 'Base', editableByPlayer: true, defaultValue: '0' }],
           attributeModifiers: [{ attributeId: 'attr-1', enabled: true }],
         },
       ],

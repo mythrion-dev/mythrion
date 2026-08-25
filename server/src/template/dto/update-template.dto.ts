@@ -4,6 +4,10 @@ import { i18nValidationMessage } from 'nestjs-i18n'
 
 export class UpdateAttributeDefDto {
   @IsString({ message: i18nValidationMessage('validation.isString') })
+  @IsOptional()
+  id?: string
+
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   key!: string
 
   @IsString({ message: i18nValidationMessage('validation.isString') })
@@ -12,6 +16,10 @@ export class UpdateAttributeDefDto {
 
 export class UpdateTemplateFieldDefDto {
   @IsString({ message: i18nValidationMessage('validation.isString') })
+  @IsOptional()
+  id?: string
+
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   key!: string
 
   @IsString({ message: i18nValidationMessage('validation.isString') })
@@ -19,6 +27,10 @@ export class UpdateTemplateFieldDefDto {
 }
 
 export class UpdateTemplateSkillDefDto {
+  @IsString({ message: i18nValidationMessage('validation.isString') })
+  @IsOptional()
+  id?: string
+
   @IsString({ message: i18nValidationMessage('validation.isString') })
   name!: string
 
@@ -42,6 +54,10 @@ export class UpdateTemplateSkillDefDto {
 
 export class UpdateProfileOptionDefDto {
   @IsString({ message: i18nValidationMessage('validation.isString') })
+  @IsOptional()
+  id?: string
+
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   label!: string
 
   @IsNumber(undefined, { message: i18nValidationMessage('validation.isNumber') })
@@ -49,6 +65,10 @@ export class UpdateProfileOptionDefDto {
 }
 
 export class UpdateSkillModifierProfileDefDto {
+  @IsString({ message: i18nValidationMessage('validation.isString') })
+  @IsOptional()
+  id?: string
+
   @IsString({ message: i18nValidationMessage('validation.isString') })
   name!: string
 
@@ -69,6 +89,10 @@ export class UpdateSkillModifierProfileDefDto {
 }
 
 export class UpdateCoreResourceDefDto {
+  @IsString({ message: i18nValidationMessage('validation.isString') })
+  @IsOptional()
+  id?: string
+
   @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
   displayName?: string
@@ -97,6 +121,10 @@ export class UpdateCoreResourceDefDto {
 export class UpdateArmorClassFieldDefDto {
   @IsString({ message: i18nValidationMessage('validation.isString') })
   @IsOptional()
+  id?: string
+
+  @IsString({ message: i18nValidationMessage('validation.isString') })
+  @IsOptional()
   name?: string
 
   @IsString({ message: i18nValidationMessage('validation.isString') })
@@ -118,6 +146,10 @@ export class UpdateArmorClassFieldDefDto {
 
 export class UpdateArmorClassAttributeModifierDefDto {
   @IsString({ message: i18nValidationMessage('validation.isString') })
+  @IsOptional()
+  id?: string
+
+  @IsString({ message: i18nValidationMessage('validation.isString') })
   attributeId!: string
 
   @IsBoolean({ message: i18nValidationMessage('validation.isBoolean') })
@@ -130,6 +162,10 @@ export class UpdateArmorClassAttributeModifierDefDto {
 }
 
 export class UpdateArmorClassDefDto {
+  @IsString({ message: i18nValidationMessage('validation.isString') })
+  @IsOptional()
+  id?: string
+
   @IsBoolean({ message: i18nValidationMessage('validation.isBoolean') })
   @IsOptional()
   enabled?: boolean
@@ -175,6 +211,10 @@ export class UpdateResistanceComponentDefDto {
 }
 
 export class UpdateResistanceAttributeModifierDefDto {
+  @IsString({ message: i18nValidationMessage('validation.isString') })
+  @IsOptional()
+  id?: string
+
   @IsString({ message: i18nValidationMessage('validation.isString') })
   attributeId!: string
 
