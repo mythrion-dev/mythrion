@@ -123,13 +123,13 @@ function buildAcPayload(configs: AcConfigDraft[]) {
     }))
 }
 
-function buildResistancesPayload(resistances: ResistanceDef[]) {
+function buildResistancesPayload(resistances: ResistanceDef[], includeIds = false) {
   return resistances.filter(r => r.name.trim()).map((r) => ({
-    id: r.id,
+    ...(includeIds && r.id ? { id: r.id } : {}),
     name: r.name.trim(),
     calculationType: r.calculationType,
     components: (r.components || []).filter(c => c.name.trim()).map(c => ({
-      id: c.id,
+      ...(includeIds && c.id ? { id: c.id } : {}),
       name: c.name.trim(),
       editableByPlayer: c.editableByPlayer,
       defaultValue: c.defaultValue || '0',
@@ -162,6 +162,7 @@ interface TemplatePayloadSource {
   featureCharacterSections: boolean
   featureSkillProfiles: boolean
   featureResistance: boolean
+  includeIds?: boolean
 }
 
 function buildTemplatePayload(s: TemplatePayloadSource) {
@@ -175,8 +176,8 @@ function buildTemplatePayload(s: TemplatePayloadSource) {
     skillModifierProfiles: s.featureSkillProfiles ? s.skillModifierProfiles.filter(p => p.name.trim()).map(p => ({ name: p.name.trim(), targetMode: p.targetMode ?? 'ALL_SKILLS', targetSkillIds: p.targetSkillIds ?? [], options: p.options.filter(o => o.label.trim()).map(o => ({ label: o.label.trim(), value: o.value })) })) : undefined,
     coreResources: s.featureCoreResources ? s.coreResources.filter(r => r.slug.trim()).map(r => ({ displayName: r.displayName.trim() || r.slug.trim(), slug: r.slug.trim(), enabled: r.enabled, editableByPlayer: r.editableByPlayer, showNotes: r.showNotes, color: r.color || undefined })) : undefined,
     armorClasses: s.featureArmorClass ? buildAcPayload(s.acConfigs) : undefined,
-    characterSections: s.featureCharacterSections ? s.characterSections.filter(x => x.name.trim()).map(x => ({ id: x.id, name: x.name.trim() })) : undefined,
-    resistances: s.featureResistance ? buildResistancesPayload(s.resistances) : undefined,
+    characterSections: s.featureCharacterSections ? s.characterSections.filter(x => x.name.trim()).map(x => ({ ...(s.includeIds && x.id ? { id: x.id } : {}), name: x.name.trim() })) : undefined,
+    resistances: s.featureResistance ? buildResistancesPayload(s.resistances, s.includeIds) : undefined,
   }
 }
 
@@ -551,6 +552,7 @@ export default function AdventureDetailPage() {
           characterSections: newCharacterSections, resistances: newResistances,
           featureSkills: newFeatureSkills, featureCustomFields: newFeatureCustomFields, featureCoreResources: newFeatureCoreResources, featureArmorClass: newFeatureArmorClass,
           featureCharacterSections: newFeatureCharacterSections, featureSkillProfiles: newFeatureSkillProfiles, featureResistance: newFeatureResistance,
+          includeIds: false,
         }),
       })
       resetNewTemplate(); fetchTemplates(); fetchAdventure()
@@ -624,6 +626,7 @@ export default function AdventureDetailPage() {
           characterSections: editCharacterSections, resistances: editResistances,
           featureSkills: editFeatureSkills, featureCustomFields: editFeatureCustomFields, featureCoreResources: editFeatureCoreResources, featureArmorClass: editFeatureArmorClass,
           featureCharacterSections: editFeatureCharacterSections, featureSkillProfiles: editFeatureSkillProfiles, featureResistance: editFeatureResistance,
+          includeIds: true,
         }),
       })
       cancelEditTemplate(); fetchTemplates()
