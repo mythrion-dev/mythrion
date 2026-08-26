@@ -339,6 +339,7 @@
   "privateCampaignDescription": "Only invited members can see this campaign.",
   "profileCount": "{{count}} profiles",
   "profileNamePlaceholder": "Profile name (e.g. mastery)",
+  "profileOptionsNeedNumber": "Profile option values must be valid numbers.",
   "profileSelectedSkillsError": "Profile \"{{name}}\" uses \"Selected Skills\" mode but no skills are selected.",
   "profiles": "Profiles",
   "publicCampaign": "Public Campaign",
