@@ -29,3 +29,4 @@ server/homologation/
 .scannerwork/
 sonar-response.json
 sonar-issues.json
+server/homologation/

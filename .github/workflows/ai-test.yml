@@ -1,0 +1,276 @@
+name: AI SonarQube Fixer
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix-sonar-issues:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      # --------------------------------------------------
+      # 1. Checkout
+      # --------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # --------------------------------------------------
+      # 2. Setup Node
+      # --------------------------------------------------
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
+
+      # --------------------------------------------------
+      # 3. Install dependencies
+      # --------------------------------------------------
+      - name: Install server dependencies
+        run: npm ci
+        working-directory: server
+
+      - name: Install client dependencies
+        run: npm ci
+        working-directory: client
+
+      # --------------------------------------------------
+      # 4. Install Qwen Code
+      # --------------------------------------------------
+      - name: Install Qwen Code
+        run: |
+          npm install -g @qwen-code/qwen-code@latest
+          qwen --version
+
+      # --------------------------------------------------
+      # 5. Get SonarQube issues
+      # --------------------------------------------------
+      - name: Get Open SonarQube Issues
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          echo "Checking SonarQube..."
+
+          RESPONSE=$(curl -sS \
+            -H "Authorization: Bearer ${SONAR_TOKEN}" \
+            -H "Accept: application/json" \
+            "${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&statuses=OPEN&types=CODE_SMELL")
+
+          echo "===== SONARQUBE RESPONSE ====="
+          echo "$RESPONSE" | jq .
+          echo "=============================="
+
+          # Fail immediately if SonarQube returned an API error
+          if echo "$RESPONSE" | jq -e '.errors' >/dev/null; then
+            echo "::error::SonarQube API returned an error."
+            exit 1
+          fi
+
+          # Make sure the response contains a valid total
+          if ! echo "$RESPONSE" | jq -e '.total | numbers' >/dev/null; then
+            echo "::error::SonarQube response does not contain a valid 'total'."
+            exit 1
+          fi
+
+          echo "$RESPONSE" > sonar-issues.json
+
+      # --------------------------------------------------
+      # 6. Check SonarQube issues
+      # --------------------------------------------------
+      - name: Check SonarQube issues
+        id: sonar
+        run: |
+          set -euo pipefail
+
+          TOTAL=$(jq -r '.total' sonar-issues.json)
+
+          echo "Open SonarQube Issues: $TOTAL"
+
+          if ! [[ "$TOTAL" =~ ^[0-9]+$ ]]; then
+            echo "::error::Invalid SonarQube issue count: $TOTAL"
+            exit 1
+          fi
+
+          echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
+
+      # --------------------------------------------------
+      # 7. Stop if there are no issues
+      # --------------------------------------------------
+      - name: No issues found
+        if: steps.sonar.outputs.total == '0'
+        run: |
+          echo "=========================================="
+          echo "No OPEN SonarQube issues were found."
+          echo "Nothing for the AI agent to fix."
+          echo "=========================================="
+
+      # --------------------------------------------------
+      # 8. Create AI branch
+      # --------------------------------------------------
+      - name: Create AI branch
+        if: steps.sonar.outputs.total != '0'
+        run: |
+          set -euo pipefail
+
+          BRANCH="ai/sonar-fix-${GITHUB_RUN_ID}"
+
+          git checkout -b "$BRANCH"
+
+          echo "AI_BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+          echo "Created branch:"
+          echo "$BRANCH"
+
+      # --------------------------------------------------
+      # 9. Run Qwen
+      # --------------------------------------------------
+      - name: Run Qwen Code
+        if: steps.sonar.outputs.total != '0'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENAI_BASE_URL: https://openrouter.ai/api/v1
+          OPENAI_MODEL: openai/gpt-oss-120b
+        run: |
+          set -euo pipefail
+
+          qwen \
+            --prompt "
+          You are an autonomous senior TypeScript, React, Next.js and NestJS developer.
+
+          Your task is to fix the OPEN SonarQube issues reported in sonar-issues.json.
+
+          IMPORTANT:
+
+          Read sonar-issues.json before doing anything.
+
+          Only work on issues whose status is OPEN.
+
+          Do NOT modify issues that are:
+          - RESOLVED
+          - ACCEPTED
+          - WONTFIX
+
+          GENERAL RULES:
+
+          1. Inspect the affected source files before making changes.
+          2. Understand the context of each SonarQube issue.
+          3. Apply the smallest safe fix.
+          4. Preserve existing application behavior.
+          5. Follow the existing coding style.
+          6. Do not disable SonarQube rules.
+          7. Do not add SonarQube suppressions.
+          8. Do not modify sonar-project.properties.
+          9. Do not modify GitHub Actions workflows.
+          10. Do not modify package.json.
+          11. Do not modify package-lock.json.
+          12. Do not remove tests.
+          13. Do not reduce test coverage.
+          14. Do not make unrelated refactoring.
+          15. Do not create commits.
+          16. Do not push to GitHub.
+
+          After making the changes:
+
+          - Run the relevant backend tests when backend files were changed.
+          - Run the relevant frontend tests when frontend files were changed.
+          - Run lint when appropriate.
+          - If a test fails because of your changes, investigate and fix it.
+
+          At the end, report:
+
+          - SonarQube issues fixed
+          - Files modified
+          - Tests executed
+          - Lint executed
+          - Any remaining concerns
+          " \
+            --output-format text
+
+      # --------------------------------------------------
+      # 10. Show changes
+      # --------------------------------------------------
+      - name: Show AI changes
+        if: steps.sonar.outputs.total != '0'
+        run: |
+          echo "===== GIT STATUS ====="
+          git status --short
+
+          echo ""
+          echo "===== DIFF STAT ====="
+          git diff --stat
+
+          echo ""
+          echo "===== DIFF ====="
+          git diff
+
+      # --------------------------------------------------
+      # 11. Run server tests
+      # --------------------------------------------------
+      - name: Run server tests
+        if: steps.sonar.outputs.total != '0'
+        run: npm run test:cov
+        working-directory: server
+
+      # --------------------------------------------------
+      # 12. Run client tests
+      # --------------------------------------------------
+      - name: Run client tests
+        if: steps.sonar.outputs.total != '0'
+        run: npm run test:cov
+        working-directory: client
+
+      # --------------------------------------------------
+      # 13. Commit changes
+      # --------------------------------------------------
+      - name: Commit AI changes
+        if: steps.sonar.outputs.total != '0'
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Only add source directories
+          git add client server
+
+          if git diff --cached --quiet; then
+            echo "No source changes were made by Qwen."
+            exit 0
+          fi
+
+          git commit -m "fix: resolve SonarQube code smells"
+
+      # --------------------------------------------------
+      # 14. Push AI branch
+      # --------------------------------------------------
+      - name: Push AI branch
+        if: steps.sonar.outputs.total != '0'
+        run: |
+          set -euo pipefail
+
+          git push origin "$AI_BRANCH"
+
+          echo ""
+          echo "=========================================="
+          echo "AI branch pushed successfully"
+          echo "Branch: $AI_BRANCH"
+          echo "=========================================="
+
+      # --------------------------------------------------
+      # 15. Cleanup
+      # --------------------------------------------------
+      - name: Cleanup temporary files
+        if: always()
+        run: |
+          rm -f sonar-issues.json
