@@ -45,7 +45,7 @@ function updateProfileOption(
   f: 'label' | 'value',
   v: string | number,
 ): NewProfileDraft {
-  return { ...profile, options: profile.options.map((o, oi) => (oi === oIdx ? { ...o, [f]: v } : o)) }
+  return { ...profile, options: profile.options.map((o, oi) => (oi === oIdx ? { ...o, [f]: f === 'value' ? Number(v) : v } : o)) }
 }
 
 function toggleProfileSkill(profile: NewProfileDraft, skillId: string): NewProfileDraft {
