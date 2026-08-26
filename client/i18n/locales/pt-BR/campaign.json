@@ -339,6 +339,7 @@
   "privateCampaignDescription": "Apenas membros convidados podem ver esta campanha.",
   "profileCount": "{{count}} perfis",
   "profileNamePlaceholder": "Nome do perfil (ex.: maestria)",
+  "profileOptionsNeedNumber": "Os valores das opções do perfil devem ser números válidos.",
   "profileSelectedSkillsError": "O perfil \"{{name}}\" usa o modo \"Perícias Selecionadas\", mas nenhuma perícia foi selecionada.",
   "profiles": "Perfis",
   "publicCampaign": "Campanha Pública",

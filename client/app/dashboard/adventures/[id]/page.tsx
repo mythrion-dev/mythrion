@@ -173,7 +173,7 @@ function buildTemplatePayload(s: TemplatePayloadSource) {
     attributes: s.attributes.map(a => ({ key: a.key.trim(), name: a.name.trim() })),
     templateFields: s.featureCustomFields ? s.templateFields.filter(f => f.key.trim() && f.label.trim()).map(f => ({ key: f.key.trim(), label: f.label.trim() })) : undefined,
     skills: s.featureSkills ? s.templateSkills.filter(sk => sk.name.trim()).map(sk => ({ name: sk.name.trim(), description: sk.description.trim() || undefined, attributeId: sk.attributeId.trim() || undefined, allowedAttributeIds: sk.allowedAttributeIds.filter(k => k.trim()), defaultAttributeId: sk.defaultAttributeId.trim() || undefined })) : undefined,
-    skillModifierProfiles: s.featureSkillProfiles ? s.skillModifierProfiles.filter(p => p.name.trim()).map(p => ({ name: p.name.trim(), targetMode: p.targetMode ?? 'ALL_SKILLS', targetSkillIds: p.targetSkillIds ?? [], options: p.options.filter(o => o.label.trim()).map(o => ({ label: o.label.trim(), value: o.value })) })) : undefined,
+    skillModifierProfiles: s.featureSkillProfiles ? s.skillModifierProfiles.filter(p => p.name.trim()).map(p => ({ name: p.name.trim(), targetMode: p.targetMode ?? 'ALL_SKILLS', targetSkillIds: p.targetSkillIds ?? [], options: p.options.filter(o => o.label.trim() && Number.isFinite(o.value)).map(o => ({ label: o.label.trim(), value: Number(o.value) })) })) : undefined,
     coreResources: s.featureCoreResources ? s.coreResources.filter(r => r.slug.trim()).map(r => ({ displayName: r.displayName.trim() || r.slug.trim(), slug: r.slug.trim(), enabled: r.enabled, editableByPlayer: r.editableByPlayer, showNotes: r.showNotes, color: r.color || undefined })) : undefined,
     armorClasses: s.featureArmorClass ? buildAcPayload(s.acConfigs) : undefined,
     characterSections: s.featureCharacterSections ? s.characterSections.filter(x => x.name.trim()).map(x => ({ ...(s.includeIds && x.id ? { id: x.id } : {}), name: x.name.trim() })) : undefined,
@@ -184,7 +184,7 @@ function buildTemplatePayload(s: TemplatePayloadSource) {
 function validateTemplateForm(args: {
   attrs: { key: string; name: string }[]
   coreResources: CoreResource[]
-  profiles: { name: string; targetMode?: string; targetSkillIds?: string[] }[]
+  profiles: { name: string; targetMode?: string; targetSkillIds?: string[]; options: { label: string; value: number }[] }[]
   acConfigs: AcConfigDraft[]
 }, t: TFunction): string | null {
   const ta = args.attrs.map(a => ({ key: a.key.trim(), name: a.name.trim() }))
@@ -192,6 +192,9 @@ function validateTemplateForm(args: {
   const ve = validateCoreResources(args.coreResources, t)
   if (ve) return ve
   for (const p of args.profiles) {
+    if (p.options?.some(o => !Number.isFinite(o.value))) {
+      return t('campaign:profileOptionsNeedNumber')
+    }
     if (p.targetMode === 'SELECTED_SKILLS' && (p.targetSkillIds?.length ?? 0) === 0) {
       return t('campaign:profileSelectedSkillsError', { name: p.name || t('campaign:unnamed') })
     }

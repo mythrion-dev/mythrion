@@ -1,0 +1,581 @@
+name: AI SonarQube Fix - QA
+
+on:
+  push:
+    branches:
+      - qa
+  # Manual re-trigger from the Actions tab when wanted. The autonomous loop
+  # does NOT use this: a GITHUB_TOKEN cannot dispatch it (403), and this
+  # GitHub instance's parser rejects the `workflow` permission key entirely.
+  # Instead the Commit step pushes with a PAT (QA_FIXER_PAT), whose push emits
+  # a push event that restarts this workflow via on.push.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Only one run at a time: a newer run cancels an older one, so the bot's
+# commit+push can never race a human's push into a non-fast-forward conflict.
+concurrency:
+  group: ai-sonar-fix-qa
+  cancel-in-progress: true
+
+jobs:
+  sonar-ai-fix:
+    # The AI fixer's own commit MUST re-trigger the pipeline so the fix gets
+    # re-scanned. It is pushed with the QA_FIXER_PAT, so the push emits an
+    # event that starts a new run. Termination is natural: once SonarQube
+    # reports zero active issues, nothing is committed and no push happens, so
+    # no new run starts.
+    # (The commit step never dirtied the tree anymore — .scannerwork/ is
+    # gitignored and untracked.)
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ============================================================
+      # CHECKOUT QA
+      # ============================================================
+      - name: Checkout QA
+        uses: actions/checkout@v4
+        with:
+          ref: qa
+          fetch-depth: 0
+
+      # ============================================================
+      # SHOW GIT INFORMATION
+      # ============================================================
+      - name: Show Git information
+        run: |
+          echo "=========================================="
+          echo "GIT INFORMATION"
+          echo "=========================================="
+
+          echo "Branch:"
+          git branch --show-current
+
+          echo ""
+          echo "Commit:"
+          git rev-parse HEAD
+
+          echo ""
+          echo "GitHub ref:"
+          echo "${GITHUB_REF}"
+
+          echo ""
+          echo "GitHub SHA:"
+          echo "${GITHUB_SHA}"
+
+      # ============================================================
+      # NODE
+      # ============================================================
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
+
+      # ============================================================
+      # INSTALL SERVER
+      # ============================================================
+      - name: Install server dependencies
+        run: |
+          cd server
+          npm ci
+
+      # ============================================================
+      # INSTALL CLIENT
+      # ============================================================
+      - name: Install client dependencies
+        run: |
+          cd client
+          npm ci
+
+      # ============================================================
+      # SERVER TESTS
+      # ============================================================
+      - name: Run server tests
+        run: |
+          cd server
+          npm run test:cov
+
+      # ============================================================
+      # CLIENT TESTS
+      # ============================================================
+      - name: Run client tests
+        run: |
+          cd client
+          npm run test:cov
+
+      # ============================================================
+      # WAKE SONARQUBE
+      # ============================================================
+      # SonarQube runs on Railway's free tier, which sleeps after ~15 min of
+      # idle time. The first request while asleep returns 404 from
+      # /api/server/version and kills the scan. Wake the app first: the first
+      # HTTP request triggers the wake, subsequent ones succeed.
+      - name: Wake SonarQube (Railway sleep)
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          echo "Waking SonarQube at ${SONAR_HOST_URL}..."
+          for i in {1..30}; do
+            CODE=$(curl -sS -o /tmp/wake -w "%{http_code}" --max-time 20 "${SONAR_HOST_URL}/api/server/version" || echo 000)
+            echo "Attempt $i/30 - HTTP ${CODE}"
+            if [[ "$CODE" == "200" ]]; then
+              echo "SonarQube is awake."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "SonarQube did not wake in time."
+          exit 1
+
+      # ============================================================
+      # RUN SONARQUBE ANALYSIS
+      # ============================================================
+      - name: Run SonarQube Analysis
+        uses: sonarsource/sonarqube-scan-action@v3
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      # ============================================================
+      # SHOW SONAR TASK
+      # ============================================================
+      - name: Show SonarQube task
+        run: |
+          echo "=========================================="
+          echo "SONARQUBE TASK"
+          echo "=========================================="
+
+          if [[ ! -f ".scannerwork/report-task.txt" ]]; then
+            echo "ERROR: report-task.txt was not generated."
+            exit 1
+          fi
+
+          cat .scannerwork/report-task.txt
+
+      # ============================================================
+      # WAIT FOR SONARQUBE ANALYSIS
+      # ============================================================
+      - name: Wait for SonarQube analysis
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          echo "=========================================="
+          echo "WAITING FOR SONARQUBE ANALYSIS"
+          echo "=========================================="
+
+          CE_TASK_ID=$(grep '^ceTaskId=' .scannerwork/report-task.txt | cut -d'=' -f2)
+
+          if [[ -z "$CE_TASK_ID" ]]; then
+            echo "ERROR: Could not find ceTaskId."
+            exit 1
+          fi
+
+          echo "CE Task ID: $CE_TASK_ID"
+
+          for i in {1..30}; do
+
+            RESPONSE=$(curl -sS \
+              -H "Authorization: Bearer ${SONAR_TOKEN}" \
+              -H "Accept: application/json" \
+              "${SONAR_HOST_URL}/api/ce/task?id=${CE_TASK_ID}")
+
+            STATUS=$(echo "$RESPONSE" | jq -r '.task.status // empty')
+
+            echo "Attempt $i/30 - SonarQube task status: ${STATUS}"
+
+            case "$STATUS" in
+              SUCCESS)
+                echo "SonarQube analysis completed successfully."
+                exit 0
+                ;;
+
+              FAILED)
+                echo "SonarQube analysis FAILED."
+                echo "$RESPONSE" | jq .
+                exit 1
+                ;;
+
+              CANCELED)
+                echo "SonarQube analysis was CANCELED."
+                echo "$RESPONSE" | jq .
+                exit 1
+                ;;
+
+              PENDING|IN_PROGRESS)
+                echo "Analysis still running..."
+                sleep 10
+                ;;
+
+              *)
+                echo "Unknown SonarQube status."
+                echo "$RESPONSE" | jq .
+                sleep 10
+                ;;
+            esac
+
+          done
+
+          echo "SonarQube analysis did not finish within the expected time."
+          exit 1
+
+      # ============================================================
+      # GET OPEN CODE SMELLS
+      # ============================================================
+      - name: Get OPEN SonarQube Code Smells
+        id: get-open
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          echo "=========================================="
+          echo "GETTING OPEN SONARQUBE CODE SMELLS"
+          echo "=========================================="
+
+          SONAR_URL="${SONAR_HOST_URL}/api/issues/search?componentKeys=mythrion&statuses=OPEN,CONFIRMED,REOPENED&types=CODE_SMELL&ps=500"
+
+          echo "Query:"
+          echo "${SONAR_URL}"
+
+          curl -sS \
+            -H "Authorization: Bearer ${SONAR_TOKEN}" \
+            -H "Accept: application/json" \
+            "$SONAR_URL" \
+            > sonar-response.json
+
+          echo ""
+          echo "===== SONARQUBE RESPONSE ====="
+          jq . sonar-response.json
+          echo "=============================="
+
+          # Validate JSON
+          jq empty sonar-response.json
+
+          # Make absolutely sure every returned issue is still active. Active
+          # statuses are OPEN, CONFIRMED, and REOPENED — an issue that a
+          # previous "fix" failed to clear comes back as REOPENED and must be
+          # re-attempted.
+          jq '
+            {
+              total: (
+                .issues
+                | map(select(.status == "OPEN" or .status == "CONFIRMED" or .status == "REOPENED"))
+                | length
+              ),
+              issues: (
+                .issues
+                | map(select(.status == "OPEN" or .status == "CONFIRMED" or .status == "REOPENED"))
+              )
+            }
+          ' sonar-response.json > sonar-issues.json
+
+          TOTAL_OPEN=$(jq -r '.total' sonar-issues.json)
+
+          echo "total=${TOTAL_OPEN}" >> "$GITHUB_OUTPUT"
+
+          echo ""
+          echo "=========================================="
+          echo "ACTIVE CODE SMELLS: ${TOTAL_OPEN}"
+          echo "=========================================="
+
+          jq . sonar-issues.json
+
+          if [[ "$TOTAL_OPEN" -eq 0 ]]; then
+            echo ""
+            echo "No active Code Smells found."
+          else
+            echo ""
+            echo "Active Code Smells found."
+          fi
+
+      # ============================================================
+      # INSTALL QWEN
+      # ============================================================
+      - name: Install Qwen Code
+        if: steps.get-open.outputs.total != '0'
+        run: |
+          # Pin the version proven in CI (0.21.14 produced the f853428 fix).
+          # @latest can drift between runs and change agentic behavior silently.
+          npm install -g @qwen-code/qwen-code@0.21.14
+          qwen --version
+
+      # ============================================================
+      # RUN QWEN
+      # ============================================================
+      - name: Run Qwen Code Fixer
+        if: steps.get-open.outputs.total != '0'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENAI_BASE_URL: https://openrouter.ai/api/v1
+          # Qwen Code is Alibaba's agent CLI; pairing it with the Qwen coder
+          # model is the native combination and far more reliable for agentic
+          # edits than gpt-oss-120b, which silently bailed on a smell
+          # (empty finish, no edits, no report) in the 2026-08-19 validation
+          # run. Still near-free at this run scale (~$0.3/$1 per M tokens).
+          OPENAI_MODEL: qwen/qwen3-coder
+        run: |
+          set -euo pipefail
+
+          TOTAL_OPEN=$(jq -r '.total' sonar-issues.json)
+
+          echo "=========================================="
+          echo "QWEN"
+          echo "=========================================="
+
+          echo "Open Code Smells: ${TOTAL_OPEN}"
+
+          if [[ "$TOTAL_OPEN" -eq 0 ]]; then
+            echo "Nothing for Qwen to fix."
+            exit 0
+          fi
+
+          echo ""
+          echo "Starting Qwen..."
+
+          # Qwen's output is captured so a silent no-op (a model call that
+          # finishes without edits or a report) is visible in the log instead
+          # of vanishing into the TUI. A retry loop re-invokes Qwen when an
+          # attempt finishes without changing any source file: model/API
+          # flakes are intermittent, so a fresh call often succeeds.
+          MAX_ATTEMPTS=3
+          for ATTEMPT in $(seq 1 "${MAX_ATTEMPTS}"); do
+            echo "=========================================="
+            echo "QWEN ATTEMPT ${ATTEMPT}/${MAX_ATTEMPTS}"
+            echo "=========================================="
+
+            # -y (YOLO mode): auto-approve Qwen's edit/write_file tools so
+            # they run non-interactively. Without it, every edit is blocked
+            # waiting for approval that never comes in a CI runner.
+            set +e
+            qwen \
+              -y \
+              --prompt "
+            You are an autonomous senior TypeScript/React/NestJS developer.
+
+            You are working directly on the QA branch of this repository.
+
+            Your task is to fix the OPEN SonarQube Code Smells listed in:
+
+            sonar-issues.json
+
+            IMPORTANT RULES:
+
+            1. Read sonar-issues.json FIRST.
+
+            2. ONLY fix issues whose status is OPEN, CONFIRMED, or REOPENED.
+
+            3. NEVER modify issues that are:
+               - CLOSED
+               - RESOLVED
+               - ACCEPTED
+               - WONTFIX
+               - FIXED
+
+            4. Do NOT modify code unrelated to the reported issues.
+
+            5. Preserve existing application behavior.
+
+            6. Prefer the smallest clean and maintainable solution.
+
+            7. Follow the existing project's coding conventions.
+
+            8. Do NOT disable SonarQube rules.
+
+            9. Do NOT add SonarQube suppressions.
+
+            10. Do NOT modify sonar-project.properties.
+
+            11. Do NOT modify GitHub Actions workflows.
+
+            12. Do NOT modify package.json unless absolutely necessary.
+
+            13. Do NOT modify package-lock.json.
+
+            14. Do NOT remove tests.
+
+            15. Do NOT reduce test coverage.
+
+            16. Do NOT create commits.
+
+            17. Do NOT push anything.
+
+            18. Do NOT modify the main branch.
+
+            19. If after investigation you determine that no code change is
+                appropriate for a reported issue, you MUST still produce the
+                final report and explain in Remaining concerns why no change
+                was made. NEVER finish without producing the final report.
+
+            Before making changes:
+
+            - Read sonar-issues.json.
+            - Inspect every affected source file.
+            - Understand the surrounding code.
+            - Determine the correct minimal fix.
+
+            Then:
+
+            - Fix the reported OPEN Code Smells.
+            - Run relevant tests.
+            - Run lint/typecheck where appropriate.
+            - Fix any regression caused by your changes.
+
+            At the end provide:
+
+            - Issues fixed
+            - Files modified
+            - Tests executed
+            - Remaining concerns
+            " \
+              --output-format text > qwen-output.txt 2>&1
+            QWEN_EXIT=$?
+            set -e
+
+            echo "qwen exit code: ${QWEN_EXIT}"
+            echo "----- qwen output (attempt ${ATTEMPT}) -----"
+            cat qwen-output.txt
+            echo "---------------------------------------------"
+
+            # Untracked scratch files (git status ^??) do not count as
+            # changes; only tracked source edits count.
+            CHANGES=$(git status --porcelain | grep -vc '^??' || true)
+            if [[ "${QWEN_EXIT}" -eq 0 && "${CHANGES}" -gt 0 ]]; then
+              echo "Qwen produced changes on attempt ${ATTEMPT}."
+              break
+            fi
+
+            if [[ "${ATTEMPT}" -lt "${MAX_ATTEMPTS}" ]]; then
+              echo "No usable changes after attempt ${ATTEMPT}; retrying."
+              # Reset any tracked edits Qwen made this attempt so the next
+              # attempt starts from a clean tree.
+              git checkout -- . 2>/dev/null || true
+              rm -f qwen-output.txt
+            fi
+          done
+
+          CHANGES=$(git status --porcelain | grep -vc '^??' || true)
+          if [[ "${CHANGES}" -eq 0 ]]; then
+            echo "=========================================="
+            echo "QWEN EXHAUSTED ${MAX_ATTEMPTS} ATTEMPTS"
+            echo "=========================================="
+            echo "Qwen produced no source changes after ${MAX_ATTEMPTS}"
+            echo "attempts. A smell the bot cannot fix needs human attention."
+            echo "Failing the run so this is visible in the Actions tab"
+            echo "(no commit, no push, no loop)."
+            exit 1
+          fi
+
+      # ============================================================
+      # SHOW CHANGES
+      # ============================================================
+      - name: Show Changes
+        run: |
+          echo "=========================================="
+          echo "GIT STATUS"
+          echo "=========================================="
+
+          git status --short
+
+          echo ""
+          echo "=========================================="
+          echo "DIFF STAT"
+          echo "=========================================="
+
+          git diff --stat
+
+          echo ""
+          echo "=========================================="
+          echo "DIFF"
+          echo "=========================================="
+
+          git diff
+
+      # ============================================================
+      # COMMIT AI FIXES TO QA
+      # ============================================================
+      - name: Commit AI fixes to QA
+        env:
+          QA_FIXER_PAT: ${{ secrets.QA_FIXER_PAT }}
+        run: |
+          set -euo pipefail
+
+          # Temporary Sonar files must never be committed.
+          rm -f sonar-response.json
+          rm -f sonar-issues.json
+          rm -f qwen-output.txt
+
+          if [[ -z "$(git status --porcelain)" ]]; then
+            echo "=========================================="
+            echo "NO SOURCE CODE CHANGES"
+            echo "=========================================="
+            exit 0
+          fi
+
+          # Loop guard: never let an unattended bot fix chain run forever. If
+          # the last 3 commits on qa are already AI fixes, the fixes are not
+          # clearing the smells — stop instead of looping. A human commit
+          # resets the chain.
+          BOT_MSG="fix: resolve SonarQube issues with AI"
+          BOT_CAP=3
+          CHAIN=0
+          while IFS= read -r MSG; do
+            if [[ "$MSG" == "$BOT_MSG" ]]; then
+              CHAIN=$((CHAIN + 1))
+            else
+              break
+            fi
+          done < <(git log --format=%s HEAD)
+
+          if [[ "$CHAIN" -ge "$BOT_CAP" ]]; then
+            echo "=========================================="
+            echo "BOT FIX CHAIN LIMIT REACHED"
+            echo "=========================================="
+            echo "The last ${CHAIN} commits on qa are AI fixes, but active"
+            echo "SonarQube issues remain. Stopping to avoid an infinite loop."
+            echo "A human push to qa resets the chain."
+            exit 0
+          fi
+
+          echo "=========================================="
+          echo "COMMITTING AI FIXES TO QA"
+          echo "=========================================="
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+
+          git commit \
+            -m "fix: resolve SonarQube issues with AI"
+
+          # Push with a PAT when available: a PAT push emits a push event, so
+          # the on.push trigger starts a new run that re-scans this commit.
+          # With zero active issues the next run commits nothing and the loop
+          # terminates naturally. A GITHUB_TOKEN push emits NO push event, so
+          # the degraded (no-PAT) path lands the fix on qa but needs a human
+          # push to re-scan. Prefer a fine-grained PAT with "Contents: Read
+          # and write" for this repo, stored as the QA_FIXER_PAT secret.
+          if [[ -n "${QA_FIXER_PAT}" ]]; then
+            echo "Pushing with QA_FIXER_PAT (push event re-triggers the scan)..."
+            git push "https://x-access-token:${QA_FIXER_PAT}@github.com/${GITHUB_REPOSITORY}.git" HEAD:qa
+            echo ""
+            echo "AI fixes pushed to QA. Push event re-scan dispatched."
+          else
+            echo "WARNING: QA_FIXER_PAT secret is not set; pushing with GITHUB_TOKEN."
+            echo "The fix lands on qa but does NOT re-trigger a scan. Configure"
+            echo "the secret for the full autonomous loop."
+            git push origin HEAD:qa
+            echo ""
+            echo "AI fixes pushed to QA (degraded mode)."
+          fi
