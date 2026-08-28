@@ -93,8 +93,8 @@ const resDef = {
   id: 'r1',
   name: 'Fire',
   calculationType: 'MANUAL',
-  components: [{ name: 'Res', editableByPlayer: true, defaultValue: '0' }],
-  attributeModifiers: [],
+  components: [{ id: 'c1', name: 'Res', editableByPlayer: true, defaultValue: '0' }],
+  attributeModifiers: [{ attributeId: 'STR', attributeKey: 'STR', attributeName: 'Strength', enabled: true }],
 }
 
 beforeEach(() => {
@@ -364,7 +364,14 @@ describe('NewTemplatePage (templates/new)', () => {
           { enabled: true, name: 'Throwaway', attributeModifiers: [], fields: [] },
         ],
         characterSections: [{ name: 'Bio' }],
-        resistances: [resDef],
+        resistances: [
+          {
+            name: 'Fire',
+            calculationType: 'MANUAL',
+            components: [{ name: 'Res', editableByPlayer: true, defaultValue: '0' }],
+            attributeModifiers: [{ attributeId: 'STR', enabled: true }],
+          },
+        ],
       })
     })
     await waitFor(() => expect(mockRouterPush).toHaveBeenCalledWith('/dashboard/templates/new-1'))
