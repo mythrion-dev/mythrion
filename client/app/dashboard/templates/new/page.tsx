@@ -347,7 +347,21 @@ export default function NewTemplatePage() {
       }
 
       if (featureResistance) {
-        payload.resistances = resistances
+        payload.resistances = resistances.filter(r => r.name.trim()).map(r => ({
+          name: r.name.trim(),
+          calculationType: r.calculationType,
+          components: (r.components ?? []).filter(c => c.name.trim()).map(c => ({
+            name: c.name.trim(),
+            editableByPlayer: c.editableByPlayer,
+            defaultValue: c.defaultValue || '0',
+          })),
+          attributeModifiers: (r.attributeModifiers ?? [])
+            .filter(am => am.attributeId?.trim())
+            .map(am => ({
+              attributeId: am.attributeId,
+              enabled: am.enabled,
+            })),
+        }))
       }
 
       const created = await api.post<{ id: string }>('/templates', payload)
