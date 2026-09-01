@@ -21,12 +21,36 @@ export class PagBankService implements PaymentGateway {
     this.apiBase =
       process.env.PAGBANK_API_URL ?? 'https://sandbox.api.assinaturas.pagseguro.com'
     this.webhookSecret = process.env.PAGBANK_WEBHOOK_SECRET ?? ''
+    const env = process.env.NODE_ENV ?? 'development'
 
-    if (!this.token) {
+    if (env === 'production') {
+      // Fail fast: in production a missing token, a missing API URL, or a URL
+      // still pointing at the sandbox would silently process (or 401) against
+      // the wrong environment. Surface the misconfiguration at boot instead.
+      const problems: string[] = []
+      if (!this.token) problems.push('PAGBANK_TOKEN is not set')
+      if (!process.env.PAGBANK_API_URL) {
+        problems.push(
+          'PAGBANK_API_URL is not set — must be https://api.assinaturas.pagseguro.com',
+        )
+      } else if (this.apiBase.includes('sandbox.')) {
+        problems.push(`PAGBANK_API_URL points to the sandbox: ${this.apiBase}`)
+      }
+      if (problems.length > 0) {
+        throw new Error(
+          `PagBank production misconfiguration: ${problems.join('; ')}. ` +
+            'Fix the Railway environment variables before deploying.',
+        )
+      }
+    } else if (!this.token) {
       this.logger.warn(
         'PAGBANK_TOKEN is not set — PagBank integration will fail at runtime',
       )
     }
+
+    // Always log the resolved endpoint so deployment logs show which
+    // environment (sandbox vs production) requests actually go to.
+    this.logger.log(`PagBank API base: ${this.apiBase} (env: ${env})`)
   }
 
   private get headers(): Record<string, string> {
@@ -34,6 +58,14 @@ export class PagBankService implements PaymentGateway {
       Authorization: `Bearer ${this.token}`,
       'Content-Type': 'application/json',
     }
+  }
+
+  private requestIdHeader(response: Response): string {
+    return (
+      response.headers?.get('x-request-id') ??
+      response.headers?.get('x-correlation-id') ??
+      'n/a'
+    )
   }
 
   async createSubscription(
@@ -114,7 +146,7 @@ export class PagBankService implements PaymentGateway {
       if (!response.ok) {
         const pgError = JSON.stringify(data)
         this.logger.error(
-          `PagBank API error creating subscription (${response.status}): ${pgError}`,
+          `PagBank API error creating subscription (HTTP ${response.status}, requestId: ${this.requestIdHeader(response)}): ${pgError}`,
         )
         throw new UnprocessableEntityException(
           this.i18n.t('subscription.pagBankError', { args: { pgError } }),
@@ -123,7 +155,7 @@ export class PagBankService implements PaymentGateway {
 
       const result = data as any
       this.logger.log(
-        `PagBank subscription created - id: ${result.id}, status: ${result.status}` +
+        `PagBank subscription created (HTTP ${response.status}, requestId: ${this.requestIdHeader(response)}) - id: ${result.id}, status: ${result.status}` +
           (result.customer?.id ? `, customerId: ${result.customer.id}` : ''),
       )
 
