@@ -60,6 +60,67 @@ describe('PagBankService', () => {
         expect.stringContaining('PAGBANK_TOKEN is not set'),
       )
     })
+
+    it('throws in production when API URL points to the sandbox', () => {
+      const env = { ...process.env }
+      process.env.NODE_ENV = 'production'
+      process.env.PAGBANK_TOKEN = TEST_TOKEN
+      process.env.PAGBANK_API_URL = 'https://sandbox.api.assinaturas.pagseguro.com'
+      process.env.PAGBANK_WEBHOOK_SECRET = TEST_SECRET
+
+      expect(() => new PagBankService(createI18nServiceMock())).toThrow(
+        'PagBank production misconfiguration',
+      )
+      process.env = env
+    })
+
+    it('throws in production when API URL is not set', () => {
+      const env = { ...process.env }
+      process.env.NODE_ENV = 'production'
+      process.env.PAGBANK_TOKEN = TEST_TOKEN
+      delete process.env.PAGBANK_API_URL
+      process.env.PAGBANK_WEBHOOK_SECRET = TEST_SECRET
+
+      expect(() => new PagBankService(createI18nServiceMock())).toThrow(
+        'PagBank production misconfiguration',
+      )
+      process.env = env
+    })
+
+    it('throws in production when token is not set', () => {
+      const env = { ...process.env }
+      process.env.NODE_ENV = 'production'
+      process.env.PAGBANK_TOKEN = ''
+      process.env.PAGBANK_API_URL = 'https://api.assinaturas.pagseguro.com'
+      process.env.PAGBANK_WEBHOOK_SECRET = TEST_SECRET
+
+      expect(() => new PagBankService(createI18nServiceMock())).toThrow(
+        'PagBank production misconfiguration',
+      )
+      process.env = env
+    })
+
+    it('does not throw in production when fully configured', () => {
+      const env = { ...process.env }
+      process.env.NODE_ENV = 'production'
+      process.env.PAGBANK_TOKEN = TEST_TOKEN
+      process.env.PAGBANK_API_URL = 'https://api.assinaturas.pagseguro.com'
+      process.env.PAGBANK_WEBHOOK_SECRET = TEST_SECRET
+
+      expect(() => new PagBankService(createI18nServiceMock())).not.toThrow()
+      process.env = env
+    })
+
+    it('logs the resolved API base and env at startup', () => {
+      const logSpy = jest.spyOn(Logger.prototype, 'log')
+      const svc = new PagBankService(createI18nServiceMock())
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining('PagBank API base'),
+      )
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining(TEST_API_URL),
+      )
+    })
   })
 
   // ─── createSubscription ─────────────────────────────────────────────

@@ -2,3 +2,9 @@
 sonarqube/Dockerfile merge=ours
 sonar-project.properties merge=ours
 .github/workflows/sonarqube.yml merge=ours
+
+# Normalize line endings: store LF in the repo, keep working-tree files LF too.
+# Prevents Windows editors from committing CRLF churn (autocrlf/eol are unset here).
+* text=auto
+*.ts text eol=lf
+*.tsx text eol=lf

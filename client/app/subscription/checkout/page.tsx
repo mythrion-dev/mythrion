@@ -213,8 +213,13 @@ function CheckoutContent() {
       const rawCardNumber = cardNumber.replace(/\D/g, '')
       const rawCvv = cardCvv.replace(/\D/g, '')
 
-      // Check if this is a known test card with a pre-defined PagBank token
-      const preDefinedToken = TEST_CARD_TOKENS[rawCardNumber]
+      // Check if this is a known test card with a pre-defined PagBank token.
+      // Gate behind non-production so a production build never sends sandbox
+      // CARD_UUIDs to the live PagBank API.
+      const preDefinedToken =
+        process.env.NODE_ENV !== 'production'
+          ? TEST_CARD_TOKENS[rawCardNumber]
+          : undefined
 
       let cardToken: string | undefined
       let cardTokenId: string | undefined
