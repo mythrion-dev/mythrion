@@ -179,15 +179,13 @@ describe('HomePage', () => {
   it('renders the full marketing page for signed-out visitors', () => {
     render(<HomePage />)
     // Hero
-    expect(screen.getByText('Build a world that feels')).toBeInTheDocument()
-    expect(screen.getByText('truly yours')).toBeInTheDocument()
-    expect(screen.getByText('Custom RPGs, crafted with wonder')).toBeInTheDocument()
-    // Feature highlights
-    expect(screen.getByText('Create your world')).toBeInTheDocument()
-    expect(screen.getByText('Bring stories to life')).toBeInTheDocument()
-    expect(screen.getByText('Play with elegance')).toBeInTheDocument()
-    // Footer
-    expect(screen.getByText('Mythrion — Forge your legend.')).toBeInTheDocument()
+    expect(screen.getByText('Create worlds that feel')).toBeInTheDocument()
+    expect(screen.getByText('truly yours.')).toBeInTheDocument()
+    expect(screen.getByText('YOUR UNIVERSE STARTS HERE')).toBeInTheDocument()
+    expect(screen.getByText('Dashboard')).toBeInTheDocument()
+    expect(screen.getByText('Colapso')).toBeInTheDocument()
+    expect(screen.getByText('Living campaigns')).toBeInTheDocument()
+    expect(screen.getByText('Privacy')).toBeInTheDocument()
   })
 
   it('renders header navigation links with the right hrefs', () => {
@@ -199,17 +197,17 @@ describe('HomePage', () => {
     for (const link of signInLinks) {
       expect(link).toHaveAttribute('href', '/login?redirect=/dashboard')
     }
-    const privacyLinks = screen.getAllByRole('link', { name: 'Privacy Policy' })
+    const privacyLinks = screen.getAllByRole('link', { name: 'Privacy' })
     expect(privacyLinks.length).toBeGreaterThanOrEqual(1)
     for (const link of privacyLinks) {
       expect(link).toHaveAttribute('href', '/privacy')
     }
-    const termsLinks = screen.getAllByRole('link', { name: 'Terms of Service' })
+    const termsLinks = screen.getAllByRole('link', { name: 'Terms of service' })
     expect(termsLinks.length).toBeGreaterThanOrEqual(1)
     for (const link of termsLinks) {
       expect(link).toHaveAttribute('href', '/terms')
     }
-    const cancelTermsLinks = screen.getAllByRole('link', { name: 'Cancellation Terms' })
+    const cancelTermsLinks = screen.getAllByRole('link', { name: 'Cancellation' })
     expect(cancelTermsLinks.length).toBeGreaterThanOrEqual(1)
     for (const link of cancelTermsLinks) {
       expect(link).toHaveAttribute('href', '/cancel-terms')
