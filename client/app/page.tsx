@@ -22,6 +22,7 @@ export default function HomePage() {
   const { t, i18n } = useTranslation()
   const [plans, setPlans] = useState<Plan[]>([])
   const [featurePage, setFeaturePage] = useState(0)
+  const [openModule, setOpenModule] = useState<'character' | 'templates' | null>(null)
   const features = [
     { label: t('landing:available'), title: t('landing:featureCampaigns'), description: t('landing:featureCampaignsDescription') },
     { label: t('landing:available'), title: t('landing:featureSheets'), description: t('landing:featureSheetsDescription') },
@@ -31,6 +32,15 @@ export default function HomePage() {
     { label: t('landing:comingSoon'), title: t('landing:featureDice'), description: t('landing:featureDiceDescription') },
   ]
   const visibleFeatures = features.slice(featurePage * 3, featurePage * 3 + 3)
+
+  useEffect(() => {
+    if (!openModule) return
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpenModule(null)
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [openModule])
 
   useEffect(() => {
     fetchPlans()
@@ -110,11 +120,11 @@ export default function HomePage() {
                       <div className="my-4 h-px bg-border-bright" />
                       <p className="text-[0.65rem] text-muted sm:text-xs">▣ {t('landing:campaignMeta')}</p>
                     </div>
-                    <div className="rounded-xl border border-border-bright bg-background/70 p-4 sm:p-5">
-                      <p className="text-[0.65rem] font-bold tracking-[0.15em] text-primary">{t('landing:continueStory')}</p>
-                      <p className="mt-4 text-lg font-bold text-foreground sm:text-xl">{t('landing:characterName')}</p>
-                      <p className="mt-2 text-xs text-muted sm:text-sm">{t('landing:characterStats')}</p>
-                      <div className="mt-5 h-2 overflow-hidden rounded-full bg-border-bright"><div className="h-full w-4/5 rounded-full bg-primary" /></div>
+                    <div className="rounded-xl border border-border-bright bg-surface-raised p-4 sm:p-5">
+                      <div className="flex items-start justify-between gap-2"><p className="text-base font-bold text-foreground sm:text-lg">{t('landing:campaignNameTwo')}</p><span className="text-[0.55rem] font-bold tracking-[0.12em] text-primary sm:text-[0.65rem]">{t('landing:campaignSystemTwo')}</span></div>
+                      <p className="mt-4 text-xs leading-6 text-muted-foreground sm:text-sm">{t('landing:campaignDescriptionTwo')}</p>
+                      <div className="my-4 h-px bg-border-bright" />
+                      <p className="text-[0.65rem] text-muted sm:text-xs">▣ {t('landing:campaignMetaTwo')}</p>
                     </div>
                   </div>
                 </div>
@@ -143,7 +153,7 @@ export default function HomePage() {
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">{t('landing:characterEyebrow')}</p>
             <h2 className="mt-4 text-3xl font-semibold leading-tight text-foreground sm:text-4xl">{t('landing:characterTitle')}</h2>
             <p className="mt-5 text-base leading-7 text-muted-foreground">{t('landing:characterDescription')}</p>
-            <Link href="/login?redirect=/dashboard/character-sheets" className="btn-ghost mt-7 px-6 py-3">{t('landing:characterCta')}</Link>
+            <button type="button" onClick={() => setOpenModule('character')} className="btn-ghost mt-7 px-6 py-3">{t('landing:characterCta')}</button>
           </div>
           <div className="animate-fade-in overflow-hidden rounded-xl border border-border-bright bg-surface shadow-[0_18px_56px_rgba(109,62,255,0.14)]" style={{ animationDelay: '120ms' }}>
             <div className="flex min-h-[360px]">
@@ -153,7 +163,7 @@ export default function HomePage() {
                 <p className="mt-1 text-xs text-muted-foreground sm:text-sm">{t('landing:characterPageSubtitle')}</p>
                 <div className="my-4 h-px bg-primary/30" />
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-lg bg-surface-raised p-4"><p className="text-xs font-bold text-foreground">{t('landing:characterInfoTitle')}</p><div className="mt-3 space-y-2 text-xs text-muted-foreground"><p className="rounded bg-background p-2">{t('landing:characterClass')}</p><p className="rounded bg-background p-2">{t('landing:characterLevel')}</p><p className="rounded bg-background p-2">{t('landing:characterNation')}</p><p className="rounded bg-background p-2">{t('landing:characterOrigin')}</p></div></div>
+                    <div className="rounded-lg bg-surface-raised p-4"><p className="text-xs font-bold text-foreground">{t('landing:characterInfoTitle')}</p><div className="mt-3 space-y-2 text-xs text-muted-foreground"><p className="rounded bg-background p-2">{t('landing:characterClass')}</p><p className="rounded bg-background p-2">{t('landing:characterLevel')}</p><p className="rounded bg-background p-2">{t('landing:characterNation')}</p><p className="rounded bg-background p-2">{t('landing:characterOrigin')}</p></div></div>
                   <div className="rounded-lg bg-surface-raised p-4"><p className="text-xs font-bold text-foreground">{t('landing:hitPoints')}</p><p className="mt-3 text-2xl font-bold text-foreground">18 / 18</p><div className="mt-3 h-2 rounded-full bg-danger"><div className="h-full w-full rounded-full bg-danger" /></div><p className="mt-5 text-xs font-bold text-foreground">{t('landing:effort')}</p><p className="mt-2 text-2xl font-bold text-primary">6 / 7</p></div>
                 </div>
               </div>
@@ -169,13 +179,13 @@ export default function HomePage() {
               <div className="overflow-hidden rounded-xl border border-border-bright bg-surface shadow-[0_18px_56px_rgba(109,62,255,0.14)]">
                 <div className="flex min-h-[360px]">
                   <div className="hidden w-12 shrink-0 flex-col items-center gap-5 border-r border-border bg-background py-5 sm:flex"><span className="text-lg text-primary">◇</span><span className="text-muted">□</span><span className="text-muted">□</span><span className="text-muted">□</span><span className="text-muted">□</span></div>
-                  <div className="min-w-0 flex-1 bg-background p-5 sm:p-6"><p className="text-xl font-bold text-primary">{t('landing:templatesPageTitle')}</p><p className="mt-1 text-xs text-muted-foreground sm:text-sm">{t('landing:templatesPageSubtitle')}</p><div className="my-4 h-px bg-primary/30" /><div className="grid gap-3 sm:grid-cols-2">
+                  <div className="min-w-0 flex-1 bg-background p-5 sm:p-6"><p className="text-xl font-bold text-primary">{t('landing:templatesPageTitle')}</p><p className="mt-1 text-xs text-muted-foreground sm:text-sm">{t('landing:templatesPageSubtitle')}</p><div className="my-4 h-px bg-primary/30" /><div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/10 p-3"><div><p className="text-[0.6rem] font-bold tracking-[0.14em] text-primary">{t('landing:templatesCustomBadge')}</p><p className="mt-1 text-xs text-foreground">{t('landing:templatesCustomDescription')}</p></div><button type="button" className="btn-primary shrink-0 px-3 py-2 text-[0.65rem]">{t('landing:templatesCreateCta')}</button></div><div className="grid gap-3 sm:grid-cols-2">
                     {[['templateOne', 'templateOneMeta'], ['templateTwo', 'templateTwoMeta']].map(([titleKey, metaKey]) => <div key={titleKey} className="rounded-lg border border-border-bright bg-surface-raised p-4 transition-transform duration-300 hover:-translate-y-1"><p className="text-base font-bold text-foreground">{t(`landing:${titleKey}`)}</p><p className="mt-2 text-xs italic text-muted">{t('landing:templateDescription')}</p><p className="mt-4 text-[0.6rem] font-bold tracking-[0.12em] text-accent">{t(`landing:${metaKey}`)}</p><div className="mt-4 flex gap-2"><button type="button" className="btn-ghost px-3 py-2 text-xs">{t('landing:viewTemplate')}</button><button type="button" className="btn-primary px-3 py-2 text-xs">{t('landing:cloneTemplate')}</button></div></div>)}
                   </div></div>
                 </div>
               </div>
             </div>
-            <div className="order-1 animate-slide-up lg:order-2"><p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">{t('landing:templatesEyebrow')}</p><h2 className="mt-4 text-3xl font-semibold leading-tight text-foreground sm:text-4xl">{t('landing:templatesTitle')}</h2><p className="mt-5 text-base leading-7 text-muted-foreground">{t('landing:templatesDescription')}</p><Link href="/login?redirect=/dashboard/public-templates" className="btn-ghost mt-7 px-6 py-3">{t('landing:templatesCta')}</Link></div>
+            <div className="order-1 animate-slide-up lg:order-2"><p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">{t('landing:templatesEyebrow')}</p><h2 className="mt-4 text-3xl font-semibold leading-tight text-foreground sm:text-4xl">{t('landing:templatesTitle')}</h2><p className="mt-5 text-base leading-7 text-muted-foreground">{t('landing:templatesDescription')}</p><button type="button" onClick={() => setOpenModule('templates')} className="btn-ghost mt-7 px-6 py-3">{t('landing:templatesCta')}</button></div>
           </div>
         </div>
       </section>
@@ -188,6 +198,29 @@ export default function HomePage() {
       <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8 lg:pb-24"><div className="card border-primary/20 bg-gradient-to-br from-background/70 via-surface/40 to-background/60"><div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between"><div className="max-w-2xl"><p className="text-xs uppercase tracking-[0.25em] text-muted">{t('landing:ctaEyebrow')}</p><h2 className="mt-2 text-2xl font-semibold text-gradient">{t('landing:ctaTitle')}</h2><p className="mt-3 text-sm leading-7 text-muted-foreground">{t('landing:ctaDescription')}</p></div><div className="flex flex-col gap-3 sm:flex-row"><Link href="/login?redirect=/dashboard" className="btn-primary px-6 py-3">{t('landing:startMyCampaign')}</Link><Link href="/login?redirect=/dashboard" className="btn-ghost px-6 py-3">{t('landing:signIn')}</Link></div></div></div></section>
 
       <footer className="border-t border-border/60 bg-background/60"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-3 px-4 py-6 text-sm text-muted sm:px-6 lg:px-8"><Link href="/privacy" className="hover:text-foreground">{t('landing:privacy')}</Link><span>·</span><Link href="/terms" className="hover:text-foreground">{t('landing:terms')}</Link><span>·</span><Link href="/cancel-terms" className="hover:text-foreground">{t('landing:cancellation')}</Link><span>·</span><a href="https://instagram.com/mythrion.app" target="_blank" rel="noreferrer" className="hover:text-foreground">{t('landing:instagram')}</a></div></footer>
+
+      {openModule && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm animate-fade-in">
+          <button type="button" aria-label={t('landing:modalClose')} onClick={() => setOpenModule(null)} className="absolute inset-0 h-full w-full cursor-default" />
+          <dialog open aria-labelledby="landing-module-title" className="card relative z-10 m-0 w-full max-w-lg animate-scale-in border-primary/30 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+            <div className="flex items-start justify-between gap-5">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">{openModule === 'character' ? t('landing:characterEyebrow') : t('landing:templatesEyebrow')}</p>
+                <h2 id="landing-module-title" className="mt-3 text-2xl font-semibold text-foreground">{openModule === 'character' ? t('landing:characterModalTitle') : t('landing:templatesModalTitle')}</h2>
+              </div>
+              <button type="button" onClick={() => setOpenModule(null)} aria-label={t('landing:modalClose')} title={t('landing:modalClose')} className="btn-ghost h-9 w-9 shrink-0 p-0 text-lg">×</button>
+            </div>
+            <p className="mt-5 text-sm leading-7 text-muted-foreground">{openModule === 'character' ? t('landing:characterModalDescription') : t('landing:templatesModalDescription')}</p>
+            <ul className="mt-6 space-y-3 text-sm text-foreground">
+              {(openModule === 'character'
+                ? ['characterModalFeatureOne', 'characterModalFeatureTwo', 'characterModalFeatureThree']
+                : ['templatesModalFeatureOne', 'templatesModalFeatureTwo', 'templatesModalFeatureThree']
+              ).map((key) => <li key={key} className="flex items-start gap-3"><span className="mt-0.5 text-primary">✓</span><span>{t(`landing:${key}`)}</span></li>)}
+            </ul>
+            <button type="button" onClick={() => setOpenModule(null)} className="btn-primary mt-8 w-full">{t('landing:modalClose')}</button>
+          </dialog>
+        </div>
+      )}
     </main>
   )
 }
