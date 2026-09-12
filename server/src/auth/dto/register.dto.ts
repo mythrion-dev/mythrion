@@ -17,4 +17,9 @@ export class RegisterDto {
   @IsBoolean({ message: i18nValidationMessage('validation.isBoolean') })
   @Equals(true, { message: i18nValidationMessage('auth.acceptTermsRequired') })
   acceptTerms!: boolean
+
+  @IsString({ message: i18nValidationMessage('validation.isString') })
+  @IsOptional()
+  @MaxLength(2048, { message: i18nValidationMessage('validation.maxLength') })
+  attributionUrl?: string
 }

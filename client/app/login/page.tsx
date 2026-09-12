@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth-context'
 import { API_URL, setInvitationToken } from '@/lib/api'
 import { resendTwoFactorCode } from '@/lib/two-factor-api'
 import { trackAccountCreated } from '@/lib/gtm'
+import { clearMarketingAttribution, getMarketingAttribution } from '@/lib/marketing-attribution'
 import { TwoFactorCodeForm } from '@/components/auth/TwoFactorCodeForm'
 import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal'
 
@@ -51,8 +52,13 @@ function LoginForm() {
     }
     // Thread the current frontend origin through the OAuth `state` param so the
     // API redirects the user back to this domain after Google auth.
-    const state = window.location.origin
-    window.location.href = `${API_URL}/auth/google?state=${encodeURIComponent(state)}`
+    const state = encodeURIComponent(
+      JSON.stringify({
+        origin: window.location.origin,
+        attributionUrl: getMarketingAttribution(),
+      }),
+    )
+    window.location.href = `${API_URL}/auth/google?state=${state}`
   }
 
   async function handleSubmit(e: SubmitEvent) {
@@ -69,6 +75,7 @@ function LoginForm() {
         setTermsError(null)
         await register(email, password, undefined, acceptedTerms)
         trackAccountCreated(email, 'form')
+        clearMarketingAttribution()
         // New accounts must verify their email before entering the app.
         router.push('/verify-email')
       } else {

@@ -52,6 +52,7 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   User: 'User',
+  MarketingAttribution: 'MarketingAttribution',
   Adventure: 'Adventure',
   JoinRequest: 'JoinRequest',
   Book: 'Book',
@@ -144,6 +145,16 @@ export const UserScalarFieldEnum = {
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const MarketingAttributionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  sourceUrl: 'sourceUrl',
+  createdAt: 'createdAt'
+} as const
+
+export type MarketingAttributionScalarFieldEnum = (typeof MarketingAttributionScalarFieldEnum)[keyof typeof MarketingAttributionScalarFieldEnum]
 
 
 export const AdventureScalarFieldEnum = {

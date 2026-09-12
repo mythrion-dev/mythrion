@@ -385,6 +385,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   User: 'User',
+  MarketingAttribution: 'MarketingAttribution',
   Adventure: 'Adventure',
   JoinRequest: 'JoinRequest',
   Book: 'Book',
@@ -455,7 +456,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "adventure" | "joinRequest" | "book" | "notebook" | "notebookFolder" | "notebookPage" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateCoreResource" | "characterSheetCoreResourceValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "armorClassAttributeModifier" | "characterSheetArmorClassAttributeValue" | "templateResistance" | "resistanceComponent" | "resistanceAttributeModifier" | "characterSheetResistanceValue" | "characterSheetResistanceComponentValue" | "sheetResistance" | "sheetResistanceComponent" | "sheetResistanceAttributeModifier" | "sheetProfessionalSkill" | "sheetProfessionalSkillProfileValue" | "characterAbility" | "characterAbilityLevel" | "summonSkill" | "summonResistance" | "summonAttribute" | "summonArmorClassValue" | "summonHealth" | "characterInventoryItem" | "characterStory" | "templateCharacterSection" | "characterSectionEntry" | "subscriptionPlan" | "userSubscription" | "subscriptionInvoice" | "twoFactorChallenge" | "recoveryCode" | "auditLog"
+    modelProps: "user" | "marketingAttribution" | "adventure" | "joinRequest" | "book" | "notebook" | "notebookFolder" | "notebookPage" | "campaignMember" | "campaignInvitation" | "googleAccount" | "refreshToken" | "template" | "skillModifierProfile" | "profileOption" | "characterSheetSkillProfileValue" | "templateAttribute" | "templateSkill" | "characterSheetSkillValue" | "characterSheet" | "characterSheetValue" | "templateField" | "characterSheetFieldValue" | "templateCoreResource" | "characterSheetCoreResourceValue" | "templateArmorClass" | "armorClassField" | "characterSheetArmorClassValue" | "armorClassAttributeModifier" | "characterSheetArmorClassAttributeValue" | "templateResistance" | "resistanceComponent" | "resistanceAttributeModifier" | "characterSheetResistanceValue" | "characterSheetResistanceComponentValue" | "sheetResistance" | "sheetResistanceComponent" | "sheetResistanceAttributeModifier" | "sheetProfessionalSkill" | "sheetProfessionalSkillProfileValue" | "characterAbility" | "characterAbilityLevel" | "summonSkill" | "summonResistance" | "summonAttribute" | "summonArmorClassValue" | "summonHealth" | "characterInventoryItem" | "characterStory" | "templateCharacterSection" | "characterSectionEntry" | "subscriptionPlan" | "userSubscription" | "subscriptionInvoice" | "twoFactorChallenge" | "recoveryCode" | "auditLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -530,6 +531,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.UserCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.UserCountAggregateOutputType> | number
+        }
+      }
+    }
+    MarketingAttribution: {
+      payload: Prisma.$MarketingAttributionPayload<ExtArgs>
+      fields: Prisma.MarketingAttributionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.MarketingAttributionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketingAttributionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.MarketingAttributionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketingAttributionPayload>
+        }
+        findFirst: {
+          args: Prisma.MarketingAttributionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketingAttributionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.MarketingAttributionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketingAttributionPayload>
+        }
+        findMany: {
+          args: Prisma.MarketingAttributionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketingAttributionPayload>[]
+        }
+        create: {
+          args: Prisma.MarketingAttributionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketingAttributionPayload>
+        }
+        createMany: {
+          args: Prisma.MarketingAttributionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.MarketingAttributionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketingAttributionPayload>[]
+        }
+        delete: {
+          args: Prisma.MarketingAttributionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketingAttributionPayload>
+        }
+        update: {
+          args: Prisma.MarketingAttributionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketingAttributionPayload>
+        }
+        deleteMany: {
+          args: Prisma.MarketingAttributionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.MarketingAttributionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.MarketingAttributionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketingAttributionPayload>[]
+        }
+        upsert: {
+          args: Prisma.MarketingAttributionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MarketingAttributionPayload>
+        }
+        aggregate: {
+          args: Prisma.MarketingAttributionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateMarketingAttribution>
+        }
+        groupBy: {
+          args: Prisma.MarketingAttributionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MarketingAttributionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.MarketingAttributionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MarketingAttributionCountAggregateOutputType> | number
         }
       }
     }
@@ -4663,6 +4738,16 @@ export const UserScalarFieldEnum = {
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
+export const MarketingAttributionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  sourceUrl: 'sourceUrl',
+  createdAt: 'createdAt'
+} as const
+
+export type MarketingAttributionScalarFieldEnum = (typeof MarketingAttributionScalarFieldEnum)[keyof typeof MarketingAttributionScalarFieldEnum]
+
+
 export const AdventureScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -5741,6 +5826,7 @@ export type PrismaClientOptions = ({
 }
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
+  marketingAttribution?: Prisma.MarketingAttributionOmit
   adventure?: Prisma.AdventureOmit
   joinRequest?: Prisma.JoinRequestOmit
   book?: Prisma.BookOmit

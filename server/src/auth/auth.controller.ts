@@ -21,7 +21,7 @@ import { JwtAuthGuard } from './jwt-auth.guard.js'
 import { PermissionService } from './permission.service.js'
 import { SkipEmailVerificationCheck } from './skip-email-verification.decorator.js'
 import { AuthGuard } from '@nestjs/passport'
-import { GoogleAuthGuard } from './google-auth.guard.js'
+import { GoogleAuthGuard, parseGoogleOAuthState } from './google-auth.guard.js'
 import { isAllowedOrigin, normalizeOrigin } from '../config/allowed-origins.js'
 import { RateLimit } from './rate-limit.decorator.js'
 import { RateLimitGuard } from './rate-limit.guard.js'
@@ -205,7 +205,14 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleCallback(@Req() req: any, @Res() res: Response, @Query('state') state?: string) {
-    const { accessToken, refreshToken, accountCreated, accountCreatedEmail } = req.user
+    const { accessToken, refreshToken, accountCreated, accountCreatedEmail, accountCreatedUserId } = req.user
+    const oauthState = parseGoogleOAuthState(state)
+    if (accountCreated && accountCreatedUserId && oauthState.attributionUrl) {
+      await this.authService.recordMarketingAttribution(
+        accountCreatedUserId,
+        oauthState.attributionUrl,
+      )
+    }
     const params = new URLSearchParams()
     params.set('token', accessToken)
     params.set('refreshToken', refreshToken)
@@ -213,7 +220,7 @@ export class AuthController {
       params.set('accountCreated', 'true')
       params.set('accountCreatedEmail', accountCreatedEmail)
     }
-    const origin = resolveRedirectOrigin(state)
+    const origin = resolveRedirectOrigin(oauthState.origin)
     res.redirect(`${origin}/auth/google/callback?${params.toString()}`)
   }
 }

@@ -9,6 +9,7 @@ import {
   getInvitationToken,
 } from '@/lib/api'
 import { queueAccountCreated } from '@/lib/gtm'
+import { clearMarketingAttribution } from '@/lib/marketing-attribution'
 
 function GoogleCallbackInner() {
   const router = useRouter()
@@ -34,6 +35,7 @@ function GoogleCallbackInner() {
         }
         if (accountCreated && accountCreatedEmail) {
           queueAccountCreated(accountCreatedEmail, 'google')
+          clearMarketingAttribution()
         }
 
         const redirectAfterSignIn = () => {

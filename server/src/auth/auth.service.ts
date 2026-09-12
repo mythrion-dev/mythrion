@@ -125,6 +125,19 @@ export class AuthService {
     }
   }
 
+  async recordMarketingAttribution(userId: string, sourceUrl: string): Promise<void> {
+    if (sourceUrl.length > 2048) return
+    try {
+      const parsedUrl = new URL(sourceUrl)
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') return
+      await this.prisma.marketingAttribution.create({
+        data: { userId, sourceUrl },
+      })
+    } catch {
+      // Attribution must never block account creation or OAuth completion.
+    }
+  }
+
   /**
    * Generate a fresh verification token, store only its hash, and email the
    * verification link. Returns the signed raw token (used by tests); the email
@@ -220,6 +233,8 @@ export class AuthService {
         emailVerified: false,
       },
     })
+
+    if (dto.attributionUrl) await this.recordMarketingAttribution(user.id, dto.attributionUrl)
 
     await this.issueVerificationToken(user)
     await this.recordAudit(user.id, 'register', req)

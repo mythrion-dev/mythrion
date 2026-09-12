@@ -39,6 +39,18 @@ model User {
   twoFactorChallenges         TwoFactorChallenge[]
   recoveryCodes               RecoveryCode[]
   auditLogs                   AuditLog[]
+  marketingAttributions       MarketingAttribution[]
+}
+
+model MarketingAttribution {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceUrl String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model Adventure {

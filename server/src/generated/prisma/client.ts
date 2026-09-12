@@ -46,6 +46,11 @@ export { Prisma }
  */
 export type User = Prisma.UserModel
 /**
+ * Model MarketingAttribution
+ * 
+ */
+export type MarketingAttribution = Prisma.MarketingAttributionModel
+/**
  * Model Adventure
  * 
  */

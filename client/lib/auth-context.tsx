@@ -22,6 +22,7 @@ import {
   isAccessTokenExpiringSoon,
   onAuthFailure,
 } from './api'
+import { getMarketingAttribution } from './marketing-attribution'
 
 interface User {
   id: string
@@ -216,11 +217,13 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const register = useCallback(
     async (email: string, password: string, displayName?: string, acceptTerms = false) => {
+      const attributionUrl = getMarketingAttribution()
       const res = await api.post<{ accessToken: string; refreshToken: string }>('/auth/register', {
         email,
         password,
         displayName,
         acceptTerms,
+        ...(attributionUrl ? { attributionUrl: decodeURIComponent(attributionUrl) } : {}),
       })
       setAccessToken(res.accessToken)
       setRefreshToken(res.refreshToken)

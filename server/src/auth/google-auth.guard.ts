@@ -2,6 +2,20 @@ import { ExecutionContext, Injectable } from '@nestjs/common'
 import { AuthGuard } from '@nestjs/passport'
 import { isAllowedOrigin } from '../config/allowed-origins.js'
 
+export function parseGoogleOAuthState(state?: string): { origin?: string; attributionUrl?: string } {
+  if (!state) return {}
+  try {
+    const parsed = JSON.parse(state) as { origin?: unknown; attributionUrl?: unknown }
+    return {
+      origin: typeof parsed.origin === 'string' ? parsed.origin : undefined,
+      attributionUrl:
+        typeof parsed.attributionUrl === 'string' ? parsed.attributionUrl : undefined,
+    }
+  } catch {
+    return { origin: state }
+  }
+}
+
 /**
  * Google OAuth guard that threads the requesting frontend origin through the
  * OAuth `state` parameter.
@@ -17,9 +31,10 @@ import { isAllowedOrigin } from '../config/allowed-origins.js'
 export class GoogleAuthGuard extends AuthGuard('google') {
   async getAuthenticateOptions(context: ExecutionContext) {
     const req = context.switchToHttp().getRequest()
-    const requestedOrigin = req.query?.state as string | undefined
-    if (isAllowedOrigin(requestedOrigin)) {
-      return { state: requestedOrigin }
+    const requestedState = req.query?.state as string | undefined
+    const requestedOrigin = parseGoogleOAuthState(requestedState).origin
+    if (requestedState && isAllowedOrigin(requestedOrigin)) {
+      return { state: requestedState }
     }
     // Invalid/absent state: don't pass state to Google, the callback will
     // fall back to FRONTEND_URL.
