@@ -364,6 +364,7 @@ describe('AuthController', () => {
           accessToken: 'google-access',
           refreshToken: 'google-refresh',
           accountCreated: true,
+          accountCreatedEmail: 'new@test.com',
         },
       }
       const mockRes = { redirect: jest.fn() } as unknown as Response
@@ -372,6 +373,9 @@ describe('AuthController', () => {
 
       expect(mockRes.redirect).toHaveBeenCalledWith(
         expect.stringContaining('accountCreated=true'),
+      )
+      expect(mockRes.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('accountCreatedEmail=new%40test.com'),
       )
     })
 

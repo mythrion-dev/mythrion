@@ -7,7 +7,6 @@ import {
   setAccessToken,
   setRefreshToken,
   getInvitationToken,
-  api,
 } from '@/lib/api'
 import { trackAccountCreated } from '@/lib/gtm'
 
@@ -25,13 +24,9 @@ function GoogleCallbackInner() {
         setAccessToken(accessToken)
         setRefreshToken(refreshToken)
 
-        if (searchParams.get('accountCreated') === 'true') {
-          try {
-            const profile = await api.get<{ email: string }>('/auth/me')
-            trackAccountCreated(profile.email, 'google')
-          } catch {
-            // Account creation succeeded; tracking must not block authentication.
-          }
+        const accountCreatedEmail = searchParams.get('accountCreatedEmail')
+        if (searchParams.get('accountCreated') === 'true' && accountCreatedEmail) {
+          trackAccountCreated(accountCreatedEmail, 'google')
         }
 
         // Check for pending invitation
