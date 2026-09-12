@@ -98,6 +98,9 @@ export class GoogleService {
       },
     })
 
-    return this.tokenService.generateTokens(newUser.id, newUser.email)
+    return {
+      ...(await this.tokenService.generateTokens(newUser.id, newUser.email)),
+      accountCreated: true,
+    }
   }
 }

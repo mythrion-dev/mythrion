@@ -7,7 +7,9 @@ import {
   setAccessToken,
   setRefreshToken,
   getInvitationToken,
+  api,
 } from '@/lib/api'
+import { trackAccountCreated } from '@/lib/gtm'
 
 function GoogleCallbackInner() {
   const router = useRouter()
@@ -15,27 +17,40 @@ function GoogleCallbackInner() {
   const { t } = useTranslation()
 
   useEffect(() => {
-    const accessToken = searchParams.get('token')
-    const refreshToken = searchParams.get('refreshToken')
+    async function completeGoogleSignIn() {
+      const accessToken = searchParams.get('token')
+      const refreshToken = searchParams.get('refreshToken')
 
-    if (accessToken && refreshToken) {
-      setAccessToken(accessToken)
-      setRefreshToken(refreshToken)
+      if (accessToken && refreshToken) {
+        setAccessToken(accessToken)
+        setRefreshToken(refreshToken)
 
-      // Check for pending invitation
-      const pendingInvite = getInvitationToken()
-      if (pendingInvite) {
-        // Force a full page load so AuthProvider picks up the new token
-        // and navigates to the invite page
-        window.location.replace(`/invite/${pendingInvite}`)
-        return
+        if (searchParams.get('accountCreated') === 'true') {
+          try {
+            const profile = await api.get<{ email: string }>('/auth/me')
+            trackAccountCreated(profile.email, 'google')
+          } catch {
+            // Account creation succeeded; tracking must not block authentication.
+          }
+        }
+
+        // Check for pending invitation
+        const pendingInvite = getInvitationToken()
+        if (pendingInvite) {
+          // Force a full page load so AuthProvider picks up the new token
+          // and navigates to the invite page
+          window.location.replace(`/invite/${pendingInvite}`)
+          return
+        }
+
+        // No pending invitation, go to dashboard
+        window.location.replace('/dashboard')
+      } else {
+        router.replace('/login?error=google_auth_failed')
       }
-
-      // No pending invitation, go to dashboard
-      window.location.replace('/dashboard')
-    } else {
-      router.replace('/login?error=google_auth_failed')
     }
+
+    void completeGoogleSignIn()
   }, [searchParams, router])
 
   return (

@@ -8,6 +8,10 @@ const mockRegister = vi.fn()
 const mockVerifyTwoFactor = vi.fn()
 const { mockResendTwoFactorCode } = vi.hoisted(() => ({ mockResendTwoFactorCode: vi.fn() }))
 
+vi.mock('@/lib/gtm', () => ({
+  trackAccountCreated: vi.fn(),
+}))
+
 vi.mock('@/lib/two-factor-api', () => ({
   resendTwoFactorCode: mockResendTwoFactorCode,
 }))
@@ -122,6 +126,9 @@ describe('LoginPage', () => {
       expect(mockRegister).toHaveBeenCalledWith('test@test.com', 'password123', undefined, true)
       expect(mockRouterPush).toHaveBeenCalledWith('/verify-email')
     })
+
+    const { trackAccountCreated } = await import('@/lib/gtm')
+    expect(trackAccountCreated).toHaveBeenCalledWith('test@test.com', 'form')
   })
 
   it('redirects straight to the dashboard when 2FA is not required', async () => {

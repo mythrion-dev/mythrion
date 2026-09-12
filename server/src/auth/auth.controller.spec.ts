@@ -358,6 +358,23 @@ describe('AuthController', () => {
       )
     })
 
+    it('should mark a newly created Google account in the redirect', async () => {
+      const mockReq = {
+        user: {
+          accessToken: 'google-access',
+          refreshToken: 'google-refresh',
+          accountCreated: true,
+        },
+      }
+      const mockRes = { redirect: jest.fn() } as unknown as Response
+
+      await controller.googleCallback(mockReq as any, mockRes)
+
+      expect(mockRes.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('accountCreated=true'),
+      )
+    })
+
     it('should redirect to the state origin when a valid origin is provided', async () => {
       const mockReq = { user: { accessToken: 'google-access', refreshToken: 'google-refresh' } }
       const mockRes = { redirect: jest.fn() } as unknown as Response

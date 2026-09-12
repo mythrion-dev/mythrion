@@ -205,10 +205,11 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleCallback(@Req() req: any, @Res() res: Response, @Query('state') state?: string) {
-    const { accessToken, refreshToken } = req.user
+    const { accessToken, refreshToken, accountCreated } = req.user
     const params = new URLSearchParams()
     params.set('token', accessToken)
     params.set('refreshToken', refreshToken)
+    if (accountCreated) params.set('accountCreated', 'true')
     const origin = resolveRedirectOrigin(state)
     res.redirect(`${origin}/auth/google/callback?${params.toString()}`)
   }

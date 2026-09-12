@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { API_URL, setInvitationToken } from '@/lib/api'
 import { resendTwoFactorCode } from '@/lib/two-factor-api'
+import { trackAccountCreated } from '@/lib/gtm'
 import { TwoFactorCodeForm } from '@/components/auth/TwoFactorCodeForm'
 import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal'
 
@@ -67,6 +68,7 @@ function LoginForm() {
         }
         setTermsError(null)
         await register(email, password, undefined, acceptedTerms)
+        trackAccountCreated(email, 'form')
         // New accounts must verify their email before entering the app.
         router.push('/verify-email')
       } else {
