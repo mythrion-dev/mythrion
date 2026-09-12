@@ -25,21 +25,32 @@ function GoogleCallbackInner() {
         setRefreshToken(refreshToken)
 
         const accountCreatedEmail = searchParams.get('accountCreatedEmail')
-        if (searchParams.get('accountCreated') === 'true' && accountCreatedEmail) {
+        const accountCreated = searchParams.get('accountCreated') === 'true' && Boolean(accountCreatedEmail)
+        if (accountCreated && accountCreatedEmail) {
           trackAccountCreated(accountCreatedEmail, 'google')
         }
 
-        // Check for pending invitation
-        const pendingInvite = getInvitationToken()
-        if (pendingInvite) {
-          // Force a full page load so AuthProvider picks up the new token
-          // and navigates to the invite page
-          window.location.replace(`/invite/${pendingInvite}`)
-          return
+        const redirectAfterSignIn = () => {
+          // Check for pending invitation
+          const pendingInvite = getInvitationToken()
+          if (pendingInvite) {
+            // Force a full page load so AuthProvider picks up the new token
+            // and navigates to the invite page
+            window.location.replace(`/invite/${pendingInvite}`)
+            return
+          }
+
+          // No pending invitation, go to dashboard
+          window.location.replace('/dashboard')
         }
 
-        // No pending invitation, go to dashboard
-        window.location.replace('/dashboard')
+        // GTM processes dataLayer events asynchronously. Give it time to
+        // consume the event before unloading the callback page.
+        if (accountCreated) {
+          window.setTimeout(redirectAfterSignIn, 250)
+        } else {
+          redirectAfterSignIn()
+        }
       } else {
         router.replace('/login?error=google_auth_failed')
       }
