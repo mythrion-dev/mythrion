@@ -5,6 +5,7 @@ import { AuthProvider } from '@/lib/auth-context'
 import { I18nProvider } from '@/components/shared/I18nProvider'
 import { NavigationProvider } from '@/lib/navigation-context'
 import { SubscriptionProvider } from '@/lib/subscription-context'
+import { GtmEventBridge } from '@/components/shared/GtmEventBridge'
 import './globals.css'
 
 const geistSans = Geist({
@@ -66,6 +67,7 @@ export default function RootLayout({
         {/* Subtle top ornament */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent pointer-events-none" />
         <AuthProvider>
+          <GtmEventBridge />
           <I18nProvider>
             <SubscriptionProvider>
               <NavigationProvider>{children}</NavigationProvider>

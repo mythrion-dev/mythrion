@@ -8,7 +8,7 @@ import {
   setRefreshToken,
   getInvitationToken,
 } from '@/lib/api'
-import { trackAccountCreated } from '@/lib/gtm'
+import { queueAccountCreated } from '@/lib/gtm'
 
 function GoogleCallbackInner() {
   const router = useRouter()
@@ -33,7 +33,7 @@ function GoogleCallbackInner() {
           })
         }
         if (accountCreated && accountCreatedEmail) {
-          trackAccountCreated(accountCreatedEmail, 'google')
+          queueAccountCreated(accountCreatedEmail, 'google')
         }
 
         const redirectAfterSignIn = () => {
@@ -50,13 +50,7 @@ function GoogleCallbackInner() {
           window.location.replace('/dashboard')
         }
 
-        // GTM processes dataLayer events asynchronously. Give it time to
-        // consume the event before unloading the callback page.
-        if (accountCreated) {
-          window.setTimeout(redirectAfterSignIn, 250)
-        } else {
-          redirectAfterSignIn()
-        }
+        redirectAfterSignIn()
       } else {
         router.replace('/login?error=google_auth_failed')
       }
