@@ -4,6 +4,10 @@ const COOKIE_MAX_AGE_SECONDS = 90 * 24 * 60 * 60
 export function captureMarketingAttribution(): void {
   if (typeof window === 'undefined' || !window.location.search) return
 
+  // Keep the first campaign URL. OAuth callbacks and later navigations also
+  // have query parameters, but must never replace the original attribution.
+  if (getMarketingAttribution()) return
+
   const cookieValue = encodeURIComponent(window.location.href)
   const secure = window.location.protocol === 'https:' ? '; Secure' : ''
   document.cookie = `${MARKETING_ATTRIBUTION_COOKIE}=${cookieValue}; Max-Age=${COOKIE_MAX_AGE_SECONDS}; Path=/; SameSite=Lax${secure}`
