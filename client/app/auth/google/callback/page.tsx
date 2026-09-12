@@ -26,6 +26,12 @@ function GoogleCallbackInner() {
 
         const accountCreatedEmail = searchParams.get('accountCreatedEmail')
         const accountCreated = searchParams.get('accountCreated') === 'true' && Boolean(accountCreatedEmail)
+        if (process.env.NODE_ENV === 'development') {
+          console.info('[GTM] Google account creation marker', {
+            accountCreated,
+            hasEmail: Boolean(accountCreatedEmail),
+          })
+        }
         if (accountCreated && accountCreatedEmail) {
           trackAccountCreated(accountCreatedEmail, 'google')
         }

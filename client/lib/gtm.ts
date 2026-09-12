@@ -4,6 +4,7 @@ interface AccountCreatedEvent {
   event: 'account_created'
   email: string
   signup_method: AccountCreationMethod
+  method: AccountCreationMethod
 }
 
 declare global {
@@ -22,6 +23,7 @@ export function trackAccountCreated(
     event: 'account_created',
     email,
     signup_method: signupMethod,
+    method: signupMethod,
   }
   window.dataLayer = window.dataLayer ?? []
   window.dataLayer.push(event)
